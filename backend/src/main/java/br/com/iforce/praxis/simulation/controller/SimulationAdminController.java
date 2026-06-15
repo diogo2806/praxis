@@ -1,8 +1,10 @@
 package br.com.iforce.praxis.simulation.controller;
 
 import br.com.iforce.praxis.simulation.dto.PublishSimulationResponse;
+import br.com.iforce.praxis.simulation.dto.SimulationMonitoringResponse;
 import br.com.iforce.praxis.simulation.dto.SimulationValidationResponse;
 import br.com.iforce.praxis.simulation.service.SimulationAdminService;
+import br.com.iforce.praxis.simulation.service.SimulationMonitoringService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.ResponseEntity;
@@ -18,9 +20,14 @@ import org.springframework.web.bind.annotation.RestController;
 public class SimulationAdminController {
 
     private final SimulationAdminService simulationAdminService;
+    private final SimulationMonitoringService simulationMonitoringService;
 
-    public SimulationAdminController(SimulationAdminService simulationAdminService) {
+    public SimulationAdminController(
+            SimulationAdminService simulationAdminService,
+            SimulationMonitoringService simulationMonitoringService
+    ) {
         this.simulationAdminService = simulationAdminService;
+        this.simulationMonitoringService = simulationMonitoringService;
     }
 
     @GetMapping("/{simulationId}/versions/{versionNumber}/validation")
@@ -45,5 +52,17 @@ public class SimulationAdminController {
             @PathVariable int versionNumber
     ) {
         return ResponseEntity.ok(simulationAdminService.publishVersion(simulationId, versionNumber));
+    }
+
+    @GetMapping("/{simulationId}/versions/{versionNumber}/monitoring")
+    @Operation(
+            summary = "Monitora versao publicada",
+            description = "Retorna indicadores de execucao, abandono e entrega de resultados para uma versao de simulacao."
+    )
+    public ResponseEntity<SimulationMonitoringResponse> monitorVersion(
+            @PathVariable String simulationId,
+            @PathVariable int versionNumber
+    ) {
+        return ResponseEntity.ok(simulationMonitoringService.getMonitoring(simulationId, versionNumber));
     }
 }

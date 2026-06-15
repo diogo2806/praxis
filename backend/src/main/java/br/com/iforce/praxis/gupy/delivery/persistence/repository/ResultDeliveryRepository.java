@@ -38,4 +38,9 @@ public interface ResultDeliveryRepository extends JpaRepository<ResultDeliveryEn
             "candidateAttempt.resultItems"
     })
     Optional<ResultDeliveryEntity> findById(Long id);
+
+    long countByCandidateAttemptSimulationVersionIdAndStatus(
+            Long simulationVersionId,
+            ResultDeliveryStatus status
+    );
 }

@@ -1,5 +1,6 @@
 package br.com.iforce.praxis.gupy.persistence.repository;
 
+import br.com.iforce.praxis.gupy.model.AttemptStatus;
 import br.com.iforce.praxis.gupy.persistence.entity.CandidateAttemptEntity;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -17,4 +18,8 @@ public interface CandidateAttemptRepository extends JpaRepository<CandidateAttem
     @Override
     @EntityGraph(attributePaths = {"answers", "resultItems"})
     Optional<CandidateAttemptEntity> findById(String id);
+
+    long countBySimulationVersionId(Long simulationVersionId);
+
+    long countBySimulationVersionIdAndStatus(Long simulationVersionId, AttemptStatus status);
 }
