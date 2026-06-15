@@ -10,6 +10,7 @@ import {
   ShieldCheck,
   UserRound,
 } from "lucide-react";
+import { GlobalErrorFlow, GlobalProductStateBar } from "@/components/praxis-ui";
 import { cn } from "@/lib/utils";
 
 const nav = [
@@ -28,6 +29,22 @@ const secondary = [
 
 export function AppShell({ children }: { children: ReactNode }) {
   const pathname = useRouterState({ select: (state) => state.location.pathname });
+  const productState =
+    pathname === "/nova/gupy"
+      ? {
+          gupy: "connecting" as const,
+          draft: "published" as const,
+          publication: "running" as const,
+        }
+      : pathname === "/nova/validador"
+        ? { gupy: "connected" as const, draft: "dirty" as const, publication: "blocked" as const }
+        : pathname === "/nova/piloto" || pathname.startsWith("/nova/mapa")
+          ? {
+              gupy: "connected" as const,
+              draft: "published" as const,
+              publication: "idle" as const,
+            }
+          : { gupy: "connected" as const, draft: "saved" as const, publication: "idle" as const };
 
   return (
     <div className="flex min-h-screen bg-background text-foreground">
@@ -131,7 +148,11 @@ export function AppShell({ children }: { children: ReactNode }) {
             </button>
           </div>
         </header>
-        <div className="min-h-[calc(100vh-3.5rem)] px-6 py-8 lg:px-10">{children}</div>
+        <div className="min-h-[calc(100vh-3.5rem)] px-6 py-8 lg:px-10">
+          <GlobalProductStateBar state={productState} />
+          <GlobalErrorFlow />
+          {children}
+        </div>
       </main>
     </div>
   );

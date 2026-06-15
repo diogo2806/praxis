@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { AlertTriangle, CheckCircle2, ExternalLink, ShieldCheck, XCircle } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
-import { ScreenStateStrip, StateBanner } from "@/components/praxis-ui";
+import { NextStepContract, ScreenStateStrip, StateBanner } from "@/components/praxis-ui";
 import { WizardStepper } from "@/components/wizard-stepper";
 import { cn } from "@/lib/utils";
 
@@ -128,6 +128,21 @@ function ValidatorPage() {
           Sem blocker ou warning ativo. A publicacao usa a versao imutavel atual.
         </StateBanner>
       )}
+
+      <div className="mt-5">
+        <NextStepContract
+          primary={
+            blockers > 0
+              ? "Voltar ao editor. Piloto e publicacao ficam travados."
+              : warnings > 0
+                ? "Confirmar publicacao com alertas gravados no AuditLog."
+                : "Publicar versao imutavel e seguir para piloto."
+          }
+          secondary="Salvar rascunho nunca publica; volta ao editor mantendo diagnostico clicavel."
+          versionRule="Depois de publicar, editar cria nova versao e preserva a publicada."
+          lockedAfter="Nao existe override manual para blocker critico."
+        />
+      </div>
 
       <div className="mt-5 grid gap-5 lg:grid-cols-[360px_minmax(0,1fr)]">
         <section className="rounded-md border border-border bg-card p-5">

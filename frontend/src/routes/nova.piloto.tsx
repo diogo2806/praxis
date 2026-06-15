@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { AppShell } from "@/components/app-shell";
-import { ScreenStateStrip } from "@/components/praxis-ui";
+import { NextStepContract, ScreenStateStrip } from "@/components/praxis-ui";
 import { WizardStepper } from "@/components/wizard-stepper";
 
 export const Route = createFileRoute("/nova/piloto")({
@@ -45,6 +45,14 @@ function Page() {
         <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
           Se os 3 referência não tirarem nota alta, a simulação está medindo a coisa errada.
         </p>
+      </div>
+      <div className="mb-5">
+        <NextStepContract
+          primary="Concluir checklist de referencia e seguir para mapa & score."
+          secondary="Voltar ao validador ou blueprint antes da publicacao final continua permitido."
+          versionRule="Aprovar v1.0 congela resultados do piloto; ajustes posteriores viram v1.1."
+          lockedAfter="Candidato de piloto nao muda de versao no meio da tentativa."
+        />
       </div>
       <div className="grid gap-6 lg:grid-cols-[1fr_300px]">
         <div className="overflow-hidden rounded-xl border border-border bg-card">

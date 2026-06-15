@@ -4,10 +4,16 @@ import {
   Archive,
   CheckCircle2,
   CircleDot,
+  CloudOff,
   Clock3,
   FileText,
+  Loader2,
   Lock,
   RotateCcw,
+  Route,
+  Send,
+  ServerCrash,
+  UploadCloud,
   XCircle,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -108,7 +114,157 @@ export function EmptyState({
           <h2 className="text-2xl font-semibold text-foreground">{title}</h2>
           <p className="mt-2 text-sm text-muted-foreground">{description}</p>
         </div>
-        <div className="grid min-w-0 gap-2 sm:min-w-[420px]">{actions}</div>
+        <div className="grid min-w-0 gap-2 sm:min-w-[420px]">
+          <div className="text-[10px] font-semibold uppercase text-muted-foreground">
+            Acao recomendada
+          </div>
+          {actions}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+type GlobalProductState = {
+  gupy: "connected" | "connecting" | "disconnected";
+  draft: "saved" | "dirty" | "published";
+  publication: "idle" | "running" | "blocked";
+};
+
+const defaultProductState: GlobalProductState = {
+  gupy: "connected",
+  draft: "saved",
+  publication: "idle",
+};
+
+export function GlobalProductStateBar({
+  state = defaultProductState,
+}: {
+  state?: Partial<GlobalProductState>;
+}) {
+  const current = { ...defaultProductState, ...state };
+  const gupyMeta = {
+    connected: { label: "Gupy conectada", Icon: CheckCircle2, tone: "ok" },
+    connecting: { label: "Conectando Gupy", Icon: Loader2, tone: "warn" },
+    disconnected: { label: "Gupy desconectada", Icon: CloudOff, tone: "danger" },
+  } as const;
+  const draftMeta = {
+    saved: { label: "Rascunho global salvo", Icon: FileText, tone: "muted" },
+    dirty: { label: "Rascunho global alterado", Icon: FileText, tone: "warn" },
+    published: { label: "Versao publicada imutavel", Icon: Lock, tone: "ok" },
+  } as const;
+  const publicationMeta = {
+    idle: { label: "Publicacao parada", Icon: Send, tone: "muted" },
+    running: { label: "Publicacao em andamento", Icon: UploadCloud, tone: "info" },
+    blocked: { label: "Publicacao bloqueada", Icon: Lock, tone: "danger" },
+  } as const;
+  const items = [
+    gupyMeta[current.gupy],
+    draftMeta[current.draft],
+    publicationMeta[current.publication],
+  ];
+
+  return (
+    <div className="mb-4 grid gap-2 rounded-md border border-border bg-card p-2 text-xs md:grid-cols-3">
+      {items.map(({ label, Icon, tone }) => (
+        <div
+          key={label}
+          className={cn(
+            "flex min-h-10 items-center gap-2 rounded-md border px-3 py-2",
+            toneClass[tone],
+          )}
+        >
+          <Icon className={cn("h-3.5 w-3.5", label === "Conectando Gupy" && "animate-spin")} />
+          <span className="font-medium">{label}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+const globalErrorItems = [
+  {
+    title: "Integracao Gupy",
+    description: "Sempre aparece como banner de acao, com diagnostico e tentativa de reenvio.",
+    action: "Abrir diagnostico",
+    Icon: ServerCrash,
+    tone: "danger",
+  },
+  {
+    title: "Carregamento da simulacao",
+    description: "Fallback unico: skeleton, recarregar e manter rascunho local visivel.",
+    action: "Recarregar",
+    Icon: Loader2,
+    tone: "warn",
+  },
+  {
+    title: "Publicacao",
+    description: "Falha nunca some: permanece no topo ate publicar, salvar rascunho ou corrigir.",
+    action: "Salvar rascunho",
+    Icon: UploadCloud,
+    tone: "info",
+  },
+] as const;
+
+export function GlobalErrorFlow() {
+  return (
+    <div className="mb-5 rounded-md border border-border bg-card p-3">
+      <div className="mb-2 flex items-center gap-2 text-xs font-semibold uppercase text-muted-foreground">
+        <AlertTriangle className="h-3.5 w-3.5" />
+        Fluxo de erro global
+      </div>
+      <div className="grid gap-2 lg:grid-cols-3">
+        {globalErrorItems.map(({ title, description, action, Icon, tone }) => (
+          <div key={title} className={cn("rounded-md border p-3", toneClass[tone])}>
+            <div className="flex items-center gap-2 text-sm font-semibold">
+              <Icon className="h-4 w-4" />
+              {title}
+            </div>
+            <p className="mt-1 min-h-10 text-xs opacity-85">{description}</p>
+            <button className="mt-2 rounded-md border border-current/20 bg-background/60 px-2 py-1 text-[11px] font-medium">
+              {action}
+            </button>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+export function NextStepContract({
+  primary,
+  secondary,
+  versionRule,
+  lockedAfter,
+}: {
+  primary: string;
+  secondary: string;
+  versionRule: string;
+  lockedAfter: string;
+}) {
+  return (
+    <section className="rounded-md border border-border bg-card p-4">
+      <div className="flex items-center gap-2 text-sm font-semibold">
+        <Route className="h-4 w-4 text-primary" />
+        Proximo passo sempre
+      </div>
+      <div className="mt-3 grid gap-2 text-xs md:grid-cols-2">
+        <div className="rounded-md border border-primary/25 bg-primary/10 p-3 text-primary">
+          <div className="font-semibold uppercase">acao primaria</div>
+          <div className="mt-1 text-sm font-medium">{primary}</div>
+        </div>
+        <div className="rounded-md border border-border bg-background p-3 text-muted-foreground">
+          <div className="font-semibold uppercase">rota secundaria</div>
+          <div className="mt-1 text-sm text-foreground">{secondary}</div>
+        </div>
+        <div className="rounded-md border border-warning/35 bg-warning/15 p-3 text-warning-foreground">
+          <div className="font-semibold uppercase">regra de versao</div>
+          <div className="mt-1 text-sm font-medium">{versionRule}</div>
+        </div>
+        <div className="rounded-md border border-border bg-muted p-3 text-muted-foreground">
+          <div className="font-semibold uppercase">travamento</div>
+          <div className="mt-1 text-sm text-foreground">{lockedAfter}</div>
+        </div>
       </div>
     </section>
   );

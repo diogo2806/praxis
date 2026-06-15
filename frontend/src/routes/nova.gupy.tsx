@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { CheckCircle2, RefreshCw, Server, ShieldAlert, Webhook, XCircle } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
-import { ScreenStateStrip, StateBanner } from "@/components/praxis-ui";
+import { NextStepContract, ScreenStateStrip, StateBanner } from "@/components/praxis-ui";
 import { WizardStepper } from "@/components/wizard-stepper";
 
 export const Route = createFileRoute("/nova/gupy")({
@@ -179,6 +179,19 @@ function GupyActivation() {
           A proxima acao apenas registra que a integracao foi conferida e validada com a Gupy.
         </StateBanner>
       )}
+
+      <div className="mt-5">
+        <NextStepContract
+          primary={
+            hasFailure
+              ? "Corrigir checklist de ativacao antes de marcar integracao ativa."
+              : "Registrar conferencia e aguardar ativacao/vinculo dentro da Gupy."
+          }
+          secondary="Cliente vincula a simulacao na vaga dentro da Gupy; gestor nao usa tela externa."
+          versionRule="GET /test so expoe simulacoes publicadas e versoes imutaveis."
+          lockedAfter="Integracao ativa nao publica rascunho nem altera tentativa ja iniciada."
+        />
+      </div>
 
       <div className="mt-5 grid gap-5 lg:grid-cols-[minmax(0,1fr)_360px]">
         <main className="space-y-5">

@@ -2,7 +2,12 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { GitBranch, ListTree, Plus, Save, Smartphone, Trash2, Workflow } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
-import { ScreenStateStrip, StateBanner, UndoRedoBar } from "@/components/praxis-ui";
+import {
+  NextStepContract,
+  ScreenStateStrip,
+  StateBanner,
+  UndoRedoBar,
+} from "@/components/praxis-ui";
 import { WizardStepper } from "@/components/wizard-stepper";
 import { cn } from "@/lib/utils";
 
@@ -156,9 +161,11 @@ function DialogEditor() {
   const [future, setFuture] = useState<Node[][]>([]);
   const [selectedId, setSelectedId] = useState("T1");
   const [mode, setMode] = useState<"lista" | "grafo">("grafo");
+  const [editorMode, setEditorMode] = useState<"edit" | "review" | "published">("edit");
   const [savedAt, setSavedAt] = useState("14:21");
 
   const selected = nodes.find((node) => node.id === selectedId) ?? nodes[0];
+  const isLocked = editorMode === "published";
   const canAddTurn = nodes.length < 10;
 
   const previewMessages = useMemo(() => {
@@ -174,6 +181,7 @@ function DialogEditor() {
   }, [selected]);
 
   function commit(updater: (current: Node[]) => Node[]) {
+    if (isLocked) return;
     setHistory((current) => [...current.slice(-8), nodes]);
     setFuture([]);
     setNodes((current) => updater(current));
@@ -211,7 +219,7 @@ function DialogEditor() {
   }
 
   function addOption() {
-    if (selected.options.length >= 4) return;
+    if (isLocked || selected.options.length >= 4) return;
     const label = String.fromCharCode(65 + selected.options.length);
     commit((current) =>
       current.map((node) =>
@@ -238,7 +246,7 @@ function DialogEditor() {
   }
 
   function addTurn() {
-    if (!canAddTurn) return;
+    if (isLocked || !canAddTurn) return;
     const id = `T${nodes.length + 1}`;
     commit((current) => [
       ...current,
@@ -275,7 +283,7 @@ function DialogEditor() {
   }
 
   function deleteTurn(id: string) {
-    if (nodes.length <= 1) return;
+    if (isLocked || nodes.length <= 1) return;
     commit((current) =>
       current
         .filter((node) => node.id !== id)
@@ -290,6 +298,7 @@ function DialogEditor() {
   }
 
   function undo() {
+    if (isLocked) return;
     const previous = history.at(-1);
     if (!previous) return;
     setFuture((current) => [nodes, ...current]);
@@ -298,6 +307,7 @@ function DialogEditor() {
   }
 
   function redo() {
+    if (isLocked) return;
     const next = future[0];
     if (!next) return;
     setHistory((current) => [...current, nodes]);
@@ -321,10 +331,69 @@ function DialogEditor() {
         <UndoRedoBar savedAt={savedAt} onUndo={undo} onRedo={redo} />
       </div>
 
-      <StateBanner tone="warn" title="Alteracoes anteriores ficam como revisar, nao sao apagadas">
-        Se um passo invalida outro, o validador marca os turnos seguintes em amarelo e preserva o
-        trabalho.
-      </StateBanner>
+      <div className="mb-5 flex flex-wrap items-center justify-between gap-3 rounded-md border border-border bg-card p-3">
+        <div>
+          <div className="text-sm font-semibold">Modo do editor</div>
+          <p className="text-xs text-muted-foreground">
+            Fecha a duvida entre editar, revisar e proteger versao publicada.
+          </p>
+        </div>
+        <div className="inline-flex rounded-md border border-border bg-background p-1 text-xs">
+          {[
+            { id: "edit", label: "Edicao" },
+            { id: "review", label: "Revisao final" },
+            { id: "published", label: "Bloqueado pos-publicacao" },
+          ].map((item) => (
+            <button
+              key={item.id}
+              type="button"
+              onClick={() => setEditorMode(item.id as typeof editorMode)}
+              className={cn(
+                "rounded px-3 py-1.5",
+                editorMode === item.id && "bg-primary text-primary-foreground",
+              )}
+            >
+              {item.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {editorMode === "edit" && (
+        <StateBanner tone="warn" title="Alteracoes anteriores ficam como revisar, nao sao apagadas">
+          Se um passo invalida outro, o validador marca os turnos seguintes em amarelo e preserva o
+          trabalho.
+        </StateBanner>
+      )}
+      {editorMode === "review" && (
+        <StateBanner tone="info" title="Modo revisao final">
+          Edicao ainda permitida. O foco passa a ser validar ramificacoes, rubricas e mensagens que
+          ainda podem quebrar a publicacao.
+        </StateBanner>
+      )}
+      {isLocked && (
+        <StateBanner
+          tone="danger"
+          title="Versao publicada bloqueada"
+          action={
+            <button className="shrink-0 rounded-md border border-current/20 bg-background/60 px-3 py-1.5 text-xs font-medium">
+              Criar v1.1
+            </button>
+          }
+        >
+          Editar uma versao publicada cria uma nova versao. Candidatos em andamento continuam na
+          versao atual.
+        </StateBanner>
+      )}
+
+      <div className="mt-5">
+        <NextStepContract
+          primary="Validar qualidade quando todos os turnos estiverem sem blocker."
+          secondary="Voltar a personagem ou blueprint continua permitido antes de publicar."
+          versionRule="Depois de publicar, qualquer edicao cria v1.1 automaticamente."
+          lockedAfter="Versao publicada nao altera tentativas ou candidatos em andamento."
+        />
+      </div>
 
       <div className="mt-5 grid gap-5 xl:grid-cols-[360px_minmax(0,1fr)_340px]">
         <aside className="rounded-md border border-border bg-card p-4">
@@ -395,7 +464,7 @@ function DialogEditor() {
           <button
             type="button"
             onClick={addTurn}
-            disabled={!canAddTurn}
+            disabled={isLocked || !canAddTurn}
             className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-md border border-border bg-card px-3 py-2 text-sm hover:bg-accent disabled:cursor-not-allowed disabled:opacity-50"
           >
             <Plus className="h-4 w-4" />
@@ -412,7 +481,8 @@ function DialogEditor() {
             <button
               type="button"
               onClick={() => deleteTurn(selected.id)}
-              className="inline-flex items-center gap-2 rounded-md border border-danger/25 bg-danger/5 px-3 py-2 text-xs text-danger hover:bg-danger/10"
+              disabled={isLocked}
+              className="inline-flex items-center gap-2 rounded-md border border-danger/25 bg-danger/5 px-3 py-2 text-xs text-danger hover:bg-danger/10 disabled:cursor-not-allowed disabled:opacity-50"
             >
               <Trash2 className="h-4 w-4" />
               Deletar turno
@@ -426,6 +496,7 @@ function DialogEditor() {
             <textarea
               className="input min-h-20"
               value={selected.client}
+              disabled={isLocked}
               onChange={(event) =>
                 commit((current) =>
                   current.map((node) =>
@@ -442,6 +513,7 @@ function DialogEditor() {
               <select
                 className="input"
                 value={selected.timeLimit ?? "none"}
+                disabled={isLocked}
                 onChange={(event) =>
                   commit((current) =>
                     current.map((node) =>
@@ -469,6 +541,7 @@ function DialogEditor() {
               <input
                 className="input"
                 value={selected.timeReason}
+                disabled={isLocked}
                 onChange={(event) =>
                   commit((current) =>
                     current.map((node) =>
@@ -485,7 +558,7 @@ function DialogEditor() {
             <button
               type="button"
               onClick={addOption}
-              disabled={selected.options.length >= 4}
+              disabled={isLocked || selected.options.length >= 4}
               className="inline-flex items-center gap-2 rounded-md border border-border bg-card px-3 py-2 text-xs hover:bg-accent disabled:cursor-not-allowed disabled:opacity-50"
             >
               <Plus className="h-4 w-4" />
@@ -515,6 +588,7 @@ function DialogEditor() {
                       className="input"
                       value={option.text}
                       maxLength={160}
+                      disabled={isLocked}
                       onChange={(event) => updateOption(option.id, event.target.value)}
                     />
                     <span className="mt-1 block text-[11px] text-muted-foreground">
@@ -525,6 +599,7 @@ function DialogEditor() {
                     <select
                       className="input"
                       value={option.next}
+                      disabled={isLocked}
                       onChange={(event) => updateNext(option.id, event.target.value)}
                     >
                       {nodes
@@ -596,7 +671,7 @@ function DialogEditor() {
           </StateBanner>
           <button className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-md border border-border bg-card px-3 py-2 text-sm hover:bg-accent">
             <Save className="h-4 w-4" />
-            Salvar manualmente
+            {isLocked ? "Criar nova versao para editar" : "Salvar manualmente"}
           </button>
         </aside>
       </div>
