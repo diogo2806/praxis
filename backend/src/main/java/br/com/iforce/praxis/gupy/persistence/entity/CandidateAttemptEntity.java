@@ -76,6 +76,12 @@ public class CandidateAttemptEntity {
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
 
+    @Column(name = "started_at")
+    private Instant startedAt;
+
+    @Column(name = "finished_at")
+    private Instant finishedAt;
+
     @OneToMany(mappedBy = "candidateAttempt", cascade = CascadeType.ALL, orphanRemoval = true)
     private Set<AttemptAnswerEntity> answers = new LinkedHashSet<>();
 

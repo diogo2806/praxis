@@ -10,6 +10,7 @@ import java.util.stream.Stream;
 public enum AuditEventType {
 
     ATTEMPT_CREATED("attemptCreated"),
+    ATTEMPT_STARTED("attemptStarted"),
     ANSWER_SUBMITTED("answerSubmitted"),
     ATTEMPT_COMPLETED("attemptCompleted"),
     SIMULATION_VERSION_PUBLISHED("simulationVersionPublished");

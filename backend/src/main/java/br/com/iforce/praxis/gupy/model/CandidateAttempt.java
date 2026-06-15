@@ -20,6 +20,8 @@ public record CandidateAttempt(
         ResultDecision decision,
         boolean humanReviewRequired,
         String companyResultString,
-        Instant createdAt
+        Instant createdAt,
+        Instant startedAt,
+        Instant finishedAt
 ) {
 }

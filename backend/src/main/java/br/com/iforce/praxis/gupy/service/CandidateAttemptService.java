@@ -104,17 +104,21 @@ public class CandidateAttemptService {
         return candidateAttemptEntity;
     }
 
-    @Transactional(readOnly = true)
+    @Transactional
     public CandidateAttemptResponse findCandidateAttempt(String attemptId) {
-        CandidateAttempt attempt = toDomain(findAttemptEntityById(attemptId));
+        CandidateAttemptEntity candidateAttemptEntity = findAttemptEntityById(attemptId);
+        CandidateAttempt attempt = startAttemptIfNeeded(toDomain(candidateAttemptEntity));
+        applyDomainToEntity(attempt, candidateAttemptEntity);
+        CandidateAttemptEntity savedCandidateAttemptEntity = candidateAttemptRepository.save(candidateAttemptEntity);
+        CandidateAttempt savedAttempt = toDomain(savedCandidateAttemptEntity);
         PublishedSimulation simulation = findSimulation(attempt);
-        ScenarioNode currentNode = findCurrentNode(attempt, simulation).orElse(null);
+        ScenarioNode currentNode = findCurrentNode(savedAttempt, simulation).orElse(null);
 
         return new CandidateAttemptResponse(
-                attempt.id(),
+                savedAttempt.id(),
                 simulation.name(),
-                attempt.status(),
-                attempt.status() == AttemptStatus.COMPLETED,
+                savedAttempt.status(),
+                savedAttempt.status() == AttemptStatus.COMPLETED,
                 toCandidateNodeResponse(currentNode)
         );
     }
@@ -122,7 +126,7 @@ public class CandidateAttemptService {
     @Transactional
     public SubmitAnswerResponse submitAnswer(String attemptId, SubmitAnswerRequest request) {
         CandidateAttemptEntity candidateAttemptEntity = findAttemptEntityById(attemptId);
-        CandidateAttempt attempt = toDomain(candidateAttemptEntity);
+        CandidateAttempt attempt = startAttemptIfNeeded(toDomain(candidateAttemptEntity));
         PublishedSimulation simulation = findSimulation(attempt);
 
         Optional<AttemptAnswer> existingAnswer = Optional.ofNullable(attempt.answersByNodeId().get(request.nodeId()));
@@ -241,7 +245,9 @@ public class CandidateAttemptService {
                 ResultDecision.IN_PROGRESS,
                 false,
                 "Resultado ainda nao finalizado. A trilha auditavel sera preenchida apos a conclusao da simulacao.",
-                Instant.now()
+                Instant.now(),
+                null,
+                null
         );
 
         CandidateAttemptEntity candidateAttemptEntity = new CandidateAttemptEntity();
@@ -266,6 +272,8 @@ public class CandidateAttemptService {
         candidateAttemptEntity.setHumanReviewRequired(attempt.humanReviewRequired());
         candidateAttemptEntity.setCompanyResultString(attempt.companyResultString());
         candidateAttemptEntity.setCreatedAt(attempt.createdAt());
+        candidateAttemptEntity.setStartedAt(attempt.startedAt());
+        candidateAttemptEntity.setFinishedAt(attempt.finishedAt());
 
         candidateAttemptEntity.getAnswers().clear();
         for (AttemptAnswer answer : attempt.answersByNodeId().values()) {
@@ -322,7 +330,9 @@ public class CandidateAttemptService {
                 candidateAttemptEntity.getDecision(),
                 candidateAttemptEntity.isHumanReviewRequired(),
                 candidateAttemptEntity.getCompanyResultString(),
-                candidateAttemptEntity.getCreatedAt()
+                candidateAttemptEntity.getCreatedAt(),
+                candidateAttemptEntity.getStartedAt(),
+                candidateAttemptEntity.getFinishedAt()
         );
     }
 
@@ -359,7 +369,44 @@ public class CandidateAttemptService {
                 decision,
                 humanReviewRequired,
                 companyResultString,
-                attempt.createdAt()
+                attempt.createdAt(),
+                attempt.startedAt(),
+                completed ? Instant.now() : attempt.finishedAt()
+        );
+    }
+
+    private CandidateAttempt startAttemptIfNeeded(CandidateAttempt attempt) {
+        if (attempt.status() != AttemptStatus.NOT_STARTED) {
+            return attempt;
+        }
+
+        Instant startedAt = Instant.now();
+        auditEventService.appendCandidateAttemptEvent(
+                attempt.id(),
+                AuditEventType.ATTEMPT_STARTED,
+                "Tentativa iniciada pelo candidato.",
+                "{\"startedAt\":\"" + startedAt + "\"}"
+        );
+
+        return new CandidateAttempt(
+                attempt.id(),
+                attempt.resultId(),
+                attempt.simulationId(),
+                attempt.simulationVersionId(),
+                attempt.simulationVersionNumber(),
+                attempt.idempotencyKey(),
+                attempt.candidateName(),
+                attempt.candidateEmail(),
+                AttemptStatus.IN_PROGRESS,
+                attempt.score(),
+                attempt.results(),
+                attempt.answersByNodeId(),
+                attempt.decision(),
+                attempt.humanReviewRequired(),
+                attempt.companyResultString(),
+                attempt.createdAt(),
+                startedAt,
+                attempt.finishedAt()
         );
     }
 

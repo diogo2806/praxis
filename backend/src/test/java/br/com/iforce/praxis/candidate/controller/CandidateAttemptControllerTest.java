@@ -37,12 +37,18 @@ class CandidateAttemptControllerTest {
         mockMvc.perform(get("/candidate/attempts/" + attemptId))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.attemptId").value(attemptId))
-                .andExpect(jsonPath("$.status").value("notStarted"))
+                .andExpect(jsonPath("$.status").value("inProgress"))
                 .andExpect(jsonPath("$.currentNode.id").value("turno-1"))
                 .andExpect(jsonPath("$.currentNode.options[0].id").value(startsWith("opcao-")))
                 .andExpect(jsonPath("$.currentNode.options[0].competencyScores").doesNotExist())
                 .andExpect(jsonPath("$.currentNode.options[0].critical").doesNotExist())
                 .andExpect(jsonPath("$.currentNode.options[0].auditNote").doesNotExist());
+
+        CandidateAttemptEntity candidateAttemptEntity = candidateAttemptRepository.findById(attemptId)
+                .orElseThrow();
+
+        assertThat(candidateAttemptEntity.getStartedAt()).isNotNull();
+        assertThat(candidateAttemptEntity.getFinishedAt()).isNull();
     }
 
     @Test
@@ -76,8 +82,15 @@ class CandidateAttemptControllerTest {
         mockMvc.perform(get("/api/v1/audit/candidate-attempts/" + attemptId))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].eventType").value("attemptCreated"))
-                .andExpect(jsonPath("$[1].eventType").value("answerSubmitted"))
-                .andExpect(jsonPath("$[2].eventType").value("attemptCompleted"));
+                .andExpect(jsonPath("$[1].eventType").value("attemptStarted"))
+                .andExpect(jsonPath("$[2].eventType").value("answerSubmitted"))
+                .andExpect(jsonPath("$[3].eventType").value("attemptCompleted"));
+
+        CandidateAttemptEntity candidateAttemptEntity = candidateAttemptRepository.findById(attemptId)
+                .orElseThrow();
+
+        assertThat(candidateAttemptEntity.getStartedAt()).isNotNull();
+        assertThat(candidateAttemptEntity.getFinishedAt()).isNotNull();
     }
 
     @Test
