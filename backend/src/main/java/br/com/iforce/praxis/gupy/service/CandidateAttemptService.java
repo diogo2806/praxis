@@ -22,6 +22,7 @@ import br.com.iforce.praxis.gupy.model.ResultItem;
 import br.com.iforce.praxis.gupy.model.ResultTier;
 import br.com.iforce.praxis.gupy.model.ScenarioNode;
 import br.com.iforce.praxis.gupy.model.ScenarioOption;
+import br.com.iforce.praxis.gupy.model.ScoreCalculationResult;
 import br.com.iforce.praxis.gupy.persistence.entity.AttemptAnswerEntity;
 import br.com.iforce.praxis.gupy.persistence.entity.CandidateAttemptEntity;
 import br.com.iforce.praxis.gupy.persistence.entity.ResultItemEntity;
@@ -47,19 +48,22 @@ public class CandidateAttemptService {
     private final ResultDeliveryService resultDeliveryService;
     private final PraxisProperties praxisProperties;
     private final SimulationCatalogService simulationCatalogService;
+    private final ResultScoringService resultScoringService;
 
     public CandidateAttemptService(
             CandidateAttemptRepository candidateAttemptRepository,
             AuditEventService auditEventService,
             ResultDeliveryService resultDeliveryService,
             PraxisProperties praxisProperties,
-            SimulationCatalogService simulationCatalogService
+            SimulationCatalogService simulationCatalogService,
+            ResultScoringService resultScoringService
     ) {
         this.candidateAttemptRepository = candidateAttemptRepository;
         this.auditEventService = auditEventService;
         this.resultDeliveryService = resultDeliveryService;
         this.praxisProperties = praxisProperties;
         this.simulationCatalogService = simulationCatalogService;
+        this.resultScoringService = resultScoringService;
     }
 
     @Transactional
@@ -311,11 +315,14 @@ public class CandidateAttemptService {
     ) {
         boolean completed = selectedOption.nextNodeId() == null;
         AttemptStatus status = completed ? AttemptStatus.COMPLETED : AttemptStatus.IN_PROGRESS;
-        Integer score = completed ? calculateScore(selectedOption) : null;
-        List<ResultItem> results = completed ? toResultItems(selectedOption) : attempt.results();
-        boolean humanReviewRequired = completed && selectedOption.critical();
+        ScoreCalculationResult scoreCalculationResult = completed
+                ? resultScoringService.calculate(simulation, answersByNodeId)
+                : null;
+        Integer score = completed ? scoreCalculationResult.score() : null;
+        List<ResultItem> results = completed ? scoreCalculationResult.resultItems() : attempt.results();
+        boolean humanReviewRequired = completed && scoreCalculationResult.humanReviewRequired();
         ResultDecision decision = resolveDecision(completed, humanReviewRequired);
-        String companyResultString = buildCompanyResultString(simulation, selectedOption, score, humanReviewRequired);
+        String companyResultString = buildCompanyResultString(simulation, scoreCalculationResult);
 
         return new CandidateAttempt(
                 attempt.id(),
@@ -412,6 +419,25 @@ public class CandidateAttemptService {
             return ResultDecision.REVIEW_REQUIRED;
         }
         return ResultDecision.RECOMMEND_INTERVIEW;
+    }
+
+    private String buildCompanyResultString(
+            PublishedSimulation simulation,
+            ScoreCalculationResult scoreCalculationResult
+    ) {
+        if (scoreCalculationResult == null) {
+            return "Resultado ainda nao finalizado.";
+        }
+
+        String reviewLine = scoreCalculationResult.humanReviewRequired()
+                ? "Revisão humana obrigatória: alternativa crítica selecionada."
+                : "Sem blocker crítico na trilha respondida.";
+
+        return "# Práxis - Resultado\n\n"
+                + "Simulação: " + simulation.name() + "\n\n"
+                + "Score geral: " + scoreCalculationResult.score() + "/100\n\n"
+                + reviewLine + "\n\n"
+                + "Trilha auditável: " + scoreCalculationResult.auditTrail();
     }
 
     private String buildCompanyResultString(
