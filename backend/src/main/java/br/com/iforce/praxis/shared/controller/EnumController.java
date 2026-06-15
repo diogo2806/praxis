@@ -5,6 +5,8 @@ import br.com.iforce.praxis.gupy.delivery.model.ResultDeliveryStatus;
 import br.com.iforce.praxis.gupy.model.AttemptStatus;
 import br.com.iforce.praxis.gupy.model.ResultDecision;
 import br.com.iforce.praxis.gupy.model.ResultTier;
+import br.com.iforce.praxis.simulation.model.GupyPreflightCheckCode;
+import br.com.iforce.praxis.simulation.model.GupyPreflightCheckStatus;
 import br.com.iforce.praxis.shared.dto.EnumOptionResponse;
 import br.com.iforce.praxis.simulation.model.SimulationVersionStatus;
 import br.com.iforce.praxis.simulation.model.ValidationIssueSeverity;
@@ -87,6 +89,26 @@ public class EnumController {
     @Operation(summary = "Lista status de entrega", description = "Retorna value/label para ResultDeliveryStatus.")
     public ResponseEntity<List<EnumOptionResponse>> listResultDeliveryStatus() {
         List<EnumOptionResponse> options = Arrays.stream(ResultDeliveryStatus.values())
+                .map(status -> new EnumOptionResponse(status.name(), status.getDescricao()))
+                .toList();
+
+        return ResponseEntity.ok(options);
+    }
+
+    @GetMapping("/gupy-preflight-check-code")
+    @Operation(summary = "Lista codigos de preflight Gupy", description = "Retorna value/label para GupyPreflightCheckCode.")
+    public ResponseEntity<List<EnumOptionResponse>> listGupyPreflightCheckCode() {
+        List<EnumOptionResponse> options = Arrays.stream(GupyPreflightCheckCode.values())
+                .map(code -> new EnumOptionResponse(code.name(), code.getDescricao()))
+                .toList();
+
+        return ResponseEntity.ok(options);
+    }
+
+    @GetMapping("/gupy-preflight-check-status")
+    @Operation(summary = "Lista status de preflight Gupy", description = "Retorna value/label para GupyPreflightCheckStatus.")
+    public ResponseEntity<List<EnumOptionResponse>> listGupyPreflightCheckStatus() {
+        List<EnumOptionResponse> options = Arrays.stream(GupyPreflightCheckStatus.values())
                 .map(status -> new EnumOptionResponse(status.name(), status.getDescricao()))
                 .toList();
 

@@ -1,8 +1,10 @@
 package br.com.iforce.praxis.simulation.controller;
 
+import br.com.iforce.praxis.simulation.dto.GupyPreflightResponse;
 import br.com.iforce.praxis.simulation.dto.PublishSimulationResponse;
 import br.com.iforce.praxis.simulation.dto.SimulationMonitoringResponse;
 import br.com.iforce.praxis.simulation.dto.SimulationValidationResponse;
+import br.com.iforce.praxis.simulation.service.GupyPreflightService;
 import br.com.iforce.praxis.simulation.service.SimulationAdminService;
 import br.com.iforce.praxis.simulation.service.SimulationMonitoringService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -21,13 +23,16 @@ public class SimulationAdminController {
 
     private final SimulationAdminService simulationAdminService;
     private final SimulationMonitoringService simulationMonitoringService;
+    private final GupyPreflightService gupyPreflightService;
 
     public SimulationAdminController(
             SimulationAdminService simulationAdminService,
-            SimulationMonitoringService simulationMonitoringService
+            SimulationMonitoringService simulationMonitoringService,
+            GupyPreflightService gupyPreflightService
     ) {
         this.simulationAdminService = simulationAdminService;
         this.simulationMonitoringService = simulationMonitoringService;
+        this.gupyPreflightService = gupyPreflightService;
     }
 
     @GetMapping("/{simulationId}/versions/{versionNumber}/validation")
@@ -52,6 +57,18 @@ public class SimulationAdminController {
             @PathVariable int versionNumber
     ) {
         return ResponseEntity.ok(simulationAdminService.publishVersion(simulationId, versionNumber));
+    }
+
+    @GetMapping("/{simulationId}/versions/{versionNumber}/gupy-preflight")
+    @Operation(
+            summary = "Executa preflight Gupy",
+            description = "Valida configuracao publica, token de integracao e grafo antes da publicacao."
+    )
+    public ResponseEntity<GupyPreflightResponse> runGupyPreflight(
+            @PathVariable String simulationId,
+            @PathVariable int versionNumber
+    ) {
+        return ResponseEntity.ok(gupyPreflightService.getPreflight(simulationId, versionNumber));
     }
 
     @GetMapping("/{simulationId}/versions/{versionNumber}/monitoring")

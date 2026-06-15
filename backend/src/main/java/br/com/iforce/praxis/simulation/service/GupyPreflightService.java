@@ -1,0 +1,118 @@
+package br.com.iforce.praxis.simulation.service;
+
+import br.com.iforce.praxis.config.PraxisProperties;
+import br.com.iforce.praxis.simulation.dto.GupyPreflightCheckResponse;
+import br.com.iforce.praxis.simulation.dto.GupyPreflightResponse;
+import br.com.iforce.praxis.simulation.dto.SimulationValidationResponse;
+import br.com.iforce.praxis.simulation.model.GupyPreflightCheckCode;
+import br.com.iforce.praxis.simulation.model.GupyPreflightCheckStatus;
+import br.com.iforce.praxis.simulation.persistence.entity.SimulationVersionEntity;
+import br.com.iforce.praxis.simulation.persistence.repository.SimulationVersionRepository;
+import org.springframework.http.HttpStatus;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
+
+import java.net.URI;
+import java.util.ArrayList;
+import java.util.List;
+
+@Service
+public class GupyPreflightService {
+
+    private final SimulationVersionRepository simulationVersionRepository;
+    private final SimulationValidationService simulationValidationService;
+    private final PraxisProperties praxisProperties;
+
+    public GupyPreflightService(
+            SimulationVersionRepository simulationVersionRepository,
+            SimulationValidationService simulationValidationService,
+            PraxisProperties praxisProperties
+    ) {
+        this.simulationVersionRepository = simulationVersionRepository;
+        this.simulationValidationService = simulationValidationService;
+        this.praxisProperties = praxisProperties;
+    }
+
+    @Transactional(readOnly = true)
+    public GupyPreflightResponse getPreflight(String simulationId, int versionNumber) {
+        SimulationVersionEntity simulationVersionEntity = simulationVersionRepository
+                .findBySimulationIdAndVersionNumber(simulationId, versionNumber)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Versao de simulacao nao encontrada."));
+
+        return evaluate(simulationVersionEntity);
+    }
+
+    public GupyPreflightResponse evaluate(SimulationVersionEntity simulationVersionEntity) {
+        List<GupyPreflightCheckResponse> checks = new ArrayList<>();
+        checks.add(validatePublicBaseUrl());
+        checks.add(validateIntegrationToken());
+        checks.add(validateSimulation(simulationVersionEntity));
+
+        boolean ok = checks.stream()
+                .noneMatch(check -> GupyPreflightCheckStatus.BLOCKER.equals(check.status()));
+
+        return new GupyPreflightResponse(
+                simulationVersionEntity.getSimulation().getId(),
+                simulationVersionEntity.getVersionNumber(),
+                ok,
+                checks
+        );
+    }
+
+    private GupyPreflightCheckResponse validatePublicBaseUrl() {
+        String publicBaseUrl = praxisProperties.publicBaseUrl();
+        if (isBlank(publicBaseUrl)) {
+            return blocker(GupyPreflightCheckCode.PUBLIC_BASE_URL, "URL publica do backend nao configurada.");
+        }
+
+        try {
+            URI uri = URI.create(publicBaseUrl);
+            boolean hasHttpScheme = "http".equalsIgnoreCase(uri.getScheme()) || "https".equalsIgnoreCase(uri.getScheme());
+            if (!hasHttpScheme || isBlank(uri.getHost())) {
+                return blocker(GupyPreflightCheckCode.PUBLIC_BASE_URL, "URL publica deve usar http ou https e conter host.");
+            }
+        } catch (IllegalArgumentException exception) {
+            return blocker(GupyPreflightCheckCode.PUBLIC_BASE_URL, "URL publica invalida.");
+        }
+
+        return ok(GupyPreflightCheckCode.PUBLIC_BASE_URL, "URL publica configurada.");
+    }
+
+    private GupyPreflightCheckResponse validateIntegrationToken() {
+        if (isBlank(praxisProperties.integrationToken())) {
+            return blocker(GupyPreflightCheckCode.INTEGRATION_TOKEN, "Token de integracao Gupy nao configurado.");
+        }
+
+        return ok(GupyPreflightCheckCode.INTEGRATION_TOKEN, "Token de integracao configurado.");
+    }
+
+    private GupyPreflightCheckResponse validateSimulation(SimulationVersionEntity simulationVersionEntity) {
+        SimulationValidationResponse validationResponse = simulationValidationService.validate(simulationVersionEntity);
+        if (!validationResponse.publishable()) {
+            return blocker(GupyPreflightCheckCode.SIMULATION_VALIDATION, "Versao possui blockers no validador.");
+        }
+
+        if (!validationResponse.issues().isEmpty()) {
+            return new GupyPreflightCheckResponse(
+                    GupyPreflightCheckCode.SIMULATION_VALIDATION,
+                    GupyPreflightCheckStatus.WARNING,
+                    "Versao publicavel com avisos do validador."
+            );
+        }
+
+        return ok(GupyPreflightCheckCode.SIMULATION_VALIDATION, "Versao publicavel sem avisos.");
+    }
+
+    private GupyPreflightCheckResponse ok(GupyPreflightCheckCode code, String message) {
+        return new GupyPreflightCheckResponse(code, GupyPreflightCheckStatus.OK, message);
+    }
+
+    private GupyPreflightCheckResponse blocker(GupyPreflightCheckCode code, String message) {
+        return new GupyPreflightCheckResponse(code, GupyPreflightCheckStatus.BLOCKER, message);
+    }
+
+    private boolean isBlank(String value) {
+        return value == null || value.isBlank();
+    }
+}

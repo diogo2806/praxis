@@ -51,6 +51,19 @@ class SimulationAdminControllerTest {
     }
 
     @Test
+    void gupyPreflightApprovesSeededVersion() throws Exception {
+        mockMvc.perform(get("/api/v1/simulations/sim-atendimento-caos/versions/1/gupy-preflight"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.simulationId").value("sim-atendimento-caos"))
+                .andExpect(jsonPath("$.versionNumber").value(1))
+                .andExpect(jsonPath("$.ok").value(true))
+                .andExpect(jsonPath("$.checks[*].code").value(hasItem("publicBaseUrl")))
+                .andExpect(jsonPath("$.checks[*].code").value(hasItem("integrationToken")))
+                .andExpect(jsonPath("$.checks[*].code").value(hasItem("simulationValidation")))
+                .andExpect(jsonPath("$.checks[*].status").value(hasItem("ok")));
+    }
+
+    @Test
     void monitorSeededVersionReturnsAttemptAndDeliveryIndicators() throws Exception {
         mockMvc.perform(post("/test/candidate")
                         .header("Authorization", "Bearer dev-company-token")

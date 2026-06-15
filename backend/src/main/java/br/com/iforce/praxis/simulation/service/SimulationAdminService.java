@@ -2,6 +2,7 @@ package br.com.iforce.praxis.simulation.service;
 
 import br.com.iforce.praxis.audit.model.AuditEventType;
 import br.com.iforce.praxis.audit.service.AuditEventService;
+import br.com.iforce.praxis.simulation.dto.GupyPreflightResponse;
 import br.com.iforce.praxis.simulation.dto.PublishSimulationResponse;
 import br.com.iforce.praxis.simulation.dto.SimulationValidationResponse;
 import br.com.iforce.praxis.simulation.model.SimulationVersionStatus;
@@ -19,15 +20,18 @@ public class SimulationAdminService {
 
     private final SimulationVersionRepository simulationVersionRepository;
     private final SimulationValidationService simulationValidationService;
+    private final GupyPreflightService gupyPreflightService;
     private final AuditEventService auditEventService;
 
     public SimulationAdminService(
             SimulationVersionRepository simulationVersionRepository,
             SimulationValidationService simulationValidationService,
+            GupyPreflightService gupyPreflightService,
             AuditEventService auditEventService
     ) {
         this.simulationVersionRepository = simulationVersionRepository;
         this.simulationValidationService = simulationValidationService;
+        this.gupyPreflightService = gupyPreflightService;
         this.auditEventService = auditEventService;
     }
 
@@ -44,6 +48,11 @@ public class SimulationAdminService {
 
         if (!validationResponse.publishable()) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Publicacao bloqueada por itens criticos do validador.");
+        }
+
+        GupyPreflightResponse gupyPreflightResponse = gupyPreflightService.evaluate(simulationVersionEntity);
+        if (!gupyPreflightResponse.ok()) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Preflight Gupy bloqueou a publicacao.");
         }
 
         Instant publishedAt = Instant.now();
