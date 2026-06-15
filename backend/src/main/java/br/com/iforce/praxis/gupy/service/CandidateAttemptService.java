@@ -107,12 +107,17 @@ public class CandidateAttemptService {
     @Transactional
     public CandidateAttemptResponse findCandidateAttempt(String attemptId) {
         CandidateAttemptEntity candidateAttemptEntity = findAttemptEntityById(attemptId);
-        CandidateAttempt attempt = startAttemptIfNeeded(toDomain(candidateAttemptEntity));
+        CandidateAttempt attempt = expireAttemptIfNeeded(toDomain(candidateAttemptEntity));
+        if (!isTerminalBlockedStatus(attempt.status())) {
+            attempt = startAttemptIfNeeded(attempt);
+        }
         applyDomainToEntity(attempt, candidateAttemptEntity);
         CandidateAttemptEntity savedCandidateAttemptEntity = candidateAttemptRepository.save(candidateAttemptEntity);
         CandidateAttempt savedAttempt = toDomain(savedCandidateAttemptEntity);
         PublishedSimulation simulation = findSimulation(attempt);
-        ScenarioNode currentNode = findCurrentNode(savedAttempt, simulation).orElse(null);
+        ScenarioNode currentNode = isTerminalBlockedStatus(savedAttempt.status())
+                ? null
+                : findCurrentNode(savedAttempt, simulation).orElse(null);
 
         return new CandidateAttemptResponse(
                 savedAttempt.id(),
@@ -123,10 +128,16 @@ public class CandidateAttemptService {
         );
     }
 
-    @Transactional
+    @Transactional(noRollbackFor = ResponseStatusException.class)
     public SubmitAnswerResponse submitAnswer(String attemptId, SubmitAnswerRequest request) {
         CandidateAttemptEntity candidateAttemptEntity = findAttemptEntityById(attemptId);
-        CandidateAttempt attempt = startAttemptIfNeeded(toDomain(candidateAttemptEntity));
+        CandidateAttempt attempt = expireAttemptIfNeeded(toDomain(candidateAttemptEntity));
+        if (isTerminalBlockedStatus(attempt.status())) {
+            applyDomainToEntity(attempt, candidateAttemptEntity);
+            candidateAttemptRepository.save(candidateAttemptEntity);
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Tentativa expirada ou abandonada.");
+        }
+        attempt = startAttemptIfNeeded(attempt);
         PublishedSimulation simulation = findSimulation(attempt);
 
         Optional<AttemptAnswer> existingAnswer = Optional.ofNullable(attempt.answersByNodeId().get(request.nodeId()));
@@ -408,6 +419,61 @@ public class CandidateAttemptService {
                 startedAt,
                 attempt.finishedAt()
         );
+    }
+
+    private CandidateAttempt expireAttemptIfNeeded(CandidateAttempt attempt) {
+        Instant now = Instant.now();
+        if (attempt.status() == AttemptStatus.NOT_STARTED
+                && attempt.createdAt().plusSeconds(praxisProperties.attemptLinkTtlHours() * 3600L).isBefore(now)) {
+            auditEventService.appendCandidateAttemptEvent(
+                    attempt.id(),
+                    AuditEventType.ATTEMPT_EXPIRED,
+                    "Link da tentativa expirou antes do inicio.",
+                    "{\"expiredAt\":\"" + now + "\"}"
+            );
+            return withBlockedStatus(attempt, AttemptStatus.EXPIRED, now);
+        }
+
+        if ((attempt.status() == AttemptStatus.IN_PROGRESS || attempt.status() == AttemptStatus.PAUSED)
+                && attempt.startedAt() != null
+                && attempt.startedAt().plusSeconds(praxisProperties.attemptSessionTtlHours() * 3600L).isBefore(now)) {
+            auditEventService.appendCandidateAttemptEvent(
+                    attempt.id(),
+                    AuditEventType.ATTEMPT_ABANDONED,
+                    "Sessao da tentativa expirou sem conclusao.",
+                    "{\"abandonedAt\":\"" + now + "\"}"
+            );
+            return withBlockedStatus(attempt, AttemptStatus.ABANDONED, now);
+        }
+
+        return attempt;
+    }
+
+    private CandidateAttempt withBlockedStatus(CandidateAttempt attempt, AttemptStatus status, Instant finishedAt) {
+        return new CandidateAttempt(
+                attempt.id(),
+                attempt.resultId(),
+                attempt.simulationId(),
+                attempt.simulationVersionId(),
+                attempt.simulationVersionNumber(),
+                attempt.idempotencyKey(),
+                attempt.candidateName(),
+                attempt.candidateEmail(),
+                status,
+                attempt.score(),
+                attempt.results(),
+                attempt.answersByNodeId(),
+                attempt.decision(),
+                attempt.humanReviewRequired(),
+                attempt.companyResultString(),
+                attempt.createdAt(),
+                attempt.startedAt(),
+                finishedAt
+        );
+    }
+
+    private boolean isTerminalBlockedStatus(AttemptStatus status) {
+        return status == AttemptStatus.ABANDONED || status == AttemptStatus.EXPIRED || status == AttemptStatus.FAILED;
     }
 
     private PublishedSimulation findSimulation(CandidateAttempt attempt) {

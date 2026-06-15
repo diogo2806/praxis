@@ -13,6 +13,8 @@ public enum AttemptStatus {
     IN_PROGRESS("inProgress"),
     PAUSED("paused"),
     COMPLETED("completed"),
+    ABANDONED("abandoned"),
+    EXPIRED("expired"),
     FAILED("failed");
 
     private static final Map<String, AttemptStatus> NOME_PARA_ENUM_MAP = Stream.of(values())

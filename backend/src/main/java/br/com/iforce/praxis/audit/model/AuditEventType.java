@@ -11,6 +11,8 @@ public enum AuditEventType {
 
     ATTEMPT_CREATED("attemptCreated"),
     ATTEMPT_STARTED("attemptStarted"),
+    ATTEMPT_ABANDONED("attemptAbandoned"),
+    ATTEMPT_EXPIRED("attemptExpired"),
     ANSWER_SUBMITTED("answerSubmitted"),
     ATTEMPT_COMPLETED("attemptCompleted"),
     SIMULATION_VERSION_PUBLISHED("simulationVersionPublished");

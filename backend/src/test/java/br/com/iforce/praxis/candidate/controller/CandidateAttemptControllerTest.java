@@ -2,6 +2,7 @@ package br.com.iforce.praxis.candidate.controller;
 
 import br.com.iforce.praxis.gupy.persistence.entity.CandidateAttemptEntity;
 import br.com.iforce.praxis.gupy.persistence.repository.CandidateAttemptRepository;
+import br.com.iforce.praxis.gupy.model.AttemptStatus;
 import com.jayway.jsonpath.JsonPath;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -10,6 +11,9 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
+
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.startsWith;
@@ -153,6 +157,61 @@ class CandidateAttemptControllerTest {
         assertThat(candidateAttemptEntity.getSimulationId()).isEqualTo("sim-atendimento-caos");
         assertThat(candidateAttemptEntity.getSimulationVersionId()).isEqualTo(1L);
         assertThat(candidateAttemptEntity.getSimulationVersionNumber()).isEqualTo(1);
+    }
+
+    @Test
+    void expiredNotStartedAttemptReturnsExpiredWithoutStarting() throws Exception {
+        String attemptId = createAttempt("candidate-expired-before-start");
+        CandidateAttemptEntity candidateAttemptEntity = candidateAttemptRepository.findById(attemptId)
+                .orElseThrow();
+        candidateAttemptEntity.setCreatedAt(Instant.now().minus(8, ChronoUnit.DAYS));
+        candidateAttemptRepository.save(candidateAttemptEntity);
+
+        mockMvc.perform(get("/candidate/attempts/" + attemptId))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("expired"))
+                .andExpect(jsonPath("$.completed").value(false))
+                .andExpect(jsonPath("$.currentNode").doesNotExist());
+
+        CandidateAttemptEntity expiredAttemptEntity = candidateAttemptRepository.findById(attemptId)
+                .orElseThrow();
+        assertThat(expiredAttemptEntity.getStatus()).isEqualTo(AttemptStatus.EXPIRED);
+        assertThat(expiredAttemptEntity.getStartedAt()).isNull();
+        assertThat(expiredAttemptEntity.getFinishedAt()).isNotNull();
+
+        mockMvc.perform(get("/api/v1/audit/candidate-attempts/" + attemptId))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].eventType").value("attemptCreated"))
+                .andExpect(jsonPath("$[1].eventType").value("attemptExpired"));
+    }
+
+    @Test
+    void expiredRunningAttemptIsMarkedAbandonedAndBlocksAnswerSubmission() throws Exception {
+        String attemptId = createAttempt("candidate-abandoned-running");
+        mockMvc.perform(get("/candidate/attempts/" + attemptId))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("inProgress"));
+
+        CandidateAttemptEntity candidateAttemptEntity = candidateAttemptRepository.findById(attemptId)
+                .orElseThrow();
+        candidateAttemptEntity.setStartedAt(Instant.now().minus(2, ChronoUnit.DAYS));
+        candidateAttemptRepository.save(candidateAttemptEntity);
+
+        mockMvc.perform(post("/candidate/attempts/" + attemptId + "/answers")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "nodeId": "turno-1",
+                                  "optionId": "opcao-equilibrada"
+                                }
+                                """))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.message").value("Tentativa expirada ou abandonada."));
+
+        CandidateAttemptEntity abandonedAttemptEntity = candidateAttemptRepository.findById(attemptId)
+                .orElseThrow();
+        assertThat(abandonedAttemptEntity.getStatus()).isEqualTo(AttemptStatus.ABANDONED);
+        assertThat(abandonedAttemptEntity.getFinishedAt()).isNotNull();
     }
 
     private String createAttempt(String documentId) throws Exception {
