@@ -5,6 +5,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
+import org.springframework.test.context.jdbc.Sql;
 import org.springframework.test.web.servlet.MockMvc;
 
 import static org.hamcrest.Matchers.containsString;
@@ -48,6 +49,39 @@ class SimulationAdminControllerTest {
                 .andExpect(jsonPath("$[*].aggregateType").value(hasItem("SimulationVersion")))
                 .andExpect(jsonPath("$[*].aggregateId").value(hasItem("sim-atendimento-caos:v1")))
                 .andExpect(jsonPath("$[*].metadata").value(hasItem(containsString("\"status\":\"published\""))));
+    }
+
+    @Test
+    @Sql(scripts = "/simulation-review-fixtures.sql")
+    void publishDraftVersionRequiresApproval() throws Exception {
+        mockMvc.perform(post("/api/v1/simulations/sim-publish-gate/versions/1/publish"))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.message").value("Versao precisa estar aprovada antes da publicacao."));
+    }
+
+    @Test
+    @Sql(scripts = "/simulation-review-fixtures.sql")
+    void reviewApproveAndPublishDraftVersion() throws Exception {
+        mockMvc.perform(post("/api/v1/simulations/sim-review-flow/versions/1/submit-review"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.simulationId").value("sim-review-flow"))
+                .andExpect(jsonPath("$.versionNumber").value(1))
+                .andExpect(jsonPath("$.status").value("inReview"));
+
+        mockMvc.perform(post("/api/v1/simulations/sim-review-flow/versions/1/approve"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("approved"));
+
+        mockMvc.perform(post("/api/v1/simulations/sim-review-flow/versions/1/publish"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("published"))
+                .andExpect(jsonPath("$.publishedAt").exists());
+
+        mockMvc.perform(get("/api/v1/audit/simulations/sim-review-flow/versions/1"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[*].eventType").value(hasItem("simulationVersionSubmittedForReview")))
+                .andExpect(jsonPath("$[*].eventType").value(hasItem("simulationVersionApproved")))
+                .andExpect(jsonPath("$[*].eventType").value(hasItem("simulationVersionPublished")));
     }
 
     @Test

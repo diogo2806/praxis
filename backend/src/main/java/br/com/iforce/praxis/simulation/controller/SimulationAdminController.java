@@ -2,13 +2,17 @@ package br.com.iforce.praxis.simulation.controller;
 
 import br.com.iforce.praxis.simulation.dto.GupyPreflightResponse;
 import br.com.iforce.praxis.simulation.dto.PublishSimulationResponse;
+import br.com.iforce.praxis.simulation.dto.RejectSimulationVersionRequest;
 import br.com.iforce.praxis.simulation.dto.SimulationMonitoringResponse;
 import br.com.iforce.praxis.simulation.dto.SimulationValidationResponse;
+import br.com.iforce.praxis.simulation.dto.SimulationVersionStatusResponse;
 import br.com.iforce.praxis.simulation.service.GupyPreflightService;
 import br.com.iforce.praxis.simulation.service.SimulationAdminService;
 import br.com.iforce.praxis.simulation.service.SimulationMonitoringService;
+import jakarta.validation.Valid;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -45,6 +49,43 @@ public class SimulationAdminController {
             @PathVariable int versionNumber
     ) {
         return ResponseEntity.ok(simulationAdminService.validateVersion(simulationId, versionNumber));
+    }
+
+    @PostMapping("/{simulationId}/versions/{versionNumber}/submit-review")
+    @Operation(
+            summary = "Envia versao para revisao",
+            description = "Move uma versao em rascunho ou reprovada para revisao quando o validador nao possui blockers."
+    )
+    public ResponseEntity<SimulationVersionStatusResponse> submitVersionForReview(
+            @PathVariable String simulationId,
+            @PathVariable int versionNumber
+    ) {
+        return ResponseEntity.ok(simulationAdminService.submitVersionForReview(simulationId, versionNumber));
+    }
+
+    @PostMapping("/{simulationId}/versions/{versionNumber}/approve")
+    @Operation(
+            summary = "Aprova versao revisada",
+            description = "Move uma versao em revisao para aprovada, liberando a publicacao."
+    )
+    public ResponseEntity<SimulationVersionStatusResponse> approveVersion(
+            @PathVariable String simulationId,
+            @PathVariable int versionNumber
+    ) {
+        return ResponseEntity.ok(simulationAdminService.approveVersion(simulationId, versionNumber));
+    }
+
+    @PostMapping("/{simulationId}/versions/{versionNumber}/reject")
+    @Operation(
+            summary = "Reprova versao revisada",
+            description = "Move uma versao em revisao para reprovada com justificativa obrigatoria."
+    )
+    public ResponseEntity<SimulationVersionStatusResponse> rejectVersion(
+            @PathVariable String simulationId,
+            @PathVariable int versionNumber,
+            @Valid @RequestBody RejectSimulationVersionRequest request
+    ) {
+        return ResponseEntity.ok(simulationAdminService.rejectVersion(simulationId, versionNumber, request.reason()));
     }
 
     @PostMapping("/{simulationId}/versions/{versionNumber}/publish")

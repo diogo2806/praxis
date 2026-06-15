@@ -10,6 +10,9 @@ import java.util.stream.Stream;
 public enum SimulationVersionStatus {
 
     DRAFT("draft"),
+    IN_REVIEW("inReview"),
+    APPROVED("approved"),
+    REJECTED("rejected"),
     PUBLISHED("published"),
     ARCHIVED("archived");
 

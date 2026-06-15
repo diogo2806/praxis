@@ -15,6 +15,9 @@ public enum AuditEventType {
     ATTEMPT_EXPIRED("attemptExpired"),
     ANSWER_SUBMITTED("answerSubmitted"),
     ATTEMPT_COMPLETED("attemptCompleted"),
+    SIMULATION_VERSION_SUBMITTED_FOR_REVIEW("simulationVersionSubmittedForReview"),
+    SIMULATION_VERSION_APPROVED("simulationVersionApproved"),
+    SIMULATION_VERSION_REJECTED("simulationVersionRejected"),
     SIMULATION_VERSION_PUBLISHED("simulationVersionPublished");
 
     private static final Map<String, AuditEventType> NOME_PARA_ENUM_MAP = Stream.of(values())
