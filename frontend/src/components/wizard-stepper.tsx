@@ -7,8 +7,8 @@ export function WizardStepper({ current }: { current: WizardSlug }) {
     <div className="mb-8 rounded-xl border border-border bg-card p-4">
       <div className="mb-3 flex items-center justify-between text-xs text-muted-foreground">
         <div>
-          <span className="font-semibold text-foreground">Nova simulação</span>{" "}
-          · etapa {idx + 1} de {wizardSteps.length}
+          <span className="font-semibold text-foreground">Nova simulação</span> · etapa {idx + 1} de{" "}
+          {wizardSteps.length}
         </div>
         <div>
           Salvo automaticamente <span className="text-success">●</span>
@@ -49,9 +49,7 @@ export function WizardStepper({ current }: { current: WizardSlug }) {
                   </span>
                   Passo {s.n}
                 </div>
-                <div className="mt-1 truncate text-xs font-medium text-foreground">
-                  {s.label}
-                </div>
+                <div className="mt-1 truncate text-xs font-medium text-foreground">{s.label}</div>
               </a>
             </li>
           );

@@ -1,5 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { useState } from "react";
 import { AppShell } from "@/components/app-shell";
+import { ScreenStateStrip } from "@/components/praxis-ui";
 import { WizardStepper } from "@/components/wizard-stepper";
 
 export const Route = createFileRoute("/nova/blueprint")({
@@ -28,9 +30,20 @@ const competencies = [
 ];
 
 function Page() {
+  const [role, setRole] = useState("Analista de Atendimento N2");
+  const [criticalSituation, setCriticalSituation] = useState(
+    "Cliente quer estorno fora da política, com risco de churn de conta grande.",
+  );
+  const [criticalError, setCriticalError] = useState("Prometer estorno sem validar política.");
+  const canGoNext =
+    role.trim().length > 0 &&
+    criticalSituation.trim().length > 0 &&
+    criticalError.trim().length > 0;
+
   return (
     <AppShell>
       <WizardStepper current="blueprint" />
+      <ScreenStateStrip blockedReason="cargo, situacao critica e erro critico obrigatorios" />
 
       <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
         <div className="space-y-6">
@@ -46,7 +59,8 @@ function Page() {
                 <input
                   className="input"
                   placeholder="Ex.: Analista de Atendimento N2"
-                  defaultValue="Analista de Atendimento N2"
+                  value={role}
+                  onChange={(event) => setRole(event.target.value)}
                 />
               </Field>
               <Field label="Senioridade">
@@ -60,12 +74,7 @@ function Page() {
                           : "border-border bg-card hover:bg-accent"
                       }`}
                     >
-                      <input
-                        type="radio"
-                        name="sen"
-                        defaultChecked={i === 1}
-                        className="sr-only"
-                      />
+                      <input type="radio" name="sen" defaultChecked={i === 1} className="sr-only" />
                       {s}
                     </label>
                   ))}
@@ -77,11 +86,10 @@ function Page() {
           <Card title="Situação crítica REAL do cargo">
             <textarea
               className="input min-h-24"
-              defaultValue="Cliente quer estorno fora da política, com risco de churn de conta grande."
+              value={criticalSituation}
+              onChange={(event) => setCriticalSituation(event.target.value)}
             />
-            <Help>
-              Use situação que de fato acontece nesta empresa, não um caso genérico.
-            </Help>
+            <Help>Use situação que de fato acontece nesta empresa, não um caso genérico.</Help>
           </Card>
 
           <Card title="Competências avaliadas">
@@ -95,16 +103,14 @@ function Page() {
                       : "border-border bg-card text-foreground/75 hover:bg-accent"
                   }`}
                 >
-                  <input
-                    type="checkbox"
-                    defaultChecked={i < 3}
-                    className="sr-only"
-                  />
+                  <input type="checkbox" defaultChecked={i < 3} className="sr-only" />
                   {c}
                 </label>
               ))}
             </div>
-            <Help>Da taxonomia interna. Competências customizadas serão mapeadas para esta lista.</Help>
+            <Help>
+              Da taxonomia interna. Competências customizadas serão mapeadas para esta lista.
+            </Help>
           </Card>
 
           <div className="grid gap-6 md:grid-cols-2">
@@ -117,11 +123,12 @@ function Page() {
             <Card title="Erros CRÍTICOS" tone="danger">
               <textarea
                 className="input min-h-24"
-                defaultValue="Prometer estorno sem validar política."
+                value={criticalError}
+                onChange={(event) => setCriticalError(event.target.value)}
               />
               <Help>
-                Dispara <b>revisão humana obrigatória</b>, bloqueia recomendação automática.
-                Não reprova sozinho.
+                Dispara <b>revisão humana obrigatória</b>, bloqueia recomendação automática. Não
+                reprova sozinho.
               </Help>
             </Card>
           </div>
@@ -129,10 +136,7 @@ function Page() {
           <Card title="Diferença por senioridade">
             <div className="grid gap-3 md:grid-cols-3">
               <Field label="Júnior faria…">
-                <textarea
-                  className="input min-h-20"
-                  defaultValue="Acolhe e escala para o líder."
-                />
+                <textarea className="input min-h-20" defaultValue="Acolhe e escala para o líder." />
               </Field>
               <Field label="Pleno faria…">
                 <textarea
@@ -173,8 +177,8 @@ function Page() {
               ))}
             </div>
             <Help>
-              Eliminação só para simulação <b>validada</b>, com aprovação de gestor/compliance
-              e canal de revisão para o candidato (LGPD art. 20).
+              Eliminação só para simulação <b>validada</b>, com aprovação de gestor/compliance e
+              canal de revisão para o candidato (LGPD art. 20).
             </Help>
           </Card>
 
@@ -185,12 +189,23 @@ function Page() {
             >
               ← Cancelar
             </Link>
-            <Link
-              to="/nova/objetivo"
-              className="rounded-md bg-primary px-5 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
-            >
-              Criar simulação →
-            </Link>
+            {canGoNext ? (
+              <Link
+                to="/nova/objetivo"
+                className="rounded-md bg-primary px-5 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
+              >
+                Próximo: Objetivo
+              </Link>
+            ) : (
+              <button
+                type="button"
+                disabled
+                title="Preencha cargo, situação crítica e erro crítico para avançar"
+                className="cursor-not-allowed rounded-md bg-primary px-5 py-2 text-sm font-medium text-primary-foreground opacity-50"
+              >
+                Próximo: Objetivo
+              </button>
+            )}
           </div>
         </div>
 
@@ -200,8 +215,8 @@ function Page() {
               Por que blueprint?
             </div>
             <p className="mt-2 text-sm text-foreground/80">
-              O blueprint vira referência fixa para o Validador (Passo 3.5) checar se a
-              simulação realmente mede o que prometeu — não só se está bonita.
+              O blueprint vira referência fixa para o Validador (Passo 3.5) checar se a simulação
+              realmente mede o que prometeu — não só se está bonita.
             </p>
           </div>
           <div className="rounded-xl border border-warning/30 bg-warning/10 p-5">
@@ -209,8 +224,8 @@ function Page() {
               Sem IA, com responsabilidade
             </div>
             <p className="mt-2 text-sm text-foreground/80">
-              A nota sai de rubrica + peso + cálculo. O blueprint registra o porquê
-              comportamental — e é o que a auditoria vai pedir.
+              A nota sai de rubrica + peso + cálculo. O blueprint registra o porquê comportamental —
+              e é o que a auditoria vai pedir.
             </p>
           </div>
         </aside>

@@ -159,9 +159,12 @@
     font-family: var(--font-sans);
     font-feature-settings: "cv11", "ss01";
   }
-  h1, h2, h3, .font-display {
+  h1,
+  h2,
+  h3,
+  .font-display {
     font-family: var(--font-display);
-    letter-spacing: -0.01em;
+    letter-spacing: 0;
   }
 }
 
@@ -174,7 +177,9 @@
   font-size: 0.875rem;
   color: var(--color-foreground);
   outline: none;
-  transition: border-color 120ms, box-shadow 120ms;
+  transition:
+    border-color 120ms,
+    box-shadow 120ms;
   &:focus {
     border-color: var(--color-ring);
     box-shadow: 0 0 0 3px color-mix(in oklab, var(--color-ring) 18%, transparent);

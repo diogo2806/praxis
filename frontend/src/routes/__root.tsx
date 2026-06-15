@@ -78,9 +78,16 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
       { title: "Motor de Avaliação Situacional · Integração Gupy" },
-      { name: "description", content: "Crie, valide, calibre e audite simulações situacionais para seleção — sem IA julgando candidato." },
+      {
+        name: "description",
+        content:
+          "Crie, valide, calibre e audite simulações situacionais para seleção — sem IA julgando candidato.",
+      },
       { property: "og:title", content: "Motor de Avaliação Situacional" },
-      { property: "og:description", content: "SJT determinístico com rubricas, score normalizado e trilha auditável." },
+      {
+        property: "og:description",
+        content: "SJT determinístico com rubricas, score normalizado e trilha auditável.",
+      },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
       { name: "twitter:site", content: "@Lovable" },
@@ -92,7 +99,10 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       },
       { rel: "preconnect", href: "https://fonts.googleapis.com" },
       { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
-      { rel: "stylesheet", href: "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Instrument+Serif:ital@0;1&display=swap" },
+      {
+        rel: "stylesheet",
+        href: "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Instrument+Serif:ital@0;1&display=swap",
+      },
     ],
   }),
   shellComponent: RootShell,
@@ -103,7 +113,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 
 function RootShell({ children }: { children: ReactNode }) {
   return (
-    <html lang="en">
+    <html lang="pt-BR">
       <head>
         <HeadContent />
       </head>

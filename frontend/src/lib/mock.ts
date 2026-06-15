@@ -4,6 +4,7 @@ export type SimStatus =
   | "aprovada"
   | "publicada"
   | "piloto"
+  | "expirada"
   | "arquivada";
 
 export type Maturity =
@@ -100,6 +101,34 @@ export const simulations: Simulation[] = [
     attempts: 412,
     completion: 0.88,
   },
+  {
+    id: "sim-006",
+    name: "Priorizar sob pressao",
+    role: "Supervisor de Operacoes",
+    seniority: "Pleno",
+    status: "expirada",
+    maturity: "Expirada",
+    version: "v1.0",
+    quality: 76,
+    competencies: ["Priorizacao", "Comunicacao", "Tomada de Decisao"],
+    updated: "ha 90 dias",
+    attempts: 260,
+    completion: 0.79,
+  },
+  {
+    id: "sim-007",
+    name: "Escuta ativa em suporte",
+    role: "Analista de Suporte",
+    seniority: "JÃºnior",
+    status: "arquivada",
+    maturity: "Arquivada",
+    version: "v0.9",
+    quality: 68,
+    competencies: ["Empatia", "Processo"],
+    updated: "ha 6 meses",
+    attempts: 44,
+    completion: 0.72,
+  },
 ];
 
 export const statusMeta: Record<
@@ -111,6 +140,7 @@ export const statusMeta: Record<
   aprovada: { label: "Aprovada", tone: "info" },
   publicada: { label: "Publicada", tone: "ok" },
   piloto: { label: "Piloto", tone: "info" },
+  expirada: { label: "Expirada", tone: "danger" },
   arquivada: { label: "Arquivada", tone: "muted" },
 };
 

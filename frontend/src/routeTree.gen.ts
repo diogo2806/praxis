@@ -9,19 +9,56 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as MonitoramentoRouteImport } from './routes/monitoramento'
+import { Route as LgpdRouteImport } from './routes/lgpd'
+import { Route as GovernancaRouteImport } from './routes/governanca'
+import { Route as DefensabilidadeRouteImport } from './routes/defensabilidade'
+import { Route as CandidatoRouteImport } from './routes/candidato'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as RelatorioCandThiagoRouteImport } from './routes/relatorio.cand-thiago'
 import { Route as NovaValidadorRouteImport } from './routes/nova.validador'
 import { Route as NovaPilotoRouteImport } from './routes/nova.piloto'
 import { Route as NovaPersonagemRouteImport } from './routes/nova.personagem'
 import { Route as NovaObjetivoRouteImport } from './routes/nova.objetivo'
 import { Route as NovaMapaRouteImport } from './routes/nova.mapa'
+import { Route as NovaGupyRouteImport } from './routes/nova.gupy'
 import { Route as NovaGovernancaRouteImport } from './routes/nova.governanca'
 import { Route as NovaDialogoRouteImport } from './routes/nova.dialogo'
 import { Route as NovaBlueprintRouteImport } from './routes/nova.blueprint'
 
+const MonitoramentoRoute = MonitoramentoRouteImport.update({
+  id: '/monitoramento',
+  path: '/monitoramento',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LgpdRoute = LgpdRouteImport.update({
+  id: '/lgpd',
+  path: '/lgpd',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const GovernancaRoute = GovernancaRouteImport.update({
+  id: '/governanca',
+  path: '/governanca',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DefensabilidadeRoute = DefensabilidadeRouteImport.update({
+  id: '/defensabilidade',
+  path: '/defensabilidade',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CandidatoRoute = CandidatoRouteImport.update({
+  id: '/candidato',
+  path: '/candidato',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RelatorioCandThiagoRoute = RelatorioCandThiagoRouteImport.update({
+  id: '/relatorio/cand-thiago',
+  path: '/relatorio/cand-thiago',
   getParentRoute: () => rootRouteImport,
 } as any)
 const NovaValidadorRoute = NovaValidadorRouteImport.update({
@@ -49,6 +86,11 @@ const NovaMapaRoute = NovaMapaRouteImport.update({
   path: '/nova/mapa',
   getParentRoute: () => rootRouteImport,
 } as any)
+const NovaGupyRoute = NovaGupyRouteImport.update({
+  id: '/nova/gupy',
+  path: '/nova/gupy',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const NovaGovernancaRoute = NovaGovernancaRouteImport.update({
   id: '/nova/governanca',
   path: '/nova/governanca',
@@ -67,93 +109,184 @@ const NovaBlueprintRoute = NovaBlueprintRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/candidato': typeof CandidatoRoute
+  '/defensabilidade': typeof DefensabilidadeRoute
+  '/governanca': typeof GovernancaRoute
+  '/lgpd': typeof LgpdRoute
+  '/monitoramento': typeof MonitoramentoRoute
   '/nova/blueprint': typeof NovaBlueprintRoute
   '/nova/dialogo': typeof NovaDialogoRoute
   '/nova/governanca': typeof NovaGovernancaRoute
+  '/nova/gupy': typeof NovaGupyRoute
   '/nova/mapa': typeof NovaMapaRoute
   '/nova/objetivo': typeof NovaObjetivoRoute
   '/nova/personagem': typeof NovaPersonagemRoute
   '/nova/piloto': typeof NovaPilotoRoute
   '/nova/validador': typeof NovaValidadorRoute
+  '/relatorio/cand-thiago': typeof RelatorioCandThiagoRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/candidato': typeof CandidatoRoute
+  '/defensabilidade': typeof DefensabilidadeRoute
+  '/governanca': typeof GovernancaRoute
+  '/lgpd': typeof LgpdRoute
+  '/monitoramento': typeof MonitoramentoRoute
   '/nova/blueprint': typeof NovaBlueprintRoute
   '/nova/dialogo': typeof NovaDialogoRoute
   '/nova/governanca': typeof NovaGovernancaRoute
+  '/nova/gupy': typeof NovaGupyRoute
   '/nova/mapa': typeof NovaMapaRoute
   '/nova/objetivo': typeof NovaObjetivoRoute
   '/nova/personagem': typeof NovaPersonagemRoute
   '/nova/piloto': typeof NovaPilotoRoute
   '/nova/validador': typeof NovaValidadorRoute
+  '/relatorio/cand-thiago': typeof RelatorioCandThiagoRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/candidato': typeof CandidatoRoute
+  '/defensabilidade': typeof DefensabilidadeRoute
+  '/governanca': typeof GovernancaRoute
+  '/lgpd': typeof LgpdRoute
+  '/monitoramento': typeof MonitoramentoRoute
   '/nova/blueprint': typeof NovaBlueprintRoute
   '/nova/dialogo': typeof NovaDialogoRoute
   '/nova/governanca': typeof NovaGovernancaRoute
+  '/nova/gupy': typeof NovaGupyRoute
   '/nova/mapa': typeof NovaMapaRoute
   '/nova/objetivo': typeof NovaObjetivoRoute
   '/nova/personagem': typeof NovaPersonagemRoute
   '/nova/piloto': typeof NovaPilotoRoute
   '/nova/validador': typeof NovaValidadorRoute
+  '/relatorio/cand-thiago': typeof RelatorioCandThiagoRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/candidato'
+    | '/defensabilidade'
+    | '/governanca'
+    | '/lgpd'
+    | '/monitoramento'
     | '/nova/blueprint'
     | '/nova/dialogo'
     | '/nova/governanca'
+    | '/nova/gupy'
     | '/nova/mapa'
     | '/nova/objetivo'
     | '/nova/personagem'
     | '/nova/piloto'
     | '/nova/validador'
+    | '/relatorio/cand-thiago'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/candidato'
+    | '/defensabilidade'
+    | '/governanca'
+    | '/lgpd'
+    | '/monitoramento'
     | '/nova/blueprint'
     | '/nova/dialogo'
     | '/nova/governanca'
+    | '/nova/gupy'
     | '/nova/mapa'
     | '/nova/objetivo'
     | '/nova/personagem'
     | '/nova/piloto'
     | '/nova/validador'
+    | '/relatorio/cand-thiago'
   id:
     | '__root__'
     | '/'
+    | '/candidato'
+    | '/defensabilidade'
+    | '/governanca'
+    | '/lgpd'
+    | '/monitoramento'
     | '/nova/blueprint'
     | '/nova/dialogo'
     | '/nova/governanca'
+    | '/nova/gupy'
     | '/nova/mapa'
     | '/nova/objetivo'
     | '/nova/personagem'
     | '/nova/piloto'
     | '/nova/validador'
+    | '/relatorio/cand-thiago'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  CandidatoRoute: typeof CandidatoRoute
+  DefensabilidadeRoute: typeof DefensabilidadeRoute
+  GovernancaRoute: typeof GovernancaRoute
+  LgpdRoute: typeof LgpdRoute
+  MonitoramentoRoute: typeof MonitoramentoRoute
   NovaBlueprintRoute: typeof NovaBlueprintRoute
   NovaDialogoRoute: typeof NovaDialogoRoute
   NovaGovernancaRoute: typeof NovaGovernancaRoute
+  NovaGupyRoute: typeof NovaGupyRoute
   NovaMapaRoute: typeof NovaMapaRoute
   NovaObjetivoRoute: typeof NovaObjetivoRoute
   NovaPersonagemRoute: typeof NovaPersonagemRoute
   NovaPilotoRoute: typeof NovaPilotoRoute
   NovaValidadorRoute: typeof NovaValidadorRoute
+  RelatorioCandThiagoRoute: typeof RelatorioCandThiagoRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/monitoramento': {
+      id: '/monitoramento'
+      path: '/monitoramento'
+      fullPath: '/monitoramento'
+      preLoaderRoute: typeof MonitoramentoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/lgpd': {
+      id: '/lgpd'
+      path: '/lgpd'
+      fullPath: '/lgpd'
+      preLoaderRoute: typeof LgpdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/governanca': {
+      id: '/governanca'
+      path: '/governanca'
+      fullPath: '/governanca'
+      preLoaderRoute: typeof GovernancaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/defensabilidade': {
+      id: '/defensabilidade'
+      path: '/defensabilidade'
+      fullPath: '/defensabilidade'
+      preLoaderRoute: typeof DefensabilidadeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/candidato': {
+      id: '/candidato'
+      path: '/candidato'
+      fullPath: '/candidato'
+      preLoaderRoute: typeof CandidatoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/relatorio/cand-thiago': {
+      id: '/relatorio/cand-thiago'
+      path: '/relatorio/cand-thiago'
+      fullPath: '/relatorio/cand-thiago'
+      preLoaderRoute: typeof RelatorioCandThiagoRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/nova/validador': {
@@ -191,6 +324,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof NovaMapaRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/nova/gupy': {
+      id: '/nova/gupy'
+      path: '/nova/gupy'
+      fullPath: '/nova/gupy'
+      preLoaderRoute: typeof NovaGupyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/nova/governanca': {
       id: '/nova/governanca'
       path: '/nova/governanca'
@@ -217,15 +357,32 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  CandidatoRoute: CandidatoRoute,
+  DefensabilidadeRoute: DefensabilidadeRoute,
+  GovernancaRoute: GovernancaRoute,
+  LgpdRoute: LgpdRoute,
+  MonitoramentoRoute: MonitoramentoRoute,
   NovaBlueprintRoute: NovaBlueprintRoute,
   NovaDialogoRoute: NovaDialogoRoute,
   NovaGovernancaRoute: NovaGovernancaRoute,
+  NovaGupyRoute: NovaGupyRoute,
   NovaMapaRoute: NovaMapaRoute,
   NovaObjetivoRoute: NovaObjetivoRoute,
   NovaPersonagemRoute: NovaPersonagemRoute,
   NovaPilotoRoute: NovaPilotoRoute,
   NovaValidadorRoute: NovaValidadorRoute,
+  RelatorioCandThiagoRoute: RelatorioCandThiagoRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
