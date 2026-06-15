@@ -35,6 +35,12 @@ public class CandidateAttemptEntity {
     @Column(name = "simulation_id", nullable = false, length = 120)
     private String simulationId;
 
+    @Column(name = "simulation_version_id")
+    private Long simulationVersionId;
+
+    @Column(name = "simulation_version_number")
+    private Integer simulationVersionNumber;
+
     @Column(name = "idempotency_key", nullable = false, unique = true, length = 300)
     private String idempotencyKey;
 

@@ -45,6 +45,12 @@ public class SimulationCatalogService {
                 .map(simulationMapperService::toPublishedSimulation);
     }
 
+    @Transactional(readOnly = true)
+    public Optional<PublishedSimulation> findByVersionId(Long simulationVersionId) {
+        return simulationVersionRepository.findById(simulationVersionId)
+                .map(simulationMapperService::toPublishedSimulation);
+    }
+
     public Optional<ScenarioNode> findNode(PublishedSimulation simulation, String nodeId) {
         return simulation.nodes().stream()
                 .filter(node -> node.id().equals(nodeId))

@@ -1,5 +1,7 @@
 package br.com.iforce.praxis.candidate.controller;
 
+import br.com.iforce.praxis.gupy.persistence.entity.CandidateAttemptEntity;
+import br.com.iforce.praxis.gupy.persistence.repository.CandidateAttemptRepository;
 import com.jayway.jsonpath.JsonPath;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -9,6 +11,7 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.startsWith;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -23,6 +26,9 @@ class CandidateAttemptControllerTest {
 
     @Autowired
     private MockMvc mockMvc;
+
+    @Autowired
+    private CandidateAttemptRepository candidateAttemptRepository;
 
     @Test
     void getCandidateAttemptReturnsCurrentNodeWithoutScoringInternals() throws Exception {
@@ -122,6 +128,18 @@ class CandidateAttemptControllerTest {
                 .andExpect(jsonPath("$.decision").value("reviewRequired"))
                 .andExpect(jsonPath("$.humanReviewRequired").value(true))
                 .andExpect(jsonPath("$.companyResultString").value(org.hamcrest.Matchers.containsString("Revisão humana obrigatória")));
+    }
+
+    @Test
+    void createCandidateAttemptPinsPublishedSimulationVersion() throws Exception {
+        String attemptId = createAttempt("candidate-pinned-version");
+
+        CandidateAttemptEntity candidateAttemptEntity = candidateAttemptRepository.findById(attemptId)
+                .orElseThrow();
+
+        assertThat(candidateAttemptEntity.getSimulationId()).isEqualTo("sim-atendimento-caos");
+        assertThat(candidateAttemptEntity.getSimulationVersionId()).isEqualTo(1L);
+        assertThat(candidateAttemptEntity.getSimulationVersionNumber()).isEqualTo(1);
     }
 
     private String createAttempt(String documentId) throws Exception {

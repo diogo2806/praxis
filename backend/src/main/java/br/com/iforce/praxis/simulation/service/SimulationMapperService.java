@@ -30,6 +30,8 @@ public class SimulationMapperService {
                 .toList();
 
         return new PublishedSimulation(
+                simulationVersionEntity.getId(),
+                simulationVersionEntity.getVersionNumber(),
                 simulationVersionEntity.getSimulation().getId(),
                 simulationVersionEntity.getSimulation().getName(),
                 simulationVersionEntity.getSimulation().getDescription(),

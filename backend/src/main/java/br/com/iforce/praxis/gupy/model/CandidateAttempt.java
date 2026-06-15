@@ -8,6 +8,8 @@ public record CandidateAttempt(
         String id,
         String resultId,
         String simulationId,
+        Long simulationVersionId,
+        Integer simulationVersionNumber,
         String idempotencyKey,
         String candidateName,
         String candidateEmail,

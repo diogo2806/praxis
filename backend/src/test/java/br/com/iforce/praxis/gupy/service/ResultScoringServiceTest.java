@@ -83,6 +83,8 @@ class ResultScoringServiceTest {
         );
 
         return new PublishedSimulation(
+                10L,
+                1,
                 "sim-teste",
                 "Simulacao teste",
                 "Descricao",

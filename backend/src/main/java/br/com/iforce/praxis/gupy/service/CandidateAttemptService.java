@@ -68,14 +68,14 @@ public class CandidateAttemptService {
 
     @Transactional
     public CreateCandidateResponse createOrReuse(CreateCandidateRequest request) {
-        simulationCatalogService.findPublishedById(request.testId())
+        PublishedSimulation publishedSimulation = simulationCatalogService.findPublishedById(request.testId())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Teste publicado nao encontrado."));
 
         String idempotencyKey = request.companyId() + "|" + request.documentId() + "|" + request.testId();
         Optional<CandidateAttemptEntity> existingCandidateAttemptEntity =
                 candidateAttemptRepository.findByIdempotencyKey(idempotencyKey);
         CandidateAttemptEntity candidateAttemptEntity = existingCandidateAttemptEntity
-                .orElseGet(() -> createAndAuditAttempt(idempotencyKey, request));
+                .orElseGet(() -> createAndAuditAttempt(idempotencyKey, request, publishedSimulation));
 
         return new CreateCandidateResponse(
                 candidateUrl(candidateAttemptEntity.getId()),
@@ -84,13 +84,22 @@ public class CandidateAttemptService {
         );
     }
 
-    private CandidateAttemptEntity createAndAuditAttempt(String idempotencyKey, CreateCandidateRequest request) {
-        CandidateAttemptEntity candidateAttemptEntity = candidateAttemptRepository.save(createAttemptEntity(idempotencyKey, request));
+    private CandidateAttemptEntity createAndAuditAttempt(
+            String idempotencyKey,
+            CreateCandidateRequest request,
+            PublishedSimulation publishedSimulation
+    ) {
+        CandidateAttemptEntity candidateAttemptEntity = candidateAttemptRepository.save(
+                createAttemptEntity(idempotencyKey, request, publishedSimulation)
+        );
         auditEventService.appendCandidateAttemptEvent(
                 candidateAttemptEntity.getId(),
                 AuditEventType.ATTEMPT_CREATED,
                 "Tentativa criada pela integracao Gupy.",
-                "{\"resultId\":\"" + candidateAttemptEntity.getResultId() + "\",\"testId\":\"" + request.testId() + "\"}"
+                "{\"resultId\":\"" + candidateAttemptEntity.getResultId()
+                        + "\",\"testId\":\"" + request.testId()
+                        + "\",\"simulationVersionId\":" + publishedSimulation.versionId()
+                        + ",\"simulationVersionNumber\":" + publishedSimulation.versionNumber() + "}"
         );
         return candidateAttemptEntity;
     }
@@ -98,7 +107,7 @@ public class CandidateAttemptService {
     @Transactional(readOnly = true)
     public CandidateAttemptResponse findCandidateAttempt(String attemptId) {
         CandidateAttempt attempt = toDomain(findAttemptEntityById(attemptId));
-        PublishedSimulation simulation = findSimulation(attempt.simulationId());
+        PublishedSimulation simulation = findSimulation(attempt);
         ScenarioNode currentNode = findCurrentNode(attempt, simulation).orElse(null);
 
         return new CandidateAttemptResponse(
@@ -114,7 +123,7 @@ public class CandidateAttemptService {
     public SubmitAnswerResponse submitAnswer(String attemptId, SubmitAnswerRequest request) {
         CandidateAttemptEntity candidateAttemptEntity = findAttemptEntityById(attemptId);
         CandidateAttempt attempt = toDomain(candidateAttemptEntity);
-        PublishedSimulation simulation = findSimulation(attempt.simulationId());
+        PublishedSimulation simulation = findSimulation(attempt);
 
         Optional<AttemptAnswer> existingAnswer = Optional.ofNullable(attempt.answersByNodeId().get(request.nodeId()));
         if (existingAnswer.isPresent()) {
@@ -206,12 +215,18 @@ public class CandidateAttemptService {
         );
     }
 
-    private CandidateAttemptEntity createAttemptEntity(String idempotencyKey, CreateCandidateRequest request) {
+    private CandidateAttemptEntity createAttemptEntity(
+            String idempotencyKey,
+            CreateCandidateRequest request,
+            PublishedSimulation publishedSimulation
+    ) {
         String hash = Integer.toUnsignedString(idempotencyKey.hashCode());
         CandidateAttempt initialAttempt = new CandidateAttempt(
                 "att_" + hash,
                 "res_" + hash,
-                request.testId(),
+                publishedSimulation.id(),
+                publishedSimulation.versionId(),
+                publishedSimulation.versionNumber(),
                 idempotencyKey,
                 request.candidateName(),
                 request.candidateEmail(),
@@ -240,6 +255,8 @@ public class CandidateAttemptService {
         candidateAttemptEntity.setId(attempt.id());
         candidateAttemptEntity.setResultId(attempt.resultId());
         candidateAttemptEntity.setSimulationId(attempt.simulationId());
+        candidateAttemptEntity.setSimulationVersionId(attempt.simulationVersionId());
+        candidateAttemptEntity.setSimulationVersionNumber(attempt.simulationVersionNumber());
         candidateAttemptEntity.setIdempotencyKey(attempt.idempotencyKey());
         candidateAttemptEntity.setCandidateName(attempt.candidateName());
         candidateAttemptEntity.setCandidateEmail(attempt.candidateEmail());
@@ -293,6 +310,8 @@ public class CandidateAttemptService {
                 candidateAttemptEntity.getId(),
                 candidateAttemptEntity.getResultId(),
                 candidateAttemptEntity.getSimulationId(),
+                candidateAttemptEntity.getSimulationVersionId(),
+                candidateAttemptEntity.getSimulationVersionNumber(),
                 candidateAttemptEntity.getIdempotencyKey(),
                 candidateAttemptEntity.getCandidateName(),
                 candidateAttemptEntity.getCandidateEmail(),
@@ -328,6 +347,8 @@ public class CandidateAttemptService {
                 attempt.id(),
                 attempt.resultId(),
                 attempt.simulationId(),
+                attempt.simulationVersionId(),
+                attempt.simulationVersionNumber(),
                 attempt.idempotencyKey(),
                 attempt.candidateName(),
                 attempt.candidateEmail(),
@@ -342,8 +363,13 @@ public class CandidateAttemptService {
         );
     }
 
-    private PublishedSimulation findSimulation(String simulationId) {
-        return simulationCatalogService.findPublishedById(simulationId)
+    private PublishedSimulation findSimulation(CandidateAttempt attempt) {
+        if (attempt.simulationVersionId() != null) {
+            return simulationCatalogService.findByVersionId(attempt.simulationVersionId())
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Versao da simulacao nao encontrada."));
+        }
+
+        return simulationCatalogService.findPublishedById(attempt.simulationId())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Simulacao publicada nao encontrada."));
     }
 
