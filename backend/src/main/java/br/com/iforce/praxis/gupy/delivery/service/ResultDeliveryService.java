@@ -1,5 +1,6 @@
 package br.com.iforce.praxis.gupy.delivery.service;
 
+import br.com.iforce.praxis.gupy.delivery.dto.ProcessReadyDeliveriesResponse;
 import br.com.iforce.praxis.gupy.delivery.dto.ReprocessDeliveryResponse;
 import br.com.iforce.praxis.gupy.delivery.dto.ResultDeliveryResponse;
 import br.com.iforce.praxis.gupy.delivery.model.ResultDeliveryStatus;
@@ -87,6 +88,25 @@ public class ResultDeliveryService {
         processDelivery(resultDeliveryEntity);
 
         return new ReprocessDeliveryResponse(toResponse(resultDeliveryEntity));
+    }
+
+    @Transactional
+    public ProcessReadyDeliveriesResponse processReadyDeliveries() {
+        List<ResultDeliveryEntity> readyDeliveries = resultDeliveryRepository
+                .findByStatusInAndNextAttemptAtLessThanEqualOrderByCreatedAtAsc(
+                        List.of(ResultDeliveryStatus.PENDING, ResultDeliveryStatus.RETRYING),
+                        Instant.now()
+                );
+
+        for (ResultDeliveryEntity resultDeliveryEntity : readyDeliveries) {
+            processDelivery(resultDeliveryEntity);
+        }
+
+        List<ResultDeliveryResponse> responses = readyDeliveries.stream()
+                .map(this::toResponse)
+                .toList();
+
+        return new ProcessReadyDeliveriesResponse(responses.size(), responses);
     }
 
     private void processDelivery(ResultDeliveryEntity resultDeliveryEntity) {

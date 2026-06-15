@@ -68,6 +68,26 @@ class ResultDeliveryControllerTest {
     }
 
     @Test
+    void processReadyDeliveriesMarksPendingDeliveriesAsSent() throws Exception {
+        String attemptId = createCompletedAttempt("delivery-process-ready");
+
+        doNothing().when(resultWebhookClient)
+                .postResult(eq("https://cliente.gupy.io/result-webhook"), any(TestResultResponse.class));
+
+        mockMvc.perform(post("/api/v1/gupy/result-deliveries/process-ready"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.processedCount").value(org.hamcrest.Matchers.greaterThanOrEqualTo(1)));
+
+        MvcResult deliveryResult = mockMvc.perform(get("/api/v1/gupy/result-deliveries?status=sent"))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        String deliveryBody = deliveryResult.getResponse().getContentAsString();
+        List<String> statuses = JsonPath.read(deliveryBody, "$[?(@.attemptId == '" + attemptId + "')].status");
+        assertThat(statuses).containsExactly("sent");
+    }
+
+    @Test
     void reprocessDeliveryRetriesAndMovesToDlqAfterFifthFailure() throws Exception {
         String attemptId = createCompletedAttempt("delivery-dlq");
         Long deliveryId = findDeliveryId(attemptId, "pending");

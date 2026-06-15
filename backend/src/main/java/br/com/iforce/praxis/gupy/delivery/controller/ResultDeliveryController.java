@@ -1,5 +1,6 @@
 package br.com.iforce.praxis.gupy.delivery.controller;
 
+import br.com.iforce.praxis.gupy.delivery.dto.ProcessReadyDeliveriesResponse;
 import br.com.iforce.praxis.gupy.delivery.dto.ReprocessDeliveryResponse;
 import br.com.iforce.praxis.gupy.delivery.dto.ResultDeliveryResponse;
 import br.com.iforce.praxis.gupy.delivery.model.ResultDeliveryStatus;
@@ -40,6 +41,12 @@ public class ResultDeliveryController {
     @Operation(summary = "Lista entregas prontas para retry", description = "Retorna entregas pendentes ou em retry com nextAttemptAt vencido.")
     public ResponseEntity<List<ResultDeliveryResponse>> listReadyForRetry() {
         return ResponseEntity.ok(resultDeliveryService.listReadyForRetry());
+    }
+
+    @PostMapping("/process-ready")
+    @Operation(summary = "Processa entregas prontas", description = "Executa em lote as entregas pendentes ou em retry com nextAttemptAt vencido.")
+    public ResponseEntity<ProcessReadyDeliveriesResponse> processReadyDeliveries() {
+        return ResponseEntity.ok(resultDeliveryService.processReadyDeliveries());
     }
 
     @PostMapping("/{deliveryId}/reprocess")
