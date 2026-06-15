@@ -1,0 +1,46 @@
+package br.com.iforce.praxis.gupy.persistence.entity;
+
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
+import java.time.Instant;
+
+@Getter
+@Setter
+@NoArgsConstructor
+@Entity
+@Table(
+        name = "attempt_answers",
+        uniqueConstraints = @UniqueConstraint(name = "uk_attempt_answer_node", columnNames = {"candidate_attempt_id", "node_id"})
+)
+public class AttemptAnswerEntity {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "id", nullable = false)
+    private Long id;
+
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "candidate_attempt_id", nullable = false)
+    private CandidateAttemptEntity candidateAttempt;
+
+    @Column(name = "node_id", nullable = false, length = 120)
+    private String nodeId;
+
+    @Column(name = "option_id", nullable = false, length = 120)
+    private String optionId;
+
+    @Column(name = "answered_at", nullable = false)
+    private Instant answeredAt;
+}
