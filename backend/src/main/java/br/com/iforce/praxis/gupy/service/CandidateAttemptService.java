@@ -12,6 +12,7 @@ import br.com.iforce.praxis.gupy.dto.CreateCandidateRequest;
 import br.com.iforce.praxis.gupy.dto.CreateCandidateResponse;
 import br.com.iforce.praxis.gupy.dto.TestResultItemResponse;
 import br.com.iforce.praxis.gupy.dto.TestResultResponse;
+import br.com.iforce.praxis.gupy.delivery.service.ResultDeliveryService;
 import br.com.iforce.praxis.gupy.model.AttemptAnswer;
 import br.com.iforce.praxis.gupy.model.AttemptStatus;
 import br.com.iforce.praxis.gupy.model.CandidateAttempt;
@@ -43,17 +44,20 @@ public class CandidateAttemptService {
 
     private final CandidateAttemptRepository candidateAttemptRepository;
     private final AuditEventService auditEventService;
+    private final ResultDeliveryService resultDeliveryService;
     private final PraxisProperties praxisProperties;
     private final SimulationCatalogService simulationCatalogService;
 
     public CandidateAttemptService(
             CandidateAttemptRepository candidateAttemptRepository,
             AuditEventService auditEventService,
+            ResultDeliveryService resultDeliveryService,
             PraxisProperties praxisProperties,
             SimulationCatalogService simulationCatalogService
     ) {
         this.candidateAttemptRepository = candidateAttemptRepository;
         this.auditEventService = auditEventService;
+        this.resultDeliveryService = resultDeliveryService;
         this.praxisProperties = praxisProperties;
         this.simulationCatalogService = simulationCatalogService;
     }
@@ -143,6 +147,9 @@ public class CandidateAttemptService {
         applyDomainToEntity(updatedAttempt, candidateAttemptEntity);
         CandidateAttemptEntity savedCandidateAttemptEntity = candidateAttemptRepository.save(candidateAttemptEntity);
         auditAnswerSubmission(savedCandidateAttemptEntity.getId(), request, updatedAttempt);
+        if (updatedAttempt.status() == AttemptStatus.COMPLETED) {
+            resultDeliveryService.enqueueIfNeeded(savedCandidateAttemptEntity);
+        }
         CandidateAttempt savedAttempt = toDomain(savedCandidateAttemptEntity);
         ScenarioNode nextNode = findCurrentNode(savedAttempt, simulation).orElse(null);
 
@@ -220,6 +227,8 @@ public class CandidateAttemptService {
 
         CandidateAttemptEntity candidateAttemptEntity = new CandidateAttemptEntity();
         applyDomainToEntity(initialAttempt, candidateAttemptEntity);
+        candidateAttemptEntity.setCallbackUrl(request.callbackUrl() == null ? null : request.callbackUrl().toString());
+        candidateAttemptEntity.setResultWebhookUrl(request.resultWebhookUrl() == null ? null : request.resultWebhookUrl().toString());
         return candidateAttemptEntity;
     }
 

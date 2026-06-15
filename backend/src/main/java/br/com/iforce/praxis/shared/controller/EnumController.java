@@ -1,6 +1,7 @@
 package br.com.iforce.praxis.shared.controller;
 
 import br.com.iforce.praxis.audit.model.AuditEventType;
+import br.com.iforce.praxis.gupy.delivery.model.ResultDeliveryStatus;
 import br.com.iforce.praxis.gupy.model.AttemptStatus;
 import br.com.iforce.praxis.gupy.model.ResultDecision;
 import br.com.iforce.praxis.gupy.model.ResultTier;
@@ -77,6 +78,16 @@ public class EnumController {
     public ResponseEntity<List<EnumOptionResponse>> listValidationIssueSeverity() {
         List<EnumOptionResponse> options = Arrays.stream(ValidationIssueSeverity.values())
                 .map(severity -> new EnumOptionResponse(severity.name(), severity.getDescricao()))
+                .toList();
+
+        return ResponseEntity.ok(options);
+    }
+
+    @GetMapping("/result-delivery-status")
+    @Operation(summary = "Lista status de entrega", description = "Retorna value/label para ResultDeliveryStatus.")
+    public ResponseEntity<List<EnumOptionResponse>> listResultDeliveryStatus() {
+        List<EnumOptionResponse> options = Arrays.stream(ResultDeliveryStatus.values())
+                .map(status -> new EnumOptionResponse(status.name(), status.getDescricao()))
                 .toList();
 
         return ResponseEntity.ok(options);

@@ -1,0 +1,140 @@
+package br.com.iforce.praxis.gupy.delivery.controller;
+
+import br.com.iforce.praxis.gupy.delivery.service.ResultWebhookClient;
+import br.com.iforce.praxis.gupy.dto.TestResultResponse;
+import com.jayway.jsonpath.JsonPath;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.http.MediaType;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.MvcResult;
+
+import java.util.List;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.doThrow;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
+@SpringBootTest
+@AutoConfigureMockMvc
+class ResultDeliveryControllerTest {
+
+    private static final String AUTHORIZATION = "Bearer dev-company-token";
+
+    @Autowired
+    private MockMvc mockMvc;
+
+    @MockitoBean
+    private ResultWebhookClient resultWebhookClient;
+
+    @Test
+    void completedAttemptCreatesPendingResultDelivery() throws Exception {
+        String attemptId = createCompletedAttempt("delivery-pending");
+
+        MvcResult deliveryResult = mockMvc.perform(get("/api/v1/gupy/result-deliveries?status=pending"))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        String deliveryBody = deliveryResult.getResponse().getContentAsString();
+        List<String> statuses = JsonPath.read(deliveryBody, "$[?(@.attemptId == '" + attemptId + "')].status");
+        List<Integer> attemptCounts = JsonPath.read(deliveryBody, "$[?(@.attemptId == '" + attemptId + "')].attemptCount");
+
+        assertThat(statuses).containsExactly("pending");
+        assertThat(attemptCounts).containsExactly(0);
+    }
+
+    @Test
+    void reprocessDeliveryMarksAsSentWhenWebhookAcceptsPayload() throws Exception {
+        String attemptId = createCompletedAttempt("delivery-sent");
+        Long deliveryId = findDeliveryId(attemptId, "pending");
+
+        doNothing().when(resultWebhookClient)
+                .postResult(eq("https://cliente.gupy.io/result-webhook"), any(TestResultResponse.class));
+
+        mockMvc.perform(post("/api/v1/gupy/result-deliveries/" + deliveryId + "/reprocess"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.delivery.status").value("sent"))
+                .andExpect(jsonPath("$.delivery.attemptCount").value(1))
+                .andExpect(jsonPath("$.delivery.sentAt").exists());
+    }
+
+    @Test
+    void reprocessDeliveryRetriesAndMovesToDlqAfterFifthFailure() throws Exception {
+        String attemptId = createCompletedAttempt("delivery-dlq");
+        Long deliveryId = findDeliveryId(attemptId, "pending");
+
+        doThrow(new IllegalStateException("HTTP 500"))
+                .when(resultWebhookClient)
+                .postResult(eq("https://cliente.gupy.io/result-webhook"), any(TestResultResponse.class));
+
+        for (int attempt = 1; attempt <= 4; attempt++) {
+            mockMvc.perform(post("/api/v1/gupy/result-deliveries/" + deliveryId + "/reprocess"))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.delivery.status").value("retrying"))
+                    .andExpect(jsonPath("$.delivery.attemptCount").value(attempt))
+                    .andExpect(jsonPath("$.delivery.nextAttemptAt").exists());
+        }
+
+        mockMvc.perform(post("/api/v1/gupy/result-deliveries/" + deliveryId + "/reprocess"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.delivery.status").value("dlq"))
+                .andExpect(jsonPath("$.delivery.attemptCount").value(5))
+                .andExpect(jsonPath("$.delivery.lastError").value("HTTP 500"));
+    }
+
+    private String createCompletedAttempt(String documentId) throws Exception {
+        MvcResult createResult = mockMvc.perform(post("/test/candidate")
+                        .header("Authorization", AUTHORIZATION)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "companyId": "empresa-123",
+                                  "documentId": "%s",
+                                  "testId": "sim-atendimento-caos",
+                                  "candidateName": "Thiago Souza",
+                                  "candidateEmail": "thiago@example.com",
+                                  "callbackUrl": "https://cliente.gupy.io/callback",
+                                  "resultWebhookUrl": "https://cliente.gupy.io/result-webhook",
+                                  "candidateType": "external",
+                                  "previousResult": "none"
+                                }
+                                """.formatted(documentId)))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        String responseBody = createResult.getResponse().getContentAsString();
+        String attemptId = JsonPath.read(responseBody, "$.attemptId");
+
+        mockMvc.perform(post("/candidate/attempts/" + attemptId + "/answers")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "nodeId": "turno-1",
+                                  "optionId": "opcao-equilibrada"
+                                }
+                                """))
+                .andExpect(status().isOk());
+
+        return attemptId;
+    }
+
+    private Long findDeliveryId(String attemptId, String deliveryStatus) throws Exception {
+        MvcResult deliveryResult = mockMvc.perform(get("/api/v1/gupy/result-deliveries?status=" + deliveryStatus))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        String deliveryBody = deliveryResult.getResponse().getContentAsString();
+        List<Number> deliveryIds = JsonPath.read(deliveryBody, "$[?(@.attemptId == '" + attemptId + "')].id");
+        assertThat(deliveryIds).hasSize(1);
+        return deliveryIds.getFirst().longValue();
+    }
+}
