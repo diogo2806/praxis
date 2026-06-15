@@ -31,4 +31,16 @@ public class AuditEventController {
     public ResponseEntity<List<AuditEventResponse>> listCandidateAttemptEvents(@PathVariable String attemptId) {
         return ResponseEntity.ok(auditEventService.listCandidateAttemptEvents(attemptId));
     }
+
+    @GetMapping("/simulations/{simulationId}/versions/{versionNumber}")
+    @Operation(
+            summary = "Lista auditoria da versao",
+            description = "Retorna eventos append-only registrados para transicoes de estado da versao da simulacao."
+    )
+    public ResponseEntity<List<AuditEventResponse>> listSimulationVersionEvents(
+            @PathVariable String simulationId,
+            @PathVariable int versionNumber
+    ) {
+        return ResponseEntity.ok(auditEventService.listSimulationVersionEvents(simulationId, versionNumber));
+    }
 }

@@ -6,7 +6,9 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.web.servlet.MockMvc;
 
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.empty;
+import static org.hamcrest.Matchers.hasItem;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -37,5 +39,12 @@ class SimulationAdminControllerTest {
                 .andExpect(jsonPath("$.versionNumber").value(1))
                 .andExpect(jsonPath("$.status").value("published"))
                 .andExpect(jsonPath("$.publishedAt").exists());
+
+        mockMvc.perform(get("/api/v1/audit/simulations/sim-atendimento-caos/versions/1"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[*].eventType").value(hasItem("simulationVersionPublished")))
+                .andExpect(jsonPath("$[*].aggregateType").value(hasItem("SimulationVersion")))
+                .andExpect(jsonPath("$[*].aggregateId").value(hasItem("sim-atendimento-caos:v1")))
+                .andExpect(jsonPath("$[*].metadata").value(hasItem(containsString("\"status\":\"published\""))));
     }
 }

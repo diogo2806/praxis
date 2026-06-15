@@ -1,5 +1,7 @@
 package br.com.iforce.praxis.simulation.service;
 
+import br.com.iforce.praxis.audit.model.AuditEventType;
+import br.com.iforce.praxis.audit.service.AuditEventService;
 import br.com.iforce.praxis.simulation.dto.PublishSimulationResponse;
 import br.com.iforce.praxis.simulation.dto.SimulationValidationResponse;
 import br.com.iforce.praxis.simulation.model.SimulationVersionStatus;
@@ -17,13 +19,16 @@ public class SimulationAdminService {
 
     private final SimulationVersionRepository simulationVersionRepository;
     private final SimulationValidationService simulationValidationService;
+    private final AuditEventService auditEventService;
 
     public SimulationAdminService(
             SimulationVersionRepository simulationVersionRepository,
-            SimulationValidationService simulationValidationService
+            SimulationValidationService simulationValidationService,
+            AuditEventService auditEventService
     ) {
         this.simulationVersionRepository = simulationVersionRepository;
         this.simulationValidationService = simulationValidationService;
+        this.auditEventService = auditEventService;
     }
 
     @Transactional(readOnly = true)
@@ -45,6 +50,15 @@ public class SimulationAdminService {
         simulationVersionEntity.setStatus(SimulationVersionStatus.PUBLISHED);
         simulationVersionEntity.setPublishedAt(publishedAt);
         SimulationVersionEntity savedSimulationVersionEntity = simulationVersionRepository.save(simulationVersionEntity);
+        auditEventService.appendSimulationVersionEvent(
+                savedSimulationVersionEntity.getSimulation().getId(),
+                savedSimulationVersionEntity.getVersionNumber(),
+                AuditEventType.SIMULATION_VERSION_PUBLISHED,
+                "Versao de simulacao publicada.",
+                "{\"status\":\"" + savedSimulationVersionEntity.getStatus().getDescricao()
+                        + "\",\"publishedAt\":\"" + savedSimulationVersionEntity.getPublishedAt()
+                        + "\",\"warningCount\":" + validationResponse.issues().size() + "}"
+        );
 
         return new PublishSimulationResponse(
                 savedSimulationVersionEntity.getSimulation().getId(),

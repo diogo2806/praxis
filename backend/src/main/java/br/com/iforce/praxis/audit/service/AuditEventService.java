@@ -15,6 +15,7 @@ import java.util.List;
 public class AuditEventService {
 
     public static final String CANDIDATE_ATTEMPT_AGGREGATE = "CandidateAttempt";
+    public static final String SIMULATION_VERSION_AGGREGATE = "SimulationVersion";
 
     private final AuditEventRepository auditEventRepository;
 
@@ -40,6 +41,25 @@ public class AuditEventService {
         auditEventRepository.save(auditEventEntity);
     }
 
+    @Transactional(propagation = Propagation.MANDATORY)
+    public void appendSimulationVersionEvent(
+            String simulationId,
+            int versionNumber,
+            AuditEventType eventType,
+            String message,
+            String metadata
+    ) {
+        AuditEventEntity auditEventEntity = new AuditEventEntity();
+        auditEventEntity.setAggregateType(SIMULATION_VERSION_AGGREGATE);
+        auditEventEntity.setAggregateId(simulationVersionAggregateId(simulationId, versionNumber));
+        auditEventEntity.setEventType(eventType);
+        auditEventEntity.setMessage(message);
+        auditEventEntity.setMetadata(metadata);
+        auditEventEntity.setCreatedAt(Instant.now());
+
+        auditEventRepository.save(auditEventEntity);
+    }
+
     @Transactional(readOnly = true)
     public List<AuditEventResponse> listCandidateAttemptEvents(String attemptId) {
         return auditEventRepository
@@ -47,6 +67,22 @@ public class AuditEventService {
                 .stream()
                 .map(this::toResponse)
                 .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<AuditEventResponse> listSimulationVersionEvents(String simulationId, int versionNumber) {
+        return auditEventRepository
+                .findByAggregateTypeAndAggregateIdOrderByCreatedAtAsc(
+                        SIMULATION_VERSION_AGGREGATE,
+                        simulationVersionAggregateId(simulationId, versionNumber)
+                )
+                .stream()
+                .map(this::toResponse)
+                .toList();
+    }
+
+    private String simulationVersionAggregateId(String simulationId, int versionNumber) {
+        return simulationId + ":v" + versionNumber;
     }
 
     private AuditEventResponse toResponse(AuditEventEntity auditEventEntity) {

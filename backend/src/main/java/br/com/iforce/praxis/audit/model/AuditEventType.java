@@ -11,7 +11,8 @@ public enum AuditEventType {
 
     ATTEMPT_CREATED("attemptCreated"),
     ANSWER_SUBMITTED("answerSubmitted"),
-    ATTEMPT_COMPLETED("attemptCompleted");
+    ATTEMPT_COMPLETED("attemptCompleted"),
+    SIMULATION_VERSION_PUBLISHED("simulationVersionPublished");
 
     private static final Map<String, AuditEventType> NOME_PARA_ENUM_MAP = Stream.of(values())
             .collect(Collectors.toMap(type -> type.name().toLowerCase(), type -> type));
