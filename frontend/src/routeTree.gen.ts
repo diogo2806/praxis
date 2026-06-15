@@ -25,6 +25,7 @@ import { Route as NovaGupyRouteImport } from './routes/nova.gupy'
 import { Route as NovaGovernancaRouteImport } from './routes/nova.governanca'
 import { Route as NovaDialogoRouteImport } from './routes/nova.dialogo'
 import { Route as NovaBlueprintRouteImport } from './routes/nova.blueprint'
+import { Route as CandidatoTokenRouteImport } from './routes/candidato.$token'
 
 const MonitoramentoRoute = MonitoramentoRouteImport.update({
   id: '/monitoramento',
@@ -106,14 +107,20 @@ const NovaBlueprintRoute = NovaBlueprintRouteImport.update({
   path: '/nova/blueprint',
   getParentRoute: () => rootRouteImport,
 } as any)
+const CandidatoTokenRoute = CandidatoTokenRouteImport.update({
+  id: '/$token',
+  path: '/$token',
+  getParentRoute: () => CandidatoRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/candidato': typeof CandidatoRoute
+  '/candidato': typeof CandidatoRouteWithChildren
   '/defensabilidade': typeof DefensabilidadeRoute
   '/governanca': typeof GovernancaRoute
   '/lgpd': typeof LgpdRoute
   '/monitoramento': typeof MonitoramentoRoute
+  '/candidato/$token': typeof CandidatoTokenRoute
   '/nova/blueprint': typeof NovaBlueprintRoute
   '/nova/dialogo': typeof NovaDialogoRoute
   '/nova/governanca': typeof NovaGovernancaRoute
@@ -127,11 +134,12 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/candidato': typeof CandidatoRoute
+  '/candidato': typeof CandidatoRouteWithChildren
   '/defensabilidade': typeof DefensabilidadeRoute
   '/governanca': typeof GovernancaRoute
   '/lgpd': typeof LgpdRoute
   '/monitoramento': typeof MonitoramentoRoute
+  '/candidato/$token': typeof CandidatoTokenRoute
   '/nova/blueprint': typeof NovaBlueprintRoute
   '/nova/dialogo': typeof NovaDialogoRoute
   '/nova/governanca': typeof NovaGovernancaRoute
@@ -146,11 +154,12 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/candidato': typeof CandidatoRoute
+  '/candidato': typeof CandidatoRouteWithChildren
   '/defensabilidade': typeof DefensabilidadeRoute
   '/governanca': typeof GovernancaRoute
   '/lgpd': typeof LgpdRoute
   '/monitoramento': typeof MonitoramentoRoute
+  '/candidato/$token': typeof CandidatoTokenRoute
   '/nova/blueprint': typeof NovaBlueprintRoute
   '/nova/dialogo': typeof NovaDialogoRoute
   '/nova/governanca': typeof NovaGovernancaRoute
@@ -171,6 +180,7 @@ export interface FileRouteTypes {
     | '/governanca'
     | '/lgpd'
     | '/monitoramento'
+    | '/candidato/$token'
     | '/nova/blueprint'
     | '/nova/dialogo'
     | '/nova/governanca'
@@ -189,6 +199,7 @@ export interface FileRouteTypes {
     | '/governanca'
     | '/lgpd'
     | '/monitoramento'
+    | '/candidato/$token'
     | '/nova/blueprint'
     | '/nova/dialogo'
     | '/nova/governanca'
@@ -207,6 +218,7 @@ export interface FileRouteTypes {
     | '/governanca'
     | '/lgpd'
     | '/monitoramento'
+    | '/candidato/$token'
     | '/nova/blueprint'
     | '/nova/dialogo'
     | '/nova/governanca'
@@ -221,7 +233,7 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  CandidatoRoute: typeof CandidatoRoute
+  CandidatoRoute: typeof CandidatoRouteWithChildren
   DefensabilidadeRoute: typeof DefensabilidadeRoute
   GovernancaRoute: typeof GovernancaRoute
   LgpdRoute: typeof LgpdRoute
@@ -352,12 +364,31 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof NovaBlueprintRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/candidato/$token': {
+      id: '/candidato/$token'
+      path: '/$token'
+      fullPath: '/candidato/$token'
+      preLoaderRoute: typeof CandidatoTokenRouteImport
+      parentRoute: typeof CandidatoRoute
+    }
   }
 }
 
+interface CandidatoRouteChildren {
+  CandidatoTokenRoute: typeof CandidatoTokenRoute
+}
+
+const CandidatoRouteChildren: CandidatoRouteChildren = {
+  CandidatoTokenRoute: CandidatoTokenRoute,
+}
+
+const CandidatoRouteWithChildren = CandidatoRoute._addFileChildren(
+  CandidatoRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  CandidatoRoute: CandidatoRoute,
+  CandidatoRoute: CandidatoRouteWithChildren,
   DefensabilidadeRoute: DefensabilidadeRoute,
   GovernancaRoute: GovernancaRoute,
   LgpdRoute: LgpdRoute,

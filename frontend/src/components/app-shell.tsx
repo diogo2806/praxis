@@ -10,15 +10,16 @@ import {
   ShieldCheck,
   UserRound,
 } from "lucide-react";
-import { GlobalErrorFlow, GlobalProductStateBar } from "@/components/praxis-ui";
+import { GlobalErrorFlow, GlobalProductStateBar, StateBanner } from "@/components/praxis-ui";
+import { gupyConnectionLabels, useGupyConnectionState, useViewMode } from "@/lib/view-mode";
 import { cn } from "@/lib/utils";
 
 const nav = [
   { to: "/", label: "Painel", icon: Home },
   { to: "/nova/blueprint", label: "Nova simulacao", icon: ClipboardCheck },
   { to: "/monitoramento", label: "Monitoramento", icon: BarChart3 },
-  { to: "/relatorio/cand-thiago", label: "Relatorio do gestor", icon: FileText },
-  { to: "/candidato", label: "Visao do candidato", icon: MessageSquare },
+  { to: "/relatorio/cand-thiago", label: "Detalhe do resultado", icon: FileText },
+  { to: "/candidato", label: "Visão do candidato", icon: MessageSquare },
 ] as const;
 
 const secondary = [
@@ -29,22 +30,26 @@ const secondary = [
 
 export function AppShell({ children }: { children: ReactNode }) {
   const pathname = useRouterState({ select: (state) => state.location.pathname });
+  const mode = useViewMode();
+  const gupyState = useGupyConnectionState(pathname);
+  const hasGlobalError = gupyState === "error";
+  const modeHref = mode === "technical" ? pathname : `${pathname}?mode=technical`;
   const productState =
     pathname === "/nova/gupy"
       ? {
-          gupy: "connecting" as const,
+          gupy: gupyState,
           draft: "published" as const,
-          publication: "running" as const,
+          publication: hasGlobalError ? ("blocked" as const) : ("running" as const),
         }
       : pathname === "/nova/validador"
-        ? { gupy: "connected" as const, draft: "dirty" as const, publication: "blocked" as const }
+        ? { gupy: gupyState, draft: "dirty" as const, publication: "blocked" as const }
         : pathname === "/nova/piloto" || pathname.startsWith("/nova/mapa")
           ? {
-              gupy: "connected" as const,
+              gupy: gupyState,
               draft: "published" as const,
               publication: "idle" as const,
             }
-          : { gupy: "connected" as const, draft: "saved" as const, publication: "idle" as const };
+          : { gupy: gupyState, draft: "saved" as const, publication: "idle" as const };
 
   return (
     <div className="flex min-h-screen bg-background text-foreground">
@@ -55,12 +60,12 @@ export function AppShell({ children }: { children: ReactNode }) {
             Motor SJT
           </div>
           <div className="mt-2 font-display text-2xl leading-tight">
-            Avaliacao
+            Avaliação
             <br />
             <span className="text-sidebar-foreground/70">Situacional</span>
           </div>
           <div className="mt-3 text-[11px] uppercase text-sidebar-foreground/50">
-            Integracao Gupy - v0.1
+            Integração Gupy - v0.1
           </div>
         </div>
 
@@ -118,7 +123,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           <div className="rounded-md border border-sidebar-border/60 bg-sidebar-accent/40 p-3 text-xs text-sidebar-foreground/80">
             <div className="font-medium text-sidebar-foreground">100% deterministico</div>
             <p className="mt-1 text-sidebar-foreground/60">
-              Sem IA julgando candidato. Score sai de rubrica, peso e calculo.
+              Sem IA julgando candidato. Score sai de rubrica, peso e cálculo.
             </p>
           </div>
           <div className="mt-3 flex items-center gap-3 px-1">
@@ -141,8 +146,14 @@ export function AppShell({ children }: { children: ReactNode }) {
           <div className="ml-auto flex items-center gap-2 text-xs">
             <span className="inline-flex items-center gap-1.5 rounded-md border border-border bg-card px-2.5 py-1 text-muted-foreground">
               <span className="h-1.5 w-1.5 rounded-full bg-success" />
-              Gupy conectada
+              {gupyConnectionLabels[gupyState]}
             </span>
+            <a
+              href={modeHref}
+              className="rounded-md border border-border bg-card px-2.5 py-1 text-muted-foreground hover:bg-accent"
+            >
+              {mode === "technical" ? "Modo técnico" : "Modo comercial"}
+            </a>
             <button className="rounded-md border border-border bg-card px-3 py-1.5 text-foreground hover:bg-accent">
               Buscar
             </button>
@@ -150,7 +161,23 @@ export function AppShell({ children }: { children: ReactNode }) {
         </header>
         <div className="min-h-[calc(100vh-3.5rem)] px-6 py-8 lg:px-10">
           <GlobalProductStateBar state={productState} />
-          <GlobalErrorFlow />
+          {hasGlobalError && mode === "commercial" && (
+            <StateBanner
+              tone="danger"
+              title="Erro na integração Gupy"
+              action={
+                <a
+                  href={`${pathname}?mode=technical&gupy=error`}
+                  className="shrink-0 rounded-md border border-current/20 bg-background/60 px-3 py-1.5 text-xs font-medium"
+                >
+                  Abrir diagnóstico
+                </a>
+              }
+            >
+              Não foi possível confirmar o envio do resultado.
+            </StateBanner>
+          )}
+          {(mode === "technical" || hasGlobalError) && <GlobalErrorFlow />}
           {children}
         </div>
       </main>

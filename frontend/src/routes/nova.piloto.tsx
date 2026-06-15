@@ -6,7 +6,7 @@ import { WizardStepper } from "@/components/wizard-stepper";
 export const Route = createFileRoute("/nova/piloto")({
   head: () => ({
     meta: [
-      { title: "Piloto & Calibração" },
+      { title: "Piloto & Calibração — Práxis" },
       {
         name: "description",
         content: "Teste com colaboradores referência antes de ir para vaga real.",

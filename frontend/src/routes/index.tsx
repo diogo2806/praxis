@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
-import { BarChart3, Eye, FilePlus2, Filter, Search, Table2 } from "lucide-react";
+import { BarChart3, Eye, FilePlus2, Filter, PlayCircle, Search, Table2 } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
 import {
   EmptyState,
@@ -15,11 +15,11 @@ import { cn } from "@/lib/utils";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Painel - Praxis" },
+      { title: "Painel — Práxis" },
       {
         name: "description",
         content:
-          "Painel da Renata: simulacoes ativas, qualidade, maturidade e vinculo com vagas Gupy.",
+          "Painel da Renata: simulações ativas, qualidade, maturidade e vínculo com vagas Gupy.",
       },
     ],
   }),
@@ -76,8 +76,8 @@ function Dashboard() {
           <div className="text-xs uppercase text-muted-foreground">Painel</div>
           <h1 className="mt-1 text-3xl font-semibold text-foreground">Boa tarde, Renata.</h1>
           <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
-            Avaliacao situacional estruturada para recrutamento, sem IA julgando candidato, com
-            score por rubrica e trilha auditavel.
+            Avaliação situacional estruturada para recrutamento, com score por rubrica, decisão em
+            contexto e trilha auditável.
           </p>
         </div>
         <div className="flex gap-2">
@@ -90,10 +90,18 @@ function Dashboard() {
           </Link>
           <Link
             to="/nova/blueprint"
+            search={{ demo: "1" }}
+            className="inline-flex items-center gap-2 rounded-md border border-border bg-card px-3 py-2 text-sm hover:bg-accent"
+          >
+            <PlayCircle className="h-4 w-4" />
+            Iniciar demo guiada
+          </Link>
+          <Link
+            to="/nova/blueprint"
             className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
           >
             <FilePlus2 className="h-4 w-4" />
-            Nova simulacao
+            Nova simulação
           </Link>
         </div>
       </div>
@@ -101,7 +109,7 @@ function Dashboard() {
       {firstRun ? (
         <div className="space-y-5">
           <EmptyState
-            title="Comece pela primeira simulacao guiada"
+            title="Comece pela primeira simulação guiada"
             description="Conta nova nunca abre em tabela vazia. O fluxo guiado parte de um template parcialmente preenchido e leva do blueprint ao validador em poucos minutos."
             actions={
               <>
@@ -109,14 +117,14 @@ function Dashboard() {
                   to="/nova/blueprint"
                   className="inline-flex items-center justify-between rounded-md border border-primary bg-primary px-4 py-3 text-sm font-medium text-primary-foreground hover:bg-primary/90"
                 >
-                  Criar minha primeira simulacao guiada
+                  Criar minha primeira simulação guiada
                   <FilePlus2 className="h-4 w-4" />
                 </Link>
                 <Link
                   to="/nova/objetivo"
                   className="inline-flex items-center justify-between rounded-md border border-border bg-card px-4 py-3 text-sm hover:bg-accent"
                 >
-                  Comecar de um modelo pronto
+                  Começar de um modelo pronto
                   <Table2 className="h-4 w-4" />
                 </Link>
                 <button
@@ -124,14 +132,14 @@ function Dashboard() {
                   onClick={loadWorkspace}
                   className="inline-flex items-center justify-between rounded-md border border-border bg-card px-4 py-3 text-left text-sm hover:bg-accent"
                 >
-                  Ver exemplo pre-carregado: O Dia do Caos
+                  Ver exemplo pré-carregado: O Dia do Caos
                   <Eye className="h-4 w-4" />
                 </button>
               </>
             }
           />
           <StateBanner tone="info" title="Exemplo pronto em toda conta nova">
-            O Dia do Caos entra como simulacao de leitura para o RH entender o produto antes de
+            O Dia do Caos entra como simulação de leitura para o RH entender o produto antes de
             criar algo do zero.
           </StateBanner>
           {loading && (
@@ -144,16 +152,16 @@ function Dashboard() {
         <div className="space-y-6">
           <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
             <Stat label="Publicadas" value={totals.publicadas} hint="Em vagas ativas" />
-            <Stat label="Em piloto" value={totals.piloto} hint="Ranqueiam, nao eliminam" />
-            <Stat label="Rascunhos" value={totals.rascunhos} hint="Em construcao" />
-            <Stat label="Tentativas" value={totals.tentativas} hint="Ultimos 30 dias" />
+            <Stat label="Em piloto" value={totals.piloto} hint="Ranqueiam, não eliminam" />
+            <Stat label="Rascunhos" value={totals.rascunhos} hint="Em construção" />
+            <Stat label="Tentativas" value={totals.tentativas} hint="Últimos 30 dias" />
           </div>
 
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
-              <h2 className="text-xl font-semibold">Simulacoes</h2>
+              <h2 className="text-xl font-semibold">Simulações</h2>
               <p className="text-xs text-muted-foreground">
-                Status tecnico e maturidade aparecem juntos em todas as linhas.
+                Status técnico e maturidade aparecem juntos em todas as linhas.
               </p>
             </div>
             <div className="flex min-w-0 flex-wrap gap-2">
@@ -163,7 +171,7 @@ function Dashboard() {
                   value={query}
                   onChange={(event) => setQuery(event.target.value)}
                   className="input w-64 pl-8"
-                  placeholder="Buscar cargo ou simulacao"
+                  placeholder="Buscar cargo ou simulação"
                 />
               </label>
               <div className="inline-flex flex-wrap gap-1 rounded-md border border-border bg-card p-1">
@@ -187,8 +195,8 @@ function Dashboard() {
 
           {filtered.length === 0 ? (
             <EmptyState
-              title="Nenhuma simulacao neste filtro"
-              description="A lista nunca fica vazia sem orientacao. Ajuste busca, limpe o filtro ou crie um novo rascunho."
+              title="Nenhuma simulação neste filtro"
+              description="A lista nunca fica vazia sem orientação. Ajuste busca, limpe o filtro ou crie um novo rascunho."
               actions={
                 <button
                   type="button"
@@ -207,7 +215,7 @@ function Dashboard() {
               <table className="w-full text-sm">
                 <thead className="border-b border-border bg-muted/45 text-xs uppercase text-muted-foreground">
                   <tr>
-                    <th className="px-4 py-3 text-left font-medium">Simulacao</th>
+                    <th className="px-4 py-3 text-left font-medium">Simulação</th>
                     <th className="px-4 py-3 text-left font-medium">Estado</th>
                     <th className="px-4 py-3 text-left font-medium">Qualidade</th>
                     <th className="px-4 py-3 text-left font-medium">Versao</th>

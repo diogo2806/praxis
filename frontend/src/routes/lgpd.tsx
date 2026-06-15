@@ -6,7 +6,7 @@ import { ScreenStateStrip, StateBanner } from "@/components/praxis-ui";
 export const Route = createFileRoute("/lgpd")({
   head: () => ({
     meta: [
-      { title: "LGPD e Explicabilidade" },
+      { title: "LGPD & Explicabilidade — Práxis" },
       { name: "description", content: "Explicacao de score e revisao humana." },
     ],
   }),

@@ -6,7 +6,7 @@ import { WizardStepper } from "@/components/wizard-stepper";
 export const Route = createFileRoute("/nova/personagem")({
   head: () => ({
     meta: [
-      { title: "Personagem fictício · Nova simulação" },
+      { title: "Personagem Fictício — Práxis" },
       {
         name: "description",
         content: "Personagem do cliente fictício com checklist de linguagem para evitar viés.",

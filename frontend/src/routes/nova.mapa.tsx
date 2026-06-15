@@ -6,7 +6,7 @@ import { WizardStepper } from "@/components/wizard-stepper";
 export const Route = createFileRoute("/nova/mapa")({
   head: () => ({
     meta: [
-      { title: "Mapa & Score Normalizado" },
+      { title: "Mapa & Score — Práxis" },
       { name: "description", content: "Grafo de turnos e normalização por caminho." },
     ],
   }),
@@ -17,18 +17,18 @@ function Page() {
   return (
     <AppShell>
       <WizardStepper current="mapa" />
-      <ScreenStateStrip blockedReason="grafo invalido ou caminho morto precisa voltar ao editor" />
+      <ScreenStateStrip blockedReason="grafo inválido ou caminho morto precisa voltar ao editor" />
       <div className="mb-6">
-        <div className="text-xs uppercase tracking-[0.2em] text-primary">Passo 5–6</div>
+        <div className="text-xs uppercase tracking-[0.2em] text-primary">Passo 5-6</div>
         <h1 className="mt-1 font-display text-3xl">Mapa & score normalizado</h1>
         <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
-          Dois candidatos têm o <b>mesmo teto possível</b>, independente do caminho.
+          Dois candidatos têm o mesmo teto possível, independente do caminho percorrido.
         </p>
       </div>
       <div className="grid gap-6 lg:grid-cols-[1fr_340px]">
         <div className="rounded-xl border border-border bg-card p-6">
           <h3 className="mb-4 text-sm font-semibold">"O Dia do Caos" — v1.0</h3>
-          <svg viewBox="0 0 720 320" className="h-auto w-full">
+          <svg viewBox="0 0 720 320" className="h-auto w-full" aria-label="Mapa de turnos">
             <defs>
               <marker id="arr" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto">
                 <path d="M0,0 L6,3 L0,6 Z" className="fill-muted-foreground" />
@@ -47,7 +47,7 @@ function Page() {
                   T1
                 </text>
                 <text x="60" y="44" textAnchor="middle" className="fill-foreground/70">
-                  A·B·C·D
+                  A/B/C/D
                 </text>
               </g>
               {[
@@ -143,10 +143,10 @@ score_final =
           </div>
           <div className="rounded-xl border border-danger/30 bg-danger/5 p-5 text-sm">
             <div className="text-xs font-semibold uppercase tracking-wider text-danger">
-              Erro crítico ≠ reprova
+              Erro crítico exige revisão
             </div>
             <p className="mt-2 text-foreground/80">
-              Dispara revisão humana, bloqueia recomendação automática.
+              Dispara revisão humana e bloqueia recomendação operacional sem validação.
             </p>
           </div>
         </aside>
@@ -162,7 +162,7 @@ score_final =
           to="/nova/governanca"
           className="rounded-md bg-primary px-5 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
         >
-          Governança →
+          Governança
         </Link>
       </div>
     </AppShell>

@@ -7,11 +7,11 @@ import { WizardStepper } from "@/components/wizard-stepper";
 export const Route = createFileRoute("/nova/blueprint")({
   head: () => ({
     meta: [
-      { title: "Blueprint da Avaliação · Nova simulação" },
+      { title: "Blueprint — Práxis" },
       {
         name: "description",
         content:
-          "Defina por que essa avaliação é relevante: cargo, situação crítica, competências, comportamentos de alta performance e erros críticos.",
+          "Defina cargo, situação crítica, competências, comportamentos esperados e erros críticos.",
       },
     ],
   }),
@@ -43,14 +43,14 @@ function Page() {
   return (
     <AppShell>
       <WizardStepper current="blueprint" />
-      <ScreenStateStrip blockedReason="cargo, situacao critica e erro critico obrigatorios" />
+      <ScreenStateStrip blockedReason="cargo, situação crítica e erro crítico obrigatórios" />
 
       <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
         <div className="space-y-6">
           <Header
             kicker="Passo 0"
-            title="Blueprint da Avaliação"
-            lede="Antes de escrever qualquer diálogo, defina o porquê. Sem isso, você cria uma história interessante que talvez não meça nada útil. O blueprint vira referência fixa para o Validador de Qualidade."
+            title="Blueprint da avaliação"
+            lede="Antes de escrever qualquer diálogo, defina o porquê. O blueprint vira referência fixa para o Validador de Qualidade."
           />
 
           <Card title="Cargo e senioridade">
@@ -83,7 +83,7 @@ function Page() {
             </div>
           </Card>
 
-          <Card title="Situação crítica REAL do cargo">
+          <Card title="Situação crítica do cargo">
             <textarea
               className="input min-h-24"
               value={criticalSituation}
@@ -108,43 +108,38 @@ function Page() {
                 </label>
               ))}
             </div>
-            <Help>
-              Da taxonomia interna. Competências customizadas serão mapeadas para esta lista.
-            </Help>
+            <Help>Competências customizadas podem ser mapeadas para a taxonomia interna.</Help>
           </Card>
 
           <div className="grid gap-6 md:grid-cols-2">
-            <Card title="Alta performance faria…" tone="ok">
+            <Card title="Alta performance faria" tone="ok">
               <textarea
                 className="input min-h-24"
                 defaultValue="Acolhe, coleta dados mínimos, explica limite de alçada e oferece alternativa válida."
               />
             </Card>
-            <Card title="Erros CRÍTICOS" tone="danger">
+            <Card title="Erros críticos" tone="danger">
               <textarea
                 className="input min-h-24"
                 value={criticalError}
                 onChange={(event) => setCriticalError(event.target.value)}
               />
-              <Help>
-                Dispara <b>revisão humana obrigatória</b>, bloqueia recomendação automática. Não
-                reprova sozinho.
-              </Help>
+              <Help>Dispara revisão humana obrigatória e bloqueia recomendação sem validação.</Help>
             </Card>
           </div>
 
           <Card title="Diferença por senioridade">
             <div className="grid gap-3 md:grid-cols-3">
-              <Field label="Júnior faria…">
+              <Field label="Júnior faria">
                 <textarea className="input min-h-20" defaultValue="Acolhe e escala para o líder." />
               </Field>
-              <Field label="Pleno faria…">
+              <Field label="Pleno faria">
                 <textarea
                   className="input min-h-20"
                   defaultValue="Acolhe, decide dentro da alçada e registra."
                 />
               </Field>
-              <Field label="Sênior faria…">
+              <Field label="Sênior faria">
                 <textarea
                   className="input min-h-20"
                   defaultValue="Conduz, ajusta política se necessário, fecha com cliente."
@@ -159,7 +154,7 @@ function Page() {
                 { label: "Triagem", on: true },
                 { label: "Ranking", on: false },
                 { label: "Apoio à entrevista", on: false },
-                { label: "🔒 Eliminação", on: false, locked: true },
+                { label: "Decisão final", on: false, locked: true },
               ].map((o) => (
                 <label
                   key={o.label}
@@ -177,8 +172,8 @@ function Page() {
               ))}
             </div>
             <Help>
-              Eliminação só para simulação <b>validada</b>, com aprovação de gestor/compliance e
-              canal de revisão para o candidato (LGPD art. 20).
+              O Práxis entrega evidência comportamental estruturada. A decisão do processo continua
+              com a empresa, dentro da Gupy.
             </Help>
           </Card>
 
@@ -187,7 +182,7 @@ function Page() {
               to="/"
               className="rounded-md border border-border bg-card px-4 py-2 text-sm hover:bg-accent"
             >
-              ← Cancelar
+              Cancelar
             </Link>
             {canGoNext ? (
               <Link
@@ -215,17 +210,17 @@ function Page() {
               Por que blueprint?
             </div>
             <p className="mt-2 text-sm text-foreground/80">
-              O blueprint vira referência fixa para o Validador (Passo 3.5) checar se a simulação
-              realmente mede o que prometeu — não só se está bonita.
+              O blueprint vira referência fixa para o Validador checar se a simulação mede o que
+              prometeu.
             </p>
           </div>
           <div className="rounded-xl border border-warning/30 bg-warning/10 p-5">
             <div className="text-xs font-semibold uppercase tracking-wider text-warning-foreground">
-              Sem IA, com responsabilidade
+              Rubrica, peso e cálculo
             </div>
             <p className="mt-2 text-sm text-foreground/80">
-              A nota sai de rubrica + peso + cálculo. O blueprint registra o porquê comportamental —
-              e é o que a auditoria vai pedir.
+              A nota sai de regras declaradas. O blueprint registra o porquê comportamental que a
+              auditoria vai pedir.
             </p>
           </div>
         </aside>

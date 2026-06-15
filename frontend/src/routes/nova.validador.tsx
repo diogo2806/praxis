@@ -5,14 +5,15 @@ import { AppShell } from "@/components/app-shell";
 import { NextStepContract, ScreenStateStrip, StateBanner } from "@/components/praxis-ui";
 import { WizardStepper } from "@/components/wizard-stepper";
 import { cn } from "@/lib/utils";
+import { useViewMode } from "@/lib/view-mode";
 
 export const Route = createFileRoute("/nova/validador")({
   head: () => ({
     meta: [
-      { title: "Validador de Qualidade" },
+      { title: "Validador de Qualidade — Práxis" },
       {
         name: "description",
-        content: "Diagnostico deterministico, sem IA, com score 0-100 e bloqueios de publicacao.",
+        content: "Diagnóstico determinístico com score 0-100 e bloqueios de publicação.",
       },
     ],
   }),
@@ -63,7 +64,7 @@ const checks = [
   {
     id: "positioning",
     tone: "danger",
-    text: 'Texto ainda sugere "transcricao real"; deve ser julgamento situacional',
+    text: "Texto ainda sugere promessa errada; deve ser julgamento situacional",
     target: "Blueprint: promessa comercial",
   },
 ] as const;
@@ -74,6 +75,7 @@ function ValidatorPage() {
   );
   const [highlight, setHighlight] = useState("score-balance");
   const [modalOpen, setModalOpen] = useState(false);
+  const technical = useViewMode() === "technical";
   const total = breakdown.reduce((sum, item) => sum + item.got, 0);
   const activeChecks = checks.filter((check) =>
     publicationState === "clear"
@@ -94,38 +96,44 @@ function ValidatorPage() {
           <div className="text-xs uppercase text-primary">Passo 3.5</div>
           <h1 className="mt-1 text-3xl font-semibold">Validador de Qualidade</h1>
           <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
-            Regras deterministicas. Sem IA, sem interpretacao de texto livre, sem override de
-            blocker.
+            Regras determinísticas, score por rubrica, trilha auditável e bloqueios sem override
+            manual.
           </p>
         </div>
-        <div className="inline-flex rounded-md border border-border bg-card p-1 text-xs">
-          {(["blocker", "warning", "clear"] as const).map((state) => (
-            <button
-              key={state}
-              type="button"
-              onClick={() => setPublicationState(state)}
-              className={cn(
-                "rounded px-3 py-1.5",
-                publicationState === state && "bg-primary text-primary-foreground",
-              )}
-            >
-              {state === "blocker" ? "Com blocker" : state === "warning" ? "So warning" : "Pronta"}
-            </button>
-          ))}
-        </div>
+        {technical && (
+          <div className="inline-flex rounded-md border border-border bg-card p-1 text-xs">
+            {(["blocker", "warning", "clear"] as const).map((state) => (
+              <button
+                key={state}
+                type="button"
+                onClick={() => setPublicationState(state)}
+                className={cn(
+                  "rounded px-3 py-1.5",
+                  publicationState === state && "bg-primary text-primary-foreground",
+                )}
+              >
+                {state === "blocker"
+                  ? "Com blocker"
+                  : state === "warning"
+                    ? "Só warning"
+                    : "Pronta"}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
       {blockers > 0 ? (
-        <StateBanner tone="danger" title={`Publicacao bloqueada - ${blockers} item critico`}>
-          O botao Publicar nao aparece. Resolva o blocker ou salve como rascunho.
+        <StateBanner tone="danger" title={`Publicação bloqueada - ${blockers} item crítico`}>
+          O botão Publicar não aparece. Resolva o blocker ou salve como rascunho.
         </StateBanner>
       ) : warnings > 0 ? (
         <StateBanner tone="warn" title={`Pode publicar - ${warnings} alertas registrados`}>
-          A confirmacao registra os alertas no log de auditoria antes de publicar.
+          A confirmação registra os alertas no log de auditoria antes de publicar.
         </StateBanner>
       ) : (
         <StateBanner tone="ok" title="Pronta para publicar">
-          Sem blocker ou warning ativo. A publicacao usa a versao imutavel atual.
+          Sem blocker ou warning ativo. A publicação usa a versão imutável atual.
         </StateBanner>
       )}
 
@@ -133,14 +141,14 @@ function ValidatorPage() {
         <NextStepContract
           primary={
             blockers > 0
-              ? "Voltar ao editor. Piloto e publicacao ficam travados."
+              ? "Voltar ao editor. Piloto e publicação ficam travados."
               : warnings > 0
-                ? "Confirmar publicacao com alertas gravados no AuditLog."
-                : "Publicar versao imutavel e seguir para piloto."
+                ? "Confirmar publicação com alertas gravados no AuditLog."
+                : "Publicar versão imutável e seguir para piloto."
           }
-          secondary="Salvar rascunho nunca publica; volta ao editor mantendo diagnostico clicavel."
-          versionRule="Depois de publicar, editar cria nova versao e preserva a publicada."
-          lockedAfter="Nao existe override manual para blocker critico."
+          secondary="Salvar rascunho nunca publica; volta ao editor mantendo diagnóstico clicável."
+          versionRule="Depois de publicar, editar cria nova versão e preserva a publicada."
+          lockedAfter="Não existe override manual para blocker crítico."
         />
       </div>
 
@@ -152,7 +160,7 @@ function ValidatorPage() {
             <div className="mb-2 text-sm text-muted-foreground">/100</div>
           </div>
           <p className="mt-1 text-xs text-muted-foreground">
-            A primeira coisa que o RH ve. Barras seguem os pesos da formula.
+            A primeira coisa que o RH vê. Barras seguem os pesos da fórmula.
           </p>
           <div className="mt-4 space-y-3">
             {breakdown.map((item) => {
@@ -182,7 +190,7 @@ function ValidatorPage() {
 
         <section className="rounded-md border border-border bg-card p-5">
           <div className="mb-4 flex items-center justify-between">
-            <h2 className="text-sm font-semibold">Diagnostico clicavel</h2>
+            <h2 className="text-sm font-semibold">Diagnóstico clicável</h2>
             <span className="rounded-md border border-border bg-background px-2 py-1 text-[11px] text-muted-foreground">
               clique para destacar no editor
             </span>
@@ -217,7 +225,7 @@ function ValidatorPage() {
               {activeChecks.find((check) => check.id === highlight)?.target ?? "Editor: T1"}
             </div>
             <p className="mt-1 text-xs text-muted-foreground">
-              No produto real, este clique abre o turno/opcao e aplica destaque temporario.
+              No produto real, este clique abre o turno/opção e aplica destaque temporário.
             </p>
           </div>
 
@@ -260,8 +268,8 @@ function ValidatorPage() {
               Registrar alertas no AuditLog
             </div>
             <p className="mt-2 text-sm text-muted-foreground">
-              Estes alertas ficarao anexados a versao publicada e nao expiram. A auditoria
-              conseguira ver quem publicou e quando.
+              Estes alertas ficarão anexados à versão publicada e não expiram. A auditoria
+              conseguirá ver quem publicou e quando.
             </p>
             <div className="mt-5 flex justify-end gap-2">
               <button

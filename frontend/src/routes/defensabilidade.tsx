@@ -6,8 +6,8 @@ import { ScreenStateStrip, StateBanner } from "@/components/praxis-ui";
 export const Route = createFileRoute("/defensabilidade")({
   head: () => ({
     meta: [
-      { title: "Defensabilidade" },
-      { name: "description", content: "Base tecnica e juridica do SJT deterministico." },
+      { title: "Defensabilidade — Práxis" },
+      { name: "description", content: "Base técnica e jurídica do SJT determinístico." },
     ],
   }),
   component: DefensibilityPage,
@@ -17,7 +17,7 @@ const pillars = [
   {
     icon: ClipboardCheck,
     title: "Construto definido",
-    text: "Blueprint fixa cargo, situacao critica e comportamento observavel.",
+    text: "Blueprint fixa cargo, situação crítica e comportamento observável.",
   },
   {
     icon: Scale,
@@ -26,20 +26,21 @@ const pillars = [
   },
   {
     icon: Shield,
-    title: "Sem julgamento por IA",
-    text: "Nenhuma chamada de modelo em runtime; calculo deterministico.",
+    title: "Pontuação determinística",
+    text: "Cálculo por rubrica, peso e regra declarada.",
   },
 ];
 
 function DefensibilityPage() {
   return (
     <AppShell>
-      <ScreenStateStrip blockedReason="promessa comercial indefensavel precisa ser removida" />
+      <ScreenStateStrip blockedReason="promessa comercial indefensável precisa ser removida" />
       <div className="mb-5">
         <div className="text-xs uppercase text-primary">Conformidade</div>
         <h1 className="mt-1 text-3xl font-semibold">Defensabilidade</h1>
         <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
-          O produto mede julgamento situacional, nao atendimento real nem texto livre.
+          O produto mede julgamento situacional, decisão em contexto e evidência comportamental
+          estruturada.
         </p>
       </div>
       <div className="grid gap-4 md:grid-cols-3">
@@ -53,7 +54,7 @@ function DefensibilityPage() {
       </div>
       <div className="mt-5">
         <StateBanner tone="danger" title="Promessa proibida">
-          Nao vender como transcricao real, atendimento real ou IA que entende o candidato.
+          Não vender como conversa real, resposta aberta automática ou decisão sem revisão humana.
         </StateBanner>
       </div>
       <div className="mt-6">

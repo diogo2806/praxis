@@ -14,7 +14,7 @@ import { cn } from "@/lib/utils";
 export const Route = createFileRoute("/nova/dialogo")({
   head: () => ({
     meta: [
-      { title: "Editor de Dialogo e Rubricas" },
+      { title: "Editor de Simulação — Práxis" },
       {
         name: "description",
         content:
@@ -162,6 +162,7 @@ function DialogEditor() {
   const [selectedId, setSelectedId] = useState("T1");
   const [mode, setMode] = useState<"lista" | "grafo">("grafo");
   const [editorMode, setEditorMode] = useState<"edit" | "review" | "published">("edit");
+  const [pendingDelete, setPendingDelete] = useState<string | null>(null);
   const [savedAt, setSavedAt] = useState("14:21");
 
   const selected = nodes.find((node) => node.id === selectedId) ?? nodes[0];
@@ -282,7 +283,7 @@ function DialogEditor() {
     setSelectedId(id);
   }
 
-  function deleteTurn(id: string) {
+  function confirmDeleteTurn(id: string) {
     if (isLocked || nodes.length <= 1) return;
     commit((current) =>
       current
@@ -295,6 +296,7 @@ function DialogEditor() {
         })),
     );
     setSelectedId("T1");
+    setPendingDelete(null);
   }
 
   function undo() {
@@ -357,6 +359,20 @@ function DialogEditor() {
             </button>
           ))}
         </div>
+      </div>
+
+      <div className="mb-5 flex flex-wrap gap-2 rounded-md border border-border bg-card p-3 text-xs">
+        <LegendItem label="Pronto" className="border-success/30 bg-success/10 text-success" />
+        <LegendItem
+          label="Revisar"
+          className="border-warning/35 bg-warning/15 text-warning-foreground"
+        />
+        <LegendItem label="Blocker" className="border-danger/30 bg-danger/10 text-danger" />
+        <LegendItem label="Erro crítico" className="border-danger/30 bg-danger/10 text-danger" />
+        <LegendItem
+          label="Comportamento esperado"
+          className="border-success/30 bg-success/10 text-success"
+        />
       </div>
 
       {editorMode === "edit" && (
@@ -480,7 +496,7 @@ function DialogEditor() {
             </div>
             <button
               type="button"
-              onClick={() => deleteTurn(selected.id)}
+              onClick={() => setPendingDelete(selected.id)}
               disabled={isLocked}
               className="inline-flex items-center gap-2 rounded-md border border-danger/25 bg-danger/5 px-3 py-2 text-xs text-danger hover:bg-danger/10 disabled:cursor-not-allowed disabled:opacity-50"
             >
@@ -669,10 +685,16 @@ function DialogEditor() {
           <StateBanner tone="info" title="Autosave ativo">
             Cada resposta persiste no turno. Recarregar ou voltar no deep-link nao perde estado.
           </StateBanner>
-          <button className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-md border border-border bg-card px-3 py-2 text-sm hover:bg-accent">
-            <Save className="h-4 w-4" />
-            {isLocked ? "Criar nova versao para editar" : "Salvar manualmente"}
-          </button>
+          {isLocked ? (
+            <button className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90">
+              Criar nova versão para editar
+            </button>
+          ) : (
+            <button className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-md border border-border bg-card px-3 py-2 text-sm hover:bg-accent">
+              <Save className="h-4 w-4" />
+              Salvar manualmente
+            </button>
+          )}
         </aside>
       </div>
 
@@ -683,14 +705,57 @@ function DialogEditor() {
         >
           Voltar
         </Link>
-        <Link
-          to="/nova/validador"
-          className="rounded-md bg-primary px-5 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
-        >
-          Validar qualidade
-        </Link>
+        {isLocked ? (
+          <button className="rounded-md bg-primary px-5 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90">
+            Criar nova versão para editar
+          </button>
+        ) : (
+          <Link
+            to="/nova/validador"
+            className="rounded-md bg-primary px-5 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
+          >
+            Validar qualidade
+          </Link>
+        )}
       </div>
+
+      {pendingDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-foreground/30 p-4">
+          <div className="w-full max-w-md rounded-md border border-border bg-card p-5 shadow-xl">
+            <h2 className="text-lg font-semibold">Excluir este turno?</h2>
+            <p className="mt-2 text-sm text-muted-foreground">
+              Esta ação pode desconectar ramificações. Os caminhos afetados serão marcados para
+              revisão.
+            </p>
+            <div className="mt-5 flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setPendingDelete(null)}
+                className="rounded-md border border-border bg-card px-4 py-2 text-sm hover:bg-accent"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={() => confirmDeleteTurn(pendingDelete)}
+                className="rounded-md border border-danger/30 bg-danger px-4 py-2 text-sm font-medium text-danger-foreground hover:opacity-90"
+              >
+                Excluir e marcar revisão
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </AppShell>
+  );
+}
+
+function LegendItem({ label, className }: { label: string; className: string }) {
+  return (
+    <span className={cn("inline-flex items-center gap-1.5 rounded-md border px-2 py-1", className)}>
+      <span className="h-2 w-2 rounded-full bg-current" />
+      {label}
+    </span>
   );
 }
 

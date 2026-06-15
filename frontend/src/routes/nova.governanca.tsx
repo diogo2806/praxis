@@ -6,7 +6,7 @@ import { WizardStepper } from "@/components/wizard-stepper";
 export const Route = createFileRoute("/nova/governanca")({
   head: () => ({
     meta: [
-      { title: "Governança & Aprovações" },
+      { title: "Governança & Aprovações — Práxis" },
       { name: "description", content: "Estados, papéis e versionamento imutável." },
     ],
   }),

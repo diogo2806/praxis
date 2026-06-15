@@ -7,16 +7,16 @@ import { simulations } from "@/lib/mock";
 export const Route = createFileRoute("/monitoramento")({
   head: () => ({
     meta: [
-      { title: "Monitoramento" },
-      { name: "description", content: "Acompanhamento pos-publicacao e sinais de calibracao." },
+      { title: "Monitoramento — Práxis" },
+      { name: "description", content: "Acompanhamento pós-publicação e sinais de calibração." },
     ],
   }),
   component: MonitoringPage,
 });
 
 const cohorts = [
-  { label: "Concluidas", value: 842, pct: 91 },
-  { label: "Revisao humana", value: 38, pct: 4 },
+  { label: "Concluídas", value: 842, pct: 91 },
+  { label: "Revisão humana", value: 38, pct: 4 },
   { label: "Falha de envio", value: 3, pct: 0.3 },
   { label: "Abandonadas", value: 44, pct: 5 },
 ];
@@ -26,13 +26,13 @@ function MonitoringPage() {
 
   return (
     <AppShell>
-      <ScreenStateStrip blockedReason="sem dados suficientes para calibracao automatica" />
+      <ScreenStateStrip blockedReason="sem dados suficientes para calibração" />
       <div className="mb-5 flex flex-wrap items-end justify-between gap-4">
         <div>
           <div className="text-xs uppercase text-primary">Monitoramento</div>
-          <h1 className="mt-1 text-3xl font-semibold">Pos-publicacao</h1>
+          <h1 className="mt-1 text-3xl font-semibold">Pós-publicação</h1>
           <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
-            Acompanhe calibracao, vazamento de prova, maturidade e envio de resultados.
+            Acompanhe calibração, vazamento de prova, maturidade e envio de resultados.
           </p>
         </div>
         <Link
@@ -46,7 +46,7 @@ function MonitoringPage() {
       {!hasData ? (
         <EmptyState
           title="Sem dados suficientes ainda"
-          description="A simulacao precisa de respostas antes de exibir distribuicao, vazamento ou calibracao."
+          description="A simulação precisa de respostas antes de exibir distribuição, vazamento ou calibração."
           actions={
             <Link
               to="/"
@@ -107,11 +107,11 @@ function MonitoringPage() {
             </section>
 
             <aside className="space-y-3">
-              <StateBanner tone="ok" title="Calibracao ativa">
-                Referencias internas continuam separadas dos candidatos reais.
+              <StateBanner tone="ok" title="Calibração ativa">
+                Referências internas continuam separadas dos candidatos reais.
               </StateBanner>
               <StateBanner tone="danger" title="Regra de alerta">
-                Erro critico gera revisao humana, nunca reprovacao automatica.
+                Erro crítico gera revisão humana obrigatória; não decide o processo sozinho.
               </StateBanner>
               <div className="rounded-md border border-border bg-card p-4">
                 <div className="mb-3 text-sm font-semibold">Checklist operacional</div>
@@ -122,11 +122,11 @@ function MonitoringPage() {
                   </li>
                   <li className="flex gap-2">
                     <CheckCircle2 className="mt-0.5 h-4 w-4 text-success" />
-                    AuditLog imutavel
+                    AuditLog imutável
                   </li>
                   <li className="flex gap-2">
                     <AlertTriangle className="mt-0.5 h-4 w-4 text-warning-foreground" />
-                    Revisar caminho T2b apos 100 novas respostas
+                    Revisar caminho T2b após 100 novas respostas
                   </li>
                 </ul>
               </div>

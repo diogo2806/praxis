@@ -7,7 +7,7 @@ import { ScreenStateStrip, StateBanner } from "@/components/praxis-ui";
 export const Route = createFileRoute("/governanca")({
   head: () => ({
     meta: [
-      { title: "Governanca e Auditoria" },
+      { title: "Governança & Auditoria — Práxis" },
       { name: "description", content: "Controles operacionais, auditoria e versionamento." },
     ],
   }),

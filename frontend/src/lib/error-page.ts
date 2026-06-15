@@ -1,30 +1,72 @@
-export function renderErrorPage(): string {
-  return `<!doctype html>
-<html lang="en">
+const errorPageHtml = `<!doctype html>
+<html lang="pt-BR">
   <head>
     <meta charset="utf-8" />
-    <title>This page didn't load</title>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Esta página não carregou</title>
     <style>
-      body { font: 15px/1.5 system-ui, -apple-system, sans-serif; background: #fafafa; color: #111; display: grid; place-items: center; min-height: 100vh; margin: 0; padding: 1.5rem; }
-      .card { max-width: 28rem; width: 100%; text-align: center; padding: 2rem; }
-      h1 { font-size: 1.25rem; margin: 0 0 0.5rem; }
-      p { color: #4b5563; margin: 0 0 1.5rem; }
-      .actions { display: flex; gap: 0.5rem; justify-content: center; flex-wrap: wrap; }
-      a, button { padding: 0.5rem 1rem; border-radius: 0.375rem; font: inherit; cursor: pointer; text-decoration: none; border: 1px solid transparent; }
-      .primary { background: #111; color: #fff; }
-      .secondary { background: #fff; color: #111; border-color: #d1d5db; }
+      body {
+        margin: 0;
+        min-height: 100vh;
+        display: grid;
+        place-items: center;
+        font-family: Inter, system-ui, sans-serif;
+        color: #172033;
+        background: #f8fafc;
+      }
+      main {
+        max-width: 420px;
+        padding: 24px;
+        text-align: center;
+      }
+      h1 {
+        margin: 0;
+        font-size: 24px;
+      }
+      p {
+        color: #5b6475;
+      }
+      .actions {
+        display: flex;
+        justify-content: center;
+        gap: 8px;
+        margin-top: 20px;
+      }
+      a,
+      button {
+        border-radius: 8px;
+        border: 1px solid #d7dce5;
+        padding: 10px 14px;
+        font: inherit;
+      }
+      button {
+        background: #315fdc;
+        color: white;
+        border-color: #315fdc;
+      }
+      a {
+        color: #172033;
+        text-decoration: none;
+        background: white;
+      }
+      :focus-visible {
+        outline: 3px solid #315fdc;
+        outline-offset: 2px;
+      }
     </style>
   </head>
   <body>
-    <div class="card">
-      <h1>This page didn't load</h1>
-      <p>Something went wrong on our end. You can try refreshing or head back home.</p>
+    <main>
+      <h1>Esta página não carregou</h1>
+      <p>Algo deu errado. Tente novamente ou volte ao painel.</p>
       <div class="actions">
-        <button class="primary" onclick="location.reload()">Try again</button>
-        <a class="secondary" href="/">Go home</a>
+        <button class="primary" onclick="location.reload()">Tentar novamente</button>
+        <a class="secondary" href="/">Voltar ao painel</a>
       </div>
-    </div>
+    </main>
   </body>
 </html>`;
+
+export function renderErrorPage() {
+  return errorPageHtml;
 }

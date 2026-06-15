@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { statusMeta, type Maturity, type SimStatus } from "@/lib/mock";
+import { gupyConnectionLabels, type GupyConnectionState, useViewMode } from "@/lib/view-mode";
 
 const toneClass = {
   ok: "border-success/25 bg-success/10 text-success",
@@ -126,7 +127,7 @@ export function EmptyState({
 }
 
 type GlobalProductState = {
-  gupy: "connected" | "connecting" | "disconnected";
+  gupy: GupyConnectionState;
   draft: "saved" | "dirty" | "published";
   publication: "idle" | "running" | "blocked";
 };
@@ -144,9 +145,10 @@ export function GlobalProductStateBar({
 }) {
   const current = { ...defaultProductState, ...state };
   const gupyMeta = {
-    connected: { label: "Gupy conectada", Icon: CheckCircle2, tone: "ok" },
-    connecting: { label: "Conectando Gupy", Icon: Loader2, tone: "warn" },
-    disconnected: { label: "Gupy desconectada", Icon: CloudOff, tone: "danger" },
+    connected: { label: gupyConnectionLabels.connected, Icon: CheckCircle2, tone: "ok" },
+    connecting: { label: gupyConnectionLabels.connecting, Icon: Loader2, tone: "warn" },
+    disconnected: { label: gupyConnectionLabels.disconnected, Icon: CloudOff, tone: "danger" },
+    error: { label: gupyConnectionLabels.error, Icon: ServerCrash, tone: "danger" },
   } as const;
   const draftMeta = {
     saved: { label: "Rascunho global salvo", Icon: FileText, tone: "muted" },
@@ -174,7 +176,12 @@ export function GlobalProductStateBar({
             toneClass[tone],
           )}
         >
-          <Icon className={cn("h-3.5 w-3.5", label === "Conectando Gupy" && "animate-spin")} />
+          <Icon
+            className={cn(
+              "h-3.5 w-3.5",
+              label === gupyConnectionLabels.connecting && "animate-spin",
+            )}
+          />
           <span className="font-medium">{label}</span>
         </div>
       ))}
@@ -184,9 +191,9 @@ export function GlobalProductStateBar({
 
 const globalErrorItems = [
   {
-    title: "Integracao Gupy",
-    description: "Sempre aparece como banner de acao, com diagnostico e tentativa de reenvio.",
-    action: "Abrir diagnostico",
+    title: "Integração Gupy",
+    description: "Sempre aparece como banner de ação, com diagnóstico e tentativa de reenvio.",
+    action: "Abrir diagnóstico",
     Icon: ServerCrash,
     tone: "danger",
   },
@@ -302,6 +309,9 @@ export function ScreenStateStrip({
 }: {
   blockedReason?: string;
 }) {
+  const mode = useViewMode();
+  if (mode !== "technical") return null;
+
   return (
     <div className="mb-5 grid gap-2 rounded-md border border-border bg-card p-3 text-xs md:grid-cols-5">
       {stateItems.map((item) => {
