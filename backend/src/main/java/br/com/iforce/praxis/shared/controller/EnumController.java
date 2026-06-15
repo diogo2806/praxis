@@ -5,6 +5,8 @@ import br.com.iforce.praxis.gupy.model.AttemptStatus;
 import br.com.iforce.praxis.gupy.model.ResultDecision;
 import br.com.iforce.praxis.gupy.model.ResultTier;
 import br.com.iforce.praxis.shared.dto.EnumOptionResponse;
+import br.com.iforce.praxis.simulation.model.SimulationVersionStatus;
+import br.com.iforce.praxis.simulation.model.ValidationIssueSeverity;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.ResponseEntity;
@@ -55,6 +57,26 @@ public class EnumController {
     public ResponseEntity<List<EnumOptionResponse>> listAuditEventType() {
         List<EnumOptionResponse> options = Arrays.stream(AuditEventType.values())
                 .map(type -> new EnumOptionResponse(type.name(), type.getDescricao()))
+                .toList();
+
+        return ResponseEntity.ok(options);
+    }
+
+    @GetMapping("/simulation-version-status")
+    @Operation(summary = "Lista status de versão", description = "Retorna value/label para SimulationVersionStatus.")
+    public ResponseEntity<List<EnumOptionResponse>> listSimulationVersionStatus() {
+        List<EnumOptionResponse> options = Arrays.stream(SimulationVersionStatus.values())
+                .map(status -> new EnumOptionResponse(status.name(), status.getDescricao()))
+                .toList();
+
+        return ResponseEntity.ok(options);
+    }
+
+    @GetMapping("/validation-issue-severity")
+    @Operation(summary = "Lista severidades de validação", description = "Retorna value/label para ValidationIssueSeverity.")
+    public ResponseEntity<List<EnumOptionResponse>> listValidationIssueSeverity() {
+        List<EnumOptionResponse> options = Arrays.stream(ValidationIssueSeverity.values())
+                .map(severity -> new EnumOptionResponse(severity.name(), severity.getDescricao()))
                 .toList();
 
         return ResponseEntity.ok(options);
