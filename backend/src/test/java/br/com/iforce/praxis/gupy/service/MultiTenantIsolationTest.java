@@ -92,8 +92,8 @@ class MultiTenantIsolationTest {
         entity.setCandidateEmail("test@example.com");
         entity.setCompanyId("company-1");
         entity.setSimulationId("sim-1");
-        entity.setStatus(AttemptStatus.PENDING);
-        entity.setDecision(br.com.iforce.praxis.gupy.model.ResultDecision.APPROVED);
+        entity.setStatus(AttemptStatus.NOT_STARTED);
+        entity.setDecision(br.com.iforce.praxis.gupy.model.ResultDecision.RECOMMEND_INTERVIEW);
         entity.setHumanReviewRequired(false);
         entity.setCompanyResultString("{}");
         entity.setCreatedAt(Instant.now());
