@@ -26,12 +26,14 @@ public class AuditEventService {
 
     @Transactional(propagation = Propagation.MANDATORY)
     public void appendCandidateAttemptEvent(
+            String tenantId,
             String attemptId,
             AuditEventType eventType,
             String message,
             String metadata
     ) {
         AuditEventEntity auditEventEntity = new AuditEventEntity();
+        auditEventEntity.setTenantId(tenantId);
         auditEventEntity.setAggregateType(CANDIDATE_ATTEMPT_AGGREGATE);
         auditEventEntity.setAggregateId(attemptId);
         auditEventEntity.setEventType(eventType);
@@ -44,12 +46,14 @@ public class AuditEventService {
 
     @Transactional(propagation = Propagation.MANDATORY)
     public void appendSimulationEvent(
+            String tenantId,
             String simulationId,
             AuditEventType eventType,
             String message,
             String metadata
     ) {
         AuditEventEntity auditEventEntity = new AuditEventEntity();
+        auditEventEntity.setTenantId(tenantId);
         auditEventEntity.setAggregateType(SIMULATION_AGGREGATE);
         auditEventEntity.setAggregateId(simulationId);
         auditEventEntity.setEventType(eventType);
@@ -62,6 +66,7 @@ public class AuditEventService {
 
     @Transactional(propagation = Propagation.MANDATORY)
     public void appendSimulationVersionEvent(
+            String tenantId,
             String simulationId,
             int versionNumber,
             AuditEventType eventType,
@@ -69,6 +74,7 @@ public class AuditEventService {
             String metadata
     ) {
         AuditEventEntity auditEventEntity = new AuditEventEntity();
+        auditEventEntity.setTenantId(tenantId);
         auditEventEntity.setAggregateType(SIMULATION_VERSION_AGGREGATE);
         auditEventEntity.setAggregateId(simulationVersionAggregateId(simulationId, versionNumber));
         auditEventEntity.setEventType(eventType);

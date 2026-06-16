@@ -71,12 +71,13 @@ public class GupyIntegrationController {
             @RequestParam(name = "offset", defaultValue = "0") int offset,
             @RequestParam(name = "limit", defaultValue = "50") int limit
     ) {
-        gupyAuthService.validateBearerToken(authorization);
+        GupyAuthService.GupyTenantContext tenantContext = gupyAuthService.validateBearerToken(authorization);
 
         int normalizedOffset = Math.max(offset, 0);
         int normalizedLimit = Math.min(Math.max(limit, 1), 400);
 
-        List<GupyTestResponse> tests = simulationCatalogService.findPublished(searchString, normalizedOffset, normalizedLimit).stream()
+        List<GupyTestResponse> tests = simulationCatalogService
+                .findPublished(tenantContext.tenantId(), searchString, normalizedOffset, normalizedLimit).stream()
                 .map(simulation -> new GupyTestResponse(
                         simulation.id(),
                         simulation.name(),
@@ -86,7 +87,7 @@ public class GupyIntegrationController {
                 ))
                 .toList();
 
-        int totalTests = simulationCatalogService.countPublished(searchString);
+        int totalTests = simulationCatalogService.countPublished(tenantContext.tenantId(), searchString);
         return ResponseEntity.ok(new TestItemsResponse(normalizedLimit, normalizedOffset, totalTests, tests));
     }
 

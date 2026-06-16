@@ -8,8 +8,10 @@ import br.com.iforce.praxis.simulation.service.SimulationMapperService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Optional;
 
 @Service
@@ -26,37 +28,47 @@ public class SimulationCatalogService {
         this.simulationMapperService = simulationMapperService;
     }
 
+    /**
+     * Lista as simulações publicadas do tenant, com no máximo uma versão por simulação
+     * (a publicada mais recente), evitando duplicidade quando há histórico de versões publicadas.
+     */
     @Transactional(readOnly = true)
-    public List<PublishedSimulation> findPublished() {
-        return simulationVersionRepository
-                .findByStatusAndSimulationArchivedFalseAndSimulationDeletedAtIsNullOrderByPublishedAtDesc(
+    public List<PublishedSimulation> findPublished(String tenantId) {
+        Map<String, PublishedSimulation> latestBySimulationId = new LinkedHashMap<>();
+
+        simulationVersionRepository
+                .findBySimulationTenantIdAndStatusAndSimulationArchivedFalseAndSimulationDeletedAtIsNullOrderByPublishedAtDesc(
+                        tenantId,
                         SimulationVersionStatus.PUBLISHED
                 )
                 .stream()
                 .map(simulationMapperService::toPublishedSimulation)
-                .toList();
+                .forEach(simulation -> latestBySimulationId.putIfAbsent(simulation.id(), simulation));
+
+        return List.copyOf(latestBySimulationId.values());
     }
 
     @Transactional(readOnly = true)
-    public List<PublishedSimulation> findPublished(String searchString, int offset, int limit) {
+    public List<PublishedSimulation> findPublished(String tenantId, String searchString, int offset, int limit) {
         int normalizedOffset = Math.max(offset, 0);
         int normalizedLimit = Math.max(limit, 1);
 
-        return filteredPublished(searchString).stream()
+        return filteredPublished(tenantId, searchString).stream()
                 .skip(normalizedOffset)
                 .limit(normalizedLimit)
                 .toList();
     }
 
     @Transactional(readOnly = true)
-    public int countPublished(String searchString) {
-        return filteredPublished(searchString).size();
+    public int countPublished(String tenantId, String searchString) {
+        return filteredPublished(tenantId, searchString).size();
     }
 
     @Transactional(readOnly = true)
-    public Optional<PublishedSimulation> findPublishedById(String simulationId) {
+    public Optional<PublishedSimulation> findPublishedById(String tenantId, String simulationId) {
         return simulationVersionRepository
-                .findBySimulationIdAndStatusAndSimulationArchivedFalseAndSimulationDeletedAtIsNullOrderByPublishedAtDesc(
+                .findBySimulationTenantIdAndSimulationIdAndStatusAndSimulationArchivedFalseAndSimulationDeletedAtIsNullOrderByPublishedAtDesc(
+                        tenantId,
                         simulationId,
                         SimulationVersionStatus.PUBLISHED
                 )
@@ -77,9 +89,9 @@ public class SimulationCatalogService {
                 .findFirst();
     }
 
-    private List<PublishedSimulation> filteredPublished(String searchString) {
+    private List<PublishedSimulation> filteredPublished(String tenantId, String searchString) {
         String normalizedSearch = normalize(searchString);
-        return findPublished().stream()
+        return findPublished(tenantId).stream()
                 .filter(simulation -> normalizedSearch.isBlank()
                         || normalize(simulation.id()).contains(normalizedSearch)
                         || normalize(simulation.name()).contains(normalizedSearch)

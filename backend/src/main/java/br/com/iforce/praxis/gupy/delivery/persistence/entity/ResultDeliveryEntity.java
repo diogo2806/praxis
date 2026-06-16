@@ -35,6 +35,9 @@ public class ResultDeliveryEntity {
     @Column(name = "id", nullable = false)
     private Long id;
 
+    @Column(name = "tenant_id", nullable = false, length = 120)
+    private String tenantId;
+
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "candidate_attempt_id", nullable = false)
     private CandidateAttemptEntity candidateAttempt;

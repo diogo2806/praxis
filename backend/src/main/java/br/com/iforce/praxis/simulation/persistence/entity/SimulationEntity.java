@@ -25,6 +25,9 @@ public class SimulationEntity {
     @Column(name = "id", nullable = false, length = 120)
     private String id;
 
+    @Column(name = "tenant_id", nullable = false, length = 120)
+    private String tenantId;
+
     @Column(name = "name", nullable = false, length = 180)
     private String name;
 

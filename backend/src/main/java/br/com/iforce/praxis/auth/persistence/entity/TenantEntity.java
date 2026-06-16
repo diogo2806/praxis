@@ -24,4 +24,7 @@ public class TenantEntity {
 
     @Column(name = "company_id", nullable = false, length = 120)
     private String companyId;
+
+    @Column(name = "integration_token_hash", length = 120)
+    private String integrationTokenHash;
 }

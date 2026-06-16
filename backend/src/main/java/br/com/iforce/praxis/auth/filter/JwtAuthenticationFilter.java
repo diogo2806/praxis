@@ -1,5 +1,6 @@
 package br.com.iforce.praxis.auth.filter;
 
+import br.com.iforce.praxis.auth.service.CurrentTenantService;
 import br.com.iforce.praxis.auth.service.JwtService;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
@@ -47,7 +48,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                     null,
                     extractAuthorities(claims)
             );
-            authentication.setDetails(claims.get("tenant_id", String.class));
+            authentication.setDetails(
+                    new CurrentTenantService.AuthenticatedTenant(claims.get("tenant_id", String.class))
+            );
             SecurityContextHolder.getContext().setAuthentication(authentication);
             filterChain.doFilter(request, response);
         } catch (JwtException | IllegalArgumentException exception) {

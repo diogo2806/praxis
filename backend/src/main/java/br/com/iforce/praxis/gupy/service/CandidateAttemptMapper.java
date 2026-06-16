@@ -32,6 +32,7 @@ import java.util.UUID;
 public class CandidateAttemptMapper {
 
     public CandidateAttemptEntity newEntity(
+            String tenantId,
             String idempotencyKey,
             CreateCandidateRequest request,
             PublishedSimulation publishedSimulation
@@ -39,6 +40,8 @@ public class CandidateAttemptMapper {
         CandidateAttempt initialAttempt = new CandidateAttempt(
                 "att_" + randomToken(),
                 "res_" + randomToken(),
+                tenantId,
+                request.companyId().trim(),
                 publishedSimulation.id(),
                 publishedSimulation.versionId(),
                 publishedSimulation.versionNumber(),
@@ -81,6 +84,8 @@ public class CandidateAttemptMapper {
     public void applyDomainToEntity(CandidateAttempt attempt, CandidateAttemptEntity candidateAttemptEntity) {
         candidateAttemptEntity.setId(attempt.id());
         candidateAttemptEntity.setResultId(attempt.resultId());
+        candidateAttemptEntity.setTenantId(attempt.tenantId());
+        candidateAttemptEntity.setCompanyId(attempt.companyId());
         candidateAttemptEntity.setSimulationId(attempt.simulationId());
         candidateAttemptEntity.setSimulationVersionId(attempt.simulationVersionId());
         candidateAttemptEntity.setSimulationVersionNumber(attempt.simulationVersionNumber());
@@ -139,6 +144,8 @@ public class CandidateAttemptMapper {
         return new CandidateAttempt(
                 candidateAttemptEntity.getId(),
                 candidateAttemptEntity.getResultId(),
+                candidateAttemptEntity.getTenantId(),
+                candidateAttemptEntity.getCompanyId(),
                 candidateAttemptEntity.getSimulationId(),
                 candidateAttemptEntity.getSimulationVersionId(),
                 candidateAttemptEntity.getSimulationVersionNumber(),

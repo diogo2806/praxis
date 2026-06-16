@@ -38,7 +38,7 @@ public class GupyTestResultMapper {
                 attempt.companyResultString(),
                 praxisProperties.publicBaseUrl(),
                 toGupyStatus(attempt.status()),
-                resultPageUrl(attempt.resultId(), companyIdFrom(attempt.idempotencyKey())),
+                resultPageUrl(attempt.resultId(), attempt.companyId()),
                 candidatePageUrl(attempt.id()),
                 attempt.results().stream()
                         .sorted(Comparator.comparing(ResultItem::name))
@@ -61,7 +61,7 @@ public class GupyTestResultMapper {
                 attempt.getCompanyResultString(),
                 praxisProperties.publicBaseUrl(),
                 toGupyStatus(attempt.getStatus()),
-                resultPageUrl(attempt.getResultId(), companyIdFrom(attempt.getIdempotencyKey())),
+                resultPageUrl(attempt.getResultId(), attempt.getCompanyId()),
                 candidatePageUrl(attempt.getId()),
                 attempt.getResultItems().stream()
                         .sorted(Comparator.comparing(ResultItemEntity::getName))
@@ -99,14 +99,6 @@ public class GupyTestResultMapper {
     private String resultPageUrl(String resultId, String companyId) {
         return praxisProperties.publicBaseUrl() + "/test/result/" + resultId
                 + "?company_id=" + URLEncoder.encode(companyId, StandardCharsets.UTF_8);
-    }
-
-    private String companyIdFrom(String idempotencyKey) {
-        int separatorIndex = idempotencyKey == null ? -1 : idempotencyKey.indexOf('|');
-        if (separatorIndex <= 0) {
-            return "";
-        }
-        return idempotencyKey.substring(0, separatorIndex);
     }
 
     private String candidatePageUrl(String attemptId) {

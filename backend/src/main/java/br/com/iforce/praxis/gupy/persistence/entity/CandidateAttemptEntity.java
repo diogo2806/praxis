@@ -29,6 +29,12 @@ public class CandidateAttemptEntity {
     @Column(name = "id", nullable = false, length = 80)
     private String id;
 
+    @Column(name = "tenant_id", nullable = false, length = 120)
+    private String tenantId;
+
+    @Column(name = "company_id", nullable = false, length = 120)
+    private String companyId;
+
     @Column(name = "result_id", nullable = false, unique = true, length = 80)
     private String resultId;
 

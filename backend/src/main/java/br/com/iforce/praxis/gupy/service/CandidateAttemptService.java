@@ -19,6 +19,7 @@ import br.com.iforce.praxis.gupy.model.ScenarioNode;
 import br.com.iforce.praxis.gupy.model.ScenarioOption;
 import br.com.iforce.praxis.gupy.persistence.entity.CandidateAttemptEntity;
 import br.com.iforce.praxis.gupy.persistence.repository.CandidateAttemptRepository;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -48,6 +49,7 @@ public class CandidateAttemptService {
     private final CandidateAttemptMapper candidateAttemptMapper;
     private final AttemptStateMachine attemptStateMachine;
     private final GupyTestResultMapper gupyTestResultMapper;
+    private final GupyAuthService gupyAuthService;
 
     public CandidateAttemptService(
             CandidateAttemptRepository candidateAttemptRepository,
@@ -58,7 +60,8 @@ public class CandidateAttemptService {
             SimulationCatalogService simulationCatalogService,
             CandidateAttemptMapper candidateAttemptMapper,
             AttemptStateMachine attemptStateMachine,
-            GupyTestResultMapper gupyTestResultMapper
+            GupyTestResultMapper gupyTestResultMapper,
+            GupyAuthService gupyAuthService
     ) {
         this.candidateAttemptRepository = candidateAttemptRepository;
         this.auditEventService = auditEventService;
@@ -69,16 +72,21 @@ public class CandidateAttemptService {
         this.candidateAttemptMapper = candidateAttemptMapper;
         this.attemptStateMachine = attemptStateMachine;
         this.gupyTestResultMapper = gupyTestResultMapper;
+        this.gupyAuthService = gupyAuthService;
     }
 
     @Transactional
     public CreateCandidateResponse createOrReuse(CreateCandidateRequest request) {
-        PublishedSimulation publishedSimulation = simulationCatalogService.findPublishedById(request.testId())
+        GupyAuthService.GupyTenantContext tenantContext = gupyAuthService.resolveByCompanyId(request.companyId());
+        String tenantId = tenantContext.tenantId();
+
+        PublishedSimulation publishedSimulation = simulationCatalogService.findPublishedById(tenantId, request.testId())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Teste publicado nao encontrado."));
 
-        String idempotencyKey = request.companyId() + "|" + request.documentId() + "|" + request.testId();
-        CandidateAttemptEntity candidateAttemptEntity = candidateAttemptRepository.findByIdempotencyKey(idempotencyKey)
-                .orElseGet(() -> createAndAuditAttempt(idempotencyKey, request, publishedSimulation));
+        String idempotencyKey = tenantId + "|" + request.companyId() + "|" + request.documentId() + "|" + request.testId();
+        CandidateAttemptEntity candidateAttemptEntity = candidateAttemptRepository
+                .findByTenantIdAndIdempotencyKey(tenantId, idempotencyKey)
+                .orElseGet(() -> createAndAuditAttemptSafely(tenantId, idempotencyKey, request, publishedSimulation));
 
         return new CreateCandidateResponse(
                 candidateUrl(candidateAttemptEntity.getId()),
@@ -87,15 +95,32 @@ public class CandidateAttemptService {
         );
     }
 
+    private CandidateAttemptEntity createAndAuditAttemptSafely(
+            String tenantId,
+            String idempotencyKey,
+            CreateCandidateRequest request,
+            PublishedSimulation publishedSimulation
+    ) {
+        try {
+            return createAndAuditAttempt(tenantId, idempotencyKey, request, publishedSimulation);
+        } catch (DataIntegrityViolationException exception) {
+            // Outra requisicao concorrente criou a tentativa com a mesma chave: reaproveita.
+            return candidateAttemptRepository.findByTenantIdAndIdempotencyKey(tenantId, idempotencyKey)
+                    .orElseThrow(() -> exception);
+        }
+    }
+
     private CandidateAttemptEntity createAndAuditAttempt(
+            String tenantId,
             String idempotencyKey,
             CreateCandidateRequest request,
             PublishedSimulation publishedSimulation
     ) {
         CandidateAttemptEntity candidateAttemptEntity = candidateAttemptRepository.save(
-                candidateAttemptMapper.newEntity(idempotencyKey, request, publishedSimulation)
+                candidateAttemptMapper.newEntity(tenantId, idempotencyKey, request, publishedSimulation)
         );
         auditEventService.appendCandidateAttemptEvent(
+                tenantId,
                 candidateAttemptEntity.getId(),
                 AuditEventType.ATTEMPT_CREATED,
                 "Tentativa criada pela integracao Gupy.",
@@ -132,7 +157,8 @@ public class CandidateAttemptService {
 
     @Transactional(noRollbackFor = ResponseStatusException.class)
     public SubmitAnswerResponse submitAnswer(String attemptId, SubmitAnswerRequest request) {
-        CandidateAttemptEntity candidateAttemptEntity = findAttemptEntityById(attemptId);
+        CandidateAttemptEntity candidateAttemptEntity = candidateAttemptRepository.findByIdForUpdate(attemptId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Tentativa nao encontrada."));
         CandidateAttempt attempt = attemptStateMachine.expireIfNeeded(candidateAttemptMapper.toDomain(candidateAttemptEntity));
         if (attemptStateMachine.isTerminalBlocked(attempt.status())) {
             persist(attempt, candidateAttemptEntity);
@@ -161,7 +187,7 @@ public class CandidateAttemptService {
                 attempt, simulation, answersByNodeId, selectedOption, answer.timedOut());
 
         CandidateAttempt savedAttempt = persist(updatedAttempt, candidateAttemptEntity);
-        auditAnswerSubmission(candidateAttemptEntity.getId(), answer, savedAttempt);
+        auditAnswerSubmission(candidateAttemptEntity.getTenantId(), candidateAttemptEntity.getId(), answer, savedAttempt);
         if (savedAttempt.status() == AttemptStatus.COMPLETED) {
             gupyCompletionCallbackService.notifyCompletionIfNeeded(candidateAttemptEntity);
             resultDeliveryService.enqueueWebhookDelivery(candidateAttemptEntity);
@@ -185,23 +211,18 @@ public class CandidateAttemptService {
         if (companyId == null || companyId.isBlank()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "company_id e obrigatorio.");
         }
-        CandidateAttemptEntity candidateAttemptEntity = candidateAttemptRepository.findByResultId(resultId)
+
+        GupyAuthService.GupyTenantContext tenantContext = gupyAuthService.resolveByCompanyId(companyId);
+        CandidateAttemptEntity candidateAttemptEntity = candidateAttemptRepository
+                .findByTenantIdAndResultId(tenantContext.tenantId(), resultId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Resultado de teste nao encontrado."));
-        if (!companyId.trim().equals(companyIdFrom(candidateAttemptEntity))) {
+        if (!companyId.trim().equals(candidateAttemptEntity.getCompanyId())) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Resultado de teste nao encontrado.");
         }
+
         CandidateAttempt attempt = candidateAttemptMapper.toDomain(candidateAttemptEntity);
         PublishedSimulation simulation = findSimulation(attempt);
         return gupyTestResultMapper.toResponse(attempt, simulation);
-    }
-
-    private String companyIdFrom(CandidateAttemptEntity candidateAttemptEntity) {
-        String idempotencyKey = candidateAttemptEntity.getIdempotencyKey();
-        int separatorIndex = idempotencyKey == null ? -1 : idempotencyKey.indexOf('|');
-        if (separatorIndex <= 0) {
-            return "";
-        }
-        return idempotencyKey.substring(0, separatorIndex);
     }
 
     private Optional<SubmitAnswerResponse> handleDuplicate(
@@ -252,17 +273,18 @@ public class CandidateAttemptService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Alternativa invalida para o turno atual."));
     }
 
-    private void auditAnswerSubmission(String attemptId, AttemptAnswer answer, CandidateAttempt updatedAttempt) {
+    private void auditAnswerSubmission(String tenantId, String attemptId, AttemptAnswer answer, CandidateAttempt updatedAttempt) {
         String message = answer.timedOut()
                 ? "Turno " + answer.nodeId() + " encerrado por timeout (sem resposta)."
                 : "Resposta salva para o turno " + answer.nodeId() + ".";
         String metadata = answer.timedOut()
                 ? "{\"nodeId\":\"" + answer.nodeId() + "\",\"timedOut\":true}"
                 : "{\"nodeId\":\"" + answer.nodeId() + "\",\"optionId\":\"" + answer.optionId() + "\"}";
-        auditEventService.appendCandidateAttemptEvent(attemptId, AuditEventType.ANSWER_SUBMITTED, message, metadata);
+        auditEventService.appendCandidateAttemptEvent(tenantId, attemptId, AuditEventType.ANSWER_SUBMITTED, message, metadata);
 
         if (updatedAttempt.status() == AttemptStatus.COMPLETED) {
             auditEventService.appendCandidateAttemptEvent(
+                    tenantId,
                     attemptId,
                     AuditEventType.ATTEMPT_COMPLETED,
                     "Tentativa finalizada com score deterministico.",
@@ -284,7 +306,7 @@ public class CandidateAttemptService {
                     .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Versao da simulacao nao encontrada."));
         }
 
-        return simulationCatalogService.findPublishedById(attempt.simulationId())
+        return simulationCatalogService.findPublishedById(attempt.tenantId(), attempt.simulationId())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Simulacao publicada nao encontrada."));
     }
 
