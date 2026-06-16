@@ -1,5 +1,7 @@
 package br.com.iforce.praxis.privacy.service;
 
+import br.com.iforce.praxis.auth.context.TenantContextHolder;
+import br.com.iforce.praxis.auth.persistence.repository.TenantRepository;
 import br.com.iforce.praxis.gupy.model.AttemptStatus;
 import br.com.iforce.praxis.gupy.persistence.entity.CandidateAttemptEntity;
 import br.com.iforce.praxis.gupy.persistence.repository.CandidateAttemptRepository;
@@ -19,15 +21,18 @@ public class PrivacyRetentionService {
     private static final int BATCH_SIZE = 100;
 
     private final CandidateAttemptRepository candidateAttemptRepository;
+    private final TenantRepository tenantRepository;
     private final int retentionDays;
     private final boolean enabled;
 
     public PrivacyRetentionService(
             CandidateAttemptRepository candidateAttemptRepository,
+            TenantRepository tenantRepository,
             @Value("${praxis.privacy-retention-days:180}") int retentionDays,
             @Value("${praxis.privacy-retention-enabled:true}") boolean enabled
     ) {
         this.candidateAttemptRepository = candidateAttemptRepository;
+        this.tenantRepository = tenantRepository;
         this.retentionDays = retentionDays;
         this.enabled = enabled;
     }
@@ -39,9 +44,21 @@ public class PrivacyRetentionService {
             return;
         }
 
+        tenantRepository.findAll().forEach(tenant -> {
+            try {
+                TenantContextHolder.set(tenant.getId());
+                anonymizeExpiredAttemptsForTenant(tenant.getId());
+            } finally {
+                TenantContextHolder.clear();
+            }
+        });
+    }
+
+    private void anonymizeExpiredAttemptsForTenant(String tenantId) {
         Instant finishedBefore = Instant.now().minus(retentionDays, ChronoUnit.DAYS);
         List<CandidateAttemptEntity> attempts = candidateAttemptRepository
-                .findByAnonymizedAtIsNullAndStatusInAndFinishedAtBefore(
+                .findByTenantIdAndAnonymizedAtIsNullAndStatusInAndFinishedAtBefore(
+                        tenantId,
                         List.of(
                                 AttemptStatus.COMPLETED,
                                 AttemptStatus.ABANDONED,
