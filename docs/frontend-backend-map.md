@@ -51,7 +51,7 @@
 | Simulacoes admin | `/api/v1/simulations` | Criacao de rascunho, atualizacao de blueprint, listagem resumida, validacao, workflow de revisao, publicacao, preflight, monitoramento e arquivamento. |
 | Auditoria | `/api/v1/audit` | Governanca, defensabilidade e trilha de decisoes. |
 | Entregas Gupy | `/api/v1/gupy/result-deliveries` | Monitoramento operacional, retry e DLQ. |
-| Integracao Gupy | `/test`, `/test/candidate`, `/test/result/{resultId}` | Contrato externo da Gupy; usar no frontend interno com cuidado por exigir token de integracao. |
+| Integracao Gupy | `/test`, `/test/candidate`, `/test/result/{resultId}?company_id={companyId}` | Contrato externo da Gupy; usar no frontend interno com cuidado por exigir token de integracao. |
 | Enums | `/api/v1/enums` | Popular selects/status sem duplicar labels no frontend. |
 | Privacidade | `/api/v1/privacy/compliance` | Bases legais, retencao, canal de revisao e regra de decisao automatizada para LGPD. |
 

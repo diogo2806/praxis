@@ -34,8 +34,7 @@ public class AuthService {
 
     private UserEntity loadUser(LoginRequest request) {
         if (request.tenantId() == null || request.tenantId().isBlank()) {
-            return userRepository.findFirstByEmail(request.email())
-                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Credenciais invalidas."));
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "tenantId e obrigatorio.");
         }
 
         return userRepository.findFirstByEmailAndTenantId(request.email(), request.tenantId())

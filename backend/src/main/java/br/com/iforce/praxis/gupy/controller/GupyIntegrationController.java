@@ -73,7 +73,10 @@ public class GupyIntegrationController {
     ) {
         gupyAuthService.validateBearerToken(authorization);
 
-        List<GupyTestResponse> tests = simulationCatalogService.findPublished(searchString, offset, limit).stream()
+        int normalizedOffset = Math.max(offset, 0);
+        int normalizedLimit = Math.min(Math.max(limit, 1), 400);
+
+        List<GupyTestResponse> tests = simulationCatalogService.findPublished(searchString, normalizedOffset, normalizedLimit).stream()
                 .map(simulation -> new GupyTestResponse(
                         simulation.id(),
                         simulation.name(),
@@ -84,7 +87,7 @@ public class GupyIntegrationController {
                 .toList();
 
         int totalTests = simulationCatalogService.countPublished(searchString);
-        return ResponseEntity.ok(new TestItemsResponse(limit, offset, totalTests, tests));
+        return ResponseEntity.ok(new TestItemsResponse(normalizedLimit, normalizedOffset, totalTests, tests));
     }
 
     @PostMapping("/test/candidate")
@@ -113,9 +116,10 @@ public class GupyIntegrationController {
     })
     public ResponseEntity<TestResultResponse> getTestResult(
             @RequestHeader(name = "Authorization", required = false) String authorization,
-            @PathVariable String resultId
+            @PathVariable String resultId,
+            @RequestParam(name = "company_id") String companyId
     ) {
         gupyAuthService.validateBearerToken(authorization);
-        return ResponseEntity.ok(candidateAttemptService.findResult(resultId));
+        return ResponseEntity.ok(candidateAttemptService.findResult(resultId, companyId));
     }
 }

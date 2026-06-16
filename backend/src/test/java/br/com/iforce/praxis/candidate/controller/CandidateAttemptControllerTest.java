@@ -77,7 +77,9 @@ class CandidateAttemptControllerTest {
                 .andExpect(jsonPath("$.completed").value(true))
                 .andExpect(jsonPath("$.currentNode").doesNotExist());
 
-        mockMvc.perform(get("/test/result/" + resultId).header("Authorization", AUTHORIZATION))
+        mockMvc.perform(get("/test/result/" + resultId)
+                        .header("Authorization", AUTHORIZATION)
+                        .param("company_id", "empresa-123"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("done"))
                 .andExpect(jsonPath("$.results[?(@.title=='Empatia')].score").value(org.hamcrest.Matchers.hasItem(100)))
@@ -140,7 +142,9 @@ class CandidateAttemptControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("completed"));
 
-        mockMvc.perform(get("/test/result/" + resultId).header("Authorization", AUTHORIZATION))
+        mockMvc.perform(get("/test/result/" + resultId)
+                        .header("Authorization", AUTHORIZATION)
+                        .param("company_id", "empresa-123"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("done"))
                 .andExpect(jsonPath("$.results[?(@.title=='Empatia')].score").value(org.hamcrest.Matchers.hasItem(95)))
@@ -167,7 +171,9 @@ class CandidateAttemptControllerTest {
                 .andExpect(jsonPath("$.completed").value(true))
                 .andExpect(jsonPath("$.currentNode").doesNotExist());
 
-        mockMvc.perform(get("/test/result/" + resultId).header("Authorization", AUTHORIZATION))
+        mockMvc.perform(get("/test/result/" + resultId)
+                        .header("Authorization", AUTHORIZATION)
+                        .param("company_id", "empresa-123"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("done"))
                 .andExpect(jsonPath("$.results[?(@.title=='Empatia')].score").value(org.hamcrest.Matchers.hasItem(0)))
@@ -197,7 +203,9 @@ class CandidateAttemptControllerTest {
                                 """))
                 .andExpect(status().isOk());
 
-        mockMvc.perform(get("/test/result/" + resultId).header("Authorization", AUTHORIZATION))
+        mockMvc.perform(get("/test/result/" + resultId)
+                        .header("Authorization", AUTHORIZATION)
+                        .param("company_id", "empresa-123"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.results[?(@.title=='Aderencia a politica')].tier").value(org.hamcrest.Matchers.hasItem("minor")))
                 .andExpect(jsonPath("$.results[?(@.title=='Empatia')].tier").value(org.hamcrest.Matchers.hasItem("major")))

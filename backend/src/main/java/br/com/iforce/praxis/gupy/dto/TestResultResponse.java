@@ -27,7 +27,7 @@ public record TestResultResponse(
         @Schema(example = "done", allowableValues = {"notStarted", "paused", "done"})
         String status,
 
-        @Schema(example = "https://praxis.example.com/test/result/res_123")
+        @Schema(example = "https://praxis.example.com/test/result/res_123?company_id=empresa-123")
         String result_page_url,
 
         @Schema(example = "https://praxis.example.com/candidate/attempts/att_123")

@@ -24,9 +24,6 @@ import java.util.concurrent.ConcurrentHashMap;
 public class RateLimitFilter extends OncePerRequestFilter {
 
     private static final String HEADER_AUTHORIZATION = "Authorization";
-    private static final String HEADER_FORWARDED_FOR = "X-Forwarded-For";
-    private static final String HEADER_USER_ID = "X-User-Id";
-    private static final String HEADER_TENANT_ID = "X-Tenant-Id";
 
     private final PraxisProperties praxisProperties;
     private final Map<String, Bucket> buckets = new ConcurrentHashMap<>();
@@ -71,10 +68,8 @@ public class RateLimitFilter extends OncePerRequestFilter {
         }
 
         if (path.equals("/api/v1/simulations") || path.startsWith("/api/v1/simulations/")) {
-            String userId = nullToAnonymous(request.getHeader(HEADER_USER_ID));
-            String tenantId = nullToAnonymous(request.getHeader(HEADER_TENANT_ID));
             return new RateLimitPolicy(
-                    "authoring:%s:%s:%s".formatted(userId, tenantId, ip),
+                    "authoring:%s:%s".formatted(authenticatedPrincipal(), ip),
                     praxisProperties.authoringRateLimitRequestsPerMinute()
             );
         }
@@ -93,11 +88,15 @@ public class RateLimitFilter extends OncePerRequestFilter {
     }
 
     private String clientIp(HttpServletRequest request) {
-        String forwardedFor = request.getHeader(HEADER_FORWARDED_FOR);
-        if (forwardedFor != null && !forwardedFor.isBlank()) {
-            return forwardedFor.split(",")[0].trim();
-        }
         return request.getRemoteAddr();
+    }
+
+    private String authenticatedPrincipal() {
+        var authentication = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || authentication.getName() == null || authentication.getName().isBlank()) {
+            return "anonymous";
+        }
+        return authentication.getName();
     }
 
     private String nullToAnonymous(String value) {

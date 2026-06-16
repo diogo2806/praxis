@@ -21,6 +21,7 @@ import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 /**
  * Tradução entre a entidade JPA {@link CandidateAttemptEntity} e o agregado de domínio
@@ -35,10 +36,9 @@ public class CandidateAttemptMapper {
             CreateCandidateRequest request,
             PublishedSimulation publishedSimulation
     ) {
-        String hash = Integer.toUnsignedString(idempotencyKey.hashCode());
         CandidateAttempt initialAttempt = new CandidateAttempt(
-                "att_" + hash,
-                "res_" + hash,
+                "att_" + randomToken(),
+                "res_" + randomToken(),
                 publishedSimulation.id(),
                 publishedSimulation.versionId(),
                 publishedSimulation.versionNumber(),
@@ -62,6 +62,10 @@ public class CandidateAttemptMapper {
         candidateAttemptEntity.setCallbackUrl(request.callbackUrl() == null ? null : request.callbackUrl().toString());
         candidateAttemptEntity.setResultWebhookUrl(request.resultWebhookUrl() == null ? null : request.resultWebhookUrl().toString());
         return candidateAttemptEntity;
+    }
+
+    private String randomToken() {
+        return UUID.randomUUID().toString().replace("-", "");
     }
 
     private List<ResultItem> initialResultItems(PublishedSimulation publishedSimulation) {

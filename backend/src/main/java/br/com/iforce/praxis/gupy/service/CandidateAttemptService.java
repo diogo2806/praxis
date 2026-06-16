@@ -6,6 +6,7 @@ import br.com.iforce.praxis.candidate.dto.CandidateAttemptResponse;
 import br.com.iforce.praxis.candidate.dto.SubmitAnswerRequest;
 import br.com.iforce.praxis.candidate.dto.SubmitAnswerResponse;
 import br.com.iforce.praxis.config.PraxisProperties;
+import br.com.iforce.praxis.gupy.delivery.service.GupyCompletionCallbackService;
 import br.com.iforce.praxis.gupy.delivery.service.ResultDeliveryService;
 import br.com.iforce.praxis.gupy.dto.CreateCandidateRequest;
 import br.com.iforce.praxis.gupy.dto.CreateCandidateResponse;
@@ -40,6 +41,7 @@ public class CandidateAttemptService {
 
     private final CandidateAttemptRepository candidateAttemptRepository;
     private final AuditEventService auditEventService;
+    private final GupyCompletionCallbackService gupyCompletionCallbackService;
     private final ResultDeliveryService resultDeliveryService;
     private final PraxisProperties praxisProperties;
     private final SimulationCatalogService simulationCatalogService;
@@ -50,6 +52,7 @@ public class CandidateAttemptService {
     public CandidateAttemptService(
             CandidateAttemptRepository candidateAttemptRepository,
             AuditEventService auditEventService,
+            GupyCompletionCallbackService gupyCompletionCallbackService,
             ResultDeliveryService resultDeliveryService,
             PraxisProperties praxisProperties,
             SimulationCatalogService simulationCatalogService,
@@ -59,6 +62,7 @@ public class CandidateAttemptService {
     ) {
         this.candidateAttemptRepository = candidateAttemptRepository;
         this.auditEventService = auditEventService;
+        this.gupyCompletionCallbackService = gupyCompletionCallbackService;
         this.resultDeliveryService = resultDeliveryService;
         this.praxisProperties = praxisProperties;
         this.simulationCatalogService = simulationCatalogService;
@@ -159,7 +163,8 @@ public class CandidateAttemptService {
         CandidateAttempt savedAttempt = persist(updatedAttempt, candidateAttemptEntity);
         auditAnswerSubmission(candidateAttemptEntity.getId(), answer, savedAttempt);
         if (savedAttempt.status() == AttemptStatus.COMPLETED) {
-            resultDeliveryService.enqueueIfNeeded(candidateAttemptEntity);
+            gupyCompletionCallbackService.notifyCompletionIfNeeded(candidateAttemptEntity);
+            resultDeliveryService.enqueueWebhookDelivery(candidateAttemptEntity);
         }
 
         ScenarioNode nextNode = savedAttempt.status() == AttemptStatus.COMPLETED
@@ -176,12 +181,27 @@ public class CandidateAttemptService {
     }
 
     @Transactional(readOnly = true)
-    public TestResultResponse findResult(String resultId) {
+    public TestResultResponse findResult(String resultId, String companyId) {
+        if (companyId == null || companyId.isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "company_id e obrigatorio.");
+        }
         CandidateAttemptEntity candidateAttemptEntity = candidateAttemptRepository.findByResultId(resultId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Resultado de teste nao encontrado."));
+        if (!companyId.trim().equals(companyIdFrom(candidateAttemptEntity))) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Resultado de teste nao encontrado.");
+        }
         CandidateAttempt attempt = candidateAttemptMapper.toDomain(candidateAttemptEntity);
         PublishedSimulation simulation = findSimulation(attempt);
         return gupyTestResultMapper.toResponse(attempt, simulation);
+    }
+
+    private String companyIdFrom(CandidateAttemptEntity candidateAttemptEntity) {
+        String idempotencyKey = candidateAttemptEntity.getIdempotencyKey();
+        int separatorIndex = idempotencyKey == null ? -1 : idempotencyKey.indexOf('|');
+        if (separatorIndex <= 0) {
+            return "";
+        }
+        return idempotencyKey.substring(0, separatorIndex);
     }
 
     private Optional<SubmitAnswerResponse> handleDuplicate(

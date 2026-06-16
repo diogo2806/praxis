@@ -10,7 +10,7 @@ O Praxis atua como provedor de testes externos da Gupy. A integracao expoe endpo
 | --- | --- | --- | --- |
 | `/test` | GET | Lista testes publicados com `offset`, `limit` e `searchString` | Bearer token |
 | `/test/candidate` | POST | Cria ou reutiliza tentativa idempotente para candidato | Bearer token |
-| `/test/result/{resultId}` | GET | Retorna o resultado no formato `TestResult` da Gupy | Bearer token |
+| `/test/result/{resultId}?company_id={companyId}` | GET | Retorna o resultado no formato `TestResult` da Gupy escopado pela empresa | Bearer token |
 | `result_webhook_url` | POST | Recebe envio assincrono do resultado pela fila de retry/DLQ | URL informada pela Gupy |
 
 ## Fluxo Completo
@@ -20,7 +20,7 @@ O Praxis atua como provedor de testes externos da Gupy. A integracao expoe endpo
 3. O Praxis cria ou reutiliza a tentativa por chave idempotente `companyId|documentId|testId`.
 4. O candidato conclui a simulacao no link retornado em `testUrl`.
 5. Ao finalizar, o Praxis calcula o score deterministico e monta o payload `TestResult`.
-6. A Gupy pode consultar `GET /test/result/{resultId}`.
+6. A Gupy pode consultar `GET /test/result/{resultId}?company_id={companyId}`.
 7. Se `resultWebhookUrl` tiver sido informado, o Praxis enfileira o envio assincrono com retry exponencial e DLQ.
 
 ## Contrato de Resultado
@@ -36,7 +36,7 @@ O payload de resultado segue o shape externo da Gupy:
   "company_result_string": "Score geral: 100/100",
   "providerLink": "http://localhost:8080",
   "status": "done",
-  "result_page_url": "http://localhost:8080/test/result/res_123",
+  "result_page_url": "http://localhost:8080/test/result/res_123?company_id=empresa-123",
   "result_candidate_page_url": "http://localhost:8080/candidate/attempts/att_123",
   "results": [
     {
@@ -60,7 +60,8 @@ O payload de resultado segue o shape externo da Gupy:
 - `score` de cada item sempre usa porcentagem de 0 a 100.
 - `tier = major` aparece para candidato e empresa.
 - `tier = minor` fica restrito a visao da empresa.
-- O envio para `result_webhook_url` reaproveita `ResultDeliveryService`, com retry exponencial e DLQ para erro permanente.
+- A consulta de resultado exige `company_id` compativel com a tentativa criada, evitando acesso cruzado entre empresas.
+- O callback `callbackUrl` e o envio para `result_webhook_url` so aceitam hosts publicos presentes em `PRAXIS_WEBHOOK_ALLOWED_HOSTS`; `result_webhook_url` reaproveita `ResultDeliveryService`, com retry exponencial e DLQ para erro permanente.
 
 ## Monitoramento
 

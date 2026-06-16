@@ -359,7 +359,7 @@ public class SimulationAdminService {
     @Transactional
     public ArchiveSimulationResponse archiveSimulation(String simulationId, String deletedBy) {
         if (deletedBy == null || deletedBy.isBlank()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Header X-User-Id e obrigatorio.");
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Usuario autenticado obrigatorio.");
         }
 
         SimulationEntity simulationEntity = simulationRepository.findById(simulationId)

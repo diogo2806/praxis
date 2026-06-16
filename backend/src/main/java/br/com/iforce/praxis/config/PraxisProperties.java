@@ -2,6 +2,8 @@ package br.com.iforce.praxis.config;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
+import java.util.List;
+
 @ConfigurationProperties(prefix = "praxis")
 public record PraxisProperties(
         String publicBaseUrl,
@@ -11,10 +13,14 @@ public record PraxisProperties(
         int recommendInterviewThreshold,
         double competencyWeightTolerance,
         int gupyRateLimitRequestsPerMinute,
-        int authoringRateLimitRequestsPerMinute
+        int authoringRateLimitRequestsPerMinute,
+        List<String> webhookAllowedHosts
 ) {
 
     public PraxisProperties {
+        if (webhookAllowedHosts == null) {
+            webhookAllowedHosts = List.of();
+        }
         if (recommendInterviewThreshold == 0) {
             recommendInterviewThreshold = 70;
         }

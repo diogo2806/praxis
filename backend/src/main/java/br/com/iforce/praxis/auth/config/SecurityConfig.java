@@ -45,14 +45,16 @@ public class SecurityConfig {
         http.authorizeHttpRequests(auth -> auth
                         .requestMatchers(
                                 "/api/v1/auth/login",
-                                "/test/**",
                                 "/candidate/**",
                                 "/docs/**",
                                 "/v3/api-docs/**",
                                 "/swagger-ui/**",
                                 "/actuator/health"
                         ).permitAll()
-                        .requestMatchers("/api/v1/simulations/**").authenticated()
+                        .requestMatchers("/test/**").hasRole("GUPY")
+                        .requestMatchers("/api/v1/simulations/**").hasRole("ADMIN")
+                        .requestMatchers("/api/v1/gupy/result-deliveries/**").hasRole("ADMIN")
+                        .requestMatchers("/api/v1/audit/**").hasRole("ADMIN")
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(gupyFilter, UsernamePasswordAuthenticationFilter.class)

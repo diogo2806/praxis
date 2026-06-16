@@ -44,6 +44,11 @@ public class ResultDeliveryService {
     }
 
     @Transactional(propagation = Propagation.MANDATORY)
+    public void enqueueWebhookDelivery(CandidateAttemptEntity candidateAttemptEntity) {
+        enqueueIfNeeded(candidateAttemptEntity);
+    }
+
+    @Transactional(propagation = Propagation.MANDATORY)
     public void enqueueIfNeeded(CandidateAttemptEntity candidateAttemptEntity) {
         if (candidateAttemptEntity.getResultWebhookUrl() == null || candidateAttemptEntity.getResultWebhookUrl().isBlank()) {
             return;
