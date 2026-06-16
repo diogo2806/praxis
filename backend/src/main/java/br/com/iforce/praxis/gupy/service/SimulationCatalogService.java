@@ -27,7 +27,10 @@ public class SimulationCatalogService {
 
     @Transactional(readOnly = true)
     public List<PublishedSimulation> findPublished() {
-        return simulationVersionRepository.findByStatusOrderByPublishedAtDesc(SimulationVersionStatus.PUBLISHED)
+        return simulationVersionRepository
+                .findByStatusAndSimulationArchivedFalseAndSimulationDeletedAtIsNullOrderByPublishedAtDesc(
+                        SimulationVersionStatus.PUBLISHED
+                )
                 .stream()
                 .map(simulationMapperService::toPublishedSimulation)
                 .toList();
@@ -36,7 +39,7 @@ public class SimulationCatalogService {
     @Transactional(readOnly = true)
     public Optional<PublishedSimulation> findPublishedById(String simulationId) {
         return simulationVersionRepository
-                .findBySimulationIdAndStatusOrderByPublishedAtDesc(
+                .findBySimulationIdAndStatusAndSimulationArchivedFalseAndSimulationDeletedAtIsNullOrderByPublishedAtDesc(
                         simulationId,
                         SimulationVersionStatus.PUBLISHED
                 )

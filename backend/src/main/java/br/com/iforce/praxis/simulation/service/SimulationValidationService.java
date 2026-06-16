@@ -22,6 +22,7 @@ import java.util.Set;
 public class SimulationValidationService {
 
     private static final int MAX_DEPTH_TURNS = 10;
+    private static final int LARGE_GRAPH_NODE_THRESHOLD = 8;
 
     private final PraxisProperties praxisProperties;
 
@@ -46,6 +47,7 @@ public class SimulationValidationService {
         }
 
         validateCompetencyWeights(simulationVersionEntity, issues);
+        warnLargeGraph(simulationVersionEntity, issues);
 
         if (nodesById.containsKey(simulationVersionEntity.getRootNodeId())) {
             detectCycles(simulationVersionEntity.getRootNodeId(), nodesById, issues);
@@ -175,6 +177,19 @@ public class SimulationValidationService {
                     ValidationIssueSeverity.BLOCKER,
                     simulationVersionEntity.getRootNodeId(),
                     "A soma dos pesos das competências deve ser 1.0 (atual: " + weightSum + ")."
+            ));
+        }
+    }
+
+    private void warnLargeGraph(
+            SimulationVersionEntity simulationVersionEntity,
+            List<ValidationIssueResponse> issues
+    ) {
+        if (simulationVersionEntity.getNodes().size() > LARGE_GRAPH_NODE_THRESHOLD) {
+            issues.add(new ValidationIssueResponse(
+                    ValidationIssueSeverity.WARNING,
+                    simulationVersionEntity.getRootNodeId(),
+                    "Grafo grande detectado — validação pode demorar."
             ));
         }
     }

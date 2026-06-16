@@ -17,7 +17,8 @@ public enum AuditEventType implements DescribedEnum {
     SIMULATION_VERSION_APPROVED("simulationVersionApproved"),
     SIMULATION_VERSION_REJECTED("simulationVersionRejected"),
     SIMULATION_VERSION_CLONED("simulationVersionCloned"),
-    SIMULATION_VERSION_PUBLISHED("simulationVersionPublished");
+    SIMULATION_VERSION_PUBLISHED("simulationVersionPublished"),
+    SIMULATION_ARCHIVED("simulationArchived");
 
     private final String descricao;
 

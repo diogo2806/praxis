@@ -1,13 +1,14 @@
 DELETE FROM audit_events
-WHERE aggregate_id IN ('sim-publish-gate:v1', 'sim-review-flow:v1');
+WHERE aggregate_id IN ('sim-publish-gate:v1', 'sim-review-flow:v1', 'sim-clone-source:v1', 'sim-clone-source:v2');
 
 DELETE FROM simulations
-WHERE id IN ('sim-publish-gate', 'sim-review-flow');
+WHERE id IN ('sim-publish-gate', 'sim-review-flow', 'sim-clone-source');
 
 INSERT INTO simulations (id, name, description, created_at)
 VALUES
     ('sim-publish-gate', 'Publish Gate', 'Fixture para testar bloqueio de publicacao sem aprovacao.', CURRENT_TIMESTAMP),
-    ('sim-review-flow', 'Review Flow', 'Fixture para testar fluxo de revisao e aprovacao.', CURRENT_TIMESTAMP);
+    ('sim-review-flow', 'Review Flow', 'Fixture para testar fluxo de revisao e aprovacao.', CURRENT_TIMESTAMP),
+    ('sim-clone-source', 'Clone Source', 'Fixture para testar clone de versao publicada.', CURRENT_TIMESTAMP);
 
 INSERT INTO simulation_versions (
     id,
@@ -20,14 +21,17 @@ INSERT INTO simulation_versions (
 )
 VALUES
     (201, 'sim-publish-gate', 1, 'DRAFT', 'turno-1', NULL, CURRENT_TIMESTAMP),
-    (202, 'sim-review-flow', 1, 'DRAFT', 'turno-1', NULL, CURRENT_TIMESTAMP);
+    (202, 'sim-review-flow', 1, 'DRAFT', 'turno-1', NULL, CURRENT_TIMESTAMP),
+    (203, 'sim-clone-source', 1, 'PUBLISHED', 'turno-1', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
 
 INSERT INTO simulation_competencies (simulation_version_id, name, weight)
 VALUES
     (201, 'Empatia', 0.5),
     (201, 'Resolucao', 0.5),
     (202, 'Empatia', 0.5),
-    (202, 'Resolucao', 0.5);
+    (202, 'Resolucao', 0.5),
+    (203, 'Empatia', 0.5),
+    (203, 'Resolucao', 0.5);
 
 INSERT INTO simulation_nodes (
     id,
@@ -40,7 +44,8 @@ INSERT INTO simulation_nodes (
 )
 VALUES
     (201, 201, 'turno-1', 1, 'Cliente ficticio', 'Mensagem do cliente para teste.', 45),
-    (202, 202, 'turno-1', 1, 'Cliente ficticio', 'Mensagem do cliente para teste.', 45);
+    (202, 202, 'turno-1', 1, 'Cliente ficticio', 'Mensagem do cliente para teste.', 45),
+    (203, 203, 'turno-1', 1, 'Cliente ficticio', 'Mensagem do cliente para teste.', 45);
 
 INSERT INTO simulation_options (
     id,
@@ -55,7 +60,9 @@ VALUES
     (201, 201, 'opcao-a', 'Resposta A.', NULL, FALSE, 'Opcao valida para teste.'),
     (202, 202, 'opcao-a', 'Resposta A.', NULL, FALSE, 'Opcao valida para teste.'),
     (203, 201, 'opcao-b', 'Resposta B.', NULL, FALSE, 'Opcao valida para teste.'),
-    (204, 202, 'opcao-b', 'Resposta B.', NULL, FALSE, 'Opcao valida para teste.');
+    (204, 202, 'opcao-b', 'Resposta B.', NULL, FALSE, 'Opcao valida para teste.'),
+    (205, 203, 'opcao-a', 'Resposta A.', NULL, FALSE, 'Opcao valida para teste.'),
+    (206, 203, 'opcao-b', 'Resposta B.', NULL, FALSE, 'Opcao valida para teste.');
 
 INSERT INTO option_competency_scores (simulation_option_id, competency_name, score)
 VALUES
@@ -66,4 +73,8 @@ VALUES
     (203, 'Empatia', 75),
     (203, 'Resolucao', 72),
     (204, 'Empatia', 75),
-    (204, 'Resolucao', 72);
+    (204, 'Resolucao', 72),
+    (205, 'Empatia', 80),
+    (205, 'Resolucao', 70),
+    (206, 'Empatia', 75),
+    (206, 'Resolucao', 72);

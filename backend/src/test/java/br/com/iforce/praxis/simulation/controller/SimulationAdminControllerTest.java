@@ -85,6 +85,31 @@ class SimulationAdminControllerTest {
     }
 
     @Test
+    @Sql(scripts = "/simulation-review-fixtures.sql")
+    void clonePublishedVersionCreatesDraftWithGraphAndNoAttempts() throws Exception {
+        mockMvc.perform(post("/api/v1/simulations/sim-clone-source/versions/1/clone-draft"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.simulationId").value("sim-clone-source"))
+                .andExpect(jsonPath("$.sourceVersionNumber").value(1))
+                .andExpect(jsonPath("$.newVersionNumber").value(2))
+                .andExpect(jsonPath("$.status").value("draft"));
+
+        mockMvc.perform(get("/api/v1/simulations/sim-clone-source/versions/2/validation"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.publishable").value(true))
+                .andExpect(jsonPath("$.issues", empty()));
+
+        mockMvc.perform(get("/api/v1/simulations/sim-clone-source/versions/2/monitoring"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.attemptsCreated").value(0));
+
+        mockMvc.perform(get("/api/v1/audit/simulations/sim-clone-source/versions/2"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[*].eventType").value(hasItem("simulationVersionCloned")))
+                .andExpect(jsonPath("$[*].metadata").value(hasItem(containsString("\"sourceVersionNumber\":1"))));
+    }
+
+    @Test
     void gupyPreflightApprovesSeededVersion() throws Exception {
         mockMvc.perform(get("/api/v1/simulations/sim-atendimento-caos/versions/1/gupy-preflight"))
                 .andExpect(status().isOk())

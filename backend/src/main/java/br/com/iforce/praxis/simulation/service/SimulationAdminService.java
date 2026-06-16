@@ -2,6 +2,7 @@ package br.com.iforce.praxis.simulation.service;
 
 import br.com.iforce.praxis.audit.model.AuditEventType;
 import br.com.iforce.praxis.audit.service.AuditEventService;
+import br.com.iforce.praxis.simulation.dto.ArchiveSimulationResponse;
 import br.com.iforce.praxis.simulation.dto.CloneSimulationVersionResponse;
 import br.com.iforce.praxis.simulation.dto.GupyPreflightResponse;
 import br.com.iforce.praxis.simulation.dto.PublishSimulationResponse;
@@ -10,9 +11,11 @@ import br.com.iforce.praxis.simulation.dto.SimulationVersionStatusResponse;
 import br.com.iforce.praxis.simulation.model.SimulationVersionStatus;
 import br.com.iforce.praxis.simulation.persistence.entity.OptionCompetencyScoreEntity;
 import br.com.iforce.praxis.simulation.persistence.entity.SimulationCompetencyEntity;
+import br.com.iforce.praxis.simulation.persistence.entity.SimulationEntity;
 import br.com.iforce.praxis.simulation.persistence.entity.SimulationNodeEntity;
 import br.com.iforce.praxis.simulation.persistence.entity.SimulationOptionEntity;
 import br.com.iforce.praxis.simulation.persistence.entity.SimulationVersionEntity;
+import br.com.iforce.praxis.simulation.persistence.repository.SimulationRepository;
 import br.com.iforce.praxis.simulation.persistence.repository.SimulationVersionRepository;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -25,17 +28,20 @@ import java.time.Instant;
 public class SimulationAdminService {
 
     private final SimulationVersionRepository simulationVersionRepository;
+    private final SimulationRepository simulationRepository;
     private final SimulationValidationService simulationValidationService;
     private final GupyPreflightService gupyPreflightService;
     private final AuditEventService auditEventService;
 
     public SimulationAdminService(
             SimulationVersionRepository simulationVersionRepository,
+            SimulationRepository simulationRepository,
             SimulationValidationService simulationValidationService,
             GupyPreflightService gupyPreflightService,
             AuditEventService auditEventService
     ) {
         this.simulationVersionRepository = simulationVersionRepository;
+        this.simulationRepository = simulationRepository;
         this.simulationValidationService = simulationValidationService;
         this.gupyPreflightService = gupyPreflightService;
         this.auditEventService = auditEventService;
@@ -45,6 +51,40 @@ public class SimulationAdminService {
     public SimulationValidationResponse validateVersion(String simulationId, int versionNumber) {
         SimulationVersionEntity simulationVersionEntity = findVersion(simulationId, versionNumber);
         return simulationValidationService.validate(simulationVersionEntity);
+    }
+
+    @Transactional
+    public ArchiveSimulationResponse archiveSimulation(String simulationId, String deletedBy) {
+        if (deletedBy == null || deletedBy.isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Header X-User-Id e obrigatorio.");
+        }
+
+        SimulationEntity simulationEntity = simulationRepository.findById(simulationId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Simulacao nao encontrada."));
+
+        if (simulationEntity.isArchived() || simulationEntity.getDeletedAt() != null) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Simulacao ja arquivada.");
+        }
+
+        Instant deletedAt = Instant.now();
+        simulationEntity.setArchived(true);
+        simulationEntity.setDeletedAt(deletedAt);
+        simulationEntity.setDeletedBy(deletedBy);
+        SimulationEntity savedSimulationEntity = simulationRepository.save(simulationEntity);
+        auditEventService.appendSimulationEvent(
+                savedSimulationEntity.getId(),
+                AuditEventType.SIMULATION_ARCHIVED,
+                "Simulacao arquivada por soft delete.",
+                "{\"archived\":true,\"deletedAt\":\"" + savedSimulationEntity.getDeletedAt()
+                        + "\",\"deletedBy\":\"" + escapeJson(deletedBy) + "\"}"
+        );
+
+        return new ArchiveSimulationResponse(
+                savedSimulationEntity.getId(),
+                savedSimulationEntity.isArchived(),
+                savedSimulationEntity.getDeletedAt(),
+                savedSimulationEntity.getDeletedBy()
+        );
     }
 
     @Transactional
@@ -217,6 +257,7 @@ public class SimulationAdminService {
             SimulationCompetencyEntity clonedCompetencyEntity = new SimulationCompetencyEntity();
             clonedCompetencyEntity.setSimulationVersion(clonedVersionEntity);
             clonedCompetencyEntity.setName(sourceCompetencyEntity.getName());
+            clonedCompetencyEntity.setWeight(sourceCompetencyEntity.getWeight());
             clonedVersionEntity.getCompetencies().add(clonedCompetencyEntity);
         }
 

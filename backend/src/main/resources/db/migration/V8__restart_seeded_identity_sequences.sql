@@ -1,0 +1,9 @@
+ALTER TABLE simulation_versions ALTER COLUMN id RESTART WITH 1000;
+
+ALTER TABLE simulation_competencies ALTER COLUMN id RESTART WITH 1000;
+
+ALTER TABLE simulation_nodes ALTER COLUMN id RESTART WITH 1000;
+
+ALTER TABLE simulation_options ALTER COLUMN id RESTART WITH 1000;
+
+ALTER TABLE option_competency_scores ALTER COLUMN id RESTART WITH 1000;

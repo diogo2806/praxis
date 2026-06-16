@@ -17,7 +17,9 @@ public interface SimulationVersionRepository extends JpaRepository<SimulationVer
             "nodes.options",
             "nodes.options.competencyScores"
     })
-    List<SimulationVersionEntity> findByStatusOrderByPublishedAtDesc(SimulationVersionStatus status);
+    List<SimulationVersionEntity> findByStatusAndSimulationArchivedFalseAndSimulationDeletedAtIsNullOrderByPublishedAtDesc(
+            SimulationVersionStatus status
+    );
 
     @EntityGraph(attributePaths = {
             "simulation",
@@ -44,7 +46,7 @@ public interface SimulationVersionRepository extends JpaRepository<SimulationVer
             "nodes.options",
             "nodes.options.competencyScores"
     })
-    List<SimulationVersionEntity> findBySimulationIdAndStatusOrderByPublishedAtDesc(
+    List<SimulationVersionEntity> findBySimulationIdAndStatusAndSimulationArchivedFalseAndSimulationDeletedAtIsNullOrderByPublishedAtDesc(
             String simulationId,
             SimulationVersionStatus status
     );

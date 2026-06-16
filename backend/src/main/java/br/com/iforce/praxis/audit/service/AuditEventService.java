@@ -15,6 +15,7 @@ import java.util.List;
 public class AuditEventService {
 
     public static final String CANDIDATE_ATTEMPT_AGGREGATE = "CandidateAttempt";
+    public static final String SIMULATION_AGGREGATE = "Simulation";
     public static final String SIMULATION_VERSION_AGGREGATE = "SimulationVersion";
 
     private final AuditEventRepository auditEventRepository;
@@ -33,6 +34,24 @@ public class AuditEventService {
         AuditEventEntity auditEventEntity = new AuditEventEntity();
         auditEventEntity.setAggregateType(CANDIDATE_ATTEMPT_AGGREGATE);
         auditEventEntity.setAggregateId(attemptId);
+        auditEventEntity.setEventType(eventType);
+        auditEventEntity.setMessage(message);
+        auditEventEntity.setMetadata(metadata);
+        auditEventEntity.setCreatedAt(Instant.now());
+
+        auditEventRepository.save(auditEventEntity);
+    }
+
+    @Transactional(propagation = Propagation.MANDATORY)
+    public void appendSimulationEvent(
+            String simulationId,
+            AuditEventType eventType,
+            String message,
+            String metadata
+    ) {
+        AuditEventEntity auditEventEntity = new AuditEventEntity();
+        auditEventEntity.setAggregateType(SIMULATION_AGGREGATE);
+        auditEventEntity.setAggregateId(simulationId);
         auditEventEntity.setEventType(eventType);
         auditEventEntity.setMessage(message);
         auditEventEntity.setMetadata(metadata);

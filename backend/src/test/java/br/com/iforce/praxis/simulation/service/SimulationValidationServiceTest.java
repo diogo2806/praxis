@@ -20,7 +20,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 class SimulationValidationServiceTest {
 
     private final SimulationValidationService service = new SimulationValidationService(
-            new PraxisProperties("http://localhost:8080", "token", 168, 24, 70, 0.001)
+            new PraxisProperties("http://localhost:8080", "token", 168, 24, 70, 0.001, 100, 30)
     );
 
     @Test
