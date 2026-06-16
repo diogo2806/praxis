@@ -1,9 +1,5 @@
 package br.com.iforce.praxis.config;
 
-import org.hibernate.engine.spi.SessionImplementor;
-import org.hibernate.metamodel.spi.MetamodelImplementor;
-import org.hibernate.metamodel.spi.ValueClassification;
-import org.hibernate.persister.entity.EntityPersister;
 import org.springframework.boot.autoconfigure.orm.jpa.HibernatePropertiesCustomizer;
 import org.springframework.stereotype.Component;
 
