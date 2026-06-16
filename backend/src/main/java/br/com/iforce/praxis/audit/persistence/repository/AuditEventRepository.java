@@ -8,4 +8,10 @@ import java.util.List;
 public interface AuditEventRepository extends JpaRepository<AuditEventEntity, Long> {
 
     List<AuditEventEntity> findByAggregateTypeAndAggregateIdOrderByCreatedAtAsc(String aggregateType, String aggregateId);
+
+    List<AuditEventEntity> findByTenantIdAndAggregateTypeAndAggregateIdOrderByCreatedAtAsc(
+            String tenantId,
+            String aggregateType,
+            String aggregateId
+    );
 }

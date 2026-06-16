@@ -8,6 +8,7 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.http.HttpStatus;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
@@ -19,6 +20,7 @@ import java.time.Duration;
 import java.util.Base64;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicLong;
 
 @Component
 public class RateLimitFilter extends OncePerRequestFilter {
@@ -26,7 +28,7 @@ public class RateLimitFilter extends OncePerRequestFilter {
     private static final String HEADER_AUTHORIZATION = "Authorization";
 
     private final PraxisProperties praxisProperties;
-    private final Map<String, Bucket> buckets = new ConcurrentHashMap<>();
+    private final Map<String, BucketState> buckets = new ConcurrentHashMap<>();
 
     public RateLimitFilter(PraxisProperties praxisProperties) {
         this.praxisProperties = praxisProperties;
@@ -44,15 +46,27 @@ public class RateLimitFilter extends OncePerRequestFilter {
             return;
         }
 
-        Bucket bucket = buckets.computeIfAbsent(policy.key(), ignored -> newBucket(policy.requestsPerMinute()));
-        if (bucket.tryConsume(1)) {
+        BucketState state = buckets.computeIfAbsent(policy.key(), ignored ->
+                new BucketState(newBucket(policy.requestsPerMinute()), new AtomicLong())
+        );
+        state.lastSeenEpochMs().set(System.currentTimeMillis());
+        response.setHeader("X-RateLimit-Limit", String.valueOf(policy.requestsPerMinute()));
+
+        if (state.bucket().tryConsume(1)) {
             filterChain.doFilter(request, response);
             return;
         }
 
         response.setStatus(HttpStatus.TOO_MANY_REQUESTS.value());
         response.setContentType("application/json");
+        response.setHeader("Retry-After", "60");
         response.getWriter().write("{\"message\":\"Rate limit excedido.\"}");
+    }
+
+    @Scheduled(fixedDelayString = "${praxis.rate-limit-cleanup-delay-ms:300000}")
+    public void cleanupIdleBuckets() {
+        long cutoff = System.currentTimeMillis() - Duration.ofHours(1).toMillis();
+        buckets.entrySet().removeIf(entry -> entry.getValue().lastSeenEpochMs().get() < cutoff);
     }
 
     private RateLimitPolicy policyFor(HttpServletRequest request) {
@@ -88,6 +102,14 @@ public class RateLimitFilter extends OncePerRequestFilter {
     }
 
     private String clientIp(HttpServletRequest request) {
+        String forwardedFor = request.getHeader("X-Forwarded-For");
+        if (forwardedFor != null && !forwardedFor.isBlank()) {
+            return forwardedFor.split(",")[0].trim();
+        }
+        String realIp = request.getHeader("X-Real-IP");
+        if (realIp != null && !realIp.isBlank()) {
+            return realIp.trim();
+        }
         return request.getRemoteAddr();
     }
 
@@ -114,5 +136,8 @@ public class RateLimitFilter extends OncePerRequestFilter {
     }
 
     private record RateLimitPolicy(String key, int requestsPerMinute) {
+    }
+
+    private record BucketState(Bucket bucket, AtomicLong lastSeenEpochMs) {
     }
 }

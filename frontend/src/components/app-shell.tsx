@@ -10,6 +10,7 @@ import {
   UserRound,
 } from "lucide-react";
 import { GlobalErrorFlow, GlobalProductStateBar, StateBanner } from "@/components/praxis-ui";
+import { getSession } from "@/lib/session";
 import { gupyConnectionLabels, useGupyConnectionState, useViewMode } from "@/lib/view-mode";
 import { cn } from "@/lib/utils";
 
@@ -29,6 +30,7 @@ const secondary = [
 export function AppShell({ children }: { children: ReactNode }) {
   const pathname = useRouterState({ select: (state) => state.location.pathname });
   const mode = useViewMode();
+  const session = getSession();
   const gupyState = useGupyConnectionState(pathname);
   const hasGlobalError = gupyState === "error";
   const modeHref = mode === "technical" ? pathname : `${pathname}?mode=technical`;
@@ -129,8 +131,8 @@ export function AppShell({ children }: { children: ReactNode }) {
               R
             </div>
             <div className="text-xs">
-              <div className="font-medium text-sidebar-foreground">Renata Silveira</div>
-              <div className="text-sidebar-foreground/55">RH - Aprovadora</div>
+              <div className="font-medium text-sidebar-foreground">{session.userName}</div>
+              <div className="text-sidebar-foreground/55">{session.userRole}</div>
             </div>
           </div>
         </div>
@@ -139,7 +141,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       <main className="flex min-w-0 flex-1 flex-col">
         <header className="sticky top-0 z-10 flex h-14 items-center gap-4 border-b border-border bg-background/85 px-6 backdrop-blur">
           <div className="text-xs text-muted-foreground">
-            Workspace <span className="text-foreground">/ Acme S.A.</span>
+            Workspace <span className="text-foreground">/ {session.workspaceName}</span>
           </div>
           <div className="ml-auto flex items-center gap-2 text-xs">
             <span className="inline-flex items-center gap-1.5 rounded-md border border-border bg-card px-2.5 py-1 text-muted-foreground">

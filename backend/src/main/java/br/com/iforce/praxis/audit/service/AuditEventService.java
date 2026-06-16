@@ -4,6 +4,7 @@ import br.com.iforce.praxis.audit.dto.AuditEventResponse;
 import br.com.iforce.praxis.audit.model.AuditEventType;
 import br.com.iforce.praxis.audit.persistence.entity.AuditEventEntity;
 import br.com.iforce.praxis.audit.persistence.repository.AuditEventRepository;
+import br.com.iforce.praxis.auth.service.CurrentTenantService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -19,9 +20,11 @@ public class AuditEventService {
     public static final String SIMULATION_VERSION_AGGREGATE = "SimulationVersion";
 
     private final AuditEventRepository auditEventRepository;
+    private final CurrentTenantService currentTenantService;
 
-    public AuditEventService(AuditEventRepository auditEventRepository) {
+    public AuditEventService(AuditEventRepository auditEventRepository, CurrentTenantService currentTenantService) {
         this.auditEventRepository = auditEventRepository;
+        this.currentTenantService = currentTenantService;
     }
 
     @Transactional(propagation = Propagation.MANDATORY)
@@ -87,8 +90,13 @@ public class AuditEventService {
 
     @Transactional(readOnly = true)
     public List<AuditEventResponse> listCandidateAttemptEvents(String attemptId) {
+        String tenantId = currentTenantService.requiredTenantId();
         return auditEventRepository
-                .findByAggregateTypeAndAggregateIdOrderByCreatedAtAsc(CANDIDATE_ATTEMPT_AGGREGATE, attemptId)
+                .findByTenantIdAndAggregateTypeAndAggregateIdOrderByCreatedAtAsc(
+                        tenantId,
+                        CANDIDATE_ATTEMPT_AGGREGATE,
+                        attemptId
+                )
                 .stream()
                 .map(this::toResponse)
                 .toList();
@@ -96,8 +104,10 @@ public class AuditEventService {
 
     @Transactional(readOnly = true)
     public List<AuditEventResponse> listSimulationVersionEvents(String simulationId, int versionNumber) {
+        String tenantId = currentTenantService.requiredTenantId();
         return auditEventRepository
-                .findByAggregateTypeAndAggregateIdOrderByCreatedAtAsc(
+                .findByTenantIdAndAggregateTypeAndAggregateIdOrderByCreatedAtAsc(
+                        tenantId,
                         SIMULATION_VERSION_AGGREGATE,
                         simulationVersionAggregateId(simulationId, versionNumber)
                 )

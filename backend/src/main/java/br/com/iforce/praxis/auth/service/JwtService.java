@@ -23,13 +23,17 @@ public class JwtService {
             @Value("${praxis.jwt-expiration-hours:8}") int expirationHours,
             @Value("${praxis.security.enabled:true}") boolean securityEnabled
     ) {
+        String effectiveSecret = secret;
         if (securityEnabled && (secret == null
                 || secret.isBlank()
                 || secret.length() < 32
                 || "dev-praxis-jwt-secret-2026-32-characters-minimum".equals(secret))) {
             throw new IllegalStateException("praxis.jwt-secret deve ser configurado com segredo forte fora do valor de desenvolvimento.");
         }
-        this.secretKey = Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
+        if (!securityEnabled && (effectiveSecret == null || effectiveSecret.isBlank())) {
+            effectiveSecret = "dev-praxis-jwt-secret-2026-32-characters-minimum";
+        }
+        this.secretKey = Keys.hmacShaKeyFor(effectiveSecret.getBytes(StandardCharsets.UTF_8));
         this.expirationHours = expirationHours;
     }
 

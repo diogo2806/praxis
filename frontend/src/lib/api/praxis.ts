@@ -1,3 +1,5 @@
+import { getSession } from "@/lib/session";
+
 const API_BASE_URL = (
   import.meta.env.VITE_PRAXIS_API_BASE_URL ?? "http://localhost:8080"
 ).replace(/\/$/, "");
@@ -298,10 +300,18 @@ export class PraxisApiError extends Error {
 }
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
+  const session = getSession();
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+  };
+  if (session.token && isAdminPath(path)) {
+    headers.Authorization = `Bearer ${session.token}`;
+  }
+
   const response = await fetch(`${API_BASE_URL}${path}`, {
     ...init,
     headers: {
-      "Content-Type": "application/json",
+      ...headers,
       ...init?.headers,
     },
   });
@@ -322,6 +332,14 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   }
 
   return response.json() as Promise<T>;
+}
+
+function isAdminPath(path: string) {
+  return (
+    path.startsWith("/api/v1/simulations") ||
+    path.startsWith("/api/v1/gupy/result-deliveries") ||
+    path.startsWith("/api/v1/audit")
+  );
 }
 
 export function getCandidateAttempt(attemptId: string) {
