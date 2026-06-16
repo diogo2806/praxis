@@ -7,9 +7,12 @@ services:
     ports:
       - "8080:8080"
     environment:
-      - PRAXIS_DATASOURCE_URL=jdbc:postgresql://postgres:5432/praxis
-      - PRAXIS_DATASOURCE_USERNAME=postgres
-      - PRAXIS_DATASOURCE_PASSWORD=postgres
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_NAME=praxis
+      - DB_USER=postgres
+      - SPRING_DATASOURCE_PASSWORD=postgres
+      - DB_SCHEMA=public
       - PRAXIS_JPA_DDL_AUTO=validate
       - PRAXIS_INTEGRATION_TOKEN=dev-integration-token
       - PRAXIS_JWT_SECRET=dev-jwt-secret-change-me
