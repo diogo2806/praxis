@@ -7,10 +7,12 @@ services:
     ports:
       - "8080:8080"
     environment:
-      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/praxis
-      - SPRING_DATASOURCE_USERNAME=postgres
-      - SPRING_DATASOURCE_PASSWORD=postgres
-      - SPRING_JPA_HIBERNATE_DDL_AUTO=validate
+      - PRAXIS_DATASOURCE_URL=jdbc:postgresql://postgres:5432/praxis
+      - PRAXIS_DATASOURCE_USERNAME=postgres
+      - PRAXIS_DATASOURCE_PASSWORD=postgres
+      - PRAXIS_JPA_DDL_AUTO=validate
+      - PRAXIS_INTEGRATION_TOKEN=dev-integration-token
+      - PRAXIS_JWT_SECRET=dev-jwt-secret-change-me
       - SPRING_PROFILES_ACTIVE=prod
     depends_on:
       - postgres
