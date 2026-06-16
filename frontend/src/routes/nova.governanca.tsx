@@ -1,79 +1,235 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useState } from "react";
 import { AppShell } from "@/components/app-shell";
-import { ScreenStateStrip } from "@/components/praxis-ui";
+import { EmptyState, ScreenStateStrip, StateBanner, StatusBadge } from "@/components/praxis-ui";
 import { WizardStepper } from "@/components/wizard-stepper";
+import {
+  approveSimulationVersion,
+  listSimulations,
+  listSimulationVersionAuditEvents,
+  publishSimulationVersion,
+  rejectSimulationVersion,
+  submitSimulationVersionForReview,
+  type AuditEventResponse,
+  type SimulationSummaryResponse,
+  type SimulationVersionStatus,
+  type SimulationVersionStatusResponse,
+} from "@/lib/api/praxis";
+import { maturityForStatus } from "@/lib/simulation-meta";
+import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/nova/governanca")({
+  validateSearch: (search: Record<string, unknown>) => ({
+    simulationId: typeof search.simulationId === "string" ? search.simulationId : undefined,
+    versionNumber:
+      typeof search.versionNumber === "string" && Number.isFinite(Number(search.versionNumber))
+        ? Number(search.versionNumber)
+        : undefined,
+  }),
   head: () => ({
     meta: [
-      { title: "Governança & Aprovações — Práxis" },
-      { name: "description", content: "Estados, papéis e versionamento imutável." },
+      { title: "Governanca & Aprovacoes - Praxis" },
+      { name: "description", content: "Estados, papeis e versionamento imutavel." },
     ],
   }),
   component: Page,
 });
 
-const states = [
-  "Rascunho",
-  "Em revisão (gestor)",
-  "Em revisão (compliance)",
-  "Aprovada",
-  "Publicada",
-];
-const audit = [
-  { who: "Renata Silveira", role: "RH · Criadora", w: "10/06 14:22", t: "criou v0.1" },
-  { who: "Marcos Lima", role: "Gestor", w: "11/06 09:15", t: "aprovou diálogo" },
-  { who: "Validador", role: "Sistema", w: "11/06 09:16", t: "qualidade 82/100 · 2 warnings" },
-  { who: "Carla Souza", role: "Compliance", w: "12/06 16:48", t: "aprovou texto e LGPD" },
-  { who: "Renata Silveira", role: "RH", w: "13/06 10:02", t: "publicou v1.0 (com warnings)" },
+const workflowStates: Array<{ status: SimulationVersionStatus; label: string }> = [
+  { status: "draft", label: "Rascunho" },
+  { status: "inReview", label: "Em revisao" },
+  { status: "approved", label: "Aprovada" },
+  { status: "published", label: "Publicada" },
 ];
 
+type TransitionAction = "submit-review" | "approve" | "reject" | "publish";
+
+const transitionCopy: Record<TransitionAction, { title: string; description: string; cta: string }> = {
+  "submit-review": {
+    title: "Enviar para revisao?",
+    description: "O backend so aceita esta transicao quando a versao esta em rascunho ou reprovada e sem blockers.",
+    cta: "Enviar para revisao",
+  },
+  approve: {
+    title: "Aprovar versao?",
+    description: "A versao ficara aprovada e liberada para publicacao.",
+    cta: "Aprovar",
+  },
+  reject: {
+    title: "Reprovar versao?",
+    description: "Informe uma justificativa. Ela sera enviada ao backend e preservada na trilha de governanca.",
+    cta: "Reprovar",
+  },
+  publish: {
+    title: "Publicar versao?",
+    description: "A publicacao torna a versao imutavel. Blockers continuam sem override manual.",
+    cta: "Publicar",
+  },
+};
+
 function Page() {
+  const search = Route.useSearch();
+  const queryClient = useQueryClient();
+  const hasGovernanceParams = Boolean(search.simulationId && search.versionNumber);
+  const simulationsQuery = useQuery({
+    queryKey: ["simulations"],
+    queryFn: listSimulations,
+    enabled: !hasGovernanceParams,
+  });
+  const [currentStatus, setCurrentStatus] = useState<SimulationVersionStatus | null>(null);
+  const [pendingAction, setPendingAction] = useState<TransitionAction | null>(null);
+  const [rejectReason, setRejectReason] = useState("Ajustar pontos indicados pela revisao.");
+  const auditQuery = useQuery({
+    queryKey: ["simulation-version-audit", search.simulationId, search.versionNumber],
+    queryFn: () => listSimulationVersionAuditEvents(search.simulationId!, search.versionNumber!),
+    enabled: hasGovernanceParams,
+  });
+
+  const transitionMutation = useMutation({
+    mutationFn: async (action: TransitionAction) => {
+      if (action === "submit-review") {
+        return submitSimulationVersionForReview(search.simulationId!, search.versionNumber!);
+      }
+      if (action === "approve") {
+        return approveSimulationVersion(search.simulationId!, search.versionNumber!);
+      }
+      if (action === "reject") {
+        return rejectSimulationVersion(search.simulationId!, search.versionNumber!, rejectReason);
+      }
+      return publishSimulationVersion(search.simulationId!, search.versionNumber!);
+    },
+    onSuccess: async (response) => {
+      setCurrentStatus(response.status);
+      setPendingAction(null);
+      await queryClient.invalidateQueries({
+        queryKey: ["simulation-version-audit", search.simulationId, search.versionNumber],
+      });
+    },
+  });
+
+  const visibleStatus = currentStatus ?? inferStatusFromEvents(auditQuery.data);
+
   return (
     <AppShell>
       <WizardStepper current="governanca" />
       <ScreenStateStrip blockedReason="aguardando aprovacao de gestor ou compliance" />
       <div className="mb-6">
         <div className="text-xs uppercase tracking-[0.2em] text-primary">Passo 7</div>
-        <h1 className="mt-1 font-display text-3xl">Governança de publicação</h1>
+        <h1 className="mt-1 font-display text-3xl">Governanca de publicacao</h1>
         <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
-          RH não publica direto em vaga crítica. Estados, papéis, versionamento imutável.
+          RH nao publica direto em vaga critica. Estados, papeis, versionamento imutavel.
         </p>
       </div>
+
+      {hasGovernanceParams && auditQuery.isLoading && (
+        <StateBanner tone="info" title="Governanca conectada">
+          Buscando AuditLog da simulacao {search.simulationId} v{search.versionNumber}.
+        </StateBanner>
+      )}
+
+      {hasGovernanceParams && auditQuery.isError && (
+        <StateBanner tone="danger" title="Nao foi possivel carregar a governanca">
+          {auditQuery.error instanceof Error
+            ? auditQuery.error.message
+            : "Verifique se o backend esta rodando e se a versao existe."}
+        </StateBanner>
+      )}
+
+      {transitionMutation.isSuccess && (
+        <StateBanner tone="ok" title="Transicao aplicada">
+          Estado atual retornado pelo backend: {statusLabel(transitionMutation.data.status)}.
+        </StateBanner>
+      )}
+
+      {transitionMutation.isError && (
+        <StateBanner tone="danger" title="Transicao recusada">
+          {transitionMutation.error instanceof Error
+            ? transitionMutation.error.message
+            : "O backend recusou a transicao de estado."}
+        </StateBanner>
+      )}
+
+      {!hasGovernanceParams ? (
+        <EmptyState
+          title="Selecione uma versao para governanca"
+          description="As transicoes de estado e o AuditLog agora dependem do backend."
+          actions={
+            <SimulationLinks
+              loading={simulationsQuery.isLoading}
+              simulations={simulationsQuery.data ?? []}
+            />
+          }
+        />
+      ) : (
       <div className="rounded-xl border border-border bg-card p-5">
         <h3 className="text-sm font-semibold">Estado atual</h3>
         <ol className="mt-4 flex flex-wrap gap-2 text-xs">
-          {states.map((s, i) => (
-            <li
-              key={s}
-              className={`rounded-full border px-3 py-1.5 ${i < 3 ? "border-success/30 bg-success/10 text-success" : i === 3 ? "border-primary bg-primary/10 text-primary" : "border-border bg-card text-muted-foreground"}`}
-            >
-              {i < 3 ? "✓ " : i === 3 ? "● " : ""}
-              {s}
+          {visibleStatus ? workflowStates.map((state) => {
+            const tone = stateTone(state.status, visibleStatus);
+            return (
+              <li
+                key={state.status}
+                className={cn(
+                  "rounded-full border px-3 py-1.5",
+                  tone === "done" && "border-success/30 bg-success/10 text-success",
+                  tone === "current" && "border-primary bg-primary/10 text-primary",
+                  tone === "future" && "border-border bg-card text-muted-foreground",
+                )}
+              >
+                {tone === "done" ? "ok " : tone === "current" ? "atual " : ""}
+                {state.label}
+              </li>
+            );
+          }) : (
+            <li className="rounded-full border border-border bg-card px-3 py-1.5 text-muted-foreground">
+              Sem eventos suficientes para inferir estado
             </li>
-          ))}
+          )}
+          {visibleStatus === "rejected" && (
+            <li className="rounded-full border border-danger/30 bg-danger/10 px-3 py-1.5 text-danger">
+              atual Reprovada
+            </li>
+          )}
         </ol>
+
+        <div className="mt-5 grid gap-2 md:grid-cols-4">
+          <TransitionButton
+            label="Enviar para revisao"
+            disabled={!hasGovernanceParams}
+            onClick={() => setPendingAction("submit-review")}
+          />
+          <TransitionButton
+            label="Aprovar"
+            disabled={!hasGovernanceParams}
+            onClick={() => setPendingAction("approve")}
+          />
+          <TransitionButton
+            label="Reprovar"
+            disabled={!hasGovernanceParams}
+            onClick={() => setPendingAction("reject")}
+          />
+          <TransitionButton
+            label="Publicar"
+            disabled={!hasGovernanceParams}
+            primary
+            onClick={() => setPendingAction("publish")}
+          />
+        </div>
       </div>
+      )}
+
       <div className="mt-6 rounded-xl border border-border bg-card p-5">
-        <h3 className="text-sm font-semibold">Log de auditoria imutável</h3>
-        <ul className="mt-4 divide-y divide-border">
-          {audit.map((a) => (
-            <li key={a.w} className="flex items-start gap-3 py-3 text-sm">
-              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-muted text-[11px] font-medium">
-                {a.who[0]}
-              </div>
-              <div className="flex-1">
-                <div>
-                  <span className="font-medium">{a.who}</span>{" "}
-                  <span className="text-xs text-muted-foreground">· {a.role}</span>
-                </div>
-                <div className="text-xs text-foreground/75">{a.t}</div>
-              </div>
-              <div className="text-xs tabular-nums text-muted-foreground">{a.w}</div>
-            </li>
-          ))}
-        </ul>
+        <h3 className="text-sm font-semibold">Log de auditoria imutavel</h3>
+        {hasGovernanceParams ? (
+          <AuditLog events={auditQuery.data ?? []} loading={auditQuery.isLoading} />
+        ) : (
+          <div className="mt-4 rounded-md border border-border bg-background p-4 text-sm text-muted-foreground">
+            Selecione uma versao para carregar eventos reais.
+          </div>
+        )}
       </div>
+
       <div className="mt-8 flex justify-between">
         <Link
           to="/nova/mapa"
@@ -85,9 +241,196 @@ function Page() {
           to="/nova/gupy"
           className="rounded-md bg-primary px-5 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
         >
-          Gupy Preflight →
+          Gupy Preflight
         </Link>
       </div>
+
+      {pendingAction && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-foreground/30 p-4">
+          <div className="w-full max-w-md rounded-md border border-border bg-card p-5 shadow-xl">
+            <div className="text-sm font-semibold">{transitionCopy[pendingAction].title}</div>
+            <p className="mt-2 text-sm text-muted-foreground">
+              {transitionCopy[pendingAction].description}
+            </p>
+            {pendingAction === "reject" && (
+              <label className="mt-4 block text-sm">
+                <span className="text-xs font-medium text-muted-foreground">Justificativa</span>
+                <textarea
+                  value={rejectReason}
+                  onChange={(event) => setRejectReason(event.target.value)}
+                  className="mt-1 min-h-24 w-full rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
+                />
+              </label>
+            )}
+            <div className="mt-5 flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setPendingAction(null)}
+                className="rounded-md border border-border bg-card px-4 py-2 text-sm hover:bg-accent"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={() => transitionMutation.mutate(pendingAction)}
+                disabled={transitionMutation.isPending || (pendingAction === "reject" && !rejectReason.trim())}
+                className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {transitionMutation.isPending ? "Enviando..." : transitionCopy[pendingAction].cta}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </AppShell>
   );
+}
+
+function TransitionButton({
+  label,
+  disabled,
+  primary,
+  onClick,
+}: {
+  label: string;
+  disabled: boolean;
+  primary?: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      disabled={disabled}
+      onClick={onClick}
+      className={cn(
+        "rounded-md px-3 py-2 text-sm disabled:cursor-not-allowed disabled:opacity-60",
+        primary
+          ? "bg-primary text-primary-foreground hover:bg-primary/90"
+          : "border border-border bg-card hover:bg-accent",
+      )}
+    >
+      {label}
+    </button>
+  );
+}
+
+function AuditLog({ events, loading }: { events: AuditEventResponse[]; loading: boolean }) {
+  if (loading) {
+    return <div className="mt-4 rounded-md border border-border bg-background p-4 text-sm">Carregando eventos...</div>;
+  }
+
+  if (events.length === 0) {
+    return (
+      <div className="mt-4 rounded-md border border-border bg-background p-4 text-sm text-muted-foreground">
+        Nenhum evento de auditoria registrado para esta versao.
+      </div>
+    );
+  }
+
+  return (
+    <ul className="mt-4 divide-y divide-border">
+      {events.map((event) => (
+        <li key={event.id} className="flex items-start gap-3 py-3 text-sm">
+          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-muted text-[11px] font-medium">
+            {event.eventType[0]?.toUpperCase() ?? "A"}
+          </div>
+          <div className="min-w-0 flex-1">
+            <div className="truncate font-medium">{event.message}</div>
+            <div className="truncate text-xs text-muted-foreground">
+              {formatEventType(event.eventType)} - {event.aggregateId}
+            </div>
+          </div>
+          <div className="text-xs tabular-nums text-muted-foreground">{formatDateTime(event.createdAt)}</div>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+function SimulationLinks({
+  simulations,
+  loading,
+}: {
+  simulations: SimulationSummaryResponse[];
+  loading: boolean;
+}) {
+  if (loading) {
+    return <div className="rounded-md border border-border bg-card px-4 py-3 text-sm">Carregando simulacoes...</div>;
+  }
+
+  if (simulations.length === 0) {
+    return (
+      <Link
+        to="/nova/blueprint"
+        className="rounded-md border border-border bg-card px-4 py-3 text-sm hover:bg-accent"
+      >
+        Criar simulacao
+      </Link>
+    );
+  }
+
+  return (
+    <>
+      {simulations.slice(0, 3).map((simulation) => (
+        <Link
+          key={simulation.id}
+          to="/nova/governanca"
+          search={{
+            simulationId: simulation.id,
+            versionNumber: simulation.versionNumber,
+          }}
+          className="rounded-md border border-border bg-card px-4 py-3 text-sm hover:bg-accent"
+        >
+          <span className="block font-medium">{simulation.name}</span>
+          <span className="mt-1 block">
+            <StatusBadge status={simulation.status} maturity={maturityForStatus(simulation.status)} />
+          </span>
+        </Link>
+      ))}
+    </>
+  );
+}
+
+function inferStatusFromEvents(events?: AuditEventResponse[]): SimulationVersionStatus | null {
+  if (!events?.length) return null;
+  const eventTypes = events.map((event) => event.eventType);
+  if (eventTypes.includes("simulationVersionPublished")) return "published";
+  if (eventTypes.includes("simulationVersionApproved")) return "approved";
+  if (eventTypes.includes("simulationVersionRejected")) return "rejected";
+  if (eventTypes.includes("simulationVersionSubmittedForReview")) return "inReview";
+  return "draft";
+}
+
+function stateTone(status: SimulationVersionStatus, current: SimulationVersionStatus) {
+  const order: SimulationVersionStatus[] = ["draft", "inReview", "approved", "published"];
+  const statusIndex = order.indexOf(status);
+  const currentIndex = order.indexOf(current);
+  if (status === current) return "current";
+  if (statusIndex !== -1 && currentIndex !== -1 && statusIndex < currentIndex) return "done";
+  return "future";
+}
+
+function statusLabel(status: SimulationVersionStatus) {
+  const labels: Record<SimulationVersionStatus, string> = {
+    draft: "rascunho",
+    inReview: "em revisao",
+    approved: "aprovada",
+    rejected: "reprovada",
+    published: "publicada",
+    archived: "arquivada",
+  };
+  return labels[status];
+}
+
+function formatEventType(value: string) {
+  return value.replace(/([A-Z])/g, " $1").toLowerCase();
+}
+
+function formatDateTime(value: string) {
+  return new Intl.DateTimeFormat("pt-BR", {
+    day: "2-digit",
+    month: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(new Date(value));
 }

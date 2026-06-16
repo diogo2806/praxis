@@ -1,170 +1,167 @@
+import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { AppShell } from "@/components/app-shell";
-import { ScreenStateStrip } from "@/components/praxis-ui";
+import { EmptyState, ScreenStateStrip, StateBanner } from "@/components/praxis-ui";
 import { WizardStepper } from "@/components/wizard-stepper";
+import { getSimulationVersion, listSimulations, type SimulationSummaryResponse } from "@/lib/api/praxis";
 
 export const Route = createFileRoute("/nova/mapa")({
+  validateSearch: (search: Record<string, unknown>) => ({
+    simulationId: typeof search.simulationId === "string" ? search.simulationId : undefined,
+    versionNumber:
+      typeof search.versionNumber === "number"
+        ? search.versionNumber
+        : typeof search.versionNumber === "string"
+          ? Number(search.versionNumber)
+          : undefined,
+  }),
   head: () => ({
     meta: [
-      { title: "Mapa & Score — Práxis" },
-      { name: "description", content: "Grafo de turnos e normalização por caminho." },
+      { title: "Mapa & Score - Praxis" },
+      { name: "description", content: "Grafo persistido e pesos reais da versao." },
     ],
   }),
   component: Page,
 });
 
 function Page() {
+  const search = Route.useSearch();
+  const hasContext = Boolean(search.simulationId && search.versionNumber);
+  const simulationsQuery = useQuery({
+    queryKey: ["simulations"],
+    queryFn: listSimulations,
+    enabled: !hasContext,
+  });
+  const versionQuery = useQuery({
+    queryKey: ["simulation-version", search.simulationId, search.versionNumber],
+    queryFn: () => getSimulationVersion(search.simulationId!, search.versionNumber!),
+    enabled: hasContext,
+  });
+  const version = versionQuery.data;
+
   return (
     <AppShell>
       <WizardStepper current="mapa" />
-      <ScreenStateStrip blockedReason="grafo inválido ou caminho morto precisa voltar ao editor" />
+      <ScreenStateStrip blockedReason="grafo invalido ou caminho morto precisa voltar ao editor" />
       <div className="mb-6">
         <div className="text-xs uppercase tracking-[0.2em] text-primary">Passo 5-6</div>
         <h1 className="mt-1 font-display text-3xl">Mapa & score normalizado</h1>
         <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
-          Dois candidatos têm o mesmo teto possível, independente do caminho percorrido.
+          Visualizacao derivada dos nos, alternativas e pesos persistidos.
         </p>
       </div>
-      <div className="grid gap-6 lg:grid-cols-[1fr_340px]">
-        <div className="rounded-xl border border-border bg-card p-6">
-          <h3 className="mb-4 text-sm font-semibold">"O Dia do Caos" — v1.0</h3>
-          <svg viewBox="0 0 720 320" className="h-auto w-full" aria-label="Mapa de turnos">
-            <defs>
-              <marker id="arr" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto">
-                <path d="M0,0 L6,3 L0,6 Z" className="fill-muted-foreground" />
-              </marker>
-            </defs>
-            <g fontFamily="ui-sans-serif" fontSize="12">
-              <g transform="translate(40,140)">
-                <rect
-                  rx="10"
-                  width="120"
-                  height="60"
-                  className="fill-primary/10 stroke-primary"
-                  strokeWidth="1.5"
-                />
-                <text x="60" y="26" textAnchor="middle" className="fill-primary font-semibold">
-                  T1
-                </text>
-                <text x="60" y="44" textAnchor="middle" className="fill-foreground/70">
-                  A/B/C/D
-                </text>
-              </g>
-              {[
-                { y: 50, l: "C", c: "stroke-success" },
-                { y: 120, l: "B/D", c: "stroke-primary" },
-                { y: 200, l: "A", c: "stroke-danger" },
-              ].map((b, i) => (
-                <g key={i}>
-                  <path
-                    d={`M160 170 C 240 170, 240 ${b.y + 30}, 320 ${b.y + 30}`}
-                    fill="none"
-                    className={b.c}
-                    strokeWidth="1.5"
-                    markerEnd="url(#arr)"
-                  />
-                  <text
-                    x="240"
-                    y={b.y + 20}
-                    textAnchor="middle"
-                    className="fill-muted-foreground text-[11px]"
-                  >
-                    {b.l}
-                  </text>
-                </g>
-              ))}
-              {[
-                { y: 50, t: "T2a", n: "encerra cedo", c: "fill-success/10 stroke-success" },
-                { y: 120, t: "T2c", n: "segue 2 turnos", c: "fill-primary/10 stroke-primary" },
-                { y: 200, t: "T2b", n: "revisão humana", c: "fill-danger/10 stroke-danger" },
-              ].map((n) => (
-                <g key={n.t} transform={`translate(320,${n.y})`}>
-                  <rect rx="10" width="140" height="60" className={n.c} strokeWidth="1.5" />
-                  <text x="70" y="26" textAnchor="middle" className="fill-foreground font-semibold">
-                    {n.t}
-                  </text>
-                  <text x="70" y="44" textAnchor="middle" className="fill-foreground/70">
-                    {n.n}
-                  </text>
-                </g>
-              ))}
-              {[50, 120, 200].map((y, i) => (
-                <g key={i}>
-                  <path
-                    d={`M460 ${y + 30} L 580 ${y + 30}`}
-                    fill="none"
-                    stroke="currentColor"
-                    className="text-muted-foreground"
-                    strokeWidth="1.5"
-                    markerEnd="url(#arr)"
-                  />
-                  <g transform={`translate(580,${y})`}>
-                    <rect
-                      rx="10"
-                      width="100"
-                      height="60"
-                      className="fill-muted stroke-border"
-                      strokeWidth="1.5"
-                    />
-                    <text
-                      x="50"
-                      y="36"
-                      textAnchor="middle"
-                      className="fill-foreground font-semibold"
-                    >
-                      FIM
-                    </text>
-                  </g>
-                </g>
-              ))}
-            </g>
-          </svg>
-          <div className="mt-4 grid grid-cols-2 gap-3 text-xs md:grid-cols-4">
-            {["A", "B", "C", "D"].map((p) => (
-              <div key={p} className="rounded-md border border-border bg-background p-3">
-                <div className="font-mono text-[11px] text-muted-foreground">Caminho {p}</div>
-                <div className="mt-1 font-display text-xl tabular-nums">máx 100</div>
-              </div>
-            ))}
-          </div>
-        </div>
-        <aside className="space-y-4">
-          <div className="rounded-xl border border-border bg-card p-5">
-            <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-              Fórmula
-            </div>
-            <pre className="mt-2 overflow-x-auto rounded-md bg-muted/50 p-3 font-mono text-[11px] leading-relaxed">{`score_competência =
-  pts_obtidos / pts_possíveis_no_caminho
 
-score_final =
-    Empatia    × 40%
-  + Resolução  × 35%
-  + Processo   × 25%`}</pre>
-          </div>
-          <div className="rounded-xl border border-danger/30 bg-danger/5 p-5 text-sm">
-            <div className="text-xs font-semibold uppercase tracking-wider text-danger">
-              Erro crítico exige revisão
+      {!hasContext ? (
+        <EmptyState
+          title="Selecione uma versao para ver o mapa"
+          description="Nao ha SVG ou grafo local nesta tela."
+          actions={<SimulationLinks loading={simulationsQuery.isLoading} simulations={simulationsQuery.data ?? []} />}
+        />
+      ) : versionQuery.isLoading ? (
+        <StateBanner tone="info" title="Carregando mapa">
+          Buscando grafo da simulacao {search.simulationId} v{search.versionNumber}.
+        </StateBanner>
+      ) : versionQuery.isError ? (
+        <StateBanner tone="danger" title="Nao foi possivel carregar o mapa">
+          {versionQuery.error instanceof Error ? versionQuery.error.message : "Verifique a API."}
+        </StateBanner>
+      ) : version ? (
+        <>
+          <div className="grid gap-6 lg:grid-cols-[1fr_340px]">
+            <div className="rounded-md border border-border bg-card p-5">
+              <h2 className="text-lg font-semibold">{version.name} - v{version.versionNumber}</h2>
+              <div className="mt-4 space-y-4">
+                {version.nodes.map((node) => (
+                  <div key={node.id} className="rounded-md border border-border bg-background p-4">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <div className="font-semibold">{node.id}</div>
+                      <div className="text-xs text-muted-foreground">turno {node.turnIndex}</div>
+                    </div>
+                    <p className="mt-2 text-sm text-foreground/80">{node.clientMessage}</p>
+                    <div className="mt-3 space-y-2">
+                      {node.options.map((option) => (
+                        <div key={option.id} className="rounded border border-border bg-card p-3 text-sm">
+                          <div>{option.text}</div>
+                          <div className="mt-2 flex flex-wrap gap-1.5 text-[11px] text-muted-foreground">
+                            <span className="rounded border border-border px-2 py-1">
+                              proximo: {option.nextNodeId ?? "fim"}
+                            </span>
+                            {Object.entries(option.competencyLevels).map(([name, value]) => (
+                              <span key={name} className="rounded border border-border px-2 py-1">
+                                {name}: {value}
+                              </span>
+                            ))}
+                            {option.isCritical && (
+                              <span className="rounded border border-danger/30 px-2 py-1 text-danger">
+                                critica
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
-            <p className="mt-2 text-foreground/80">
-              Dispara revisão humana e bloqueia recomendação operacional sem validação.
-            </p>
+            <aside className="rounded-md border border-border bg-card p-5">
+              <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                Pesos do score
+              </div>
+              <div className="mt-3 space-y-2">
+                {version.blueprint.competencies.map((competency) => (
+                  <div key={competency.name} className="flex justify-between rounded-md border border-border bg-background p-3 text-sm">
+                    <span>{competency.name}</span>
+                    <span className="tabular-nums text-muted-foreground">
+                      {(competency.weight * 100).toFixed(0)}%
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </aside>
           </div>
-        </aside>
-      </div>
-      <div className="mt-8 flex justify-between">
-        <Link
-          to="/nova/piloto"
-          className="rounded-md border border-border bg-card px-4 py-2 text-sm hover:bg-accent"
-        >
-          Voltar: Piloto
-        </Link>
-        <Link
-          to="/nova/governanca"
-          className="rounded-md bg-primary px-5 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
-        >
-          Governança
-        </Link>
-      </div>
+          <div className="mt-8 flex justify-between">
+            <Link
+              to="/nova/piloto"
+              search={{ simulationId: search.simulationId, versionNumber: search.versionNumber }}
+              className="rounded-md border border-border bg-card px-4 py-2 text-sm hover:bg-accent"
+            >
+              Voltar: Piloto
+            </Link>
+            <Link
+              to="/nova/governanca"
+              search={{ simulationId: search.simulationId, versionNumber: search.versionNumber }}
+              className="rounded-md bg-primary px-5 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
+            >
+              Governanca
+            </Link>
+          </div>
+        </>
+      ) : null}
     </AppShell>
+  );
+}
+
+function SimulationLinks({
+  loading,
+  simulations,
+}: {
+  loading: boolean;
+  simulations: SimulationSummaryResponse[];
+}) {
+  if (loading) return <span className="text-sm text-muted-foreground">Carregando...</span>;
+  return (
+    <div className="flex flex-wrap gap-2">
+      {simulations.map((simulation) => (
+        <Link
+          key={`${simulation.id}-${simulation.versionNumber}`}
+          to="/nova/mapa"
+          search={{ simulationId: simulation.id, versionNumber: simulation.versionNumber }}
+          className="rounded-md border border-border bg-card px-3 py-2 text-sm hover:bg-accent"
+        >
+          {simulation.name} v{simulation.versionNumber}
+        </Link>
+      ))}
+    </div>
   );
 }

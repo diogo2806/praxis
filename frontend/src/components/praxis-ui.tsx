@@ -17,7 +17,8 @@ import {
   XCircle,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { statusMeta, type Maturity, type SimStatus } from "@/lib/mock";
+import type { SimulationVersionStatus } from "@/lib/api/praxis";
+import { statusMeta, type Maturity } from "@/lib/simulation-meta";
 import { gupyConnectionLabels, type GupyConnectionState, useViewMode } from "@/lib/view-mode";
 
 const toneClass = {
@@ -37,7 +38,13 @@ const maturityMeta: Record<Maturity, { label: string; tone: keyof typeof toneCla
   Arquivada: { label: "Arquivada", tone: "muted" },
 };
 
-export function StatusBadge({ status, maturity }: { status: SimStatus; maturity?: Maturity }) {
+export function StatusBadge({
+  status,
+  maturity,
+}: {
+  status: SimulationVersionStatus;
+  maturity?: Maturity;
+}) {
   const statusInfo = statusMeta[status];
   const maturityInfo = maturity ? maturityMeta[maturity] : undefined;
   return (

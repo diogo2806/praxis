@@ -15,7 +15,6 @@ import { Route as GovernancaRouteImport } from './routes/governanca'
 import { Route as DefensabilidadeRouteImport } from './routes/defensabilidade'
 import { Route as CandidatoRouteImport } from './routes/candidato'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as RelatorioCandThiagoRouteImport } from './routes/relatorio.cand-thiago'
 import { Route as NovaValidadorRouteImport } from './routes/nova.validador'
 import { Route as NovaPilotoRouteImport } from './routes/nova.piloto'
 import { Route as NovaPersonagemRouteImport } from './routes/nova.personagem'
@@ -55,11 +54,6 @@ const CandidatoRoute = CandidatoRouteImport.update({
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const RelatorioCandThiagoRoute = RelatorioCandThiagoRouteImport.update({
-  id: '/relatorio/cand-thiago',
-  path: '/relatorio/cand-thiago',
   getParentRoute: () => rootRouteImport,
 } as any)
 const NovaValidadorRoute = NovaValidadorRouteImport.update({
@@ -130,7 +124,6 @@ export interface FileRoutesByFullPath {
   '/nova/personagem': typeof NovaPersonagemRoute
   '/nova/piloto': typeof NovaPilotoRoute
   '/nova/validador': typeof NovaValidadorRoute
-  '/relatorio/cand-thiago': typeof RelatorioCandThiagoRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -149,7 +142,6 @@ export interface FileRoutesByTo {
   '/nova/personagem': typeof NovaPersonagemRoute
   '/nova/piloto': typeof NovaPilotoRoute
   '/nova/validador': typeof NovaValidadorRoute
-  '/relatorio/cand-thiago': typeof RelatorioCandThiagoRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -169,7 +161,6 @@ export interface FileRoutesById {
   '/nova/personagem': typeof NovaPersonagemRoute
   '/nova/piloto': typeof NovaPilotoRoute
   '/nova/validador': typeof NovaValidadorRoute
-  '/relatorio/cand-thiago': typeof RelatorioCandThiagoRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -190,7 +181,6 @@ export interface FileRouteTypes {
     | '/nova/personagem'
     | '/nova/piloto'
     | '/nova/validador'
-    | '/relatorio/cand-thiago'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -209,7 +199,6 @@ export interface FileRouteTypes {
     | '/nova/personagem'
     | '/nova/piloto'
     | '/nova/validador'
-    | '/relatorio/cand-thiago'
   id:
     | '__root__'
     | '/'
@@ -228,7 +217,6 @@ export interface FileRouteTypes {
     | '/nova/personagem'
     | '/nova/piloto'
     | '/nova/validador'
-    | '/relatorio/cand-thiago'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -247,7 +235,6 @@ export interface RootRouteChildren {
   NovaPersonagemRoute: typeof NovaPersonagemRoute
   NovaPilotoRoute: typeof NovaPilotoRoute
   NovaValidadorRoute: typeof NovaValidadorRoute
-  RelatorioCandThiagoRoute: typeof RelatorioCandThiagoRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -292,13 +279,6 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/relatorio/cand-thiago': {
-      id: '/relatorio/cand-thiago'
-      path: '/relatorio/cand-thiago'
-      fullPath: '/relatorio/cand-thiago'
-      preLoaderRoute: typeof RelatorioCandThiagoRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/nova/validador': {
@@ -402,7 +382,6 @@ const rootRouteChildren: RootRouteChildren = {
   NovaPersonagemRoute: NovaPersonagemRoute,
   NovaPilotoRoute: NovaPilotoRoute,
   NovaValidadorRoute: NovaValidadorRoute,
-  RelatorioCandThiagoRoute: RelatorioCandThiagoRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

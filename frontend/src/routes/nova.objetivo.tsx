@@ -1,142 +1,191 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { AppShell } from "@/components/app-shell";
-import { ScreenStateStrip } from "@/components/praxis-ui";
+import { EmptyState, ScreenStateStrip, StateBanner, StatusBadge } from "@/components/praxis-ui";
 import { WizardStepper } from "@/components/wizard-stepper";
+import {
+  getSimulationVersion,
+  listSimulations,
+  updateSimulationBlueprint,
+  type SimulationSummaryResponse,
+} from "@/lib/api/praxis";
 
 export const Route = createFileRoute("/nova/objetivo")({
+  validateSearch: (search: Record<string, unknown>) => ({
+    simulationId: typeof search.simulationId === "string" ? search.simulationId : undefined,
+    versionNumber:
+      typeof search.versionNumber === "number"
+        ? search.versionNumber
+        : typeof search.versionNumber === "string"
+          ? Number(search.versionNumber)
+          : undefined,
+  }),
   head: () => ({
     meta: [
-      { title: "Objetivo & Modelo — Práxis" },
-      {
-        name: "description",
-        content:
-          "Escolha por objetivo, não só por área. Dificuldade é calculada a partir de 5 dimensões.",
-      },
+      { title: "Objetivo & Modelo - Praxis" },
+      { name: "description", content: "Revisao do blueprint real antes da autoria do personagem." },
     ],
   }),
   component: Page,
 });
 
-const objetivos = [
-  { t: "Lidar com conflito", d: "Cliente furioso, colega irritado, deadline em risco" },
-  { t: "Priorizar sob pressão", d: "Múltiplas demandas competindo pela mesma hora" },
-  { t: "Negociar sem dar desconto", d: "Preservar margem mantendo relação" },
-  { t: "Comunicar uma negativa", d: "Dizer não com clareza, sem perder o vínculo" },
-  { t: "Recuperar cliente em risco", d: "Reverter churn iminente em conta grande" },
-  { t: "Escalar problema corretamente", d: "Pedir ajuda sem terceirizar a decisão" },
-];
-
-const dimensions = [
-  { label: "Intensidade emocional", value: 70 },
-  { label: "Ambiguidade da informação", value: 35 },
-  { label: "Risco de negócio", value: 80 },
-  { label: "Conflito empatia × política", value: 65 },
-  { label: "Autonomia exigida", value: 55 },
-];
-
 function Page() {
+  const search = Route.useSearch();
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const hasDraftContext = Boolean(search.simulationId && search.versionNumber);
+  const simulationsQuery = useQuery({
+    queryKey: ["simulations"],
+    queryFn: listSimulations,
+    enabled: !hasDraftContext,
+  });
+  const versionQuery = useQuery({
+    queryKey: ["simulation-version", search.simulationId, search.versionNumber],
+    queryFn: () => getSimulationVersion(search.simulationId!, search.versionNumber!),
+    enabled: hasDraftContext,
+  });
+  const saveMutation = useMutation({
+    mutationFn: () =>
+      updateSimulationBlueprint(search.simulationId!, search.versionNumber!, {
+        rootNodeId: versionQuery.data!.blueprint.rootNodeId,
+        competencies: versionQuery.data!.blueprint.competencies,
+      }),
+    onSuccess: async (simulation) => {
+      await queryClient.invalidateQueries({
+        queryKey: ["simulation-version", search.simulationId, search.versionNumber],
+      });
+      void navigate({
+        to: "/nova/personagem",
+        search: { simulationId: simulation.id, versionNumber: simulation.versionNumber },
+      });
+    },
+  });
+
   return (
     <AppShell>
       <WizardStepper current="objetivo" />
-      <ScreenStateStrip blockedReason="selecione objetivo e modelo de partida" />
+      <ScreenStateStrip blockedReason="selecione uma versao real para continuar" />
       <div className="mb-8">
         <div className="text-xs uppercase tracking-[0.2em] text-primary">Passo 1</div>
-        <h1 className="mt-1 font-display text-3xl">O que você quer avaliar?</h1>
+        <h1 className="mt-1 font-display text-3xl">Objetivo do blueprint</h1>
         <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
-          Em vez de só "Atendimento / Vendas / Liderança", escolha o objetivo comportamental —
-          aproxima a simulação do problema real do cargo.
+          Esta etapa usa o blueprint persistido no backend. Ajustes estruturais continuam em Nova
+          simulacao.
         </p>
       </div>
-      <div className="grid gap-3 md:grid-cols-3">
-        {objetivos.map((o, i) => (
-          <button
-            key={o.t}
-            className={`text-left rounded-xl border p-5 transition ${i === 0 ? "border-primary bg-primary/5 shadow-sm" : "border-border bg-card hover:border-primary/40 hover:bg-accent/50"}`}
-          >
-            <div className="flex items-start justify-between">
-              <div className="font-medium">{o.t}</div>
-              <span
-                className={`h-5 w-5 rounded-full border-2 ${i === 0 ? "border-primary bg-primary" : "border-border"}`}
-              />
-            </div>
-            <p className="mt-1 text-xs text-muted-foreground">{o.d}</p>
-          </button>
-        ))}
-      </div>
-      <div className="mt-8 grid gap-6 lg:grid-cols-2">
-        <div className="rounded-xl border border-border bg-card p-6">
-          <h2 className="font-display text-xl">Começar de…</h2>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Modelos são pontos de partida — toda simulação passa pelo Blueprint, Validador e Piloto
-            antes de ir para vaga crítica.
-          </p>
-          <div className="mt-4 grid gap-3 sm:grid-cols-2">
-            <div className="rounded-lg border border-primary/40 bg-primary/5 p-4">
-              <div className="text-xs font-semibold uppercase tracking-wider text-primary">
-                Modelo pronto
+
+      {!hasDraftContext ? (
+        <EmptyState
+          title="Escolha uma simulacao real"
+          description="Sem contexto de versao, esta tela nao cria objetivo local nem carrega exemplos."
+          actions={
+            <SimulationLinks loading={simulationsQuery.isLoading} simulations={simulationsQuery.data ?? []} />
+          }
+        />
+      ) : versionQuery.isLoading ? (
+        <StateBanner tone="info" title="Carregando blueprint">
+          Buscando simulacao {search.simulationId} v{search.versionNumber}.
+        </StateBanner>
+      ) : versionQuery.isError ? (
+        <StateBanner tone="danger" title="Nao foi possivel carregar o blueprint">
+          {versionQuery.error instanceof Error ? versionQuery.error.message : "Verifique a API."}
+        </StateBanner>
+      ) : versionQuery.data ? (
+        <>
+          <section className="rounded-md border border-border bg-card p-6">
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <h2 className="text-xl font-semibold">{versionQuery.data.name}</h2>
+                <p className="mt-1 max-w-3xl text-sm text-muted-foreground">
+                  {versionQuery.data.description}
+                </p>
               </div>
-              <div className="mt-1 font-medium">"O Dia do Caos"</div>
-              <p className="text-xs text-muted-foreground">
-                Atendimento · Pleno · 4 turnos · calibrado em 5 empresas
-              </p>
+              <StatusBadge status={versionQuery.data.status} />
             </div>
-            <div className="rounded-lg border border-border bg-card p-4 hover:bg-accent/50">
-              <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                Do zero
-              </div>
-              <div className="mt-1 font-medium">Começar em branco</div>
-              <p className="text-xs text-muted-foreground">
-                Sem turnos pré-escritos. Exige mais calibração.
-              </p>
+            <div className="mt-5 grid gap-3 md:grid-cols-2">
+              <Info label="No raiz" value={versionQuery.data.blueprint.rootNodeId} />
+              <Info label="Versao" value={`v${versionQuery.data.versionNumber}`} />
             </div>
-          </div>
-        </div>
-        <div className="rounded-xl border border-border bg-card p-6">
-          <div className="flex items-center justify-between">
-            <h2 className="font-display text-xl">Dificuldade calculada</h2>
-            <span className="rounded-full border border-warning/30 bg-warning/15 px-2 py-0.5 text-[11px] font-medium text-warning-foreground">
-              INTENSO
-            </span>
-          </div>
-          <p className="mt-1 text-xs text-muted-foreground">
-            "Leve / Moderado / Intenso" é vago. Aqui sai de 5 dimensões.
-          </p>
-          <div className="mt-4 space-y-3">
-            {dimensions.map((d) => (
-              <div key={d.label}>
-                <div className="mb-1 flex justify-between text-xs">
-                  <span className="text-foreground/80">{d.label}</span>
-                  <span className="tabular-nums text-muted-foreground">{d.value}</span>
-                </div>
-                <div className="h-1.5 overflow-hidden rounded-full bg-muted">
-                  <div
-                    className="h-full rounded-full bg-primary"
-                    style={{ width: `${d.value}%` }}
-                  />
-                </div>
+            <div className="mt-5">
+              <h3 className="text-sm font-semibold">Competencias e pesos</h3>
+              <div className="mt-3 grid gap-2 md:grid-cols-3">
+                {versionQuery.data.blueprint.competencies.map((competency) => (
+                  <div key={competency.name} className="rounded-md border border-border bg-background p-3">
+                    <div className="text-sm font-medium">{competency.name}</div>
+                    <div className="mt-1 text-xs tabular-nums text-muted-foreground">
+                      {(competency.weight * 100).toFixed(0)}%
+                    </div>
+                  </div>
+                ))}
               </div>
-            ))}
+            </div>
+          </section>
+          {saveMutation.isError && (
+            <div className="mt-5">
+              <StateBanner tone="danger" title="Nao foi possivel confirmar o blueprint">
+                {saveMutation.error instanceof Error ? saveMutation.error.message : "Tente novamente."}
+              </StateBanner>
+            </div>
+          )}
+          <div className="mt-8 flex flex-row-reverse justify-between">
+            <button
+              type="button"
+              onClick={() => saveMutation.mutate()}
+              disabled={saveMutation.isPending}
+              className="rounded-md bg-primary px-5 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {saveMutation.isPending ? "Salvando..." : "Personagem ->"}
+            </button>
+            <Link
+              to="/nova/blueprint"
+              search={{ simulationId: search.simulationId, versionNumber: search.versionNumber }}
+              className="rounded-md border border-border bg-card px-4 py-2 text-sm hover:bg-accent"
+            >
+              Voltar: Blueprint
+            </Link>
           </div>
-          <p className="mt-4 rounded-md bg-muted/60 p-3 text-xs text-foreground/80">
-            Há conflito real entre empatia e política — não só cliente gritando. Marcado como{" "}
-            <b>Intenso</b>.
-          </p>
-        </div>
-      </div>
-      <div className="mt-8 flex justify-between">
-        <Link
-          to="/nova/blueprint"
-          className="rounded-md border border-border bg-card px-4 py-2 text-sm hover:bg-accent"
-        >
-          Voltar: Blueprint
-        </Link>
-        <Link
-          to="/nova/personagem"
-          className="rounded-md bg-primary px-5 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
-        >
-          Personagem →
-        </Link>
-      </div>
+        </>
+      ) : null}
     </AppShell>
+  );
+}
+
+function Info({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-md border border-border bg-background p-3">
+      <div className="text-xs text-muted-foreground">{label}</div>
+      <div className="mt-1 text-sm font-medium">{value}</div>
+    </div>
+  );
+}
+
+function SimulationLinks({
+  loading,
+  simulations,
+}: {
+  loading: boolean;
+  simulations: SimulationSummaryResponse[];
+}) {
+  if (loading) return <span className="text-sm text-muted-foreground">Carregando...</span>;
+  if (simulations.length === 0) {
+    return (
+      <Link to="/nova/blueprint" className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground">
+        Criar blueprint
+      </Link>
+    );
+  }
+  return (
+    <div className="flex flex-wrap gap-2">
+      {simulations.map((simulation) => (
+        <Link
+          key={`${simulation.id}-${simulation.versionNumber}`}
+          to="/nova/objetivo"
+          search={{ simulationId: simulation.id, versionNumber: simulation.versionNumber }}
+          className="rounded-md border border-border bg-card px-3 py-2 text-sm hover:bg-accent"
+        >
+          {simulation.name} v{simulation.versionNumber}
+        </Link>
+      ))}
+    </div>
   );
 }

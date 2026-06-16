@@ -1,4 +1,4 @@
-import { wizardSteps, type WizardSlug } from "@/lib/mock";
+import { wizardSteps, type WizardSlug } from "@/lib/simulation-meta";
 import { cn } from "@/lib/utils";
 
 export function WizardStepper({ current }: { current: WizardSlug }) {

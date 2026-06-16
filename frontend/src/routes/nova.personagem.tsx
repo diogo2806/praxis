@@ -1,105 +1,221 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { useMemo, useState } from "react";
 import { AppShell } from "@/components/app-shell";
-import { ScreenStateStrip } from "@/components/praxis-ui";
+import { EmptyState, ScreenStateStrip, StateBanner } from "@/components/praxis-ui";
 import { WizardStepper } from "@/components/wizard-stepper";
+import {
+  createSimulationNode,
+  getSimulationVersion,
+  listSimulations,
+  updateSimulationNode,
+  type SimulationSummaryResponse,
+} from "@/lib/api/praxis";
 
 export const Route = createFileRoute("/nova/personagem")({
+  validateSearch: (search: Record<string, unknown>) => ({
+    simulationId: typeof search.simulationId === "string" ? search.simulationId : undefined,
+    versionNumber:
+      typeof search.versionNumber === "number"
+        ? search.versionNumber
+        : typeof search.versionNumber === "string"
+          ? Number(search.versionNumber)
+          : undefined,
+  }),
   head: () => ({
     meta: [
-      { title: "Personagem Fictício — Práxis" },
-      {
-        name: "description",
-        content: "Personagem do cliente fictício com checklist de linguagem para evitar viés.",
-      },
+      { title: "Personagem Ficticio - Praxis" },
+      { name: "description", content: "Configura o contexto inicial persistido no grafo." },
     ],
   }),
   component: Page,
 });
 
 const checklist = [
-  "Evita regionalismo desnecessário",
-  "Não usa estereótipo de classe",
-  "Sem marcador de gênero sem necessidade",
-  "Sem referência a idade, sotaque, origem ou crença",
-  "Linguagem compatível com o cargo avaliado",
+  "Evita regionalismo desnecessario",
+  "Nao usa estereotipo de classe",
+  "Sem marcador de genero sem necessidade",
+  "Sem referencia a idade, sotaque, origem ou crenca",
+  "Linguagem compativel com o cargo avaliado",
 ];
 
 function Page() {
+  const search = Route.useSearch();
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const hasDraftContext = Boolean(search.simulationId && search.versionNumber);
+  const [name, setName] = useState("");
+  const [emotion, setEmotion] = useState("");
+  const [context, setContext] = useState("");
+  const [checkedItems, setCheckedItems] = useState<string[]>([]);
+  const simulationsQuery = useQuery({
+    queryKey: ["simulations"],
+    queryFn: listSimulations,
+    enabled: !hasDraftContext,
+  });
+  const versionQuery = useQuery({
+    queryKey: ["simulation-version", search.simulationId, search.versionNumber],
+    queryFn: () => getSimulationVersion(search.simulationId!, search.versionNumber!),
+    enabled: hasDraftContext,
+  });
+  const rootNodeId = versionQuery.data?.blueprint.rootNodeId;
+  const rootNode = versionQuery.data?.nodes.find((node) => node.id === rootNodeId);
+  const existingMessage = rootNode?.clientMessage;
+  const canGoNext = checkedItems.length === checklist.length && context.trim().length > 0;
+  const clientMessage = useMemo(() => {
+    const parts = [emotion.trim(), context.trim(), name.trim() ? `Personagem: ${name.trim()}` : ""].filter(Boolean);
+    return parts.join("\n\n");
+  }, [context, emotion, name]);
+  const saveCharacterMutation = useMutation({
+    mutationFn: async () => {
+      if (rootNode) {
+        await updateSimulationNode(search.simulationId!, search.versionNumber!, rootNode.id, {
+          clientMessage,
+          timeLimitSeconds: rootNode.timeLimitSeconds,
+        });
+        return rootNode.id;
+      }
+      return createSimulationNode(search.simulationId!, search.versionNumber!, {
+        clientMessage,
+        timeLimitSeconds: 45,
+      });
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({
+        queryKey: ["simulation-version", search.simulationId, search.versionNumber],
+      });
+      void navigate({
+        to: "/nova/dialogo",
+        search: { simulationId: search.simulationId, versionNumber: search.versionNumber },
+      });
+    },
+  });
+
+  function toggleChecklist(item: string) {
+    setCheckedItems((current) =>
+      current.includes(item) ? current.filter((value) => value !== item) : [...current, item],
+    );
+  }
+
   return (
     <AppShell>
       <WizardStepper current="personagem" />
-      <ScreenStateStrip blockedReason="checklist de linguagem precisa ser confirmado" />
+      <ScreenStateStrip blockedReason="contexto e checklist de linguagem precisam ser confirmados" />
       <div className="mb-6">
         <div className="text-xs uppercase tracking-[0.2em] text-primary">Passo 2</div>
-        <h1 className="mt-1 font-display text-3xl">Personagem do cliente fictício</h1>
+        <h1 className="mt-1 font-display text-3xl">Personagem do cliente ficticio</h1>
         <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
-          A linguagem é manualmente auditada para reduzir viés. Nada é classificado por modelo.
+          O contexto informado aqui e salvo no no raiz da versao selecionada.
         </p>
       </div>
-      <div className="rounded-xl border border-border bg-card p-6">
-        <div className="grid gap-4 md:grid-cols-2">
-          <label className="block">
-            <span className="mb-1.5 block text-xs font-medium text-muted-foreground">Nome</span>
-            <input className="input" defaultValue="Carlos M." />
-          </label>
-          <label className="block">
-            <span className="mb-1.5 block text-xs font-medium text-muted-foreground">
-              Perfil emocional inicial
-            </span>
-            <div className="grid grid-cols-3 gap-2">
-              {["Tranquilo", "Frustrado", "Furioso"].map((p, i) => (
-                <label
-                  key={p}
-                  className={`cursor-pointer rounded-md border px-3 py-2 text-center text-sm ${i === 2 ? "border-primary bg-primary/5 text-primary" : "border-border bg-card"}`}
-                >
-                  <input type="radio" name="emo" defaultChecked={i === 2} className="sr-only" />
-                  {p}
-                </label>
-              ))}
+
+      {!hasDraftContext ? (
+        <EmptyState
+          title="Escolha uma simulacao real"
+          description="Esta etapa nao usa personagem de exemplo."
+          actions={
+            <SimulationLinks loading={simulationsQuery.isLoading} simulations={simulationsQuery.data ?? []} />
+          }
+        />
+      ) : versionQuery.isLoading ? (
+        <StateBanner tone="info" title="Carregando grafo">
+          Buscando no raiz da simulacao {search.simulationId} v{search.versionNumber}.
+        </StateBanner>
+      ) : versionQuery.isError ? (
+        <StateBanner tone="danger" title="Nao foi possivel carregar a versao">
+          {versionQuery.error instanceof Error ? versionQuery.error.message : "Verifique a API."}
+        </StateBanner>
+      ) : (
+        <>
+          {existingMessage && (
+            <div className="mb-5">
+              <StateBanner tone="info" title={`No raiz atual: ${rootNodeId}`}>
+                {existingMessage}
+              </StateBanner>
             </div>
-          </label>
-        </div>
-        <label className="mt-4 block">
-          <span className="mb-1.5 block text-xs font-medium text-muted-foreground">
-            Contexto (RH/gestor)
-          </span>
-          <textarea
-            className="input min-h-24"
-            defaultValue="Produto com defeito, presente do filho. Cliente espera resposta rápida."
-          />
-        </label>
-        <div className="mt-6 rounded-lg border border-warning/30 bg-warning/10 p-4">
-          <div className="text-sm font-semibold text-warning-foreground">
-            ⚠️ Checklist de linguagem · manual, sem IA
+          )}
+          {saveCharacterMutation.isError && (
+            <div className="mb-5">
+              <StateBanner tone="danger" title="Nao foi possivel salvar o personagem">
+                {saveCharacterMutation.error instanceof Error ? saveCharacterMutation.error.message : "Tente novamente."}
+              </StateBanner>
+            </div>
+          )}
+          <div className="rounded-md border border-border bg-card p-6">
+            <div className="grid gap-4 md:grid-cols-2">
+              <label className="block">
+                <span className="mb-1.5 block text-xs font-medium text-muted-foreground">Nome ou identificador</span>
+                <input className="input" value={name} onChange={(event) => setName(event.target.value)} />
+              </label>
+              <label className="block">
+                <span className="mb-1.5 block text-xs font-medium text-muted-foreground">Estado emocional inicial</span>
+                <input className="input" value={emotion} onChange={(event) => setEmotion(event.target.value)} />
+              </label>
+            </div>
+            <label className="mt-4 block">
+              <span className="mb-1.5 block text-xs font-medium text-muted-foreground">Contexto do cliente</span>
+              <textarea className="input min-h-24" value={context} onChange={(event) => setContext(event.target.value)} />
+            </label>
+            <div className="mt-6 rounded-md border border-warning/30 bg-warning/10 p-4">
+              <div className="text-sm font-semibold text-warning-foreground">Checklist de linguagem</div>
+              <ul className="mt-3 space-y-2">
+                {checklist.map((item) => (
+                  <li key={item} className="flex items-start gap-3 text-sm">
+                    <input
+                      type="checkbox"
+                      checked={checkedItems.includes(item)}
+                      onChange={() => toggleChecklist(item)}
+                      className="mt-0.5 h-4 w-4 accent-primary"
+                    />
+                    <span>{item}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
           </div>
-          <ul className="mt-3 space-y-2">
-            {checklist.map((c, i) => (
-              <li key={c} className="flex items-start gap-3 text-sm">
-                <input
-                  type="checkbox"
-                  defaultChecked={i < 3}
-                  className="mt-0.5 h-4 w-4 accent-primary"
-                />
-                <span>{c}</span>
-              </li>
-            ))}
-          </ul>
-        </div>
-      </div>
-      <div className="mt-8 flex justify-between">
-        <Link
-          to="/nova/objetivo"
-          className="rounded-md border border-border bg-card px-4 py-2 text-sm hover:bg-accent"
-        >
-          Voltar: Objetivo
-        </Link>
-        <Link
-          to="/nova/dialogo"
-          className="rounded-md bg-primary px-5 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
-        >
-          Montar diálogo →
-        </Link>
-      </div>
+          <div className="mt-8 flex justify-between">
+            <Link
+              to="/nova/objetivo"
+              search={{ simulationId: search.simulationId, versionNumber: search.versionNumber }}
+              className="rounded-md border border-border bg-card px-4 py-2 text-sm hover:bg-accent"
+            >
+              Voltar: Objetivo
+            </Link>
+            <button
+              type="button"
+              onClick={() => saveCharacterMutation.mutate()}
+              disabled={!canGoNext || saveCharacterMutation.isPending}
+              className="rounded-md bg-primary px-5 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {saveCharacterMutation.isPending ? "Salvando..." : "Montar dialogo ->"}
+            </button>
+          </div>
+        </>
+      )}
     </AppShell>
+  );
+}
+
+function SimulationLinks({
+  loading,
+  simulations,
+}: {
+  loading: boolean;
+  simulations: SimulationSummaryResponse[];
+}) {
+  if (loading) return <span className="text-sm text-muted-foreground">Carregando...</span>;
+  return (
+    <div className="flex flex-wrap gap-2">
+      {simulations.map((simulation) => (
+        <Link
+          key={`${simulation.id}-${simulation.versionNumber}`}
+          to="/nova/personagem"
+          search={{ simulationId: simulation.id, versionNumber: simulation.versionNumber }}
+          className="rounded-md border border-border bg-card px-3 py-2 text-sm hover:bg-accent"
+        >
+          {simulation.name} v{simulation.versionNumber}
+        </Link>
+      ))}
+    </div>
   );
 }

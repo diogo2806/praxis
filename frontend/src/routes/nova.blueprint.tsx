@@ -1,8 +1,10 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { useMutation } from "@tanstack/react-query";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { AppShell } from "@/components/app-shell";
-import { ScreenStateStrip } from "@/components/praxis-ui";
+import { ScreenStateStrip, StateBanner } from "@/components/praxis-ui";
 import { WizardStepper } from "@/components/wizard-stepper";
+import { createSimulationDraft } from "@/lib/api/praxis";
 
 export const Route = createFileRoute("/nova/blueprint")({
   head: () => ({
@@ -30,20 +32,57 @@ const competencies = [
 ];
 
 function Page() {
-  const [role, setRole] = useState("Analista de Atendimento N2");
-  const [criticalSituation, setCriticalSituation] = useState(
-    "Cliente quer estorno fora da política, com risco de churn de conta grande.",
-  );
-  const [criticalError, setCriticalError] = useState("Prometer estorno sem validar política.");
+  const navigate = useNavigate();
+  const [role, setRole] = useState("");
+  const [criticalSituation, setCriticalSituation] = useState("");
+  const [criticalError, setCriticalError] = useState("");
+  const [selectedCompetencies, setSelectedCompetencies] = useState<string[]>([]);
   const canGoNext =
     role.trim().length > 0 &&
     criticalSituation.trim().length > 0 &&
-    criticalError.trim().length > 0;
+    criticalError.trim().length > 0 &&
+    selectedCompetencies.length > 0;
+  const createDraftMutation = useMutation({
+    mutationFn: () =>
+      createSimulationDraft({
+        name: role.trim(),
+        description: `${criticalSituation.trim()}\n\nErro critico: ${criticalError.trim()}`,
+        rootNodeId: "turno-1",
+        competencies: selectedCompetencies,
+      }),
+    onSuccess: (simulation) => {
+      void navigate({
+        to: "/nova/objetivo",
+        search: {
+          simulationId: simulation.id,
+          versionNumber: simulation.versionNumber,
+        },
+      });
+    },
+  });
+
+  function toggleCompetency(competency: string) {
+    setSelectedCompetencies((current) =>
+      current.includes(competency)
+        ? current.filter((item) => item !== competency)
+        : [...current, competency],
+    );
+  }
 
   return (
     <AppShell>
       <WizardStepper current="blueprint" />
       <ScreenStateStrip blockedReason="cargo, situação crítica e erro crítico obrigatórios" />
+
+      {createDraftMutation.isError && (
+        <div className="mb-5">
+          <StateBanner tone="danger" title="Nao foi possivel criar o rascunho">
+            {createDraftMutation.error instanceof Error
+              ? createDraftMutation.error.message
+              : "Tente novamente quando a API estiver disponivel."}
+          </StateBanner>
+        </div>
+      )}
 
       <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
         <div className="space-y-6">
@@ -94,16 +133,21 @@ function Page() {
 
           <Card title="Competências avaliadas">
             <div className="flex flex-wrap gap-2">
-              {competencies.map((c, i) => (
+              {competencies.map((c) => (
                 <label
                   key={c}
                   className={`cursor-pointer rounded-full border px-3 py-1.5 text-sm ${
-                    i < 3
+                    selectedCompetencies.includes(c)
                       ? "border-primary bg-primary/10 text-primary"
                       : "border-border bg-card text-foreground/75 hover:bg-accent"
                   }`}
                 >
-                  <input type="checkbox" defaultChecked={i < 3} className="sr-only" />
+                  <input
+                    type="checkbox"
+                    checked={selectedCompetencies.includes(c)}
+                    onChange={() => toggleCompetency(c)}
+                    className="sr-only"
+                  />
                   {c}
                 </label>
               ))}
@@ -115,7 +159,7 @@ function Page() {
             <Card title="Alta performance faria" tone="ok">
               <textarea
                 className="input min-h-24"
-                defaultValue="Acolhe, coleta dados mínimos, explica limite de alçada e oferece alternativa válida."
+                placeholder="Descreva o comportamento esperado para alta performance."
               />
             </Card>
             <Card title="Erros críticos" tone="danger">
@@ -131,18 +175,18 @@ function Page() {
           <Card title="Diferença por senioridade">
             <div className="grid gap-3 md:grid-cols-3">
               <Field label="Júnior faria">
-                <textarea className="input min-h-20" defaultValue="Acolhe e escala para o líder." />
+                <textarea className="input min-h-20" placeholder="Comportamento esperado para júnior." />
               </Field>
               <Field label="Pleno faria">
                 <textarea
                   className="input min-h-20"
-                  defaultValue="Acolhe, decide dentro da alçada e registra."
+                  placeholder="Comportamento esperado para pleno."
                 />
               </Field>
               <Field label="Sênior faria">
                 <textarea
                   className="input min-h-20"
-                  defaultValue="Conduz, ajusta política se necessário, fecha com cliente."
+                  placeholder="Comportamento esperado para sênior."
                 />
               </Field>
             </div>
@@ -184,23 +228,21 @@ function Page() {
             >
               Cancelar
             </Link>
-            {canGoNext ? (
-              <Link
-                to="/nova/objetivo"
-                className="rounded-md bg-primary px-5 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
-              >
-                Próximo: Objetivo
-              </Link>
-            ) : (
-              <button
-                type="button"
-                disabled
-                title="Preencha cargo, situação crítica e erro crítico para avançar"
-                className="cursor-not-allowed rounded-md bg-primary px-5 py-2 text-sm font-medium text-primary-foreground opacity-50"
-              >
-                Próximo: Objetivo
-              </button>
-            )}
+            <button
+              type="button"
+              disabled={!canGoNext || createDraftMutation.isPending}
+              title={
+                canGoNext
+                  ? "Criar rascunho e avancar"
+                  : "Preencha cargo, situacao critica, erro critico e competencias para avancar"
+              }
+              onClick={() => createDraftMutation.mutate()}
+              className={`rounded-md bg-primary px-5 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 ${
+                !canGoNext || createDraftMutation.isPending ? "cursor-not-allowed opacity-50" : ""
+              }`}
+            >
+              {createDraftMutation.isPending ? "Criando rascunho..." : "Proximo: Objetivo"}
+            </button>
           </div>
         </div>
 

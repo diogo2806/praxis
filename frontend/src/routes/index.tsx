@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { useQuery } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
-import { BarChart3, Eye, FilePlus2, Filter, PlayCircle, Search, Table2 } from "lucide-react";
+import { BarChart3, FilePlus2, Filter, PlayCircle, Search, Table2 } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
 import {
   EmptyState,
@@ -9,64 +10,76 @@ import {
   StateBanner,
   StatusBadge,
 } from "@/components/praxis-ui";
-import { simulations, type SimStatus } from "@/lib/mock";
+import {
+  listSimulations,
+  type SimulationSummaryResponse,
+  type SimulationVersionStatus,
+} from "@/lib/api/praxis";
+import { maturityForStatus } from "@/lib/simulation-meta";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Painel — Práxis" },
+      { title: "Painel - Praxis" },
       {
         name: "description",
         content:
-          "Painel da Renata: simulações ativas, qualidade, maturidade e vínculo com vagas Gupy.",
+          "Painel da Renata: simulacoes ativas, qualidade, maturidade e vinculo com vagas Gupy.",
       },
     ],
   }),
   component: Dashboard,
 });
 
-const filters: Array<"todas" | SimStatus> = [
+const filters: Array<"todas" | SimulationVersionStatus> = [
   "todas",
-  "publicada",
-  "piloto",
-  "rascunho",
-  "em-revisao",
-  "expirada",
-  "arquivada",
+  "published",
+  "approved",
+  "inReview",
+  "draft",
+  "rejected",
+  "archived",
 ];
 
+const filterLabels: Record<(typeof filters)[number], string> = {
+  todas: "todas",
+  published: "publicadas",
+  approved: "aprovadas",
+  inReview: "em revisao",
+  draft: "rascunhos",
+  rejected: "reprovadas",
+  archived: "arquivadas",
+};
+
 function Dashboard() {
-  const [firstRun, setFirstRun] = useState(true);
   const [filter, setFilter] = useState<(typeof filters)[number]>("todas");
-  const [loading, setLoading] = useState(false);
   const [query, setQuery] = useState("");
+  const simulationsQuery = useQuery({
+    queryKey: ["simulations"],
+    queryFn: listSimulations,
+    retry: false,
+  });
+  const simulations = simulationsQuery.data ?? [];
 
   const totals = {
-    publicadas: simulations.filter((s) => s.status === "publicada").length,
-    piloto: simulations.filter((s) => s.status === "piloto").length,
-    rascunhos: simulations.filter((s) => s.status === "rascunho").length,
-    tentativas: simulations.reduce((a, s) => a + s.attempts, 0),
+    publicadas: simulations.filter((s) => s.status === "published").length,
+    aprovadas: simulations.filter((s) => s.status === "approved").length,
+    rascunhos: simulations.filter((s) => s.status === "draft").length,
+    tentativas: simulations.reduce((a, s) => a + s.attemptsCreated, 0),
   };
 
   const filtered = useMemo(() => {
+    const normalizedQuery = query.trim().toLowerCase();
     return simulations.filter((simulation) => {
       const byStatus = filter === "todas" || simulation.status === filter;
       const byQuery =
-        query.trim().length === 0 ||
-        simulation.name.toLowerCase().includes(query.toLowerCase()) ||
-        simulation.role.toLowerCase().includes(query.toLowerCase());
+        normalizedQuery.length === 0 ||
+        simulation.name.toLowerCase().includes(normalizedQuery) ||
+        simulation.description.toLowerCase().includes(normalizedQuery);
       return byStatus && byQuery;
     });
-  }, [filter, query]);
-
-  function loadWorkspace() {
-    setLoading(true);
-    window.setTimeout(() => {
-      setFirstRun(false);
-      setLoading(false);
-    }, 450);
-  }
+  }, [filter, query, simulations]);
 
   return (
     <AppShell>
@@ -76,8 +89,8 @@ function Dashboard() {
           <div className="text-xs uppercase text-muted-foreground">Painel</div>
           <h1 className="mt-1 text-3xl font-semibold text-foreground">Boa tarde, Renata.</h1>
           <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
-            Avaliação situacional estruturada para recrutamento, com score por rubrica, decisão em
-            contexto e trilha auditável.
+            Avaliacao situacional estruturada para recrutamento, com score por rubrica, decisao em
+            contexto e trilha auditavel.
           </p>
         </div>
         <div className="flex gap-2">
@@ -90,78 +103,68 @@ function Dashboard() {
           </Link>
           <Link
             to="/nova/blueprint"
-            search={{ demo: "1" }}
             className="inline-flex items-center gap-2 rounded-md border border-border bg-card px-3 py-2 text-sm hover:bg-accent"
           >
             <PlayCircle className="h-4 w-4" />
-            Iniciar demo guiada
+            Fluxo guiado
           </Link>
           <Link
             to="/nova/blueprint"
             className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
           >
             <FilePlus2 className="h-4 w-4" />
-            Nova simulação
+            Nova simulacao
           </Link>
         </div>
       </div>
 
-      {firstRun ? (
-        <div className="space-y-5">
-          <EmptyState
-            title="Comece pela primeira simulação guiada"
-            description="Conta nova nunca abre em tabela vazia. O fluxo guiado parte de um template parcialmente preenchido e leva do blueprint ao validador em poucos minutos."
-            actions={
-              <>
-                <Link
-                  to="/nova/blueprint"
-                  className="inline-flex items-center justify-between rounded-md border border-primary bg-primary px-4 py-3 text-sm font-medium text-primary-foreground hover:bg-primary/90"
-                >
-                  Criar minha primeira simulação guiada
-                  <FilePlus2 className="h-4 w-4" />
-                </Link>
-                <Link
-                  to="/nova/objetivo"
-                  className="inline-flex items-center justify-between rounded-md border border-border bg-card px-4 py-3 text-sm hover:bg-accent"
-                >
-                  Começar de um modelo pronto
-                  <Table2 className="h-4 w-4" />
-                </Link>
-                <button
-                  type="button"
-                  onClick={loadWorkspace}
-                  className="inline-flex items-center justify-between rounded-md border border-border bg-card px-4 py-3 text-left text-sm hover:bg-accent"
-                >
-                  Ver exemplo pré-carregado: O Dia do Caos
-                  <Eye className="h-4 w-4" />
-                </button>
-              </>
-            }
-          />
-          <StateBanner tone="info" title="Exemplo pronto em toda conta nova">
-            O Dia do Caos entra como simulação de leitura para o RH entender o produto antes de
-            criar algo do zero.
-          </StateBanner>
-          {loading && (
-            <section className="rounded-md border border-border bg-card p-4">
-              <SkeletonRows rows={3} />
-            </section>
-          )}
-        </div>
+      {simulationsQuery.isLoading ? (
+        <section className="rounded-md border border-border bg-card p-4">
+          <SkeletonRows rows={5} />
+        </section>
+      ) : simulationsQuery.isError ? (
+        <StateBanner tone="danger" title="Nao foi possivel carregar as simulacoes">
+          {simulationsQuery.error instanceof Error
+            ? simulationsQuery.error.message
+            : "Verifique se o backend esta rodando."}
+        </StateBanner>
+      ) : simulations.length === 0 ? (
+        <EmptyState
+          title="Nenhuma simulacao cadastrada"
+          description="O painel depende do backend. Crie ou importe uma simulacao para que ela apareca aqui."
+          actions={
+            <>
+              <Link
+                to="/nova/blueprint"
+                className="inline-flex items-center justify-between rounded-md border border-primary bg-primary px-4 py-3 text-sm font-medium text-primary-foreground hover:bg-primary/90"
+              >
+                Criar primeira simulacao
+                <FilePlus2 className="h-4 w-4" />
+              </Link>
+              <Link
+                to="/nova/objetivo"
+                className="inline-flex items-center justify-between rounded-md border border-border bg-card px-4 py-3 text-sm hover:bg-accent"
+              >
+                Abrir fluxo de cadastro
+                <Table2 className="h-4 w-4" />
+              </Link>
+            </>
+          }
+        />
       ) : (
         <div className="space-y-6">
           <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
             <Stat label="Publicadas" value={totals.publicadas} hint="Em vagas ativas" />
-            <Stat label="Em piloto" value={totals.piloto} hint="Ranqueiam, não eliminam" />
-            <Stat label="Rascunhos" value={totals.rascunhos} hint="Em construção" />
-            <Stat label="Tentativas" value={totals.tentativas} hint="Últimos 30 dias" />
+            <Stat label="Aprovadas" value={totals.aprovadas} hint="Prontas para publicar" />
+            <Stat label="Rascunhos" value={totals.rascunhos} hint="Em construcao" />
+            <Stat label="Tentativas" value={totals.tentativas} hint="Total registrado" />
           </div>
 
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
-              <h2 className="text-xl font-semibold">Simulações</h2>
+              <h2 className="text-xl font-semibold">Simulacoes</h2>
               <p className="text-xs text-muted-foreground">
-                Status técnico e maturidade aparecem juntos em todas as linhas.
+                Status tecnico e maturidade aparecem juntos em todas as linhas.
               </p>
             </div>
             <div className="flex min-w-0 flex-wrap gap-2">
@@ -171,7 +174,7 @@ function Dashboard() {
                   value={query}
                   onChange={(event) => setQuery(event.target.value)}
                   className="input w-64 pl-8"
-                  placeholder="Buscar cargo ou simulação"
+                  placeholder="Buscar simulacao"
                 />
               </label>
               <div className="inline-flex flex-wrap gap-1 rounded-md border border-border bg-card p-1">
@@ -186,7 +189,7 @@ function Dashboard() {
                       filter === item && "bg-primary text-primary-foreground hover:bg-primary",
                     )}
                   >
-                    {item.replace("-", " ")}
+                    {filterLabels[item]}
                   </button>
                 ))}
               </div>
@@ -195,8 +198,8 @@ function Dashboard() {
 
           {filtered.length === 0 ? (
             <EmptyState
-              title="Nenhuma simulação neste filtro"
-              description="A lista nunca fica vazia sem orientação. Ajuste busca, limpe o filtro ou crie um novo rascunho."
+              title="Nenhuma simulacao neste filtro"
+              description="Ajuste busca, limpe o filtro ou crie um novo rascunho."
               actions={
                 <button
                   type="button"
@@ -215,9 +218,9 @@ function Dashboard() {
               <table className="w-full text-sm">
                 <thead className="border-b border-border bg-muted/45 text-xs uppercase text-muted-foreground">
                   <tr>
-                    <th className="px-4 py-3 text-left font-medium">Simulação</th>
+                    <th className="px-4 py-3 text-left font-medium">Simulacao</th>
                     <th className="px-4 py-3 text-left font-medium">Estado</th>
-                    <th className="px-4 py-3 text-left font-medium">Qualidade</th>
+                    <th className="px-4 py-3 text-left font-medium">Conclusao</th>
                     <th className="px-4 py-3 text-left font-medium">Versao</th>
                     <th className="px-4 py-3 text-left font-medium">Tentativas</th>
                     <th className="px-4 py-3" />
@@ -232,8 +235,7 @@ function Dashboard() {
                       <td className="px-4 py-3">
                         <div className="font-medium text-foreground">{simulation.name}</div>
                         <div className="text-xs text-muted-foreground">
-                          {simulation.role} - {simulation.seniority} - atualizada{" "}
-                          {simulation.updated}
+                          {simulation.description} - atualizada {formatDateTime(simulation.updatedAt)}
                         </div>
                         <div className="mt-1 flex flex-wrap gap-1">
                           {simulation.competencies.map((competency) => (
@@ -247,7 +249,10 @@ function Dashboard() {
                         </div>
                       </td>
                       <td className="px-4 py-3">
-                        <StatusBadge status={simulation.status} maturity={simulation.maturity} />
+                        <StatusBadge
+                          status={simulation.status}
+                          maturity={maturityForStatus(simulation.status)}
+                        />
                       </td>
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-2">
@@ -255,32 +260,33 @@ function Dashboard() {
                             <div
                               className={cn(
                                 "h-full rounded-full",
-                                simulation.quality >= 80
+                                simulation.completionRatePercent >= 80
                                   ? "bg-success"
-                                  : simulation.quality >= 60
+                                  : simulation.completionRatePercent >= 60
                                     ? "bg-warning"
                                     : "bg-danger",
                               )}
-                              style={{ width: `${simulation.quality}%` }}
+                              style={{ width: `${simulation.completionRatePercent}%` }}
                             />
                           </div>
                           <span className="text-xs font-medium tabular-nums">
-                            {simulation.quality}/100
+                            {formatPercent(simulation.completionRatePercent)}
                           </span>
                         </div>
                       </td>
                       <td className="px-4 py-3 text-xs tabular-nums text-muted-foreground">
-                        {simulation.version}
+                        v{simulation.versionNumber}
                       </td>
                       <td className="px-4 py-3 text-xs tabular-nums">
-                        {simulation.attempts.toLocaleString("pt-BR")}
+                        {simulation.attemptsCreated.toLocaleString("pt-BR")}
                         <div className="text-[10px] text-muted-foreground">
-                          {Math.round(simulation.completion * 100)}% concluem
+                          {simulation.attemptsCompleted.toLocaleString("pt-BR")} concluidas
                         </div>
                       </td>
                       <td className="px-4 py-3 text-right">
                         <Link
                           to="/nova/validador"
+                          search={simulationSearch(simulation)}
                           className="text-xs font-medium text-primary hover:underline"
                         >
                           Abrir
@@ -296,6 +302,26 @@ function Dashboard() {
       )}
     </AppShell>
   );
+}
+
+function simulationSearch(simulation: SimulationSummaryResponse) {
+  return {
+    simulationId: simulation.id,
+    versionNumber: simulation.versionNumber,
+  };
+}
+
+function formatPercent(value: number) {
+  return `${Number.isFinite(value) ? value.toFixed(value % 1 === 0 ? 0 : 1) : "0"}%`;
+}
+
+function formatDateTime(value: string) {
+  return new Intl.DateTimeFormat("pt-BR", {
+    day: "2-digit",
+    month: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(new Date(value));
 }
 
 function Stat({ label, value, hint }: { label: string; value: number; hint: string }) {

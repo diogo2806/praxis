@@ -1,0 +1,25 @@
+package br.com.iforce.praxis.simulation.dto;
+
+import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.validation.constraints.Size;
+
+import java.util.Map;
+
+@Schema(description = "Payload para atualizar parcialmente uma alternativa de resposta.")
+public record UpdateOptionRequest(
+        @Size(max = 800)
+        String text,
+
+        Map<String, Integer> competencyLevels,
+
+        Boolean isBest,
+
+        Boolean isCritical,
+
+        @Size(max = 120)
+        String nextNodeId,
+
+        @Size(max = 1000)
+        String resultingTone
+) {
+}

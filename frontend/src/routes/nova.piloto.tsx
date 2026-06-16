@@ -1,136 +1,141 @@
+import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { AppShell } from "@/components/app-shell";
-import { NextStepContract, ScreenStateStrip } from "@/components/praxis-ui";
+import { EmptyState, NextStepContract, ScreenStateStrip, StateBanner } from "@/components/praxis-ui";
 import { WizardStepper } from "@/components/wizard-stepper";
+import { getSimulationMonitoring, listSimulations, type SimulationSummaryResponse } from "@/lib/api/praxis";
 
 export const Route = createFileRoute("/nova/piloto")({
+  validateSearch: (search: Record<string, unknown>) => ({
+    simulationId: typeof search.simulationId === "string" ? search.simulationId : undefined,
+    versionNumber:
+      typeof search.versionNumber === "number"
+        ? search.versionNumber
+        : typeof search.versionNumber === "string"
+          ? Number(search.versionNumber)
+          : undefined,
+  }),
   head: () => ({
     meta: [
-      { title: "Piloto & Calibração — Práxis" },
-      {
-        name: "description",
-        content: "Teste com colaboradores referência antes de ir para vaga real.",
-      },
+      { title: "Piloto & Calibracao - Praxis" },
+      { name: "description", content: "Indicadores reais de execucao antes da publicacao." },
     ],
   }),
   component: Page,
 });
 
-const piloto = [
-  { n: "Mariana (ref.)", s: 92, t: "4m12s", p: "C→C→C", c: 0 },
-  { n: "Pedro (ref.)", s: 88, t: "3m47s", p: "C→B→C", c: 0 },
-  { n: "Júlia (ref.)", s: 90, t: "4m30s", p: "C→C→B", c: 0 },
-  { n: "Lucas (fora)", s: 64, t: "5m02s", p: "A→… (rev.)", c: 1 },
-  { n: "Bruna (fora)", s: 71, t: "4m55s", p: "B→C→C", c: 0 },
-  { n: "Tiago (fora)", s: 58, t: "6m18s", p: "D→C→A", c: 1 },
-];
-const check = [
-  "Testar com 3 ref.",
-  "Testar com 3 fora",
-  "Comparar distribuição",
-  "Ajustar óbvias",
-  "Calibrar tempo",
-  "Calibrar pesos",
-  "Aprovar v1.0",
-];
-
 function Page() {
+  const search = Route.useSearch();
+  const hasContext = Boolean(search.simulationId && search.versionNumber);
+  const simulationsQuery = useQuery({
+    queryKey: ["simulations"],
+    queryFn: listSimulations,
+    enabled: !hasContext,
+  });
+  const monitoringQuery = useQuery({
+    queryKey: ["simulation-monitoring", search.simulationId, search.versionNumber],
+    queryFn: () => getSimulationMonitoring(search.simulationId!, search.versionNumber!),
+    enabled: hasContext,
+  });
+  const monitoring = monitoringQuery.data;
+
   return (
     <AppShell>
       <WizardStepper current="piloto" />
-      <ScreenStateStrip blockedReason="faltam referencias ou distribuicao minima de piloto" />
+      <ScreenStateStrip blockedReason="acompanhe tentativas reais antes de avancar" />
       <div className="mb-6">
         <div className="text-xs uppercase tracking-[0.2em] text-primary">Passo 4</div>
-        <h1 className="mt-1 font-display text-3xl">Piloto & Calibração</h1>
+        <h1 className="mt-1 font-display text-3xl">Piloto & Calibracao</h1>
         <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
-          Se os 3 referência não tirarem nota alta, a simulação está medindo a coisa errada.
+          Esta tela mostra somente indicadores retornados pelo backend.
         </p>
       </div>
-      <div className="mb-5">
-        <NextStepContract
-          primary="Concluir checklist de referencia e seguir para mapa & score."
-          secondary="Voltar ao validador ou blueprint antes da publicacao final continua permitido."
-          versionRule="Aprovar v1.0 congela resultados do piloto; ajustes posteriores viram v1.1."
-          lockedAfter="Candidato de piloto nao muda de versao no meio da tentativa."
+
+      {!hasContext ? (
+        <EmptyState
+          title="Selecione uma versao para acompanhar"
+          description="Nao ha participantes ou checklist local nesta etapa."
+          actions={<SimulationLinks loading={simulationsQuery.isLoading} simulations={simulationsQuery.data ?? []} />}
         />
-      </div>
-      <div className="grid gap-6 lg:grid-cols-[1fr_300px]">
-        <div className="overflow-hidden rounded-xl border border-border bg-card">
-          <table className="w-full text-sm">
-            <thead className="border-b border-border bg-muted/40 text-xs uppercase tracking-wider text-muted-foreground">
-              <tr>
-                <th className="px-4 py-2 text-left font-medium">Participante</th>
-                <th className="px-4 py-2 text-left font-medium">Score</th>
-                <th className="px-4 py-2 text-left font-medium">Tempo</th>
-                <th className="px-4 py-2 text-left font-medium">Caminho</th>
-                <th className="px-4 py-2 text-left font-medium">Crítico</th>
-              </tr>
-            </thead>
-            <tbody>
-              {piloto.map((p, i) => (
-                <tr
-                  key={p.n}
-                  className={`border-b border-border last:border-0 ${i < 3 ? "bg-success/[0.03]" : ""}`}
-                >
-                  <td className="px-4 py-3">
-                    {p.n}
-                    {i < 3 && (
-                      <div className="text-[10px] uppercase tracking-wider text-success">
-                        Referência
-                      </div>
-                    )}
-                  </td>
-                  <td className="px-4 py-3">
-                    <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-medium tabular-nums">
-                      {p.s}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3 text-xs tabular-nums text-muted-foreground">{p.t}</td>
-                  <td className="px-4 py-3 font-mono text-xs text-foreground/75">{p.p}</td>
-                  <td className="px-4 py-3">
-                    {p.c ? (
-                      <span className="rounded-full border border-danger/30 bg-danger/10 px-2 py-0.5 text-[11px] text-danger">
-                        ⚠ revisão
-                      </span>
-                    ) : (
-                      <span className="text-xs text-muted-foreground">—</span>
-                    )}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-        <aside className="rounded-xl border border-border bg-card p-5">
-          <h3 className="text-sm font-semibold">Checklist</h3>
-          <ul className="mt-3 space-y-2">
-            {check.map((c, i) => (
-              <li key={c} className="flex items-start gap-2 text-sm">
-                <input
-                  type="checkbox"
-                  defaultChecked={i < 5}
-                  className="mt-0.5 h-4 w-4 accent-primary"
-                />
-                <span className={i < 5 ? "line-through opacity-60" : ""}>{c}</span>
-              </li>
-            ))}
-          </ul>
-        </aside>
-      </div>
-      <div className="mt-8 flex justify-between">
-        <Link
-          to="/nova/validador"
-          className="rounded-md border border-border bg-card px-4 py-2 text-sm hover:bg-accent"
-        >
-          Voltar: Validador
-        </Link>
-        <Link
-          to="/nova/mapa"
-          className="rounded-md bg-primary px-5 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
-        >
-          Ver mapa & score →
-        </Link>
-      </div>
+      ) : monitoringQuery.isLoading ? (
+        <StateBanner tone="info" title="Carregando piloto">
+          Buscando monitoramento da simulacao {search.simulationId} v{search.versionNumber}.
+        </StateBanner>
+      ) : monitoringQuery.isError ? (
+        <StateBanner tone="danger" title="Nao foi possivel carregar o piloto">
+          {monitoringQuery.error instanceof Error ? monitoringQuery.error.message : "Verifique a API."}
+        </StateBanner>
+      ) : monitoring ? (
+        <>
+          <NextStepContract
+            primary="Usar indicadores reais para decidir se a versao segue para mapa e governanca."
+            secondary="Voltar ao validador ou blueprint antes da publicacao final continua permitido."
+            versionRule="Ajustes posteriores criam nova versao quando a versao atual estiver publicada."
+            lockedAfter="Tentativas existentes permanecem na versao em que foram criadas."
+          />
+          <div className="mt-5 grid gap-4 md:grid-cols-4">
+            <Metric label="Criadas" value={monitoring.attemptsCreated} />
+            <Metric label="Em andamento" value={monitoring.attemptsInProgress + monitoring.attemptsPaused} />
+            <Metric label="Concluidas" value={monitoring.attemptsCompleted} />
+            <Metric label="Conclusao" value={`${monitoring.completionRatePercent.toFixed(1)}%`} />
+          </div>
+          <div className="mt-5 grid gap-4 md:grid-cols-4">
+            <Metric label="Abandonadas" value={monitoring.attemptsAbandoned} />
+            <Metric label="Expiradas" value={monitoring.attemptsExpired} />
+            <Metric label="Falhas" value={monitoring.attemptsFailed} />
+            <Metric label="Drop-off" value={`${monitoring.dropOffRatePercent.toFixed(1)}%`} />
+          </div>
+          <div className="mt-8 flex justify-between">
+            <Link
+              to="/nova/validador"
+              search={{ simulationId: search.simulationId, versionNumber: search.versionNumber }}
+              className="rounded-md border border-border bg-card px-4 py-2 text-sm hover:bg-accent"
+            >
+              Voltar: Validador
+            </Link>
+            <Link
+              to="/nova/mapa"
+              search={{ simulationId: search.simulationId, versionNumber: search.versionNumber }}
+              className="rounded-md bg-primary px-5 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
+            >
+              Ver mapa & score
+            </Link>
+          </div>
+        </>
+      ) : null}
     </AppShell>
+  );
+}
+
+function Metric({ label, value }: { label: string; value: number | string }) {
+  return (
+    <div className="rounded-md border border-border bg-card p-4">
+      <div className="text-xs uppercase text-muted-foreground">{label}</div>
+      <div className="mt-2 text-3xl font-semibold tabular-nums">{value}</div>
+    </div>
+  );
+}
+
+function SimulationLinks({
+  loading,
+  simulations,
+}: {
+  loading: boolean;
+  simulations: SimulationSummaryResponse[];
+}) {
+  if (loading) return <span className="text-sm text-muted-foreground">Carregando...</span>;
+  return (
+    <div className="flex flex-wrap gap-2">
+      {simulations.map((simulation) => (
+        <Link
+          key={`${simulation.id}-${simulation.versionNumber}`}
+          to="/nova/piloto"
+          search={{ simulationId: simulation.id, versionNumber: simulation.versionNumber }}
+          className="rounded-md border border-border bg-card px-3 py-2 text-sm hover:bg-accent"
+        >
+          {simulation.name} v{simulation.versionNumber}
+        </Link>
+      ))}
+    </div>
   );
 }

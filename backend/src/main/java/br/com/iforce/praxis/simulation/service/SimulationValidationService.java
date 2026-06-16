@@ -1,6 +1,8 @@
 package br.com.iforce.praxis.simulation.service;
 
 import br.com.iforce.praxis.config.PraxisProperties;
+import br.com.iforce.praxis.simulation.dto.CompetencyWeightDto;
+import br.com.iforce.praxis.simulation.dto.UpdateBlueprintRequest;
 import br.com.iforce.praxis.simulation.dto.SimulationValidationResponse;
 import br.com.iforce.praxis.simulation.dto.ValidationIssueResponse;
 import br.com.iforce.praxis.simulation.model.ValidationIssueSeverity;
@@ -9,7 +11,9 @@ import br.com.iforce.praxis.simulation.persistence.entity.SimulationCompetencyEn
 import br.com.iforce.praxis.simulation.persistence.entity.SimulationNodeEntity;
 import br.com.iforce.praxis.simulation.persistence.entity.SimulationOptionEntity;
 import br.com.iforce.praxis.simulation.persistence.entity.SimulationVersionEntity;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -178,6 +182,36 @@ public class SimulationValidationService {
                     simulationVersionEntity.getRootNodeId(),
                     "A soma dos pesos das competências deve ser 1.0 (atual: " + weightSum + ")."
             ));
+        }
+    }
+
+    public void validateWeights(List<CompetencyWeightDto> competencies) {
+        validateWeightValues(
+                competencies.stream()
+                        .map(CompetencyWeightDto::weight)
+                        .toList()
+        );
+    }
+
+    public void validateBlueprintWeights(List<UpdateBlueprintRequest.CompetencyRequest> competencies) {
+        validateWeightValues(
+                competencies.stream()
+                        .map(UpdateBlueprintRequest.CompetencyRequest::weight)
+                        .toList()
+        );
+    }
+
+    private void validateWeightValues(List<Double> weights) {
+        if (weights == null || weights.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Ao menos uma competencia e obrigatoria.");
+        }
+
+        double sum = weights.stream().mapToDouble(weight -> weight == null ? 0.0 : weight).sum();
+        if (Math.abs(sum - 1.0) > praxisProperties.competencyWeightTolerance()) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Soma dos pesos deve ser 1.0 (tolerancia " + praxisProperties.competencyWeightTolerance() + ")."
+            );
         }
     }
 

@@ -1,29 +1,59 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { ArchiveRestore, Lock, RefreshCw } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
-import { ScreenStateStrip, StateBanner } from "@/components/praxis-ui";
+import { ScreenStateStrip, StateBanner, StatusBadge } from "@/components/praxis-ui";
+import {
+  cloneSimulationVersionToDraft,
+  listSimulations,
+  listSimulationVersionAuditEvents,
+  type AuditEventResponse,
+  type SimulationSummaryResponse,
+} from "@/lib/api/praxis";
+import { maturityForStatus } from "@/lib/simulation-meta";
 
 export const Route = createFileRoute("/governanca")({
+  validateSearch: (search: Record<string, unknown>) => ({
+    simulationId: typeof search.simulationId === "string" ? search.simulationId : undefined,
+    versionNumber:
+      typeof search.versionNumber === "string" && Number.isFinite(Number(search.versionNumber))
+        ? Number(search.versionNumber)
+        : undefined,
+  }),
   head: () => ({
     meta: [
-      { title: "Governança & Auditoria — Práxis" },
+      { title: "Governanca & Auditoria - Praxis" },
       { name: "description", content: "Controles operacionais, auditoria e versionamento." },
     ],
   }),
   component: GovernanceHub,
 });
 
-const events = [
-  "Renata criou v0.1",
-  "Gestor aprovou dialogo",
-  "Validador registrou 2 warnings",
-  "Compliance aprovou LGPD",
-  "Publicacao vinculada a vaga GUPY-8421",
-];
-
 function GovernanceHub() {
+  const search = Route.useSearch();
+  const queryClient = useQueryClient();
   const [versionDialogOpen, setVersionDialogOpen] = useState(false);
+  const hasGovernanceParams = Boolean(search.simulationId && search.versionNumber);
+  const simulationsQuery = useQuery({
+    queryKey: ["simulations"],
+    queryFn: listSimulations,
+    enabled: !hasGovernanceParams,
+  });
+  const auditQuery = useQuery({
+    queryKey: ["simulation-version-audit", search.simulationId, search.versionNumber],
+    queryFn: () => listSimulationVersionAuditEvents(search.simulationId!, search.versionNumber!),
+    enabled: hasGovernanceParams,
+  });
+  const cloneMutation = useMutation({
+    mutationFn: () => cloneSimulationVersionToDraft(search.simulationId!, search.versionNumber!),
+    onSuccess: async () => {
+      setVersionDialogOpen(false);
+      await queryClient.invalidateQueries({
+        queryKey: ["simulation-version-audit", search.simulationId, search.versionNumber],
+      });
+    },
+  });
 
   return (
     <AppShell>
@@ -36,20 +66,46 @@ function GovernanceHub() {
         </p>
       </div>
 
-      <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_340px]">
+      {hasGovernanceParams && auditQuery.isLoading && (
+        <StateBanner tone="info" title="AuditLog conectado">
+          Buscando eventos da simulacao {search.simulationId} v{search.versionNumber}.
+        </StateBanner>
+      )}
+
+      {hasGovernanceParams && auditQuery.isError && (
+        <StateBanner tone="danger" title="Nao foi possivel carregar a auditoria">
+          {auditQuery.error instanceof Error
+            ? auditQuery.error.message
+            : "Verifique se o backend esta rodando e se a versao existe."}
+        </StateBanner>
+      )}
+
+      {cloneMutation.isSuccess && (
+        <StateBanner tone="ok" title="Nova versao criada">
+          Rascunho v{cloneMutation.data.newVersionNumber} criado a partir da v
+          {cloneMutation.data.sourceVersionNumber}.
+        </StateBanner>
+      )}
+
+      {cloneMutation.isError && (
+        <StateBanner tone="danger" title="Nao foi possivel criar a versao">
+          {cloneMutation.error instanceof Error
+            ? cloneMutation.error.message
+            : "A transicao foi recusada pelo backend."}
+        </StateBanner>
+      )}
+
+      <div className="mt-5 grid gap-5 lg:grid-cols-[minmax(0,1fr)_340px]">
         <section className="rounded-md border border-border bg-card p-5">
           <h2 className="text-sm font-semibold">AuditLog imutavel</h2>
-          <ul className="mt-4 divide-y divide-border">
-            {events.map((event, index) => (
-              <li key={event} className="flex items-center gap-3 py-3 text-sm">
-                <span className="flex h-7 w-7 items-center justify-center rounded-md bg-muted text-xs">
-                  {index + 1}
-                </span>
-                <span className="flex-1">{event}</span>
-                <span className="text-xs text-muted-foreground">15/06 14:{20 + index}</span>
-              </li>
-            ))}
-          </ul>
+          {hasGovernanceParams ? (
+            <AuditEventList events={auditQuery.data ?? []} loading={auditQuery.isLoading} />
+          ) : (
+            <SimulationLinks
+              loading={simulationsQuery.isLoading}
+              simulations={simulationsQuery.data ?? []}
+            />
+          )}
         </section>
         <aside className="space-y-3">
           <StateBanner tone="warn" title="Edicao de publicada cria nova versao">
@@ -58,12 +114,17 @@ function GovernanceHub() {
           <button
             type="button"
             onClick={() => setVersionDialogOpen(true)}
-            className="inline-flex w-full items-center justify-center gap-2 rounded-md border border-border bg-card px-4 py-2 text-sm hover:bg-accent"
+            className="inline-flex w-full items-center justify-center gap-2 rounded-md border border-border bg-card px-4 py-2 text-sm hover:bg-accent disabled:cursor-not-allowed disabled:opacity-60"
           >
             <RefreshCw className="h-4 w-4" />
-            Criar versao v1.3
+            {hasGovernanceParams
+              ? `Criar nova versao a partir da v${search.versionNumber}`
+              : "Selecione uma versao"}
           </button>
-          <button className="inline-flex w-full items-center justify-center gap-2 rounded-md border border-border bg-card px-4 py-2 text-sm hover:bg-accent">
+          <button
+            disabled
+            className="inline-flex w-full cursor-not-allowed items-center justify-center gap-2 rounded-md border border-border bg-card px-4 py-2 text-sm opacity-60"
+          >
             <ArchiveRestore className="h-4 w-4" />
             Restaurar arquivada
           </button>
@@ -90,8 +151,9 @@ function GovernanceHub() {
           <div className="w-full max-w-md rounded-md border border-border bg-card p-5 shadow-xl">
             <div className="text-sm font-semibold">Criar nova versao?</div>
             <p className="mt-2 text-sm text-muted-foreground">
-              Isto cria a versao v1.3. Candidatos em andamento continuam na versao atual e
-              tentativas ja iniciadas nao migram.
+              {hasGovernanceParams
+                ? `Isto cria um rascunho a partir da versao ${search.versionNumber}. Candidatos em andamento continuam na versao atual.`
+                : "Escolha uma simulacao real antes de criar nova versao."}
             </p>
             <div className="mt-4 rounded-md border border-border bg-muted/45 p-3 text-xs text-muted-foreground">
               Typo entra como minor. Pontuacao, peso ou grafo entram como major.
@@ -106,10 +168,17 @@ function GovernanceHub() {
               </button>
               <button
                 type="button"
-                onClick={() => setVersionDialogOpen(false)}
-                className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground"
+                onClick={() => {
+                  if (hasGovernanceParams) {
+                    cloneMutation.mutate();
+                  } else {
+                    setVersionDialogOpen(false);
+                  }
+                }}
+                disabled={cloneMutation.isPending}
+                className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground disabled:cursor-not-allowed disabled:opacity-60"
               >
-                Confirmar nova versao
+                {cloneMutation.isPending ? "Criando..." : "Confirmar nova versao"}
               </button>
             </div>
           </div>
@@ -117,4 +186,92 @@ function GovernanceHub() {
       )}
     </AppShell>
   );
+}
+
+function AuditEventList({ events, loading }: { events: AuditEventResponse[]; loading: boolean }) {
+  if (loading) {
+    return <div className="mt-4 rounded-md border border-border bg-background p-4 text-sm">Carregando eventos...</div>;
+  }
+
+  if (events.length === 0) {
+    return (
+      <div className="mt-4 rounded-md border border-border bg-background p-4 text-sm text-muted-foreground">
+        Nenhum evento de auditoria registrado para esta versao.
+      </div>
+    );
+  }
+
+  return (
+    <ul className="mt-4 divide-y divide-border">
+      {events.map((event, index) => (
+        <li key={event.id} className="flex items-center gap-3 py-3 text-sm">
+          <span className="flex h-7 w-7 items-center justify-center rounded-md bg-muted text-xs">
+            {index + 1}
+          </span>
+          <span className="min-w-0 flex-1">
+            <span className="block truncate">{event.message}</span>
+            <span className="mt-1 block text-xs text-muted-foreground">
+              {formatEventType(event.eventType)} · {event.aggregateId}
+            </span>
+          </span>
+          <span className="text-xs text-muted-foreground">{formatDateTime(event.createdAt)}</span>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+function SimulationLinks({
+  simulations,
+  loading,
+}: {
+  simulations: SimulationSummaryResponse[];
+  loading: boolean;
+}) {
+  if (loading) {
+    return <div className="mt-4 rounded-md border border-border bg-background p-4 text-sm">Carregando simulacoes...</div>;
+  }
+
+  if (simulations.length === 0) {
+    return (
+      <div className="mt-4 rounded-md border border-border bg-background p-4 text-sm text-muted-foreground">
+        Nenhuma simulacao ativa encontrada.
+      </div>
+    );
+  }
+
+  return (
+    <div className="mt-4 grid gap-3">
+      {simulations.map((simulation) => (
+        <Link
+          key={simulation.id}
+          to="/governanca"
+          search={{
+            simulationId: simulation.id,
+            versionNumber: simulation.versionNumber,
+          }}
+          className="grid gap-3 rounded-md border border-border bg-background p-3 text-sm hover:bg-accent md:grid-cols-[1fr_220px]"
+        >
+          <span>
+            <span className="block font-medium">{simulation.name}</span>
+            <span className="text-xs text-muted-foreground">v{simulation.versionNumber}</span>
+          </span>
+          <StatusBadge status={simulation.status} maturity={maturityForStatus(simulation.status)} />
+        </Link>
+      ))}
+    </div>
+  );
+}
+
+function formatEventType(value: string) {
+  return value.replace(/([A-Z])/g, " $1").toLowerCase();
+}
+
+function formatDateTime(value: string) {
+  return new Intl.DateTimeFormat("pt-BR", {
+    day: "2-digit",
+    month: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(new Date(value));
 }

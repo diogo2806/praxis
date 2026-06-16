@@ -1,101 +1,165 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
+import { useMutation, useQuery } from "@tanstack/react-query";
+import { useEffect, useState } from "react";
 import { Pause, Play, RotateCcw, ShieldCheck, Wifi, WifiOff } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
-import { ScreenStateStrip, StateBanner } from "@/components/praxis-ui";
+import { EmptyState, ScreenStateStrip, StateBanner } from "@/components/praxis-ui";
+import {
+  getCandidateAttempt,
+  submitCandidateAnswer,
+  type CandidateAttemptResponse,
+  type CandidateNodeResponse,
+} from "@/lib/api/praxis";
 import { cn } from "@/lib/utils";
 import { useViewMode } from "@/lib/view-mode";
 
 export const Route = createFileRoute("/candidato")({
   head: () => ({
     meta: [
-      { title: "Visão do Candidato — Práxis" },
+      { title: "Visao do Candidato - Praxis" },
       {
         name: "description",
-        content: "Experiência mobile-first com timer, chat, retomada e acessibilidade.",
+        content: "Experiencia mobile-first com timer, chat, retomada e acessibilidade.",
       },
     ],
   }),
-  component: CandidateDemoPage,
+  component: CandidateEntryPage,
 });
 
-const options = [
-  "Acolher, coletar dados mínimos e explicar o próximo passo.",
-  "Prometer estorno imediato para acalmar o cliente.",
-  "Seguir o processo sem reconhecer a frustração.",
-];
-
-function CandidateDemoPage() {
-  const [token, setToken] = useState<string | undefined>();
-  useEffect(() => {
-    const match = window.location.pathname.match(/^\/candidato\/([^/]+)$/);
-    setToken(match?.[1]);
-  }, []);
-  return <CandidateExperience demo={!token} token={token} />;
+function CandidateEntryPage() {
+  return (
+    <AppShell>
+      <EmptyState
+        title="Link de tentativa obrigatorio"
+        description="A experiencia do candidato depende de uma tentativa criada pelo backend. Acesse pelo link /candidato/:token enviado pela integracao."
+        actions={
+          <Link
+            to="/"
+            className="rounded-md border border-border bg-card px-4 py-3 text-sm hover:bg-accent"
+          >
+            Voltar ao painel
+          </Link>
+        }
+      />
+    </AppShell>
+  );
 }
 
-export function CandidateExperience({ token, demo = false }: { token?: string; demo?: boolean }) {
+export function CandidateExperience({ token }: { token: string }) {
+  const [liveAttempt, setLiveAttempt] = useState<CandidateAttemptResponse | null>(null);
   const [remaining, setRemaining] = useState(30);
   const [paused, setPaused] = useState(false);
   const [offline, setOffline] = useState(false);
   const [selected, setSelected] = useState<string | null>(null);
-  const [finished, setFinished] = useState(false);
   const technical = useViewMode() === "technical";
 
+  const attemptQuery = useQuery({
+    queryKey: ["candidate-attempt", token],
+    queryFn: () => getCandidateAttempt(token),
+  });
+
   useEffect(() => {
-    if (paused || finished) return;
+    if (attemptQuery.data) {
+      setLiveAttempt(attemptQuery.data);
+    }
+  }, [attemptQuery.data]);
+
+  const answerMutation = useMutation({
+    mutationFn: ({
+      node,
+      optionId,
+      timedOut,
+    }: {
+      node: CandidateNodeResponse;
+      optionId?: string | null;
+      timedOut: boolean;
+    }) => submitCandidateAnswer(token, { nodeId: node.id, optionId, timedOut }),
+    onSuccess: (response) => {
+      setLiveAttempt({
+        attemptId: response.attemptId,
+        simulationName: liveAttempt?.simulationName ?? attemptQuery.data?.simulationName ?? "Praxis",
+        status: response.status,
+        completed: response.completed,
+        currentNode: response.currentNode,
+      });
+      setSelected(null);
+      setPaused(false);
+    },
+  });
+
+  const attempt = liveAttempt ?? attemptQuery.data;
+  const currentNode = attempt?.currentNode ?? null;
+  const finished = Boolean(attempt && (attempt.completed || !currentNode));
+  const showTurn = Boolean(currentNode && !finished);
+  const timeLimit = currentNode?.timeLimitSeconds ?? 30;
+
+  useEffect(() => {
+    setRemaining(timeLimit);
+    setSelected(null);
+  }, [currentNode?.id, timeLimit]);
+
+  useEffect(() => {
+    if (paused || finished || answerMutation.isPending) return;
     const id = window.setInterval(() => {
       setRemaining((value) => Math.max(0, value - 1));
     }, 1000);
     return () => window.clearInterval(id);
-  }, [paused, finished]);
+  }, [answerMutation.isPending, paused, finished]);
 
   useEffect(() => {
-    if (remaining === 0 && !finished) {
+    if (remaining === 0 && !finished && currentNode && !selected) {
       setSelected("Sem resposta neste turno");
-      window.setTimeout(() => setFinished(true), 600);
+      answerMutation.mutate({ node: currentNode, timedOut: true });
     }
-  }, [remaining, finished]);
+  }, [answerMutation, currentNode, finished, remaining, selected]);
 
-  const pct = remaining / 30;
+  const pct = remaining / timeLimit;
   const timerTone = pct <= 0.1 ? "bg-danger" : pct <= 0.3 ? "bg-warning" : "bg-primary";
-
-  const finalSummary = useMemo(
-    () => [
-      { label: "Empatia", value: "alta" },
-      { label: "Resolução", value: "boa" },
-      { label: "Processo", value: selected?.includes("Prometer") ? "revisão" : "adequado" },
-    ],
-    [selected],
-  );
 
   return (
     <AppShell>
       <ScreenStateStrip blockedReason="link expirado ou tentativa abandonada fora da janela" />
       <div className="mb-5">
-        <div className="text-xs uppercase text-primary">Visão do candidato</div>
-        <h1 className="mt-1 text-3xl font-semibold">Simulação situacional</h1>
+        <div className="text-xs uppercase text-primary">Visao do candidato</div>
+        <h1 className="mt-1 text-3xl font-semibold">
+          {attempt?.simulationName ?? "Simulacao situacional"}
+        </h1>
         <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
-          Chat estruturado, timer legível, navegação por teclado e retomada após queda.
+          Chat estruturado, timer legivel, navegacao por teclado e retomada apos queda.
         </p>
       </div>
 
-      {technical && demo && (
-        <StateBanner tone="info" title="Rota demo">
-          Em produção o candidato acessa <code>/candidato/:token</code>. Esta rota existe para
-          apresentação interna.
+      {attemptQuery.isLoading && (
+        <StateBanner tone="info" title="Carregando tentativa">
+          Buscando a simulacao e o turno atual no backend.
         </StateBanner>
       )}
 
-      {technical && token && (
+      {attemptQuery.isError && (
+        <StateBanner tone="danger" title="Nao foi possivel carregar a tentativa">
+          {attemptQuery.error instanceof Error
+            ? attemptQuery.error.message
+            : "Verifique se o backend esta rodando e se o token e valido."}
+        </StateBanner>
+      )}
+
+      {technical && (
         <StateBanner tone="info" title="Token de tentativa carregado">
-          Token visualizado apenas no modo técnico: <code>{token}</code>.
+          Token visualizado apenas no modo tecnico: <code>{token}</code>.
         </StateBanner>
       )}
 
       {offline && (
-        <StateBanner tone="warn" title="Conexão perdida - reconectando">
-          A resposta salva no último turno será retomada automaticamente quando a conexão voltar.
+        <StateBanner tone="warn" title="Conexao perdida - reconectando">
+          A resposta salva no ultimo turno sera retomada automaticamente quando a conexao voltar.
+        </StateBanner>
+      )}
+
+      {answerMutation.isError && (
+        <StateBanner tone="danger" title="Resposta nao enviada">
+          {answerMutation.error instanceof Error
+            ? answerMutation.error.message
+            : "Tente enviar a resposta novamente."}
         </StateBanner>
       )}
 
@@ -103,12 +167,12 @@ export function CandidateExperience({ token, demo = false }: { token?: string; d
         <section className="rounded-md border border-border bg-card p-5">
           <div className="mx-auto max-w-[320px] rounded-[30px] border border-border bg-foreground p-2">
             <div className="min-h-[620px] rounded-[24px] bg-background p-4">
-              {!finished ? (
+              {showTurn ? (
                 <>
                   <div className="mb-4">
                     <div className="mb-1 flex items-center justify-between text-xs">
                       <span aria-live="polite">{remaining}s restantes</span>
-                      <span>{paused ? "pausado" : "turno 1 de 4"}</span>
+                      <span>{paused ? "pausado" : `turno ${currentNode?.turnIndex ?? 1}`}</span>
                     </div>
                     <div
                       className="h-2 overflow-hidden rounded-full bg-muted"
@@ -123,7 +187,7 @@ export function CandidateExperience({ token, demo = false }: { token?: string; d
                   </div>
                   <div className="space-y-3" aria-live="polite">
                     <div className="mr-8 rounded-md bg-muted px-3 py-2 text-sm">
-                      Chegou quebrado. Quero meu dinheiro de volta agora.
+                      {currentNode?.message}
                     </div>
                     {selected && (
                       <div className="ml-8 rounded-md bg-primary px-3 py-2 text-sm text-primary-foreground">
@@ -132,47 +196,50 @@ export function CandidateExperience({ token, demo = false }: { token?: string; d
                     )}
                     {selected && (
                       <div className="mr-16 rounded-md bg-muted px-3 py-2 text-sm text-muted-foreground">
-                        digitando...
+                        {answerMutation.isPending ? "enviando..." : "registrado"}
                       </div>
                     )}
                   </div>
                   {!selected && (
                     <div className="mt-5 space-y-2">
-                      {options.map((option) => (
+                      {(currentNode?.options ?? []).map((option) => (
                         <button
-                          key={option}
+                          key={option.id}
                           type="button"
                           onClick={() => {
-                            setSelected(option);
-                            window.setTimeout(() => setFinished(true), 900);
+                            setSelected(option.text);
+                            if (currentNode) {
+                              answerMutation.mutate({
+                                node: currentNode,
+                                optionId: option.id,
+                                timedOut: false,
+                              });
+                            }
                           }}
-                          className="w-full rounded-md border border-border bg-card p-3 text-left text-sm hover:border-primary hover:bg-primary/5"
+                          disabled={answerMutation.isPending}
+                          className="w-full rounded-md border border-border bg-card p-3 text-left text-sm hover:border-primary hover:bg-primary/5 disabled:cursor-not-allowed disabled:opacity-60"
                         >
-                          {option}
+                          {option.text}
                         </button>
                       ))}
                     </div>
                   )}
                 </>
+              ) : attemptQuery.isLoading ? (
+                <div className="flex min-h-[560px] flex-col justify-center">
+                  <div className="text-xs uppercase text-primary">Carregando</div>
+                  <h2 className="mt-2 text-2xl font-semibold">Preparando sua simulacao.</h2>
+                  <p className="mt-2 text-sm text-muted-foreground">
+                    Buscando o turno atual e as alternativas disponiveis.
+                  </p>
+                </div>
               ) : (
                 <div className="flex min-h-[560px] flex-col justify-center">
-                  <div className="text-xs uppercase text-success">Respostas enviadas</div>
+                  <div className="text-xs uppercase text-success">Tentativa finalizada</div>
                   <h2 className="mt-2 text-2xl font-semibold">Obrigado por participar.</h2>
                   <p className="mt-2 text-sm text-muted-foreground">
-                    O RH retorna em até 5 dias úteis. Você pode revisar acomodações ou contatar o
-                    recrutador se precisar de suporte.
+                    O resultado sera processado pelo backend e entregue para o fluxo configurado.
                   </p>
-                  <div className="mt-5 grid gap-2">
-                    {finalSummary.map((item) => (
-                      <div
-                        key={item.label}
-                        className="flex justify-between rounded-md border border-border bg-card px-3 py-2 text-sm"
-                      >
-                        <span>{item.label}</span>
-                        <span className="font-medium">{item.value}</span>
-                      </div>
-                    ))}
-                  </div>
                 </div>
               )}
             </div>
@@ -186,10 +253,10 @@ export function CandidateExperience({ token, demo = false }: { token?: string; d
               Recursos de acessibilidade
             </div>
             <ul className="space-y-2 text-sm text-muted-foreground">
-              <li>Compatível com leitor de tela</li>
+              <li>Compativel com leitor de tela</li>
               <li>Alto contraste</li>
               <li>Tempo estendido quando configurado</li>
-              <li>Navegação por teclado</li>
+              <li>Navegacao por teclado</li>
             </ul>
           </div>
 
@@ -216,9 +283,8 @@ export function CandidateExperience({ token, demo = false }: { token?: string; d
                 <button
                   type="button"
                   onClick={() => {
-                    setRemaining(30);
+                    setRemaining(timeLimit);
                     setSelected(null);
-                    setFinished(false);
                     setPaused(false);
                   }}
                   className="inline-flex items-center gap-2 rounded-md border border-border bg-card px-3 py-2 text-sm hover:bg-accent"
@@ -230,11 +296,8 @@ export function CandidateExperience({ token, demo = false }: { token?: string; d
             </div>
           )}
 
-          <StateBanner tone="info" title="Tempo esgotado encerra só o turno">
-            Quando chega a zero, registra "sem resposta" e avança. A simulação inteira não fecha.
-          </StateBanner>
-          <StateBanner tone="ok" title="Acomodação PCD aplicada sem expor motivo">
-            O multiplicador altera o tempo apresentado ao candidato, mantendo privacidade.
+          <StateBanner tone="info" title="Tempo esgotado encerra so o turno">
+            Quando chega a zero, registra sem resposta e avanca. A simulacao inteira nao fecha.
           </StateBanner>
         </aside>
       </div>

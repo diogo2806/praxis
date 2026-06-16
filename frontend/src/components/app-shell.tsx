@@ -3,7 +3,6 @@ import type { ReactNode } from "react";
 import {
   BarChart3,
   ClipboardCheck,
-  FileText,
   Home,
   MessageSquare,
   Scale,
@@ -18,7 +17,6 @@ const nav = [
   { to: "/", label: "Painel", icon: Home },
   { to: "/nova/blueprint", label: "Nova simulacao", icon: ClipboardCheck },
   { to: "/monitoramento", label: "Monitoramento", icon: BarChart3 },
-  { to: "/relatorio/cand-thiago", label: "Detalhe do resultado", icon: FileText },
   { to: "/candidato", label: "Visão do candidato", icon: MessageSquare },
 ] as const;
 
