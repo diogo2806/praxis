@@ -14,6 +14,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.client.RestClientResponseException;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.Instant;
@@ -134,7 +135,8 @@ public class ResultDeliveryService {
     private void registerFailure(ResultDeliveryEntity resultDeliveryEntity, RuntimeException exception) {
         resultDeliveryEntity.setLastError(limitMessage(exception.getMessage()));
 
-        if (resultDeliveryEntity.getAttemptCount() >= MAX_ATTEMPT_COUNT) {
+        // 4xx = erro de contrato: não adianta retentar, vai direto para a DLQ p/ inspeção do admin.
+        if (isContractError(exception) || resultDeliveryEntity.getAttemptCount() >= MAX_ATTEMPT_COUNT) {
             resultDeliveryEntity.setStatus(ResultDeliveryStatus.DLQ);
             resultDeliveryEntity.setNextAttemptAt(null);
             return;
@@ -144,6 +146,11 @@ public class ResultDeliveryService {
         resultDeliveryEntity.setNextAttemptAt(
                 Instant.now().plusSeconds(retryDelaySeconds(resultDeliveryEntity.getAttemptCount()))
         );
+    }
+
+    private boolean isContractError(RuntimeException exception) {
+        return exception instanceof RestClientResponseException responseException
+                && responseException.getStatusCode().is4xxClientError();
     }
 
     private long retryDelaySeconds(int attemptCount) {
