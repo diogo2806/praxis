@@ -4,6 +4,7 @@ import br.com.iforce.praxis.gupy.delivery.service.ResultWebhookClient;
 import br.com.iforce.praxis.gupy.dto.TestResultResponse;
 import com.jayway.jsonpath.JsonPath;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -20,6 +21,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.verify;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -92,6 +94,19 @@ class ResultDeliveryControllerTest {
                 .andExpect(jsonPath("$.delivery.status").value("sent"))
                 .andExpect(jsonPath("$.delivery.attemptCount").value(1))
                 .andExpect(jsonPath("$.delivery.sentAt").exists());
+
+        ArgumentCaptor<TestResultResponse> payloadCaptor = ArgumentCaptor.forClass(TestResultResponse.class);
+        verify(resultWebhookClient).postResult(eq("https://cliente.gupy.io/result-webhook"), payloadCaptor.capture());
+
+        TestResultResponse payload = payloadCaptor.getValue();
+        assertThat(payload.testCode()).isEqualTo("sim-atendimento-caos");
+        assertThat(payload.status()).isEqualTo("done");
+        assertThat(payload.company_result_string()).contains("Score geral: 100/100");
+        assertThat(payload.results()).anySatisfy(result -> {
+            assertThat(result.title()).isEqualTo("Empatia");
+            assertThat(result.type_result()).isEqualTo("percentage");
+            assertThat(result.tier()).isEqualTo("major");
+        });
     }
 
     @Test

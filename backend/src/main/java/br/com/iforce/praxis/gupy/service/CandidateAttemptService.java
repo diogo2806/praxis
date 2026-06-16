@@ -9,7 +9,6 @@ import br.com.iforce.praxis.config.PraxisProperties;
 import br.com.iforce.praxis.gupy.delivery.service.ResultDeliveryService;
 import br.com.iforce.praxis.gupy.dto.CreateCandidateRequest;
 import br.com.iforce.praxis.gupy.dto.CreateCandidateResponse;
-import br.com.iforce.praxis.gupy.dto.TestResultItemResponse;
 import br.com.iforce.praxis.gupy.dto.TestResultResponse;
 import br.com.iforce.praxis.gupy.model.AttemptAnswer;
 import br.com.iforce.praxis.gupy.model.AttemptStatus;
@@ -46,6 +45,7 @@ public class CandidateAttemptService {
     private final SimulationCatalogService simulationCatalogService;
     private final CandidateAttemptMapper candidateAttemptMapper;
     private final AttemptStateMachine attemptStateMachine;
+    private final GupyTestResultMapper gupyTestResultMapper;
 
     public CandidateAttemptService(
             CandidateAttemptRepository candidateAttemptRepository,
@@ -54,7 +54,8 @@ public class CandidateAttemptService {
             PraxisProperties praxisProperties,
             SimulationCatalogService simulationCatalogService,
             CandidateAttemptMapper candidateAttemptMapper,
-            AttemptStateMachine attemptStateMachine
+            AttemptStateMachine attemptStateMachine,
+            GupyTestResultMapper gupyTestResultMapper
     ) {
         this.candidateAttemptRepository = candidateAttemptRepository;
         this.auditEventService = auditEventService;
@@ -63,6 +64,7 @@ public class CandidateAttemptService {
         this.simulationCatalogService = simulationCatalogService;
         this.candidateAttemptMapper = candidateAttemptMapper;
         this.attemptStateMachine = attemptStateMachine;
+        this.gupyTestResultMapper = gupyTestResultMapper;
     }
 
     @Transactional
@@ -178,20 +180,8 @@ public class CandidateAttemptService {
         CandidateAttemptEntity candidateAttemptEntity = candidateAttemptRepository.findByResultId(resultId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Resultado de teste nao encontrado."));
         CandidateAttempt attempt = candidateAttemptMapper.toDomain(candidateAttemptEntity);
-
-        List<TestResultItemResponse> results = attempt.results().stream()
-                .map(item -> new TestResultItemResponse(item.name(), item.score(), item.tier()))
-                .toList();
-
-        return new TestResultResponse(
-                attempt.resultId(),
-                attempt.status(),
-                attempt.score(),
-                results,
-                attempt.decision(),
-                attempt.humanReviewRequired(),
-                attempt.companyResultString()
-        );
+        PublishedSimulation simulation = findSimulation(attempt);
+        return gupyTestResultMapper.toResponse(attempt, simulation);
     }
 
     private Optional<SubmitAnswerResponse> handleDuplicate(

@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
 
 @Service
@@ -37,6 +38,22 @@ public class SimulationCatalogService {
     }
 
     @Transactional(readOnly = true)
+    public List<PublishedSimulation> findPublished(String searchString, int offset, int limit) {
+        int normalizedOffset = Math.max(offset, 0);
+        int normalizedLimit = Math.max(limit, 1);
+
+        return filteredPublished(searchString).stream()
+                .skip(normalizedOffset)
+                .limit(normalizedLimit)
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public int countPublished(String searchString) {
+        return filteredPublished(searchString).size();
+    }
+
+    @Transactional(readOnly = true)
     public Optional<PublishedSimulation> findPublishedById(String simulationId) {
         return simulationVersionRepository
                 .findBySimulationIdAndStatusAndSimulationArchivedFalseAndSimulationDeletedAtIsNullOrderByPublishedAtDesc(
@@ -58,5 +75,22 @@ public class SimulationCatalogService {
         return simulation.nodes().stream()
                 .filter(node -> node.id().equals(nodeId))
                 .findFirst();
+    }
+
+    private List<PublishedSimulation> filteredPublished(String searchString) {
+        String normalizedSearch = normalize(searchString);
+        return findPublished().stream()
+                .filter(simulation -> normalizedSearch.isBlank()
+                        || normalize(simulation.id()).contains(normalizedSearch)
+                        || normalize(simulation.name()).contains(normalizedSearch)
+                        || normalize(simulation.description()).contains(normalizedSearch))
+                .toList();
+    }
+
+    private String normalize(String value) {
+        if (value == null) {
+            return "";
+        }
+        return value.toLowerCase(Locale.ROOT).trim();
     }
 }

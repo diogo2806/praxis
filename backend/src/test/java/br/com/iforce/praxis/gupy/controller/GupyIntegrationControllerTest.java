@@ -42,11 +42,39 @@ class GupyIntegrationControllerTest {
     void listPublishedTestsReturnsPublishedSimulationsWithoutInternalScoringRules() throws Exception {
         mockMvc.perform(get("/test").header("Authorization", AUTHORIZATION))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$", not(empty())))
-                .andExpect(jsonPath("$[0].id").value("sim-atendimento-caos"))
-                .andExpect(jsonPath("$[0].name").value("Cenario Seed de Teste"))
-                .andExpect(jsonPath("$[0].isBest").doesNotExist())
-                .andExpect(jsonPath("$[0].weight").doesNotExist());
+                .andExpect(jsonPath("$.limit").value(50))
+                .andExpect(jsonPath("$.offset").value(0))
+                .andExpect(jsonPath("$.total_tests").value(1))
+                .andExpect(jsonPath("$.payload", not(empty())))
+                .andExpect(jsonPath("$.payload[0].id").value("sim-atendimento-caos"))
+                .andExpect(jsonPath("$.payload[0].name").value("Cenario Seed de Teste"))
+                .andExpect(jsonPath("$.payload[0].category").value("Situational Judgment"))
+                .andExpect(jsonPath("$.payload[0].level").value("professional"))
+                .andExpect(jsonPath("$.payload[0].isBest").doesNotExist())
+                .andExpect(jsonPath("$.payload[0].weight").doesNotExist());
+    }
+
+    @Test
+    void listPublishedTestsSupportsSearchAndPagination() throws Exception {
+        mockMvc.perform(get("/test")
+                        .header("Authorization", AUTHORIZATION)
+                        .param("searchString", "seed")
+                        .param("offset", "0")
+                        .param("limit", "1"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.limit").value(1))
+                .andExpect(jsonPath("$.offset").value(0))
+                .andExpect(jsonPath("$.total_tests").value(1))
+                .andExpect(jsonPath("$.payload[0].id").value("sim-atendimento-caos"));
+
+        mockMvc.perform(get("/test")
+                        .header("Authorization", AUTHORIZATION)
+                        .param("searchString", "inexistente")
+                        .param("offset", "0")
+                        .param("limit", "1"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.total_tests").value(0))
+                .andExpect(jsonPath("$.payload").isEmpty());
     }
 
     @Test
@@ -97,10 +125,13 @@ class GupyIntegrationControllerTest {
 
         mockMvc.perform(get("/test/result/" + resultId).header("Authorization", AUTHORIZATION))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id").value(resultId))
+                .andExpect(jsonPath("$.title").value("Cenario Seed de Teste"))
+                .andExpect(jsonPath("$.testCode").value("sim-atendimento-caos"))
+                .andExpect(jsonPath("$.providerName").value("Praxis"))
                 .andExpect(jsonPath("$.status").value("notStarted"))
                 .andExpect(jsonPath("$.score").doesNotExist())
-                .andExpect(content().string(containsString("\"name\":\"Empatia\"")))
+                .andExpect(jsonPath("$.company_result_string").exists())
+                .andExpect(content().string(containsString("\"title\":\"Empatia\"")))
                 .andExpect(content().string(containsString("\"tier\":\"major\"")));
     }
 

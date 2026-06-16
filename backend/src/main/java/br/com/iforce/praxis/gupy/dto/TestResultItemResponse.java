@@ -1,17 +1,32 @@
 package br.com.iforce.praxis.gupy.dto;
 
-import br.com.iforce.praxis.gupy.model.ResultTier;
 import io.swagger.v3.oas.annotations.media.Schema;
 
-@Schema(description = "Nota por competência no formato esperado pela Gupy.")
+import java.util.Map;
+
+@Schema(description = "Nota por competencia no formato esperado pela Gupy.")
 public record TestResultItemResponse(
-        @Schema(example = "Empatia")
-        String name,
-
         @Schema(example = "86", minimum = "0", maximum = "100")
-        Integer score,
+        int score,
 
-        @Schema(example = "major")
-        ResultTier tier
+        @Schema(example = "86%")
+        String result_string,
+
+        @Schema(example = "percentage")
+        String type_result,
+
+        @Schema(example = "major", allowableValues = {"major", "minor"})
+        String tier,
+
+        @Schema(example = "Empatia")
+        String title,
+
+        @Schema(example = "Pontuacao da competencia Empatia.")
+        String description,
+
+        @Schema(example = "2026-06-16T13:20:00Z")
+        String date,
+
+        Map<String, Object> other_informations
 ) {
 }

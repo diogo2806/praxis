@@ -6,10 +6,11 @@ import br.com.iforce.praxis.gupy.delivery.dto.ResultDeliveryResponse;
 import br.com.iforce.praxis.gupy.delivery.model.ResultDeliveryStatus;
 import br.com.iforce.praxis.gupy.delivery.persistence.entity.ResultDeliveryEntity;
 import br.com.iforce.praxis.gupy.delivery.persistence.repository.ResultDeliveryRepository;
-import br.com.iforce.praxis.gupy.dto.TestResultItemResponse;
 import br.com.iforce.praxis.gupy.dto.TestResultResponse;
+import br.com.iforce.praxis.gupy.model.PublishedSimulation;
 import br.com.iforce.praxis.gupy.persistence.entity.CandidateAttemptEntity;
-import br.com.iforce.praxis.gupy.persistence.entity.ResultItemEntity;
+import br.com.iforce.praxis.gupy.service.GupyTestResultMapper;
+import br.com.iforce.praxis.gupy.service.SimulationCatalogService;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
@@ -27,13 +28,19 @@ public class ResultDeliveryService {
 
     private final ResultDeliveryRepository resultDeliveryRepository;
     private final ResultWebhookClient resultWebhookClient;
+    private final SimulationCatalogService simulationCatalogService;
+    private final GupyTestResultMapper gupyTestResultMapper;
 
     public ResultDeliveryService(
             ResultDeliveryRepository resultDeliveryRepository,
-            ResultWebhookClient resultWebhookClient
+            ResultWebhookClient resultWebhookClient,
+            SimulationCatalogService simulationCatalogService,
+            GupyTestResultMapper gupyTestResultMapper
     ) {
         this.resultDeliveryRepository = resultDeliveryRepository;
         this.resultWebhookClient = resultWebhookClient;
+        this.simulationCatalogService = simulationCatalogService;
+        this.gupyTestResultMapper = gupyTestResultMapper;
     }
 
     @Transactional(propagation = Propagation.MANDATORY)
@@ -194,23 +201,12 @@ public class ResultDeliveryService {
     }
 
     private TestResultResponse toTestResultResponse(CandidateAttemptEntity candidateAttemptEntity) {
-        List<TestResultItemResponse> resultItems = candidateAttemptEntity.getResultItems().stream()
-                .map(resultItemEntity -> new TestResultItemResponse(
-                        resultItemEntity.getName(),
-                        resultItemEntity.getScore(),
-                        resultItemEntity.getTier()
-                ))
-                .toList();
-
-        return new TestResultResponse(
-                candidateAttemptEntity.getResultId(),
-                candidateAttemptEntity.getStatus(),
-                candidateAttemptEntity.getScore(),
-                resultItems,
-                candidateAttemptEntity.getDecision(),
-                candidateAttemptEntity.isHumanReviewRequired(),
-                candidateAttemptEntity.getCompanyResultString()
-        );
+        PublishedSimulation simulation = candidateAttemptEntity.getSimulationVersionId() == null
+                ? simulationCatalogService.findPublishedById(candidateAttemptEntity.getSimulationId())
+                        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Simulacao publicada nao encontrada."))
+                : simulationCatalogService.findByVersionId(candidateAttemptEntity.getSimulationVersionId())
+                        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Versao da simulacao nao encontrada."));
+        return gupyTestResultMapper.toResponse(candidateAttemptEntity, simulation);
     }
 
     private ResultDeliveryResponse toResponse(ResultDeliveryEntity resultDeliveryEntity) {

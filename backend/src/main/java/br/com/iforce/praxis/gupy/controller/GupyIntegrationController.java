@@ -3,6 +3,7 @@ package br.com.iforce.praxis.gupy.controller;
 import br.com.iforce.praxis.gupy.dto.CreateCandidateRequest;
 import br.com.iforce.praxis.gupy.dto.CreateCandidateResponse;
 import br.com.iforce.praxis.gupy.dto.GupyTestResponse;
+import br.com.iforce.praxis.gupy.dto.TestItemsResponse;
 import br.com.iforce.praxis.gupy.dto.TestResultResponse;
 import br.com.iforce.praxis.gupy.service.CandidateAttemptService;
 import br.com.iforce.praxis.gupy.service.GupyAuthService;
@@ -20,6 +21,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
@@ -63,16 +65,26 @@ public class GupyIntegrationController {
             @ApiResponse(responseCode = "403", description = "Acesso negado.", content = @Content(examples = @ExampleObject(value = ERROR_EXAMPLE))),
             @ApiResponse(responseCode = "409", description = "Conflito de estado.", content = @Content(examples = @ExampleObject(value = ERROR_EXAMPLE)))
     })
-    public ResponseEntity<List<GupyTestResponse>> listPublishedTests(
-            @RequestHeader(name = "Authorization", required = false) String authorization
+    public ResponseEntity<TestItemsResponse> listPublishedTests(
+            @RequestHeader(name = "Authorization", required = false) String authorization,
+            @RequestParam(name = "searchString", required = false) String searchString,
+            @RequestParam(name = "offset", defaultValue = "0") int offset,
+            @RequestParam(name = "limit", defaultValue = "50") int limit
     ) {
         gupyAuthService.validateBearerToken(authorization);
 
-        List<GupyTestResponse> tests = simulationCatalogService.findPublished().stream()
-                .map(simulation -> new GupyTestResponse(simulation.id(), simulation.name(), simulation.description()))
+        List<GupyTestResponse> tests = simulationCatalogService.findPublished(searchString, offset, limit).stream()
+                .map(simulation -> new GupyTestResponse(
+                        simulation.id(),
+                        simulation.name(),
+                        "Situational Judgment",
+                        simulation.description(),
+                        "professional"
+                ))
                 .toList();
 
-        return ResponseEntity.ok(tests);
+        int totalTests = simulationCatalogService.countPublished(searchString);
+        return ResponseEntity.ok(new TestItemsResponse(limit, offset, totalTests, tests));
     }
 
     @PostMapping("/test/candidate")

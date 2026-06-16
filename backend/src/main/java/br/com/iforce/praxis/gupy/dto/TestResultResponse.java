@@ -1,31 +1,38 @@
 package br.com.iforce.praxis.gupy.dto;
 
-import br.com.iforce.praxis.gupy.model.AttemptStatus;
-import br.com.iforce.praxis.gupy.model.ResultDecision;
 import io.swagger.v3.oas.annotations.media.Schema;
 
 import java.util.List;
 
 @Schema(description = "Resultado de teste retornado para a Gupy.")
 public record TestResultResponse(
-        @Schema(example = "res_123")
-        String id,
+        @Schema(example = "Atendimento N2")
+        String title,
 
-        @Schema(example = "notStarted")
-        AttemptStatus status,
+        @Schema(example = "sim-atendimento-n2")
+        String testCode,
 
-        @Schema(example = "78", minimum = "0", maximum = "100", nullable = true)
-        Integer score,
+        @Schema(example = "Avaliacao situacional deterministica.")
+        String description,
 
-        List<TestResultItemResponse> results,
+        @Schema(example = "Praxis")
+        String providerName,
 
-        @Schema(example = "recommendInterview")
-        ResultDecision decision,
+        @Schema(example = "Score geral: 78/100")
+        String company_result_string,
 
-        @Schema(example = "false")
-        boolean humanReviewRequired,
+        @Schema(example = "https://praxis.example.com")
+        String providerLink,
 
-        @Schema(example = "Trilha auditável de pontuação para a empresa.")
-        String companyResultString
+        @Schema(example = "done", allowableValues = {"notStarted", "paused", "done"})
+        String status,
+
+        @Schema(example = "https://praxis.example.com/test/result/res_123")
+        String result_page_url,
+
+        @Schema(example = "https://praxis.example.com/candidate/attempts/att_123")
+        String result_candidate_page_url,
+
+        List<TestResultItemResponse> results
 ) {
 }

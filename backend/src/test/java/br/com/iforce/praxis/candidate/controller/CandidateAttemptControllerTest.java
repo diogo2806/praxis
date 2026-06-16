@@ -79,11 +79,10 @@ class CandidateAttemptControllerTest {
 
         mockMvc.perform(get("/test/result/" + resultId).header("Authorization", AUTHORIZATION))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.status").value("completed"))
-                .andExpect(jsonPath("$.score").value(100))
-                .andExpect(jsonPath("$.decision").value("recommendInterview"))
-                .andExpect(jsonPath("$.humanReviewRequired").value(false))
-                .andExpect(jsonPath("$.companyResultString").value(org.hamcrest.Matchers.containsString("Score geral: 100/100")));
+                .andExpect(jsonPath("$.status").value("done"))
+                .andExpect(jsonPath("$.results[?(@.title=='Empatia')].score").value(org.hamcrest.Matchers.hasItem(100)))
+                .andExpect(jsonPath("$.company_result_string").value(org.hamcrest.Matchers.containsString("Score geral: 100/100")))
+                .andExpect(jsonPath("$.company_result_string").value(org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString("Revisao humana obrigatoria"))));
 
         mockMvc.perform(get("/api/v1/audit/candidate-attempts/" + attemptId))
                 .andExpect(status().isOk())
@@ -143,10 +142,9 @@ class CandidateAttemptControllerTest {
 
         mockMvc.perform(get("/test/result/" + resultId).header("Authorization", AUTHORIZATION))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.score").value(63))
-                .andExpect(jsonPath("$.decision").value("reviewRequired"))
-                .andExpect(jsonPath("$.humanReviewRequired").value(true))
-                .andExpect(jsonPath("$.companyResultString").value(org.hamcrest.Matchers.containsString("Revisão humana obrigatória")));
+                .andExpect(jsonPath("$.status").value("done"))
+                .andExpect(jsonPath("$.results[?(@.title=='Empatia')].score").value(org.hamcrest.Matchers.hasItem(95)))
+                .andExpect(jsonPath("$.company_result_string").value(org.hamcrest.Matchers.containsString("Revisão humana obrigatória")));
     }
 
     @Test
@@ -171,9 +169,9 @@ class CandidateAttemptControllerTest {
 
         mockMvc.perform(get("/test/result/" + resultId).header("Authorization", AUTHORIZATION))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.status").value("completed"))
-                .andExpect(jsonPath("$.score").value(0))
-                .andExpect(jsonPath("$.humanReviewRequired").value(false));
+                .andExpect(jsonPath("$.status").value("done"))
+                .andExpect(jsonPath("$.results[?(@.title=='Empatia')].score").value(org.hamcrest.Matchers.hasItem(0)))
+                .andExpect(jsonPath("$.company_result_string").value(org.hamcrest.Matchers.containsString("Score geral: 0/100")));
 
         mockMvc.perform(get("/api/v1/audit/candidate-attempts/" + attemptId))
                 .andExpect(status().isOk())
@@ -201,9 +199,9 @@ class CandidateAttemptControllerTest {
 
         mockMvc.perform(get("/test/result/" + resultId).header("Authorization", AUTHORIZATION))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.results[?(@.name=='Aderencia a politica')].tier").value(org.hamcrest.Matchers.hasItem("minor")))
-                .andExpect(jsonPath("$.results[?(@.name=='Empatia')].tier").value(org.hamcrest.Matchers.hasItem("major")))
-                .andExpect(jsonPath("$.results[?(@.name=='Resolucao de conflito')].tier").value(org.hamcrest.Matchers.hasItem("major")));
+                .andExpect(jsonPath("$.results[?(@.title=='Aderencia a politica')].tier").value(org.hamcrest.Matchers.hasItem("minor")))
+                .andExpect(jsonPath("$.results[?(@.title=='Empatia')].tier").value(org.hamcrest.Matchers.hasItem("major")))
+                .andExpect(jsonPath("$.results[?(@.title=='Resolucao de conflito')].tier").value(org.hamcrest.Matchers.hasItem("major")));
     }
 
     @Test
