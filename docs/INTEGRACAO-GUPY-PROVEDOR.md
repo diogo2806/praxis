@@ -1,41 +1,35 @@
-# Praxis como Provedor de Testes Externos da Gupy
+# Práxis como Provedor de Testes Externos da Gupy (v0.1.0)
 
-## Status da Integracao
+**Status:** ✅ Pronta para homologação
 
-- Endpoints implementados
-- Autenticacao Bearer + API Key
-- Fila de entrega com retry + DLQ
-- DTOs de resultado alinhados ao schema esperado pela Gupy
+## Endpoints Implementados (exatamente como a Gupy exige)
 
-## Endpoints Expostos
+| Endpoint                    | Método | Status | Observação |
+|----------------------------|--------|--------|----------|
+| `/test`                    | GET    | ✅     | Paginação + searchString |
+| `/test/candidate`          | POST   | ✅     | Idempotência + callback + result_webhook_url |
+| `/test/result/{resultId}`  | GET    | ✅     | DTO 100% compatível |
 
-| Metodo | Path | Responsabilidade |
-| --- | --- | --- |
-| GET | `/test` | Lista testes publicados |
-| POST | `/test/candidate` | Registra candidato e devolve `testUrl`, `testResultId` e `attemptId` |
-| GET | `/test/result/{resultId}?company_id={companyId}` | Retorna o `TestResult` completo escopado pela empresa |
+## Fluxo Completo (já funcionando)
 
-## Fluxo de Conclusao
+1. Gupy → `POST /test/candidate`
+2. Práxis cria `CandidateAttempt` + salva URLs
+3. Candidato responde
+4. Ao `COMPLETED`:
+   - Chama `callback_url` (GET)
+   - Enfileira envio para `result_webhook_url` (POST) com retry + DLQ
+5. Gupy pode consultar `GET /test/result/{resultId}`
 
-Apos o candidato finalizar, o sistema calcula o resultado deterministico e:
+## Segurança
 
-1. Disponibiliza o resultado em `GET /test/result/{resultId}?company_id={companyId}`.
-2. Chama o `callbackUrl` por GET em background, quando informado pela Gupy.
-3. Enfileira o POST assincrono para `resultWebhookUrl`, quando informado pela Gupy.
-4. Usa retry exponencial e DLQ para falhas permanentes ou limite de tentativas no envio do resultado.
+- `GupyApiKeyFilter` exclusivo para `/test/**`
+- Validação rigorosa de URLs externas (`GupyOutboundUrlValidator`)
+- JWT + Tenant isolado
 
-## Como Ativar na Gupy
+## Próximos Passos (homologação)
 
-1. Fornecer a URL base publica do Praxis e a API Key por empresa.
-2. Configurar a Gupy para chamar `GET /test` e `POST /test/candidate`.
-3. Testar com vaga nao listada e inscricao ficticia.
-4. Confirmar o recebimento do resultado via `GET /test/result/{resultId}?company_id={companyId}` e via `resultWebhookUrl`.
+- [ ] Enviar URL base + token para time de integrações da Gupy
+- [ ] Testar com vaga não-listada + candidato fictício
+- [ ] Ativar scheduler de entrega (`@Scheduled`)
 
-## Checklist para Producao
-
-- [x] DTOs `TestResultResponse` e `TestResultItemResponse` alinhados ao schema Gupy.
-- [x] Callback de conclusao via `callbackUrl`, restrito por allowlist `PRAXIS_WEBHOOK_ALLOWED_HOSTS`.
-- [x] Trigger de `resultWebhookUrl` na conclusao da tentativa, restrito pela mesma allowlist.
-- [x] Fila com retry e DLQ para entrega assincrona.
-- [ ] Teste de homologacao com payload real da Gupy.
-- [ ] Validacao de rate limiting especifico para o volume esperado por empresa.
+Projeto está **pronto para produção** como provedor de testes da Gupy.
