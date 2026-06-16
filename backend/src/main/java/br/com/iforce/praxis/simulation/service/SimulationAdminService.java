@@ -782,8 +782,10 @@ public class SimulationAdminService {
             SimulationEntity simulationEntity,
             SimulationVersionEntity versionEntity
     ) {
-        long attemptsCreated = candidateAttemptRepository.countBySimulationVersionId(versionEntity.getId());
-        long attemptsCompleted = candidateAttemptRepository.countBySimulationVersionIdAndStatus(
+        String tenantId = currentTenantService.requiredTenantId();
+        long attemptsCreated = candidateAttemptRepository.countByTenantIdAndSimulationVersionId(tenantId, versionEntity.getId());
+        long attemptsCompleted = candidateAttemptRepository.countByTenantIdAndSimulationVersionIdAndStatus(
+                tenantId,
                 versionEntity.getId(),
                 AttemptStatus.COMPLETED
         );

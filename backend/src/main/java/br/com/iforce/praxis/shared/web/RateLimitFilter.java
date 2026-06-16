@@ -1,6 +1,8 @@
 package br.com.iforce.praxis.shared.web;
 
 import br.com.iforce.praxis.config.PraxisProperties;
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
 import io.github.bucket4j.Bandwidth;
 import io.github.bucket4j.Bucket;
 import jakarta.servlet.FilterChain;
@@ -8,7 +10,6 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.http.HttpStatus;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
@@ -18,20 +19,22 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.Duration;
 import java.util.Base64;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicLong;
 
 @Component
 public class RateLimitFilter extends OncePerRequestFilter {
 
     private static final String HEADER_AUTHORIZATION = "Authorization";
+    private static final int MAX_CACHE_SIZE = 100_000;
 
     private final PraxisProperties praxisProperties;
-    private final Map<String, BucketState> buckets = new ConcurrentHashMap<>();
+    private final Cache<String, Bucket> buckets;
 
     public RateLimitFilter(PraxisProperties praxisProperties) {
         this.praxisProperties = praxisProperties;
+        this.buckets = Caffeine.newBuilder()
+                .expireAfterAccess(Duration.ofHours(1))
+                .maximumSize(MAX_CACHE_SIZE)
+                .build();
     }
 
     @Override
@@ -46,13 +49,10 @@ public class RateLimitFilter extends OncePerRequestFilter {
             return;
         }
 
-        BucketState state = buckets.computeIfAbsent(policy.key(), ignored ->
-                new BucketState(newBucket(policy.requestsPerMinute()), new AtomicLong())
-        );
-        state.lastSeenEpochMs().set(System.currentTimeMillis());
+        Bucket bucket = buckets.get(policy.key(), ignored -> newBucket(policy.requestsPerMinute()));
         response.setHeader("X-RateLimit-Limit", String.valueOf(policy.requestsPerMinute()));
 
-        if (state.bucket().tryConsume(1)) {
+        if (bucket.tryConsume(1)) {
             filterChain.doFilter(request, response);
             return;
         }
@@ -61,12 +61,6 @@ public class RateLimitFilter extends OncePerRequestFilter {
         response.setContentType("application/json");
         response.setHeader("Retry-After", "60");
         response.getWriter().write("{\"message\":\"Rate limit excedido.\"}");
-    }
-
-    @Scheduled(fixedDelayString = "${praxis.rate-limit-cleanup-delay-ms:300000}")
-    public void cleanupIdleBuckets() {
-        long cutoff = System.currentTimeMillis() - Duration.ofHours(1).toMillis();
-        buckets.entrySet().removeIf(entry -> entry.getValue().lastSeenEpochMs().get() < cutoff);
     }
 
     private RateLimitPolicy policyFor(HttpServletRequest request) {
@@ -136,8 +130,5 @@ public class RateLimitFilter extends OncePerRequestFilter {
     }
 
     private record RateLimitPolicy(String key, int requestsPerMinute) {
-    }
-
-    private record BucketState(Bucket bucket, AtomicLong lastSeenEpochMs) {
     }
 }

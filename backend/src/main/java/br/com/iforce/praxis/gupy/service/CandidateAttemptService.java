@@ -2,6 +2,7 @@ package br.com.iforce.praxis.gupy.service;
 
 import br.com.iforce.praxis.audit.model.AuditEventType;
 import br.com.iforce.praxis.audit.service.AuditEventService;
+import br.com.iforce.praxis.auth.service.CurrentTenantService;
 import br.com.iforce.praxis.candidate.dto.CandidateAttemptResponse;
 import br.com.iforce.praxis.candidate.dto.SubmitAnswerRequest;
 import br.com.iforce.praxis.candidate.dto.SubmitAnswerResponse;
@@ -19,6 +20,7 @@ import br.com.iforce.praxis.gupy.model.ScenarioNode;
 import br.com.iforce.praxis.gupy.model.ScenarioOption;
 import br.com.iforce.praxis.gupy.persistence.entity.CandidateAttemptEntity;
 import br.com.iforce.praxis.gupy.persistence.repository.CandidateAttemptRepository;
+import br.com.iforce.praxis.shared.security.TenantSecurity;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -50,6 +52,7 @@ public class CandidateAttemptService {
     private final AttemptStateMachine attemptStateMachine;
     private final GupyTestResultMapper gupyTestResultMapper;
     private final GupyAuthService gupyAuthService;
+    private final CurrentTenantService currentTenantService;
 
     public CandidateAttemptService(
             CandidateAttemptRepository candidateAttemptRepository,
@@ -61,7 +64,8 @@ public class CandidateAttemptService {
             CandidateAttemptMapper candidateAttemptMapper,
             AttemptStateMachine attemptStateMachine,
             GupyTestResultMapper gupyTestResultMapper,
-            GupyAuthService gupyAuthService
+            GupyAuthService gupyAuthService,
+            CurrentTenantService currentTenantService
     ) {
         this.candidateAttemptRepository = candidateAttemptRepository;
         this.auditEventService = auditEventService;
@@ -73,6 +77,7 @@ public class CandidateAttemptService {
         this.attemptStateMachine = attemptStateMachine;
         this.gupyTestResultMapper = gupyTestResultMapper;
         this.gupyAuthService = gupyAuthService;
+        this.currentTenantService = currentTenantService;
     }
 
     @Transactional
@@ -157,7 +162,9 @@ public class CandidateAttemptService {
 
     @Transactional(noRollbackFor = ResponseStatusException.class)
     public SubmitAnswerResponse submitAnswer(String attemptId, SubmitAnswerRequest request) {
-        CandidateAttemptEntity candidateAttemptEntity = candidateAttemptRepository.findByIdForUpdate(attemptId)
+        String tenantId = TenantSecurity.requiredTenant();
+        CandidateAttemptEntity candidateAttemptEntity = candidateAttemptRepository
+                .findByTenantIdAndIdForUpdate(tenantId, attemptId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Tentativa nao encontrada."));
         CandidateAttempt attempt = attemptStateMachine.expireIfNeeded(candidateAttemptMapper.toDomain(candidateAttemptEntity));
         if (attemptStateMachine.isTerminalBlocked(attempt.status())) {
@@ -311,7 +318,8 @@ public class CandidateAttemptService {
     }
 
     private CandidateAttemptEntity findAttemptEntityById(String attemptId) {
-        return candidateAttemptRepository.findById(attemptId)
+        String tenantId = TenantSecurity.requiredTenant();
+        return candidateAttemptRepository.findByTenantIdAndId(tenantId, attemptId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Tentativa nao encontrada."));
     }
 

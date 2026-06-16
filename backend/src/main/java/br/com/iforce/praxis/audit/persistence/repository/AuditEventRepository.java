@@ -2,16 +2,17 @@ package br.com.iforce.praxis.audit.persistence.repository;
 
 import br.com.iforce.praxis.audit.persistence.entity.AuditEventEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 import java.util.List;
 
 public interface AuditEventRepository extends JpaRepository<AuditEventEntity, Long> {
 
-    List<AuditEventEntity> findByAggregateTypeAndAggregateIdOrderByCreatedAtAsc(String aggregateType, String aggregateId);
-
+    @Query("SELECT e FROM AuditEventEntity e WHERE e.tenantId = :tenantId AND e.aggregateType = :aggregateType AND e.aggregateId = :aggregateId ORDER BY e.createdAt ASC")
     List<AuditEventEntity> findByTenantIdAndAggregateTypeAndAggregateIdOrderByCreatedAtAsc(
-            String tenantId,
-            String aggregateType,
-            String aggregateId
+            @Param("tenantId") String tenantId,
+            @Param("aggregateType") String aggregateType,
+            @Param("aggregateId") String aggregateId
     );
 }
