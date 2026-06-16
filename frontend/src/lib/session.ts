@@ -19,7 +19,7 @@ const demoSession: PraxisSession = {
 export function getSession(): PraxisSession {
   const demoEnabled = import.meta.env.VITE_PRAXIS_DEMO_MODE === "true";
 
-  if (demoEnabled) {
+  if (demoEnabled || typeof window === "undefined") {
     return demoSession;
   }
 
