@@ -48,4 +48,6 @@ public interface SimulationVersionRepository extends JpaRepository<SimulationVer
             String simulationId,
             SimulationVersionStatus status
     );
+
+    Optional<SimulationVersionEntity> findFirstBySimulationIdOrderByVersionNumberDesc(String simulationId);
 }

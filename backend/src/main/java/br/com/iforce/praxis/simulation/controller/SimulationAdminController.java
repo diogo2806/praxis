@@ -1,5 +1,6 @@
 package br.com.iforce.praxis.simulation.controller;
 
+import br.com.iforce.praxis.simulation.dto.CloneSimulationVersionResponse;
 import br.com.iforce.praxis.simulation.dto.GupyPreflightResponse;
 import br.com.iforce.praxis.simulation.dto.PublishSimulationResponse;
 import br.com.iforce.praxis.simulation.dto.RejectSimulationVersionRequest;
@@ -49,6 +50,18 @@ public class SimulationAdminController {
             @PathVariable int versionNumber
     ) {
         return ResponseEntity.ok(simulationAdminService.validateVersion(simulationId, versionNumber));
+    }
+
+    @PostMapping("/{simulationId}/versions/{versionNumber}/clone-draft")
+    @Operation(
+            summary = "Clona versao publicada para edicao",
+            description = "Cria a proxima versao em rascunho a partir de uma versao publicada, preservando a publicada imutavel."
+    )
+    public ResponseEntity<CloneSimulationVersionResponse> clonePublishedVersionToDraft(
+            @PathVariable String simulationId,
+            @PathVariable int versionNumber
+    ) {
+        return ResponseEntity.ok(simulationAdminService.clonePublishedVersionToDraft(simulationId, versionNumber));
     }
 
     @PostMapping("/{simulationId}/versions/{versionNumber}/submit-review")
