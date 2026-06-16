@@ -19,10 +19,16 @@ import java.util.Map;
 public class SimulationMapperService {
 
     public PublishedSimulation toPublishedSimulation(SimulationVersionEntity simulationVersionEntity) {
-        List<String> competencies = simulationVersionEntity.getCompetencies().stream()
-                .map(SimulationCompetencyEntity::getName)
-                .sorted()
+        List<SimulationCompetencyEntity> sortedCompetencies = simulationVersionEntity.getCompetencies().stream()
+                .sorted(Comparator.comparing(SimulationCompetencyEntity::getName))
                 .toList();
+
+        List<String> competencies = sortedCompetencies.stream()
+                .map(SimulationCompetencyEntity::getName)
+                .toList();
+
+        Map<String, Double> competencyWeights = new LinkedHashMap<>();
+        sortedCompetencies.forEach(competency -> competencyWeights.put(competency.getName(), competency.getWeight()));
 
         List<ScenarioNode> nodes = simulationVersionEntity.getNodes().stream()
                 .sorted(Comparator.comparingInt(SimulationNodeEntity::getTurnIndex))
@@ -36,6 +42,7 @@ public class SimulationMapperService {
                 simulationVersionEntity.getSimulation().getName(),
                 simulationVersionEntity.getSimulation().getDescription(),
                 competencies,
+                competencyWeights,
                 simulationVersionEntity.getRootNodeId(),
                 nodes
         );

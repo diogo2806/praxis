@@ -111,6 +111,23 @@ class ResultDeliveryControllerTest {
                 .andExpect(jsonPath("$.delivery.lastError").value("HTTP 500"));
     }
 
+    @Test
+    void contractErrorMovesDeliveryStraightToDlqWithoutRetry() throws Exception {
+        String attemptId = createCompletedAttempt("delivery-contract-error");
+        Long deliveryId = findDeliveryId(attemptId, "pending");
+
+        doThrow(new org.springframework.web.client.HttpClientErrorException(org.springframework.http.HttpStatus.BAD_REQUEST))
+                .when(resultWebhookClient)
+                .postResult(eq("https://cliente.gupy.io/result-webhook"), any(TestResultResponse.class));
+
+        // 4xx é erro de contrato: vai direto para a DLQ na primeira tentativa, sem retry.
+        mockMvc.perform(post("/api/v1/gupy/result-deliveries/" + deliveryId + "/reprocess"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.delivery.status").value("dlq"))
+                .andExpect(jsonPath("$.delivery.attemptCount").value(1))
+                .andExpect(jsonPath("$.delivery.nextAttemptAt").doesNotExist());
+    }
+
     private String createCompletedAttempt(String documentId) throws Exception {
         MvcResult createResult = mockMvc.perform(post("/test/candidate")
                         .header("Authorization", AUTHORIZATION)

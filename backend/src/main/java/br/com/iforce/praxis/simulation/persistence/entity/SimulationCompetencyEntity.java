@@ -35,4 +35,7 @@ public class SimulationCompetencyEntity {
 
     @Column(name = "name", nullable = false, length = 140)
     private String name;
+
+    @Column(name = "weight", nullable = false)
+    private double weight;
 }

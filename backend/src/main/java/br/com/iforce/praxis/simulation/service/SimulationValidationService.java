@@ -1,9 +1,11 @@
 package br.com.iforce.praxis.simulation.service;
 
+import br.com.iforce.praxis.config.PraxisProperties;
 import br.com.iforce.praxis.simulation.dto.SimulationValidationResponse;
 import br.com.iforce.praxis.simulation.dto.ValidationIssueResponse;
 import br.com.iforce.praxis.simulation.model.ValidationIssueSeverity;
 import br.com.iforce.praxis.simulation.persistence.entity.OptionCompetencyScoreEntity;
+import br.com.iforce.praxis.simulation.persistence.entity.SimulationCompetencyEntity;
 import br.com.iforce.praxis.simulation.persistence.entity.SimulationNodeEntity;
 import br.com.iforce.praxis.simulation.persistence.entity.SimulationOptionEntity;
 import br.com.iforce.praxis.simulation.persistence.entity.SimulationVersionEntity;
@@ -18,6 +20,14 @@ import java.util.Set;
 
 @Service
 public class SimulationValidationService {
+
+    private static final int MAX_DEPTH_TURNS = 10;
+
+    private final PraxisProperties praxisProperties;
+
+    public SimulationValidationService(PraxisProperties praxisProperties) {
+        this.praxisProperties = praxisProperties;
+    }
 
     public SimulationValidationResponse validate(SimulationVersionEntity simulationVersionEntity) {
         List<ValidationIssueResponse> issues = new ArrayList<>();
@@ -35,9 +45,12 @@ public class SimulationValidationService {
             validateNode(node, nodesById, issues);
         }
 
+        validateCompetencyWeights(simulationVersionEntity, issues);
+
         if (nodesById.containsKey(simulationVersionEntity.getRootNodeId())) {
             detectCycles(simulationVersionEntity.getRootNodeId(), nodesById, issues);
             validateReachability(simulationVersionEntity.getRootNodeId(), nodesById, issues);
+            validateDepth(simulationVersionEntity.getRootNodeId(), nodesById, issues);
         }
 
         boolean publishable = issues.stream()
@@ -129,6 +142,87 @@ public class SimulationValidationService {
                 ));
             }
         }
+    }
+
+    private void validateCompetencyWeights(
+            SimulationVersionEntity simulationVersionEntity,
+            List<ValidationIssueResponse> issues
+    ) {
+        Set<SimulationCompetencyEntity> competencies = simulationVersionEntity.getCompetencies();
+        if (competencies.isEmpty()) {
+            issues.add(new ValidationIssueResponse(
+                    ValidationIssueSeverity.BLOCKER,
+                    simulationVersionEntity.getRootNodeId(),
+                    "Versão sem competências configuradas."
+            ));
+            return;
+        }
+
+        double weightSum = 0.0;
+        for (SimulationCompetencyEntity competency : competencies) {
+            if (competency.getWeight() < 0) {
+                issues.add(new ValidationIssueResponse(
+                        ValidationIssueSeverity.BLOCKER,
+                        competency.getName(),
+                        "Peso de competência não pode ser negativo."
+                ));
+            }
+            weightSum += competency.getWeight();
+        }
+
+        if (Math.abs(weightSum - 1.0) > praxisProperties.competencyWeightTolerance()) {
+            issues.add(new ValidationIssueResponse(
+                    ValidationIssueSeverity.BLOCKER,
+                    simulationVersionEntity.getRootNodeId(),
+                    "A soma dos pesos das competências deve ser 1.0 (atual: " + weightSum + ")."
+            ));
+        }
+    }
+
+    private void validateDepth(
+            String rootNodeId,
+            Map<String, SimulationNodeEntity> nodesById,
+            List<ValidationIssueResponse> issues
+    ) {
+        int longestPath = longestPathLength(rootNodeId, nodesById, new HashMap<>(), new HashSet<>());
+        if (longestPath > MAX_DEPTH_TURNS) {
+            issues.add(new ValidationIssueResponse(
+                    ValidationIssueSeverity.BLOCKER,
+                    rootNodeId,
+                    "A simulação excede a profundidade máxima de " + MAX_DEPTH_TURNS + " turnos (atual: " + longestPath + ")."
+            ));
+        }
+    }
+
+    private int longestPathLength(
+            String nodeId,
+            Map<String, SimulationNodeEntity> nodesById,
+            Map<String, Integer> memo,
+            Set<String> visiting
+    ) {
+        SimulationNodeEntity node = nodesById.get(nodeId);
+        if (node == null || !visiting.add(nodeId)) {
+            // Nó inexistente ou ciclo (já sinalizado por detectCycles): interrompe a recursão.
+            return 0;
+        }
+
+        Integer cached = memo.get(nodeId);
+        if (cached != null) {
+            visiting.remove(nodeId);
+            return cached;
+        }
+
+        int longestChild = 0;
+        for (SimulationOptionEntity option : node.getOptions()) {
+            if (option.getNextNodeId() != null && nodesById.containsKey(option.getNextNodeId())) {
+                longestChild = Math.max(longestChild, longestPathLength(option.getNextNodeId(), nodesById, memo, visiting));
+            }
+        }
+
+        int longest = 1 + longestChild;
+        memo.put(nodeId, longest);
+        visiting.remove(nodeId);
+        return longest;
     }
 
     private void detectCycles(

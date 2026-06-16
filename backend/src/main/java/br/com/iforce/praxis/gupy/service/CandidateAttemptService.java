@@ -1,31 +1,23 @@
 package br.com.iforce.praxis.gupy.service;
 
-import br.com.iforce.praxis.candidate.dto.CandidateAttemptResponse;
-import br.com.iforce.praxis.candidate.dto.CandidateNodeResponse;
-import br.com.iforce.praxis.candidate.dto.CandidateOptionResponse;
-import br.com.iforce.praxis.candidate.dto.SubmitAnswerRequest;
-import br.com.iforce.praxis.candidate.dto.SubmitAnswerResponse;
 import br.com.iforce.praxis.audit.model.AuditEventType;
 import br.com.iforce.praxis.audit.service.AuditEventService;
+import br.com.iforce.praxis.candidate.dto.CandidateAttemptResponse;
+import br.com.iforce.praxis.candidate.dto.SubmitAnswerRequest;
+import br.com.iforce.praxis.candidate.dto.SubmitAnswerResponse;
 import br.com.iforce.praxis.config.PraxisProperties;
+import br.com.iforce.praxis.gupy.delivery.service.ResultDeliveryService;
 import br.com.iforce.praxis.gupy.dto.CreateCandidateRequest;
 import br.com.iforce.praxis.gupy.dto.CreateCandidateResponse;
 import br.com.iforce.praxis.gupy.dto.TestResultItemResponse;
 import br.com.iforce.praxis.gupy.dto.TestResultResponse;
-import br.com.iforce.praxis.gupy.delivery.service.ResultDeliveryService;
 import br.com.iforce.praxis.gupy.model.AttemptAnswer;
 import br.com.iforce.praxis.gupy.model.AttemptStatus;
 import br.com.iforce.praxis.gupy.model.CandidateAttempt;
 import br.com.iforce.praxis.gupy.model.PublishedSimulation;
-import br.com.iforce.praxis.gupy.model.ResultDecision;
-import br.com.iforce.praxis.gupy.model.ResultItem;
-import br.com.iforce.praxis.gupy.model.ResultTier;
 import br.com.iforce.praxis.gupy.model.ScenarioNode;
 import br.com.iforce.praxis.gupy.model.ScenarioOption;
-import br.com.iforce.praxis.gupy.model.ScoreCalculationResult;
-import br.com.iforce.praxis.gupy.persistence.entity.AttemptAnswerEntity;
 import br.com.iforce.praxis.gupy.persistence.entity.CandidateAttemptEntity;
-import br.com.iforce.praxis.gupy.persistence.entity.ResultItemEntity;
 import br.com.iforce.praxis.gupy.persistence.repository.CandidateAttemptRepository;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -33,13 +25,17 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+/**
+ * Orquestra o ciclo de vida da tentativa do candidato: idempotência na criação, persistência,
+ * disparo de entrega à Gupy e montagem das respostas REST. As transições de estado ficam em
+ * {@link AttemptStateMachine}, o mapeamento entidade↔domínio em {@link CandidateAttemptMapper} e o
+ * cálculo de score em {@link ResultScoringService}.
+ */
 @Service
 public class CandidateAttemptService {
 
@@ -48,7 +44,8 @@ public class CandidateAttemptService {
     private final ResultDeliveryService resultDeliveryService;
     private final PraxisProperties praxisProperties;
     private final SimulationCatalogService simulationCatalogService;
-    private final ResultScoringService resultScoringService;
+    private final CandidateAttemptMapper candidateAttemptMapper;
+    private final AttemptStateMachine attemptStateMachine;
 
     public CandidateAttemptService(
             CandidateAttemptRepository candidateAttemptRepository,
@@ -56,14 +53,16 @@ public class CandidateAttemptService {
             ResultDeliveryService resultDeliveryService,
             PraxisProperties praxisProperties,
             SimulationCatalogService simulationCatalogService,
-            ResultScoringService resultScoringService
+            CandidateAttemptMapper candidateAttemptMapper,
+            AttemptStateMachine attemptStateMachine
     ) {
         this.candidateAttemptRepository = candidateAttemptRepository;
         this.auditEventService = auditEventService;
         this.resultDeliveryService = resultDeliveryService;
         this.praxisProperties = praxisProperties;
         this.simulationCatalogService = simulationCatalogService;
-        this.resultScoringService = resultScoringService;
+        this.candidateAttemptMapper = candidateAttemptMapper;
+        this.attemptStateMachine = attemptStateMachine;
     }
 
     @Transactional
@@ -72,9 +71,7 @@ public class CandidateAttemptService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Teste publicado nao encontrado."));
 
         String idempotencyKey = request.companyId() + "|" + request.documentId() + "|" + request.testId();
-        Optional<CandidateAttemptEntity> existingCandidateAttemptEntity =
-                candidateAttemptRepository.findByIdempotencyKey(idempotencyKey);
-        CandidateAttemptEntity candidateAttemptEntity = existingCandidateAttemptEntity
+        CandidateAttemptEntity candidateAttemptEntity = candidateAttemptRepository.findByIdempotencyKey(idempotencyKey)
                 .orElseGet(() -> createAndAuditAttempt(idempotencyKey, request, publishedSimulation));
 
         return new CreateCandidateResponse(
@@ -90,7 +87,7 @@ public class CandidateAttemptService {
             PublishedSimulation publishedSimulation
     ) {
         CandidateAttemptEntity candidateAttemptEntity = candidateAttemptRepository.save(
-                createAttemptEntity(idempotencyKey, request, publishedSimulation)
+                candidateAttemptMapper.newEntity(idempotencyKey, request, publishedSimulation)
         );
         auditEventService.appendCandidateAttemptEvent(
                 candidateAttemptEntity.getId(),
@@ -107,15 +104,14 @@ public class CandidateAttemptService {
     @Transactional
     public CandidateAttemptResponse findCandidateAttempt(String attemptId) {
         CandidateAttemptEntity candidateAttemptEntity = findAttemptEntityById(attemptId);
-        CandidateAttempt attempt = expireAttemptIfNeeded(toDomain(candidateAttemptEntity));
-        if (!isTerminalBlockedStatus(attempt.status())) {
-            attempt = startAttemptIfNeeded(attempt);
+        CandidateAttempt attempt = attemptStateMachine.expireIfNeeded(candidateAttemptMapper.toDomain(candidateAttemptEntity));
+        if (!attemptStateMachine.isTerminalBlocked(attempt.status())) {
+            attempt = attemptStateMachine.startIfNeeded(attempt);
         }
-        applyDomainToEntity(attempt, candidateAttemptEntity);
-        CandidateAttemptEntity savedCandidateAttemptEntity = candidateAttemptRepository.save(candidateAttemptEntity);
-        CandidateAttempt savedAttempt = toDomain(savedCandidateAttemptEntity);
-        PublishedSimulation simulation = findSimulation(attempt);
-        ScenarioNode currentNode = isTerminalBlockedStatus(savedAttempt.status())
+        CandidateAttempt savedAttempt = persist(attempt, candidateAttemptEntity);
+
+        PublishedSimulation simulation = findSimulation(savedAttempt);
+        ScenarioNode currentNode = attemptStateMachine.isTerminalBlocked(savedAttempt.status())
                 ? null
                 : findCurrentNode(savedAttempt, simulation).orElse(null);
 
@@ -124,96 +120,64 @@ public class CandidateAttemptService {
                 simulation.name(),
                 savedAttempt.status(),
                 savedAttempt.status() == AttemptStatus.COMPLETED,
-                toCandidateNodeResponse(currentNode)
+                candidateAttemptMapper.toCandidateNodeResponse(currentNode)
         );
     }
 
     @Transactional(noRollbackFor = ResponseStatusException.class)
     public SubmitAnswerResponse submitAnswer(String attemptId, SubmitAnswerRequest request) {
         CandidateAttemptEntity candidateAttemptEntity = findAttemptEntityById(attemptId);
-        CandidateAttempt attempt = expireAttemptIfNeeded(toDomain(candidateAttemptEntity));
-        if (isTerminalBlockedStatus(attempt.status())) {
-            applyDomainToEntity(attempt, candidateAttemptEntity);
-            candidateAttemptRepository.save(candidateAttemptEntity);
+        CandidateAttempt attempt = attemptStateMachine.expireIfNeeded(candidateAttemptMapper.toDomain(candidateAttemptEntity));
+        if (attemptStateMachine.isTerminalBlocked(attempt.status())) {
+            persist(attempt, candidateAttemptEntity);
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Tentativa expirada ou abandonada.");
         }
-        attempt = startAttemptIfNeeded(attempt);
+        attempt = attemptStateMachine.startIfNeeded(attempt);
         PublishedSimulation simulation = findSimulation(attempt);
 
-        Optional<AttemptAnswer> existingAnswer = Optional.ofNullable(attempt.answersByNodeId().get(request.nodeId()));
-        if (existingAnswer.isPresent()) {
-            if (!existingAnswer.get().optionId().equals(request.optionId())) {
-                throw new ResponseStatusException(HttpStatus.CONFLICT, "Turno ja respondido com outra alternativa.");
-            }
-
-            ScenarioNode currentNodeAfterDuplicate = findCurrentNode(attempt, simulation).orElse(null);
-            return new SubmitAnswerResponse(
-                    attempt.id(),
-                    attempt.status(),
-                    true,
-                    attempt.status() == AttemptStatus.COMPLETED,
-                    toCandidateNodeResponse(currentNodeAfterDuplicate)
-            );
+        Optional<SubmitAnswerResponse> duplicateResponse = handleDuplicate(attempt, simulation, request);
+        if (duplicateResponse.isPresent()) {
+            return duplicateResponse.get();
         }
 
         ScenarioNode currentNode = findCurrentNode(attempt, simulation)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.CONFLICT, "Tentativa sem turno pendente."));
-
         if (!currentNode.id().equals(request.nodeId())) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Turno informado nao e o turno atual da tentativa.");
         }
 
-        ScenarioOption selectedOption = currentNode.options().stream()
-                .filter(option -> option.id().equals(request.optionId()))
-                .findFirst()
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Alternativa invalida para o turno atual."));
-
+        AttemptAnswer answer = buildAnswer(currentNode, request);
         Map<String, AttemptAnswer> answersByNodeId = new LinkedHashMap<>(attempt.answersByNodeId());
-        answersByNodeId.put(request.nodeId(), new AttemptAnswer(request.nodeId(), request.optionId(), Instant.now()));
+        answersByNodeId.put(request.nodeId(), answer);
 
-        CandidateAttempt updatedAttempt = updateAttemptAfterAnswer(attempt, simulation, answersByNodeId, selectedOption);
-        applyDomainToEntity(updatedAttempt, candidateAttemptEntity);
-        CandidateAttemptEntity savedCandidateAttemptEntity = candidateAttemptRepository.save(candidateAttemptEntity);
-        auditAnswerSubmission(savedCandidateAttemptEntity.getId(), request, updatedAttempt);
-        if (updatedAttempt.status() == AttemptStatus.COMPLETED) {
-            resultDeliveryService.enqueueIfNeeded(savedCandidateAttemptEntity);
+        ScenarioOption selectedOption = answer.timedOut() ? null : findOption(currentNode, answer.optionId());
+        CandidateAttempt updatedAttempt = attemptStateMachine.applyAnswer(
+                attempt, simulation, answersByNodeId, selectedOption, answer.timedOut());
+
+        CandidateAttempt savedAttempt = persist(updatedAttempt, candidateAttemptEntity);
+        auditAnswerSubmission(candidateAttemptEntity.getId(), answer, savedAttempt);
+        if (savedAttempt.status() == AttemptStatus.COMPLETED) {
+            resultDeliveryService.enqueueIfNeeded(candidateAttemptEntity);
         }
-        CandidateAttempt savedAttempt = toDomain(savedCandidateAttemptEntity);
-        ScenarioNode nextNode = findCurrentNode(savedAttempt, simulation).orElse(null);
+
+        ScenarioNode nextNode = savedAttempt.status() == AttemptStatus.COMPLETED
+                ? null
+                : findCurrentNode(savedAttempt, simulation).orElse(null);
 
         return new SubmitAnswerResponse(
                 savedAttempt.id(),
                 savedAttempt.status(),
                 false,
                 savedAttempt.status() == AttemptStatus.COMPLETED,
-                toCandidateNodeResponse(nextNode)
+                candidateAttemptMapper.toCandidateNodeResponse(nextNode)
         );
-    }
-
-    private void auditAnswerSubmission(String attemptId, SubmitAnswerRequest request, CandidateAttempt updatedAttempt) {
-        auditEventService.appendCandidateAttemptEvent(
-                attemptId,
-                AuditEventType.ANSWER_SUBMITTED,
-                "Resposta salva para o turno " + request.nodeId() + ".",
-                "{\"nodeId\":\"" + request.nodeId() + "\",\"optionId\":\"" + request.optionId() + "\"}"
-        );
-
-        if (updatedAttempt.status() == AttemptStatus.COMPLETED) {
-            auditEventService.appendCandidateAttemptEvent(
-                    attemptId,
-                    AuditEventType.ATTEMPT_COMPLETED,
-                    "Tentativa finalizada com score deterministico.",
-                    "{\"score\":" + updatedAttempt.score()
-                            + ",\"humanReviewRequired\":" + updatedAttempt.humanReviewRequired() + "}"
-            );
-        }
     }
 
     @Transactional(readOnly = true)
     public TestResultResponse findResult(String resultId) {
         CandidateAttemptEntity candidateAttemptEntity = candidateAttemptRepository.findByResultId(resultId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Resultado de teste nao encontrado."));
-        CandidateAttempt attempt = toDomain(candidateAttemptEntity);
+        CandidateAttempt attempt = candidateAttemptMapper.toDomain(candidateAttemptEntity);
 
         List<TestResultItemResponse> results = attempt.results().stream()
                 .map(item -> new TestResultItemResponse(item.name(), item.score(), item.tier()))
@@ -230,250 +194,78 @@ public class CandidateAttemptService {
         );
     }
 
-    private CandidateAttemptEntity createAttemptEntity(
-            String idempotencyKey,
-            CreateCandidateRequest request,
-            PublishedSimulation publishedSimulation
-    ) {
-        String hash = Integer.toUnsignedString(idempotencyKey.hashCode());
-        CandidateAttempt initialAttempt = new CandidateAttempt(
-                "att_" + hash,
-                "res_" + hash,
-                publishedSimulation.id(),
-                publishedSimulation.versionId(),
-                publishedSimulation.versionNumber(),
-                idempotencyKey,
-                request.candidateName(),
-                request.candidateEmail(),
-                AttemptStatus.NOT_STARTED,
-                null,
-                List.of(
-                        new ResultItem("Empatia", 0, ResultTier.MAJOR),
-                        new ResultItem("Resolução de conflito", 0, ResultTier.MAJOR),
-                        new ResultItem("Aderência à política", 0, ResultTier.MINOR)
-                ),
-                Map.of(),
-                ResultDecision.IN_PROGRESS,
-                false,
-                "Resultado ainda nao finalizado. A trilha auditavel sera preenchida apos a conclusao da simulacao.",
-                Instant.now(),
-                null,
-                null
-        );
-
-        CandidateAttemptEntity candidateAttemptEntity = new CandidateAttemptEntity();
-        applyDomainToEntity(initialAttempt, candidateAttemptEntity);
-        candidateAttemptEntity.setCallbackUrl(request.callbackUrl() == null ? null : request.callbackUrl().toString());
-        candidateAttemptEntity.setResultWebhookUrl(request.resultWebhookUrl() == null ? null : request.resultWebhookUrl().toString());
-        return candidateAttemptEntity;
-    }
-
-    private void applyDomainToEntity(CandidateAttempt attempt, CandidateAttemptEntity candidateAttemptEntity) {
-        candidateAttemptEntity.setId(attempt.id());
-        candidateAttemptEntity.setResultId(attempt.resultId());
-        candidateAttemptEntity.setSimulationId(attempt.simulationId());
-        candidateAttemptEntity.setSimulationVersionId(attempt.simulationVersionId());
-        candidateAttemptEntity.setSimulationVersionNumber(attempt.simulationVersionNumber());
-        candidateAttemptEntity.setIdempotencyKey(attempt.idempotencyKey());
-        candidateAttemptEntity.setCandidateName(attempt.candidateName());
-        candidateAttemptEntity.setCandidateEmail(attempt.candidateEmail());
-        candidateAttemptEntity.setStatus(attempt.status());
-        candidateAttemptEntity.setScore(attempt.score());
-        candidateAttemptEntity.setDecision(attempt.decision());
-        candidateAttemptEntity.setHumanReviewRequired(attempt.humanReviewRequired());
-        candidateAttemptEntity.setCompanyResultString(attempt.companyResultString());
-        candidateAttemptEntity.setCreatedAt(attempt.createdAt());
-        candidateAttemptEntity.setStartedAt(attempt.startedAt());
-        candidateAttemptEntity.setFinishedAt(attempt.finishedAt());
-
-        candidateAttemptEntity.getAnswers().clear();
-        for (AttemptAnswer answer : attempt.answersByNodeId().values()) {
-            AttemptAnswerEntity attemptAnswerEntity = new AttemptAnswerEntity();
-            attemptAnswerEntity.setCandidateAttempt(candidateAttemptEntity);
-            attemptAnswerEntity.setNodeId(answer.nodeId());
-            attemptAnswerEntity.setOptionId(answer.optionId());
-            attemptAnswerEntity.setAnsweredAt(answer.answeredAt());
-            candidateAttemptEntity.getAnswers().add(attemptAnswerEntity);
-        }
-
-        candidateAttemptEntity.getResultItems().clear();
-        for (ResultItem resultItem : attempt.results()) {
-            ResultItemEntity resultItemEntity = new ResultItemEntity();
-            resultItemEntity.setCandidateAttempt(candidateAttemptEntity);
-            resultItemEntity.setName(resultItem.name());
-            resultItemEntity.setScore(resultItem.score());
-            resultItemEntity.setTier(resultItem.tier());
-            candidateAttemptEntity.getResultItems().add(resultItemEntity);
-        }
-    }
-
-    private CandidateAttempt toDomain(CandidateAttemptEntity candidateAttemptEntity) {
-        Map<String, AttemptAnswer> answersByNodeId = new LinkedHashMap<>();
-        candidateAttemptEntity.getAnswers().stream()
-                .sorted(Comparator.comparing(AttemptAnswerEntity::getAnsweredAt))
-                .forEach(answer -> answersByNodeId.put(
-                        answer.getNodeId(),
-                        new AttemptAnswer(answer.getNodeId(), answer.getOptionId(), answer.getAnsweredAt())
-                ));
-
-        List<ResultItem> resultItems = candidateAttemptEntity.getResultItems().stream()
-                .sorted(Comparator.comparing(ResultItemEntity::getName))
-                .map(resultItemEntity -> new ResultItem(
-                        resultItemEntity.getName(),
-                        resultItemEntity.getScore(),
-                        resultItemEntity.getTier()
-                ))
-                .toList();
-
-        return new CandidateAttempt(
-                candidateAttemptEntity.getId(),
-                candidateAttemptEntity.getResultId(),
-                candidateAttemptEntity.getSimulationId(),
-                candidateAttemptEntity.getSimulationVersionId(),
-                candidateAttemptEntity.getSimulationVersionNumber(),
-                candidateAttemptEntity.getIdempotencyKey(),
-                candidateAttemptEntity.getCandidateName(),
-                candidateAttemptEntity.getCandidateEmail(),
-                candidateAttemptEntity.getStatus(),
-                candidateAttemptEntity.getScore(),
-                resultItems,
-                answersByNodeId,
-                candidateAttemptEntity.getDecision(),
-                candidateAttemptEntity.isHumanReviewRequired(),
-                candidateAttemptEntity.getCompanyResultString(),
-                candidateAttemptEntity.getCreatedAt(),
-                candidateAttemptEntity.getStartedAt(),
-                candidateAttemptEntity.getFinishedAt()
-        );
-    }
-
-    private CandidateAttempt updateAttemptAfterAnswer(
+    private Optional<SubmitAnswerResponse> handleDuplicate(
             CandidateAttempt attempt,
             PublishedSimulation simulation,
-            Map<String, AttemptAnswer> answersByNodeId,
-            ScenarioOption selectedOption
+            SubmitAnswerRequest request
     ) {
-        boolean completed = selectedOption.nextNodeId() == null;
-        AttemptStatus status = completed ? AttemptStatus.COMPLETED : AttemptStatus.IN_PROGRESS;
-        ScoreCalculationResult scoreCalculationResult = completed
-                ? resultScoringService.calculate(simulation, answersByNodeId)
-                : null;
-        Integer score = completed ? scoreCalculationResult.score() : null;
-        List<ResultItem> results = completed ? scoreCalculationResult.resultItems() : attempt.results();
-        boolean humanReviewRequired = completed && scoreCalculationResult.humanReviewRequired();
-        ResultDecision decision = resolveDecision(completed, humanReviewRequired);
-        String companyResultString = buildCompanyResultString(simulation, scoreCalculationResult);
-
-        return new CandidateAttempt(
-                attempt.id(),
-                attempt.resultId(),
-                attempt.simulationId(),
-                attempt.simulationVersionId(),
-                attempt.simulationVersionNumber(),
-                attempt.idempotencyKey(),
-                attempt.candidateName(),
-                attempt.candidateEmail(),
-                status,
-                score,
-                results,
-                answersByNodeId,
-                decision,
-                humanReviewRequired,
-                companyResultString,
-                attempt.createdAt(),
-                attempt.startedAt(),
-                completed ? Instant.now() : attempt.finishedAt()
-        );
-    }
-
-    private CandidateAttempt startAttemptIfNeeded(CandidateAttempt attempt) {
-        if (attempt.status() != AttemptStatus.NOT_STARTED) {
-            return attempt;
+        AttemptAnswer existingAnswer = attempt.answersByNodeId().get(request.nodeId());
+        if (existingAnswer == null) {
+            return Optional.empty();
         }
 
-        Instant startedAt = Instant.now();
-        auditEventService.appendCandidateAttemptEvent(
-                attempt.id(),
-                AuditEventType.ATTEMPT_STARTED,
-                "Tentativa iniciada pelo candidato.",
-                "{\"startedAt\":\"" + startedAt + "\"}"
-        );
+        boolean sameAnswer = request.timedOut()
+                ? existingAnswer.timedOut()
+                : !existingAnswer.timedOut() && request.optionId() != null && request.optionId().equals(existingAnswer.optionId());
+        if (!sameAnswer) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Turno ja respondido com outra alternativa.");
+        }
 
-        return new CandidateAttempt(
+        ScenarioNode currentNode = attempt.status() == AttemptStatus.COMPLETED
+                ? null
+                : findCurrentNode(attempt, simulation).orElse(null);
+        return Optional.of(new SubmitAnswerResponse(
                 attempt.id(),
-                attempt.resultId(),
-                attempt.simulationId(),
-                attempt.simulationVersionId(),
-                attempt.simulationVersionNumber(),
-                attempt.idempotencyKey(),
-                attempt.candidateName(),
-                attempt.candidateEmail(),
-                AttemptStatus.IN_PROGRESS,
-                attempt.score(),
-                attempt.results(),
-                attempt.answersByNodeId(),
-                attempt.decision(),
-                attempt.humanReviewRequired(),
-                attempt.companyResultString(),
-                attempt.createdAt(),
-                startedAt,
-                attempt.finishedAt()
-        );
+                attempt.status(),
+                true,
+                attempt.status() == AttemptStatus.COMPLETED,
+                candidateAttemptMapper.toCandidateNodeResponse(currentNode)
+        ));
     }
 
-    private CandidateAttempt expireAttemptIfNeeded(CandidateAttempt attempt) {
-        Instant now = Instant.now();
-        if (attempt.status() == AttemptStatus.NOT_STARTED
-                && attempt.createdAt().plusSeconds(praxisProperties.attemptLinkTtlHours() * 3600L).isBefore(now)) {
+    private AttemptAnswer buildAnswer(ScenarioNode currentNode, SubmitAnswerRequest request) {
+        if (request.timedOut()) {
+            return AttemptAnswer.timedOut(request.nodeId(), Instant.now());
+        }
+        if (request.optionId() == null || request.optionId().isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Alternativa obrigatoria quando nao houver timeout.");
+        }
+        // Valida a alternativa contra o turno atual antes de persistir.
+        findOption(currentNode, request.optionId());
+        return AttemptAnswer.answered(request.nodeId(), request.optionId(), Instant.now());
+    }
+
+    private ScenarioOption findOption(ScenarioNode node, String optionId) {
+        return node.options().stream()
+                .filter(option -> option.id().equals(optionId))
+                .findFirst()
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Alternativa invalida para o turno atual."));
+    }
+
+    private void auditAnswerSubmission(String attemptId, AttemptAnswer answer, CandidateAttempt updatedAttempt) {
+        String message = answer.timedOut()
+                ? "Turno " + answer.nodeId() + " encerrado por timeout (sem resposta)."
+                : "Resposta salva para o turno " + answer.nodeId() + ".";
+        String metadata = answer.timedOut()
+                ? "{\"nodeId\":\"" + answer.nodeId() + "\",\"timedOut\":true}"
+                : "{\"nodeId\":\"" + answer.nodeId() + "\",\"optionId\":\"" + answer.optionId() + "\"}";
+        auditEventService.appendCandidateAttemptEvent(attemptId, AuditEventType.ANSWER_SUBMITTED, message, metadata);
+
+        if (updatedAttempt.status() == AttemptStatus.COMPLETED) {
             auditEventService.appendCandidateAttemptEvent(
-                    attempt.id(),
-                    AuditEventType.ATTEMPT_EXPIRED,
-                    "Link da tentativa expirou antes do inicio.",
-                    "{\"expiredAt\":\"" + now + "\"}"
+                    attemptId,
+                    AuditEventType.ATTEMPT_COMPLETED,
+                    "Tentativa finalizada com score deterministico.",
+                    "{\"score\":" + updatedAttempt.score()
+                            + ",\"humanReviewRequired\":" + updatedAttempt.humanReviewRequired() + "}"
             );
-            return withBlockedStatus(attempt, AttemptStatus.EXPIRED, now);
         }
-
-        if ((attempt.status() == AttemptStatus.IN_PROGRESS || attempt.status() == AttemptStatus.PAUSED)
-                && attempt.startedAt() != null
-                && attempt.startedAt().plusSeconds(praxisProperties.attemptSessionTtlHours() * 3600L).isBefore(now)) {
-            auditEventService.appendCandidateAttemptEvent(
-                    attempt.id(),
-                    AuditEventType.ATTEMPT_ABANDONED,
-                    "Sessao da tentativa expirou sem conclusao.",
-                    "{\"abandonedAt\":\"" + now + "\"}"
-            );
-            return withBlockedStatus(attempt, AttemptStatus.ABANDONED, now);
-        }
-
-        return attempt;
     }
 
-    private CandidateAttempt withBlockedStatus(CandidateAttempt attempt, AttemptStatus status, Instant finishedAt) {
-        return new CandidateAttempt(
-                attempt.id(),
-                attempt.resultId(),
-                attempt.simulationId(),
-                attempt.simulationVersionId(),
-                attempt.simulationVersionNumber(),
-                attempt.idempotencyKey(),
-                attempt.candidateName(),
-                attempt.candidateEmail(),
-                status,
-                attempt.score(),
-                attempt.results(),
-                attempt.answersByNodeId(),
-                attempt.decision(),
-                attempt.humanReviewRequired(),
-                attempt.companyResultString(),
-                attempt.createdAt(),
-                attempt.startedAt(),
-                finishedAt
-        );
-    }
-
-    private boolean isTerminalBlockedStatus(AttemptStatus status) {
-        return status == AttemptStatus.ABANDONED || status == AttemptStatus.EXPIRED || status == AttemptStatus.FAILED;
+    private CandidateAttempt persist(CandidateAttempt attempt, CandidateAttemptEntity candidateAttemptEntity) {
+        candidateAttemptMapper.applyDomainToEntity(attempt, candidateAttemptEntity);
+        CandidateAttemptEntity saved = candidateAttemptRepository.save(candidateAttemptEntity);
+        return candidateAttemptMapper.toDomain(saved);
     }
 
     private PublishedSimulation findSimulation(CandidateAttempt attempt) {
@@ -502,6 +294,10 @@ public class CandidateAttemptService {
             if (answer == null) {
                 return Optional.of(node);
             }
+            if (answer.timedOut() || answer.optionId() == null) {
+                // Timeout encerra a trilha: não há próximo turno.
+                return Optional.empty();
+            }
 
             ScenarioOption option = node.options().stream()
                     .filter(candidateOption -> candidateOption.id().equals(answer.optionId()))
@@ -512,92 +308,6 @@ public class CandidateAttemptService {
         }
 
         return Optional.empty();
-    }
-
-    private CandidateNodeResponse toCandidateNodeResponse(ScenarioNode node) {
-        if (node == null) {
-            return null;
-        }
-
-        List<CandidateOptionResponse> options = node.options().stream()
-                .map(option -> new CandidateOptionResponse(option.id(), option.text()))
-                .toList();
-
-        return new CandidateNodeResponse(
-                node.id(),
-                node.turnIndex(),
-                node.speaker(),
-                node.message(),
-                node.timeLimitSeconds(),
-                options
-        );
-    }
-
-    private int calculateScore(ScenarioOption selectedOption) {
-        int total = selectedOption.competencyScores().values().stream()
-                .mapToInt(Integer::intValue)
-                .sum();
-
-        return Math.round((float) total / selectedOption.competencyScores().size());
-    }
-
-    private List<ResultItem> toResultItems(ScenarioOption selectedOption) {
-        List<ResultItem> resultItems = new ArrayList<>();
-        for (Map.Entry<String, Integer> entry : selectedOption.competencyScores().entrySet()) {
-            ResultTier tier = "Aderência à política".equals(entry.getKey()) ? ResultTier.MINOR : ResultTier.MAJOR;
-            resultItems.add(new ResultItem(entry.getKey(), entry.getValue(), tier));
-        }
-        return resultItems;
-    }
-
-    private ResultDecision resolveDecision(boolean completed, boolean humanReviewRequired) {
-        if (!completed) {
-            return ResultDecision.IN_PROGRESS;
-        }
-        if (humanReviewRequired) {
-            return ResultDecision.REVIEW_REQUIRED;
-        }
-        return ResultDecision.RECOMMEND_INTERVIEW;
-    }
-
-    private String buildCompanyResultString(
-            PublishedSimulation simulation,
-            ScoreCalculationResult scoreCalculationResult
-    ) {
-        if (scoreCalculationResult == null) {
-            return "Resultado ainda nao finalizado.";
-        }
-
-        String reviewLine = scoreCalculationResult.humanReviewRequired()
-                ? "Revisão humana obrigatória: alternativa crítica selecionada."
-                : "Sem blocker crítico na trilha respondida.";
-
-        return "# Práxis - Resultado\n\n"
-                + "Simulação: " + simulation.name() + "\n\n"
-                + "Score geral: " + scoreCalculationResult.score() + "/100\n\n"
-                + reviewLine + "\n\n"
-                + "Trilha auditável: " + scoreCalculationResult.auditTrail();
-    }
-
-    private String buildCompanyResultString(
-            PublishedSimulation simulation,
-            ScenarioOption selectedOption,
-            Integer score,
-            boolean humanReviewRequired
-    ) {
-        if (score == null) {
-            return "Resultado ainda nao finalizado.";
-        }
-
-        String reviewLine = humanReviewRequired
-                ? "Revisão humana obrigatória: alternativa crítica selecionada."
-                : "Sem blocker crítico na trilha respondida.";
-
-        return "# Práxis — Resultado\n\n"
-                + "Simulação: " + simulation.name() + "\n\n"
-                + "Score geral: " + score + "/100\n\n"
-                + reviewLine + "\n\n"
-                + "Trilha auditável: " + selectedOption.auditNote();
     }
 
     private String candidateUrl(String attemptId) {

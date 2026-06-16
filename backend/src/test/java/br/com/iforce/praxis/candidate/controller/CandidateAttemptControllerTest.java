@@ -78,10 +78,10 @@ class CandidateAttemptControllerTest {
         mockMvc.perform(get("/test/result/" + resultId).header("Authorization", AUTHORIZATION))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("completed"))
-                .andExpect(jsonPath("$.score").value(85))
+                .andExpect(jsonPath("$.score").value(100))
                 .andExpect(jsonPath("$.decision").value("recommendInterview"))
                 .andExpect(jsonPath("$.humanReviewRequired").value(false))
-                .andExpect(jsonPath("$.companyResultString").value(org.hamcrest.Matchers.containsString("Score geral: 85/100")));
+                .andExpect(jsonPath("$.companyResultString").value(org.hamcrest.Matchers.containsString("Score geral: 100/100")));
 
         mockMvc.perform(get("/api/v1/audit/candidate-attempts/" + attemptId))
                 .andExpect(status().isOk())
@@ -141,10 +141,67 @@ class CandidateAttemptControllerTest {
 
         mockMvc.perform(get("/test/result/" + resultId).header("Authorization", AUTHORIZATION))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.score").value(46))
+                .andExpect(jsonPath("$.score").value(63))
                 .andExpect(jsonPath("$.decision").value("reviewRequired"))
                 .andExpect(jsonPath("$.humanReviewRequired").value(true))
                 .andExpect(jsonPath("$.companyResultString").value(org.hamcrest.Matchers.containsString("Revisão humana obrigatória")));
+    }
+
+    @Test
+    void timeoutAnswerCompletesAttemptScoringTheTurnAsLevelZero() throws Exception {
+        MvcResult createResult = createAttemptResult("candidate-timeout");
+        String responseBody = createResult.getResponse().getContentAsString();
+        String attemptId = JsonPath.read(responseBody, "$.attemptId");
+        String resultId = JsonPath.read(responseBody, "$.testResultId");
+
+        mockMvc.perform(post("/candidate/attempts/" + attemptId + "/answers")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "nodeId": "turno-1",
+                                  "timedOut": true
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("completed"))
+                .andExpect(jsonPath("$.completed").value(true))
+                .andExpect(jsonPath("$.currentNode").doesNotExist());
+
+        mockMvc.perform(get("/test/result/" + resultId).header("Authorization", AUTHORIZATION))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("completed"))
+                .andExpect(jsonPath("$.score").value(0))
+                .andExpect(jsonPath("$.humanReviewRequired").value(false));
+
+        mockMvc.perform(get("/api/v1/audit/candidate-attempts/" + attemptId))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[2].eventType").value("answerSubmitted"))
+                .andExpect(jsonPath("$[2].metadata").value(org.hamcrest.Matchers.containsString("\"timedOut\":true")))
+                .andExpect(jsonPath("$[3].eventType").value("attemptCompleted"));
+    }
+
+    @Test
+    void resultExposesPolicyAdherenceAsMinorAndOthersAsMajor() throws Exception {
+        MvcResult createResult = createAttemptResult("candidate-tier-check");
+        String responseBody = createResult.getResponse().getContentAsString();
+        String attemptId = JsonPath.read(responseBody, "$.attemptId");
+        String resultId = JsonPath.read(responseBody, "$.testResultId");
+
+        mockMvc.perform(post("/candidate/attempts/" + attemptId + "/answers")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "nodeId": "turno-1",
+                                  "optionId": "opcao-equilibrada"
+                                }
+                                """))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(get("/test/result/" + resultId).header("Authorization", AUTHORIZATION))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.results[?(@.name=='Aderência à política')].tier").value(org.hamcrest.Matchers.hasItem("minor")))
+                .andExpect(jsonPath("$.results[?(@.name=='Empatia')].tier").value(org.hamcrest.Matchers.hasItem("major")))
+                .andExpect(jsonPath("$.results[?(@.name=='Resolução de conflito')].tier").value(org.hamcrest.Matchers.hasItem("major")));
     }
 
     @Test

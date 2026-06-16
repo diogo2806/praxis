@@ -22,12 +22,12 @@ VALUES
     (201, 'sim-publish-gate', 1, 'DRAFT', 'turno-1', NULL, CURRENT_TIMESTAMP),
     (202, 'sim-review-flow', 1, 'DRAFT', 'turno-1', NULL, CURRENT_TIMESTAMP);
 
-INSERT INTO simulation_competencies (simulation_version_id, name)
+INSERT INTO simulation_competencies (simulation_version_id, name, weight)
 VALUES
-    (201, 'Empatia'),
-    (201, 'Resolucao'),
-    (202, 'Empatia'),
-    (202, 'Resolucao');
+    (201, 'Empatia', 0.5),
+    (201, 'Resolucao', 0.5),
+    (202, 'Empatia', 0.5),
+    (202, 'Resolucao', 0.5);
 
 INSERT INTO simulation_nodes (
     id,
