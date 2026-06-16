@@ -1,0 +1,15 @@
+.git
+.gitignore
+*.md
+.DS_Store
+.env
+.env.local
+.vscode
+.idea
+target
+*.iml
+*.class
+*.jar
+*.war
+node_modules
+npm-debug.log

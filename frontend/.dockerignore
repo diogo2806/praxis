@@ -1,0 +1,16 @@
+.git
+.gitignore
+*.md
+.DS_Store
+.env
+.env.local
+.env.*.local
+.vscode
+.idea
+.eslintrc.cjs
+node_modules
+npm-debug.log
+dist
+coverage
+.turbo
+*.iml

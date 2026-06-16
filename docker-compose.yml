@@ -1,0 +1,56 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: praxis-backend
+    ports:
+      - "8080:8080"
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/praxis
+      - SPRING_DATASOURCE_USERNAME=postgres
+      - SPRING_DATASOURCE_PASSWORD=postgres
+      - SPRING_JPA_HIBERNATE_DDL_AUTO=validate
+      - SPRING_PROFILES_ACTIVE=prod
+    depends_on:
+      - postgres
+    restart: unless-stopped
+    networks:
+      - praxis-network
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: praxis-frontend
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    restart: unless-stopped
+    networks:
+      - praxis-network
+
+  postgres:
+    image: postgres:17-alpine
+    container_name: praxis-postgres
+    environment:
+      - POSTGRES_DB=praxis
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    restart: unless-stopped
+    networks:
+      - praxis-network
+
+volumes:
+  postgres_data:
+
+networks:
+  praxis-network:
+    driver: bridge
