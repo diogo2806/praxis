@@ -12,10 +12,10 @@ public record CandidateNodeResponse(
         @Schema(example = "1")
         int turnIndex,
 
-        @Schema(example = "Cliente fictício")
+        @Schema(example = "Cliente")
         String speaker,
 
-        @Schema(example = "Chegou quebrado. Quero meu dinheiro de volta agora.")
+        @Schema(example = "Preciso de ajuda com este atendimento.")
         String message,
 
         @Schema(example = "45", nullable = true)

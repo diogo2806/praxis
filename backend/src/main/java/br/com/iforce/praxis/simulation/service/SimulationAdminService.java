@@ -112,7 +112,7 @@ public class SimulationAdminService {
         rootNodeEntity.setSimulationVersion(versionEntity);
         rootNodeEntity.setNodeId(versionEntity.getRootNodeId());
         rootNodeEntity.setTurnIndex(1);
-        rootNodeEntity.setSpeaker("Cliente ficticio");
+        rootNodeEntity.setSpeaker("Cliente");
         rootNodeEntity.setMessage(defaultIfBlank(request.criticalSituation(), "Descreva a situacao critica do primeiro turno."));
         rootNodeEntity.setTimeLimitSeconds(null);
         versionEntity.getNodes().add(rootNodeEntity);
@@ -442,7 +442,7 @@ public class SimulationAdminService {
                 AuditEventType.SIMULATION_VERSION_SUBMITTED_FOR_REVIEW,
                 "Versao de simulacao enviada para revisao.",
                 "{\"status\":\"" + savedSimulationVersionEntity.getStatus().getDescricao()
-                        + "\",\"warningCount\":" + validationResponse.issues().size() + "}"
+                        + "\",\"warningCount\":" + validationResponse.warningCount() + "}"
         );
 
         return toStatusResponse(savedSimulationVersionEntity);
@@ -523,7 +523,7 @@ public class SimulationAdminService {
                 "Versao de simulacao publicada.",
                 "{\"status\":\"" + savedSimulationVersionEntity.getStatus().getDescricao()
                         + "\",\"publishedAt\":\"" + savedSimulationVersionEntity.getPublishedAt()
-                        + "\",\"warningCount\":" + validationResponse.issues().size() + "}"
+                        + "\",\"warningCount\":" + validationResponse.warningCount() + "}"
         );
 
         return new PublishSimulationResponse(

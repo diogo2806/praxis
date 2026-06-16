@@ -55,6 +55,12 @@ public class SimulationVersionEntity {
     @Column(name = "published_at")
     private Instant publishedAt;
 
+    @Column(name = "gupy_integration_activated_at")
+    private Instant gupyIntegrationActivatedAt;
+
+    @Column(name = "gupy_integration_activated_by", length = 160)
+    private String gupyIntegrationActivatedBy;
+
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
 

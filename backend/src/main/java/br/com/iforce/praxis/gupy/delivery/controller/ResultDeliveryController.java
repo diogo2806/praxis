@@ -29,12 +29,17 @@ public class ResultDeliveryController {
     }
 
     @GetMapping
-    @Operation(summary = "Lista entregas de resultado", description = "Permite monitorar entregas enviadas, em retry e DLQ.")
+    @Operation(
+            summary = "Lista entregas de resultado",
+            description = "Permite monitorar entregas enviadas, em retry e DLQ, com filtro opcional por simulacao e versao."
+    )
     public ResponseEntity<List<ResultDeliveryResponse>> listDeliveries(
-            @RequestParam(required = false) String status
+            @RequestParam(required = false) String status,
+            @RequestParam(required = false) String simulationId,
+            @RequestParam(required = false) Integer versionNumber
     ) {
         ResultDeliveryStatus resultDeliveryStatus = ResultDeliveryStatus.fromString(status);
-        return ResponseEntity.ok(resultDeliveryService.listDeliveries(resultDeliveryStatus));
+        return ResponseEntity.ok(resultDeliveryService.listDeliveries(resultDeliveryStatus, simulationId, versionNumber));
     }
 
     @GetMapping("/ready")

@@ -20,6 +20,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.OptionalDouble;
 import java.util.Set;
 
 @Service
@@ -57,15 +58,25 @@ public class SimulationValidationService {
             detectCycles(simulationVersionEntity.getRootNodeId(), nodesById, issues);
             validateReachability(simulationVersionEntity.getRootNodeId(), nodesById, issues);
             validateDepth(simulationVersionEntity.getRootNodeId(), nodesById, issues);
+            validatePathScoreBalance(simulationVersionEntity.getRootNodeId(), nodesById, simulationVersionEntity, issues);
         }
 
-        boolean publishable = issues.stream()
-                .noneMatch(issue -> issue.severity() == ValidationIssueSeverity.BLOCKER);
+        long blockerCount = issues.stream()
+                .filter(issue -> issue.severity() == ValidationIssueSeverity.BLOCKER)
+                .count();
+        long warningCount = issues.stream()
+                .filter(issue -> issue.severity() == ValidationIssueSeverity.WARNING)
+                .count();
+        boolean publishable = blockerCount == 0;
+        int qualityScore = Math.max(0, 100 - (int) blockerCount * 30 - (int) warningCount * 10);
 
         return new SimulationValidationResponse(
                 simulationVersionEntity.getSimulation().getId(),
                 simulationVersionEntity.getVersionNumber(),
                 publishable,
+                blockerCount,
+                warningCount,
+                qualityScore,
                 issues
         );
     }
@@ -226,6 +237,90 @@ public class SimulationValidationService {
                     "Grafo grande detectado — validação pode demorar."
             ));
         }
+    }
+
+    private void validatePathScoreBalance(
+            String rootNodeId,
+            Map<String, SimulationNodeEntity> nodesById,
+            SimulationVersionEntity simulationVersionEntity,
+            List<ValidationIssueResponse> issues
+    ) {
+        List<List<SimulationNodeEntity>> paths = new ArrayList<>();
+        collectTerminalNodePaths(rootNodeId, nodesById, new HashSet<>(), new ArrayList<>(), paths);
+        if (paths.size() < 2) {
+            return;
+        }
+
+        Map<String, Double> weightsByCompetency = new HashMap<>();
+        for (SimulationCompetencyEntity competency : simulationVersionEntity.getCompetencies()) {
+            weightsByCompetency.put(competency.getName(), competency.getWeight());
+        }
+
+        double referenceScore = calculateMaxPathScore(paths.getFirst(), weightsByCompetency);
+        for (int i = 1; i < paths.size(); i++) {
+            double pathScore = calculateMaxPathScore(paths.get(i), weightsByCompetency);
+            if (Math.abs(pathScore - referenceScore) > praxisProperties.competencyWeightTolerance()) {
+                SimulationNodeEntity terminalNode = paths.get(i).getLast();
+                issues.add(new ValidationIssueResponse(
+                        ValidationIssueSeverity.BLOCKER,
+                        terminalNode.getNodeId(),
+                        "Caminho " + (i + 1) + " permite score maximo diferente ("
+                                + String.format("%.2f", pathScore)
+                                + " vs "
+                                + String.format("%.2f", referenceScore)
+                                + ")."
+                ));
+            }
+        }
+    }
+
+    private void collectTerminalNodePaths(
+            String nodeId,
+            Map<String, SimulationNodeEntity> nodesById,
+            Set<String> visiting,
+            List<SimulationNodeEntity> currentPath,
+            List<List<SimulationNodeEntity>> paths
+    ) {
+        SimulationNodeEntity node = nodesById.get(nodeId);
+        if (node == null || !visiting.add(nodeId)) {
+            return;
+        }
+
+        currentPath.add(node);
+        List<String> nextNodeIds = node.getOptions().stream()
+                .map(SimulationOptionEntity::getNextNodeId)
+                .filter(nextNodeId -> nextNodeId != null && nodesById.containsKey(nextNodeId))
+                .distinct()
+                .toList();
+        if (nextNodeIds.isEmpty()) {
+            paths.add(new ArrayList<>(currentPath));
+        } else {
+            for (String nextNodeId : nextNodeIds) {
+                collectTerminalNodePaths(nextNodeId, nodesById, visiting, currentPath, paths);
+            }
+        }
+
+        currentPath.removeLast();
+        visiting.remove(nodeId);
+    }
+
+    private double calculateMaxPathScore(List<SimulationNodeEntity> path, Map<String, Double> weightsByCompetency) {
+        return path.stream()
+                .mapToDouble(node -> calculateMaxNodeOptionScore(node, weightsByCompetency))
+                .sum();
+    }
+
+    private double calculateMaxNodeOptionScore(SimulationNodeEntity node, Map<String, Double> weightsByCompetency) {
+        OptionalDouble maxScore = node.getOptions().stream()
+                .mapToDouble(option -> calculateOptionWeightedScore(option, weightsByCompetency))
+                .max();
+        return maxScore.orElse(0.0);
+    }
+
+    private double calculateOptionWeightedScore(SimulationOptionEntity option, Map<String, Double> weightsByCompetency) {
+        return option.getCompetencyScores().stream()
+                .mapToDouble(score -> score.getScore() * weightsByCompetency.getOrDefault(score.getCompetencyName(), 0.0))
+                .sum();
     }
 
     private void validateDepth(

@@ -4,6 +4,7 @@ import { FileSearch, ShieldCheck } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
 import { EmptyState, ScreenStateStrip, StateBanner, StatusBadge } from "@/components/praxis-ui";
 import {
+  getPrivacyCompliance,
   getSimulationVersion,
   listSimulationVersionAuditEvents,
   listSimulations,
@@ -36,6 +37,10 @@ function LgpdPage() {
     queryKey: ["simulations"],
     queryFn: listSimulations,
     enabled: !hasContext,
+  });
+  const privacyQuery = useQuery({
+    queryKey: ["privacy-compliance"],
+    queryFn: getPrivacyCompliance,
   });
   const versionQuery = useQuery({
     queryKey: ["simulation-version", search.simulationId, search.versionNumber],
@@ -142,9 +147,57 @@ function LgpdPage() {
         </section>
 
         <aside className="space-y-4">
+          {privacyQuery.isLoading ? (
+            <StateBanner tone="info" title="Carregando politica LGPD">
+              Buscando bases legais, retencao e canal de revisao.
+            </StateBanner>
+          ) : privacyQuery.isError ? (
+            <StateBanner tone="danger" title="Nao foi possivel carregar politica LGPD">
+              {privacyQuery.error instanceof Error ? privacyQuery.error.message : "Verifique a API."}
+            </StateBanner>
+          ) : privacyQuery.data ? (
+            <div className="rounded-md border border-border bg-card p-5">
+              <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                Politica operacional
+              </div>
+              <div className="mt-3 space-y-3 text-sm">
+                <div className="rounded-md border border-border bg-background p-3">
+                  <div className="font-medium">Retencao: {privacyQuery.data.retentionDays} dias</div>
+                  <p className="mt-1 text-xs text-muted-foreground">{privacyQuery.data.retentionPolicy}</p>
+                </div>
+                <div className="rounded-md border border-border bg-background p-3">
+                  <div className="font-medium">Revisao humana</div>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    {privacyQuery.data.reviewChannel} - SLA {privacyQuery.data.reviewSla}
+                  </p>
+                </div>
+                <div className="rounded-md border border-border bg-background p-3">
+                  <div className="font-medium">Decisao automatizada sem revisao</div>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    {privacyQuery.data.automatedDecisionWithoutReviewAllowed ? "Permitida" : "Nao permitida"}
+                  </p>
+                </div>
+              </div>
+            </div>
+          ) : null}
           <StateBanner tone="warn" title="Canal de revisao obrigatorio">
             Uso eliminatorio so e permitido para simulacao validada, com aprovacao e revisao humana.
           </StateBanner>
+          {privacyQuery.data && (
+            <div className="rounded-md border border-border bg-card p-5">
+              <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                Bases legais
+              </div>
+              <div className="mt-3 space-y-3">
+                {privacyQuery.data.legalBases.map((basis) => (
+                  <div key={basis.name} className="rounded-md border border-border bg-background p-3 text-sm">
+                    <div className="font-medium">{basis.name}</div>
+                    <p className="mt-1 text-xs text-muted-foreground">{basis.description}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
           {hasContext && (
             <div className="rounded-md border border-border bg-card p-5">
               <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">

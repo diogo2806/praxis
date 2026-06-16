@@ -81,8 +81,12 @@ function MonitoringPage() {
     enabled: hasMonitoringParams,
   });
   const deliveriesQuery = useQuery({
-    queryKey: ["result-deliveries"],
-    queryFn: () => listResultDeliveries(),
+    queryKey: ["result-deliveries", search.simulationId, search.versionNumber],
+    queryFn: () =>
+      listResultDeliveries({
+        simulationId: search.simulationId,
+        versionNumber: search.versionNumber,
+      }),
     enabled: hasMonitoringParams,
   });
 
@@ -189,7 +193,7 @@ function MonitoringPage() {
             <section className="rounded-md border border-border bg-card p-5">
               <div className="mb-4 flex items-center gap-2 text-sm font-semibold">
                 <BarChart3 className="h-4 w-4" />
-                Fila de entregas Gupy
+                Fila de entregas Gupy da versao
               </div>
               <DeliveryList
                 deliveries={deliveriesQuery.data ?? []}

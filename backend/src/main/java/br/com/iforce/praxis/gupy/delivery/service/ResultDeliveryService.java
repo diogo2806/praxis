@@ -59,10 +59,30 @@ public class ResultDeliveryService {
     }
 
     @Transactional(readOnly = true)
-    public List<ResultDeliveryResponse> listDeliveries(ResultDeliveryStatus status) {
-        List<ResultDeliveryEntity> deliveries = status == null
-                ? resultDeliveryRepository.findAll()
-                : resultDeliveryRepository.findByStatusOrderByCreatedAtDesc(status);
+    public List<ResultDeliveryResponse> listDeliveries(
+            ResultDeliveryStatus status,
+            String simulationId,
+            Integer versionNumber
+    ) {
+        List<ResultDeliveryEntity> deliveries;
+        if (simulationId != null && !simulationId.isBlank() && versionNumber != null) {
+            deliveries = status == null
+                    ? resultDeliveryRepository
+                            .findByCandidateAttemptSimulationIdAndCandidateAttemptSimulationVersionNumberOrderByCreatedAtDesc(
+                                    simulationId,
+                                    versionNumber
+                            )
+                    : resultDeliveryRepository
+                            .findByCandidateAttemptSimulationIdAndCandidateAttemptSimulationVersionNumberAndStatusOrderByCreatedAtDesc(
+                                    simulationId,
+                                    versionNumber,
+                                    status
+                            );
+        } else {
+            deliveries = status == null
+                    ? resultDeliveryRepository.findAll()
+                    : resultDeliveryRepository.findByStatusOrderByCreatedAtDesc(status);
+        }
 
         return deliveries.stream()
                 .map(this::toResponse)

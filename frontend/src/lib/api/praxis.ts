@@ -59,6 +59,9 @@ export interface SimulationValidationResponse {
   simulationId: string;
   versionNumber: number;
   publishable: boolean;
+  blockerCount: number;
+  warningCount: number;
+  qualityScore: number;
   issues: ValidationIssueResponse[];
 }
 
@@ -216,6 +219,7 @@ export type AuditEventType =
   | "simulationOptionAdded"
   | "simulationOptionUpdated"
   | "simulationOptionDeleted"
+  | "simulationGupyIntegrationActivated"
   | "simulationArchived";
 
 export interface AuditEventResponse {
@@ -266,7 +270,21 @@ export interface GupyPreflightResponse {
   simulationId: string;
   versionNumber: number;
   ok: boolean;
+  integrationActive: boolean;
+  integrationActivatedAt: string | null;
   checks: GupyPreflightCheckResponse[];
+}
+
+export interface PrivacyComplianceResponse {
+  legalBases: {
+    name: string;
+    description: string;
+  }[];
+  retentionDays: number;
+  retentionPolicy: string;
+  reviewChannel: string;
+  reviewSla: string;
+  automatedDecisionWithoutReviewAllowed: boolean;
 }
 
 export class PraxisApiError extends Error {
@@ -439,8 +457,20 @@ export function getSimulationMonitoring(simulationId: string, versionNumber: num
   );
 }
 
-export function listResultDeliveries(status?: ResultDeliveryStatus) {
-  const search = status ? `?status=${encodeURIComponent(status)}` : "";
+export function listResultDeliveries(params?: {
+  status?: ResultDeliveryStatus;
+  simulationId?: string;
+  versionNumber?: number;
+}) {
+  const searchParams = new URLSearchParams();
+  if (params?.status) {
+    searchParams.set("status", params.status);
+  }
+  if (params?.simulationId && params.versionNumber) {
+    searchParams.set("simulationId", params.simulationId);
+    searchParams.set("versionNumber", String(params.versionNumber));
+  }
+  const search = searchParams.size > 0 ? `?${searchParams.toString()}` : "";
   return request<ResultDeliveryResponse[]>(`/api/v1/gupy/result-deliveries${search}`);
 }
 
@@ -492,4 +522,15 @@ export function getGupyPreflight(simulationId: string, versionNumber: number) {
   return request<GupyPreflightResponse>(
     `/api/v1/simulations/${encodeURIComponent(simulationId)}/versions/${versionNumber}/gupy-preflight`,
   );
+}
+
+export function activateGupyIntegration(simulationId: string, versionNumber: number) {
+  return request<GupyPreflightResponse>(
+    `/api/v1/simulations/${encodeURIComponent(simulationId)}/versions/${versionNumber}/gupy-activation`,
+    { method: "POST" },
+  );
+}
+
+export function getPrivacyCompliance() {
+  return request<PrivacyComplianceResponse>("/api/v1/privacy/compliance");
 }

@@ -1,11 +1,14 @@
 package br.com.iforce.praxis.simulation.service;
 
 import br.com.iforce.praxis.config.PraxisProperties;
+import br.com.iforce.praxis.audit.model.AuditEventType;
+import br.com.iforce.praxis.audit.service.AuditEventService;
 import br.com.iforce.praxis.simulation.dto.GupyPreflightCheckResponse;
 import br.com.iforce.praxis.simulation.dto.GupyPreflightResponse;
 import br.com.iforce.praxis.simulation.dto.SimulationValidationResponse;
 import br.com.iforce.praxis.simulation.model.GupyPreflightCheckCode;
 import br.com.iforce.praxis.simulation.model.GupyPreflightCheckStatus;
+import br.com.iforce.praxis.simulation.model.SimulationVersionStatus;
 import br.com.iforce.praxis.simulation.persistence.entity.SimulationVersionEntity;
 import br.com.iforce.praxis.simulation.persistence.repository.SimulationVersionRepository;
 import org.springframework.http.HttpStatus;
@@ -14,6 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.net.URI;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -22,15 +26,18 @@ public class GupyPreflightService {
 
     private final SimulationVersionRepository simulationVersionRepository;
     private final SimulationValidationService simulationValidationService;
+    private final AuditEventService auditEventService;
     private final PraxisProperties praxisProperties;
 
     public GupyPreflightService(
             SimulationVersionRepository simulationVersionRepository,
             SimulationValidationService simulationValidationService,
+            AuditEventService auditEventService,
             PraxisProperties praxisProperties
     ) {
         this.simulationVersionRepository = simulationVersionRepository;
         this.simulationValidationService = simulationValidationService;
+        this.auditEventService = auditEventService;
         this.praxisProperties = praxisProperties;
     }
 
@@ -39,6 +46,37 @@ public class GupyPreflightService {
         SimulationVersionEntity simulationVersionEntity = simulationVersionRepository
                 .findBySimulationIdAndVersionNumber(simulationId, versionNumber)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Versao de simulacao nao encontrada."));
+
+        return evaluate(simulationVersionEntity);
+    }
+
+    @Transactional
+    public GupyPreflightResponse activateIntegration(String simulationId, int versionNumber) {
+        SimulationVersionEntity simulationVersionEntity = simulationVersionRepository
+                .findBySimulationIdAndVersionNumber(simulationId, versionNumber)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Versao de simulacao nao encontrada."));
+
+        if (simulationVersionEntity.getStatus() != SimulationVersionStatus.PUBLISHED) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Somente versoes publicadas podem ativar a integracao Gupy.");
+        }
+
+        GupyPreflightResponse preflightResponse = evaluate(simulationVersionEntity);
+        if (!preflightResponse.ok()) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Preflight Gupy bloqueou a ativacao.");
+        }
+
+        if (simulationVersionEntity.getGupyIntegrationActivatedAt() == null) {
+            simulationVersionEntity.setGupyIntegrationActivatedAt(Instant.now());
+            simulationVersionEntity.setGupyIntegrationActivatedBy("system");
+            simulationVersionRepository.save(simulationVersionEntity);
+            auditEventService.appendSimulationVersionEvent(
+                    simulationId,
+                    versionNumber,
+                    AuditEventType.SIMULATION_GUPY_INTEGRATION_ACTIVATED,
+                    "Integracao Gupy ativada para a versao.",
+                    "{\"activatedAt\":\"" + simulationVersionEntity.getGupyIntegrationActivatedAt() + "\"}"
+            );
+        }
 
         return evaluate(simulationVersionEntity);
     }
@@ -56,6 +94,8 @@ public class GupyPreflightService {
                 simulationVersionEntity.getSimulation().getId(),
                 simulationVersionEntity.getVersionNumber(),
                 ok,
+                simulationVersionEntity.getGupyIntegrationActivatedAt() != null,
+                simulationVersionEntity.getGupyIntegrationActivatedAt(),
                 checks
         );
     }

@@ -63,9 +63,9 @@ function ValidatorPage() {
   });
 
   const activeChecks = validationQuery.data ? mapValidationIssues(validationQuery.data) : [];
-  const blockers = activeChecks.filter((check) => check.tone === "danger").length;
-  const warnings = activeChecks.filter((check) => check.tone === "warn").length;
-  const qualityScore = validationQuery.data ? calculateQualityScore(validationQuery.data) : 0;
+  const blockers = validationQuery.data?.blockerCount ?? 0;
+  const warnings = validationQuery.data?.warningCount ?? 0;
+  const qualityScore = validationQuery.data?.qualityScore ?? 0;
 
   return (
     <AppShell>
@@ -145,7 +145,7 @@ function ValidatorPage() {
                 <div className="mb-2 text-sm text-muted-foreground">/100</div>
               </div>
               <p className="mt-1 text-xs text-muted-foreground">
-                Calculado a partir dos blockers e warnings retornados pelo backend.
+                Retornado pelo backend junto com os blockers e warnings.
               </p>
               <div className="mt-4 rounded-md border border-border bg-background p-3 text-sm">
                 {blockers} blockers e {warnings} warnings.
@@ -229,14 +229,6 @@ function mapValidationIssues(validation: SimulationValidationResponse): Validati
     text: issue.message,
     target: issue.nodeId ? `Editor: ${issue.nodeId}` : "Simulacao",
   }));
-}
-
-function calculateQualityScore(validation: SimulationValidationResponse) {
-  const penalty = validation.issues.reduce(
-    (sum, issue) => sum + (issue.severity === "blocker" ? 30 : 10),
-    0,
-  );
-  return Math.max(0, 100 - penalty);
 }
 
 function SimulationLinks({

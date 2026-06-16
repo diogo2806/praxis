@@ -68,6 +68,18 @@ class SimulationValidationServiceTest {
                 .noneMatch(message -> message.contains("profundidade máxima"));
     }
 
+    @Test
+    void blocksPublicationWhenTerminalPathsHaveDifferentMaxScores() {
+        SimulationVersionEntity version = branchingVersionWithUnbalancedPathScores();
+
+        SimulationValidationResponse response = service.validate(version);
+
+        assertThat(response.publishable()).isFalse();
+        assertThat(response.issues())
+                .anyMatch(issue -> issue.severity() == ValidationIssueSeverity.BLOCKER
+                        && issue.message().contains("score maximo diferente"));
+    }
+
     private SimulationVersionEntity singleNodeVersion(Map<String, Double> weights) {
         SimulationVersionEntity version = baseVersion("turno-1");
         weights.forEach((name, weight) -> version.getCompetencies().add(competency(version, name, weight)));
@@ -91,6 +103,29 @@ class SimulationValidationServiceTest {
             node.getOptions().add(option(node, "opcao-b-" + turn, nextNodeId, List.of("Empatia", "Resolução")));
             version.getNodes().add(node);
         }
+        return version;
+    }
+
+    private SimulationVersionEntity branchingVersionWithUnbalancedPathScores() {
+        SimulationVersionEntity version = baseVersion("turno-1");
+        version.getCompetencies().add(competency(version, "Empatia", 0.5));
+        version.getCompetencies().add(competency(version, "Resolucao", 0.5));
+
+        SimulationNodeEntity root = node(version, "turno-1", 1);
+        root.getOptions().add(option(root, "opcao-a", "turno-2a", List.of("Empatia", "Resolucao")));
+        root.getOptions().add(option(root, "opcao-b", "turno-2b", List.of("Empatia", "Resolucao")));
+
+        SimulationNodeEntity highScoreTerminal = node(version, "turno-2a", 2);
+        highScoreTerminal.getOptions().add(option(highScoreTerminal, "opcao-a1", null, List.of("Empatia", "Resolucao"), 90));
+        highScoreTerminal.getOptions().add(option(highScoreTerminal, "opcao-a2", null, List.of("Empatia", "Resolucao"), 90));
+
+        SimulationNodeEntity lowScoreTerminal = node(version, "turno-2b", 2);
+        lowScoreTerminal.getOptions().add(option(lowScoreTerminal, "opcao-b1", null, List.of("Empatia", "Resolucao"), 50));
+        lowScoreTerminal.getOptions().add(option(lowScoreTerminal, "opcao-b2", null, List.of("Empatia", "Resolucao"), 50));
+
+        version.getNodes().add(root);
+        version.getNodes().add(highScoreTerminal);
+        version.getNodes().add(lowScoreTerminal);
         return version;
     }
 
@@ -143,6 +178,30 @@ class SimulationValidationServiceTest {
             score.setSimulationOption(option);
             score.setCompetencyName(competency);
             score.setScore(50);
+            option.getCompetencyScores().add(score);
+        }
+        return option;
+    }
+
+    private SimulationOptionEntity option(
+            SimulationNodeEntity node,
+            String optionId,
+            String nextNodeId,
+            Iterable<String> competencies,
+            int scoreValue
+    ) {
+        SimulationOptionEntity option = new SimulationOptionEntity();
+        option.setSimulationNode(node);
+        option.setOptionId(optionId);
+        option.setText("Texto");
+        option.setNextNodeId(nextNodeId);
+        option.setCritical(false);
+        option.setAuditNote("Nota");
+        for (String competency : competencies) {
+            OptionCompetencyScoreEntity score = new OptionCompetencyScoreEntity();
+            score.setSimulationOption(option);
+            score.setCompetencyName(competency);
+            score.setScore(scoreValue);
             option.getCompetencyScores().add(score);
         }
         return option;

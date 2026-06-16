@@ -15,6 +15,15 @@ public record SimulationValidationResponse(
         @Schema(example = "true")
         boolean publishable,
 
+        @Schema(example = "0")
+        long blockerCount,
+
+        @Schema(example = "1")
+        long warningCount,
+
+        @Schema(example = "90")
+        int qualityScore,
+
         List<ValidationIssueResponse> issues
 ) {
 }

@@ -44,7 +44,7 @@ class GupyIntegrationControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$", not(empty())))
                 .andExpect(jsonPath("$[0].id").value("sim-atendimento-caos"))
-                .andExpect(jsonPath("$[0].name").value("O Dia do Caos"))
+                .andExpect(jsonPath("$[0].name").value("Cenario Seed de Teste"))
                 .andExpect(jsonPath("$[0].isBest").doesNotExist())
                 .andExpect(jsonPath("$[0].weight").doesNotExist());
     }
@@ -135,3 +135,4 @@ class GupyIntegrationControllerTest {
                 """.formatted(documentId);
     }
 }
+

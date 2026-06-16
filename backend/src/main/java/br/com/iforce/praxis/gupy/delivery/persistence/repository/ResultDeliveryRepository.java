@@ -27,6 +27,25 @@ public interface ResultDeliveryRepository extends JpaRepository<ResultDeliveryEn
             "candidateAttempt",
             "candidateAttempt.resultItems"
     })
+    List<ResultDeliveryEntity> findByCandidateAttemptSimulationIdAndCandidateAttemptSimulationVersionNumberOrderByCreatedAtDesc(
+            String simulationId,
+            Integer simulationVersionNumber
+    );
+
+    @EntityGraph(attributePaths = {
+            "candidateAttempt",
+            "candidateAttempt.resultItems"
+    })
+    List<ResultDeliveryEntity> findByCandidateAttemptSimulationIdAndCandidateAttemptSimulationVersionNumberAndStatusOrderByCreatedAtDesc(
+            String simulationId,
+            Integer simulationVersionNumber,
+            ResultDeliveryStatus status
+    );
+
+    @EntityGraph(attributePaths = {
+            "candidateAttempt",
+            "candidateAttempt.resultItems"
+    })
     List<ResultDeliveryEntity> findByStatusInAndNextAttemptAtLessThanEqualOrderByCreatedAtAsc(
             List<ResultDeliveryStatus> statuses,
             Instant nextAttemptAt

@@ -8,7 +8,7 @@ public record CandidateAttemptResponse(
         @Schema(example = "att_123")
         String attemptId,
 
-        @Schema(example = "O Dia do Caos")
+        @Schema(example = "Atendimento N2")
         String simulationName,
 
         @Schema(example = "notStarted")

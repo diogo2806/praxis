@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { CheckCircle2, RefreshCw, Server, Webhook, XCircle } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
 import {
@@ -11,6 +11,7 @@ import {
 } from "@/components/praxis-ui";
 import { WizardStepper } from "@/components/wizard-stepper";
 import {
+  activateGupyIntegration,
   getGupyPreflight,
   listResultDeliveries,
   listSimulations,
@@ -56,6 +57,7 @@ const endpoints = [
 
 function GupyActivation() {
   const search = Route.useSearch();
+  const queryClient = useQueryClient();
   const hasParams = Boolean(search.simulationId && search.versionNumber);
   const simulationsQuery = useQuery({
     queryKey: ["simulations"],
@@ -68,11 +70,26 @@ function GupyActivation() {
     enabled: hasParams,
   });
   const deliveriesQuery = useQuery({
-    queryKey: ["result-deliveries"],
-    queryFn: () => listResultDeliveries(),
+    queryKey: ["result-deliveries", search.simulationId, search.versionNumber],
+    queryFn: () =>
+      listResultDeliveries({
+        simulationId: search.simulationId,
+        versionNumber: search.versionNumber,
+      }),
     enabled: hasParams,
   });
   const hasFailure = preflightQuery.data?.checks.some((item) => item.status === "blocker") ?? false;
+  const activateMutation = useMutation({
+    mutationFn: () => activateGupyIntegration(search.simulationId!, search.versionNumber!),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({
+        queryKey: ["gupy-preflight", search.simulationId, search.versionNumber],
+      });
+      await queryClient.invalidateQueries({
+        queryKey: ["simulation-audit", search.simulationId, search.versionNumber],
+      });
+    },
+  });
 
   return (
     <AppShell>
@@ -120,8 +137,20 @@ function GupyActivation() {
             <StateBanner tone={hasFailure ? "danger" : "ok"} title={hasFailure ? "Preflight bloqueado" : "Preflight aprovado"}>
               {hasFailure
                 ? "Corrija os blockers retornados pelo backend antes de ativar a integracao."
-                : "A versao passou nas verificacoes exigidas para integracao."}
+                : preflightQuery.data.integrationActive
+                  ? `Integracao ativa desde ${formatDateTime(preflightQuery.data.integrationActivatedAt)}.`
+                  : "A versao passou nas verificacoes exigidas para integracao."}
             </StateBanner>
+          )}
+
+          {activateMutation.isError && (
+            <div className="mt-3">
+              <StateBanner tone="danger" title="Nao foi possivel ativar a integracao">
+                {activateMutation.error instanceof Error
+                  ? activateMutation.error.message
+                  : "Verifique se a versao esta publicada e se o preflight esta aprovado."}
+              </StateBanner>
+            </div>
           )}
 
           <div className="mt-5">
@@ -136,6 +165,19 @@ function GupyActivation() {
               lockedAfter="Integracao ativa nao publica rascunho nem altera tentativa ja iniciada."
             />
           </div>
+
+          {preflightQuery.data && !preflightQuery.data.integrationActive && (
+            <div className="mt-4">
+              <button
+                type="button"
+                onClick={() => activateMutation.mutate()}
+                disabled={!preflightQuery.data.ok || activateMutation.isPending}
+                className="rounded-md bg-primary px-5 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {activateMutation.isPending ? "Ativando..." : "Marcar integracao como ativa"}
+              </button>
+            </div>
+          )}
 
           <div className="mt-5 grid gap-5 lg:grid-cols-[minmax(0,1fr)_360px]">
             <main className="space-y-5">

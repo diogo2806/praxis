@@ -55,6 +55,31 @@ class ResultDeliveryControllerTest {
     }
 
     @Test
+    void listDeliveriesCanBeFilteredBySimulationVersion() throws Exception {
+        String attemptId = createCompletedAttempt("delivery-filtered");
+
+        MvcResult matchingResult = mockMvc.perform(get(
+                        "/api/v1/gupy/result-deliveries?simulationId=sim-atendimento-caos&versionNumber=1"
+                ))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        String matchingBody = matchingResult.getResponse().getContentAsString();
+        List<String> matchingAttemptIds = JsonPath.read(matchingBody, "$[*].attemptId");
+        assertThat(matchingAttemptIds).contains(attemptId);
+
+        MvcResult emptyResult = mockMvc.perform(get(
+                        "/api/v1/gupy/result-deliveries?simulationId=sim-atendimento-caos&versionNumber=99"
+                ))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        String emptyBody = emptyResult.getResponse().getContentAsString();
+        List<String> emptyAttemptIds = JsonPath.read(emptyBody, "$[*].attemptId");
+        assertThat(emptyAttemptIds).doesNotContain(attemptId);
+    }
+
+    @Test
     void reprocessDeliveryMarksAsSentWhenWebhookAcceptsPayload() throws Exception {
         String attemptId = createCompletedAttempt("delivery-sent");
         Long deliveryId = findDeliveryId(attemptId, "pending");

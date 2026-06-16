@@ -17,16 +17,16 @@ public record CreateCandidateRequest(
         String documentId,
 
         @NotBlank
-        @Schema(example = "sim-atendimento-caos")
+        @Schema(example = "sim-atendimento-n2")
         String testId,
 
         @NotBlank
-        @Schema(example = "Thiago Souza")
+        @Schema(example = "Candidato Teste")
         String candidateName,
 
         @Email
         @NotBlank
-        @Schema(example = "thiago@example.com")
+        @Schema(example = "candidato@example.com")
         String candidateEmail,
 
         @Schema(example = "https://cliente.gupy.io/callback")

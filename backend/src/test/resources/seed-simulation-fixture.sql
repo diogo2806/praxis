@@ -1,6 +1,14 @@
 DELETE FROM audit_events
 WHERE aggregate_id IN ('sim-atendimento-caos', 'sim-atendimento-caos:v1');
 
+DELETE FROM result_deliveries
+WHERE candidate_attempt_id IN (
+    SELECT id FROM candidate_attempts WHERE simulation_id = 'sim-atendimento-caos'
+);
+
+DELETE FROM candidate_attempts
+WHERE simulation_id = 'sim-atendimento-caos';
+
 DELETE FROM simulations
 WHERE id = 'sim-atendimento-caos';
 

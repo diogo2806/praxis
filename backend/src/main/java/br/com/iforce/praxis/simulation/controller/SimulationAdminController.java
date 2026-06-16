@@ -347,6 +347,24 @@ public class SimulationAdminController {
         return ResponseEntity.ok(gupyPreflightService.getPreflight(simulationId, versionNumber));
     }
 
+    @PostMapping("/{simulationId}/versions/{versionNumber}/gupy-activation")
+    @Operation(
+            summary = "Ativa integracao Gupy",
+            description = "Persiste a ativacao da integracao Gupy para uma versao publicada apos preflight aprovado."
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Integracao ativada."),
+            @ApiResponse(responseCode = "400", description = "Parametro invalido.", content = @Content(examples = @ExampleObject(value = ERROR_EXAMPLE))),
+            @ApiResponse(responseCode = "403", description = "Acesso negado.", content = @Content(examples = @ExampleObject(value = ERROR_EXAMPLE))),
+            @ApiResponse(responseCode = "409", description = "Ativacao bloqueada.", content = @Content(examples = @ExampleObject(value = ERROR_EXAMPLE)))
+    })
+    public ResponseEntity<GupyPreflightResponse> activateGupyIntegration(
+            @PathVariable String simulationId,
+            @PathVariable int versionNumber
+    ) {
+        return ResponseEntity.ok(gupyPreflightService.activateIntegration(simulationId, versionNumber));
+    }
+
     @GetMapping("/{simulationId}/versions/{versionNumber}/monitoring")
     @Operation(
             summary = "Monitora versao publicada",

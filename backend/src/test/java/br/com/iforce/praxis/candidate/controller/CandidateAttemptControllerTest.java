@@ -201,9 +201,9 @@ class CandidateAttemptControllerTest {
 
         mockMvc.perform(get("/test/result/" + resultId).header("Authorization", AUTHORIZATION))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.results[?(@.name=='Aderência à política')].tier").value(org.hamcrest.Matchers.hasItem("minor")))
+                .andExpect(jsonPath("$.results[?(@.name=='Aderencia a politica')].tier").value(org.hamcrest.Matchers.hasItem("minor")))
                 .andExpect(jsonPath("$.results[?(@.name=='Empatia')].tier").value(org.hamcrest.Matchers.hasItem("major")))
-                .andExpect(jsonPath("$.results[?(@.name=='Resolução de conflito')].tier").value(org.hamcrest.Matchers.hasItem("major")));
+                .andExpect(jsonPath("$.results[?(@.name=='Resolucao de conflito')].tier").value(org.hamcrest.Matchers.hasItem("major")));
     }
 
     @Test
