@@ -2,6 +2,7 @@ package br.com.iforce.praxis.simulation.service;
 
 import br.com.iforce.praxis.audit.model.AuditEventType;
 import br.com.iforce.praxis.audit.service.AuditEventService;
+import br.com.iforce.praxis.auth.service.CurrentTenantService;
 import br.com.iforce.praxis.simulation.dto.ArchiveSimulationResponse;
 import br.com.iforce.praxis.simulation.dto.CloneSimulationVersionResponse;
 import br.com.iforce.praxis.simulation.dto.CompetencyWeightDto;
@@ -59,6 +60,7 @@ public class SimulationAdminService {
     private final GupyPreflightService gupyPreflightService;
     private final SimulationMapperService simulationMapperService;
     private final AuditEventService auditEventService;
+    private final CurrentTenantService currentTenantService;
 
     public SimulationAdminService(
             SimulationVersionRepository simulationVersionRepository,
@@ -67,7 +69,8 @@ public class SimulationAdminService {
             SimulationValidationService simulationValidationService,
             GupyPreflightService gupyPreflightService,
             SimulationMapperService simulationMapperService,
-            AuditEventService auditEventService
+            AuditEventService auditEventService,
+            CurrentTenantService currentTenantService
     ) {
         this.simulationVersionRepository = simulationVersionRepository;
         this.simulationRepository = simulationRepository;
@@ -76,11 +79,13 @@ public class SimulationAdminService {
         this.gupyPreflightService = gupyPreflightService;
         this.simulationMapperService = simulationMapperService;
         this.auditEventService = auditEventService;
+        this.currentTenantService = currentTenantService;
     }
 
     @Transactional(readOnly = true)
     public List<SimulationSummaryResponse> listActiveSimulations() {
-        return simulationRepository.findByArchivedFalseAndDeletedAtIsNullOrderByCreatedAtDesc()
+        return simulationRepository.findByTenantIdAndArchivedFalseAndDeletedAtIsNullOrderByCreatedAtDesc(
+                        currentTenantService.requiredTenantId())
                 .stream()
                 .map(this::toLatestVersionSummary)
                 .flatMap(List::stream)
@@ -94,6 +99,7 @@ public class SimulationAdminService {
         Instant createdAt = Instant.now();
         SimulationEntity simulationEntity = new SimulationEntity();
         simulationEntity.setId(generateSimulationId(request.name()));
+        simulationEntity.setTenantId(currentTenantService.requiredTenantId());
         simulationEntity.setName(request.name().trim());
         simulationEntity.setDescription(createDescription(request));
         simulationEntity.setCreatedAt(createdAt);
@@ -120,6 +126,7 @@ public class SimulationAdminService {
         simulationEntity.getVersions().add(versionEntity);
         SimulationEntity savedSimulationEntity = simulationRepository.save(simulationEntity);
         auditEventService.appendSimulationVersionEvent(
+                savedSimulationEntity.getTenantId(),
                 savedSimulationEntity.getId(),
                 versionEntity.getVersionNumber(),
                 AuditEventType.SIMULATION_VERSION_DRAFT_CREATED,
@@ -140,6 +147,7 @@ public class SimulationAdminService {
         Instant createdAt = Instant.now();
         SimulationEntity simulationEntity = new SimulationEntity();
         simulationEntity.setId(generateSimulationId(request.name()));
+        simulationEntity.setTenantId(currentTenantService.requiredTenantId());
         simulationEntity.setName(request.name().trim());
         simulationEntity.setDescription(request.description().trim());
         simulationEntity.setCreatedAt(createdAt);
@@ -157,6 +165,7 @@ public class SimulationAdminService {
         simulationEntity.getVersions().add(versionEntity);
         SimulationEntity savedSimulationEntity = simulationRepository.save(simulationEntity);
         auditEventService.appendSimulationVersionEvent(
+                savedSimulationEntity.getTenantId(),
                 savedSimulationEntity.getId(),
                 versionEntity.getVersionNumber(),
                 AuditEventType.SIMULATION_VERSION_DRAFT_CREATED,
@@ -190,6 +199,7 @@ public class SimulationAdminService {
         SimulationVersionEntity savedVersionEntity = simulationVersionRepository.save(versionEntity);
 
         auditEventService.appendSimulationVersionEvent(
+                savedVersionEntity.getSimulation().getTenantId(),
                 simulationId,
                 versionNumber,
                 AuditEventType.SIMULATION_VERSION_BLUEPRINT_UPDATED,
@@ -217,6 +227,7 @@ public class SimulationAdminService {
 
         simulationVersionRepository.save(versionEntity);
         auditEventService.appendSimulationVersionEvent(
+                versionEntity.getSimulation().getTenantId(),
                 simulationId,
                 versionNumber,
                 AuditEventType.SIMULATION_NODE_ADDED,
@@ -241,6 +252,7 @@ public class SimulationAdminService {
 
         simulationVersionRepository.save(versionEntity);
         auditEventService.appendSimulationVersionEvent(
+                versionEntity.getSimulation().getTenantId(),
                 simulationId,
                 versionNumber,
                 AuditEventType.SIMULATION_NODE_UPDATED,
@@ -260,6 +272,7 @@ public class SimulationAdminService {
         versionEntity.getNodes().remove(nodeEntity);
         simulationVersionRepository.save(versionEntity);
         auditEventService.appendSimulationVersionEvent(
+                versionEntity.getSimulation().getTenantId(),
                 simulationId,
                 versionNumber,
                 AuditEventType.SIMULATION_NODE_DELETED,
@@ -289,6 +302,7 @@ public class SimulationAdminService {
 
         simulationVersionRepository.save(versionEntity);
         auditEventService.appendSimulationVersionEvent(
+                versionEntity.getSimulation().getTenantId(),
                 simulationId,
                 versionNumber,
                 AuditEventType.SIMULATION_OPTION_ADDED,
@@ -331,6 +345,7 @@ public class SimulationAdminService {
 
         simulationVersionRepository.save(versionEntity);
         auditEventService.appendSimulationVersionEvent(
+                versionEntity.getSimulation().getTenantId(),
                 simulationId,
                 versionNumber,
                 AuditEventType.SIMULATION_OPTION_UPDATED,
@@ -348,6 +363,7 @@ public class SimulationAdminService {
         nodeEntity.getOptions().remove(optionEntity);
         simulationVersionRepository.save(versionEntity);
         auditEventService.appendSimulationVersionEvent(
+                versionEntity.getSimulation().getTenantId(),
                 simulationId,
                 versionNumber,
                 AuditEventType.SIMULATION_OPTION_DELETED,
@@ -375,6 +391,7 @@ public class SimulationAdminService {
         simulationEntity.setDeletedBy(deletedBy);
         SimulationEntity savedSimulationEntity = simulationRepository.save(simulationEntity);
         auditEventService.appendSimulationEvent(
+                savedSimulationEntity.getTenantId(),
                 savedSimulationEntity.getId(),
                 AuditEventType.SIMULATION_ARCHIVED,
                 "Simulacao arquivada por soft delete.",
@@ -403,6 +420,7 @@ public class SimulationAdminService {
         SimulationVersionEntity clonedVersionEntity = cloneVersion(sourceVersionEntity, newVersionNumber);
         SimulationVersionEntity savedClonedVersionEntity = simulationVersionRepository.save(clonedVersionEntity);
         auditEventService.appendSimulationVersionEvent(
+                savedClonedVersionEntity.getSimulation().getTenantId(),
                 savedClonedVersionEntity.getSimulation().getId(),
                 savedClonedVersionEntity.getVersionNumber(),
                 AuditEventType.SIMULATION_VERSION_CLONED,
@@ -437,6 +455,7 @@ public class SimulationAdminService {
         simulationVersionEntity.setStatus(SimulationVersionStatus.IN_REVIEW);
         SimulationVersionEntity savedSimulationVersionEntity = simulationVersionRepository.save(simulationVersionEntity);
         auditEventService.appendSimulationVersionEvent(
+                savedSimulationVersionEntity.getSimulation().getTenantId(),
                 savedSimulationVersionEntity.getSimulation().getId(),
                 savedSimulationVersionEntity.getVersionNumber(),
                 AuditEventType.SIMULATION_VERSION_SUBMITTED_FOR_REVIEW,
@@ -460,6 +479,7 @@ public class SimulationAdminService {
         simulationVersionEntity.setStatus(SimulationVersionStatus.APPROVED);
         SimulationVersionEntity savedSimulationVersionEntity = simulationVersionRepository.save(simulationVersionEntity);
         auditEventService.appendSimulationVersionEvent(
+                savedSimulationVersionEntity.getSimulation().getTenantId(),
                 savedSimulationVersionEntity.getSimulation().getId(),
                 savedSimulationVersionEntity.getVersionNumber(),
                 AuditEventType.SIMULATION_VERSION_APPROVED,
@@ -482,6 +502,7 @@ public class SimulationAdminService {
         simulationVersionEntity.setStatus(SimulationVersionStatus.REJECTED);
         SimulationVersionEntity savedSimulationVersionEntity = simulationVersionRepository.save(simulationVersionEntity);
         auditEventService.appendSimulationVersionEvent(
+                savedSimulationVersionEntity.getSimulation().getTenantId(),
                 savedSimulationVersionEntity.getSimulation().getId(),
                 savedSimulationVersionEntity.getVersionNumber(),
                 AuditEventType.SIMULATION_VERSION_REJECTED,
@@ -512,11 +533,14 @@ public class SimulationAdminService {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Preflight Gupy bloqueou a publicacao.");
         }
 
+        archiveOtherPublishedVersions(simulationVersionEntity);
+
         Instant publishedAt = Instant.now();
         simulationVersionEntity.setStatus(SimulationVersionStatus.PUBLISHED);
         simulationVersionEntity.setPublishedAt(publishedAt);
         SimulationVersionEntity savedSimulationVersionEntity = simulationVersionRepository.save(simulationVersionEntity);
         auditEventService.appendSimulationVersionEvent(
+                savedSimulationVersionEntity.getSimulation().getTenantId(),
                 savedSimulationVersionEntity.getSimulation().getId(),
                 savedSimulationVersionEntity.getVersionNumber(),
                 AuditEventType.SIMULATION_VERSION_PUBLISHED,
@@ -725,8 +749,25 @@ public class SimulationAdminService {
     }
 
     private SimulationVersionEntity findVersion(String simulationId, int versionNumber) {
-        return simulationVersionRepository.findBySimulationIdAndVersionNumber(simulationId, versionNumber)
+        String tenantId = currentTenantService.requiredTenantId();
+        return simulationVersionRepository
+                .findBySimulationTenantIdAndSimulationIdAndVersionNumber(tenantId, simulationId, versionNumber)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Versao de simulacao nao encontrada."));
+    }
+
+    private void archiveOtherPublishedVersions(SimulationVersionEntity targetVersion) {
+        String tenantId = targetVersion.getSimulation().getTenantId();
+        String simulationId = targetVersion.getSimulation().getId();
+
+        simulationVersionRepository
+                .findBySimulationTenantIdAndSimulationIdAndStatusAndSimulationArchivedFalseAndSimulationDeletedAtIsNullOrderByPublishedAtDesc(
+                        tenantId,
+                        simulationId,
+                        SimulationVersionStatus.PUBLISHED
+                )
+                .stream()
+                .filter(version -> !Objects.equals(version.getId(), targetVersion.getId()))
+                .forEach(version -> version.setStatus(SimulationVersionStatus.ARCHIVED));
     }
 
     private List<SimulationSummaryResponse> toLatestVersionSummary(SimulationEntity simulationEntity) {

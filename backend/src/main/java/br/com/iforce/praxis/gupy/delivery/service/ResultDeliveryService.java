@@ -9,8 +9,10 @@ import br.com.iforce.praxis.gupy.delivery.persistence.repository.ResultDeliveryR
 import br.com.iforce.praxis.gupy.dto.TestResultResponse;
 import br.com.iforce.praxis.gupy.model.PublishedSimulation;
 import br.com.iforce.praxis.gupy.persistence.entity.CandidateAttemptEntity;
+import br.com.iforce.praxis.auth.service.CurrentTenantService;
 import br.com.iforce.praxis.gupy.service.GupyTestResultMapper;
 import br.com.iforce.praxis.gupy.service.SimulationCatalogService;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
@@ -30,17 +32,20 @@ public class ResultDeliveryService {
     private final ResultWebhookClient resultWebhookClient;
     private final SimulationCatalogService simulationCatalogService;
     private final GupyTestResultMapper gupyTestResultMapper;
+    private final CurrentTenantService currentTenantService;
 
     public ResultDeliveryService(
             ResultDeliveryRepository resultDeliveryRepository,
             ResultWebhookClient resultWebhookClient,
             SimulationCatalogService simulationCatalogService,
-            GupyTestResultMapper gupyTestResultMapper
+            GupyTestResultMapper gupyTestResultMapper,
+            CurrentTenantService currentTenantService
     ) {
         this.resultDeliveryRepository = resultDeliveryRepository;
         this.resultWebhookClient = resultWebhookClient;
         this.simulationCatalogService = simulationCatalogService;
         this.gupyTestResultMapper = gupyTestResultMapper;
+        this.currentTenantService = currentTenantService;
     }
 
     @Transactional(propagation = Propagation.MANDATORY)
@@ -60,6 +65,7 @@ public class ResultDeliveryService {
         }
 
         ResultDeliveryEntity resultDeliveryEntity = new ResultDeliveryEntity();
+        resultDeliveryEntity.setTenantId(candidateAttemptEntity.getTenantId());
         resultDeliveryEntity.setCandidateAttempt(candidateAttemptEntity);
         resultDeliveryEntity.setWebhookUrl(candidateAttemptEntity.getResultWebhookUrl());
         resultDeliveryEntity.setStatus(ResultDeliveryStatus.PENDING);
@@ -67,7 +73,11 @@ public class ResultDeliveryService {
         resultDeliveryEntity.setNextAttemptAt(Instant.now());
         resultDeliveryEntity.setCreatedAt(Instant.now());
 
-        resultDeliveryRepository.save(resultDeliveryEntity);
+        try {
+            resultDeliveryRepository.save(resultDeliveryEntity);
+        } catch (DataIntegrityViolationException exception) {
+            // Outra transacao ja criou a entrega para esta tentativa; idempotencia preservada.
+        }
     }
 
     @Transactional(readOnly = true)
@@ -76,24 +86,27 @@ public class ResultDeliveryService {
             String simulationId,
             Integer versionNumber
     ) {
+        String tenantId = currentTenantService.requiredTenantId();
         List<ResultDeliveryEntity> deliveries;
         if (simulationId != null && !simulationId.isBlank() && versionNumber != null) {
             deliveries = status == null
                     ? resultDeliveryRepository
-                            .findByCandidateAttemptSimulationIdAndCandidateAttemptSimulationVersionNumberOrderByCreatedAtDesc(
+                            .findByTenantIdAndCandidateAttemptSimulationIdAndCandidateAttemptSimulationVersionNumberOrderByCreatedAtDesc(
+                                    tenantId,
                                     simulationId,
                                     versionNumber
                             )
                     : resultDeliveryRepository
-                            .findByCandidateAttemptSimulationIdAndCandidateAttemptSimulationVersionNumberAndStatusOrderByCreatedAtDesc(
+                            .findByTenantIdAndCandidateAttemptSimulationIdAndCandidateAttemptSimulationVersionNumberAndStatusOrderByCreatedAtDesc(
+                                    tenantId,
                                     simulationId,
                                     versionNumber,
                                     status
                             );
         } else {
             deliveries = status == null
-                    ? resultDeliveryRepository.findAll()
-                    : resultDeliveryRepository.findByStatusOrderByCreatedAtDesc(status);
+                    ? resultDeliveryRepository.findByTenantIdOrderByCreatedAtDesc(tenantId)
+                    : resultDeliveryRepository.findByTenantIdAndStatusOrderByCreatedAtDesc(tenantId, status);
         }
 
         return deliveries.stream()
@@ -104,7 +117,8 @@ public class ResultDeliveryService {
     @Transactional(readOnly = true)
     public List<ResultDeliveryResponse> listReadyForRetry() {
         return resultDeliveryRepository
-                .findByStatusInAndNextAttemptAtLessThanEqualOrderByCreatedAtAsc(
+                .findByTenantIdAndStatusInAndNextAttemptAtLessThanEqualOrderByCreatedAtAsc(
+                        currentTenantService.requiredTenantId(),
                         List.of(ResultDeliveryStatus.PENDING, ResultDeliveryStatus.RETRYING),
                         Instant.now()
                 )
@@ -115,7 +129,9 @@ public class ResultDeliveryService {
 
     @Transactional
     public ReprocessDeliveryResponse reprocessDelivery(Long deliveryId) {
+        String tenantId = currentTenantService.requiredTenantId();
         ResultDeliveryEntity resultDeliveryEntity = resultDeliveryRepository.findById(deliveryId)
+                .filter(delivery -> tenantId.equals(delivery.getTenantId()))
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Entrega de resultado nao encontrada."));
 
         processDelivery(resultDeliveryEntity);
@@ -126,11 +142,31 @@ public class ResultDeliveryService {
     @Transactional
     public ProcessReadyDeliveriesResponse processReadyDeliveries() {
         List<ResultDeliveryEntity> readyDeliveries = resultDeliveryRepository
+                .findByTenantIdAndStatusInAndNextAttemptAtLessThanEqualOrderByCreatedAtAsc(
+                        currentTenantService.requiredTenantId(),
+                        List.of(ResultDeliveryStatus.PENDING, ResultDeliveryStatus.RETRYING),
+                        Instant.now()
+                );
+
+        return process(readyDeliveries);
+    }
+
+    /**
+     * Processa entregas prontas de todos os tenants. Usado pelo scheduler de sistema, que não possui
+     * usuário autenticado; cada entrega carrega seu próprio tenant e payload, sem mistura entre eles.
+     */
+    @Transactional
+    public ProcessReadyDeliveriesResponse processReadyDeliveriesForAllTenants() {
+        List<ResultDeliveryEntity> readyDeliveries = resultDeliveryRepository
                 .findByStatusInAndNextAttemptAtLessThanEqualOrderByCreatedAtAsc(
                         List.of(ResultDeliveryStatus.PENDING, ResultDeliveryStatus.RETRYING),
                         Instant.now()
                 );
 
+        return process(readyDeliveries);
+    }
+
+    private ProcessReadyDeliveriesResponse process(List<ResultDeliveryEntity> readyDeliveries) {
         for (ResultDeliveryEntity resultDeliveryEntity : readyDeliveries) {
             processDelivery(resultDeliveryEntity);
         }
@@ -207,7 +243,7 @@ public class ResultDeliveryService {
 
     private TestResultResponse toTestResultResponse(CandidateAttemptEntity candidateAttemptEntity) {
         PublishedSimulation simulation = candidateAttemptEntity.getSimulationVersionId() == null
-                ? simulationCatalogService.findPublishedById(candidateAttemptEntity.getSimulationId())
+                ? simulationCatalogService.findPublishedById(candidateAttemptEntity.getTenantId(), candidateAttemptEntity.getSimulationId())
                         .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Simulacao publicada nao encontrada."))
                 : simulationCatalogService.findByVersionId(candidateAttemptEntity.getSimulationVersionId())
                         .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Versao da simulacao nao encontrada."));

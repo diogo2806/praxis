@@ -50,6 +50,7 @@ public class AttemptStateMachine {
         if (attempt.status() == AttemptStatus.NOT_STARTED
                 && attempt.createdAt().plusSeconds(praxisProperties.attemptLinkTtlHours() * 3600L).isBefore(now)) {
             auditEventService.appendCandidateAttemptEvent(
+                    attempt.tenantId(),
                     attempt.id(),
                     AuditEventType.ATTEMPT_EXPIRED,
                     "Link da tentativa expirou antes do inicio.",
@@ -62,6 +63,7 @@ public class AttemptStateMachine {
                 && attempt.startedAt() != null
                 && attempt.startedAt().plusSeconds(praxisProperties.attemptSessionTtlHours() * 3600L).isBefore(now)) {
             auditEventService.appendCandidateAttemptEvent(
+                    attempt.tenantId(),
                     attempt.id(),
                     AuditEventType.ATTEMPT_ABANDONED,
                     "Sessao da tentativa expirou sem conclusao.",
@@ -80,6 +82,7 @@ public class AttemptStateMachine {
 
         Instant startedAt = Instant.now();
         auditEventService.appendCandidateAttemptEvent(
+                attempt.tenantId(),
                 attempt.id(),
                 AuditEventType.ATTEMPT_STARTED,
                 "Tentativa iniciada pelo candidato.",
@@ -186,6 +189,8 @@ public class AttemptStateMachine {
         return new CandidateAttempt(
                 attempt.id(),
                 attempt.resultId(),
+                attempt.tenantId(),
+                attempt.companyId(),
                 attempt.simulationId(),
                 attempt.simulationVersionId(),
                 attempt.simulationVersionNumber(),

@@ -3,6 +3,7 @@ package br.com.iforce.praxis.simulation.service;
 import br.com.iforce.praxis.config.PraxisProperties;
 import br.com.iforce.praxis.audit.model.AuditEventType;
 import br.com.iforce.praxis.audit.service.AuditEventService;
+import br.com.iforce.praxis.auth.service.CurrentTenantService;
 import br.com.iforce.praxis.simulation.dto.GupyPreflightCheckResponse;
 import br.com.iforce.praxis.simulation.dto.GupyPreflightResponse;
 import br.com.iforce.praxis.simulation.dto.SimulationValidationResponse;
@@ -28,33 +29,32 @@ public class GupyPreflightService {
     private final SimulationValidationService simulationValidationService;
     private final AuditEventService auditEventService;
     private final PraxisProperties praxisProperties;
+    private final CurrentTenantService currentTenantService;
 
     public GupyPreflightService(
             SimulationVersionRepository simulationVersionRepository,
             SimulationValidationService simulationValidationService,
             AuditEventService auditEventService,
-            PraxisProperties praxisProperties
+            PraxisProperties praxisProperties,
+            CurrentTenantService currentTenantService
     ) {
         this.simulationVersionRepository = simulationVersionRepository;
         this.simulationValidationService = simulationValidationService;
         this.auditEventService = auditEventService;
         this.praxisProperties = praxisProperties;
+        this.currentTenantService = currentTenantService;
     }
 
     @Transactional(readOnly = true)
     public GupyPreflightResponse getPreflight(String simulationId, int versionNumber) {
-        SimulationVersionEntity simulationVersionEntity = simulationVersionRepository
-                .findBySimulationIdAndVersionNumber(simulationId, versionNumber)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Versao de simulacao nao encontrada."));
+        SimulationVersionEntity simulationVersionEntity = findVersion(simulationId, versionNumber);
 
         return evaluate(simulationVersionEntity);
     }
 
     @Transactional
     public GupyPreflightResponse activateIntegration(String simulationId, int versionNumber) {
-        SimulationVersionEntity simulationVersionEntity = simulationVersionRepository
-                .findBySimulationIdAndVersionNumber(simulationId, versionNumber)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Versao de simulacao nao encontrada."));
+        SimulationVersionEntity simulationVersionEntity = findVersion(simulationId, versionNumber);
 
         if (simulationVersionEntity.getStatus() != SimulationVersionStatus.PUBLISHED) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Somente versoes publicadas podem ativar a integracao Gupy.");
@@ -70,6 +70,7 @@ public class GupyPreflightService {
             simulationVersionEntity.setGupyIntegrationActivatedBy("system");
             simulationVersionRepository.save(simulationVersionEntity);
             auditEventService.appendSimulationVersionEvent(
+                    simulationVersionEntity.getSimulation().getTenantId(),
                     simulationId,
                     versionNumber,
                     AuditEventType.SIMULATION_GUPY_INTEGRATION_ACTIVATED,
@@ -79,6 +80,13 @@ public class GupyPreflightService {
         }
 
         return evaluate(simulationVersionEntity);
+    }
+
+    private SimulationVersionEntity findVersion(String simulationId, int versionNumber) {
+        String tenantId = currentTenantService.requiredTenantId();
+        return simulationVersionRepository
+                .findBySimulationTenantIdAndSimulationIdAndVersionNumber(tenantId, simulationId, versionNumber)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Versao de simulacao nao encontrada."));
     }
 
     public GupyPreflightResponse evaluate(SimulationVersionEntity simulationVersionEntity) {

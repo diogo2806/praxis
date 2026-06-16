@@ -13,4 +13,10 @@ public interface SimulationRepository extends JpaRepository<SimulationEntity, St
             "versions.competencies"
     })
     List<SimulationEntity> findByArchivedFalseAndDeletedAtIsNullOrderByCreatedAtDesc();
+
+    @EntityGraph(attributePaths = {
+            "versions",
+            "versions.competencies"
+    })
+    List<SimulationEntity> findByTenantIdAndArchivedFalseAndDeletedAtIsNullOrderByCreatedAtDesc(String tenantId);
 }

@@ -52,4 +52,42 @@ public interface SimulationVersionRepository extends JpaRepository<SimulationVer
     );
 
     Optional<SimulationVersionEntity> findFirstBySimulationIdOrderByVersionNumberDesc(String simulationId);
+
+    @EntityGraph(attributePaths = {
+            "simulation",
+            "competencies",
+            "nodes",
+            "nodes.options",
+            "nodes.options.competencyScores"
+    })
+    Optional<SimulationVersionEntity> findBySimulationTenantIdAndSimulationIdAndVersionNumber(
+            String tenantId,
+            String simulationId,
+            int versionNumber
+    );
+
+    @EntityGraph(attributePaths = {
+            "simulation",
+            "competencies",
+            "nodes",
+            "nodes.options",
+            "nodes.options.competencyScores"
+    })
+    List<SimulationVersionEntity> findBySimulationTenantIdAndStatusAndSimulationArchivedFalseAndSimulationDeletedAtIsNullOrderByPublishedAtDesc(
+            String tenantId,
+            SimulationVersionStatus status
+    );
+
+    @EntityGraph(attributePaths = {
+            "simulation",
+            "competencies",
+            "nodes",
+            "nodes.options",
+            "nodes.options.competencyScores"
+    })
+    List<SimulationVersionEntity> findBySimulationTenantIdAndSimulationIdAndStatusAndSimulationArchivedFalseAndSimulationDeletedAtIsNullOrderByPublishedAtDesc(
+            String tenantId,
+            String simulationId,
+            SimulationVersionStatus status
+    );
 }

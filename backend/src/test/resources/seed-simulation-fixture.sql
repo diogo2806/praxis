@@ -12,9 +12,16 @@ WHERE simulation_id = 'sim-atendimento-caos';
 DELETE FROM simulations
 WHERE id = 'sim-atendimento-caos';
 
-INSERT INTO simulations (id, name, description, created_at, archived, deleted_at, deleted_by)
+INSERT INTO tenants (id, name, company_id)
+SELECT 'tenant-1', 'Acme S.A.', 'empresa-123'
+WHERE NOT EXISTS (
+    SELECT 1 FROM tenants WHERE id = 'tenant-1'
+);
+
+INSERT INTO simulations (id, tenant_id, name, description, created_at, archived, deleted_at, deleted_by)
 VALUES (
     'sim-atendimento-caos',
+    'tenant-1',
     'Cenario Seed de Teste',
     'Avaliacao situacional deterministica para priorizacao, comunicacao e decisao em contexto.',
     CURRENT_TIMESTAMP,

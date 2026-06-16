@@ -1,6 +1,7 @@
 package br.com.iforce.praxis.auth.filter;
 
-import br.com.iforce.praxis.config.PraxisProperties;
+import br.com.iforce.praxis.auth.service.CurrentTenantService;
+import br.com.iforce.praxis.gupy.service.GupyAuthService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -10,6 +11,7 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.io.IOException;
 import java.util.List;
@@ -19,10 +21,10 @@ public class GupyApiKeyFilter extends OncePerRequestFilter {
 
     private static final String BEARER_PREFIX = "Bearer ";
 
-    private final PraxisProperties properties;
+    private final GupyAuthService gupyAuthService;
 
-    public GupyApiKeyFilter(PraxisProperties properties) {
-        this.properties = properties;
+    public GupyApiKeyFilter(GupyAuthService gupyAuthService) {
+        this.gupyAuthService = gupyAuthService;
     }
 
     @Override
@@ -38,15 +40,19 @@ public class GupyApiKeyFilter extends OncePerRequestFilter {
             FilterChain filterChain
     ) throws ServletException, IOException {
         String authorization = request.getHeader("Authorization");
-        if (authorization != null && authorization.startsWith(BEARER_PREFIX) && properties.integrationToken() != null) {
-            String token = authorization.substring(BEARER_PREFIX.length());
-            if (properties.integrationToken().equals(token)) {
+        if (authorization != null && authorization.startsWith(BEARER_PREFIX)) {
+            try {
+                GupyAuthService.GupyTenantContext context = gupyAuthService.validateBearerToken(authorization);
                 UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
                         "gupy",
                         null,
                         List.of(new SimpleGrantedAuthority("ROLE_GUPY"))
                 );
+                authentication.setDetails(new CurrentTenantService.AuthenticatedTenant(context.tenantId()));
                 SecurityContextHolder.getContext().setAuthentication(authentication);
+            } catch (ResponseStatusException exception) {
+                // Token invalido: segue sem autenticar; o controller devolve o erro adequado.
+                SecurityContextHolder.clearContext();
             }
         }
 

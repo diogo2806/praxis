@@ -16,6 +16,6 @@ public class ResultDeliveryProcessor {
 
     @Scheduled(fixedDelayString = "${praxis.delivery-scheduler-fixed-delay-ms:30000}")
     public void processReadyDeliveries() {
-        resultDeliveryService.processReadyDeliveries();
+        resultDeliveryService.processReadyDeliveriesForAllTenants();
     }
 }

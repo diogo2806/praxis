@@ -7,6 +7,8 @@ import java.util.Map;
 public record CandidateAttempt(
         String id,
         String resultId,
+        String tenantId,
+        String companyId,
         String simulationId,
         Long simulationVersionId,
         Integer simulationVersionNumber,

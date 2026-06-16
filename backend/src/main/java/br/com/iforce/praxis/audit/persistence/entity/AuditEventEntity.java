@@ -27,6 +27,9 @@ public class AuditEventEntity {
     @Column(name = "id", nullable = false)
     private Long id;
 
+    @Column(name = "tenant_id", nullable = false, length = 120)
+    private String tenantId;
+
     @Column(name = "aggregate_type", nullable = false, length = 80)
     private String aggregateType;
 

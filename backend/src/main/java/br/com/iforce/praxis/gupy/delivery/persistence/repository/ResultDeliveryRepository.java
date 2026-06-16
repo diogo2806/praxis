@@ -51,6 +51,16 @@ public interface ResultDeliveryRepository extends JpaRepository<ResultDeliveryEn
             Instant nextAttemptAt
     );
 
+    @EntityGraph(attributePaths = {
+            "candidateAttempt",
+            "candidateAttempt.resultItems"
+    })
+    List<ResultDeliveryEntity> findByTenantIdAndStatusInAndNextAttemptAtLessThanEqualOrderByCreatedAtAsc(
+            String tenantId,
+            List<ResultDeliveryStatus> statuses,
+            Instant nextAttemptAt
+    );
+
     @Override
     @EntityGraph(attributePaths = {
             "candidateAttempt",
@@ -60,6 +70,45 @@ public interface ResultDeliveryRepository extends JpaRepository<ResultDeliveryEn
 
     long countByCandidateAttemptSimulationVersionIdAndStatus(
             Long simulationVersionId,
+            ResultDeliveryStatus status
+    );
+
+    long countByTenantIdAndCandidateAttemptSimulationVersionIdAndStatus(
+            String tenantId,
+            Long simulationVersionId,
+            ResultDeliveryStatus status
+    );
+
+    @EntityGraph(attributePaths = {
+            "candidateAttempt",
+            "candidateAttempt.resultItems"
+    })
+    List<ResultDeliveryEntity> findByTenantIdOrderByCreatedAtDesc(String tenantId);
+
+    @EntityGraph(attributePaths = {
+            "candidateAttempt",
+            "candidateAttempt.resultItems"
+    })
+    List<ResultDeliveryEntity> findByTenantIdAndStatusOrderByCreatedAtDesc(String tenantId, ResultDeliveryStatus status);
+
+    @EntityGraph(attributePaths = {
+            "candidateAttempt",
+            "candidateAttempt.resultItems"
+    })
+    List<ResultDeliveryEntity> findByTenantIdAndCandidateAttemptSimulationIdAndCandidateAttemptSimulationVersionNumberOrderByCreatedAtDesc(
+            String tenantId,
+            String simulationId,
+            Integer simulationVersionNumber
+    );
+
+    @EntityGraph(attributePaths = {
+            "candidateAttempt",
+            "candidateAttempt.resultItems"
+    })
+    List<ResultDeliveryEntity> findByTenantIdAndCandidateAttemptSimulationIdAndCandidateAttemptSimulationVersionNumberAndStatusOrderByCreatedAtDesc(
+            String tenantId,
+            String simulationId,
+            Integer simulationVersionNumber,
             ResultDeliveryStatus status
     );
 }
