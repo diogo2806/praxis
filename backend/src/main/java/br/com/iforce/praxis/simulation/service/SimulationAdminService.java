@@ -21,6 +21,7 @@ import br.com.iforce.praxis.simulation.dto.UpdateNodeRequest;
 import br.com.iforce.praxis.simulation.dto.UpdateOptionRequest;
 import br.com.iforce.praxis.gupy.model.AttemptStatus;
 import br.com.iforce.praxis.gupy.persistence.repository.CandidateAttemptRepository;
+import br.com.iforce.praxis.shared.model.MediaType;
 import br.com.iforce.praxis.simulation.model.SimulationVersionStatus;
 import br.com.iforce.praxis.simulation.persistence.entity.OptionCompetencyScoreEntity;
 import br.com.iforce.praxis.simulation.persistence.entity.SimulationCompetencyEntity;
@@ -47,6 +48,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import java.util.function.Consumer;
 
 @Service
 public class SimulationAdminService {
@@ -223,6 +225,7 @@ public class SimulationAdminService {
         nodeEntity.setSpeaker("Cliente");
         nodeEntity.setMessage(request.clientMessage().trim());
         nodeEntity.setTimeLimitSeconds(request.timeLimitSeconds());
+        applyMedia(request.mediaUrl(), request.mediaType(), nodeEntity::setMediaUrl, nodeEntity::setMediaType);
         versionEntity.getNodes().add(nodeEntity);
 
         simulationVersionRepository.save(versionEntity);
@@ -248,6 +251,9 @@ public class SimulationAdminService {
         }
         if (request.timeLimitSeconds() != null) {
             nodeEntity.setTimeLimitSeconds(request.timeLimitSeconds());
+        }
+        if (request.mediaUrl() != null) {
+            applyMedia(request.mediaUrl(), request.mediaType(), nodeEntity::setMediaUrl, nodeEntity::setMediaType);
         }
 
         simulationVersionRepository.save(versionEntity);
@@ -297,6 +303,7 @@ public class SimulationAdminService {
         optionEntity.setNextNodeId(trimToNull(request.nextNodeId()));
         optionEntity.setCritical(request.isCritical());
         optionEntity.setAuditNote(defaultIfBlank(request.resultingTone(), ""));
+        applyMedia(request.mediaUrl(), request.mediaType(), optionEntity::setMediaUrl, optionEntity::setMediaType);
         applyCompetencyScores(optionEntity, request.competencyLevels());
         nodeEntity.getOptions().add(optionEntity);
 
@@ -337,6 +344,9 @@ public class SimulationAdminService {
         }
         if (request.resultingTone() != null) {
             optionEntity.setAuditNote(defaultIfBlank(request.resultingTone(), ""));
+        }
+        if (request.mediaUrl() != null) {
+            applyMedia(request.mediaUrl(), request.mediaType(), optionEntity::setMediaUrl, optionEntity::setMediaType);
         }
         if (request.competencyLevels() != null) {
             assertCompetencyScores(versionEntity, request.competencyLevels());
@@ -780,6 +790,17 @@ public class SimulationAdminService {
         return candidate;
     }
 
+    private void applyMedia(
+            String mediaUrl,
+            MediaType mediaType,
+            Consumer<String> urlSetter,
+            Consumer<MediaType> typeSetter
+    ) {
+        String normalizedUrl = trimToNull(mediaUrl);
+        urlSetter.accept(normalizedUrl);
+        typeSetter.accept(normalizedUrl == null ? null : mediaType);
+    }
+
     private String defaultIfBlank(String value, String fallback) {
         return value == null || value.isBlank() ? fallback : value.trim();
     }
@@ -931,6 +952,8 @@ public class SimulationAdminService {
         clonedNodeEntity.setSpeaker(sourceNodeEntity.getSpeaker());
         clonedNodeEntity.setMessage(sourceNodeEntity.getMessage());
         clonedNodeEntity.setTimeLimitSeconds(sourceNodeEntity.getTimeLimitSeconds());
+        clonedNodeEntity.setMediaUrl(sourceNodeEntity.getMediaUrl());
+        clonedNodeEntity.setMediaType(sourceNodeEntity.getMediaType());
 
         for (SimulationOptionEntity sourceOptionEntity : sourceNodeEntity.getOptions()) {
             SimulationOptionEntity clonedOptionEntity = cloneOption(sourceOptionEntity, clonedNodeEntity);
@@ -951,6 +974,8 @@ public class SimulationAdminService {
         clonedOptionEntity.setNextNodeId(sourceOptionEntity.getNextNodeId());
         clonedOptionEntity.setCritical(sourceOptionEntity.isCritical());
         clonedOptionEntity.setAuditNote(sourceOptionEntity.getAuditNote());
+        clonedOptionEntity.setMediaUrl(sourceOptionEntity.getMediaUrl());
+        clonedOptionEntity.setMediaType(sourceOptionEntity.getMediaType());
 
         for (OptionCompetencyScoreEntity sourceScoreEntity : sourceOptionEntity.getCompetencyScores()) {
             OptionCompetencyScoreEntity clonedScoreEntity = new OptionCompetencyScoreEntity();

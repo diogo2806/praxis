@@ -1,5 +1,6 @@
 package br.com.iforce.praxis.simulation.dto;
 
+import br.com.iforce.praxis.shared.model.MediaType;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.Size;
 
@@ -11,6 +12,13 @@ public record UpdateNodeRequest(
         Integer timeLimitSeconds,
 
         @Size(max = 1000)
-        String timeJustification
+        String timeJustification,
+
+        @Size(max = 1000)
+        @Schema(description = "URL pública da mídia. Envie string vazia para remover a mídia.", nullable = true)
+        String mediaUrl,
+
+        @Schema(description = "Tipo da mídia anexada (IMAGE ou AUDIO).", nullable = true)
+        MediaType mediaType
 ) {
 }

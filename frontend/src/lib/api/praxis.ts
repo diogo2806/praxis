@@ -10,9 +10,20 @@ export type AttemptStatus =
   | "expired"
   | "failed";
 
+export type MediaType = "IMAGE" | "AUDIO";
+
+export interface MediaUploadResponse {
+  url: string;
+  mediaType: MediaType;
+  contentType: string;
+  sizeBytes: number;
+}
+
 export interface CandidateOptionResponse {
   id: string;
   text: string;
+  mediaUrl?: string | null;
+  mediaType?: MediaType | null;
 }
 
 export interface CandidateNodeResponse {
@@ -21,6 +32,8 @@ export interface CandidateNodeResponse {
   speaker: string;
   message: string;
   timeLimitSeconds: number | null;
+  mediaUrl?: string | null;
+  mediaType?: MediaType | null;
   options: CandidateOptionResponse[];
 }
 
@@ -124,6 +137,8 @@ export interface SimulationVersionOptionResponse {
   isCritical: boolean;
   nextNodeId: string | null;
   auditNote: string;
+  mediaUrl: string | null;
+  mediaType: MediaType | null;
 }
 
 export interface SimulationVersionNodeResponse {
@@ -132,6 +147,8 @@ export interface SimulationVersionNodeResponse {
   speaker: string;
   clientMessage: string;
   timeLimitSeconds: number | null;
+  mediaUrl: string | null;
+  mediaType: MediaType | null;
   options: SimulationVersionOptionResponse[];
 }
 
@@ -152,12 +169,16 @@ export interface CreateNodeRequest {
   clientMessage: string;
   timeLimitSeconds?: number | null;
   timeJustification?: string | null;
+  mediaUrl?: string | null;
+  mediaType?: MediaType | null;
 }
 
 export interface UpdateNodeRequest {
   clientMessage?: string;
   timeLimitSeconds?: number | null;
   timeJustification?: string | null;
+  mediaUrl?: string | null;
+  mediaType?: MediaType | null;
 }
 
 export interface CreateOptionRequest {
@@ -167,6 +188,8 @@ export interface CreateOptionRequest {
   isCritical: boolean;
   nextNodeId?: string | null;
   resultingTone?: string | null;
+  mediaUrl?: string | null;
+  mediaType?: MediaType | null;
 }
 
 export interface UpdateOptionRequest {
@@ -176,6 +199,8 @@ export interface UpdateOptionRequest {
   isCritical?: boolean;
   nextNodeId?: string | null;
   resultingTone?: string | null;
+  mediaUrl?: string | null;
+  mediaType?: MediaType | null;
 }
 
 export type ResultDeliveryStatus = "pending" | "retrying" | "sent" | "dlq";
@@ -365,6 +390,35 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 
   const text = await response.text();
   return (text.length > 0 ? text : undefined) as T;
+}
+
+export async function uploadMedia(file: File): Promise<MediaUploadResponse> {
+  const session = getSession();
+  const headers: Record<string, string> = {};
+  if (session.token) {
+    headers.Authorization = `Bearer ${session.token}`;
+  }
+  const formData = new FormData();
+  formData.append("file", file);
+
+  const response = await fetch(`${getApiBaseUrl()}/api/v1/media`, {
+    method: "POST",
+    headers,
+    body: formData,
+  });
+
+  if (!response.ok) {
+    let message = `Falha no upload da mídia (${response.status})`;
+    try {
+      const body = (await response.json()) as { message?: string; error?: string };
+      message = body.message ?? body.error ?? message;
+    } catch {
+      // Mantem a mensagem HTTP padrao quando a resposta nao vem em JSON.
+    }
+    throw new PraxisApiError(message, response.status);
+  }
+
+  return response.json() as Promise<MediaUploadResponse>;
 }
 
 function isAdminPath(path: string) {

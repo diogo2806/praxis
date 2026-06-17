@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
-import { GitBranch, Plus, Save, Trash2 } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { GitBranch, ImagePlus, Music, Plus, Save, Trash2, X } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
 import {
   EmptyState,
@@ -20,6 +20,8 @@ import {
   listSimulations,
   updateSimulationNode,
   updateSimulationOption,
+  uploadMedia,
+  type MediaType,
   type SimulationSummaryResponse,
   type SimulationVersionNodeResponse,
 } from "@/lib/api/praxis";
@@ -150,6 +152,8 @@ function DialogEditor() {
       nextNodeId,
       isCritical,
       competencyLevels: levels,
+      mediaUrl,
+      mediaType,
     }: {
       nodeId: string;
       optionId: string;
@@ -157,12 +161,32 @@ function DialogEditor() {
       nextNodeId?: string | null;
       isCritical?: boolean;
       competencyLevels?: Record<string, number>;
+      mediaUrl?: string;
+      mediaType?: MediaType | null;
     }) =>
       updateSimulationOption(search.simulationId!, search.versionNumber!, nodeId, optionId, {
         text,
         nextNodeId: nextNodeId === null ? "" : nextNodeId,
         isCritical,
         competencyLevels: levels,
+        mediaUrl,
+        mediaType,
+      }),
+    onSuccess: refetchVersion,
+  });
+  const updateNodeMediaMutation = useMutation({
+    mutationFn: ({
+      nodeId,
+      mediaUrl,
+      mediaType,
+    }: {
+      nodeId: string;
+      mediaUrl: string;
+      mediaType: MediaType | null;
+    }) =>
+      updateSimulationNode(search.simulationId!, search.versionNumber!, nodeId, {
+        mediaUrl,
+        mediaType,
       }),
     onSuccess: refetchVersion,
   });
@@ -178,6 +202,7 @@ function DialogEditor() {
     deleteNodeMutation.error ??
     addOptionMutation.error ??
     updateOptionMutation.error ??
+    updateNodeMediaMutation.error ??
     deleteOptionMutation.error;
 
   return (
@@ -364,6 +389,24 @@ function DialogEditor() {
                     ))}
                   </select>
                 </label>
+                <div className="mt-3">
+                  <span className="mb-1.5 block text-xs font-medium text-muted-foreground">
+                    Mídia do turno (opcional)
+                  </span>
+                  <MediaAttachment
+                    mediaUrl={selected.mediaUrl}
+                    mediaType={selected.mediaType}
+                    disabled={updateNodeMediaMutation.isPending}
+                    onChange={(next) => {
+                      setFeedbackMessage(null);
+                      updateNodeMediaMutation.mutate({
+                        nodeId: selected.id,
+                        mediaUrl: next ? next.mediaUrl : "",
+                        mediaType: next ? next.mediaType : null,
+                      });
+                    }}
+                  />
+                </div>
                 <div className="mt-5 flex items-center justify-between">
                   <div className="text-sm font-semibold">Alternativas</div>
                   <span className="text-xs text-muted-foreground">
@@ -492,6 +535,21 @@ function DialogEditor() {
                           critica
                         </label>
                       </div>
+                      <MediaAttachment
+                        mediaUrl={option.mediaUrl}
+                        mediaType={option.mediaType}
+                        disabled={updateOptionMutation.isPending}
+                        label="Anexar imagem ou áudio à alternativa"
+                        onChange={(next) => {
+                          setFeedbackMessage(null);
+                          updateOptionMutation.mutate({
+                            nodeId: selected.id,
+                            optionId: option.id,
+                            mediaUrl: next ? next.mediaUrl : "",
+                            mediaType: next ? next.mediaType : null,
+                          });
+                        }}
+                      />
                     </div>
                   ))}
                 </div>
@@ -561,6 +619,116 @@ function DialogEditor() {
         </>
       )}
     </AppShell>
+  );
+}
+
+export function MediaPreview({
+  mediaUrl,
+  mediaType,
+  className,
+}: {
+  mediaUrl: string;
+  mediaType: MediaType | null;
+  className?: string;
+}) {
+  if (mediaType === "AUDIO") {
+    return (
+      <audio controls src={mediaUrl} className={cn("w-full", className)}>
+        Seu navegador não suporta áudio.
+      </audio>
+    );
+  }
+  return (
+    <img
+      src={mediaUrl}
+      alt="Mídia anexada"
+      className={cn("max-h-40 w-auto rounded-md border border-border object-contain", className)}
+    />
+  );
+}
+
+function MediaAttachment({
+  mediaUrl,
+  mediaType,
+  onChange,
+  disabled,
+  label = "Anexar imagem ou áudio",
+}: {
+  mediaUrl: string | null;
+  mediaType: MediaType | null;
+  onChange: (next: { mediaUrl: string; mediaType: MediaType } | null) => void;
+  disabled?: boolean;
+  label?: string;
+}) {
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleFile = async (file: File | undefined) => {
+    if (!file) return;
+    if (!file.type.startsWith("image/") && !file.type.startsWith("audio/")) {
+      setError("Apenas imagens ou áudios são suportados.");
+      return;
+    }
+    setError(null);
+    setUploading(true);
+    try {
+      const result = await uploadMedia(file);
+      onChange({ mediaUrl: result.url, mediaType: result.mediaType });
+    } catch (uploadError) {
+      setError(uploadError instanceof Error ? uploadError.message : "Falha no upload da mídia.");
+    } finally {
+      setUploading(false);
+      if (inputRef.current) inputRef.current.value = "";
+    }
+  };
+
+  return (
+    <div className="mt-3 rounded-md border border-dashed border-border bg-background/60 p-3">
+      <input
+        ref={inputRef}
+        type="file"
+        accept="image/*,audio/*"
+        className="hidden"
+        onChange={(event) => handleFile(event.target.files?.[0])}
+      />
+      {mediaUrl ? (
+        <div className="space-y-2">
+          <MediaPreview mediaUrl={mediaUrl} mediaType={mediaType} />
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={() => inputRef.current?.click()}
+              disabled={disabled || uploading}
+              className="inline-flex items-center gap-1.5 rounded-md border border-border bg-card px-2.5 py-1.5 text-xs hover:bg-accent disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              <ImagePlus className="h-3.5 w-3.5" />
+              {uploading ? "Enviando..." : "Trocar mídia"}
+            </button>
+            <button
+              type="button"
+              onClick={() => onChange(null)}
+              disabled={disabled || uploading}
+              className="inline-flex items-center gap-1.5 rounded-md border border-danger/25 bg-danger/5 px-2.5 py-1.5 text-xs text-danger hover:bg-danger/10 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              <X className="h-3.5 w-3.5" />
+              Remover mídia
+            </button>
+          </div>
+        </div>
+      ) : (
+        <button
+          type="button"
+          onClick={() => inputRef.current?.click()}
+          disabled={disabled || uploading}
+          className="inline-flex items-center gap-1.5 rounded-md border border-border bg-card px-2.5 py-1.5 text-xs hover:bg-accent disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          <Music className="h-3.5 w-3.5" />
+          {uploading ? "Enviando..." : label}
+        </button>
+      )}
+      {error && <p className="mt-2 text-xs text-danger">{error}</p>}
+    </div>
   );
 }
 

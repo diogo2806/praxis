@@ -171,7 +171,12 @@ public class CandidateAttemptMapper {
         }
 
         List<CandidateOptionResponse> options = node.options().stream()
-                .map(option -> new CandidateOptionResponse(option.id(), option.text()))
+                .map(option -> new CandidateOptionResponse(
+                        option.id(),
+                        option.text(),
+                        option.mediaUrl(),
+                        option.mediaType()
+                ))
                 .toList();
 
         return new CandidateNodeResponse(
@@ -180,6 +185,8 @@ public class CandidateAttemptMapper {
                 node.speaker(),
                 node.message(),
                 node.timeLimitSeconds(),
+                node.mediaUrl(),
+                node.mediaType(),
                 options
         );
     }
