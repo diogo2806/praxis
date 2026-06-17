@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as MonitoramentoRouteImport } from './routes/monitoramento'
 import { Route as LgpdRouteImport } from './routes/lgpd'
 import { Route as GovernancaRouteImport } from './routes/governanca'
+import { Route as EnviarLinkRouteImport } from './routes/enviar-link'
 import { Route as DefensabilidadeRouteImport } from './routes/defensabilidade'
 import { Route as CandidatoRouteImport } from './routes/candidato'
 import { Route as IndexRouteImport } from './routes/index'
@@ -43,6 +44,11 @@ const LgpdRoute = LgpdRouteImport.update({
 const GovernancaRoute = GovernancaRouteImport.update({
   id: '/governanca',
   path: '/governanca',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const EnviarLinkRoute = EnviarLinkRouteImport.update({
+  id: '/enviar-link',
+  path: '/enviar-link',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DefensabilidadeRoute = DefensabilidadeRouteImport.update({
@@ -135,6 +141,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/candidato': typeof CandidatoRouteWithChildren
   '/defensabilidade': typeof DefensabilidadeRoute
+  '/enviar-link': typeof EnviarLinkRoute
   '/governanca': typeof GovernancaRoute
   '/lgpd': typeof LgpdRoute
   '/monitoramento': typeof MonitoramentoRoute
@@ -157,6 +164,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/candidato': typeof CandidatoRouteWithChildren
   '/defensabilidade': typeof DefensabilidadeRoute
+  '/enviar-link': typeof EnviarLinkRoute
   '/governanca': typeof GovernancaRoute
   '/lgpd': typeof LgpdRoute
   '/monitoramento': typeof MonitoramentoRoute
@@ -180,6 +188,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/candidato': typeof CandidatoRouteWithChildren
   '/defensabilidade': typeof DefensabilidadeRoute
+  '/enviar-link': typeof EnviarLinkRoute
   '/governanca': typeof GovernancaRoute
   '/lgpd': typeof LgpdRoute
   '/monitoramento': typeof MonitoramentoRoute
@@ -204,6 +213,7 @@ export interface FileRouteTypes {
     | '/'
     | '/candidato'
     | '/defensabilidade'
+    | '/enviar-link'
     | '/governanca'
     | '/lgpd'
     | '/monitoramento'
@@ -226,6 +236,7 @@ export interface FileRouteTypes {
     | '/'
     | '/candidato'
     | '/defensabilidade'
+    | '/enviar-link'
     | '/governanca'
     | '/lgpd'
     | '/monitoramento'
@@ -248,6 +259,7 @@ export interface FileRouteTypes {
     | '/'
     | '/candidato'
     | '/defensabilidade'
+    | '/enviar-link'
     | '/governanca'
     | '/lgpd'
     | '/monitoramento'
@@ -271,6 +283,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   CandidatoRoute: typeof CandidatoRouteWithChildren
   DefensabilidadeRoute: typeof DefensabilidadeRoute
+  EnviarLinkRoute: typeof EnviarLinkRoute
   GovernancaRoute: typeof GovernancaRoute
   LgpdRoute: typeof LgpdRoute
   MonitoramentoRoute: typeof MonitoramentoRoute
@@ -310,6 +323,13 @@ declare module '@tanstack/react-router' {
       path: '/governanca'
       fullPath: '/governanca'
       preLoaderRoute: typeof GovernancaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/enviar-link': {
+      id: '/enviar-link'
+      path: '/enviar-link'
+      fullPath: '/enviar-link'
+      preLoaderRoute: typeof EnviarLinkRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/defensabilidade': {
@@ -450,6 +470,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   CandidatoRoute: CandidatoRouteWithChildren,
   DefensabilidadeRoute: DefensabilidadeRoute,
+  EnviarLinkRoute: EnviarLinkRoute,
   GovernancaRoute: GovernancaRoute,
   LgpdRoute: LgpdRoute,
   MonitoramentoRoute: MonitoramentoRoute,

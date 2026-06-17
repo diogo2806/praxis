@@ -3,6 +3,8 @@ package br.com.iforce.praxis.gupy.service;
 import br.com.iforce.praxis.audit.model.AuditEventType;
 import br.com.iforce.praxis.audit.service.AuditEventService;
 import br.com.iforce.praxis.candidate.dto.CandidateAttemptResponse;
+import br.com.iforce.praxis.candidate.dto.CreateCandidateLinkRequest;
+import br.com.iforce.praxis.candidate.dto.CreateCandidateLinkResponse;
 import br.com.iforce.praxis.candidate.dto.SubmitAnswerRequest;
 import br.com.iforce.praxis.candidate.dto.SubmitAnswerResponse;
 import br.com.iforce.praxis.config.PraxisProperties;
@@ -15,6 +17,9 @@ import br.com.iforce.praxis.gupy.model.AttemptAnswer;
 import br.com.iforce.praxis.gupy.model.AttemptStatus;
 import br.com.iforce.praxis.gupy.model.CandidateAttempt;
 import br.com.iforce.praxis.gupy.model.PublishedSimulation;
+import br.com.iforce.praxis.gupy.model.ResultDecision;
+import br.com.iforce.praxis.gupy.model.ResultItem;
+import br.com.iforce.praxis.gupy.model.ResultTier;
 import br.com.iforce.praxis.gupy.model.ScenarioNode;
 import br.com.iforce.praxis.gupy.model.ScenarioOption;
 import br.com.iforce.praxis.gupy.persistence.entity.CandidateAttemptEntity;
@@ -31,6 +36,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
 
 /**
  * Orquestra o ciclo de vida da tentativa do candidato: idempotência na criação, persistência,
@@ -92,6 +98,67 @@ public class CandidateAttemptService {
         return new CreateCandidateResponse(
                 candidateUrl(candidateAttemptEntity.getId()),
                 candidateAttemptEntity.getResultId()
+        );
+    }
+
+    @Transactional
+    public CreateCandidateLinkResponse createCompanyLink(CreateCandidateLinkRequest request) {
+        String tenantId = TenantSecurity.requiredTenant();
+
+        PublishedSimulation publishedSimulation = simulationCatalogService
+                .findPublishedById(tenantId, request.simulationId())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Simulacao publicada nao encontrada."));
+
+        String idempotencyKey = tenantId + "|company|" + request.candidateEmail().trim() + "|" + request.simulationId();
+
+        CandidateAttemptEntity entity = candidateAttemptRepository
+                .findByTenantIdAndIdempotencyKey(tenantId, idempotencyKey)
+                .orElseGet(() -> {
+                    CandidateAttempt attempt = new CandidateAttempt(
+                            "att_" + UUID.randomUUID().toString().replace("-", ""),
+                            "res_" + UUID.randomUUID().toString().replace("-", ""),
+                            tenantId,
+                            tenantId,
+                            publishedSimulation.id(),
+                            publishedSimulation.versionId(),
+                            publishedSimulation.versionNumber(),
+                            idempotencyKey,
+                            request.candidateName().trim(),
+                            request.candidateEmail().trim(),
+                            AttemptStatus.NOT_STARTED,
+                            null,
+                            publishedSimulation.competencies().stream()
+                                    .map(c -> new ResultItem(c, 0, ResultTier.MAJOR))
+                                    .toList(),
+                            Map.of(),
+                            ResultDecision.IN_PROGRESS,
+                            false,
+                            "Resultado ainda nao finalizado.",
+                            Instant.now(),
+                            null,
+                            null
+                    );
+
+                    CandidateAttemptEntity newEntity = new CandidateAttemptEntity();
+                    candidateAttemptMapper.applyDomainToEntity(attempt, newEntity);
+                    CandidateAttemptEntity saved = candidateAttemptRepository.save(newEntity);
+
+                    auditEventService.appendCandidateAttemptEvent(
+                            tenantId,
+                            saved.getId(),
+                            AuditEventType.ATTEMPT_CREATED,
+                            "Tentativa criada pela empresa para envio direto ao candidato.",
+                            "{\"simulationId\":\"" + request.simulationId()
+                                    + "\",\"candidateEmail\":\"" + request.candidateEmail().trim() + "\"}"
+                    );
+
+                    return saved;
+                });
+
+        return new CreateCandidateLinkResponse(
+                entity.getId(),
+                candidateUrl(entity.getId()),
+                publishedSimulation.name()
         );
     }
 
