@@ -290,7 +290,7 @@ function Page() {
                 }
                 className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground disabled:cursor-not-allowed disabled:opacity-60"
               >
-                {transitionMutation.isPending ? "Enviando..." : transitionCopy[pendingAction].cta}
+                {transitionMutation.isPending ? "Enviando..." : "Confirmar"}
               </button>
             </div>
           </div>
