@@ -9,6 +9,7 @@ import {
   submitCandidateAnswer,
   type CandidateAttemptResponse,
   type CandidateNodeResponse,
+  type MediaType,
 } from "@/lib/api/praxis";
 import { cn } from "@/lib/utils";
 import { useViewMode } from "@/lib/view-mode";
@@ -62,6 +63,34 @@ function CandidateEntryPage() {
         }
       />
     </AppShell>
+  );
+}
+
+function CandidateMedia({
+  mediaUrl,
+  mediaType,
+}: {
+  mediaUrl: string;
+  mediaType: MediaType | null;
+}) {
+  if (mediaType === "AUDIO") {
+    return (
+      <audio
+        controls
+        src={mediaUrl}
+        className="w-full"
+        onClick={(event) => event.stopPropagation()}
+      >
+        Seu navegador não suporta áudio.
+      </audio>
+    );
+  }
+  return (
+    <img
+      src={mediaUrl}
+      alt="Mídia do atendimento"
+      className="max-h-48 w-auto rounded-md border border-border object-contain"
+    />
   );
 }
 
@@ -207,8 +236,14 @@ export function CandidateExperience({ token }: { token: string }) {
                     </div>
                   </div>
                   <div className="space-y-3" aria-live="polite">
-                    <div className="mr-8 rounded-md bg-muted px-3 py-2 text-sm">
-                      {currentNode?.message}
+                    <div className="mr-8 space-y-2 rounded-md bg-muted px-3 py-2 text-sm">
+                      <div>{currentNode?.message}</div>
+                      {currentNode?.mediaUrl && (
+                        <CandidateMedia
+                          mediaUrl={currentNode.mediaUrl}
+                          mediaType={currentNode.mediaType ?? null}
+                        />
+                      )}
                     </div>
                     {selected && (
                       <div className="ml-8 rounded-md bg-primary px-3 py-2 text-sm text-primary-foreground">
@@ -224,24 +259,34 @@ export function CandidateExperience({ token }: { token: string }) {
                   {!selected && (
                     <div className="mt-5 space-y-2">
                       {(currentNode?.options ?? []).map((option) => (
-                        <button
+                        <div
                           key={option.id}
-                          type="button"
-                          onClick={() => {
-                            setSelected(option.text);
-                            if (currentNode) {
-                              answerMutation.mutate({
-                                node: currentNode,
-                                optionId: option.id,
-                                timedOut: false,
-                              });
-                            }
-                          }}
-                          disabled={answerMutation.isPending}
-                          className="w-full rounded-md border border-border bg-card p-3 text-left text-sm hover:border-primary hover:bg-primary/5 disabled:cursor-not-allowed disabled:opacity-60"
+                          className="space-y-2 rounded-md border border-border bg-card p-2 hover:border-primary"
                         >
-                          {option.text}
-                        </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setSelected(option.text);
+                              if (currentNode) {
+                                answerMutation.mutate({
+                                  node: currentNode,
+                                  optionId: option.id,
+                                  timedOut: false,
+                                });
+                              }
+                            }}
+                            disabled={answerMutation.isPending}
+                            className="w-full rounded-md p-1 text-left text-sm hover:bg-primary/5 disabled:cursor-not-allowed disabled:opacity-60"
+                          >
+                            {option.text}
+                          </button>
+                          {option.mediaUrl && (
+                            <CandidateMedia
+                              mediaUrl={option.mediaUrl}
+                              mediaType={option.mediaType ?? null}
+                            />
+                          )}
+                        </div>
                       ))}
                     </div>
                   )}

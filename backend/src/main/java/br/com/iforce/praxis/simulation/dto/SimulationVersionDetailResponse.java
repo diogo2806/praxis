@@ -1,5 +1,6 @@
 package br.com.iforce.praxis.simulation.dto;
 
+import br.com.iforce.praxis.shared.model.MediaType;
 import br.com.iforce.praxis.simulation.model.SimulationVersionStatus;
 
 import java.util.List;
@@ -26,6 +27,8 @@ public record SimulationVersionDetailResponse(
             String speaker,
             String clientMessage,
             Integer timeLimitSeconds,
+            String mediaUrl,
+            MediaType mediaType,
             List<OptionDto> options
     ) {
     }
@@ -36,7 +39,9 @@ public record SimulationVersionDetailResponse(
             Map<String, Integer> competencyLevels,
             boolean isCritical,
             String nextNodeId,
-            String auditNote
+            String auditNote,
+            String mediaUrl,
+            MediaType mediaType
     ) {
     }
 }

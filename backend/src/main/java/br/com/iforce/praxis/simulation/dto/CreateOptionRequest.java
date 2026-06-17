@@ -1,5 +1,6 @@
 package br.com.iforce.praxis.simulation.dto;
 
+import br.com.iforce.praxis.shared.model.MediaType;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
@@ -27,6 +28,13 @@ public record CreateOptionRequest(
         String nextNodeId,
 
         @Size(max = 1000)
-        String resultingTone
+        String resultingTone,
+
+        @Size(max = 1000)
+        @Schema(description = "URL pública da imagem ou áudio anexado à alternativa.", nullable = true)
+        String mediaUrl,
+
+        @Schema(description = "Tipo da mídia anexada (IMAGE ou AUDIO).", nullable = true)
+        MediaType mediaType
 ) {
 }

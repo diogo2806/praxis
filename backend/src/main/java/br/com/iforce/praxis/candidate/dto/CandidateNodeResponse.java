@@ -1,5 +1,6 @@
 package br.com.iforce.praxis.candidate.dto;
 
+import br.com.iforce.praxis.shared.model.MediaType;
 import io.swagger.v3.oas.annotations.media.Schema;
 
 import java.util.List;
@@ -20,6 +21,12 @@ public record CandidateNodeResponse(
 
         @Schema(example = "45", nullable = true)
         Integer timeLimitSeconds,
+
+        @Schema(description = "URL pública da imagem ou áudio do turno.", nullable = true)
+        String mediaUrl,
+
+        @Schema(description = "Tipo da mídia (IMAGE ou AUDIO).", nullable = true)
+        MediaType mediaType,
 
         List<CandidateOptionResponse> options
 ) {
