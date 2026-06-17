@@ -242,12 +242,14 @@ function Page() {
       <div className="mt-8 flex justify-between">
         <Link
           to="/nova/mapa"
+          search={{ simulationId: search.simulationId, versionNumber: search.versionNumber }}
           className="rounded-md border border-border bg-card px-4 py-2 text-sm hover:bg-accent"
         >
           Voltar: Mapa
         </Link>
         <Link
           to="/nova/gupy"
+          search={{ simulationId: search.simulationId, versionNumber: search.versionNumber }}
           className="rounded-md bg-primary px-5 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
         >
           Gupy Preflight

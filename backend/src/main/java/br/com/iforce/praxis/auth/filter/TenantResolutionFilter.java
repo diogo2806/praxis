@@ -6,6 +6,7 @@ import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -18,9 +19,14 @@ import java.io.IOException;
 public class TenantResolutionFilter extends OncePerRequestFilter {
 
     private final CurrentTenantService currentTenantService;
+    private final boolean securityEnabled;
 
-    public TenantResolutionFilter(CurrentTenantService currentTenantService) {
+    public TenantResolutionFilter(
+            CurrentTenantService currentTenantService,
+            @Value("${praxis.security.enabled:true}") boolean securityEnabled
+    ) {
         this.currentTenantService = currentTenantService;
+        this.securityEnabled = securityEnabled;
     }
 
     @Override
@@ -32,9 +38,9 @@ public class TenantResolutionFilter extends OncePerRequestFilter {
         try {
             Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
-            if (authentication != null
+            if (!securityEnabled || (authentication != null
                     && authentication.isAuthenticated()
-                    && !(authentication instanceof AnonymousAuthenticationToken)) {
+                    && !(authentication instanceof AnonymousAuthenticationToken))) {
                 String tenantId = currentTenantService.requiredTenantId();
                 TenantContextHolder.set(tenantId);
             }
