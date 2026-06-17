@@ -4,6 +4,7 @@ import {
   BarChart3,
   ClipboardCheck,
   Home,
+  Link2,
   MessageSquare,
   Scale,
   ShieldCheck,
@@ -18,6 +19,7 @@ const nav = [
   { to: "/", label: "Painel", icon: Home },
   { to: "/nova/avaliacao", label: "Nova simulação", icon: ClipboardCheck },
   { to: "/monitoramento", label: "Monitoramento", icon: BarChart3 },
+  { to: "/enviar-link", label: "Enviar link", icon: Link2 },
   { to: "/candidato", label: "Visão do candidato", icon: MessageSquare },
 ] as const;
 

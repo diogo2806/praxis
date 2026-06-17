@@ -57,6 +57,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/v1/tenant-config/**").hasRole("EMPRESA")
                         .requestMatchers("/api/v1/gupy/result-deliveries/**").hasRole("EMPRESA")
                         .requestMatchers("/api/v1/audit/**").hasRole("EMPRESA")
+                        .requestMatchers("/api/v1/candidate-links/**").hasRole("EMPRESA")
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(gupyFilter, UsernamePasswordAuthenticationFilter.class)

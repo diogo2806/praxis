@@ -426,7 +426,8 @@ function isAdminPath(path: string) {
     path.startsWith("/api/v1/simulations") ||
     path.startsWith("/api/v1/tenant-config") ||
     path.startsWith("/api/v1/gupy/result-deliveries") ||
-    path.startsWith("/api/v1/audit")
+    path.startsWith("/api/v1/audit") ||
+    path.startsWith("/api/v1/candidate-links")
   );
 }
 
@@ -664,4 +665,23 @@ export function activateGupyIntegration(simulationId: string, versionNumber: num
 
 export function getPrivacyCompliance() {
   return request<PrivacyComplianceResponse>("/api/v1/privacy/compliance");
+}
+
+export interface CreateCandidateLinkRequest {
+  simulationId: string;
+  candidateName: string;
+  candidateEmail: string;
+}
+
+export interface CreateCandidateLinkResponse {
+  attemptId: string;
+  candidateUrl: string;
+  simulationName: string;
+}
+
+export function createCandidateLink(body: CreateCandidateLinkRequest) {
+  return request<CreateCandidateLinkResponse>("/api/v1/candidate-links", {
+    method: "POST",
+    body: JSON.stringify(body),
+  });
 }
