@@ -16,7 +16,7 @@ import {
   type SimulationVersionStatus,
 } from "@/lib/api/praxis";
 import { maturityForStatus } from "@/lib/simulation-meta";
-import { getSession } from "@/lib/session";
+import { useSession } from "@/lib/session";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/")({
@@ -55,7 +55,8 @@ const filterLabels: Record<(typeof filters)[number], string> = {
 function Dashboard() {
   const [filter, setFilter] = useState<(typeof filters)[number]>("todas");
   const [query, setQuery] = useState("");
-  const firstName = getSession().userName.trim().split(/\s+/)[0] || "bem-vindo";
+  const session = useSession();
+  const firstName = session.userName.trim().split(/\s+/)[0] || "bem-vindo";
   const simulationsQuery = useQuery({
     queryKey: ["simulations"],
     queryFn: listSimulations,
