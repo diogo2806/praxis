@@ -23,7 +23,9 @@ export const Route = createFileRoute("/nova/validador")({
   validateSearch: (search: Record<string, unknown>) => ({
     simulationId: typeof search.simulationId === "string" ? search.simulationId : undefined,
     versionNumber:
-      typeof search.versionNumber === "string" && Number.isFinite(Number(search.versionNumber))
+      typeof search.versionNumber === "number"
+        ? search.versionNumber
+        : typeof search.versionNumber === "string" && Number.isFinite(Number(search.versionNumber))
         ? Number(search.versionNumber)
         : undefined,
   }),
