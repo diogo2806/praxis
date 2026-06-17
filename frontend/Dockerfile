@@ -1,3 +1,5 @@
+# syntax=docker/dockerfile:1.7
+
 # Build stage
 FROM node:22-alpine AS builder
 
@@ -12,7 +14,8 @@ ENV VITE_PRAXIS_API_BASE_URL=${VITE_PRAXIS_API_BASE_URL}
 ENV VITE_PRAXIS_DEMO_MODE=${VITE_PRAXIS_DEMO_MODE}
 
 COPY package*.json ./
-RUN npm ci
+RUN --mount=type=cache,target=/root/.npm \
+    npm ci --prefer-offline --no-audit --fund=false
 
 COPY . .
 RUN npm run build
