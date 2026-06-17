@@ -2,7 +2,6 @@ package br.com.iforce.praxis.gupy.service;
 
 import br.com.iforce.praxis.audit.model.AuditEventType;
 import br.com.iforce.praxis.audit.service.AuditEventService;
-import br.com.iforce.praxis.auth.service.CurrentTenantService;
 import br.com.iforce.praxis.candidate.dto.CandidateAttemptResponse;
 import br.com.iforce.praxis.candidate.dto.SubmitAnswerRequest;
 import br.com.iforce.praxis.candidate.dto.SubmitAnswerResponse;
@@ -51,8 +50,6 @@ public class CandidateAttemptService {
     private final CandidateAttemptMapper candidateAttemptMapper;
     private final AttemptStateMachine attemptStateMachine;
     private final GupyTestResultMapper gupyTestResultMapper;
-    private final GupyAuthService gupyAuthService;
-    private final CurrentTenantService currentTenantService;
 
     public CandidateAttemptService(
             CandidateAttemptRepository candidateAttemptRepository,
@@ -63,9 +60,7 @@ public class CandidateAttemptService {
             SimulationCatalogService simulationCatalogService,
             CandidateAttemptMapper candidateAttemptMapper,
             AttemptStateMachine attemptStateMachine,
-            GupyTestResultMapper gupyTestResultMapper,
-            GupyAuthService gupyAuthService,
-            CurrentTenantService currentTenantService
+            GupyTestResultMapper gupyTestResultMapper
     ) {
         this.candidateAttemptRepository = candidateAttemptRepository;
         this.auditEventService = auditEventService;
@@ -76,27 +71,27 @@ public class CandidateAttemptService {
         this.candidateAttemptMapper = candidateAttemptMapper;
         this.attemptStateMachine = attemptStateMachine;
         this.gupyTestResultMapper = gupyTestResultMapper;
-        this.gupyAuthService = gupyAuthService;
-        this.currentTenantService = currentTenantService;
     }
 
     @Transactional
-    public CreateCandidateResponse createOrReuse(CreateCandidateRequest request) {
-        GupyAuthService.GupyTenantContext tenantContext = gupyAuthService.resolveByCompanyId(request.companyId());
+    public CreateCandidateResponse createOrReuse(
+            CreateCandidateRequest request,
+            GupyAuthService.GupyTenantContext tenantContext
+    ) {
+        assertCompanyMatchesToken(request.companyId(), tenantContext);
         String tenantId = tenantContext.tenantId();
 
         PublishedSimulation publishedSimulation = simulationCatalogService.findPublishedById(tenantId, request.testId())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Teste publicado nao encontrado."));
 
-        String idempotencyKey = tenantId + "|" + request.companyId() + "|" + request.documentId() + "|" + request.testId();
+        String idempotencyKey = tenantId + "|" + tenantContext.companyId() + "|" + request.documentId() + "|" + request.testId();
         CandidateAttemptEntity candidateAttemptEntity = candidateAttemptRepository
                 .findByTenantIdAndIdempotencyKey(tenantId, idempotencyKey)
                 .orElseGet(() -> createAndAuditAttemptSafely(tenantId, idempotencyKey, request, publishedSimulation));
 
         return new CreateCandidateResponse(
                 candidateUrl(candidateAttemptEntity.getId()),
-                candidateAttemptEntity.getResultId(),
-                candidateAttemptEntity.getId()
+                candidateAttemptEntity.getResultId()
         );
     }
 
@@ -214,12 +209,16 @@ public class CandidateAttemptService {
     }
 
     @Transactional(readOnly = true)
-    public TestResultResponse findResult(String resultId, String companyId) {
+    public TestResultResponse findResult(
+            String resultId,
+            String companyId,
+            GupyAuthService.GupyTenantContext tenantContext
+    ) {
         if (companyId == null || companyId.isBlank()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "company_id e obrigatorio.");
         }
 
-        GupyAuthService.GupyTenantContext tenantContext = gupyAuthService.resolveByCompanyId(companyId);
+        assertCompanyMatchesToken(companyId, tenantContext);
         CandidateAttemptEntity candidateAttemptEntity = candidateAttemptRepository
                 .findByTenantIdAndResultId(tenantContext.tenantId(), resultId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Resultado de teste nao encontrado."));
@@ -230,6 +229,15 @@ public class CandidateAttemptService {
         CandidateAttempt attempt = candidateAttemptMapper.toDomain(candidateAttemptEntity);
         PublishedSimulation simulation = findSimulation(attempt);
         return gupyTestResultMapper.toResponse(attempt, simulation);
+    }
+
+    private void assertCompanyMatchesToken(String companyId, GupyAuthService.GupyTenantContext tenantContext) {
+        if (companyId == null || companyId.isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "company_id e obrigatorio.");
+        }
+        if (!companyId.trim().equals(tenantContext.companyId())) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "company_id nao pertence ao token informado.");
+        }
     }
 
     private Optional<SubmitAnswerResponse> handleDuplicate(

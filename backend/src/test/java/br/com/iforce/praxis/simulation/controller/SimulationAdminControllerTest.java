@@ -277,7 +277,7 @@ class SimulationAdminControllerTest {
                         .header("Authorization", "Bearer dev-company-token")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(validCandidateRequest("monitoring-document-1")))
-                .andExpect(status().isOk());
+                .andExpect(status().isCreated());
 
         mockMvc.perform(get("/api/v1/simulations/sim-atendimento-caos/versions/1/monitoring"))
                 .andExpect(status().isOk())
@@ -296,15 +296,15 @@ class SimulationAdminControllerTest {
     private String validCandidateRequest(String documentId) {
         return """
                 {
-                  "companyId": "empresa-123",
-                  "documentId": "%s",
-                  "testId": "sim-atendimento-caos",
-                  "candidateName": "Thiago Souza",
-                  "candidateEmail": "thiago@example.com",
-                  "callbackUrl": "https://cliente.gupy.io/callback",
-                  "resultWebhookUrl": "https://cliente.gupy.io/result-webhook",
-                  "candidateType": "external",
-                  "previousResult": "none"
+                  "company_id": "empresa-123",
+                  "document_id": "%s",
+                  "test_id": "sim-atendimento-caos",
+                  "name": "Thiago Souza",
+                  "email": "thiago@example.com",
+                  "callback_url": "https://cliente.gupy.io/callback",
+                  "result_webhook_url": "https://cliente.gupy.io/result-webhook",
+                  "candidate_type": "external",
+                  "previous_result": "none"
                 }
                 """.formatted(documentId);
     }

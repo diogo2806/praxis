@@ -176,22 +176,22 @@ class ResultDeliveryControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
-                                  "companyId": "empresa-123",
-                                  "documentId": "%s",
-                                  "testId": "sim-atendimento-caos",
-                                  "candidateName": "Thiago Souza",
-                                  "candidateEmail": "thiago@example.com",
-                                  "callbackUrl": "https://cliente.gupy.io/callback",
-                                  "resultWebhookUrl": "https://cliente.gupy.io/result-webhook",
-                                  "candidateType": "external",
-                                  "previousResult": "none"
+                                  "company_id": "empresa-123",
+                                  "document_id": "%s",
+                                  "test_id": "sim-atendimento-caos",
+                                  "name": "Thiago Souza",
+                                  "email": "thiago@example.com",
+                                  "callback_url": "https://cliente.gupy.io/callback",
+                                  "result_webhook_url": "https://cliente.gupy.io/result-webhook",
+                                  "candidate_type": "external",
+                                  "previous_result": "none"
                                 }
                                 """.formatted(documentId)))
-                .andExpect(status().isOk())
+                .andExpect(status().isCreated())
                 .andReturn();
 
         String responseBody = createResult.getResponse().getContentAsString();
-        String attemptId = JsonPath.read(responseBody, "$.attemptId");
+        String attemptId = attemptIdFromResponse(responseBody);
 
         mockMvc.perform(post("/candidate/attempts/" + attemptId + "/answers")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -204,6 +204,11 @@ class ResultDeliveryControllerTest {
                 .andExpect(status().isOk());
 
         return attemptId;
+    }
+
+    private String attemptIdFromResponse(String responseBody) {
+        String testUrl = JsonPath.read(responseBody, "$.test_url");
+        return testUrl.substring(testUrl.lastIndexOf('/') + 1);
     }
 
     private Long findDeliveryId(String attemptId, String deliveryStatus) throws Exception {

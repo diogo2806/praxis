@@ -61,11 +61,11 @@ class TenantIsolationTest {
     void resultLookupIsNotVisibleToAnotherConfiguredTenant() throws Exception {
         MvcResult createResult = mockMvc.perform(post("/test/candidate")
                         .header("Authorization", TENANT1_AUTH)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(candidateRequest("empresa-123", "doc-isolation", "sim-atendimento-caos")))
-                .andExpect(status().isOk())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(candidateRequest("empresa-123", "doc-isolation", "sim-atendimento-caos")))
+                .andExpect(status().isCreated())
                 .andReturn();
-        String resultId = JsonPath.read(createResult.getResponse().getContentAsString(), "$.testResultId");
+        String resultId = JsonPath.read(createResult.getResponse().getContentAsString(), "$.test_result_id");
 
         // O dono (empresa-123) enxerga o resultado.
         mockMvc.perform(get("/test/result/" + resultId)
@@ -83,15 +83,15 @@ class TenantIsolationTest {
     private String candidateRequest(String companyId, String documentId, String testId) {
         return """
                 {
-                  "companyId": "%s",
-                  "documentId": "%s",
-                  "testId": "%s",
-                  "candidateName": "Maria Lima",
-                  "candidateEmail": "maria@example.com",
-                  "callbackUrl": "https://cliente.gupy.io/callback",
-                  "resultWebhookUrl": "https://cliente.gupy.io/result-webhook",
-                  "candidateType": "external",
-                  "previousResult": "none"
+                  "company_id": "%s",
+                  "document_id": "%s",
+                  "test_id": "%s",
+                  "name": "Maria Lima",
+                  "email": "maria@example.com",
+                  "callback_url": "https://cliente.gupy.io/callback",
+                  "result_webhook_url": "https://cliente.gupy.io/result-webhook",
+                  "candidate_type": "external",
+                  "previous_result": "none"
                 }
                 """.formatted(companyId, documentId, testId);
     }

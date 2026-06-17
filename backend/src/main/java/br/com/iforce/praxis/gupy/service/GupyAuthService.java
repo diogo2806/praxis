@@ -55,16 +55,6 @@ public class GupyAuthService {
                 .orElseGet(() -> validateLegacyToken(token));
     }
 
-    public GupyTenantContext resolveByCompanyId(String companyId) {
-        if (companyId == null || companyId.isBlank()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "companyId e obrigatorio.");
-        }
-
-        TenantEntity tenant = tenantRepository.findFirstByCompanyId(companyId.trim())
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Empresa nao configurada para integracao."));
-        return new GupyTenantContext(tenant.getId(), tenant.getCompanyId());
-    }
-
     private GupyTenantContext validateLegacyToken(String token) {
         if (properties.integrationToken() == null || !properties.integrationToken().equals(token)) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Token Bearer invalido.");

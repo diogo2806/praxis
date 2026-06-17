@@ -61,8 +61,8 @@ class CandidateAttemptControllerTest {
     void submitAnswerCompletesAttemptAndUpdatesGupyResult() throws Exception {
         MvcResult createResult = createAttemptResult("candidate-balanced-answer");
         String responseBody = createResult.getResponse().getContentAsString();
-        String attemptId = JsonPath.read(responseBody, "$.attemptId");
-        String resultId = JsonPath.read(responseBody, "$.testResultId");
+        String attemptId = attemptIdFromResponse(responseBody);
+        String resultId = JsonPath.read(responseBody, "$.test_result_id");
 
         mockMvc.perform(post("/candidate/attempts/" + attemptId + "/answers")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -128,8 +128,8 @@ class CandidateAttemptControllerTest {
     void criticalAnswerRequiresHumanReviewWithoutZeroScore() throws Exception {
         MvcResult createResult = createAttemptResult("candidate-critical-answer");
         String responseBody = createResult.getResponse().getContentAsString();
-        String attemptId = JsonPath.read(responseBody, "$.attemptId");
-        String resultId = JsonPath.read(responseBody, "$.testResultId");
+        String attemptId = attemptIdFromResponse(responseBody);
+        String resultId = JsonPath.read(responseBody, "$.test_result_id");
 
         mockMvc.perform(post("/candidate/attempts/" + attemptId + "/answers")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -155,8 +155,8 @@ class CandidateAttemptControllerTest {
     void timeoutAnswerCompletesAttemptScoringTheTurnAsLevelZero() throws Exception {
         MvcResult createResult = createAttemptResult("candidate-timeout");
         String responseBody = createResult.getResponse().getContentAsString();
-        String attemptId = JsonPath.read(responseBody, "$.attemptId");
-        String resultId = JsonPath.read(responseBody, "$.testResultId");
+        String attemptId = attemptIdFromResponse(responseBody);
+        String resultId = JsonPath.read(responseBody, "$.test_result_id");
 
         mockMvc.perform(post("/candidate/attempts/" + attemptId + "/answers")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -190,8 +190,8 @@ class CandidateAttemptControllerTest {
     void resultExposesPolicyAdherenceAsMinorAndOthersAsMajor() throws Exception {
         MvcResult createResult = createAttemptResult("candidate-tier-check");
         String responseBody = createResult.getResponse().getContentAsString();
-        String attemptId = JsonPath.read(responseBody, "$.attemptId");
-        String resultId = JsonPath.read(responseBody, "$.testResultId");
+        String attemptId = attemptIdFromResponse(responseBody);
+        String resultId = JsonPath.read(responseBody, "$.test_result_id");
 
         mockMvc.perform(post("/candidate/attempts/" + attemptId + "/answers")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -282,7 +282,7 @@ class CandidateAttemptControllerTest {
     private String createAttempt(String documentId) throws Exception {
         MvcResult createResult = createAttemptResult(documentId);
         String responseBody = createResult.getResponse().getContentAsString();
-        return JsonPath.read(responseBody, "$.attemptId");
+        return attemptIdFromResponse(responseBody);
     }
 
     private MvcResult createAttemptResult(String documentId) throws Exception {
@@ -291,18 +291,23 @@ class CandidateAttemptControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
-                                  "companyId": "empresa-123",
-                                  "documentId": "%s",
-                                  "testId": "sim-atendimento-caos",
-                                  "candidateName": "Thiago Souza",
-                                  "candidateEmail": "thiago@example.com",
-                                  "callbackUrl": "https://cliente.gupy.io/callback",
-                                  "resultWebhookUrl": "https://cliente.gupy.io/result-webhook",
-                                  "candidateType": "external",
-                                  "previousResult": "none"
+                                  "company_id": "empresa-123",
+                                  "document_id": "%s",
+                                  "test_id": "sim-atendimento-caos",
+                                  "name": "Thiago Souza",
+                                  "email": "thiago@example.com",
+                                  "callback_url": "https://cliente.gupy.io/callback",
+                                  "result_webhook_url": "https://cliente.gupy.io/result-webhook",
+                                  "candidate_type": "external",
+                                  "previous_result": "none"
                                 }
                                 """.formatted(documentId)))
-                .andExpect(status().isOk())
+                .andExpect(status().isCreated())
                 .andReturn();
+    }
+
+    private String attemptIdFromResponse(String responseBody) {
+        String testUrl = JsonPath.read(responseBody, "$.test_url");
+        return testUrl.substring(testUrl.lastIndexOf('/') + 1);
     }
 }

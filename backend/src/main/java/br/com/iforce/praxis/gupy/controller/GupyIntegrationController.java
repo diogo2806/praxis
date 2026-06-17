@@ -15,6 +15,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -83,7 +84,7 @@ public class GupyIntegrationController {
                         simulation.name(),
                         "Situational Judgment",
                         simulation.description(),
-                        "professional"
+                        "advanced"
                 ))
                 .toList();
 
@@ -94,7 +95,7 @@ public class GupyIntegrationController {
     @PostMapping("/test/candidate")
     @Operation(summary = "Registra candidato", description = "Cria ou reutiliza tentativa por company_id, document_id e test_id.")
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Tentativa criada ou reutilizada."),
+            @ApiResponse(responseCode = "201", description = "Tentativa criada ou reutilizada."),
             @ApiResponse(responseCode = "400", description = "Payload invalido.", content = @Content(examples = @ExampleObject(value = ERROR_EXAMPLE))),
             @ApiResponse(responseCode = "403", description = "Acesso negado.", content = @Content(examples = @ExampleObject(value = ERROR_EXAMPLE))),
             @ApiResponse(responseCode = "409", description = "Conflito de idempotencia ou estado.", content = @Content(examples = @ExampleObject(value = ERROR_EXAMPLE)))
@@ -103,8 +104,8 @@ public class GupyIntegrationController {
             @RequestHeader(name = "Authorization", required = false) String authorization,
             @Valid @RequestBody CreateCandidateRequest request
     ) {
-        gupyAuthService.validateBearerToken(authorization);
-        return ResponseEntity.ok(candidateAttemptService.createOrReuse(request));
+        GupyAuthService.GupyTenantContext tenantContext = gupyAuthService.validateBearerToken(authorization);
+        return ResponseEntity.status(HttpStatus.CREATED).body(candidateAttemptService.createOrReuse(request, tenantContext));
     }
 
     @GetMapping("/test/result/{resultId}")
@@ -120,7 +121,7 @@ public class GupyIntegrationController {
             @PathVariable String resultId,
             @RequestParam(name = "company_id") String companyId
     ) {
-        gupyAuthService.validateBearerToken(authorization);
-        return ResponseEntity.ok(candidateAttemptService.findResult(resultId, companyId));
+        GupyAuthService.GupyTenantContext tenantContext = gupyAuthService.validateBearerToken(authorization);
+        return ResponseEntity.ok(candidateAttemptService.findResult(resultId, companyId, tenantContext));
     }
 }

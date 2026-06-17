@@ -16,7 +16,7 @@ public record GupyTestResponse(
         @Schema(example = "Avaliacao situacional deterministica para priorizacao, comunicacao e decisao em contexto.")
         String description,
 
-        @Schema(example = "professional")
+        @Schema(example = "advanced", allowableValues = {"advanced", "intermediate", "basic"})
         String level
 ) {
 }
