@@ -1,10 +1,10 @@
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { AppShell } from "@/components/app-shell";
 import { ScreenStateStrip, StateBanner } from "@/components/praxis-ui";
 import { WizardStepper } from "@/components/wizard-stepper";
-import { createSimulationDraft, type TenantConfigOption } from "@/lib/api/praxis";
+import { createSimulationDraft, updateTenantConfig, type TenantConfigOption } from "@/lib/api/praxis";
 import { useTenantConfig } from "@/lib/tenant-config";
 
 export const Route = createFileRoute("/nova/blueprint")({
@@ -23,6 +23,7 @@ export const Route = createFileRoute("/nova/blueprint")({
 
 function Page() {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const { config } = useTenantConfig();
   const competencies = config.competencies;
   const seniorityLevels = config.seniorityLevels;
@@ -37,6 +38,7 @@ function Page() {
   const [seniorityExpectations, setSeniorityExpectations] = useState<Record<string, string>>({});
   const [selectedResultUse, setSelectedResultUse] = useState(defaultResultUse);
   const [selectedCompetencies, setSelectedCompetencies] = useState<string[]>([]);
+  const [newCompetency, setNewCompetency] = useState("");
   const missingFields = [
     role.trim().length === 0 && "cargo-alvo",
     criticalSituation.trim().length === 0 && "situação crítica",
@@ -48,6 +50,10 @@ function Page() {
     criticalSituation.trim().length > 0 &&
     criticalError.trim().length > 0 &&
     selectedCompetencies.length > 0;
+  const normalizedCompetencies = competencies.map((competency) => competency.value.trim().toLowerCase());
+  const canAddCompetency =
+    newCompetency.trim().length > 0 &&
+    !normalizedCompetencies.includes(newCompetency.trim().toLowerCase());
 
   useEffect(() => {
     if (!selectedSeniority || !seniorityLevels.some((level) => level.value === selectedSeniority)) {
@@ -86,12 +92,29 @@ function Page() {
       }),
     onSuccess: (simulation) => {
       void navigate({
-        to: "/nova/cenario",
+        to: "/nova/personagem",
         search: {
           simulationId: simulation.id,
           versionNumber: simulation.versionNumber,
         },
       });
+    },
+  });
+
+  const addCompetencyMutation = useMutation({
+    mutationFn: async (value: string) => {
+      const nextCompetencies = [
+        ...competencies,
+        { value, label: value, locked: false, selectedByDefault: false },
+      ];
+      return updateTenantConfig("COMPETENCY", nextCompetencies);
+    },
+    onSuccess: async (_, value) => {
+      setNewCompetency("");
+      setSelectedCompetencies((current) =>
+        current.includes(value) ? current : [...current, value],
+      );
+      await queryClient.invalidateQueries({ queryKey: ["tenant-config"] });
     },
   });
 
@@ -193,6 +216,30 @@ function Page() {
                 </label>
               ))}
             </div>
+            <div className="mt-4 grid gap-2 md:grid-cols-[1fr_auto]">
+              <input
+                className="input"
+                placeholder="Adicionar competência da empresa"
+                value={newCompetency}
+                onChange={(event) => setNewCompetency(event.target.value)}
+              />
+              <button
+                type="button"
+                onClick={() => addCompetencyMutation.mutate(newCompetency.trim())}
+                disabled={!canAddCompetency || addCompetencyMutation.isPending}
+                className="rounded-md border border-border bg-card px-4 py-2 text-sm hover:bg-accent disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {addCompetencyMutation.isPending ? "Salvando..." : "Adicionar e salvar"}
+              </button>
+            </div>
+            <Help>Ao salvar, a competência entra no catálogo deste tenant e fica disponível só para esta empresa.</Help>
+            {addCompetencyMutation.isError && (
+              <p className="mt-2 text-xs text-danger">
+                {addCompetencyMutation.error instanceof Error
+                  ? addCompetencyMutation.error.message
+                  : "Nao foi possivel salvar a competencia."}
+              </p>
+            )}
             <Help>Competências customizadas podem ser mapeadas para a taxonomia interna.</Help>
           </Card>
 
