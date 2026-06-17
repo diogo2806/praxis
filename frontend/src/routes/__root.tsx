@@ -7,10 +7,18 @@ import {
   HeadContent,
   Scripts,
 } from "@tanstack/react-router";
+import { createServerFn } from "@tanstack/react-start";
 import { useEffect, type ReactNode } from "react";
 
 import appCss from "../styles.css?url";
 import { reportAppError } from "../lib/app-error-reporting";
+import { resolveRuntimeConfigFromEnv } from "../lib/runtime-config.server";
+
+// Runs only on the server. Reads the public runtime config from env per request
+// so it can be injected into the page and picked up by the browser bundle.
+const getRuntimeConfig = createServerFn({ method: "GET" }).handler(() =>
+  resolveRuntimeConfigFromEnv(),
+);
 
 function NotFoundComponent() {
   return (
@@ -73,6 +81,7 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
 }
 
 export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
+  loader: async () => ({ runtimeConfig: await getRuntimeConfig() }),
   head: () => ({
     meta: [
       { charSet: "utf-8" },
@@ -112,10 +121,18 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 });
 
 function RootShell({ children }: { children: ReactNode }) {
+  const { runtimeConfig } = Route.useLoaderData();
+
   return (
     <html lang="pt-BR">
       <head>
         <HeadContent />
+        {/* Must run before the app bundle so getRuntimeConfig() sees it. */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `window.__PRAXIS_CONFIG__=${JSON.stringify(runtimeConfig)};`,
+          }}
+        />
       </head>
       <body>
         {children}

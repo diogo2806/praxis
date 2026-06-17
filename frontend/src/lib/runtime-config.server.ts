@@ -1,0 +1,20 @@
+import process from "node:process";
+
+// Server-only resolution of public runtime config. The .server.ts suffix keeps
+// this out of the client bundle. Read env INSIDE the function so it resolves
+// per request (matters on request-scoped runtimes like Cloudflare Workers).
+//
+// Only keys that are actually set are returned, so the client can fall back to
+// its build-time defaults for anything omitted.
+export function resolveRuntimeConfigFromEnv(): {
+  apiBaseUrl?: string;
+  demoMode?: boolean;
+} {
+  const apiBaseUrl = process.env.VITE_PRAXIS_API_BASE_URL ?? process.env.PRAXIS_API_BASE_URL;
+  const demoMode = process.env.VITE_PRAXIS_DEMO_MODE ?? process.env.PRAXIS_DEMO_MODE;
+
+  const config: { apiBaseUrl?: string; demoMode?: boolean } = {};
+  if (apiBaseUrl) config.apiBaseUrl = apiBaseUrl.replace(/\/$/, "");
+  if (demoMode != null && demoMode !== "") config.demoMode = demoMode === "true";
+  return config;
+}

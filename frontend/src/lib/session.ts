@@ -1,3 +1,5 @@
+import { isDemoMode } from "@/lib/runtime-config";
+
 export type PraxisSession = {
   token: string | null;
   tenantId: string | null;
@@ -17,7 +19,7 @@ const demoSession: PraxisSession = {
 };
 
 export function getSession(): PraxisSession {
-  const demoEnabled = import.meta.env.VITE_PRAXIS_DEMO_MODE === "true";
+  const demoEnabled = isDemoMode();
 
   if (demoEnabled || typeof window === "undefined") {
     return demoSession;
