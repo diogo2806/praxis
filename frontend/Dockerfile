@@ -15,10 +15,10 @@ ENV VITE_PRAXIS_DEMO_MODE=${VITE_PRAXIS_DEMO_MODE}
 
 COPY package*.json ./
 RUN --mount=type=cache,target=/root/.npm \
-    sh -c 'echo "[build][frontend][npm-ci][start] $(date -u +%Y-%m-%dT%H:%M:%SZ)" && npm ci --prefer-offline --no-audit --fund=false && echo "[build][frontend][npm-ci][end] $(date -u +%Y-%m-%dT%H:%M:%SZ)"'
+    sh -c 'echo "[build][frontend][npm-ci][start] $(date -u +%Y-%m-%dT%H:%M:%SZ)"; pipe=/tmp/build-log.$$; mkfifo "$pipe"; while IFS= read -r line; do echo "[$(date -u +%Y-%m-%dT%H:%M:%SZ)] $line"; done < "$pipe" & logger=$!; npm ci --prefer-offline --no-audit --fund=false > "$pipe" 2>&1; status=$?; wait "$logger"; rm -f "$pipe"; echo "[build][frontend][npm-ci][end] $(date -u +%Y-%m-%dT%H:%M:%SZ) status=$status"; exit "$status"'
 
 COPY . .
-RUN sh -c 'echo "[build][frontend][vite-build][start] $(date -u +%Y-%m-%dT%H:%M:%SZ)" && npm run build && echo "[build][frontend][vite-build][end] $(date -u +%Y-%m-%dT%H:%M:%SZ)"'
+RUN sh -c 'echo "[build][frontend][vite-build][start] $(date -u +%Y-%m-%dT%H:%M:%SZ)"; pipe=/tmp/build-log.$$; mkfifo "$pipe"; while IFS= read -r line; do echo "[$(date -u +%Y-%m-%dT%H:%M:%SZ)] $line"; done < "$pipe" & logger=$!; npm run build > "$pipe" 2>&1; status=$?; wait "$logger"; rm -f "$pipe"; echo "[build][frontend][vite-build][end] $(date -u +%Y-%m-%dT%H:%M:%SZ) status=$status"; exit "$status"'
 
 # Runtime stage
 FROM node:22-alpine
