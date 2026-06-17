@@ -128,7 +128,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           </div>
           <div className="mt-3 flex items-center gap-3 px-1">
             <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-xs font-semibold text-primary-foreground">
-              R
+              {session.userName.trim().charAt(0).toUpperCase() || "?"}
             </div>
             <div className="text-xs">
               <div className="font-medium text-sidebar-foreground">{session.userName}</div>

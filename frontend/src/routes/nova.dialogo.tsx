@@ -18,6 +18,7 @@ import {
   type SimulationVersionNodeResponse,
 } from "@/lib/api/praxis";
 import { cn } from "@/lib/utils";
+import { defaultAnswerTimeLimitSeconds, useTenantConfig } from "@/lib/tenant-config";
 
 export const Route = createFileRoute("/nova/dialogo")({
   validateSearch: (search: Record<string, unknown>) => ({
@@ -42,6 +43,8 @@ function DialogEditor() {
   const search = Route.useSearch();
   const queryClient = useQueryClient();
   const hasContext = Boolean(search.simulationId && search.versionNumber);
+  const { config } = useTenantConfig();
+  const answerTimeLimits = config.answerTimeLimits;
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [draftMessage, setDraftMessage] = useState("");
   const [draftOption, setDraftOption] = useState("");
@@ -72,7 +75,7 @@ function DialogEditor() {
     mutationFn: () =>
       createSimulationNode(search.simulationId!, search.versionNumber!, {
         clientMessage: draftMessage.trim(),
-        timeLimitSeconds: 45,
+        timeLimitSeconds: defaultAnswerTimeLimitSeconds(config),
       }),
     onSuccess: async (nodeId) => {
       setDraftMessage("");
@@ -255,10 +258,11 @@ function DialogEditor() {
                       })
                     }
                   >
-                    <option value="none">Sem limite</option>
-                    <option value="30">30 s</option>
-                    <option value="45">45 s</option>
-                    <option value="60">60 s</option>
+                    {answerTimeLimits.map((limit) => (
+                      <option key={limit.value} value={limit.value === "0" ? "none" : limit.value}>
+                        {limit.label}
+                      </option>
+                    ))}
                   </select>
                 </label>
                 <div className="mt-5 flex items-center justify-between">

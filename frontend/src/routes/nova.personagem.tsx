@@ -11,6 +11,7 @@ import {
   updateSimulationNode,
   type SimulationSummaryResponse,
 } from "@/lib/api/praxis";
+import { defaultAnswerTimeLimitSeconds, useTenantConfig } from "@/lib/tenant-config";
 
 export const Route = createFileRoute("/nova/personagem")({
   validateSearch: (search: Record<string, unknown>) => ({
@@ -31,18 +32,12 @@ export const Route = createFileRoute("/nova/personagem")({
   component: Page,
 });
 
-const checklist = [
-  "Evita regionalismo desnecessario",
-  "Nao usa estereotipo de classe",
-  "Sem marcador de genero sem necessidade",
-  "Sem referencia a idade, sotaque, origem ou crenca",
-  "Linguagem compativel com o cargo avaliado",
-];
-
 function Page() {
   const search = Route.useSearch();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const { config } = useTenantConfig();
+  const checklist = config.languageChecklist.map((item) => item.value);
   const hasDraftContext = Boolean(search.simulationId && search.versionNumber);
   const [name, setName] = useState("");
   const [emotion, setEmotion] = useState("");
@@ -77,7 +72,7 @@ function Page() {
       }
       return createSimulationNode(search.simulationId!, search.versionNumber!, {
         clientMessage,
-        timeLimitSeconds: 45,
+        timeLimitSeconds: defaultAnswerTimeLimitSeconds(config),
       });
     },
     onSuccess: async () => {
