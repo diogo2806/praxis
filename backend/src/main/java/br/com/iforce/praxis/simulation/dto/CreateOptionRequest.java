@@ -1,6 +1,8 @@
 package br.com.iforce.praxis.simulation.dto;
 
 import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
@@ -15,7 +17,7 @@ public record CreateOptionRequest(
 
         @NotNull
         @Schema(example = "{\"Empatia\": 86, \"Aderencia a politica\": 92}")
-        Map<String, Integer> competencyLevels,
+        Map<@NotBlank @Size(max = 140) String, @Min(0) @Max(100) Integer> competencyLevels,
 
         boolean isBest,
 

@@ -4,7 +4,11 @@ import { useEffect, useState } from "react";
 import { AppShell } from "@/components/app-shell";
 import { ScreenStateStrip, StateBanner } from "@/components/praxis-ui";
 import { WizardStepper } from "@/components/wizard-stepper";
-import { createSimulationDraft, updateTenantConfig, type TenantConfigOption } from "@/lib/api/praxis";
+import {
+  createSimulationDraft,
+  updateTenantConfig,
+  type TenantConfigOption,
+} from "@/lib/api/praxis";
 import { useTenantConfig } from "@/lib/tenant-config";
 
 export const Route = createFileRoute("/nova/blueprint")({
@@ -26,19 +30,19 @@ function Page() {
   const queryClient = useQueryClient();
   const { config } = useTenantConfig();
   const competencies = config.competencies;
-  const seniorityLevels = config.seniorityLevels;
   const resultUses = config.resultUses;
-  const defaultSeniority = getDefaultOption(seniorityLevels)?.value ?? "";
   const defaultResultUse = getDefaultOption(resultUses)?.value ?? "";
   const [role, setRole] = useState("");
-  const [selectedSeniority, setSelectedSeniority] = useState(defaultSeniority);
   const [criticalSituation, setCriticalSituation] = useState("");
   const [highPerformance, setHighPerformance] = useState("");
   const [criticalError, setCriticalError] = useState("");
-  const [seniorityExpectations, setSeniorityExpectations] = useState<Record<string, string>>({});
   const [selectedResultUse, setSelectedResultUse] = useState(defaultResultUse);
   const [selectedCompetencies, setSelectedCompetencies] = useState<string[]>([]);
   const [newCompetency, setNewCompetency] = useState("");
+  const roleMaxLength = 180;
+  const criticalSituationMaxLength = 1200;
+  const performanceMaxLength = 1000;
+  const criticalErrorMaxLength = 1000;
   const missingFields = [
     role.trim().length === 0 && "cargo-alvo",
     criticalSituation.trim().length === 0 && "situação crítica",
@@ -50,16 +54,12 @@ function Page() {
     criticalSituation.trim().length > 0 &&
     criticalError.trim().length > 0 &&
     selectedCompetencies.length > 0;
-  const normalizedCompetencies = competencies.map((competency) => competency.value.trim().toLowerCase());
+  const normalizedCompetencies = competencies.map((competency) =>
+    competency.value.trim().toLowerCase(),
+  );
   const canAddCompetency =
     newCompetency.trim().length > 0 &&
     !normalizedCompetencies.includes(newCompetency.trim().toLowerCase());
-
-  useEffect(() => {
-    if (!selectedSeniority || !seniorityLevels.some((level) => level.value === selectedSeniority)) {
-      setSelectedSeniority(getDefaultOption(seniorityLevels)?.value ?? "");
-    }
-  }, [selectedSeniority, seniorityLevels]);
 
   useEffect(() => {
     if (!selectedResultUse || !resultUses.some((use) => use.value === selectedResultUse)) {
@@ -73,21 +73,17 @@ function Page() {
         name: role.trim(),
         description: buildBlueprintDescription({
           role,
-          seniority: selectedSeniority,
           criticalSituation,
           competencies: selectedCompetencies,
           highPerformance,
           criticalError,
-          seniorityExpectations,
           resultUse: selectedResultUse,
         }),
         rootNodeId: "turno-1",
         competencies: selectedCompetencies,
-        seniority: selectedSeniority,
         criticalSituation: criticalSituation.trim(),
         highPerformance: highPerformance.trim(),
         criticalError: criticalError.trim(),
-        seniorityExpectations: trimRecordValues(seniorityExpectations),
         resultUse: selectedResultUse,
       }),
     onSuccess: (simulation) => {
@@ -141,7 +137,25 @@ function Page() {
         </div>
       )}
 
-      <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
+      <div className="space-y-6">
+        <div className="rounded-xl border border-border bg-card p-5">
+          <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+            Por que blueprint?
+          </div>
+          <p className="mt-2 text-sm text-foreground/80">
+            O blueprint vira referência fixa para o Validador checar se a simulação mede o que
+            prometeu.
+          </p>
+        </div>
+        <div className="rounded-xl border border-warning/30 bg-warning/10 p-5">
+          <div className="text-xs font-semibold uppercase tracking-wider text-warning-foreground">
+            Rubrica, peso e cálculo
+          </div>
+          <p className="mt-2 text-sm text-foreground/80">
+            A nota sai de regras declaradas. O blueprint registra o porquê comportamental que a
+            auditoria vai pedir.
+          </p>
+        </div>
         <div className="space-y-6">
           <Header
             kicker="Passo 1"
@@ -149,48 +163,39 @@ function Page() {
             lede="Antes de escrever qualquer diálogo, defina o porquê. O blueprint vira referência fixa para o Validador de Qualidade."
           />
 
-          <Card title="Cargo e senioridade">
-            <div className="grid gap-4 md:grid-cols-2">
-              <Field label="Cargo-alvo">
-                <input
-                  className="input"
-                  placeholder="Ex.: Analista de Atendimento N2"
-                  value={role}
-                  onChange={(event) => setRole(event.target.value)}
-                />
-              </Field>
-              <Field label="Senioridade">
-                <div className="flex gap-2">
-                  {seniorityLevels.map((level) => (
-                    <label
-                      key={level.value}
-                      className={`flex flex-1 cursor-pointer items-center justify-center gap-2 rounded-md border px-3 py-2 text-sm ${
-                        selectedSeniority === level.value
-                          ? "border-primary bg-primary/5 text-foreground"
-                          : "border-border bg-card hover:bg-accent"
-                      }`}
-                    >
-                      <input
-                        type="radio"
-                        name="sen"
-                        checked={selectedSeniority === level.value}
-                        onChange={() => setSelectedSeniority(level.value)}
-                        className="sr-only"
-                      />
-                      {level.label}
-                    </label>
-                  ))}
-                </div>
-              </Field>
-            </div>
+          <Card title="Cargo">
+            <Field label="Cargo-alvo">
+              <input
+                className={`input ${role.trim().length === 0 ? "border-danger" : ""}`}
+                placeholder="Ex.: Analista de Atendimento N2"
+                maxLength={roleMaxLength}
+                value={role}
+                onChange={(event) => setRole(event.target.value)}
+              />
+              <FieldMeta
+                error={role.trim().length === 0 ? "Informe o cargo-alvo." : undefined}
+                count={role.length}
+                max={roleMaxLength}
+              />
+            </Field>
           </Card>
 
           <Card title="Situação crítica do cargo">
             <textarea
               aria-label="Situação crítica do cargo"
-              className="input min-h-24"
+              className={`input min-h-24 ${criticalSituation.trim().length === 0 ? "border-danger" : ""}`}
+              maxLength={criticalSituationMaxLength}
               value={criticalSituation}
               onChange={(event) => setCriticalSituation(event.target.value)}
+            />
+            <FieldMeta
+              error={
+                criticalSituation.trim().length === 0
+                  ? "Descreva a situação crítica do cargo."
+                  : undefined
+              }
+              count={criticalSituation.length}
+              max={criticalSituationMaxLength}
             />
             <Help>Use situação que de fato acontece nesta empresa, não um caso genérico.</Help>
           </Card>
@@ -232,7 +237,10 @@ function Page() {
                 {addCompetencyMutation.isPending ? "Salvando..." : "Adicionar e salvar"}
               </button>
             </div>
-            <Help>Ao salvar, a competência entra no catálogo deste tenant e fica disponível só para esta empresa.</Help>
+            <Help>
+              Ao salvar, a competência entra no catálogo deste tenant e fica disponível só para esta
+              empresa.
+            </Help>
             {addCompetencyMutation.isError && (
               <p className="mt-2 text-xs text-danger">
                 {addCompetencyMutation.error instanceof Error
@@ -243,46 +251,34 @@ function Page() {
             <Help>Competências customizadas podem ser mapeadas para a taxonomia interna.</Help>
           </Card>
 
-          <div className="grid gap-6 md:grid-cols-2">
+          <div className="space-y-6">
             <Card title="Alta performance faria" tone="ok">
               <textarea
                 aria-label="Alta performance faria"
                 className="input min-h-24"
                 placeholder="Descreva o comportamento esperado para alta performance."
+                maxLength={performanceMaxLength}
                 value={highPerformance}
                 onChange={(event) => setHighPerformance(event.target.value)}
               />
+              <FieldMeta count={highPerformance.length} max={performanceMaxLength} />
             </Card>
             <Card title="Erros críticos" tone="danger">
               <textarea
                 aria-label="Erros críticos"
-                className="input min-h-24"
+                className={`input min-h-24 ${criticalError.trim().length === 0 ? "border-danger" : ""}`}
+                maxLength={criticalErrorMaxLength}
                 value={criticalError}
                 onChange={(event) => setCriticalError(event.target.value)}
+              />
+              <FieldMeta
+                error={criticalError.trim().length === 0 ? "Informe os erros críticos." : undefined}
+                count={criticalError.length}
+                max={criticalErrorMaxLength}
               />
               <Help>Dispara revisão humana obrigatória e bloqueia recomendação sem validação.</Help>
             </Card>
           </div>
-
-          <Card title="Diferença por senioridade">
-            <div className="grid gap-3 md:grid-cols-3">
-              {seniorityLevels.map((level) => (
-                <Field key={level.value} label={`${level.label} faria`}>
-                  <textarea
-                    className="input min-h-20"
-                    placeholder={`Comportamento esperado para ${level.label.toLowerCase()}.`}
-                    value={seniorityExpectations[level.value] ?? ""}
-                    onChange={(event) =>
-                      setSeniorityExpectations((current) => ({
-                        ...current,
-                        [level.value]: event.target.value,
-                      }))
-                    }
-                  />
-                </Field>
-              ))}
-            </div>
-          </Card>
 
           <Card title="Uso do resultado">
             <div className="grid gap-2 md:grid-cols-4">
@@ -346,27 +342,6 @@ function Page() {
             </div>
           </div>
         </div>
-
-        <aside className="space-y-4">
-          <div className="rounded-xl border border-border bg-card p-5">
-            <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-              Por que blueprint?
-            </div>
-            <p className="mt-2 text-sm text-foreground/80">
-              O blueprint vira referência fixa para o Validador checar se a simulação mede o que
-              prometeu.
-            </p>
-          </div>
-          <div className="rounded-xl border border-warning/30 bg-warning/10 p-5">
-            <div className="text-xs font-semibold uppercase tracking-wider text-warning-foreground">
-              Rubrica, peso e cálculo
-            </div>
-            <p className="mt-2 text-sm text-foreground/80">
-              A nota sai de regras declaradas. O blueprint registra o porquê comportamental que a
-              auditoria vai pedir.
-            </p>
-          </div>
-        </aside>
       </div>
     </AppShell>
   );
@@ -382,49 +357,30 @@ function getDefaultOption(options: TenantConfigOption[]) {
 
 function buildBlueprintDescription({
   role,
-  seniority,
   criticalSituation,
   competencies,
   highPerformance,
   criticalError,
-  seniorityExpectations,
   resultUse,
 }: {
   role: string;
-  seniority: string;
   criticalSituation: string;
   competencies: string[];
   highPerformance: string;
   criticalError: string;
-  seniorityExpectations: Record<string, string>;
   resultUse: string;
 }) {
-  const seniorityLines = Object.entries(seniorityExpectations)
-    .map(([level, expected]) => [level.trim(), expected.trim()] as const)
-    .filter(([, expected]) => expected.length > 0)
-    .map(([level, expected]) => `${level}: ${expected}`);
-
   const lines = [
     `Cargo: ${role.trim()}`,
-    seniority.trim() && `Senioridade: ${seniority.trim()}`,
     `Situação crítica: ${criticalSituation.trim()}`,
     competencies.length > 0 && `Competências: ${competencies.join(", ")}`,
     `Erro crítico: ${criticalError.trim()}`,
     highPerformance.trim() && `Alta performance faria: ${highPerformance.trim()}`,
-    seniorityLines.length > 0 && `Diferença por senioridade: ${seniorityLines.join(" | ")}`,
     resultUse.trim() && `Uso do resultado: ${resultUse.trim()}`,
   ].filter((line): line is string => Boolean(line));
 
   const description = lines.join("\n");
   return description.length > 1000 ? `${description.slice(0, 997).trimEnd()}...` : description;
-}
-
-function trimRecordValues(values: Record<string, string>) {
-  return Object.fromEntries(
-    Object.entries(values)
-      .map(([key, value]) => [key, value.trim()] as const)
-      .filter(([, value]) => value.length > 0),
-  );
 }
 
 function Header({ kicker, title, lede }: { kicker: string; title: string; lede: string }) {
@@ -468,6 +424,17 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
       <span className="mb-1.5 block text-xs font-medium text-muted-foreground">{label}</span>
       {children}
     </label>
+  );
+}
+
+function FieldMeta({ error, count, max }: { error?: string; count: number; max: number }) {
+  return (
+    <div className="mt-1 flex items-center justify-between gap-3 text-xs">
+      <span className={error ? "text-danger" : "text-muted-foreground"}>{error ?? " "}</span>
+      <span className="shrink-0 text-muted-foreground">
+        {count}/{max}
+      </span>
+    </div>
   );
 }
 

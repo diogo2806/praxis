@@ -27,18 +27,38 @@ export const Route = createFileRoute("/candidato")({
 });
 
 function CandidateEntryPage() {
+  const [token, setToken] = useState("");
+  const normalizedToken = token.trim();
+
   return (
     <AppShell>
       <EmptyState
         title="Link de tentativa obrigatorio"
-        description="A experiencia do candidato depende de uma tentativa criada pelo backend. Acesse pelo link /candidato/:token enviado pela integracao."
+        description="A experiencia do candidato depende de uma tentativa criada pelo backend. Cole o token recebido ou acesse pelo link /candidato/:token enviado pela integracao."
         actions={
-          <Link
-            to="/"
-            className="rounded-md border border-border bg-card px-4 py-3 text-sm hover:bg-accent"
-          >
-            Voltar ao painel
-          </Link>
+          <div className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_auto_auto]">
+            <input
+              className="input"
+              placeholder="Token da tentativa"
+              value={token}
+              onChange={(event) => setToken(event.target.value)}
+            />
+            <Link
+              to="/candidato/$token"
+              params={{ token: normalizedToken || "_" }}
+              className={`rounded-md bg-primary px-4 py-3 text-sm font-medium text-primary-foreground hover:bg-primary/90 ${
+                !normalizedToken ? "pointer-events-none opacity-50" : ""
+              }`}
+            >
+              Abrir tentativa
+            </Link>
+            <Link
+              to="/"
+              className="rounded-md border border-border bg-card px-4 py-3 text-sm hover:bg-accent"
+            >
+              Voltar ao painel
+            </Link>
+          </div>
         }
       />
     </AppShell>
@@ -77,7 +97,8 @@ export function CandidateExperience({ token }: { token: string }) {
     onSuccess: (response) => {
       setLiveAttempt({
         attemptId: response.attemptId,
-        simulationName: liveAttempt?.simulationName ?? attemptQuery.data?.simulationName ?? "Praxis",
+        simulationName:
+          liveAttempt?.simulationName ?? attemptQuery.data?.simulationName ?? "Praxis",
         status: response.status,
         completed: response.completed,
         currentNode: response.currentNode,

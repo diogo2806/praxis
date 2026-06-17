@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { GitBranch, Plus, Save, Trash2 } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
 import {
@@ -53,7 +53,9 @@ function DialogEditor() {
   const answerTimeLimits = config.answerTimeLimits;
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [draftMessage, setDraftMessage] = useState("");
+  const [selectedMessage, setSelectedMessage] = useState("");
   const [draftOption, setDraftOption] = useState("");
+  const [feedbackMessage, setFeedbackMessage] = useState<string | null>(null);
   const simulationsQuery = useQuery({
     queryKey: ["simulations"],
     queryFn: listSimulations,
@@ -86,9 +88,14 @@ function DialogEditor() {
     [competencies],
   );
 
-  const invalidateVersion = async () => {
-    await queryClient.invalidateQueries({
+  useEffect(() => {
+    setSelectedMessage(selected?.clientMessage ?? "");
+  }, [selected?.id, selected?.clientMessage]);
+
+  const refetchVersion = async () => {
+    await queryClient.refetchQueries({
       queryKey: ["simulation-version", search.simulationId, search.versionNumber],
+      type: "active",
     });
   };
   const addNodeMutation = useMutation({
@@ -100,7 +107,8 @@ function DialogEditor() {
     onSuccess: async (nodeId) => {
       setDraftMessage("");
       setSelectedId(nodeId);
-      await invalidateVersion();
+      setFeedbackMessage(`No ${nodeId} adicionado.`);
+      await refetchVersion();
     },
   });
   const saveNodeMutation = useMutation({
@@ -109,14 +117,15 @@ function DialogEditor() {
         clientMessage: node.clientMessage,
         timeLimitSeconds: node.timeLimitSeconds,
       }),
-    onSuccess: invalidateVersion,
+    onSuccess: refetchVersion,
   });
   const deleteNodeMutation = useMutation({
     mutationFn: (nodeId: string) =>
       deleteSimulationNode(search.simulationId!, search.versionNumber!, nodeId),
     onSuccess: async () => {
       setSelectedId(null);
-      await invalidateVersion();
+      setFeedbackMessage("No removido.");
+      await refetchVersion();
     },
   });
   const addOptionMutation = useMutation({
@@ -129,7 +138,8 @@ function DialogEditor() {
       }),
     onSuccess: async () => {
       setDraftOption("");
-      await invalidateVersion();
+      setFeedbackMessage("Alternativa adicionada.");
+      await refetchVersion();
     },
   });
   const updateOptionMutation = useMutation({
@@ -154,13 +164,21 @@ function DialogEditor() {
         isCritical,
         competencyLevels: levels,
       }),
-    onSuccess: invalidateVersion,
+    onSuccess: refetchVersion,
   });
   const deleteOptionMutation = useMutation({
     mutationFn: ({ nodeId, optionId }: { nodeId: string; optionId: string }) =>
       deleteSimulationOption(search.simulationId!, search.versionNumber!, nodeId, optionId),
-    onSuccess: invalidateVersion,
+    onSuccess: refetchVersion,
   });
+
+  const mutationError =
+    addNodeMutation.error ??
+    saveNodeMutation.error ??
+    deleteNodeMutation.error ??
+    addOptionMutation.error ??
+    updateOptionMutation.error ??
+    deleteOptionMutation.error;
 
   return (
     <AppShell>
@@ -204,6 +222,20 @@ function DialogEditor() {
             versionRule="Depois de publicar, editar cria nova versao."
             lockedAfter="Versao publicada nao altera tentativas em andamento."
           />
+          {feedbackMessage && (
+            <div className="mt-5">
+              <StateBanner tone="info" title="Alteracao salva">
+                {feedbackMessage}
+              </StateBanner>
+            </div>
+          )}
+          {mutationError && (
+            <div className="mt-5">
+              <StateBanner tone="danger" title="Nao foi possivel salvar a alteracao">
+                {mutationError instanceof Error ? mutationError.message : "Tente novamente."}
+              </StateBanner>
+            </div>
+          )}
           <div className="mt-5 grid gap-5 lg:grid-cols-[320px_minmax(0,1fr)]">
             <aside className="rounded-md border border-border bg-card p-4">
               <div className="mb-3 text-sm font-semibold">Nos persistidos</div>
@@ -232,17 +264,23 @@ function DialogEditor() {
                 <textarea
                   className="input min-h-20"
                   value={draftMessage}
-                  onChange={(event) => setDraftMessage(event.target.value)}
+                  onChange={(event) => {
+                    setDraftMessage(event.target.value);
+                    setFeedbackMessage(null);
+                  }}
                 />
               </label>
               <button
                 type="button"
-                onClick={() => addNodeMutation.mutate()}
+                onClick={() => {
+                  setFeedbackMessage(null);
+                  addNodeMutation.mutate();
+                }}
                 disabled={!draftMessage.trim() || addNodeMutation.isPending}
                 className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-md border border-border bg-card px-3 py-2 text-sm hover:bg-accent disabled:cursor-not-allowed disabled:opacity-50"
               >
                 <Plus className="h-4 w-4" />
-                Adicionar no
+                {addNodeMutation.isPending ? "Adicionando..." : "Adicionar no"}
               </button>
             </aside>
 
@@ -255,7 +293,16 @@ function DialogEditor() {
                   </div>
                   <button
                     type="button"
-                    onClick={() => deleteNodeMutation.mutate(selected.id)}
+                    onClick={() => {
+                      if (
+                        window.confirm(
+                          `Remover o no ${selected.id}? Esta acao nao pode ser desfeita.`,
+                        )
+                      ) {
+                        setFeedbackMessage(null);
+                        deleteNodeMutation.mutate(selected.id);
+                      }
+                    }}
                     disabled={
                       selected.id === versionQuery.data?.blueprint.rootNodeId ||
                       deleteNodeMutation.isPending
@@ -263,7 +310,7 @@ function DialogEditor() {
                     className="inline-flex items-center gap-2 rounded-md border border-danger/25 bg-danger/5 px-3 py-2 text-xs text-danger hover:bg-danger/10 disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     <Trash2 className="h-4 w-4" />
-                    Remover no
+                    {deleteNodeMutation.isPending ? "Removendo..." : "Remover no"}
                   </button>
                 </div>
                 <label className="block">
@@ -273,12 +320,27 @@ function DialogEditor() {
                   <textarea
                     key={`${selected.id}-message`}
                     className="input min-h-24"
-                    defaultValue={selected.clientMessage}
-                    onBlur={(event) =>
-                      saveNodeMutation.mutate({ ...selected, clientMessage: event.target.value })
-                    }
+                    value={selectedMessage}
+                    onChange={(event) => setSelectedMessage(event.target.value)}
                   />
                 </label>
+                <div className="mt-3 flex justify-end">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setFeedbackMessage(null);
+                      saveNodeMutation.mutate({ ...selected, clientMessage: selectedMessage });
+                    }}
+                    disabled={
+                      saveNodeMutation.isPending ||
+                      selectedMessage.trim() === selected.clientMessage.trim()
+                    }
+                    className="inline-flex items-center gap-2 rounded-md border border-border bg-card px-3 py-2 text-xs hover:bg-accent disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    <Save className="h-4 w-4" />
+                    {saveNodeMutation.isPending ? "Salvando..." : "Salvar turno"}
+                  </button>
+                </div>
                 <label className="mt-3 block max-w-40">
                   <span className="mb-1.5 block text-xs font-medium text-muted-foreground">
                     Tempo
@@ -308,6 +370,11 @@ function DialogEditor() {
                     {selected.options.length} registradas
                   </span>
                 </div>
+                {selected.options.length < 2 && (
+                  <p className="mt-2 rounded-md border border-warning/30 bg-warning/10 px-3 py-2 text-xs text-warning-foreground">
+                    Este turno precisa de pelo menos 2 alternativas antes da revisão.
+                  </p>
+                )}
                 <div className="mt-3 space-y-3">
                   {selected.options.map((option) => (
                     <div
@@ -341,7 +408,7 @@ function DialogEditor() {
                           }
                         >
                           {nodes
-                            .filter((node) => node.id !== selected.id)
+                            .filter((node) => node.turnIndex > selected.turnIndex)
                             .map((node) => (
                               <option key={node.id} value={node.id}>
                                 Vai para {node.id}
@@ -351,12 +418,20 @@ function DialogEditor() {
                         </select>
                         <button
                           type="button"
-                          onClick={() =>
-                            deleteOptionMutation.mutate({
-                              nodeId: selected.id,
-                              optionId: option.id,
-                            })
-                          }
+                          onClick={() => {
+                            if (
+                              window.confirm(
+                                `Remover a alternativa ${option.id} do no ${selected.id}?`,
+                              )
+                            ) {
+                              setFeedbackMessage(null);
+                              deleteOptionMutation.mutate({
+                                nodeId: selected.id,
+                                optionId: option.id,
+                              });
+                            }
+                          }}
+                          disabled={deleteOptionMutation.isPending}
                           className="rounded-md border border-danger/25 bg-danger/5 p-2 text-danger hover:bg-danger/10"
                           aria-label="Remover alternativa"
                         >
@@ -372,20 +447,33 @@ function DialogEditor() {
                             {name}
                             <input
                               className="w-12 rounded border border-border bg-card px-1 py-0.5"
-                              type="number"
-                              min={0}
-                              max={100}
+                              type="text"
+                              inputMode="numeric"
+                              pattern="[0-9]*"
                               defaultValue={value}
-                              onBlur={(event) =>
+                              onBlur={(event) => {
+                                const nextValue = Number(event.target.value);
+                                if (
+                                  !Number.isInteger(nextValue) ||
+                                  nextValue < 0 ||
+                                  nextValue > 100
+                                ) {
+                                  event.target.value = String(value);
+                                  setFeedbackMessage(
+                                    `Peso invalido para ${name}. Use um numero inteiro de 0 a 100.`,
+                                  );
+                                  return;
+                                }
+                                setFeedbackMessage(null);
                                 updateOptionMutation.mutate({
                                   nodeId: selected.id,
                                   optionId: option.id,
                                   competencyLevels: {
                                     ...option.competencyLevels,
-                                    [name]: Number(event.target.value),
+                                    [name]: nextValue,
                                   },
-                                })
-                              }
+                                });
+                              }}
                             />
                           </label>
                         ))}
@@ -411,21 +499,28 @@ function DialogEditor() {
                   <input
                     className="input"
                     value={draftOption}
-                    onChange={(event) => setDraftOption(event.target.value)}
+                    onChange={(event) => {
+                      setDraftOption(event.target.value);
+                      setFeedbackMessage(null);
+                    }}
                     placeholder="Texto da nova alternativa"
                   />
                   <button
                     type="button"
-                    onClick={() => addOptionMutation.mutate()}
+                    onClick={() => {
+                      setFeedbackMessage(null);
+                      addOptionMutation.mutate();
+                    }}
                     disabled={
                       !draftOption.trim() ||
                       competencies.length === 0 ||
+                      selected.options.length >= 4 ||
                       addOptionMutation.isPending
                     }
                     className="inline-flex items-center justify-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     <Save className="h-4 w-4" />
-                    Salvar alternativa
+                    {addOptionMutation.isPending ? "Salvando..." : "Salvar alternativa"}
                   </button>
                 </div>
               </section>

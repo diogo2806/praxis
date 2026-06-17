@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
-import { BarChart3, FilePlus2, Filter, PlayCircle, Search, Table2 } from "lucide-react";
+import { Archive, BarChart3, FilePlus2, Filter, PlayCircle, Search, Table2 } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
 import {
   EmptyState,
@@ -11,6 +11,7 @@ import {
   StatusBadge,
 } from "@/components/praxis-ui";
 import {
+  archiveSimulation,
   listSimulations,
   type SimulationSummaryResponse,
   type SimulationVersionStatus,
@@ -55,6 +56,7 @@ const filterLabels: Record<(typeof filters)[number], string> = {
 function Dashboard() {
   const [filter, setFilter] = useState<(typeof filters)[number]>("todas");
   const [query, setQuery] = useState("");
+  const queryClient = useQueryClient();
   const session = useSession();
   const firstName = session.userName.trim().split(/\s+/)[0] || "bem-vindo";
   const simulationsQuery = useQuery({
@@ -63,6 +65,12 @@ function Dashboard() {
     retry: false,
   });
   const simulations = useMemo(() => simulationsQuery.data ?? [], [simulationsQuery.data]);
+  const archiveMutation = useMutation({
+    mutationFn: archiveSimulation,
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["simulations"] });
+    },
+  });
 
   const totals = {
     publicadas: simulations.filter((s) => s.status === "published").length,
@@ -155,11 +163,38 @@ function Dashboard() {
         />
       ) : (
         <div className="space-y-6">
+          {archiveMutation.isError && (
+            <StateBanner tone="danger" title="Nao foi possivel arquivar a simulacao">
+              {archiveMutation.error instanceof Error
+                ? archiveMutation.error.message
+                : "Tente novamente."}
+            </StateBanner>
+          )}
           <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-            <Stat label="Publicadas" value={totals.publicadas} hint="Em vagas ativas" />
-            <Stat label="Aprovadas" value={totals.aprovadas} hint="Prontas para publicar" />
-            <Stat label="Rascunhos" value={totals.rascunhos} hint="Em construcao" />
-            <Stat label="Tentativas" value={totals.tentativas} hint="Total registrado" />
+            <Stat
+              label="Publicadas"
+              value={totals.publicadas}
+              hint="Em vagas ativas"
+              onClick={() => setFilter("published")}
+            />
+            <Stat
+              label="Aprovadas"
+              value={totals.aprovadas}
+              hint="Prontas para publicar"
+              onClick={() => setFilter("approved")}
+            />
+            <Stat
+              label="Rascunhos"
+              value={totals.rascunhos}
+              hint="Em construcao"
+              onClick={() => setFilter("draft")}
+            />
+            <Stat
+              label="Tentativas"
+              value={totals.tentativas}
+              hint="Total registrado"
+              onClick={() => setFilter("todas")}
+            />
           </div>
 
           <div className="flex flex-wrap items-center justify-between gap-3">
@@ -173,6 +208,9 @@ function Dashboard() {
               <label className="relative">
                 <Search className="pointer-events-none absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                 <input
+                  type="search"
+                  name="simulation-search"
+                  autoComplete="off"
                   value={query}
                   onChange={(event) => setQuery(event.target.value)}
                   className="input w-64 pl-8"
@@ -287,13 +325,32 @@ function Dashboard() {
                         </div>
                       </td>
                       <td className="px-4 py-3 text-right">
-                        <Link
-                          to="/nova/revisao"
-                          search={simulationSearch(simulation)}
-                          className="text-xs font-medium text-primary hover:underline"
-                        >
-                          Abrir
-                        </Link>
+                        <div className="flex justify-end gap-3">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (
+                                window.confirm(
+                                  `Arquivar "${simulation.name}"? Ela sairá do painel ativo.`,
+                                )
+                              ) {
+                                archiveMutation.mutate(simulation.id);
+                              }
+                            }}
+                            disabled={archiveMutation.isPending}
+                            className="inline-flex items-center gap-1 text-xs font-medium text-danger hover:underline disabled:cursor-not-allowed disabled:opacity-50"
+                          >
+                            <Archive className="h-3.5 w-3.5" />
+                            Arquivar
+                          </button>
+                          <Link
+                            to="/nova/revisao"
+                            search={simulationSearch(simulation)}
+                            className="text-xs font-medium text-primary hover:underline"
+                          >
+                            Abrir
+                          </Link>
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -327,14 +384,28 @@ function formatDateTime(value: string) {
   }).format(new Date(value));
 }
 
-function Stat({ label, value, hint }: { label: string; value: number; hint: string }) {
+function Stat({
+  label,
+  value,
+  hint,
+  onClick,
+}: {
+  label: string;
+  value: number;
+  hint: string;
+  onClick: () => void;
+}) {
   return (
-    <div className="rounded-md border border-border bg-card p-4">
+    <button
+      type="button"
+      onClick={onClick}
+      className="rounded-md border border-border bg-card p-4 text-left hover:bg-accent"
+    >
       <div className="text-xs uppercase text-muted-foreground">{label}</div>
       <div className="mt-1 text-3xl font-semibold tabular-nums text-foreground">
         {value.toLocaleString("pt-BR")}
       </div>
       <div className="mt-1 text-[11px] text-muted-foreground">{hint}</div>
-    </div>
+    </button>
   );
 }

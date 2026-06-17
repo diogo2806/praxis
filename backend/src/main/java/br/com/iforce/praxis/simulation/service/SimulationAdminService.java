@@ -574,12 +574,10 @@ public class SimulationAdminService {
     }
 
     private String createDraftDescription(CreateSimulationDraftRequest request) {
-        boolean hasStructuredBlueprint = hasText(request.seniority())
-                || hasText(request.criticalSituation())
+        boolean hasStructuredBlueprint = hasText(request.criticalSituation())
                 || hasText(request.highPerformance())
                 || hasText(request.criticalError())
-                || hasText(request.resultUse())
-                || (request.seniorityExpectations() != null && !request.seniorityExpectations().isEmpty());
+                || hasText(request.resultUse());
 
         if (!hasStructuredBlueprint) {
             return truncateDescription(request.description().trim());
@@ -587,23 +585,12 @@ public class SimulationAdminService {
 
         StringBuilder description = new StringBuilder();
         appendLine(description, "Cargo", request.name());
-        appendLine(description, "Senioridade", request.seniority());
         appendLine(description, "Situação crítica", request.criticalSituation());
         if (request.competencies() != null && !request.competencies().isEmpty()) {
             appendLine(description, "Competências", String.join(", ", request.competencies()));
         }
         appendLine(description, "Erro crítico", request.criticalError());
         appendLine(description, "Alta performance faria", request.highPerformance());
-
-        if (request.seniorityExpectations() != null && !request.seniorityExpectations().isEmpty()) {
-            String seniorityDifferences = request.seniorityExpectations().entrySet().stream()
-                    .filter(entry -> hasText(entry.getValue()))
-                    .map(entry -> entry.getKey().trim() + ": " + entry.getValue().trim())
-                    .reduce((left, right) -> left + " | " + right)
-                    .orElse("");
-            appendLine(description, "Diferença por senioridade", seniorityDifferences);
-        }
-
         appendLine(description, "Uso do resultado", request.resultUse());
         return truncateDescription(description.toString().trim());
     }

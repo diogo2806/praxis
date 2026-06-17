@@ -101,11 +101,9 @@ export interface CreateSimulationDraftRequest {
   description: string;
   rootNodeId: string;
   competencies: string[];
-  seniority?: string;
   criticalSituation?: string;
   highPerformance?: string;
   criticalError?: string;
-  seniorityExpectations?: Record<string, string>;
   resultUse?: string;
 }
 
@@ -258,6 +256,13 @@ export interface PublishSimulationResponse {
   publishedAt: string | null;
 }
 
+export interface ArchiveSimulationResponse {
+  simulationId: string;
+  archived: boolean;
+  deletedAt: string;
+  deletedBy: string | null;
+}
+
 export type GupyPreflightCheckCode = "publicBaseUrl" | "integrationToken" | "simulationValidation";
 
 export type GupyPreflightCheckStatus = "ok" | "warning" | "blocker";
@@ -398,6 +403,13 @@ export function submitCandidateAnswer(attemptId: string, body: SubmitAnswerReque
 
 export function listSimulations() {
   return request<SimulationSummaryResponse[]>("/api/v1/simulations");
+}
+
+export function archiveSimulation(simulationId: string) {
+  return request<ArchiveSimulationResponse>(
+    `/api/v1/simulations/${encodeURIComponent(simulationId)}`,
+    { method: "DELETE" },
+  );
 }
 
 export function createSimulationDraft(body: CreateSimulationDraftRequest) {

@@ -1,0 +1,837 @@
+Você já tem uma integração **bem completa com a Gupy** (quase um “mini ATS + motor de avaliação + delivery de resultado”). O próximo passo não é “mais um job board qualquer”, e sim **expandir ecossistema de recrutamento e sistemas adjacentes ao fluxo real de contratação**.
+
+Vou te responder de forma objetiva e estratégica, baseado no que seu backend já faz.
+
+---
+
+# 🧭 1. O que seu sistema já cobre (importante para decidir integrações)
+
+Você já tem:
+
+### 🧠 Core ATS engine
+
+* criação de candidatos (`/test/candidate`)
+* tentativa (attempt lifecycle)
+* scoring determinístico
+* auditoria append-only
+* versionamento de simulação
+
+### 🔌 Integração Gupy completa
+
+* bearer token + tenant resolution
+* preflight + ativação de integração
+* webhook de resultado
+* retry + DLQ
+* idempotência forte
+
+### 📊 Observabilidade
+
+* monitoring por versão
+* delivery queue
+* audit event stream
+
+👉 Ou seja: você já construiu um **“evaluation engine plugável”**, não apenas integração.
+
+---
+
+# 🚀 2. Próximas integrações com maior valor (ordem real de mercado)
+
+## 🥇 1. Workday (ESSENCIAL se quiser escala enterprise)
+
+Workday
+
+### Por que é o melhor próximo passo:
+
+* maior ATS corporativo global
+* empresas grandes no Brasil usam
+* fluxo semelhante ao seu (candidate + assessment + result)
+
+### O que integrar:
+
+* Candidate ingestion (create candidate / requisition)
+* Assessment URL injection
+* Result callback (igual Gupy que você já fez)
+
+📌 Isso seria uma extensão direta do seu modelo atual.
+
+---
+
+## 🥈 2. Greenhouse (ATS moderno e muito usado em tech)
+
+Greenhouse
+
+### Por que importa:
+
+* padrão de mercado em tech (EUA + startups BR)
+* API muito limpa
+* forte em “scorecards” (combina com seu scoring engine)
+
+### Integração ideal:
+
+* webhook de candidate stage change
+* envio de scorecard estruturado
+* retorno de evaluation result
+
+---
+
+## 🥉 3. Lever (concorrente direto do Greenhouse)
+
+Lever
+
+* forte em pipeline + CRM de candidatos
+* muito usado por empresas mid-market
+* bom para seu “result delivery engine”
+
+---
+
+## 4. LinkedIn Talent Solutions (distribuição de topo)
+
+LinkedIn
+
+### Valor real:
+
+* não é ATS, é **distribuição de candidatos**
+* integra com job postings + apply flows
+
+📌 Aqui seu sistema vira “assessment layer plugado no LinkedIn Apply”
+
+---
+
+## 5. SAP SuccessFactors (enterprise pesado)
+
+SAP SuccessFactors
+
+* enterprise puro
+* integrações complexas, mas alto ticket
+
+---
+
+# 🧩 3. Integrações que fazem MUITO sentido no seu caso (não são ATS)
+
+Aqui está o pulo de maturidade do seu produto:
+
+---
+
+## 🧠 3.1 LLM / IA de triagem (camada acima do seu scoring)
+
+Você já tem scoring determinístico.
+
+Próximo nível:
+
+* explicar score (XAI layer)
+* gerar feedback automático
+* comparar candidatos
+
+👉 Isso vira “AI Recruiter Copilot”
+
+---
+
+## 📊 3.2 HR Analytics / BI tools
+
+* Power BI / Tableau connectors
+* export de eventos de auditoria
+* funnel de candidatos
+
+Seu audit log já é ouro aqui.
+
+---
+
+## 🔔 3.3 Slack / Teams notifications
+
+Slack
+
+* resultado de candidato em tempo real
+* alertas de aprovação/reprovação
+* revisão humana necessária
+
+---
+
+## 📩 3.4 Email / CRM integration
+
+* Greenhouse/Hubspot style pipeline sync
+* updates automáticos de status
+
+---
+
+# 🧱 4. Arquitetura recomendada para expandir integrações (importante)
+
+Hoje seu sistema está “hard-coded por Gupy + callback”.
+
+O próximo passo é:
+
+## 🔌 Criar camada “Integration Adapter”
+
+Algo assim:
+
+```
+IntegrationPort
+ ├── GupyAdapter
+ ├── WorkdayAdapter
+ ├── GreenhouseAdapter
+ ├── LeverAdapter
+```
+
+E separar:
+
+### Entrada (Inbound)
+
+* candidate ingestion
+* test assignment
+
+### Saída (Outbound)
+
+* result delivery
+* webhook retry system (você já tem isso 👍)
+
+---
+
+# 🧠 5. O insight mais importante
+
+Você NÃO está mais construindo:
+
+> “integração com Gupy”
+
+Você está construindo:
+
+> **um motor de avaliação independente de ATS**
+
+Isso muda totalmente a estratégia:
+
+### O valor real do seu sistema é:
+
+* scoring determinístico
+* auditabilidade
+* simulação estruturada
+* entrega padronizada de resultado
+
+👉 ATSs viram apenas “plugs”.
+
+---
+
+# 🎯 6. Prioridade prática (o que fazer agora)
+
+Se eu tivesse que ordenar:
+
+### 1. Workday integration
+
+### 2. Greenhouse integration
+
+### 3. Slack notifications (rápido impacto)
+
+### 4. LinkedIn apply flow
+
+### 5. BI export layer
+
+---
+
+# Se quiser avançar um nível mais técnico
+
+Posso te desenhar:
+
+* arquitetura completa de “multi-ATS adapter layer”
+* como transformar seu `ResultDeliveryService` em event-driven (Kafka/outbox)
+* ou como criar um “Assessment API standard” tipo Stripe de recrutamento
+
+Só dizer a direção.
+
+
+Vou desenhar uma arquitetura **real de produção** baseada no que você já construiu (Gupy integration + scoring engine + delivery + audit + tenant isolation).
+
+Vou estruturar em 4 camadas: **Core, Integration Layer, Event Layer e External ATS Layer**.
+
+---
+
+# 🧠 1. VISÃO GERAL (Arquitetura alvo)
+
+```
+                         ┌──────────────────────────────┐
+                         │        ATS / HR Systems       │
+                         │                              │
+                         │  Gupy | Workday | Greenhouse  │
+                         │  Lever | LinkedIn | SAP SF    │
+                         └─────────────┬────────────────┘
+                                       │
+                                       │ REST / Webhooks
+                                       ▼
+┌──────────────────────────────────────────────────────────────────┐
+│                    INTEGRATION LAYER (Adapters)                  │
+│                                                                  │
+│  ┌──────────────┐   ┌──────────────┐   ┌──────────────┐         │
+│  │ GupyAdapter   │   │ WorkdayAdapter│  │ GreenhouseAdapter│     │
+│  └──────┬───────┘   └──────┬───────┘   └──────┬───────┘         │
+│         │                  │                  │                   │
+│         └──────────┬───────┴───────┬──────────┘                   │
+│                    ▼               ▼                              │
+│          ┌──────────────────────────────────┐                     │
+│          │   Assessment API Gateway        │                     │
+│          │  (your Praxis Core API)         │                     │
+│          └──────────────┬──────────────────┘                     │
+└─────────────────────────┬────────────────────────────────────────┘
+                          │
+                          ▼
+┌──────────────────────────────────────────────────────────────────┐
+│                     CORE DOMAIN (SEU SISTEMA)                   │
+│                                                                  │
+│  CandidateAttemptService                                        │
+│  AttemptStateMachine                                            │
+│  ResultScoringService                                           │
+│  SimulationEngine                                               │
+│                                                                  │
+│  + Tenant Isolation                                             │
+│  + Idempotency Engine                                           │
+│  + Audit Event Stream                                           │
+└───────────────┬──────────────────────────────────────────────────┘
+                │
+                ▼
+┌──────────────────────────────────────────────────────────────────┐
+│                     EVENT / DELIVERY LAYER                      │
+│                                                                  │
+│  ResultDeliveryService (queue)                                  │
+│  Outbox Pattern (recommended upgrade)                           │
+│  Retry Engine (backoff + DLQ)                                   │
+│  Webhook Validator (security)                                   │
+│                                                                  │
+└───────────────┬──────────────────────────────────────────────────┘
+                │
+                ▼
+┌──────────────────────────────────────────────────────────────────┐
+│                         DATA LAYER                               │
+│                                                                  │
+│  PostgreSQL (multi-tenant)                                      │
+│  audit_events (append-only)                                     │
+│  candidate_attempts                                             │
+│  result_deliveries                                              │
+│  simulations / versions                                         │
+└──────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+# 🔌 2. PADRÃO CENTRAL: “ASSESSMENT PLATFORM AS A SERVICE”
+
+Você está evoluindo para isso:
+
+```
+ATS (Gupy, Workday, etc.)
+        │
+        ▼
+Praxis Assessment API (SEU PRODUTO)
+        │
+        ▼
+Scoring Engine + Simulation Graph
+        │
+        ▼
+Normalized Result Payload
+```
+
+---
+
+# 🧩 3. INTEGRATION LAYER (o que você deve criar agora)
+
+## 📦 Interface padrão
+
+```java
+public interface ATSAdapter {
+
+    CandidateContext createCandidate(CreateCandidateCommand cmd);
+
+    void pushResult(ResultPayload payload);
+
+    ATSPlatform type();
+}
+```
+
+---
+
+## 🔌 Implementações
+
+```
+ATSAdapter
+ ├── GupyAdapter (já existe implicitamente)
+ ├── WorkdayAdapter (novo)
+ ├── GreenhouseAdapter (novo)
+ ├── LeverAdapter (novo)
+ └── LinkedInAdapter (opcional)
+```
+
+---
+
+# 🔁 4. FLUXO END-TO-END (o seu sistema ideal)
+
+## 1. Entrada (ATS → Praxis)
+
+```
+Gupy
+  │ POST /test/candidate
+  ▼
+GupyAdapter
+  ▼
+CandidateAttemptService
+  ▼
+SimulationEngine
+  ▼
+CandidateAttempt (persistido)
+```
+
+---
+
+## 2. Execução do candidato
+
+```
+Candidate UI (Gupy embedded / link)
+        ▼
+CandidateAttemptController
+        ▼
+AttemptStateMachine
+        ▼
+ResultScoringService
+```
+
+---
+
+## 3. Finalização
+
+```
+COMPLETED attempt
+        ▼
+Event: ATTEMPT_COMPLETED
+        ▼
+ResultDeliveryService (QUEUE)
+        ▼
+Webhook Adapter (Gupy / Workday / etc.)
+        ▼
+ATS receives result
+```
+
+---
+
+# 📡 5. MELHORIA CRÍTICA (que seu sistema já está pronto para)
+
+## 🔥 OUTBOX PATTERN (recomendação forte)
+
+Hoje você faz:
+
+```
+service -> save entity -> call webhook
+```
+
+Melhor:
+
+```
+service -> save entity + outbox_event
+                ↓
+          async processor
+                ↓
+        webhook delivery
+```
+
+---
+
+## Estrutura:
+
+```
+outbox_events
+  - id
+  - type (RESULT_READY)
+  - payload (JSON)
+  - status (PENDING/SENT/FAILED)
+  - tenant_id
+```
+
+👉 Isso elimina:
+
+* perda de evento
+* retry inconsistente
+* acoplamento transacional
+
+---
+
+# 🧠 6. CAMADA DE NORMALIZAÇÃO (ESSENCIAL para múltiplos ATS)
+
+Hoje você já tem:
+
+```json
+TestResultResponse (Gupy format)
+```
+
+Evolução:
+
+```
+InternalCanonicalResult
+        ↓
+Adapters transformam para:
+        ↓
+Gupy format
+Workday format
+Greenhouse format
+```
+
+---
+
+## Modelo central:
+
+```java
+class CanonicalResult {
+    String candidateId;
+    String simulationId;
+    int score;
+    List<CompetencyScore> competencies;
+    Decision decision;
+    boolean humanReviewRequired;
+}
+```
+
+---
+
+# 🧱 7. NOVA ARQUITETURA EM CAMADAS (clean final)
+
+```
+┌──────────────────────────────┐
+│        API Layer             │
+│ Candidate / Simulation APIs  │
+└──────────────┬───────────────┘
+               ▼
+┌──────────────────────────────┐
+│      Application Layer       │
+│ AttemptService               │
+│ SimulationAdminService       │
+└──────────────┬───────────────┘
+               ▼
+┌──────────────────────────────┐
+│        Domain Layer          │
+│ AttemptStateMachine          │
+│ ResultScoringService         │
+│ SimulationGraphEngine        │
+└──────────────┬───────────────┘
+               ▼
+┌──────────────────────────────┐
+│   Integration Layer          │
+│ ATSAdapters (Gupy, Workday)  │
+│ Result mappers               │
+└──────────────┬───────────────┘
+               ▼
+┌──────────────────────────────┐
+│  Delivery / Event Layer      │
+│ Outbox + Retry + DLQ         │
+└──────────────┬───────────────┘
+               ▼
+┌──────────────────────────────┐
+│       Persistence            │
+│ PostgreSQL multi-tenant      │
+└──────────────────────────────┘
+```
+
+---
+
+# 🚀 8. O QUE ISSO TE TRANSFORMA (IMPORTANTE)
+
+Com essa arquitetura você deixa de ser:
+
+> “integração com Gupy”
+
+E vira:
+
+> 🧠 **Assessment Infrastructure Layer (tipo Stripe de avaliação comportamental)**
+
+---
+
+# 📌 9. PRÓXIMO PASSO (se quiser evoluir mais)
+
+Posso te desenhar agora uma dessas opções:
+
+### A) Outbox pattern implementado no seu código Spring (com tabelas + scheduler)
+
+### B) Adapter real do Workday baseado nesse design
+
+### C) Versionamento de “Assessment API public contract” (tipo Stripe API versioning)
+
+### D) Event-driven architecture com Kafka (e substituição do scheduler atual)
+
+Só me diz qual direção você quer.
+
+Vamos para o **Outbox Pattern aplicado diretamente no seu sistema (nível produção sério)**.
+
+Isso aqui é exatamente o upgrade natural do seu `ResultDeliveryService`.
+
+---
+
+# 🧱 1. PROBLEMA ATUAL (no seu código hoje)
+
+Hoje você faz isso:
+
+```java
+candidateAttemptEntity.setStatus(COMPLETED);
+repository.save(entity);
+
+resultWebhookClient.postResult(...)
+```
+
+## Problemas disso:
+
+* ❌ se o serviço cair após o save → webhook nunca é enviado
+* ❌ retry depende de lógica manual (você já tem, mas está “reativo”)
+* ❌ acoplamento transacional (DB + HTTP no mesmo fluxo lógico)
+* ❌ risco de inconsistência entre “resultado salvo” e “resultado entregue”
+
+---
+
+# 🚀 2. SOLUÇÃO: OUTBOX PATTERN
+
+Você transforma “envio de webhook” em **evento persistido primeiro**, execução depois.
+
+---
+
+# 🧩 3. ARQUITETURA FINAL
+
+```id="outbox-arch"
+┌──────────────────────────────┐
+│ CandidateAttemptService      │
+│                              │
+│ 1. salva tentativa           │
+│ 2. gera OUTBOX EVENT         │
+└──────────────┬───────────────┘
+               ▼
+┌──────────────────────────────┐
+│ outbox_events (TABLE)        │
+│                              │
+│ - id                         │
+│ - type = RESULT_READY       │
+│ - payload JSON              │
+│ - status PENDING/SENT/FAIL  │
+│ - tenant_id                 │
+│ - created_at                │
+└──────────────┬───────────────┘
+               ▼
+┌──────────────────────────────┐
+│ OutboxProcessor (Scheduler)  │
+│                              │
+│ - busca PENDING              │
+│ - envia webhook              │
+│ - marca SENT / RETRY / DLQ   │
+└──────────────┬───────────────┘
+               ▼
+┌──────────────────────────────┐
+│ ATS Adapters                 │
+│ Gupy / Workday / etc.       │
+└──────────────────────────────┘
+```
+
+---
+
+# 🧱 4. NOVA TABELA (ESSENCIAL)
+
+```sql id="outbox1"
+CREATE TABLE outbox_events (
+    id BIGINT GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY,
+    tenant_id VARCHAR(120) NOT NULL,
+    event_type VARCHAR(80) NOT NULL,
+    aggregate_type VARCHAR(80) NOT NULL,
+    aggregate_id VARCHAR(120) NOT NULL,
+    payload TEXT NOT NULL,
+    status VARCHAR(20) NOT NULL,
+    attempts INT NOT NULL DEFAULT 0,
+    next_attempt_at TIMESTAMP WITH TIME ZONE,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL
+);
+
+CREATE INDEX idx_outbox_pending
+ON outbox_events (status, next_attempt_at, tenant_id);
+```
+
+---
+
+# 🧠 5. EVENT MODEL (core do sistema)
+
+```java id="outbox2"
+public record OutboxEvent(
+    String tenantId,
+    String type,
+    String aggregateType,
+    String aggregateId,
+    String payload
+) {}
+```
+
+---
+
+# 🔥 6. COMO SEU FLUXO FICA (mudança importante)
+
+## ANTES
+
+```text
+COMPLETED attempt
+  → call webhook directly
+```
+
+---
+
+## DEPOIS
+
+```text
+COMPLETED attempt
+  → SAVE attempt
+  → INSERT OUTBOX EVENT
+  → return response immediately
+```
+
+Webhook acontece depois.
+
+---
+
+# 🧩 7. MODIFICAÇÃO NO SEU CandidateAttemptService
+
+Hoje você faz:
+
+```java
+gupyCompletionCallbackService.notifyCompletionIfNeeded(...)
+resultDeliveryService.enqueueWebhookDelivery(...)
+```
+
+## PASSA A SER:
+
+```java
+outboxService.publish(
+    new OutboxEvent(
+        tenantId,
+        "RESULT_READY",
+        "CandidateAttempt",
+        attemptId,
+        jsonPayload
+    )
+);
+```
+
+---
+
+# ⚙️ 8. PROCESSADOR (substitui parte do ResultDeliveryProcessor)
+
+```java id="outbox3"
+@Component
+public class OutboxProcessor {
+
+    private final OutboxRepository repository;
+    private final ResultWebhookClient webhookClient;
+
+    @Scheduled(fixedDelay = 5000)
+    public void process() {
+
+        List<OutboxEventEntity> events =
+            repository.findPending(Instant.now());
+
+        for (var event : events) {
+            try {
+                if (event.getEventType().equals("RESULT_READY")) {
+
+                    TestResultResponse payload =
+                        parse(event.getPayload());
+
+                    webhookClient.postResult(
+                        resolveWebhook(event),
+                        payload
+                    );
+                }
+
+                event.setStatus("SENT");
+
+            } catch (Exception ex) {
+                event.setAttempts(event.getAttempts() + 1);
+                event.setStatus(event.getAttempts() > 5 ? "DLQ" : "RETRYING");
+            }
+        }
+    }
+}
+```
+
+---
+
+# 🧠 9. DIFERENÇA ESTRUTURAL (importante entender)
+
+## SEU MODELO ATUAL
+
+```
+Service → HTTP → DB
+```
+
+## OUTBOX MODEL
+
+```
+Service → DB → EVENT → WORKER → HTTP
+```
+
+---
+
+# 🚀 10. O GANHO REAL (o que muda no seu produto)
+
+## Antes:
+
+* acoplado
+* retry manual
+* risco de perda de evento
+* difícil escalar múltiplos ATS
+
+## Depois:
+
+* eventos confiáveis
+* replay possível
+* integra qualquer ATS facilmente
+* vira “event-driven assessment engine”
+
+---
+
+# 🧱 11. COMO ISSO SE ENCAIXA NA SUA ARQUITETURA
+
+Seu sistema já tem:
+
+* audit_events (já é event stream)
+* result_deliveries (quase um outbox)
+* scheduler (já existe base)
+
+👉 Você só está **formalizando o padrão correto**
+
+---
+
+# 🧠 12. EVOLUÇÃO NATURAL (IMPORTANTE)
+
+Depois do Outbox, seu sistema evolui para:
+
+## 1. Event Bus interno
+
+* RESULT_CREATED
+* ATTEMPT_COMPLETED
+* SIMULATION_PUBLISHED
+
+## 2. Adapters plugáveis
+
+* GupyAdapter
+* WorkdayAdapter
+* GreenhouseAdapter
+
+## 3. API pública tipo Stripe
+
+* POST /assessments
+* GET /results
+* POST /webhooks
+
+---
+
+# 🔥 13. RESUMO EXECUTIVO
+
+Você está basicamente transformando seu sistema em:
+
+> 🧠 **Event-driven Assessment Platform**
+
+E o Outbox é o passo obrigatório antes de:
+
+* Kafka
+* microservices
+* multi-ATS expansion
+
+---
+
+Se quiser, o próximo nível lógico é:
+
+👉 desenhar o **Assessment API padrão (tipo Stripe)**
+ou
+👉 converter seu scheduler atual em **event bus + retry engine robusto**
+
+Só me diz.
