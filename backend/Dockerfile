@@ -7,17 +7,15 @@ WORKDIR /app
 
 ENV MAVEN_OPTS="-Xmx512m -XX:MaxRAMPercentage=75"
 
-# Copy pom.xml and download dependencies
+# Copy project files
 COPY pom.xml .
-RUN --mount=type=cache,target=/root/.m2 \
-    sh -c 'echo "[build][backend][maven-offline][start] $(date -u +%Y-%m-%dT%H:%M:%SZ)"; pipe=/tmp/build-log.$$; mkfifo "$pipe"; while IFS= read -r line; do echo "[$(date -u +%Y-%m-%dT%H:%M:%SZ)] $line"; done < "$pipe" & logger=$!; mvn dependency:go-offline -B > "$pipe" 2>&1; status=$?; wait "$logger"; rm -f "$pipe"; echo "[build][backend][maven-offline][end] $(date -u +%Y-%m-%dT%H:%M:%SZ) status=$status"; exit "$status"'
 
 # Copy source code
 COPY src ./src
 
 # Build the application
 RUN --mount=type=cache,target=/root/.m2 \
-    sh -c 'echo "[build][backend][maven-package][start] $(date -u +%Y-%m-%dT%H:%M:%SZ)"; pipe=/tmp/build-log.$$; mkfifo "$pipe"; while IFS= read -r line; do echo "[$(date -u +%Y-%m-%dT%H:%M:%SZ)] $line"; done < "$pipe" & logger=$!; mvn clean package -DskipTests -B > "$pipe" 2>&1; status=$?; wait "$logger"; rm -f "$pipe"; echo "[build][backend][maven-package][end] $(date -u +%Y-%m-%dT%H:%M:%SZ) status=$status"; exit "$status"'
+    sh -c 'echo "[build][backend][maven-package][start] $(date -u +%Y-%m-%dT%H:%M:%SZ)"; pipe=/tmp/build-log.$$; mkfifo "$pipe"; while IFS= read -r line; do echo "[$(date -u +%Y-%m-%dT%H:%M:%SZ)] $line"; done < "$pipe" & logger=$!; mvn clean package -DskipTests -Dmaven.test.skip=true -B -ntp > "$pipe" 2>&1; status=$?; wait "$logger"; rm -f "$pipe"; echo "[build][backend][maven-package][end] $(date -u +%Y-%m-%dT%H:%M:%SZ) status=$status"; exit "$status"'
 
 # Runtime stage
 FROM eclipse-temurin:21-jre
