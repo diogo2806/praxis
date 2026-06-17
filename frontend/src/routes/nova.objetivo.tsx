@@ -55,7 +55,7 @@ function Page() {
         queryKey: ["simulation-version", search.simulationId, search.versionNumber],
       });
       void navigate({
-        to: "/nova/personagem",
+        to: "/nova/cenario",
         search: { simulationId: simulation.id, versionNumber: simulation.versionNumber },
       });
     },
@@ -63,7 +63,7 @@ function Page() {
 
   return (
     <AppShell>
-      <WizardStepper current="objetivo" />
+      <WizardStepper current="avaliacao" unlockedThrough="cenario" />
       <ScreenStateStrip blockedReason="selecione uma versao real para continuar" />
       <div className="mb-8">
         <div className="text-xs uppercase tracking-[0.2em] text-primary">Passo 1</div>
@@ -79,7 +79,10 @@ function Page() {
           title="Escolha uma simulacao real"
           description="Sem contexto de versao, esta tela nao cria objetivo local nem carrega exemplos."
           actions={
-            <SimulationLinks loading={simulationsQuery.isLoading} simulations={simulationsQuery.data ?? []} />
+            <SimulationLinks
+              loading={simulationsQuery.isLoading}
+              simulations={simulationsQuery.data ?? []}
+            />
           }
         />
       ) : versionQuery.isLoading ? (
@@ -110,7 +113,10 @@ function Page() {
               <h3 className="text-sm font-semibold">Competencias e pesos</h3>
               <div className="mt-3 grid gap-2 md:grid-cols-3">
                 {versionQuery.data.blueprint.competencies.map((competency) => (
-                  <div key={competency.name} className="rounded-md border border-border bg-background p-3">
+                  <div
+                    key={competency.name}
+                    className="rounded-md border border-border bg-background p-3"
+                  >
                     <div className="text-sm font-medium">{competency.name}</div>
                     <div className="mt-1 text-xs tabular-nums text-muted-foreground">
                       {(competency.weight * 100).toFixed(0)}%
@@ -123,7 +129,9 @@ function Page() {
           {saveMutation.isError && (
             <div className="mt-5">
               <StateBanner tone="danger" title="Nao foi possivel confirmar o blueprint">
-                {saveMutation.error instanceof Error ? saveMutation.error.message : "Tente novamente."}
+                {saveMutation.error instanceof Error
+                  ? saveMutation.error.message
+                  : "Tente novamente."}
               </StateBanner>
             </div>
           )}
@@ -137,7 +145,7 @@ function Page() {
               {saveMutation.isPending ? "Salvando..." : "Personagem ->"}
             </button>
             <Link
-              to="/nova/blueprint"
+              to="/nova/avaliacao"
               search={{ simulationId: search.simulationId, versionNumber: search.versionNumber }}
               className="rounded-md border border-border bg-card px-4 py-2 text-sm hover:bg-accent"
             >
@@ -169,7 +177,10 @@ function SimulationLinks({
   if (loading) return <span className="text-sm text-muted-foreground">Carregando...</span>;
   if (simulations.length === 0) {
     return (
-      <Link to="/nova/blueprint" className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground">
+      <Link
+        to="/nova/avaliacao"
+        className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground"
+      >
         Criar blueprint
       </Link>
     );
@@ -179,7 +190,7 @@ function SimulationLinks({
       {simulations.map((simulation) => (
         <Link
           key={`${simulation.id}-${simulation.versionNumber}`}
-          to="/nova/objetivo"
+          to="/nova/avaliacao"
           search={{ simulationId: simulation.id, versionNumber: simulation.versionNumber }}
           className="rounded-md border border-border bg-card px-3 py-2 text-sm hover:bg-accent"
         >

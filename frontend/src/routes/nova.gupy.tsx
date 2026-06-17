@@ -93,11 +93,11 @@ function GupyActivation() {
 
   return (
     <AppShell>
-      <WizardStepper current="gupy" />
+      <WizardStepper current="publicacao" />
       <ScreenStateStrip blockedReason="checklist de ativacao incompleto bloqueia integracao ativa" />
       <div className="mb-5 flex flex-wrap items-start justify-between gap-4">
         <div>
-          <div className="text-xs uppercase text-primary">Passo 8</div>
+          <div className="text-xs uppercase text-primary">Passo 4</div>
           <h1 className="mt-1 text-3xl font-semibold">Gupy - Ativacao & Conferencia</h1>
           <p className="mt-1 max-w-3xl text-sm text-muted-foreground">
             A Gupy consome nossos endpoints externos; esta tela mostra o preflight real da versao e
@@ -134,7 +134,10 @@ function GupyActivation() {
           )}
 
           {preflightQuery.data && (
-            <StateBanner tone={hasFailure ? "danger" : "ok"} title={hasFailure ? "Preflight bloqueado" : "Preflight aprovado"}>
+            <StateBanner
+              tone={hasFailure ? "danger" : "ok"}
+              title={hasFailure ? "Preflight bloqueado" : "Preflight aprovado"}
+            >
               {hasFailure
                 ? "Corrija os blockers retornados pelo backend antes de ativar a integracao."
                 : preflightQuery.data.integrationActive
@@ -258,7 +261,11 @@ function DeliveryList({
   error: boolean;
 }) {
   if (loading) {
-    return <div className="rounded-md border border-border bg-background p-3 text-sm">Carregando entregas...</div>;
+    return (
+      <div className="rounded-md border border-border bg-background p-3 text-sm">
+        Carregando entregas...
+      </div>
+    );
   }
 
   if (error) {
@@ -310,13 +317,17 @@ function SimulationLinks({
   loading: boolean;
 }) {
   if (loading) {
-    return <div className="rounded-md border border-border bg-card px-4 py-3 text-sm">Carregando simulacoes...</div>;
+    return (
+      <div className="rounded-md border border-border bg-card px-4 py-3 text-sm">
+        Carregando simulacoes...
+      </div>
+    );
   }
 
   if (simulations.length === 0) {
     return (
       <Link
-        to="/nova/blueprint"
+        to="/nova/avaliacao"
         className="rounded-md border border-border bg-card px-4 py-3 text-sm hover:bg-accent"
       >
         Criar simulacao
@@ -338,7 +349,10 @@ function SimulationLinks({
         >
           <span className="block font-medium">{simulation.name}</span>
           <span className="mt-1 block">
-            <StatusBadge status={simulation.status} maturity={maturityForStatus(simulation.status)} />
+            <StatusBadge
+              status={simulation.status}
+              maturity={maturityForStatus(simulation.status)}
+            />
           </span>
         </Link>
       ))}

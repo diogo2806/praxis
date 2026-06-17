@@ -3,7 +3,11 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { AppShell } from "@/components/app-shell";
 import { EmptyState, ScreenStateStrip, StateBanner } from "@/components/praxis-ui";
 import { WizardStepper } from "@/components/wizard-stepper";
-import { getSimulationVersion, listSimulations, type SimulationSummaryResponse } from "@/lib/api/praxis";
+import {
+  getSimulationVersion,
+  listSimulations,
+  type SimulationSummaryResponse,
+} from "@/lib/api/praxis";
 
 export const Route = createFileRoute("/nova/mapa")({
   validateSearch: (search: Record<string, unknown>) => ({
@@ -41,10 +45,10 @@ function Page() {
 
   return (
     <AppShell>
-      <WizardStepper current="mapa" />
+      <WizardStepper current="revisao" unlockedThrough="publicacao" />
       <ScreenStateStrip blockedReason="grafo invalido ou caminho morto precisa voltar ao editor" />
       <div className="mb-6">
-        <div className="text-xs uppercase tracking-[0.2em] text-primary">Passo 5-6</div>
+        <div className="text-xs uppercase tracking-[0.2em] text-primary">Passo 3</div>
         <h1 className="mt-1 font-display text-3xl">Mapa & score normalizado</h1>
         <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
           Visualizacao derivada dos nos, alternativas e pesos persistidos.
@@ -55,7 +59,12 @@ function Page() {
         <EmptyState
           title="Selecione uma versao para ver o mapa"
           description="Nao ha SVG ou grafo local nesta tela."
-          actions={<SimulationLinks loading={simulationsQuery.isLoading} simulations={simulationsQuery.data ?? []} />}
+          actions={
+            <SimulationLinks
+              loading={simulationsQuery.isLoading}
+              simulations={simulationsQuery.data ?? []}
+            />
+          }
         />
       ) : versionQuery.isLoading ? (
         <StateBanner tone="info" title="Carregando mapa">
@@ -69,7 +78,9 @@ function Page() {
         <>
           <div className="grid gap-6 lg:grid-cols-[1fr_340px]">
             <div className="rounded-md border border-border bg-card p-5">
-              <h2 className="text-lg font-semibold">{version.name} - v{version.versionNumber}</h2>
+              <h2 className="text-lg font-semibold">
+                {version.name} - v{version.versionNumber}
+              </h2>
               <div className="mt-4 space-y-4">
                 {version.nodes.map((node) => (
                   <div key={node.id} className="rounded-md border border-border bg-background p-4">
@@ -80,7 +91,10 @@ function Page() {
                     <p className="mt-2 text-sm text-foreground/80">{node.clientMessage}</p>
                     <div className="mt-3 space-y-2">
                       {node.options.map((option) => (
-                        <div key={option.id} className="rounded border border-border bg-card p-3 text-sm">
+                        <div
+                          key={option.id}
+                          className="rounded border border-border bg-card p-3 text-sm"
+                        >
                           <div>{option.text}</div>
                           <div className="mt-2 flex flex-wrap gap-1.5 text-[11px] text-muted-foreground">
                             <span className="rounded border border-border px-2 py-1">
@@ -110,7 +124,10 @@ function Page() {
               </div>
               <div className="mt-3 space-y-2">
                 {version.blueprint.competencies.map((competency) => (
-                  <div key={competency.name} className="flex justify-between rounded-md border border-border bg-background p-3 text-sm">
+                  <div
+                    key={competency.name}
+                    className="flex justify-between rounded-md border border-border bg-background p-3 text-sm"
+                  >
                     <span>{competency.name}</span>
                     <span className="tabular-nums text-muted-foreground">
                       {(competency.weight * 100).toFixed(0)}%

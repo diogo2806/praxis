@@ -61,7 +61,7 @@ function Dashboard() {
     queryFn: listSimulations,
     retry: false,
   });
-  const simulations = simulationsQuery.data ?? [];
+  const simulations = useMemo(() => simulationsQuery.data ?? [], [simulationsQuery.data]);
 
   const totals = {
     publicadas: simulations.filter((s) => s.status === "published").length,
@@ -103,14 +103,14 @@ function Dashboard() {
             Monitoramento
           </Link>
           <Link
-            to="/nova/blueprint"
+            to="/nova/avaliacao"
             className="inline-flex items-center gap-2 rounded-md border border-border bg-card px-3 py-2 text-sm hover:bg-accent"
           >
             <PlayCircle className="h-4 w-4" />
             Fluxo guiado
           </Link>
           <Link
-            to="/nova/blueprint"
+            to="/nova/avaliacao"
             className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
           >
             <FilePlus2 className="h-4 w-4" />
@@ -136,14 +136,14 @@ function Dashboard() {
           actions={
             <>
               <Link
-                to="/nova/blueprint"
+                to="/nova/avaliacao"
                 className="inline-flex items-center justify-between rounded-md border border-primary bg-primary px-4 py-3 text-sm font-medium text-primary-foreground hover:bg-primary/90"
               >
                 Criar primeira simulacao
                 <FilePlus2 className="h-4 w-4" />
               </Link>
               <Link
-                to="/nova/objetivo"
+                to="/nova/avaliacao"
                 className="inline-flex items-center justify-between rounded-md border border-border bg-card px-4 py-3 text-sm hover:bg-accent"
               >
                 Abrir fluxo de cadastro
@@ -236,7 +236,8 @@ function Dashboard() {
                       <td className="px-4 py-3">
                         <div className="font-medium text-foreground">{simulation.name}</div>
                         <div className="text-xs text-muted-foreground">
-                          {simulation.description} - atualizada {formatDateTime(simulation.updatedAt)}
+                          {simulation.description} - atualizada{" "}
+                          {formatDateTime(simulation.updatedAt)}
                         </div>
                         <div className="mt-1 flex flex-wrap gap-1">
                           {simulation.competencies.map((competency) => (
@@ -286,7 +287,7 @@ function Dashboard() {
                       </td>
                       <td className="px-4 py-3 text-right">
                         <Link
-                          to="/nova/validador"
+                          to="/nova/revisao"
                           search={simulationSearch(simulation)}
                           className="text-xs font-medium text-primary hover:underline"
                         >

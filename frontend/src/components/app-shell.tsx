@@ -10,19 +10,19 @@ import {
   UserRound,
 } from "lucide-react";
 import { GlobalErrorFlow, GlobalProductStateBar, StateBanner } from "@/components/praxis-ui";
-import { getSession } from "@/lib/session";
+import { useSession } from "@/lib/session";
 import { gupyConnectionLabels, useGupyConnectionState, useViewMode } from "@/lib/view-mode";
 import { cn } from "@/lib/utils";
 
 const nav = [
   { to: "/", label: "Painel", icon: Home },
-  { to: "/nova/blueprint", label: "Nova simulacao", icon: ClipboardCheck },
+  { to: "/nova/avaliacao", label: "Nova simulação", icon: ClipboardCheck },
   { to: "/monitoramento", label: "Monitoramento", icon: BarChart3 },
   { to: "/candidato", label: "Visão do candidato", icon: MessageSquare },
 ] as const;
 
 const secondary = [
-  { to: "/governanca", label: "Governanca & Auditoria", icon: ShieldCheck },
+  { to: "/governanca", label: "Governança & Auditoria", icon: ShieldCheck },
   { to: "/lgpd", label: "LGPD & Explicabilidade", icon: UserRound },
   { to: "/defensabilidade", label: "Defensabilidade", icon: Scale },
 ] as const;
@@ -30,20 +30,23 @@ const secondary = [
 export function AppShell({ children }: { children: ReactNode }) {
   const pathname = useRouterState({ select: (state) => state.location.pathname });
   const mode = useViewMode();
-  const session = getSession();
+  const session = useSession();
   const gupyState = useGupyConnectionState(pathname);
   const hasGlobalError = gupyState === "error";
   const modeHref = mode === "technical" ? pathname : `${pathname}?mode=technical`;
+  const modeLabel = mode === "technical" ? "Ver modo comercial" : "Ver modo técnico";
   const productState =
-    pathname === "/nova/gupy"
+    pathname === "/nova/gupy" || pathname === "/nova/publicacao"
       ? {
           gupy: gupyState,
           draft: "published" as const,
           publication: hasGlobalError ? ("blocked" as const) : ("running" as const),
         }
-      : pathname === "/nova/validador"
+      : pathname === "/nova/validador" || pathname === "/nova/revisao"
         ? { gupy: gupyState, draft: "dirty" as const, publication: "blocked" as const }
-        : pathname === "/nova/piloto" || pathname.startsWith("/nova/mapa")
+        : pathname === "/nova/piloto" ||
+            pathname === "/nova/publicacao" ||
+            pathname.startsWith("/nova/mapa")
           ? {
               gupy: gupyState,
               draft: "published" as const,
@@ -55,23 +58,23 @@ export function AppShell({ children }: { children: ReactNode }) {
     <div className="flex min-h-screen bg-background text-foreground">
       <aside className="hidden w-72 shrink-0 flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground lg:flex">
         <div className="border-b border-sidebar-border px-6 py-5">
-          <div className="flex items-center gap-2 text-xs uppercase text-sidebar-foreground/60">
+          <div className="flex items-center gap-2 text-xs uppercase text-sidebar-foreground/80">
             <span className="inline-block h-1.5 w-1.5 rounded-full bg-primary" />
             Motor SJT
           </div>
           <div className="mt-2 font-display text-2xl leading-tight">
             Avaliação
             <br />
-            <span className="text-sidebar-foreground/70">Situacional</span>
+            <span className="text-sidebar-foreground/85">Situacional</span>
           </div>
-          <div className="mt-3 text-[11px] uppercase text-sidebar-foreground/50">
+          <div className="mt-3 text-[11px] uppercase text-sidebar-foreground/80">
             Integração Gupy - v0.1
           </div>
         </div>
 
         <nav className="flex-1 overflow-y-auto px-3 py-4">
-          <div className="px-3 pb-2 text-[10px] font-semibold uppercase text-sidebar-foreground/40">
-            Operacao
+          <div className="px-3 pb-2 text-[10px] font-semibold uppercase text-sidebar-foreground/75">
+            Operação
           </div>
           {nav.map((item) => {
             const active =
@@ -86,17 +89,17 @@ export function AppShell({ children }: { children: ReactNode }) {
                   "mb-1 flex items-center gap-3 rounded-md px-3 py-2 text-sm transition",
                   active
                     ? "bg-sidebar-accent text-sidebar-accent-foreground"
-                    : "text-sidebar-foreground/75 hover:bg-sidebar-accent/60 hover:text-sidebar-foreground",
+                    : "text-sidebar-foreground/85 hover:bg-sidebar-accent/60 hover:text-sidebar-foreground",
                 )}
               >
-                <item.icon className="h-4 w-4 text-sidebar-foreground/60" />
+                <item.icon className="h-4 w-4 text-sidebar-foreground/80" />
                 {item.label}
                 {active && <span className="ml-auto h-1.5 w-1.5 rounded-full bg-primary" />}
               </Link>
             );
           })}
 
-          <div className="mt-6 px-3 pb-2 text-[10px] font-semibold uppercase text-sidebar-foreground/40">
+          <div className="mt-6 px-3 pb-2 text-[10px] font-semibold uppercase text-sidebar-foreground/75">
             Conformidade
           </div>
           {secondary.map((item) => {
@@ -109,10 +112,10 @@ export function AppShell({ children }: { children: ReactNode }) {
                   "mb-1 flex items-center gap-3 rounded-md px-3 py-2 text-sm transition",
                   active
                     ? "bg-sidebar-accent text-sidebar-accent-foreground"
-                    : "text-sidebar-foreground/65 hover:bg-sidebar-accent/60 hover:text-sidebar-foreground",
+                    : "text-sidebar-foreground/85 hover:bg-sidebar-accent/60 hover:text-sidebar-foreground",
                 )}
               >
-                <item.icon className="h-4 w-4 text-sidebar-foreground/55" />
+                <item.icon className="h-4 w-4 text-sidebar-foreground/80" />
                 {item.label}
               </Link>
             );
@@ -121,8 +124,8 @@ export function AppShell({ children }: { children: ReactNode }) {
 
         <div className="border-t border-sidebar-border p-4">
           <div className="rounded-md border border-sidebar-border/60 bg-sidebar-accent/40 p-3 text-xs text-sidebar-foreground/80">
-            <div className="font-medium text-sidebar-foreground">100% deterministico</div>
-            <p className="mt-1 text-sidebar-foreground/60">
+            <div className="font-medium text-sidebar-foreground">100% determinístico</div>
+            <p className="mt-1 text-sidebar-foreground/80">
               Sem IA julgando candidato. Score sai de rubrica, peso e cálculo.
             </p>
           </div>
@@ -132,7 +135,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             </div>
             <div className="text-xs">
               <div className="font-medium text-sidebar-foreground">{session.userName}</div>
-              <div className="text-sidebar-foreground/55">{session.userRole}</div>
+              <div className="text-sidebar-foreground/80">{session.userRole}</div>
             </div>
           </div>
         </div>
@@ -152,7 +155,7 @@ export function AppShell({ children }: { children: ReactNode }) {
               href={modeHref}
               className="rounded-md border border-border bg-card px-2.5 py-1 text-muted-foreground hover:bg-accent"
             >
-              {mode === "technical" ? "Modo técnico" : "Modo comercial"}
+              {modeLabel}
             </a>
             <button className="rounded-md border border-border bg-card px-3 py-1.5 text-foreground hover:bg-accent">
               Buscar

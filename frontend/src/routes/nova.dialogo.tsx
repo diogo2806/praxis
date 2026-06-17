@@ -3,7 +3,13 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { GitBranch, Plus, Save, Trash2 } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
-import { EmptyState, NextStepContract, ScreenStateStrip, StateBanner, StatusBadge } from "@/components/praxis-ui";
+import {
+  EmptyState,
+  NextStepContract,
+  ScreenStateStrip,
+  StateBanner,
+  StatusBadge,
+} from "@/components/praxis-ui";
 import { WizardStepper } from "@/components/wizard-stepper";
 import {
   createSimulationNode,
@@ -60,7 +66,21 @@ function DialogEditor() {
   });
   const nodes = versionQuery.data?.nodes ?? [];
   const selected = nodes.find((node) => node.id === selectedId) ?? nodes[0];
-  const competencies = versionQuery.data?.blueprint.competencies ?? [];
+  const competencies = useMemo(
+    () => versionQuery.data?.blueprint.competencies ?? [],
+    [versionQuery.data?.blueprint.competencies],
+  );
+  const canReview =
+    nodes.length > 0 &&
+    nodes.every(
+      (node) =>
+        node.options.length >= 2 &&
+        node.options.length <= 4 &&
+        node.options.every(
+          (option) =>
+            option.text.trim().length > 0 && Object.keys(option.competencyLevels).length > 0,
+        ),
+    );
   const competencyLevels = useMemo(
     () => Object.fromEntries(competencies.map((competency) => [competency.name, 50])),
     [competencies],
@@ -92,7 +112,8 @@ function DialogEditor() {
     onSuccess: invalidateVersion,
   });
   const deleteNodeMutation = useMutation({
-    mutationFn: (nodeId: string) => deleteSimulationNode(search.simulationId!, search.versionNumber!, nodeId),
+    mutationFn: (nodeId: string) =>
+      deleteSimulationNode(search.simulationId!, search.versionNumber!, nodeId),
     onSuccess: async () => {
       setSelectedId(null);
       await invalidateVersion();
@@ -143,7 +164,7 @@ function DialogEditor() {
 
   return (
     <AppShell>
-      <WizardStepper current="dialogo" />
+      <WizardStepper current="cenario" unlockedThrough={canReview ? "revisao" : "cenario"} />
       <ScreenStateStrip blockedReason="grafo precisa existir no backend e passar pelo validador" />
       <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
         <div>
@@ -161,7 +182,10 @@ function DialogEditor() {
           title="Selecione uma versao para editar"
           description="O editor nao possui grafo local de exemplo."
           actions={
-            <SimulationLinks loading={simulationsQuery.isLoading} simulations={simulationsQuery.data ?? []} />
+            <SimulationLinks
+              loading={simulationsQuery.isLoading}
+              simulations={simulationsQuery.data ?? []}
+            />
           }
         />
       ) : versionQuery.isLoading ? (
@@ -202,8 +226,14 @@ function DialogEditor() {
                 ))}
               </div>
               <label className="mt-4 block">
-                <span className="mb-1 block text-xs text-muted-foreground">Nova fala do cliente</span>
-                <textarea className="input min-h-20" value={draftMessage} onChange={(event) => setDraftMessage(event.target.value)} />
+                <span className="mb-1 block text-xs text-muted-foreground">
+                  Nova fala do cliente
+                </span>
+                <textarea
+                  className="input min-h-20"
+                  value={draftMessage}
+                  onChange={(event) => setDraftMessage(event.target.value)}
+                />
               </label>
               <button
                 type="button"
@@ -226,7 +256,10 @@ function DialogEditor() {
                   <button
                     type="button"
                     onClick={() => deleteNodeMutation.mutate(selected.id)}
-                    disabled={selected.id === versionQuery.data?.blueprint.rootNodeId || deleteNodeMutation.isPending}
+                    disabled={
+                      selected.id === versionQuery.data?.blueprint.rootNodeId ||
+                      deleteNodeMutation.isPending
+                    }
                     className="inline-flex items-center gap-2 rounded-md border border-danger/25 bg-danger/5 px-3 py-2 text-xs text-danger hover:bg-danger/10 disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     <Trash2 className="h-4 w-4" />
@@ -234,7 +267,9 @@ function DialogEditor() {
                   </button>
                 </div>
                 <label className="block">
-                  <span className="mb-1.5 block text-xs font-medium text-muted-foreground">Mensagem do cliente</span>
+                  <span className="mb-1.5 block text-xs font-medium text-muted-foreground">
+                    Mensagem do cliente
+                  </span>
                   <textarea
                     key={`${selected.id}-message`}
                     className="input min-h-24"
@@ -245,7 +280,9 @@ function DialogEditor() {
                   />
                 </label>
                 <label className="mt-3 block max-w-40">
-                  <span className="mb-1.5 block text-xs font-medium text-muted-foreground">Tempo</span>
+                  <span className="mb-1.5 block text-xs font-medium text-muted-foreground">
+                    Tempo
+                  </span>
                   <select
                     key={`${selected.id}-time`}
                     className="input"
@@ -267,11 +304,16 @@ function DialogEditor() {
                 </label>
                 <div className="mt-5 flex items-center justify-between">
                   <div className="text-sm font-semibold">Alternativas</div>
-                  <span className="text-xs text-muted-foreground">{selected.options.length} registradas</span>
+                  <span className="text-xs text-muted-foreground">
+                    {selected.options.length} registradas
+                  </span>
                 </div>
                 <div className="mt-3 space-y-3">
                   {selected.options.map((option) => (
-                    <div key={option.id} className="rounded-md border border-border bg-background p-3">
+                    <div
+                      key={option.id}
+                      className="rounded-md border border-border bg-background p-3"
+                    >
                       <div className="grid gap-3 md:grid-cols-[20px_1fr_160px_auto]">
                         <GitBranch className="mt-2 h-4 w-4 text-muted-foreground" />
                         <input
@@ -309,7 +351,12 @@ function DialogEditor() {
                         </select>
                         <button
                           type="button"
-                          onClick={() => deleteOptionMutation.mutate({ nodeId: selected.id, optionId: option.id })}
+                          onClick={() =>
+                            deleteOptionMutation.mutate({
+                              nodeId: selected.id,
+                              optionId: option.id,
+                            })
+                          }
                           className="rounded-md border border-danger/25 bg-danger/5 p-2 text-danger hover:bg-danger/10"
                           aria-label="Remover alternativa"
                         >
@@ -318,7 +365,10 @@ function DialogEditor() {
                       </div>
                       <div className="mt-3 flex flex-wrap items-center gap-2 text-[11px] text-muted-foreground">
                         {Object.entries(option.competencyLevels).map(([name, value]) => (
-                          <label key={name} className="inline-flex items-center gap-1 rounded border border-border px-2 py-1">
+                          <label
+                            key={name}
+                            className="inline-flex items-center gap-1 rounded border border-border px-2 py-1"
+                          >
                             {name}
                             <input
                               className="w-12 rounded border border-border bg-card px-1 py-0.5"
@@ -358,11 +408,20 @@ function DialogEditor() {
                   ))}
                 </div>
                 <div className="mt-4 grid gap-2 md:grid-cols-[1fr_auto]">
-                  <input className="input" value={draftOption} onChange={(event) => setDraftOption(event.target.value)} placeholder="Texto da nova alternativa" />
+                  <input
+                    className="input"
+                    value={draftOption}
+                    onChange={(event) => setDraftOption(event.target.value)}
+                    placeholder="Texto da nova alternativa"
+                  />
                   <button
                     type="button"
                     onClick={() => addOptionMutation.mutate()}
-                    disabled={!draftOption.trim() || competencies.length === 0 || addOptionMutation.isPending}
+                    disabled={
+                      !draftOption.trim() ||
+                      competencies.length === 0 ||
+                      addOptionMutation.isPending
+                    }
                     className="inline-flex items-center justify-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     <Save className="h-4 w-4" />
@@ -371,7 +430,10 @@ function DialogEditor() {
                 </div>
               </section>
             ) : (
-              <EmptyState title="Nenhum no encontrado" description="Crie o primeiro no para iniciar o grafo persistido." />
+              <EmptyState
+                title="Nenhum no encontrado"
+                description="Crie o primeiro no para iniciar o grafo persistido."
+              />
             )}
           </div>
           <div className="mt-8 flex justify-between">
@@ -382,13 +444,24 @@ function DialogEditor() {
             >
               Voltar
             </Link>
-            <Link
-              to="/nova/validador"
-              search={{ simulationId: search.simulationId, versionNumber: search.versionNumber }}
-              className="rounded-md bg-primary px-5 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
-            >
-              Validar qualidade
-            </Link>
+            {canReview ? (
+              <Link
+                to="/nova/revisao"
+                search={{ simulationId: search.simulationId, versionNumber: search.versionNumber }}
+                className="rounded-md bg-primary px-5 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
+              >
+                Validar qualidade
+              </Link>
+            ) : (
+              <button
+                type="button"
+                disabled
+                title="Cada nó precisa ter de 2 a 4 alternativas com rubrica antes da revisão"
+                className="cursor-not-allowed rounded-md bg-primary px-5 py-2 text-sm font-medium text-primary-foreground opacity-50"
+              >
+                Validar qualidade
+              </button>
+            )}
           </div>
         </>
       )}

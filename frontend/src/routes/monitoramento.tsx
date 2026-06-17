@@ -34,7 +34,10 @@ export const Route = createFileRoute("/monitoramento")({
 
 const deliveryMeta: Record<ResultDeliveryStatus, { label: string; className: string }> = {
   pending: { label: "Pendente", className: "border-border bg-muted text-muted-foreground" },
-  retrying: { label: "Retry", className: "border-warning/40 bg-warning/15 text-warning-foreground" },
+  retrying: {
+    label: "Retry",
+    className: "border-warning/40 bg-warning/15 text-warning-foreground",
+  },
   sent: { label: "Enviado", className: "border-success/30 bg-success/10 text-success" },
   dlq: { label: "DLQ", className: "border-danger/30 bg-danger/10 text-danger" },
 };
@@ -94,8 +97,9 @@ function MonitoringPage() {
   const cohorts = buildLiveCohorts(monitoring);
   const hasData = monitoringQuery.isLoading || Boolean(monitoring);
   const riskyDeliveries =
-    deliveriesQuery.data?.filter((delivery) => delivery.status === "retrying" || delivery.status === "dlq") ??
-    [];
+    deliveriesQuery.data?.filter(
+      (delivery) => delivery.status === "retrying" || delivery.status === "dlq",
+    ) ?? [];
   const sentDeliveries = monitoring?.deliveriesSent ?? 0;
   const failedDeliveries = monitoring?.deliveriesDeadLetter ?? 0;
 
@@ -244,7 +248,11 @@ function DeliveryList({
   error: boolean;
 }) {
   if (loading) {
-    return <div className="rounded-md border border-border bg-background p-4 text-sm">Carregando entregas...</div>;
+    return (
+      <div className="rounded-md border border-border bg-background p-4 text-sm">
+        Carregando entregas...
+      </div>
+    );
   }
 
   if (error) {
@@ -314,13 +322,17 @@ function SimulationLinks({
   loading: boolean;
 }) {
   if (loading) {
-    return <div className="rounded-md border border-border bg-card px-4 py-3 text-sm">Carregando simulacoes...</div>;
+    return (
+      <div className="rounded-md border border-border bg-card px-4 py-3 text-sm">
+        Carregando simulacoes...
+      </div>
+    );
   }
 
   if (simulations.length === 0) {
     return (
       <Link
-        to="/nova/blueprint"
+        to="/nova/avaliacao"
         className="rounded-md border border-border bg-card px-4 py-3 text-sm hover:bg-accent"
       >
         Criar simulacao
@@ -342,7 +354,10 @@ function SimulationLinks({
         >
           <span className="block font-medium">{simulation.name}</span>
           <span className="mt-1 block">
-            <StatusBadge status={simulation.status} maturity={maturityForStatus(simulation.status)} />
+            <StatusBadge
+              status={simulation.status}
+              maturity={maturityForStatus(simulation.status)}
+            />
           </span>
         </Link>
       ))}

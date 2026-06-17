@@ -1,10 +1,10 @@
 import { useMutation } from "@tanstack/react-query";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { AppShell } from "@/components/app-shell";
 import { ScreenStateStrip, StateBanner } from "@/components/praxis-ui";
 import { WizardStepper } from "@/components/wizard-stepper";
-import { createSimulationDraft } from "@/lib/api/praxis";
+import { createSimulationDraft, type TenantConfigOption } from "@/lib/api/praxis";
 import { useTenantConfig } from "@/lib/tenant-config";
 
 export const Route = createFileRoute("/nova/blueprint")({
@@ -27,26 +27,66 @@ function Page() {
   const competencies = config.competencies;
   const seniorityLevels = config.seniorityLevels;
   const resultUses = config.resultUses;
+  const defaultSeniority = getDefaultOption(seniorityLevels)?.value ?? "";
+  const defaultResultUse = getDefaultOption(resultUses)?.value ?? "";
   const [role, setRole] = useState("");
+  const [selectedSeniority, setSelectedSeniority] = useState(defaultSeniority);
   const [criticalSituation, setCriticalSituation] = useState("");
+  const [highPerformance, setHighPerformance] = useState("");
   const [criticalError, setCriticalError] = useState("");
+  const [seniorityExpectations, setSeniorityExpectations] = useState<Record<string, string>>({});
+  const [selectedResultUse, setSelectedResultUse] = useState(defaultResultUse);
   const [selectedCompetencies, setSelectedCompetencies] = useState<string[]>([]);
+  const missingFields = [
+    role.trim().length === 0 && "cargo-alvo",
+    criticalSituation.trim().length === 0 && "situação crítica",
+    criticalError.trim().length === 0 && "erros críticos",
+    selectedCompetencies.length === 0 && "ao menos uma competência",
+  ].filter((field): field is string => Boolean(field));
   const canGoNext =
     role.trim().length > 0 &&
     criticalSituation.trim().length > 0 &&
     criticalError.trim().length > 0 &&
     selectedCompetencies.length > 0;
+
+  useEffect(() => {
+    if (!selectedSeniority || !seniorityLevels.some((level) => level.value === selectedSeniority)) {
+      setSelectedSeniority(getDefaultOption(seniorityLevels)?.value ?? "");
+    }
+  }, [selectedSeniority, seniorityLevels]);
+
+  useEffect(() => {
+    if (!selectedResultUse || !resultUses.some((use) => use.value === selectedResultUse)) {
+      setSelectedResultUse(getDefaultOption(resultUses)?.value ?? "");
+    }
+  }, [selectedResultUse, resultUses]);
+
   const createDraftMutation = useMutation({
     mutationFn: () =>
       createSimulationDraft({
         name: role.trim(),
-        description: `${criticalSituation.trim()}\n\nErro critico: ${criticalError.trim()}`,
+        description: buildBlueprintDescription({
+          role,
+          seniority: selectedSeniority,
+          criticalSituation,
+          competencies: selectedCompetencies,
+          highPerformance,
+          criticalError,
+          seniorityExpectations,
+          resultUse: selectedResultUse,
+        }),
         rootNodeId: "turno-1",
         competencies: selectedCompetencies,
+        seniority: selectedSeniority,
+        criticalSituation: criticalSituation.trim(),
+        highPerformance: highPerformance.trim(),
+        criticalError: criticalError.trim(),
+        seniorityExpectations: trimRecordValues(seniorityExpectations),
+        resultUse: selectedResultUse,
       }),
     onSuccess: (simulation) => {
       void navigate({
-        to: "/nova/objetivo",
+        to: "/nova/cenario",
         search: {
           simulationId: simulation.id,
           versionNumber: simulation.versionNumber,
@@ -65,15 +105,15 @@ function Page() {
 
   return (
     <AppShell>
-      <WizardStepper current="blueprint" />
+      <WizardStepper current="avaliacao" unlockedThrough={canGoNext ? "cenario" : "avaliacao"} />
       <ScreenStateStrip blockedReason="cargo, situação crítica e erro crítico obrigatórios" />
 
       {createDraftMutation.isError && (
         <div className="mb-5">
-          <StateBanner tone="danger" title="Nao foi possivel criar o rascunho">
+          <StateBanner tone="danger" title="Não foi possível criar o rascunho">
             {createDraftMutation.error instanceof Error
               ? createDraftMutation.error.message
-              : "Tente novamente quando a API estiver disponivel."}
+              : "Tente novamente quando a API estiver disponível."}
           </StateBanner>
         </div>
       )}
@@ -81,7 +121,7 @@ function Page() {
       <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
         <div className="space-y-6">
           <Header
-            kicker="Passo 0"
+            kicker="Passo 1"
             title="Blueprint da avaliação"
             lede="Antes de escrever qualquer diálogo, defina o porquê. O blueprint vira referência fixa para o Validador de Qualidade."
           />
@@ -102,15 +142,16 @@ function Page() {
                     <label
                       key={level.value}
                       className={`flex flex-1 cursor-pointer items-center justify-center gap-2 rounded-md border px-3 py-2 text-sm ${
-                        level.selectedByDefault
-                          ? "border-primary bg-primary/5 text-primary"
+                        selectedSeniority === level.value
+                          ? "border-primary bg-primary/5 text-foreground"
                           : "border-border bg-card hover:bg-accent"
                       }`}
                     >
                       <input
                         type="radio"
                         name="sen"
-                        defaultChecked={level.selectedByDefault}
+                        checked={selectedSeniority === level.value}
+                        onChange={() => setSelectedSeniority(level.value)}
                         className="sr-only"
                       />
                       {level.label}
@@ -123,6 +164,7 @@ function Page() {
 
           <Card title="Situação crítica do cargo">
             <textarea
+              aria-label="Situação crítica do cargo"
               className="input min-h-24"
               value={criticalSituation}
               onChange={(event) => setCriticalSituation(event.target.value)}
@@ -137,7 +179,7 @@ function Page() {
                   key={competency.value}
                   className={`cursor-pointer rounded-full border px-3 py-1.5 text-sm ${
                     selectedCompetencies.includes(competency.value)
-                      ? "border-primary bg-primary/10 text-primary"
+                      ? "border-primary bg-primary/10 text-foreground"
                       : "border-border bg-card text-foreground/75 hover:bg-accent"
                   }`}
                 >
@@ -157,12 +199,16 @@ function Page() {
           <div className="grid gap-6 md:grid-cols-2">
             <Card title="Alta performance faria" tone="ok">
               <textarea
+                aria-label="Alta performance faria"
                 className="input min-h-24"
                 placeholder="Descreva o comportamento esperado para alta performance."
+                value={highPerformance}
+                onChange={(event) => setHighPerformance(event.target.value)}
               />
             </Card>
             <Card title="Erros críticos" tone="danger">
               <textarea
+                aria-label="Erros críticos"
                 className="input min-h-24"
                 value={criticalError}
                 onChange={(event) => setCriticalError(event.target.value)}
@@ -178,6 +224,13 @@ function Page() {
                   <textarea
                     className="input min-h-20"
                     placeholder={`Comportamento esperado para ${level.label.toLowerCase()}.`}
+                    value={seniorityExpectations[level.value] ?? ""}
+                    onChange={(event) =>
+                      setSeniorityExpectations((current) => ({
+                        ...current,
+                        [level.value]: event.target.value,
+                      }))
+                    }
                   />
                 </Field>
               ))}
@@ -190,8 +243,8 @@ function Page() {
                 <label
                   key={use.value}
                   className={`flex cursor-pointer items-center gap-2 rounded-md border px-3 py-2 text-sm ${
-                    use.selectedByDefault
-                      ? "border-primary bg-primary/5 text-primary"
+                    selectedResultUse === use.value
+                      ? "border-primary bg-primary/5 text-foreground"
                       : use.locked
                         ? "border-dashed border-border bg-muted/40 text-muted-foreground"
                         : "border-border bg-card hover:bg-accent"
@@ -200,7 +253,8 @@ function Page() {
                   <input
                     type="radio"
                     name="uso"
-                    defaultChecked={use.selectedByDefault}
+                    checked={selectedResultUse === use.value}
+                    onChange={() => setSelectedResultUse(use.value)}
                     disabled={use.locked}
                     className="sr-only"
                   />
@@ -214,28 +268,35 @@ function Page() {
             </Help>
           </Card>
 
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <Link
               to="/"
               className="rounded-md border border-border bg-card px-4 py-2 text-sm hover:bg-accent"
             >
               Cancelar
             </Link>
-            <button
-              type="button"
-              disabled={!canGoNext || createDraftMutation.isPending}
-              title={
-                canGoNext
-                  ? "Criar rascunho e avancar"
-                  : "Preencha cargo, situacao critica, erro critico e competencias para avancar"
-              }
-              onClick={() => createDraftMutation.mutate()}
-              className={`rounded-md bg-primary px-5 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 ${
-                !canGoNext || createDraftMutation.isPending ? "cursor-not-allowed opacity-50" : ""
-              }`}
-            >
-              {createDraftMutation.isPending ? "Criando rascunho..." : "Proximo: Objetivo"}
-            </button>
+            <div className="flex flex-col items-start gap-2 sm:items-end">
+              {!canGoNext && (
+                <p className="text-xs text-muted-foreground" aria-live="polite">
+                  Para avançar, preencha {missingFields.join(", ")}.
+                </p>
+              )}
+              <button
+                type="button"
+                disabled={!canGoNext || createDraftMutation.isPending}
+                title={
+                  canGoNext
+                    ? "Criar rascunho e avançar"
+                    : "Preencha cargo, situação crítica, erro crítico e competências para avançar"
+                }
+                onClick={() => createDraftMutation.mutate()}
+                className={`rounded-md bg-primary px-5 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 ${
+                  !canGoNext || createDraftMutation.isPending ? "cursor-not-allowed opacity-50" : ""
+                }`}
+              >
+                {createDraftMutation.isPending ? "Criando rascunho..." : "Próximo: Cenário"}
+              </button>
+            </div>
           </div>
         </div>
 
@@ -264,10 +325,65 @@ function Page() {
   );
 }
 
+function getDefaultOption(options: TenantConfigOption[]) {
+  return (
+    options.find((option) => option.selectedByDefault && !option.locked) ??
+    options.find((option) => !option.locked) ??
+    options[0]
+  );
+}
+
+function buildBlueprintDescription({
+  role,
+  seniority,
+  criticalSituation,
+  competencies,
+  highPerformance,
+  criticalError,
+  seniorityExpectations,
+  resultUse,
+}: {
+  role: string;
+  seniority: string;
+  criticalSituation: string;
+  competencies: string[];
+  highPerformance: string;
+  criticalError: string;
+  seniorityExpectations: Record<string, string>;
+  resultUse: string;
+}) {
+  const seniorityLines = Object.entries(seniorityExpectations)
+    .map(([level, expected]) => [level.trim(), expected.trim()] as const)
+    .filter(([, expected]) => expected.length > 0)
+    .map(([level, expected]) => `${level}: ${expected}`);
+
+  const lines = [
+    `Cargo: ${role.trim()}`,
+    seniority.trim() && `Senioridade: ${seniority.trim()}`,
+    `Situação crítica: ${criticalSituation.trim()}`,
+    competencies.length > 0 && `Competências: ${competencies.join(", ")}`,
+    `Erro crítico: ${criticalError.trim()}`,
+    highPerformance.trim() && `Alta performance faria: ${highPerformance.trim()}`,
+    seniorityLines.length > 0 && `Diferença por senioridade: ${seniorityLines.join(" | ")}`,
+    resultUse.trim() && `Uso do resultado: ${resultUse.trim()}`,
+  ].filter((line): line is string => Boolean(line));
+
+  const description = lines.join("\n");
+  return description.length > 1000 ? `${description.slice(0, 997).trimEnd()}...` : description;
+}
+
+function trimRecordValues(values: Record<string, string>) {
+  return Object.fromEntries(
+    Object.entries(values)
+      .map(([key, value]) => [key, value.trim()] as const)
+      .filter(([, value]) => value.length > 0),
+  );
+}
+
 function Header({ kicker, title, lede }: { kicker: string; title: string; lede: string }) {
   return (
     <div>
-      <div className="text-xs uppercase tracking-[0.2em] text-primary">{kicker}</div>
+      <div className="text-xs uppercase tracking-[0.2em] text-foreground">{kicker}</div>
       <h1 className="mt-1 font-display text-3xl">{title}</h1>
       <p className="mt-2 max-w-2xl text-sm text-muted-foreground">{lede}</p>
     </div>
@@ -293,7 +409,7 @@ function Card({
     <section
       className={`relative overflow-hidden rounded-xl border border-border bg-card p-5 before:absolute before:left-0 before:top-0 before:h-full before:w-1 ${accent}`}
     >
-      <h3 className="mb-3 text-sm font-semibold text-foreground">{title}</h3>
+      <h2 className="mb-3 text-sm font-semibold text-foreground">{title}</h2>
       {children}
     </section>
   );

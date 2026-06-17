@@ -1,9 +1,18 @@
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { AppShell } from "@/components/app-shell";
-import { EmptyState, NextStepContract, ScreenStateStrip, StateBanner } from "@/components/praxis-ui";
+import {
+  EmptyState,
+  NextStepContract,
+  ScreenStateStrip,
+  StateBanner,
+} from "@/components/praxis-ui";
 import { WizardStepper } from "@/components/wizard-stepper";
-import { getSimulationMonitoring, listSimulations, type SimulationSummaryResponse } from "@/lib/api/praxis";
+import {
+  getSimulationMonitoring,
+  listSimulations,
+  type SimulationSummaryResponse,
+} from "@/lib/api/praxis";
 
 export const Route = createFileRoute("/nova/piloto")({
   validateSearch: (search: Record<string, unknown>) => ({
@@ -41,7 +50,7 @@ function Page() {
 
   return (
     <AppShell>
-      <WizardStepper current="piloto" />
+      <WizardStepper current="publicacao" />
       <ScreenStateStrip blockedReason="acompanhe tentativas reais antes de avancar" />
       <div className="mb-6">
         <div className="text-xs uppercase tracking-[0.2em] text-primary">Passo 4</div>
@@ -55,7 +64,12 @@ function Page() {
         <EmptyState
           title="Selecione uma versao para acompanhar"
           description="Nao ha participantes ou checklist local nesta etapa."
-          actions={<SimulationLinks loading={simulationsQuery.isLoading} simulations={simulationsQuery.data ?? []} />}
+          actions={
+            <SimulationLinks
+              loading={simulationsQuery.isLoading}
+              simulations={simulationsQuery.data ?? []}
+            />
+          }
         />
       ) : monitoringQuery.isLoading ? (
         <StateBanner tone="info" title="Carregando piloto">
@@ -63,7 +77,9 @@ function Page() {
         </StateBanner>
       ) : monitoringQuery.isError ? (
         <StateBanner tone="danger" title="Nao foi possivel carregar o piloto">
-          {monitoringQuery.error instanceof Error ? monitoringQuery.error.message : "Verifique a API."}
+          {monitoringQuery.error instanceof Error
+            ? monitoringQuery.error.message
+            : "Verifique a API."}
         </StateBanner>
       ) : monitoring ? (
         <>
@@ -75,7 +91,10 @@ function Page() {
           />
           <div className="mt-5 grid gap-4 md:grid-cols-4">
             <Metric label="Criadas" value={monitoring.attemptsCreated} />
-            <Metric label="Em andamento" value={monitoring.attemptsInProgress + monitoring.attemptsPaused} />
+            <Metric
+              label="Em andamento"
+              value={monitoring.attemptsInProgress + monitoring.attemptsPaused}
+            />
             <Metric label="Concluidas" value={monitoring.attemptsCompleted} />
             <Metric label="Conclusao" value={`${monitoring.completionRatePercent.toFixed(1)}%`} />
           </div>

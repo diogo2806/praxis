@@ -28,7 +28,7 @@ export function getGupyConnectionState(pathname = ""): GupyConnectionState {
       return forced;
     }
   }
-  return pathname === "/nova/gupy" ? "connecting" : "connected";
+  return pathname === "/nova/gupy" || pathname === "/nova/publicacao" ? "connecting" : "connected";
 }
 
 export function useViewMode() {
@@ -41,7 +41,7 @@ export function useViewMode() {
 
 export function useGupyConnectionState(pathname = "") {
   const [state, setState] = useState<GupyConnectionState>(
-    pathname === "/nova/gupy" ? "connecting" : "connected",
+    pathname === "/nova/gupy" || pathname === "/nova/publicacao" ? "connecting" : "connected",
   );
   useEffect(() => {
     setState(getGupyConnectionState(pathname));

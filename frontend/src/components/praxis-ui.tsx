@@ -22,11 +22,11 @@ import { statusMeta, type Maturity } from "@/lib/simulation-meta";
 import { gupyConnectionLabels, type GupyConnectionState, useViewMode } from "@/lib/view-mode";
 
 const toneClass = {
-  ok: "border-success/25 bg-success/10 text-success",
+  ok: "border-success/25 bg-success/10 text-foreground",
   warn: "border-warning/35 bg-warning/15 text-warning-foreground",
-  info: "border-primary/25 bg-primary/10 text-primary",
-  danger: "border-danger/25 bg-danger/10 text-danger",
-  muted: "border-border bg-muted text-muted-foreground",
+  info: "border-primary/25 bg-primary/10 text-foreground",
+  danger: "border-danger/25 bg-danger/10 text-foreground",
+  muted: "border-border bg-muted text-foreground",
 } as const;
 
 const maturityMeta: Record<Maturity, { label: string; tone: keyof typeof toneClass }> = {
@@ -163,9 +163,9 @@ export function GlobalProductStateBar({
     published: { label: "Versao publicada imutavel", Icon: Lock, tone: "ok" },
   } as const;
   const publicationMeta = {
-    idle: { label: "Publicacao parada", Icon: Send, tone: "muted" },
-    running: { label: "Publicacao em andamento", Icon: UploadCloud, tone: "info" },
-    blocked: { label: "Publicacao bloqueada", Icon: Lock, tone: "danger" },
+    idle: { label: "Publicação parada", Icon: Send, tone: "muted" },
+    running: { label: "Publicação em andamento", Icon: UploadCloud, tone: "info" },
+    blocked: { label: "Publicação bloqueada", Icon: Lock, tone: "danger" },
   } as const;
   const items = [
     gupyMeta[current.gupy],
@@ -212,7 +212,7 @@ const globalErrorItems = [
     tone: "warn",
   },
   {
-    title: "Publicacao",
+    title: "Publicação",
     description: "Falha nunca some: permanece no topo ate publicar, salvar rascunho ou corrigir.",
     action: "Salvar rascunho",
     Icon: UploadCloud,

@@ -66,14 +66,15 @@ function ValidatorPage() {
   const blockers = validationQuery.data?.blockerCount ?? 0;
   const warnings = validationQuery.data?.warningCount ?? 0;
   const qualityScore = validationQuery.data?.qualityScore ?? 0;
+  const canPublish = Boolean(validationQuery.data) && blockers === 0;
 
   return (
     <AppShell>
-      <WizardStepper current="validador" />
+      <WizardStepper current="revisao" unlockedThrough={canPublish ? "publicacao" : "revisao"} />
       <ScreenStateStrip blockedReason="qualquer blocker remove a acao de publicar" />
       <div className="mb-5 flex flex-wrap items-start justify-between gap-4">
         <div>
-          <div className="text-xs uppercase text-primary">Passo 3.5</div>
+          <div className="text-xs uppercase text-primary">Passo 3</div>
           <h1 className="mt-1 text-3xl font-semibold">Validador de Qualidade</h1>
           <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
             Regras deterministicas, trilha auditavel e bloqueios sem override manual.
@@ -187,7 +188,7 @@ function ValidatorPage() {
                   </button>
                 ) : (
                   <Link
-                    to="/nova/governanca"
+                    to="/nova/publicacao"
                     search={{
                       simulationId: search.simulationId!,
                       versionNumber: search.versionNumber!,
@@ -239,13 +240,17 @@ function SimulationLinks({
   loading: boolean;
 }) {
   if (loading) {
-    return <div className="rounded-md border border-border bg-card px-4 py-3 text-sm">Carregando simulacoes...</div>;
+    return (
+      <div className="rounded-md border border-border bg-card px-4 py-3 text-sm">
+        Carregando simulacoes...
+      </div>
+    );
   }
 
   if (simulations.length === 0) {
     return (
       <Link
-        to="/nova/blueprint"
+        to="/nova/avaliacao"
         className="rounded-md border border-border bg-card px-4 py-3 text-sm hover:bg-accent"
       >
         Criar simulacao
@@ -258,7 +263,7 @@ function SimulationLinks({
       {simulations.slice(0, 3).map((simulation) => (
         <Link
           key={simulation.id}
-          to="/nova/validador"
+          to="/nova/revisao"
           search={{
             simulationId: simulation.id,
             versionNumber: simulation.versionNumber,
@@ -267,7 +272,10 @@ function SimulationLinks({
         >
           <span className="block font-medium">{simulation.name}</span>
           <span className="mt-1 block">
-            <StatusBadge status={simulation.status} maturity={maturityForStatus(simulation.status)} />
+            <StatusBadge
+              status={simulation.status}
+              maturity={maturityForStatus(simulation.status)}
+            />
           </span>
         </Link>
       ))}

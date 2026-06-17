@@ -101,6 +101,12 @@ export interface CreateSimulationDraftRequest {
   description: string;
   rootNodeId: string;
   competencies: string[];
+  seniority?: string;
+  criticalSituation?: string;
+  highPerformance?: string;
+  criticalError?: string;
+  seniorityExpectations?: Record<string, string>;
+  resultUse?: string;
 }
 
 export interface UpdateBlueprintCompetencyRequest {
@@ -252,10 +258,7 @@ export interface PublishSimulationResponse {
   publishedAt: string | null;
 }
 
-export type GupyPreflightCheckCode =
-  | "publicBaseUrl"
-  | "integrationToken"
-  | "simulationValidation";
+export type GupyPreflightCheckCode = "publicBaseUrl" | "integrationToken" | "simulationValidation";
 
 export type GupyPreflightCheckStatus = "ok" | "warning" | "blocker";
 
@@ -378,10 +381,13 @@ export function getCandidateAttempt(attemptId: string) {
 }
 
 export function submitCandidateAnswer(attemptId: string, body: SubmitAnswerRequest) {
-  return request<SubmitAnswerResponse>(`/candidate/attempts/${encodeURIComponent(attemptId)}/answers`, {
-    method: "POST",
-    body: JSON.stringify(body),
-  });
+  return request<SubmitAnswerResponse>(
+    `/candidate/attempts/${encodeURIComponent(attemptId)}/answers`,
+    {
+      method: "POST",
+      body: JSON.stringify(body),
+    },
+  );
 }
 
 export function listSimulations() {
@@ -550,7 +556,11 @@ export function approveSimulationVersion(simulationId: string, versionNumber: nu
   );
 }
 
-export function rejectSimulationVersion(simulationId: string, versionNumber: number, reason: string) {
+export function rejectSimulationVersion(
+  simulationId: string,
+  versionNumber: number,
+  reason: string,
+) {
   return request<SimulationVersionStatusResponse>(
     `/api/v1/simulations/${encodeURIComponent(simulationId)}/versions/${versionNumber}/reject`,
     {

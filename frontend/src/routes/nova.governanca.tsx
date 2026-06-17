@@ -45,10 +45,14 @@ const workflowStates: Array<{ status: SimulationVersionStatus; label: string }> 
 
 type TransitionAction = "submit-review" | "approve" | "reject" | "publish";
 
-const transitionCopy: Record<TransitionAction, { title: string; description: string; cta: string }> = {
+const transitionCopy: Record<
+  TransitionAction,
+  { title: string; description: string; cta: string }
+> = {
   "submit-review": {
     title: "Enviar para revisao?",
-    description: "O backend so aceita esta transicao quando a versao esta em rascunho ou reprovada e sem blockers.",
+    description:
+      "O backend so aceita esta transicao quando a versao esta em rascunho ou reprovada e sem blockers.",
     cta: "Enviar para revisao",
   },
   approve: {
@@ -58,7 +62,8 @@ const transitionCopy: Record<TransitionAction, { title: string; description: str
   },
   reject: {
     title: "Reprovar versao?",
-    description: "Informe uma justificativa. Ela sera enviada ao backend e preservada na trilha de governanca.",
+    description:
+      "Informe uma justificativa. Ela sera enviada ao backend e preservada na trilha de governanca.",
     cta: "Reprovar",
   },
   publish: {
@@ -112,10 +117,10 @@ function Page() {
 
   return (
     <AppShell>
-      <WizardStepper current="governanca" />
+      <WizardStepper current="publicacao" />
       <ScreenStateStrip blockedReason="aguardando aprovacao de gestor ou compliance" />
       <div className="mb-6">
-        <div className="text-xs uppercase tracking-[0.2em] text-primary">Passo 7</div>
+        <div className="text-xs uppercase tracking-[0.2em] text-primary">Passo 4</div>
         <h1 className="mt-1 font-display text-3xl">Governanca de publicacao</h1>
         <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
           RH nao publica direto em vaga critica. Estados, papeis, versionamento imutavel.
@@ -162,61 +167,63 @@ function Page() {
           }
         />
       ) : (
-      <div className="rounded-xl border border-border bg-card p-5">
-        <h3 className="text-sm font-semibold">Estado atual</h3>
-        <ol className="mt-4 flex flex-wrap gap-2 text-xs">
-          {visibleStatus ? workflowStates.map((state) => {
-            const tone = stateTone(state.status, visibleStatus);
-            return (
-              <li
-                key={state.status}
-                className={cn(
-                  "rounded-full border px-3 py-1.5",
-                  tone === "done" && "border-success/30 bg-success/10 text-success",
-                  tone === "current" && "border-primary bg-primary/10 text-primary",
-                  tone === "future" && "border-border bg-card text-muted-foreground",
-                )}
-              >
-                {tone === "done" ? "ok " : tone === "current" ? "atual " : ""}
-                {state.label}
+        <div className="rounded-xl border border-border bg-card p-5">
+          <h3 className="text-sm font-semibold">Estado atual</h3>
+          <ol className="mt-4 flex flex-wrap gap-2 text-xs">
+            {visibleStatus ? (
+              workflowStates.map((state) => {
+                const tone = stateTone(state.status, visibleStatus);
+                return (
+                  <li
+                    key={state.status}
+                    className={cn(
+                      "rounded-full border px-3 py-1.5",
+                      tone === "done" && "border-success/30 bg-success/10 text-success",
+                      tone === "current" && "border-primary bg-primary/10 text-primary",
+                      tone === "future" && "border-border bg-card text-muted-foreground",
+                    )}
+                  >
+                    {tone === "done" ? "ok " : tone === "current" ? "atual " : ""}
+                    {state.label}
+                  </li>
+                );
+              })
+            ) : (
+              <li className="rounded-full border border-border bg-card px-3 py-1.5 text-muted-foreground">
+                Sem eventos suficientes para inferir estado
               </li>
-            );
-          }) : (
-            <li className="rounded-full border border-border bg-card px-3 py-1.5 text-muted-foreground">
-              Sem eventos suficientes para inferir estado
-            </li>
-          )}
-          {visibleStatus === "rejected" && (
-            <li className="rounded-full border border-danger/30 bg-danger/10 px-3 py-1.5 text-danger">
-              atual Reprovada
-            </li>
-          )}
-        </ol>
+            )}
+            {visibleStatus === "rejected" && (
+              <li className="rounded-full border border-danger/30 bg-danger/10 px-3 py-1.5 text-danger">
+                atual Reprovada
+              </li>
+            )}
+          </ol>
 
-        <div className="mt-5 grid gap-2 md:grid-cols-4">
-          <TransitionButton
-            label="Enviar para revisao"
-            disabled={!hasGovernanceParams}
-            onClick={() => setPendingAction("submit-review")}
-          />
-          <TransitionButton
-            label="Aprovar"
-            disabled={!hasGovernanceParams}
-            onClick={() => setPendingAction("approve")}
-          />
-          <TransitionButton
-            label="Reprovar"
-            disabled={!hasGovernanceParams}
-            onClick={() => setPendingAction("reject")}
-          />
-          <TransitionButton
-            label="Publicar"
-            disabled={!hasGovernanceParams}
-            primary
-            onClick={() => setPendingAction("publish")}
-          />
+          <div className="mt-5 grid gap-2 md:grid-cols-4">
+            <TransitionButton
+              label="Enviar para revisao"
+              disabled={!hasGovernanceParams}
+              onClick={() => setPendingAction("submit-review")}
+            />
+            <TransitionButton
+              label="Aprovar"
+              disabled={!hasGovernanceParams}
+              onClick={() => setPendingAction("approve")}
+            />
+            <TransitionButton
+              label="Reprovar"
+              disabled={!hasGovernanceParams}
+              onClick={() => setPendingAction("reject")}
+            />
+            <TransitionButton
+              label="Publicar"
+              disabled={!hasGovernanceParams}
+              primary
+              onClick={() => setPendingAction("publish")}
+            />
+          </div>
         </div>
-      </div>
       )}
 
       <div className="mt-6 rounded-xl border border-border bg-card p-5">
@@ -273,7 +280,10 @@ function Page() {
               <button
                 type="button"
                 onClick={() => transitionMutation.mutate(pendingAction)}
-                disabled={transitionMutation.isPending || (pendingAction === "reject" && !rejectReason.trim())}
+                disabled={
+                  transitionMutation.isPending ||
+                  (pendingAction === "reject" && !rejectReason.trim())
+                }
                 className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {transitionMutation.isPending ? "Enviando..." : transitionCopy[pendingAction].cta}
@@ -316,7 +326,11 @@ function TransitionButton({
 
 function AuditLog({ events, loading }: { events: AuditEventResponse[]; loading: boolean }) {
   if (loading) {
-    return <div className="mt-4 rounded-md border border-border bg-background p-4 text-sm">Carregando eventos...</div>;
+    return (
+      <div className="mt-4 rounded-md border border-border bg-background p-4 text-sm">
+        Carregando eventos...
+      </div>
+    );
   }
 
   if (events.length === 0) {
@@ -340,7 +354,9 @@ function AuditLog({ events, loading }: { events: AuditEventResponse[]; loading: 
               {formatEventType(event.eventType)} - {event.aggregateId}
             </div>
           </div>
-          <div className="text-xs tabular-nums text-muted-foreground">{formatDateTime(event.createdAt)}</div>
+          <div className="text-xs tabular-nums text-muted-foreground">
+            {formatDateTime(event.createdAt)}
+          </div>
         </li>
       ))}
     </ul>
@@ -355,13 +371,17 @@ function SimulationLinks({
   loading: boolean;
 }) {
   if (loading) {
-    return <div className="rounded-md border border-border bg-card px-4 py-3 text-sm">Carregando simulacoes...</div>;
+    return (
+      <div className="rounded-md border border-border bg-card px-4 py-3 text-sm">
+        Carregando simulacoes...
+      </div>
+    );
   }
 
   if (simulations.length === 0) {
     return (
       <Link
-        to="/nova/blueprint"
+        to="/nova/avaliacao"
         className="rounded-md border border-border bg-card px-4 py-3 text-sm hover:bg-accent"
       >
         Criar simulacao
@@ -374,7 +394,7 @@ function SimulationLinks({
       {simulations.slice(0, 3).map((simulation) => (
         <Link
           key={simulation.id}
-          to="/nova/governanca"
+          to="/nova/publicacao"
           search={{
             simulationId: simulation.id,
             versionNumber: simulation.versionNumber,
@@ -383,7 +403,10 @@ function SimulationLinks({
         >
           <span className="block font-medium">{simulation.name}</span>
           <span className="mt-1 block">
-            <StatusBadge status={simulation.status} maturity={maturityForStatus(simulation.status)} />
+            <StatusBadge
+              status={simulation.status}
+              maturity={maturityForStatus(simulation.status)}
+            />
           </span>
         </Link>
       ))}

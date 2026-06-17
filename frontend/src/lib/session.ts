@@ -1,4 +1,5 @@
 import { isDemoMode } from "@/lib/runtime-config";
+import { useEffect, useState } from "react";
 
 export type PraxisSession = {
   token: string | null;
@@ -33,4 +34,14 @@ export function getSession(): PraxisSession {
     userRole: localStorage.getItem("praxis.userRole") ?? "Operador",
     demo: false,
   };
+}
+
+export function useSession() {
+  const [session, setSession] = useState<PraxisSession>(demoSession);
+
+  useEffect(() => {
+    setSession(getSession());
+  }, []);
+
+  return session;
 }

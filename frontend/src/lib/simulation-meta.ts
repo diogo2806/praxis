@@ -1,11 +1,6 @@
 import type { SimulationVersionStatus } from "@/lib/api/praxis";
 
-export type Maturity =
-  | "Rascunho"
-  | "Em revisão"
-  | "Aprovada"
-  | "Calibrada"
-  | "Arquivada";
+export type Maturity = "Rascunho" | "Em revisão" | "Aprovada" | "Calibrada" | "Arquivada";
 
 export const statusMeta: Record<
   SimulationVersionStatus,
@@ -20,18 +15,27 @@ export const statusMeta: Record<
 };
 
 export const wizardSteps = [
-  { slug: "blueprint", label: "Blueprint", n: 0 },
-  { slug: "objetivo", label: "Objetivo", n: 1 },
-  { slug: "personagem", label: "Personagem", n: 2 },
-  { slug: "dialogo", label: "Diálogo & Rubricas", n: 3 },
-  { slug: "validador", label: "Validador", n: 3.5 },
-  { slug: "piloto", label: "Piloto", n: 4 },
-  { slug: "mapa", label: "Mapa & Score", n: 5 },
-  { slug: "governanca", label: "Governança", n: 7 },
-  { slug: "gupy", label: "Gupy", n: 8 },
+  { slug: "avaliacao", label: "Avaliação", n: 1 },
+  { slug: "cenario", label: "Cenário", n: 2 },
+  { slug: "revisao", label: "Revisão", n: 3 },
+  { slug: "publicacao", label: "Publicação", n: 4 },
 ] as const;
 
 export type WizardSlug = (typeof wizardSteps)[number]["slug"];
+
+export const legacyWizardStepMap = {
+  blueprint: "avaliacao",
+  objetivo: "avaliacao",
+  personagem: "cenario",
+  dialogo: "cenario",
+  validador: "revisao",
+  mapa: "revisao",
+  piloto: "publicacao",
+  governanca: "publicacao",
+  gupy: "publicacao",
+} as const satisfies Record<string, WizardSlug>;
+
+export type LegacyWizardSlug = keyof typeof legacyWizardStepMap;
 
 export function maturityForStatus(status: SimulationVersionStatus): Maturity {
   const maturity: Record<SimulationVersionStatus, Maturity> = {

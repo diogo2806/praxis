@@ -149,7 +149,7 @@ public class SimulationAdminService {
         simulationEntity.setId(generateSimulationId(request.name()));
         simulationEntity.setTenantId(currentTenantService.requiredTenantId());
         simulationEntity.setName(request.name().trim());
-        simulationEntity.setDescription(request.description().trim());
+        simulationEntity.setDescription(createDraftDescription(request));
         simulationEntity.setCreatedAt(createdAt);
         simulationEntity.setArchived(false);
 
@@ -571,6 +571,59 @@ public class SimulationAdminService {
         }
 
         return description.length() > 1000 ? description.substring(0, 1000) : description;
+    }
+
+    private String createDraftDescription(CreateSimulationDraftRequest request) {
+        boolean hasStructuredBlueprint = hasText(request.seniority())
+                || hasText(request.criticalSituation())
+                || hasText(request.highPerformance())
+                || hasText(request.criticalError())
+                || hasText(request.resultUse())
+                || (request.seniorityExpectations() != null && !request.seniorityExpectations().isEmpty());
+
+        if (!hasStructuredBlueprint) {
+            return truncateDescription(request.description().trim());
+        }
+
+        StringBuilder description = new StringBuilder();
+        appendLine(description, "Cargo", request.name());
+        appendLine(description, "Senioridade", request.seniority());
+        appendLine(description, "Situação crítica", request.criticalSituation());
+        if (request.competencies() != null && !request.competencies().isEmpty()) {
+            appendLine(description, "Competências", String.join(", ", request.competencies()));
+        }
+        appendLine(description, "Erro crítico", request.criticalError());
+        appendLine(description, "Alta performance faria", request.highPerformance());
+
+        if (request.seniorityExpectations() != null && !request.seniorityExpectations().isEmpty()) {
+            String seniorityDifferences = request.seniorityExpectations().entrySet().stream()
+                    .filter(entry -> hasText(entry.getValue()))
+                    .map(entry -> entry.getKey().trim() + ": " + entry.getValue().trim())
+                    .reduce((left, right) -> left + " | " + right)
+                    .orElse("");
+            appendLine(description, "Diferença por senioridade", seniorityDifferences);
+        }
+
+        appendLine(description, "Uso do resultado", request.resultUse());
+        return truncateDescription(description.toString().trim());
+    }
+
+    private void appendLine(StringBuilder description, String label, String value) {
+        if (!hasText(value)) {
+            return;
+        }
+        if (!description.isEmpty()) {
+            description.append('\n');
+        }
+        description.append(label).append(": ").append(value.trim());
+    }
+
+    private boolean hasText(String value) {
+        return value != null && !value.isBlank();
+    }
+
+    private String truncateDescription(String description) {
+        return description.length() > 1000 ? description.substring(0, 997).stripTrailing() + "..." : description;
     }
 
     private SimulationVersionDetailResponse toDetailResponse(SimulationVersionEntity versionEntity) {

@@ -133,7 +133,7 @@ function GovernanceHub() {
             Publicar com blocker e barrado na transicao de estado, nao apenas no log.
           </div>
           <Link
-            to="/nova/governanca"
+            to="/nova/publicacao"
             className="inline-flex w-full justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground"
           >
             Ver etapa do wizard
@@ -190,7 +190,11 @@ function GovernanceHub() {
 
 function AuditEventList({ events, loading }: { events: AuditEventResponse[]; loading: boolean }) {
   if (loading) {
-    return <div className="mt-4 rounded-md border border-border bg-background p-4 text-sm">Carregando eventos...</div>;
+    return (
+      <div className="mt-4 rounded-md border border-border bg-background p-4 text-sm">
+        Carregando eventos...
+      </div>
+    );
   }
 
   if (events.length === 0) {
@@ -229,7 +233,11 @@ function SimulationLinks({
   loading: boolean;
 }) {
   if (loading) {
-    return <div className="mt-4 rounded-md border border-border bg-background p-4 text-sm">Carregando simulacoes...</div>;
+    return (
+      <div className="mt-4 rounded-md border border-border bg-background p-4 text-sm">
+        Carregando simulacoes...
+      </div>
+    );
   }
 
   if (simulations.length === 0) {

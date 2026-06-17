@@ -58,7 +58,11 @@ function Page() {
   const existingMessage = rootNode?.clientMessage;
   const canGoNext = checkedItems.length === checklist.length && context.trim().length > 0;
   const clientMessage = useMemo(() => {
-    const parts = [emotion.trim(), context.trim(), name.trim() ? `Personagem: ${name.trim()}` : ""].filter(Boolean);
+    const parts = [
+      emotion.trim(),
+      context.trim(),
+      name.trim() ? `Personagem: ${name.trim()}` : "",
+    ].filter(Boolean);
     return parts.join("\n\n");
   }, [context, emotion, name]);
   const saveCharacterMutation = useMutation({
@@ -94,7 +98,7 @@ function Page() {
 
   return (
     <AppShell>
-      <WizardStepper current="personagem" />
+      <WizardStepper current="cenario" />
       <ScreenStateStrip blockedReason="contexto e checklist de linguagem precisam ser confirmados" />
       <div className="mb-6">
         <div className="text-xs uppercase tracking-[0.2em] text-primary">Passo 2</div>
@@ -109,7 +113,10 @@ function Page() {
           title="Escolha uma simulacao real"
           description="Esta etapa nao usa personagem de exemplo."
           actions={
-            <SimulationLinks loading={simulationsQuery.isLoading} simulations={simulationsQuery.data ?? []} />
+            <SimulationLinks
+              loading={simulationsQuery.isLoading}
+              simulations={simulationsQuery.data ?? []}
+            />
           }
         />
       ) : versionQuery.isLoading ? (
@@ -132,27 +139,49 @@ function Page() {
           {saveCharacterMutation.isError && (
             <div className="mb-5">
               <StateBanner tone="danger" title="Nao foi possivel salvar o personagem">
-                {saveCharacterMutation.error instanceof Error ? saveCharacterMutation.error.message : "Tente novamente."}
+                {saveCharacterMutation.error instanceof Error
+                  ? saveCharacterMutation.error.message
+                  : "Tente novamente."}
               </StateBanner>
             </div>
           )}
           <div className="rounded-md border border-border bg-card p-6">
             <div className="grid gap-4 md:grid-cols-2">
               <label className="block">
-                <span className="mb-1.5 block text-xs font-medium text-muted-foreground">Nome ou identificador</span>
-                <input className="input" value={name} onChange={(event) => setName(event.target.value)} />
+                <span className="mb-1.5 block text-xs font-medium text-muted-foreground">
+                  Nome ou identificador
+                </span>
+                <input
+                  className="input"
+                  value={name}
+                  onChange={(event) => setName(event.target.value)}
+                />
               </label>
               <label className="block">
-                <span className="mb-1.5 block text-xs font-medium text-muted-foreground">Estado emocional inicial</span>
-                <input className="input" value={emotion} onChange={(event) => setEmotion(event.target.value)} />
+                <span className="mb-1.5 block text-xs font-medium text-muted-foreground">
+                  Estado emocional inicial
+                </span>
+                <input
+                  className="input"
+                  value={emotion}
+                  onChange={(event) => setEmotion(event.target.value)}
+                />
               </label>
             </div>
             <label className="mt-4 block">
-              <span className="mb-1.5 block text-xs font-medium text-muted-foreground">Contexto do cliente</span>
-              <textarea className="input min-h-24" value={context} onChange={(event) => setContext(event.target.value)} />
+              <span className="mb-1.5 block text-xs font-medium text-muted-foreground">
+                Contexto do cliente
+              </span>
+              <textarea
+                className="input min-h-24"
+                value={context}
+                onChange={(event) => setContext(event.target.value)}
+              />
             </label>
             <div className="mt-6 rounded-md border border-warning/30 bg-warning/10 p-4">
-              <div className="text-sm font-semibold text-warning-foreground">Checklist de linguagem</div>
+              <div className="text-sm font-semibold text-warning-foreground">
+                Checklist de linguagem
+              </div>
               <ul className="mt-3 space-y-2">
                 {checklist.map((item) => (
                   <li key={item} className="flex items-start gap-3 text-sm">
