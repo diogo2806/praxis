@@ -48,12 +48,20 @@
 | Area | Endpoint base | Uso provavel no frontend |
 | --- | --- | --- |
 | Candidato | `/candidate/attempts` | Experiencia publica por token, envio de resposta e timeout. |
-| Simulacoes admin | `/api/v1/simulations` | Criacao de rascunho, atualizacao de blueprint, listagem resumida, validacao, workflow de revisao, publicacao, preflight, monitoramento e arquivamento. |
-| Auditoria | `/api/v1/audit` | Governanca, defensabilidade e trilha de decisoes. |
-| Entregas Gupy | `/api/v1/gupy/result-deliveries` | Monitoramento operacional, retry e DLQ. |
+| Simulacoes da empresa | `/api/v1/simulations` | Criacao de rascunho, atualizacao de blueprint, listagem resumida, validacao, workflow de revisao, publicacao, preflight, monitoramento e arquivamento. Exige role `EMPRESA` quando a seguranca esta ativa. |
+| Auditoria da empresa | `/api/v1/audit` | Governanca, defensabilidade e trilha de decisoes. Exige role `EMPRESA` quando a seguranca esta ativa. |
+| Entregas Gupy da empresa | `/api/v1/gupy/result-deliveries` | Monitoramento operacional, retry e DLQ. Exige role `EMPRESA` quando a seguranca esta ativa. |
 | Integracao Gupy | `/test`, `/test/candidate`, `/test/result/{resultId}?company_id={companyId}` | Contrato externo da Gupy; usar no frontend interno com cuidado por exigir token de integracao. |
 | Enums | `/api/v1/enums` | Popular selects/status sem duplicar labels no frontend. |
 | Privacidade | `/api/v1/privacy/compliance` | Bases legais, retencao, canal de revisao e regra de decisao automatizada para LGPD. |
+
+## Seguranca e perfis
+
+- `EMPRESA`: usuario da empresa contratante. Acessa as rotas operacionais do proprio tenant: simulacoes, tenant-config, auditoria e entregas Gupy.
+- `GUPY`: perfil tecnico da integracao externa. Acessa `/test/**` via token Bearer de integracao.
+- `ADMIN`: reservado para administracao global futura da plataforma, para gerenciar empresas/tenants contratantes. Ainda nao possui rotas dedicadas.
+
+`PRAXIS_SECURITY_ENABLED=false` e variavel do backend. Quando desligada, o backend libera as rotas sem JWT e usa `PRAXIS_DEFAULT_TENANT_ID` como tenant padrao.
 
 ## Proximas integracoes recomendadas
 

@@ -36,11 +36,11 @@ class SecurityConfigTest {
     }
 
     @Test
-    void adminJwtCanAccessAdminEndpoints() throws Exception {
-        String adminToken = jwtService.generateToken("admin-user", "tenant-1", Set.of("ADMIN"));
+    void empresaJwtCanAccessCompanyEndpoints() throws Exception {
+        String empresaToken = jwtService.generateToken("empresa-user", "tenant-1", Set.of("EMPRESA"));
 
         mockMvc.perform(get("/api/v1/simulations")
-                        .header("Authorization", "Bearer " + adminToken))
+                        .header("Authorization", "Bearer " + empresaToken))
                 .andExpect(status().isOk());
     }
 
