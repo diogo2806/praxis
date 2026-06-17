@@ -51,6 +51,27 @@ class SimulationAdminControllerTest {
     }
 
     @Test
+    void createDraftSimulationFromBlueprintPersistsInitialDraft() throws Exception {
+        mockMvc.perform(post("/api/v1/simulations/drafts")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "name": "Analista de Atendimento N2 - Teste",
+                                  "description": "Teste direto de criacao de rascunho",
+                                  "rootNodeId": "turno-1",
+                                  "competencies": ["Empatia", "Comunicacao"]
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").exists())
+                .andExpect(jsonPath("$.name").value("Analista de Atendimento N2 - Teste"))
+                .andExpect(jsonPath("$.versionNumber").value(1))
+                .andExpect(jsonPath("$.status").value("draft"))
+                .andExpect(jsonPath("$.competencies").value(hasItem("Empatia")))
+                .andExpect(jsonPath("$.competencies").value(hasItem("Comunicacao")));
+    }
+
+    @Test
     void publishSeededVersionKeepsItPublished() throws Exception {
         mockMvc.perform(post("/api/v1/simulations/sim-atendimento-caos/versions/1/publish"))
                 .andExpect(status().isOk())
