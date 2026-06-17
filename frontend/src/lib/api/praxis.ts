@@ -1,8 +1,5 @@
+import { getApiBaseUrl } from "@/lib/runtime-config";
 import { getSession } from "@/lib/session";
-
-const API_BASE_URL = (
-  import.meta.env.VITE_PRAXIS_API_BASE_URL ?? "http://localhost:8080"
-).replace(/\/$/, "");
 
 export type AttemptStatus =
   | "notStarted"
@@ -308,7 +305,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     headers.Authorization = `Bearer ${session.token}`;
   }
 
-  const response = await fetch(`${API_BASE_URL}${path}`, {
+  const response = await fetch(`${getApiBaseUrl()}${path}`, {
     ...init,
     headers: {
       ...headers,
