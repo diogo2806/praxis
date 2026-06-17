@@ -1,3 +1,5 @@
+# syntax=docker/dockerfile:1.7
+
 # Build stage
 FROM maven:3.9-eclipse-temurin-21 AS builder
 
@@ -7,13 +9,15 @@ ENV MAVEN_OPTS="-Xmx512m -XX:MaxRAMPercentage=75"
 
 # Copy pom.xml and download dependencies
 COPY pom.xml .
-RUN mvn dependency:go-offline -B
+RUN --mount=type=cache,target=/root/.m2 \
+    sh -c 'echo "[build][backend][maven-offline][start] $(date -u +%Y-%m-%dT%H:%M:%SZ)" && mvn dependency:go-offline -B && echo "[build][backend][maven-offline][end] $(date -u +%Y-%m-%dT%H:%M:%SZ)"'
 
 # Copy source code
 COPY src ./src
 
 # Build the application
-RUN mvn clean package -DskipTests -B
+RUN --mount=type=cache,target=/root/.m2 \
+    sh -c 'echo "[build][backend][maven-package][start] $(date -u +%Y-%m-%dT%H:%M:%SZ)" && mvn clean package -DskipTests -B && echo "[build][backend][maven-package][end] $(date -u +%Y-%m-%dT%H:%M:%SZ)"'
 
 # Runtime stage
 FROM eclipse-temurin:21-jre
