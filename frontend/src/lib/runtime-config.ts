@@ -8,7 +8,8 @@
 // To support changing public config at runtime without rebuilding, the SSR
 // server reads the env vars per request and injects them as
 // `window.__PRAXIS_CONFIG__` (see src/routes/__root.tsx). The client reads
-// that first, falling back to the build-time value, then to a local default.
+// that first, falling back to the build-time value, then to a same-origin
+// default. The SSR server proxies API paths to the real backend.
 
 export type PraxisRuntimeConfig = {
   apiBaseUrl: string;
@@ -21,9 +22,10 @@ declare global {
   }
 }
 
-const buildTimeApiBaseUrl = (
-  import.meta.env.VITE_PRAXIS_API_BASE_URL ?? "http://localhost:8080"
-).replace(/\/$/, "");
+const buildTimeApiBaseUrl = (import.meta.env.VITE_PRAXIS_BROWSER_API_BASE_URL ?? "").replace(
+  /\/$/,
+  "",
+);
 
 const buildTimeDemoMode = import.meta.env.VITE_PRAXIS_DEMO_MODE === "true";
 

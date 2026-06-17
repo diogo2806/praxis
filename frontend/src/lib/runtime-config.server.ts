@@ -5,12 +5,14 @@ import process from "node:process";
 // per request (matters on request-scoped runtimes like Cloudflare Workers).
 //
 // Only keys that are actually set are returned, so the client can fall back to
-// its build-time defaults for anything omitted.
+// its build-time defaults for anything omitted. Keep backend target URLs out of
+// the browser config; src/server.ts proxies same-origin API calls instead.
 export function resolveRuntimeConfigFromEnv(): {
   apiBaseUrl?: string;
   demoMode?: boolean;
 } {
-  const apiBaseUrl = process.env.VITE_PRAXIS_API_BASE_URL ?? process.env.PRAXIS_API_BASE_URL;
+  const apiBaseUrl =
+    process.env.VITE_PRAXIS_BROWSER_API_BASE_URL ?? process.env.PRAXIS_BROWSER_API_BASE_URL;
   const demoMode = process.env.VITE_PRAXIS_DEMO_MODE ?? process.env.PRAXIS_DEMO_MODE;
 
   const config: { apiBaseUrl?: string; demoMode?: boolean } = {};
