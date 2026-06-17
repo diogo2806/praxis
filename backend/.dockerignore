@@ -6,7 +6,12 @@
 .env.local
 .vscode
 .idea
+
 target
+.m2
+logs
+*.log
+
 *.iml
 *.class
 *.jar
