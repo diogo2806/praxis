@@ -286,6 +286,28 @@ export interface PrivacyComplianceResponse {
   automatedDecisionWithoutReviewAllowed: boolean;
 }
 
+export type TenantConfigType =
+  | "COMPETENCY"
+  | "SENIORITY_LEVEL"
+  | "LANGUAGE_CHECKLIST"
+  | "RESULT_USE"
+  | "ANSWER_TIME_LIMIT";
+
+export interface TenantConfigOption {
+  value: string;
+  label: string;
+  locked: boolean;
+  selectedByDefault: boolean;
+}
+
+export interface TenantConfig {
+  competencies: TenantConfigOption[];
+  seniorityLevels: TenantConfigOption[];
+  languageChecklist: TenantConfigOption[];
+  resultUses: TenantConfigOption[];
+  answerTimeLimits: TenantConfigOption[];
+}
+
 export class PraxisApiError extends Error {
   constructor(
     message: string,
@@ -334,9 +356,21 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 function isAdminPath(path: string) {
   return (
     path.startsWith("/api/v1/simulations") ||
+    path.startsWith("/api/v1/tenant-config") ||
     path.startsWith("/api/v1/gupy/result-deliveries") ||
     path.startsWith("/api/v1/audit")
   );
+}
+
+export function getTenantConfig() {
+  return request<TenantConfig>("/api/v1/tenant-config");
+}
+
+export function updateTenantConfig(configType: TenantConfigType, options: TenantConfigOption[]) {
+  return request<TenantConfigOption[]>(`/api/v1/tenant-config/${configType}`, {
+    method: "PUT",
+    body: JSON.stringify({ options }),
+  });
 }
 
 export function getCandidateAttempt(attemptId: string) {

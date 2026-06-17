@@ -5,6 +5,7 @@ import { AppShell } from "@/components/app-shell";
 import { ScreenStateStrip, StateBanner } from "@/components/praxis-ui";
 import { WizardStepper } from "@/components/wizard-stepper";
 import { createSimulationDraft } from "@/lib/api/praxis";
+import { useTenantConfig } from "@/lib/tenant-config";
 
 export const Route = createFileRoute("/nova/blueprint")({
   head: () => ({
@@ -20,19 +21,12 @@ export const Route = createFileRoute("/nova/blueprint")({
   component: Page,
 });
 
-const competencies = [
-  "Empatia",
-  "Resolução de Conflitos",
-  "Aderência à Política",
-  "Comunicação",
-  "Negociação",
-  "Tomada de Decisão",
-  "Liderança",
-  "Proatividade",
-];
-
 function Page() {
   const navigate = useNavigate();
+  const { config } = useTenantConfig();
+  const competencies = config.competencies;
+  const seniorityLevels = config.seniorityLevels;
+  const resultUses = config.resultUses;
   const [role, setRole] = useState("");
   const [criticalSituation, setCriticalSituation] = useState("");
   const [criticalError, setCriticalError] = useState("");
@@ -104,17 +98,22 @@ function Page() {
               </Field>
               <Field label="Senioridade">
                 <div className="flex gap-2">
-                  {["Júnior", "Pleno", "Sênior"].map((s, i) => (
+                  {seniorityLevels.map((level) => (
                     <label
-                      key={s}
+                      key={level.value}
                       className={`flex flex-1 cursor-pointer items-center justify-center gap-2 rounded-md border px-3 py-2 text-sm ${
-                        i === 1
+                        level.selectedByDefault
                           ? "border-primary bg-primary/5 text-primary"
                           : "border-border bg-card hover:bg-accent"
                       }`}
                     >
-                      <input type="radio" name="sen" defaultChecked={i === 1} className="sr-only" />
-                      {s}
+                      <input
+                        type="radio"
+                        name="sen"
+                        defaultChecked={level.selectedByDefault}
+                        className="sr-only"
+                      />
+                      {level.label}
                     </label>
                   ))}
                 </div>
@@ -133,22 +132,22 @@ function Page() {
 
           <Card title="Competências avaliadas">
             <div className="flex flex-wrap gap-2">
-              {competencies.map((c) => (
+              {competencies.map((competency) => (
                 <label
-                  key={c}
+                  key={competency.value}
                   className={`cursor-pointer rounded-full border px-3 py-1.5 text-sm ${
-                    selectedCompetencies.includes(c)
+                    selectedCompetencies.includes(competency.value)
                       ? "border-primary bg-primary/10 text-primary"
                       : "border-border bg-card text-foreground/75 hover:bg-accent"
                   }`}
                 >
                   <input
                     type="checkbox"
-                    checked={selectedCompetencies.includes(c)}
-                    onChange={() => toggleCompetency(c)}
+                    checked={selectedCompetencies.includes(competency.value)}
+                    onChange={() => toggleCompetency(competency.value)}
                     className="sr-only"
                   />
-                  {c}
+                  {competency.label}
                 </label>
               ))}
             </div>
@@ -174,44 +173,38 @@ function Page() {
 
           <Card title="Diferença por senioridade">
             <div className="grid gap-3 md:grid-cols-3">
-              <Field label="Júnior faria">
-                <textarea className="input min-h-20" placeholder="Comportamento esperado para júnior." />
-              </Field>
-              <Field label="Pleno faria">
-                <textarea
-                  className="input min-h-20"
-                  placeholder="Comportamento esperado para pleno."
-                />
-              </Field>
-              <Field label="Sênior faria">
-                <textarea
-                  className="input min-h-20"
-                  placeholder="Comportamento esperado para sênior."
-                />
-              </Field>
+              {seniorityLevels.map((level) => (
+                <Field key={level.value} label={`${level.label} faria`}>
+                  <textarea
+                    className="input min-h-20"
+                    placeholder={`Comportamento esperado para ${level.label.toLowerCase()}.`}
+                  />
+                </Field>
+              ))}
             </div>
           </Card>
 
           <Card title="Uso do resultado">
             <div className="grid gap-2 md:grid-cols-4">
-              {[
-                { label: "Triagem", on: true },
-                { label: "Ranking", on: false },
-                { label: "Apoio à entrevista", on: false },
-                { label: "Decisão final", on: false, locked: true },
-              ].map((o) => (
+              {resultUses.map((use) => (
                 <label
-                  key={o.label}
+                  key={use.value}
                   className={`flex cursor-pointer items-center gap-2 rounded-md border px-3 py-2 text-sm ${
-                    o.on
+                    use.selectedByDefault
                       ? "border-primary bg-primary/5 text-primary"
-                      : o.locked
+                      : use.locked
                         ? "border-dashed border-border bg-muted/40 text-muted-foreground"
                         : "border-border bg-card hover:bg-accent"
                   }`}
                 >
-                  <input type="radio" name="uso" defaultChecked={o.on} className="sr-only" />
-                  {o.label}
+                  <input
+                    type="radio"
+                    name="uso"
+                    defaultChecked={use.selectedByDefault}
+                    disabled={use.locked}
+                    className="sr-only"
+                  />
+                  {use.label}
                 </label>
               ))}
             </div>

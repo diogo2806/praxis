@@ -16,6 +16,7 @@ import {
   type SimulationVersionStatus,
 } from "@/lib/api/praxis";
 import { maturityForStatus } from "@/lib/simulation-meta";
+import { getSession } from "@/lib/session";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/")({
@@ -24,8 +25,7 @@ export const Route = createFileRoute("/")({
       { title: "Painel - Praxis" },
       {
         name: "description",
-        content:
-          "Painel da Renata: simulacoes ativas, qualidade, maturidade e vinculo com vagas Gupy.",
+        content: "Painel: simulacoes ativas, qualidade, maturidade e vinculo com vagas Gupy.",
       },
     ],
   }),
@@ -55,6 +55,7 @@ const filterLabels: Record<(typeof filters)[number], string> = {
 function Dashboard() {
   const [filter, setFilter] = useState<(typeof filters)[number]>("todas");
   const [query, setQuery] = useState("");
+  const firstName = getSession().userName.trim().split(/\s+/)[0] || "bem-vindo";
   const simulationsQuery = useQuery({
     queryKey: ["simulations"],
     queryFn: listSimulations,
@@ -87,7 +88,7 @@ function Dashboard() {
       <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
         <div>
           <div className="text-xs uppercase text-muted-foreground">Painel</div>
-          <h1 className="mt-1 text-3xl font-semibold text-foreground">Boa tarde, Renata.</h1>
+          <h1 className="mt-1 text-3xl font-semibold text-foreground">Boa tarde, {firstName}.</h1>
           <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
             Avaliacao situacional estruturada para recrutamento, com score por rubrica, decisao em
             contexto e trilha auditavel.

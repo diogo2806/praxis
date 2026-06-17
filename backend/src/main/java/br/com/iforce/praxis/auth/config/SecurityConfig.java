@@ -53,6 +53,7 @@ public class SecurityConfig {
                         ).permitAll()
                         .requestMatchers("/test/**").hasRole("GUPY")
                         .requestMatchers("/api/v1/simulations/**").hasRole("ADMIN")
+                        .requestMatchers("/api/v1/tenant-config/**").hasRole("ADMIN")
                         .requestMatchers("/api/v1/gupy/result-deliveries/**").hasRole("ADMIN")
                         .requestMatchers("/api/v1/audit/**").hasRole("ADMIN")
                         .anyRequest().authenticated()
