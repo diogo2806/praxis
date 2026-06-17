@@ -353,7 +353,13 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     return undefined as T;
   }
 
-  return response.json() as Promise<T>;
+  const contentType = response.headers.get("content-type") ?? "";
+  if (contentType.includes("application/json")) {
+    return response.json() as Promise<T>;
+  }
+
+  const text = await response.text();
+  return (text.length > 0 ? text : undefined) as T;
 }
 
 function isAdminPath(path: string) {
