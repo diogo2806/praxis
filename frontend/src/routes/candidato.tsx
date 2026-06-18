@@ -1,6 +1,6 @@
 import { createFileRoute, Link, Outlet, useChildMatches } from "@tanstack/react-router";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { useEffect, useState } from "react";
+import { useEffect, useState, type CSSProperties } from "react";
 import { Pause, Play, RotateCcw, ShieldCheck, Wifi, WifiOff } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
 import { EmptyState, ScreenStateStrip, StateBanner } from "@/components/praxis-ui";
@@ -238,13 +238,17 @@ export function CandidateExperience({ token }: { token: string }) {
                       <span>{paused ? "pausado" : `turno ${currentNode?.turnIndex ?? 1}`}</span>
                     </div>
                     <div
-                      className="h-2 overflow-hidden rounded-full bg-muted"
+                      className="praxis-progress-track praxis-progress-track-md"
                       aria-label={`${remaining} segundos restantes`}
                       role="timer"
                     >
                       <div
-                        className={cn("h-full rounded-full transition-all", timerTone)}
-                        style={{ width: `${pct * 100}%` }}
+                        className={cn("praxis-progress-fill transition-all", timerTone)}
+                        style={
+                          {
+                            "--praxis-progress-value": `${pct * 100}%`,
+                          } as CSSProperties
+                        }
                       />
                     </div>
                   </div>

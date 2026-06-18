@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useMemo, useState } from "react";
+import { useMemo, useState, type CSSProperties } from "react";
 import {
   Archive,
   BarChart3,
@@ -335,17 +335,21 @@ function Dashboard() {
                         </td>
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-2">
-                            <div className="h-1.5 w-24 overflow-hidden rounded-full bg-muted">
+                            <div className="praxis-progress-track praxis-progress-track-sm w-24">
                               <div
                                 className={cn(
-                                  "h-full rounded-full",
+                                  "praxis-progress-fill",
                                   simulation.completionRatePercent >= 80
                                     ? "bg-success"
                                     : simulation.completionRatePercent >= 60
                                       ? "bg-warning"
                                       : "bg-danger",
                                 )}
-                                style={{ width: `${simulation.completionRatePercent}%` }}
+                                style={
+                                  {
+                                    "--praxis-progress-value": `${simulation.completionRatePercent}%`,
+                                  } as CSSProperties
+                                }
                               />
                             </div>
                             <span className="text-xs font-medium tabular-nums">
