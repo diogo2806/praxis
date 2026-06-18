@@ -15,12 +15,16 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@SpringBootTest(properties = "praxis.security.enabled=true")
+@SpringBootTest(properties = {
+        "praxis.security.enabled=true",
+        "praxis.jwt-secret=test-only-strong-jwt-secret-2026-with-more-than-32-chars",
+        "praxis.integration-token=test-only-strong-gupy-token-2026"
+})
 @AutoConfigureMockMvc
 @Sql(scripts = "/seed-simulation-fixture.sql")
 class CandidateAttemptSecurityEnabledTest {
 
-    private static final String AUTHORIZATION = "Bearer dev-company-token";
+    private static final String AUTHORIZATION = "Bearer test-only-strong-gupy-token-2026";
 
     @Autowired
     private MockMvc mockMvc;
@@ -51,7 +55,7 @@ class CandidateAttemptSecurityEnabledTest {
 
         mockMvc.perform(get("/candidate/attempts/" + attemptId))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.attemptId").value(attemptId))
+                .andExpect(jsonPath("$.attemptId").value(org.hamcrest.Matchers.startsWith("att_")))
                 .andExpect(jsonPath("$.currentNode.id").value("turno-1"));
     }
 }

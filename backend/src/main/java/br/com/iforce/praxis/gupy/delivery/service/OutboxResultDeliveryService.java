@@ -119,9 +119,9 @@ public class OutboxResultDeliveryService {
                 toResultDeliveryStatus(event.getStatus()),
                 event.getAttempts(),
                 event.getNextAttemptAt(),
-                null,
-                event.getStatus() == OutboxEventEntity.OutboxEventStatus.SENT ? event.getCreatedAt() : null,
-                null,
+                event.getLastAttemptAt(),
+                event.getSentAt(),
+                event.getLastError(),
                 event.getCreatedAt()
         );
     }

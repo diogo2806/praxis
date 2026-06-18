@@ -1,5 +1,5 @@
 import { createFileRoute, Link, Outlet, useChildMatches } from "@tanstack/react-router";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState, type CSSProperties } from "react";
 import {
   ExternalLink,
@@ -24,9 +24,11 @@ import {
 import {
   createCandidateLink,
   getCandidateAttempt,
+  listCandidateLinks,
   listSimulations,
   submitCandidateAnswer,
   type CandidateAttemptResponse,
+  type CandidateLinkResponse,
   type CandidateNodeResponse,
   type MediaType,
   type SimulationSummaryResponse,
@@ -99,34 +101,20 @@ function CandidateEntryPage() {
   );
 }
 
-type CandidateLinkRow = {
-  id: string;
-  name: string;
-  email: string;
-  url: string;
-  simulationName: string;
-};
-
-const CANDIDATE_LINKS_STORAGE_KEY = "praxis:candidate-links";
-
 function CandidateLinksPage() {
+  const queryClient = useQueryClient();
   const [candidateName, setCandidateName] = useState("");
   const [candidateEmail, setCandidateEmail] = useState("");
   const [selectedSimulationId, setSelectedSimulationId] = useState("");
-  const [rows, setRows] = useState<CandidateLinkRow[]>(() => {
-    if (typeof window === "undefined") return [];
-    const stored = window.localStorage.getItem(CANDIDATE_LINKS_STORAGE_KEY);
-    if (!stored) return [];
-    try {
-      return JSON.parse(stored) as CandidateLinkRow[];
-    } catch {
-      return [];
-    }
-  });
 
   const simulationsQuery = useQuery({
     queryKey: ["simulations"],
     queryFn: listSimulations,
+    retry: false,
+  });
+  const candidateLinksQuery = useQuery({
+    queryKey: ["candidate-links"],
+    queryFn: listCandidateLinks,
     retry: false,
   });
 
@@ -146,26 +134,10 @@ function CandidateLinksPage() {
     }
   }, [publishedSimulations, selectedSimulationId]);
 
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      window.localStorage.setItem(CANDIDATE_LINKS_STORAGE_KEY, JSON.stringify(rows));
-    }
-  }, [rows]);
-
   const linkMutation = useMutation({
     mutationFn: createCandidateLink,
-    onSuccess: (data, variables) => {
-      const url = data.candidateUrl || `${window.location.origin}/candidato/${data.attemptId}`;
-      setRows((current) => {
-        const nextRow = {
-          id: data.attemptId,
-          name: variables.candidateName,
-          email: variables.candidateEmail,
-          url,
-          simulationName: data.simulationName,
-        };
-        return [nextRow, ...current.filter((row) => row.id !== nextRow.id)];
-      });
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["candidate-links"] });
       setCandidateName("");
       setCandidateEmail("");
     },
@@ -180,18 +152,20 @@ function CandidateLinksPage() {
     });
   }
 
-  async function handleShare(row: CandidateLinkRow) {
-    const text = `Ola ${row.name}, voce foi convidado(a) para uma simulacao situacional. Acesse: ${row.url}`;
+  async function handleShare(row: CandidateLinkResponse) {
+    const text = `Ola ${row.candidateName}, voce foi convidado(a) para uma simulacao situacional. Acesse: ${row.candidateUrl}`;
     if (navigator.share) {
       await navigator.share({
         title: row.simulationName,
         text,
-        url: row.url,
+        url: row.candidateUrl,
       });
       return;
     }
     await navigator.clipboard.writeText(text);
   }
+
+  const rows = candidateLinksQuery.data ?? [];
 
   return (
     <AppShell>
@@ -209,6 +183,14 @@ function CandidateLinksPage() {
         <StateBanner tone="danger" title="Nao foi possivel carregar simulacoes">
           {simulationsQuery.error instanceof Error
             ? simulationsQuery.error.message
+            : "Verifique se o backend esta disponivel."}
+        </StateBanner>
+      )}
+
+      {candidateLinksQuery.isError && (
+        <StateBanner tone="danger" title="Nao foi possivel carregar links de candidatos">
+          {candidateLinksQuery.error instanceof Error
+            ? candidateLinksQuery.error.message
             : "Verifique se o backend esta disponivel."}
         </StateBanner>
       )}
@@ -281,7 +263,13 @@ function CandidateLinksPage() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {rows.length === 0 ? (
+            {candidateLinksQuery.isLoading ? (
+              <TableRow>
+                <TableCell colSpan={4} className="py-8 text-center text-sm text-muted-foreground">
+                  Carregando links de candidatos...
+                </TableCell>
+              </TableRow>
+            ) : rows.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={4} className="py-8 text-center text-sm text-muted-foreground">
                   Nenhum link gerado ainda.
@@ -289,17 +277,17 @@ function CandidateLinksPage() {
               </TableRow>
             ) : (
               rows.map((row) => (
-                <TableRow key={row.id}>
-                  <TableCell className="font-medium">{row.name}</TableCell>
-                  <TableCell>{row.email}</TableCell>
+                <TableRow key={row.attemptId}>
+                  <TableCell className="font-medium">{row.candidateName}</TableCell>
+                  <TableCell>{row.candidateEmail}</TableCell>
                   <TableCell className="max-w-[420px]">
                     <a
-                      href={row.url}
+                      href={row.candidateUrl}
                       target="_blank"
                       rel="noreferrer"
                       className="inline-flex max-w-full items-center gap-2 text-primary hover:underline"
                     >
-                      <span className="truncate">{row.url}</span>
+                      <span className="truncate">{row.candidateUrl}</span>
                       <ExternalLink className="h-4 w-4 shrink-0" />
                     </a>
                   </TableCell>

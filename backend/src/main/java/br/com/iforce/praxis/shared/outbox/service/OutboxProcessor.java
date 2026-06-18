@@ -1,5 +1,6 @@
 package br.com.iforce.praxis.shared.outbox.service;
 
+import br.com.iforce.praxis.gupy.delivery.service.ResultWebhookClient;
 import br.com.iforce.praxis.gupy.delivery.service.GupyOutboundUrlValidator;
 import br.com.iforce.praxis.gupy.dto.TestResultResponse;
 import br.com.iforce.praxis.gupy.model.PublishedSimulation;
@@ -13,18 +14,15 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestClientResponseException;
-import org.springframework.web.client.RestTemplate;
 import org.springframework.web.server.ResponseStatusException;
 
-import java.time.Instant;
-import java.net.URI;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
+import java.time.Instant;
 
 @Slf4j
 @Component
@@ -34,7 +32,7 @@ public class OutboxProcessor {
     private static final String RESULT_READY_EVENT = "RESULT_READY";
 
     private final OutboxEventRepository outboxEventRepository;
-    private final RestTemplate restTemplate;
+    private final ResultWebhookClient resultWebhookClient;
     private final ObjectMapper objectMapper;
     private final CandidateAttemptRepository candidateAttemptRepository;
     private final SimulationCatalogService simulationCatalogService;
@@ -43,7 +41,7 @@ public class OutboxProcessor {
 
     public OutboxProcessor(
         OutboxEventRepository outboxEventRepository,
-        RestTemplate restTemplate,
+        ResultWebhookClient resultWebhookClient,
         ObjectMapper objectMapper,
         CandidateAttemptRepository candidateAttemptRepository,
         SimulationCatalogService simulationCatalogService,
@@ -51,7 +49,7 @@ public class OutboxProcessor {
         GupyOutboundUrlValidator outboundUrlValidator
     ) {
         this.outboxEventRepository = outboxEventRepository;
-        this.restTemplate = restTemplate;
+        this.resultWebhookClient = resultWebhookClient;
         this.objectMapper = objectMapper;
         this.candidateAttemptRepository = candidateAttemptRepository;
         this.simulationCatalogService = simulationCatalogService;
@@ -59,10 +57,6 @@ public class OutboxProcessor {
         this.outboundUrlValidator = outboundUrlValidator;
     }
 
-    /**
-     * Processa eventos pendentes de todos os tenants a cada 5 segundos.
-     */
-    @Scheduled(fixedDelay = 5000)
     @Transactional
     public void processReadyEvents() {
         List<OutboxEventEntity> readyEvents = outboxEventRepository
@@ -117,12 +111,15 @@ public class OutboxProcessor {
 
     private void processEvent(OutboxEventEntity event) {
         try {
+            event.setLastAttemptAt(Instant.now());
             if (RESULT_READY_EVENT.equals(event.getEventType())) {
                 processResultReadyEvent(event);
             }
 
             event.setStatus(OutboxEventEntity.OutboxEventStatus.SENT);
             event.setNextAttemptAt(null);
+            event.setSentAt(Instant.now());
+            event.setLastError(null);
         } catch (Exception ex) {
             handleEventFailure(event, ex);
         }
@@ -132,7 +129,11 @@ public class OutboxProcessor {
         JsonNode payload = parsePayload(event.getPayload());
 
         String webhookUrl = payload.get("webhookUrl").asText();
-        Object testResult = payload.get("testResult");
+        TestResultResponse testResult = null;
+        JsonNode testResultNode = payload.get("testResult");
+        if (testResultNode != null && !testResultNode.isNull()) {
+            testResult = toTestResult(testResultNode);
+        }
 
         if (testResult == null) {
             // Migrated event: need to fetch test result from database
@@ -140,12 +141,12 @@ public class OutboxProcessor {
             testResult = fetchTestResult(attemptId, event.getTenantId());
         }
 
-        URI validatedWebhookUrl = outboundUrlValidator.validate(webhookUrl);
-        log.debug("Enviando resultado para webhook: {}", validatedWebhookUrl);
-        restTemplate.postForObject(validatedWebhookUrl, testResult, Void.class);
+        outboundUrlValidator.validate(webhookUrl);
+        log.debug("Enviando resultado para webhook: {}", webhookUrl);
+        resultWebhookClient.postResult(webhookUrl, testResult);
     }
 
-    private Object fetchTestResult(String attemptId, String tenantId) {
+    private TestResultResponse fetchTestResult(String attemptId, String tenantId) {
         Optional<CandidateAttemptEntity> attempt = candidateAttemptRepository.findByTenantIdAndId(tenantId, attemptId);
         if (attempt.isEmpty()) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "CandidateAttempt nao encontrado: " + attemptId);
@@ -154,6 +155,14 @@ public class OutboxProcessor {
         CandidateAttemptEntity candidateAttemptEntity = attempt.get();
         PublishedSimulation simulation = getSimulation(candidateAttemptEntity);
         return gupyTestResultMapper.toResponse(candidateAttemptEntity, simulation);
+    }
+
+    private TestResultResponse toTestResult(JsonNode testResultNode) {
+        try {
+            return objectMapper.treeToValue(testResultNode, TestResultResponse.class);
+        } catch (Exception exception) {
+            throw new RuntimeException("Falha ao deserializar TestResultResponse do outbox event", exception);
+        }
     }
 
     private PublishedSimulation getSimulation(CandidateAttemptEntity candidateAttemptEntity) {
@@ -178,6 +187,7 @@ public class OutboxProcessor {
         event.setAttempts(event.getAttempts() + 1);
 
         String errorMessage = limitMessage(exception.getMessage());
+        event.setLastError(errorMessage);
         log.warn("Falha ao processar evento {} (tentativa {}): {}", event.getId(), event.getAttempts(), errorMessage);
 
         boolean isContractError = exception instanceof RestClientResponseException responseException

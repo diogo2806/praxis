@@ -3,6 +3,7 @@ package br.com.iforce.praxis.gupy.service;
 import br.com.iforce.praxis.audit.model.AuditEventType;
 import br.com.iforce.praxis.audit.service.AuditEventService;
 import br.com.iforce.praxis.candidate.dto.CandidateAttemptResponse;
+import br.com.iforce.praxis.candidate.dto.CandidateLinkResponse;
 import br.com.iforce.praxis.candidate.dto.CreateCandidateLinkRequest;
 import br.com.iforce.praxis.candidate.dto.CreateCandidateLinkResponse;
 import br.com.iforce.praxis.candidate.dto.SubmitAnswerRequest;
@@ -27,6 +28,7 @@ import br.com.iforce.praxis.gupy.persistence.repository.CandidateAttemptReposito
 import br.com.iforce.praxis.shared.outbox.service.OutboxService;
 import br.com.iforce.praxis.shared.security.TenantSecurity;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -163,6 +165,29 @@ public class CandidateAttemptService {
                 entity.getId(),
                 candidatePageUrl(entity),
                 publishedSimulation.name()
+        );
+    }
+
+    @Transactional(readOnly = true)
+    public List<CandidateLinkResponse> listCompanyLinks() {
+        String tenantId = TenantSecurity.requiredTenant();
+        return candidateAttemptRepository.findByTenantIdOrderByCreatedAtDesc(tenantId, PageRequest.of(0, 200))
+                .stream()
+                .map(this::toCandidateLinkResponse)
+                .toList();
+    }
+
+    private CandidateLinkResponse toCandidateLinkResponse(CandidateAttemptEntity entity) {
+        PublishedSimulation simulation = findSimulation(entity);
+        return new CandidateLinkResponse(
+                entity.getId(),
+                candidatePageUrl(entity),
+                entity.getCandidateName(),
+                entity.getCandidateEmail(),
+                entity.getSimulationId(),
+                simulation.name(),
+                entity.getStatus(),
+                entity.getCreatedAt()
         );
     }
 

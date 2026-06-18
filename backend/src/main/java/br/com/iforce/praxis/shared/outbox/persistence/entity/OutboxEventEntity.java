@@ -56,6 +56,15 @@ public class OutboxEventEntity implements TenantAwareEntity {
     @Column(name = "next_attempt_at")
     private Instant nextAttemptAt;
 
+    @Column(name = "last_attempt_at")
+    private Instant lastAttemptAt;
+
+    @Column(name = "sent_at")
+    private Instant sentAt;
+
+    @Column(name = "last_error", columnDefinition = "TEXT")
+    private String lastError;
+
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
 

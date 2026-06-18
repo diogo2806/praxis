@@ -677,6 +677,21 @@ export interface CreateCandidateLinkResponse {
   simulationName: string;
 }
 
+export interface CandidateLinkResponse {
+  attemptId: string;
+  candidateUrl: string;
+  candidateName: string;
+  candidateEmail: string;
+  simulationId: string;
+  simulationName: string;
+  status: AttemptStatus;
+  createdAt: string;
+}
+
+export function listCandidateLinks() {
+  return request<CandidateLinkResponse[]>("/api/v1/candidate-links");
+}
+
 export function createCandidateLink(body: CreateCandidateLinkRequest) {
   return request<CreateCandidateLinkResponse>("/api/v1/candidate-links", {
     method: "POST",
