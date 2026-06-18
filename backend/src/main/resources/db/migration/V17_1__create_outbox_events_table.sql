@@ -12,9 +12,6 @@ CREATE TABLE outbox_events (
     status VARCHAR(20) NOT NULL,
     attempts INT NOT NULL DEFAULT 0,
     next_attempt_at TIMESTAMP WITH TIME ZONE,
-    last_attempt_at TIMESTAMP WITH TIME ZONE,
-    sent_at TIMESTAMP WITH TIME ZONE,
-    last_error TEXT,
     created_at TIMESTAMP WITH TIME ZONE NOT NULL
 );
 
