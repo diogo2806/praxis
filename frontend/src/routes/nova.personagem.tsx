@@ -2,15 +2,17 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { AppShell } from "@/components/app-shell";
-import { EmptyState, ScreenStateStrip, StateBanner } from "@/components/praxis-ui";
+import { EmptyState, ScreenStateStrip, StateBanner, StatusBadge } from "@/components/praxis-ui";
 import { WizardStepper } from "@/components/wizard-stepper";
 import {
+  cloneSimulationVersionToDraft,
   createSimulationNode,
   getSimulationVersion,
   listSimulations,
   updateSimulationNode,
   type SimulationSummaryResponse,
 } from "@/lib/api/praxis";
+import { canEditSimulationVersion, statusMeta } from "@/lib/simulation-meta";
 import { defaultAnswerTimeLimitSeconds, useTenantConfig } from "@/lib/tenant-config";
 
 export const Route = createFileRoute("/nova/personagem")({
@@ -63,6 +65,8 @@ function Page() {
   );
   const rootNode = orderedNodes.find((node) => node.id === rootNodeId) ?? orderedNodes[0];
   const existingMessage = rootNode?.clientMessage;
+  const versionStatus = versionQuery.data?.status;
+  const isEditable = versionStatus ? canEditSimulationVersion(versionStatus) : true;
   const canGoNext = context.trim().length > 0;
   const clientMessage = useMemo(() => {
     const parts = [
@@ -74,6 +78,9 @@ function Page() {
   }, [context, emotion, name]);
   const saveCharacterMutation = useMutation({
     mutationFn: async () => {
+      if (!isEditable) {
+        throw new Error("Esta versao nao pode ser editada. Crie um rascunho antes de alterar.");
+      }
       if (rootNode) {
         await updateSimulationNode(search.simulationId!, search.versionNumber!, rootNode.id, {
           clientMessage,
@@ -96,6 +103,16 @@ function Page() {
       void navigate({
         to: "/nova/dialogo",
         search: { simulationId: search.simulationId, versionNumber: search.versionNumber },
+      });
+    },
+  });
+  const cloneDraftMutation = useMutation({
+    mutationFn: () => cloneSimulationVersionToDraft(search.simulationId!, search.versionNumber!),
+    onSuccess: async (draft) => {
+      await queryClient.invalidateQueries({ queryKey: ["simulations"] });
+      void navigate({
+        to: "/nova/personagem",
+        search: { simulationId: draft.simulationId, versionNumber: draft.newVersionNumber },
       });
     },
   });
@@ -162,6 +179,39 @@ function Page() {
               </StateBanner>
             </div>
           )}
+          {versionStatus && !isEditable && (
+            <div className="mb-5">
+              <StateBanner
+                tone="warn"
+                title={`Versao ${statusMeta[versionStatus].label.toLowerCase()} nao pode ser editada`}
+                action={
+                  versionStatus === "published" ? (
+                    <button
+                      type="button"
+                      onClick={() => cloneDraftMutation.mutate()}
+                      disabled={cloneDraftMutation.isPending}
+                      className="shrink-0 rounded-md border border-current/20 bg-background/70 px-3 py-2 text-xs font-medium hover:bg-background disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      {cloneDraftMutation.isPending ? "Criando..." : "Criar rascunho"}
+                    </button>
+                  ) : undefined
+                }
+              >
+                {versionStatus === "published"
+                  ? "A versao publicada fica congelada. Crie um rascunho para editar sem afetar candidatos em andamento."
+                  : "Atualize a etapa atual da versao antes de alterar o personagem."}
+              </StateBanner>
+            </div>
+          )}
+          {cloneDraftMutation.isError && (
+            <div className="mb-5">
+              <StateBanner tone="danger" title="Nao foi possivel criar o rascunho">
+                {cloneDraftMutation.error instanceof Error
+                  ? cloneDraftMutation.error.message
+                  : "Tente novamente."}
+              </StateBanner>
+            </div>
+          )}
           {saveCharacterMutation.isError && (
             <div className="mb-5">
               <StateBanner tone="danger" title="Não foi possível salvar o personagem">
@@ -173,6 +223,11 @@ function Page() {
           )}
           <div className="rounded-md border border-border bg-card p-6">
             <div className="grid gap-4 md:grid-cols-2">
+              {versionStatus && (
+                <div className="md:col-span-2">
+                  <StatusBadge status={versionStatus} />
+                </div>
+              )}
               <label className="block">
                 <span className="mb-1.5 block text-xs font-medium text-muted-foreground">
                   Nome ou identificador
@@ -180,6 +235,7 @@ function Page() {
                 <input
                   className="input"
                   value={name}
+                  disabled={!isEditable}
                   onChange={(event) => setName(event.target.value)}
                 />
               </label>
@@ -190,6 +246,7 @@ function Page() {
                 <input
                   className="input"
                   value={emotion}
+                  disabled={!isEditable}
                   onChange={(event) => setEmotion(event.target.value)}
                 />
               </label>
@@ -201,6 +258,7 @@ function Page() {
               <textarea
                 className="input min-h-24"
                 value={context}
+                disabled={!isEditable}
                 onChange={(event) => setContext(event.target.value)}
               />
             </label>
@@ -228,7 +286,7 @@ function Page() {
             <button
               type="button"
               onClick={() => saveCharacterMutation.mutate()}
-              disabled={!canGoNext || saveCharacterMutation.isPending}
+              disabled={!isEditable || !canGoNext || saveCharacterMutation.isPending}
               className="rounded-md bg-primary px-5 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50"
             >
               {saveCharacterMutation.isPending ? "Salvando..." : "Montar diálogo →"}

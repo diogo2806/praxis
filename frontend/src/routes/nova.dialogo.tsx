@@ -1,16 +1,12 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { GitBranch, ImagePlus, Music, Plus, Save, Trash2, X } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
-import {
-  EmptyState,
-  ScreenStateStrip,
-  StateBanner,
-  StatusBadge,
-} from "@/components/praxis-ui";
+import { EmptyState, ScreenStateStrip, StateBanner, StatusBadge } from "@/components/praxis-ui";
 import { WizardStepper } from "@/components/wizard-stepper";
 import {
+  cloneSimulationVersionToDraft,
   createSimulationNode,
   createSimulationOption,
   deleteSimulationNode,
@@ -24,6 +20,7 @@ import {
   type SimulationSummaryResponse,
   type SimulationVersionNodeResponse,
 } from "@/lib/api/praxis";
+import { canEditSimulationVersion, statusMeta } from "@/lib/simulation-meta";
 import { cn } from "@/lib/utils";
 import { defaultAnswerTimeLimitSeconds, useTenantConfig } from "@/lib/tenant-config";
 
@@ -49,6 +46,7 @@ export const Route = createFileRoute("/nova/dialogo")({
 
 function DialogEditor() {
   const search = Route.useSearch();
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const hasContext = Boolean(search.simulationId && search.versionNumber);
   const {
@@ -74,6 +72,8 @@ function DialogEditor() {
     enabled: hasContext,
   });
   const nodes = versionQuery.data?.nodes ?? [];
+  const versionStatus = versionQuery.data?.status;
+  const isEditable = versionStatus ? canEditSimulationVersion(versionStatus) : true;
   const selected = nodes.find((node) => node.id === selectedId) ?? nodes[0];
   const competencies = useMemo(
     () => versionQuery.data?.blueprint.competencies ?? [],
@@ -113,17 +113,32 @@ function DialogEditor() {
       type: "active",
     });
   };
+  const assertEditable = () => {
+    if (!isEditable) {
+      throw new Error("Esta versao nao pode ser editada. Crie um rascunho antes de alterar.");
+    }
+  };
+  const cloneDraftMutation = useMutation({
+    mutationFn: () => cloneSimulationVersionToDraft(search.simulationId!, search.versionNumber!),
+    onSuccess: async (draft) => {
+      await queryClient.invalidateQueries({ queryKey: ["simulations"] });
+      void navigate({
+        to: "/nova/dialogo",
+        search: { simulationId: draft.simulationId, versionNumber: draft.newVersionNumber },
+      });
+    },
+  });
   const addNodeMutation = useMutation({
-    mutationFn: () =>
-      {
-        if (!config) {
-          throw new Error("A configuração da empresa ainda não foi carregada pelo sistema.");
-        }
-        return createSimulationNode(search.simulationId!, search.versionNumber!, {
-          clientMessage: draftMessage.trim(),
-          timeLimitSeconds: defaultAnswerTimeLimitSeconds(config),
-        });
-      },
+    mutationFn: () => {
+      assertEditable();
+      if (!config) {
+        throw new Error("A configuração da empresa ainda não foi carregada pelo sistema.");
+      }
+      return createSimulationNode(search.simulationId!, search.versionNumber!, {
+        clientMessage: draftMessage.trim(),
+        timeLimitSeconds: defaultAnswerTimeLimitSeconds(config),
+      });
+    },
     onSuccess: async (nodeId) => {
       setDraftMessage("");
       setSelectedId(nodeId);
@@ -132,16 +147,20 @@ function DialogEditor() {
     },
   });
   const saveNodeMutation = useMutation({
-    mutationFn: (node: SimulationVersionNodeResponse) =>
-      updateSimulationNode(search.simulationId!, search.versionNumber!, node.id, {
+    mutationFn: (node: SimulationVersionNodeResponse) => {
+      assertEditable();
+      return updateSimulationNode(search.simulationId!, search.versionNumber!, node.id, {
         clientMessage: node.clientMessage,
         timeLimitSeconds: node.timeLimitSeconds,
-      }),
+      });
+    },
     onSuccess: refetchVersion,
   });
   const deleteNodeMutation = useMutation({
-    mutationFn: (nodeId: string) =>
-      deleteSimulationNode(search.simulationId!, search.versionNumber!, nodeId),
+    mutationFn: (nodeId: string) => {
+      assertEditable();
+      return deleteSimulationNode(search.simulationId!, search.versionNumber!, nodeId);
+    },
     onSuccess: async () => {
       setSelectedId(null);
       setFeedbackMessage("Etapa removida.");
@@ -149,13 +168,15 @@ function DialogEditor() {
     },
   });
   const addOptionMutation = useMutation({
-    mutationFn: () =>
-      createSimulationOption(search.simulationId!, search.versionNumber!, selected!.id, {
+    mutationFn: () => {
+      assertEditable();
+      return createSimulationOption(search.simulationId!, search.versionNumber!, selected!.id, {
         text: draftOption.trim(),
         competencyLevels,
         isCritical: false,
         nextNodeId: null,
-      }),
+      });
+    },
     onSuccess: async () => {
       setDraftOption("");
       setFeedbackMessage("Alternativa adicionada.");
@@ -181,15 +202,17 @@ function DialogEditor() {
       competencyLevels?: Record<string, number>;
       mediaUrl?: string;
       mediaType?: MediaType | null;
-    }) =>
-      updateSimulationOption(search.simulationId!, search.versionNumber!, nodeId, optionId, {
+    }) => {
+      assertEditable();
+      return updateSimulationOption(search.simulationId!, search.versionNumber!, nodeId, optionId, {
         text,
         nextNodeId: nextNodeId === null ? "" : nextNodeId,
         isCritical,
         competencyLevels: levels,
         mediaUrl,
         mediaType,
-      }),
+      });
+    },
     onSuccess: refetchVersion,
   });
   const updateNodeMediaMutation = useMutation({
@@ -201,16 +224,20 @@ function DialogEditor() {
       nodeId: string;
       mediaUrl: string;
       mediaType: MediaType | null;
-    }) =>
-      updateSimulationNode(search.simulationId!, search.versionNumber!, nodeId, {
+    }) => {
+      assertEditable();
+      return updateSimulationNode(search.simulationId!, search.versionNumber!, nodeId, {
         mediaUrl,
         mediaType,
-      }),
+      });
+    },
     onSuccess: refetchVersion,
   });
   const deleteOptionMutation = useMutation({
-    mutationFn: ({ nodeId, optionId }: { nodeId: string; optionId: string }) =>
-      deleteSimulationOption(search.simulationId!, search.versionNumber!, nodeId, optionId),
+    mutationFn: ({ nodeId, optionId }: { nodeId: string; optionId: string }) => {
+      assertEditable();
+      return deleteSimulationOption(search.simulationId!, search.versionNumber!, nodeId, optionId);
+    },
     onSuccess: refetchVersion,
   });
 
@@ -221,7 +248,8 @@ function DialogEditor() {
     addOptionMutation.error ??
     updateOptionMutation.error ??
     updateNodeMediaMutation.error ??
-    deleteOptionMutation.error;
+    deleteOptionMutation.error ??
+    cloneDraftMutation.error;
 
   return (
     <AppShell>
@@ -274,6 +302,30 @@ function DialogEditor() {
               </StateBanner>
             </div>
           )}
+          {versionStatus && !isEditable && (
+            <div className="mt-5">
+              <StateBanner
+                tone="warn"
+                title={`Versao ${statusMeta[versionStatus].label.toLowerCase()} nao pode ser editada`}
+                action={
+                  versionStatus === "published" ? (
+                    <button
+                      type="button"
+                      onClick={() => cloneDraftMutation.mutate()}
+                      disabled={cloneDraftMutation.isPending}
+                      className="shrink-0 rounded-md border border-current/20 bg-background/70 px-3 py-2 text-xs font-medium hover:bg-background disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      {cloneDraftMutation.isPending ? "Criando..." : "Criar rascunho"}
+                    </button>
+                  ) : undefined
+                }
+              >
+                {versionStatus === "published"
+                  ? "A versao publicada fica congelada. Crie um rascunho para editar sem afetar candidatos em andamento."
+                  : "Atualize a etapa atual da versao antes de alterar o dialogo."}
+              </StateBanner>
+            </div>
+          )}
           {mutationError && (
             <div className="mt-5">
               <StateBanner tone="danger" title="Não foi possível salvar a alteração">
@@ -281,7 +333,10 @@ function DialogEditor() {
               </StateBanner>
             </div>
           )}
-          <div className="mt-5 grid gap-5 lg:grid-cols-[320px_minmax(0,1fr)]">
+          <fieldset
+            disabled={!isEditable}
+            className="mt-5 grid gap-5 disabled:opacity-75 lg:grid-cols-[320px_minmax(0,1fr)]"
+          >
             <aside className="rounded-md border border-border bg-card p-4">
               <div className="mb-3 text-sm font-semibold">Etapas salvas</div>
               <div className="space-y-2">
@@ -608,7 +663,7 @@ function DialogEditor() {
                 description="Crie a primeira etapa para iniciar o fluxo da conversa."
               />
             )}
-          </div>
+          </fieldset>
           <div className="mt-8 flex justify-between">
             <Link
               to="/nova/personagem"

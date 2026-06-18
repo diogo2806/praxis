@@ -48,3 +48,7 @@ export function maturityForStatus(status: SimulationVersionStatus): Maturity {
   };
   return maturity[status];
 }
+
+export function canEditSimulationVersion(status: SimulationVersionStatus) {
+  return status === "draft" || status === "rejected";
+}
