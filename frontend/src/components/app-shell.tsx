@@ -35,7 +35,7 @@ type TranslationMap = ReturnType<typeof useLanguage>["t"];
 
 const getNav = (t: TranslationMap) =>
   [
-    { to: "/", label: t.common.dashboard, icon: Home, desc: t.descriptions.dashboard },
+    { to: "/app", label: t.common.dashboard, icon: Home, desc: t.descriptions.dashboard },
     {
       to: "/nova/avaliacao",
       label: t.common.createTest,
@@ -147,8 +147,8 @@ function SidebarContent({
         </div>
         {nav.map((item) => {
           const active =
-            item.to === "/"
-              ? pathname === "/"
+            item.to === "/app"
+              ? pathname === "/app"
               : pathname === item.to || pathname.startsWith(item.to + "/");
           return (
             <ShellLink key={item.to} closeOnSelect={closeOnSelect}>
