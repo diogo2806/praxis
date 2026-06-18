@@ -115,8 +115,8 @@ function LgpdPage() {
           </div>
           {!hasContext ? (
             <EmptyState
-              title="Selecione uma versão para explicar"
-              description="A tela usa blueprint, opções e eventos reais quando a URL tem simulationId e versionNumber."
+              title="Selecione uma simulação para ver a explicação"
+              description="Escolha uma simulação abaixo para entender como funciona a explicação da nota que o candidato recebe. Você verá o planejamento, as alternativas e o histórico de eventos."
               actions={<SimulationLinks loading={simulationsQuery.isLoading} simulations={simulationsQuery.data ?? []} />}
             />
           ) : versionQuery.isLoading || auditQuery.isLoading ? (

@@ -107,8 +107,8 @@ function DefensibilityPage() {
       <div className="mt-6">
         {!hasContext ? (
           <EmptyState
-            title="Selecione uma versão para ver evidências"
-            description="A base conceitual é fixa, mas eventos e blueprint podem ser ancorados em uma versão real."
+            title="Selecione uma simulação para ver a sustentação"
+            description="Escolha uma simulação abaixo para entender como ela se sustenta tecnicamente e juridicamente. Você verá o planejamento, as competências medidas e o histórico de aprovações."
             actions={<SimulationLinks loading={simulationsQuery.isLoading} simulations={simulationsQuery.data ?? []} />}
           />
         ) : versionQuery.isLoading || auditQuery.isLoading ? (

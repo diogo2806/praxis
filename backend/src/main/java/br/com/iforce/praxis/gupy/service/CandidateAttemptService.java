@@ -9,7 +9,6 @@ import br.com.iforce.praxis.candidate.dto.SubmitAnswerRequest;
 import br.com.iforce.praxis.candidate.dto.SubmitAnswerResponse;
 import br.com.iforce.praxis.config.PraxisProperties;
 import br.com.iforce.praxis.gupy.delivery.service.GupyCompletionCallbackService;
-import br.com.iforce.praxis.gupy.delivery.service.ResultDeliveryService;
 import br.com.iforce.praxis.gupy.dto.CreateCandidateRequest;
 import br.com.iforce.praxis.gupy.dto.CreateCandidateResponse;
 import br.com.iforce.praxis.gupy.dto.TestResultResponse;
@@ -24,6 +23,7 @@ import br.com.iforce.praxis.gupy.model.ScenarioNode;
 import br.com.iforce.praxis.gupy.model.ScenarioOption;
 import br.com.iforce.praxis.gupy.persistence.entity.CandidateAttemptEntity;
 import br.com.iforce.praxis.gupy.persistence.repository.CandidateAttemptRepository;
+import br.com.iforce.praxis.shared.outbox.service.OutboxService;
 import br.com.iforce.praxis.shared.security.TenantSecurity;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
@@ -50,7 +50,7 @@ public class CandidateAttemptService {
     private final CandidateAttemptRepository candidateAttemptRepository;
     private final AuditEventService auditEventService;
     private final GupyCompletionCallbackService gupyCompletionCallbackService;
-    private final ResultDeliveryService resultDeliveryService;
+    private final OutboxService outboxService;
     private final PraxisProperties praxisProperties;
     private final SimulationCatalogService simulationCatalogService;
     private final CandidateAttemptMapper candidateAttemptMapper;
@@ -61,7 +61,7 @@ public class CandidateAttemptService {
             CandidateAttemptRepository candidateAttemptRepository,
             AuditEventService auditEventService,
             GupyCompletionCallbackService gupyCompletionCallbackService,
-            ResultDeliveryService resultDeliveryService,
+            OutboxService outboxService,
             PraxisProperties praxisProperties,
             SimulationCatalogService simulationCatalogService,
             CandidateAttemptMapper candidateAttemptMapper,
@@ -71,7 +71,7 @@ public class CandidateAttemptService {
         this.candidateAttemptRepository = candidateAttemptRepository;
         this.auditEventService = auditEventService;
         this.gupyCompletionCallbackService = gupyCompletionCallbackService;
-        this.resultDeliveryService = resultDeliveryService;
+        this.outboxService = outboxService;
         this.praxisProperties = praxisProperties;
         this.simulationCatalogService = simulationCatalogService;
         this.candidateAttemptMapper = candidateAttemptMapper;
@@ -259,7 +259,7 @@ public class CandidateAttemptService {
         auditAnswerSubmission(candidateAttemptEntity.getTenantId(), candidateAttemptEntity.getId(), answer, savedAttempt);
         if (savedAttempt.status() == AttemptStatus.COMPLETED) {
             gupyCompletionCallbackService.notifyCompletionIfNeeded(candidateAttemptEntity);
-            resultDeliveryService.enqueueWebhookDelivery(candidateAttemptEntity);
+            publishResultReadyEvent(candidateAttemptEntity);
         }
 
         ScenarioNode nextNode = savedAttempt.status() == AttemptStatus.COMPLETED
@@ -382,6 +382,28 @@ public class CandidateAttemptService {
         return candidateAttemptMapper.toDomain(saved);
     }
 
+    private void publishResultReadyEvent(CandidateAttemptEntity candidateAttemptEntity) {
+        if (candidateAttemptEntity.getResultWebhookUrl() == null || candidateAttemptEntity.getResultWebhookUrl().isBlank()) {
+            return;
+        }
+
+        PublishedSimulation simulation = findSimulation(candidateAttemptEntity);
+        TestResultResponse testResult = gupyTestResultMapper.toResponse(candidateAttemptEntity, simulation);
+
+        var payload = Map.of(
+            "webhookUrl", candidateAttemptEntity.getResultWebhookUrl(),
+            "testResult", testResult
+        );
+
+        outboxService.publish(
+            candidateAttemptEntity.getTenantId(),
+            "RESULT_READY",
+            "CandidateAttempt",
+            candidateAttemptEntity.getId(),
+            payload
+        );
+    }
+
     private PublishedSimulation findSimulation(CandidateAttempt attempt) {
         if (attempt.simulationVersionId() != null) {
             return simulationCatalogService.findByVersionId(attempt.simulationVersionId())
@@ -389,6 +411,16 @@ public class CandidateAttemptService {
         }
 
         return simulationCatalogService.findPublishedById(attempt.tenantId(), attempt.simulationId())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Simulacao publicada nao encontrada."));
+    }
+
+    private PublishedSimulation findSimulation(CandidateAttemptEntity candidateAttemptEntity) {
+        if (candidateAttemptEntity.getSimulationVersionId() != null) {
+            return simulationCatalogService.findByVersionId(candidateAttemptEntity.getSimulationVersionId())
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Versao da simulacao nao encontrada."));
+        }
+
+        return simulationCatalogService.findPublishedById(candidateAttemptEntity.getTenantId(), candidateAttemptEntity.getSimulationId())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Simulacao publicada nao encontrada."));
     }
 

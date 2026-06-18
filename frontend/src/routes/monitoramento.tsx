@@ -142,7 +142,7 @@ function MonitoringPage() {
       {!hasMonitoringParams ? (
         <EmptyState
           title="Selecione uma simulação para monitorar"
-          description="O monitoramento usa apenas dados do sistema interno (servidor). Abra uma versão real para carregar indicadores e entregas Gupy."
+          description="Você verá os indicadores (tentativas, conclusões, erros e entregas) depois que uma avaliação for publicada na Gupy. Escolha uma simulação abaixo ou crie uma nova."
           actions={
             <SimulationLinks
               loading={simulationsQuery.isLoading}
