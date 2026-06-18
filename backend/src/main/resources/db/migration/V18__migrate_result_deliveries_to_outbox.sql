@@ -45,5 +45,4 @@ WHERE rd.status IN ('PENDING', 'RETRYING', 'SENT')
     WHERE oe.aggregate_id = ca.id
       AND oe.aggregate_type = 'CandidateAttempt'
       AND oe.event_type = 'RESULT_READY'
-  )
-ON CONFLICT DO NOTHING;
+  );
