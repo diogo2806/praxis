@@ -1,3 +1,0 @@
--- Marker migration kept for the vendor-specific Flyway location.
--- The PostgreSQL trigger is applied by Java migration V13_1 so H2 tests can
--- share the same migration set without parsing PL/pgSQL.
