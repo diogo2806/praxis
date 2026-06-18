@@ -1,3 +1,5 @@
+"use client";
+
 import { Link, useRouterState } from "@tanstack/react-router";
 import type { ReactNode } from "react";
 import {

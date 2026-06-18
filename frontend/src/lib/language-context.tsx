@@ -17,22 +17,41 @@ const LANGUAGE_STORAGE_KEY = "praxis-language";
 const getDefaultLanguage = (): Language => {
   if (typeof window === "undefined") return "pt-BR";
 
-  const stored = localStorage.getItem(LANGUAGE_STORAGE_KEY) as Language | null;
-  if (stored) return stored;
+  try {
+    const stored = localStorage.getItem(LANGUAGE_STORAGE_KEY) as Language | null;
+    if (stored) return stored;
 
-  const browserLang = navigator.language.toLowerCase();
-  if (browserLang.startsWith("en")) return "en";
-  if (browserLang.startsWith("es")) return "es-MX";
+    const browserLang = navigator.language.toLowerCase();
+    if (browserLang.startsWith("en")) return "en";
+    if (browserLang.startsWith("es")) return "es-MX";
+  } catch {
+    // localStorage might not be available
+  }
 
   return "pt-BR";
 };
 
 export function LanguageProvider({ children }: { children: ReactNode }) {
-  const [language, setLanguageState] = useState<Language>("pt-BR");
+  const [language, setLanguageState] = useState<Language>(() => {
+    // Initialize immediately with server-safe default
+    if (typeof window === "undefined") return "pt-BR";
+    return getDefaultLanguage();
+  });
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    setLanguageState(getDefaultLanguage());
+    // Update language from localStorage on client-side mount
+    const stored = localStorage.getItem(LANGUAGE_STORAGE_KEY) as Language | null;
+    if (stored) {
+      setLanguageState(stored);
+    } else {
+      const browserLang = navigator.language.toLowerCase();
+      if (browserLang.startsWith("en")) {
+        setLanguageState("en");
+      } else if (browserLang.startsWith("es")) {
+        setLanguageState("es-MX");
+      }
+    }
     setMounted(true);
   }, []);
 
@@ -43,10 +62,6 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
   };
 
   const t = getTranslations(language);
-
-  if (!mounted) {
-    return children;
-  }
 
   return (
     <LanguageContext.Provider value={{ language, setLanguage, t }}>
