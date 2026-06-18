@@ -47,6 +47,15 @@ export const glossario = {
     "Registro de auditoria: lista, em ordem, tudo o que aconteceu, e não pode ser alterada.",
   wizard: "Guia passo a passo que conduz você por cada etapa.",
   blocker: "Bloqueio: um problema que impede de avançar até ser resolvido.",
+  "sjt": "Teste de Julgamento Situacional (SJT) — avaliação que mostra como alguém decide diante de situações reais do trabalho.",
+  "determinisitco": "Nota calculada por regras fixas, sempre igual: as mesmas respostas geram sempre a mesma pontuação.",
+  tenant: "Sua empresa ou cliente — espaço isolado onde você cria e gerencia avaliações.",
+  taxonomia: "Catálogo de competências da sua empresa — lista de habilidades que você mede.",
+  workspace: "Área de trabalho: seu espaço pessoal para criar e gerenciar simulações.",
+  score: "Nota ou pontuação — resultado numérico da avaliação.",
+  defensabilidade: "Por que o resultado dessa avaliação se sustenta (inclusive se contestado na justiça).",
+  override: "Ajuste manual ou exceção — quando alguém altera um resultado fora das regras normais.",
+  "explicabilidade": "Capacidade de explicar de forma clara e transparente por que o candidato recebeu aquela nota.",
 } as const;
 
 export type TermoId = keyof typeof glossario;
