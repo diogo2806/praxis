@@ -10,6 +10,7 @@ import br.com.iforce.praxis.gupy.service.GupyTestResultMapper;
 import br.com.iforce.praxis.gupy.service.SimulationCatalogService;
 import br.com.iforce.praxis.shared.outbox.persistence.entity.OutboxEventEntity;
 import br.com.iforce.praxis.shared.outbox.persistence.repository.OutboxEventRepository;
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
@@ -112,6 +113,7 @@ public class OutboxProcessor {
     private void processEvent(OutboxEventEntity event) {
         try {
             event.setLastAttemptAt(Instant.now());
+            event.setAttempts(event.getAttempts() + 1);
             if (RESULT_READY_EVENT.equals(event.getEventType())) {
                 processResultReadyEvent(event);
             }
@@ -159,7 +161,9 @@ public class OutboxProcessor {
 
     private TestResultResponse toTestResult(JsonNode testResultNode) {
         try {
-            return objectMapper.treeToValue(testResultNode, TestResultResponse.class);
+            return objectMapper.readerFor(TestResultResponse.class)
+                    .without(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+                    .readValue(testResultNode);
         } catch (Exception exception) {
             throw new RuntimeException("Falha ao deserializar TestResultResponse do outbox event", exception);
         }
@@ -184,8 +188,6 @@ public class OutboxProcessor {
     }
 
     private void handleEventFailure(OutboxEventEntity event, Exception exception) {
-        event.setAttempts(event.getAttempts() + 1);
-
         String errorMessage = limitMessage(exception.getMessage());
         event.setLastError(errorMessage);
         log.warn("Falha ao processar evento {} (tentativa {}): {}", event.getId(), event.getAttempts(), errorMessage);

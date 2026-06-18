@@ -6,6 +6,12 @@ WHERE candidate_attempt_id IN (
     SELECT id FROM candidate_attempts WHERE simulation_id = 'sim-atendimento-caos'
 );
 
+DELETE FROM outbox_events
+WHERE aggregate_type = 'CandidateAttempt'
+  AND aggregate_id IN (
+      SELECT id FROM candidate_attempts WHERE simulation_id = 'sim-atendimento-caos'
+  );
+
 DELETE FROM candidate_attempts
 WHERE simulation_id = 'sim-atendimento-caos';
 
