@@ -1,12 +1,23 @@
-# Mapa frontend x backend
+# Mapa Frontend × Backend — Integração
 
-## Estado atual
+> **Propósito:** Mapear todas as rotas frontend, endpoints backend e fluxos de integração.  
+> **Público:** Engenheiros frontend, backend, PM técnico.  
+> **Status:** ✅ Atual.
 
-- Frontend: React + TanStack Router/Start em `frontend/src/routes`.
-- Backend: Spring Boot em `backend/src/main/java/br/com/iforce/praxis`.
-- Camada HTTP iniciada em `frontend/src/lib/api/praxis.ts`.
-- CSS padrao centralizado em `frontend/src/styles/app.css`, carregado uma unica vez no root da aplicacao (`frontend/src/routes/__root.tsx`).
-- Integracoes feitas:
+---
+
+## 🏗️ Arquitetura Atual
+
+**Frontend:**
+- React + TanStack Router/Start em `frontend/src/routes`
+- Camada HTTP centralizad em `frontend/src/lib/api/praxis.ts`
+- CSS global em `frontend/src/styles/app.css` (carregado uma única vez em `__root.tsx`)
+
+**Backend:**
+- Spring Boot em `backend/src/main/java/br/com/iforce/praxis`
+- APIs RESTful em `/api/v1/**` e `/test/**` (Gupy)
+
+**Integrações feitas:
   - Painel inicial em `/`, via listagem resumida de simulacoes.
   - Fluxo publico do candidato em `/candidato/:token`.
   - Diagnostico do validador em `/nova/validador?simulationId=ID&versionNumber=1`, incluindo score e contadores do backend.
