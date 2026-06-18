@@ -88,7 +88,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                 key={item.to}
                 to={item.to}
                 className={cn(
-                  "mb-1 flex items-center gap-3 rounded-md px-3 py-2 text-sm transition",
+                  "mb-1.5 flex items-center gap-3 rounded-md px-3 py-2.5 text-sm transition",
                   active
                     ? "bg-sidebar-accent text-sidebar-accent-foreground"
                     : "text-sidebar-foreground/85 hover:bg-sidebar-accent/60 hover:text-sidebar-foreground",
@@ -111,7 +111,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                 key={item.to}
                 to={item.to}
                 className={cn(
-                  "mb-1 flex items-center gap-3 rounded-md px-3 py-2 text-sm transition",
+                  "mb-1.5 flex items-center gap-3 rounded-md px-3 py-2.5 text-sm transition",
                   active
                     ? "bg-sidebar-accent text-sidebar-accent-foreground"
                     : "text-sidebar-foreground/85 hover:bg-sidebar-accent/60 hover:text-sidebar-foreground",
@@ -125,10 +125,13 @@ export function AppShell({ children }: { children: ReactNode }) {
         </nav>
 
         <div className="border-t border-sidebar-border p-4">
-          <div className="rounded-md border border-sidebar-border/60 bg-sidebar-accent/40 p-3 text-xs text-sidebar-foreground/80">
+          <div
+            className="rounded-md border border-sidebar-border/60 bg-sidebar-accent/40 p-3 text-xs text-sidebar-foreground/80"
+            title="A nota do candidato é calculada por regras declaradas (rubrica, peso e cálculo). Nenhum modelo de IA decide ou julga o resultado."
+          >
             <div className="font-medium text-sidebar-foreground">100% determinístico</div>
             <p className="mt-1 text-sidebar-foreground/80">
-              Sem IA julgando candidato. Score sai de rubrica, peso e cálculo.
+              Sem IA julgando candidato. A nota sai de rubrica, peso e cálculo.
             </p>
           </div>
           <div className="mt-3 flex items-center gap-3 px-1">
@@ -146,7 +149,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       <main className="flex min-w-0 flex-1 flex-col">
         <header className="sticky top-0 z-10 flex h-14 items-center gap-4 border-b border-border bg-background/85 px-6 backdrop-blur">
           <div className="text-xs text-muted-foreground">
-            Workspace <span className="text-foreground">/ {session.workspaceName}</span>
+            Espaço de trabalho <span className="text-foreground">/ {session.workspaceName}</span>
           </div>
           <div className="ml-auto flex items-center gap-2 text-xs">
             <span className="inline-flex items-center gap-1.5 rounded-md border border-border bg-card px-2.5 py-1 text-muted-foreground">

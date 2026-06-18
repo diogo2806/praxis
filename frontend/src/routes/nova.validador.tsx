@@ -26,15 +26,15 @@ export const Route = createFileRoute("/nova/validador")({
       typeof search.versionNumber === "number"
         ? search.versionNumber
         : typeof search.versionNumber === "string" && Number.isFinite(Number(search.versionNumber))
-        ? Number(search.versionNumber)
-        : undefined,
+          ? Number(search.versionNumber)
+          : undefined,
   }),
   head: () => ({
     meta: [
       { title: "Validador de Qualidade - Praxis" },
       {
         name: "description",
-        content: "Diagnostico deterministico com bloqueios de publicacao.",
+        content: "Diagnóstico determinístico com bloqueios de publicação.",
       },
     ],
   }),
@@ -79,29 +79,29 @@ function ValidatorPage() {
           <div className="text-xs uppercase text-primary">Passo 3</div>
           <h1 className="mt-1 text-3xl font-semibold">Validador de Qualidade</h1>
           <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
-            Regras deterministicas, trilha auditavel e bloqueios sem override manual.
+            Regras determinísticas, trilha auditável e bloqueios sem override manual.
           </p>
         </div>
       </div>
 
       {hasValidationParams && validationQuery.isLoading && (
         <StateBanner tone="info" title="Validador conectado">
-          Buscando diagnostico da simulacao {search.simulationId} v{search.versionNumber}.
+          Buscando diagnóstico da simulação {search.simulationId} v{search.versionNumber}.
         </StateBanner>
       )}
 
       {hasValidationParams && validationQuery.isError && (
-        <StateBanner tone="danger" title="Nao foi possivel carregar a validacao">
+        <StateBanner tone="danger" title="Não foi possível carregar a validação">
           {validationQuery.error instanceof Error
             ? validationQuery.error.message
-            : "Verifique se o backend esta rodando e se a simulacao existe."}
+            : "Verifique se o backend está rodando e se a simulação existe."}
         </StateBanner>
       )}
 
       {!hasValidationParams ? (
         <EmptyState
-          title="Selecione uma versao para validar"
-          description="O validador usa apenas o diagnostico retornado pelo backend."
+          title="Selecione uma versão para validar"
+          description="O validador usa apenas o diagnóstico retornado pelo backend."
           actions={
             <SimulationLinks
               loading={simulationsQuery.isLoading}
@@ -112,16 +112,22 @@ function ValidatorPage() {
       ) : (
         <>
           {blockers > 0 ? (
-            <StateBanner tone="danger" title={`Publicacao bloqueada - ${blockers} item critico`}>
-              O botao Publicar nao aparece. Resolva o blocker ou salve como rascunho.
+            <StateBanner
+              tone="danger"
+              title={`Publicação bloqueada — ${blockers} ${blockers === 1 ? "item crítico" : "itens críticos"}`}
+            >
+              O botão Publicar não aparece. Resolva o blocker ou salve como rascunho.
             </StateBanner>
           ) : warnings > 0 ? (
-            <StateBanner tone="warn" title={`Pode publicar - ${warnings} alertas registrados`}>
-              A confirmacao registra os alertas no log de auditoria antes de publicar.
+            <StateBanner
+              tone="warn"
+              title={`Pode publicar — ${warnings} ${warnings === 1 ? "alerta registrado" : "alertas registrados"}`}
+            >
+              A confirmação registra os alertas no log de auditoria antes de publicar.
             </StateBanner>
           ) : (
             <StateBanner tone="ok" title="Pronta para publicar">
-              Sem blocker ou warning ativo. A publicacao usa a versao imutavel atual.
+              Sem blocker ou warning ativo. A publicação usa a versão imutável atual.
             </StateBanner>
           )}
 
@@ -129,20 +135,20 @@ function ValidatorPage() {
             <NextStepContract
               primary={
                 blockers > 0
-                  ? "Voltar ao editor. Piloto e publicacao ficam travados."
+                  ? "Voltar ao editor. Piloto e publicação ficam travados."
                   : warnings > 0
-                    ? "Confirmar publicacao com alertas gravados no AuditLog."
-                    : "Publicar versao imutavel e seguir para piloto."
+                    ? "Confirmar publicação com alertas gravados no AuditLog."
+                    : "Publicar versão imutável e seguir para piloto."
               }
               secondary="Salvar rascunho nunca publica; volta ao editor mantendo diagnostico clicavel."
-              versionRule="Depois de publicar, editar cria nova versao e preserva a publicada."
-              lockedAfter="Nao existe override manual para blocker critico."
+              versionRule="Depois de publicar, editar cria nova versão e preserva a publicada."
+              lockedAfter="Não existe override manual para blocker crítico."
             />
           </div>
 
           <div className="mt-5 grid gap-5 lg:grid-cols-[360px_minmax(0,1fr)]">
             <section className="rounded-md border border-border bg-card p-5">
-              <div className="text-xs uppercase text-muted-foreground">Score de qualidade</div>
+              <div className="text-xs uppercase text-muted-foreground">Pontuação de qualidade</div>
               <div className="mt-2 flex items-end gap-2">
                 <div className="text-6xl font-semibold tabular-nums">{qualityScore}</div>
                 <div className="mb-2 text-sm text-muted-foreground">/100</div>
@@ -157,7 +163,7 @@ function ValidatorPage() {
 
             <section className="rounded-md border border-border bg-card p-5">
               <div className="mb-4 flex items-center justify-between">
-                <h2 className="text-sm font-semibold">Diagnostico</h2>
+                <h2 className="text-sm font-semibold">Diagnóstico</h2>
                 <span className="rounded-md border border-border bg-background px-2 py-1 text-[11px] text-muted-foreground">
                   dados do backend
                 </span>
@@ -202,7 +208,7 @@ function ValidatorPage() {
                         : "bg-success text-success-foreground hover:opacity-90",
                     )}
                   >
-                    Seguir para governanca
+                    Seguir para governança
                   </Link>
                 )}
               </div>
@@ -220,8 +226,8 @@ function mapValidationIssues(validation: SimulationValidationResponse): Validati
       {
         id: "publishable",
         tone: "ok",
-        text: "Nenhum blocker ou alerta encontrado nesta versao",
-        target: `Simulacao ${validation.simulationId} v${validation.versionNumber}`,
+        text: "Nenhum blocker ou alerta encontrado nesta versão",
+        target: `Simulação ${validation.simulationId} v${validation.versionNumber}`,
       },
     ];
   }
@@ -230,7 +236,7 @@ function mapValidationIssues(validation: SimulationValidationResponse): Validati
     id: `${issue.severity}-${issue.nodeId ?? "global"}-${index}`,
     tone: issue.severity === "blocker" ? "danger" : "warn",
     text: issue.message,
-    target: issue.nodeId ? `Editor: ${issue.nodeId}` : "Simulacao",
+    target: issue.nodeId ? `Editor: ${issue.nodeId}` : "Simulação",
   }));
 }
 
@@ -244,7 +250,7 @@ function SimulationLinks({
   if (loading) {
     return (
       <div className="rounded-md border border-border bg-card px-4 py-3 text-sm">
-        Carregando simulacoes...
+        Carregando simulações...
       </div>
     );
   }
@@ -255,7 +261,7 @@ function SimulationLinks({
         to="/nova/avaliacao"
         className="rounded-md border border-border bg-card px-4 py-3 text-sm hover:bg-accent"
       >
-        Criar simulacao
+        Criar simulação
       </Link>
     );
   }

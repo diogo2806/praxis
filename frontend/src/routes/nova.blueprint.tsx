@@ -39,6 +39,7 @@ function Page() {
   const [selectedResultUse, setSelectedResultUse] = useState(defaultResultUse);
   const [selectedCompetencies, setSelectedCompetencies] = useState<string[]>([]);
   const [newCompetency, setNewCompetency] = useState("");
+  const [submitAttempted, setSubmitAttempted] = useState(false);
   const roleMaxLength = 180;
   const criticalSituationMaxLength = 1200;
   const performanceMaxLength = 1000;
@@ -163,34 +164,40 @@ function Page() {
             lede="Antes de escrever qualquer diálogo, defina o porquê. O blueprint vira referência fixa para o Validador de Qualidade."
           />
 
-          <Card title="Cargo">
+          <Card title="Cargo" required>
             <Field label="Cargo-alvo">
               <input
-                className={`input ${role.trim().length === 0 ? "border-danger" : ""}`}
+                className={`input ${submitAttempted && role.trim().length === 0 ? "border-danger" : ""}`}
                 placeholder="Ex.: Analista de Atendimento N2"
                 maxLength={roleMaxLength}
+                required
+                aria-required="true"
                 value={role}
                 onChange={(event) => setRole(event.target.value)}
               />
               <FieldMeta
-                error={role.trim().length === 0 ? "Informe o cargo-alvo." : undefined}
+                error={
+                  submitAttempted && role.trim().length === 0 ? "Informe o cargo-alvo." : undefined
+                }
                 count={role.length}
                 max={roleMaxLength}
               />
             </Field>
           </Card>
 
-          <Card title="Situação crítica do cargo">
+          <Card title="Situação crítica do cargo" required>
             <textarea
               aria-label="Situação crítica do cargo"
-              className={`input min-h-24 ${criticalSituation.trim().length === 0 ? "border-danger" : ""}`}
+              className={`input min-h-24 ${submitAttempted && criticalSituation.trim().length === 0 ? "border-danger" : ""}`}
               maxLength={criticalSituationMaxLength}
+              required
+              aria-required="true"
               value={criticalSituation}
               onChange={(event) => setCriticalSituation(event.target.value)}
             />
             <FieldMeta
               error={
-                criticalSituation.trim().length === 0
+                submitAttempted && criticalSituation.trim().length === 0
                   ? "Descreva a situação crítica do cargo."
                   : undefined
               }
@@ -200,7 +207,7 @@ function Page() {
             <Help>Use situação que de fato acontece nesta empresa, não um caso genérico.</Help>
           </Card>
 
-          <Card title="Competências avaliadas">
+          <Card title="Competências avaliadas" required>
             <div className="flex flex-wrap gap-2">
               {competencies.map((competency) => (
                 <label
@@ -245,7 +252,7 @@ function Page() {
               <p className="mt-2 text-xs text-danger">
                 {addCompetencyMutation.error instanceof Error
                   ? addCompetencyMutation.error.message
-                  : "Nao foi possivel salvar a competencia."}
+                  : "Não foi possível salvar a competência."}
               </p>
             )}
             <Help>Competências customizadas podem ser mapeadas para a taxonomia interna.</Help>
@@ -263,16 +270,22 @@ function Page() {
               />
               <FieldMeta count={highPerformance.length} max={performanceMaxLength} />
             </Card>
-            <Card title="Erros críticos" tone="danger">
+            <Card title="Erros críticos" tone="danger" required>
               <textarea
                 aria-label="Erros críticos"
-                className={`input min-h-24 ${criticalError.trim().length === 0 ? "border-danger" : ""}`}
+                className={`input min-h-24 ${submitAttempted && criticalError.trim().length === 0 ? "border-danger" : ""}`}
                 maxLength={criticalErrorMaxLength}
+                required
+                aria-required="true"
                 value={criticalError}
                 onChange={(event) => setCriticalError(event.target.value)}
               />
               <FieldMeta
-                error={criticalError.trim().length === 0 ? "Informe os erros críticos." : undefined}
+                error={
+                  submitAttempted && criticalError.trim().length === 0
+                    ? "Informe os erros críticos."
+                    : undefined
+                }
                 count={criticalError.length}
                 max={criticalErrorMaxLength}
               />
@@ -311,7 +324,7 @@ function Page() {
             </Help>
           </Card>
 
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="sticky bottom-0 -mx-6 mt-2 flex flex-col gap-3 border-t border-border bg-background/90 px-6 py-4 backdrop-blur sm:flex-row sm:items-center sm:justify-between lg:-mx-10 lg:px-10">
             <Link
               to="/"
               className="rounded-md border border-border bg-card px-4 py-2 text-sm hover:bg-accent"
@@ -320,19 +333,29 @@ function Page() {
             </Link>
             <div className="flex flex-col items-start gap-2 sm:items-end">
               {!canGoNext && (
-                <p className="text-xs text-muted-foreground" aria-live="polite">
+                <p
+                  className={`text-xs ${submitAttempted ? "text-danger" : "text-muted-foreground"}`}
+                  aria-live="polite"
+                >
                   Para avançar, preencha {missingFields.join(", ")}.
                 </p>
               )}
               <button
                 type="button"
-                disabled={!canGoNext || createDraftMutation.isPending}
+                disabled={createDraftMutation.isPending}
                 title={
                   canGoNext
                     ? "Criar rascunho e avançar"
                     : "Preencha cargo, situação crítica, erro crítico e competências para avançar"
                 }
-                onClick={() => createDraftMutation.mutate()}
+                onClick={() => {
+                  if (!canGoNext) {
+                    setSubmitAttempted(true);
+                    return;
+                  }
+                  createDraftMutation.mutate();
+                }}
+                aria-disabled={!canGoNext}
                 className={`rounded-md bg-primary px-5 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 ${
                   !canGoNext || createDraftMutation.isPending ? "cursor-not-allowed opacity-50" : ""
                 }`}
@@ -397,10 +420,12 @@ function Card({
   title,
   children,
   tone,
+  required,
 }: {
   title: string;
   children: React.ReactNode;
   tone?: "ok" | "danger";
+  required?: boolean;
 }) {
   const accent =
     tone === "ok"
@@ -412,7 +437,14 @@ function Card({
     <section
       className={`relative overflow-hidden rounded-xl border border-border bg-card p-5 before:absolute before:left-0 before:top-0 before:h-full before:w-1 ${accent}`}
     >
-      <h2 className="mb-3 text-sm font-semibold text-foreground">{title}</h2>
+      <h2 className="mb-3 flex items-center gap-2 text-sm font-semibold text-foreground">
+        {title}
+        {required && (
+          <span className="rounded-full border border-danger/40 bg-danger/10 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-danger">
+            Obrigatório
+          </span>
+        )}
+      </h2>
       {children}
     </section>
   );
