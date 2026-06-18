@@ -26,7 +26,15 @@ public record UpdateTenantConfigRequest(
 
             boolean locked,
 
-            boolean selectedByDefault
+            boolean selectedByDefault,
+
+            @Schema(example = "true", description = "Quando false a opcao esta desativada. Padrão: true.")
+            Boolean active
     ) {
+        public OptionInput {
+            if (active == null) {
+                active = true;
+            }
+        }
     }
 }

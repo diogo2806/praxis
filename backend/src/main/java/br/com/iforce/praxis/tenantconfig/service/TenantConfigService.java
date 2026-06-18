@@ -3,6 +3,7 @@ package br.com.iforce.praxis.tenantconfig.service;
 import br.com.iforce.praxis.auth.service.CurrentTenantService;
 import br.com.iforce.praxis.tenantconfig.dto.ConfigOptionDto;
 import br.com.iforce.praxis.tenantconfig.dto.TenantConfigResponse;
+import br.com.iforce.praxis.tenantconfig.dto.UpdateConfigOptionRequest;
 import br.com.iforce.praxis.tenantconfig.dto.UpdateTenantConfigRequest;
 import br.com.iforce.praxis.tenantconfig.model.TenantConfigType;
 import br.com.iforce.praxis.tenantconfig.persistence.entity.TenantConfigOptionEntity;
@@ -12,6 +13,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.NoSuchElementException;
 
 /**
  * Resolve os catalogos configuraveis por tenant. Quando o tenant nao possui opcoes
@@ -61,6 +63,7 @@ public class TenantConfigService {
             entity.setOptionLabel(resolveLabel(input));
             entity.setLocked(input.locked());
             entity.setSelectedByDefault(input.selectedByDefault());
+            entity.setActive(input.active());
             entity.setDisplayOrder(order++);
             toPersist.add(entity);
         }
@@ -76,7 +79,10 @@ public class TenantConfigService {
         if (rows.isEmpty()) {
             return TenantConfigDefaults.forType(configType);
         }
-        return rows.stream().map(TenantConfigService::toDto).toList();
+        return rows.stream()
+                .filter(TenantConfigOptionEntity::isActive)
+                .map(TenantConfigService::toDto)
+                .toList();
     }
 
     private static String resolveLabel(UpdateTenantConfigRequest.OptionInput input) {
@@ -86,12 +92,45 @@ public class TenantConfigService {
         return input.label().trim();
     }
 
+    @Transactional(readOnly = true)
+    public List<ConfigOptionDto> getAllConfigOptions(TenantConfigType configType) {
+        String tenantId = currentTenantService.requiredTenantId();
+        List<TenantConfigOptionEntity> rows =
+                repository.findByTenantIdAndConfigTypeOrderByDisplayOrderAscIdAsc(tenantId, configType);
+        if (rows.isEmpty()) {
+            return TenantConfigDefaults.forType(configType);
+        }
+        return rows.stream().map(TenantConfigService::toDto).toList();
+    }
+
+    @Transactional
+    public ConfigOptionDto updateConfigOption(
+            TenantConfigType configType,
+            String optionValue,
+            UpdateConfigOptionRequest request
+    ) {
+        String tenantId = currentTenantService.requiredTenantId();
+        TenantConfigOptionEntity entity = repository
+                .findByTenantIdAndConfigTypeAndOptionValue(tenantId, configType, optionValue)
+                .orElseThrow(() -> new NoSuchElementException(
+                        "Opcao nao encontrada: " + optionValue
+                ));
+
+        entity.setOptionLabel(request.label().trim());
+        entity.setLocked(request.locked());
+        entity.setSelectedByDefault(request.selectedByDefault());
+        entity.setActive(request.active());
+
+        return toDto(repository.save(entity));
+    }
+
     private static ConfigOptionDto toDto(TenantConfigOptionEntity entity) {
         return new ConfigOptionDto(
                 entity.getOptionValue(),
                 entity.getOptionLabel(),
                 entity.isLocked(),
-                entity.isSelectedByDefault()
+                entity.isSelectedByDefault(),
+                entity.isActive()
         );
     }
 }

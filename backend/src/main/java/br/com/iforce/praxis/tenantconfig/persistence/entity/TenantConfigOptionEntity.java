@@ -53,4 +53,7 @@ public class TenantConfigOptionEntity {
 
     @Column(name = "display_order", nullable = false)
     private int displayOrder;
+
+    @Column(name = "active", nullable = false)
+    private boolean active = true;
 }

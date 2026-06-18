@@ -158,7 +158,7 @@ function Page() {
     mutationFn: async (value: string) => {
       const nextCompetencies = [
         ...competencies,
-        { value, label: value, locked: false, selectedByDefault: false },
+        { value, label: value, locked: false, selectedByDefault: false, active: true },
       ];
       return updateTenantConfig("COMPETENCY", nextCompetencies);
     },
