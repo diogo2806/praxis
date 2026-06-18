@@ -24,7 +24,7 @@ export const Route = createFileRoute("/defensabilidade")({
   head: () => ({
     meta: [
       { title: "Defensabilidade - Praxis" },
-      { name: "description", content: "Base tecnica e juridica do SJT deterministico." },
+      { name: "description", content: "Base técnica e jurídica do SJT determinístico." },
     ],
   }),
   component: DefensibilityPage,
@@ -100,24 +100,24 @@ function DefensibilityPage() {
 
       <div className="mt-5">
         <StateBanner tone="danger" title="Promessa proibida">
-          Nao vender como conversa real, resposta aberta automatica ou decisao sem revisao humana.
+          Não vender como conversa real, resposta aberta automática ou decisão sem revisão humana.
         </StateBanner>
       </div>
 
       <div className="mt-6">
         {!hasContext ? (
           <EmptyState
-            title="Selecione uma versao para ver evidencias"
-            description="A base conceitual e fixa, mas eventos e blueprint podem ser ancorados em uma versao real."
+            title="Selecione uma versão para ver evidências"
+            description="A base conceitual é fixa, mas eventos e blueprint podem ser ancorados em uma versão real."
             actions={<SimulationLinks loading={simulationsQuery.isLoading} simulations={simulationsQuery.data ?? []} />}
           />
         ) : versionQuery.isLoading || auditQuery.isLoading ? (
-          <StateBanner tone="info" title="Carregando evidencias">
-            Buscando blueprint e trilha de auditoria da simulacao {search.simulationId} v
+          <StateBanner tone="info" title="Carregando evidências">
+            Buscando blueprint e trilha de auditoria da simulação {search.simulationId} v
             {search.versionNumber}.
           </StateBanner>
         ) : versionQuery.isError || auditQuery.isError ? (
-          <StateBanner tone="danger" title="Nao foi possivel carregar evidencias">
+          <StateBanner tone="danger" title="Não foi possível carregar evidências">
             {versionQuery.error instanceof Error
               ? versionQuery.error.message
               : auditQuery.error instanceof Error
@@ -128,12 +128,12 @@ function DefensibilityPage() {
           <div className="grid gap-4 lg:grid-cols-[1fr_360px]">
             <section className="rounded-md border border-border bg-card p-5">
               <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                Blueprint defensavel
+                Blueprint defensável
               </div>
               <h2 className="mt-2 text-xl font-semibold">{versionQuery.data.name}</h2>
               <p className="mt-2 text-sm text-muted-foreground">{versionQuery.data.description}</p>
               <div className="mt-4 grid gap-3 md:grid-cols-3">
-                <Metric label="Nos" value={versionQuery.data.nodes.length} />
+                <Metric label="Nós" value={versionQuery.data.nodes.length} />
                 <Metric
                   label="Alternativas"
                   value={versionQuery.data.nodes.reduce(
@@ -142,7 +142,7 @@ function DefensibilityPage() {
                   )}
                 />
                 <Metric
-                  label="Competencias"
+                  label="Competências"
                   value={versionQuery.data.blueprint.competencies.length}
                 />
               </div>

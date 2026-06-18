@@ -31,8 +31,8 @@ export const Route = createFileRoute("/nova/governanca")({
   }),
   head: () => ({
     meta: [
-      { title: "Governanca & Aprovacoes - Praxis" },
-      { name: "description", content: "Estados, papeis e versionamento imutavel." },
+      { title: "Governança & Aprovações - Praxis" },
+      { name: "description", content: "Estados, papéis e versionamento imutável." },
     ],
   }),
   component: Page,
@@ -40,7 +40,7 @@ export const Route = createFileRoute("/nova/governanca")({
 
 const workflowStates: Array<{ status: SimulationVersionStatus; label: string }> = [
   { status: "draft", label: "Rascunho" },
-  { status: "inReview", label: "Em revisao" },
+  { status: "inReview", label: "Em revisão" },
   { status: "approved", label: "Aprovada" },
   { status: "published", label: "Publicada" },
 ];
@@ -52,25 +52,25 @@ const transitionCopy: Record<
   { title: string; description: string; cta: string }
 > = {
   "submit-review": {
-    title: "Enviar para revisao?",
+    title: "Enviar para revisão?",
     description:
-      "O backend so aceita esta transicao quando a versao esta em rascunho ou reprovada e sem blockers.",
-    cta: "Enviar para revisao",
+      "O sistema só aceita esta transição quando a versão está em rascunho ou reprovada e sem bloqueios críticos.",
+    cta: "Enviar para revisão",
   },
   approve: {
-    title: "Aprovar versao?",
-    description: "A versao ficara aprovada e liberada para publicacao.",
+    title: "Aprovar versão?",
+    description: "A versão ficará aprovada e liberada para publicação.",
     cta: "Aprovar",
   },
   reject: {
-    title: "Reprovar versao?",
+    title: "Reprovar versão?",
     description:
-      "Informe uma justificativa. Ela sera enviada ao backend e preservada na trilha de governanca.",
+      "Informe uma justificativa. Ela será enviada ao sistema e preservada no histórico de governança.",
     cta: "Reprovar",
   },
   publish: {
-    title: "Publicar versao?",
-    description: "A publicacao torna a versao imutavel. Blockers continuam sem override manual.",
+    title: "Publicar versão?",
+    description: "A publicação torna a versão imutável. Bloqueios críticos continuam sem override manual.",
     cta: "Publicar",
   },
 };
@@ -86,7 +86,7 @@ function Page() {
   });
   const [currentStatus, setCurrentStatus] = useState<SimulationVersionStatus | null>(null);
   const [pendingAction, setPendingAction] = useState<TransitionAction | null>(null);
-  const [rejectReason, setRejectReason] = useState("Ajustar pontos indicados pela revisao.");
+  const [rejectReason, setRejectReason] = useState("Ajustar pontos indicados pela revisão.");
   const auditQuery = useQuery({
     queryKey: ["simulation-version-audit", search.simulationId, search.versionNumber],
     queryFn: () => listSimulationVersionAuditEvents(search.simulationId!, search.versionNumber!),
@@ -120,47 +120,47 @@ function Page() {
   return (
     <AppShell>
       <WizardStepper current="publicacao" />
-      <ScreenStateStrip blockedReason="aguardando aprovacao de gestor ou compliance" />
+      <ScreenStateStrip blockedReason="aguardando aprovação de gestor ou compliance" />
       <div className="mb-6">
         <div className="text-xs uppercase tracking-[0.2em] text-primary">Passo 4</div>
-        <h1 className="mt-1 font-display text-3xl">Governanca de publicacao</h1>
+        <h1 className="mt-1 font-display text-3xl">Governança de publicação</h1>
         <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
-          RH nao publica direto em vaga critica. Estados, papeis, versionamento imutavel.
+          RH não publica direto em vaga crítica. Estados, papéis, versionamento imutável.
         </p>
       </div>
 
       {hasGovernanceParams && auditQuery.isLoading && (
-        <StateBanner tone="info" title="Governanca conectada">
-          Buscando AuditLog da simulacao {search.simulationId} v{search.versionNumber}.
+        <StateBanner tone="info" title="Governança conectada">
+          Buscando registro de auditoria da simulação {search.simulationId} v{search.versionNumber}.
         </StateBanner>
       )}
 
       {hasGovernanceParams && auditQuery.isError && (
-        <StateBanner tone="danger" title="Nao foi possivel carregar a governanca">
+        <StateBanner tone="danger" title="Não foi possível carregar a governança">
           {auditQuery.error instanceof Error
             ? auditQuery.error.message
-            : "Verifique se o backend esta rodando e se a versao existe."}
+            : "Verifique se o servidor está rodando e se a versão existe."}
         </StateBanner>
       )}
 
       {transitionMutation.isSuccess && (
-        <StateBanner tone="ok" title="Transicao aplicada">
-          Estado atual retornado pelo backend: {statusLabel(transitionMutation.data.status)}.
+        <StateBanner tone="ok" title="Transição aplicada">
+          Estado atual retornado pelo sistema: {statusLabel(transitionMutation.data.status)}.
         </StateBanner>
       )}
 
       {transitionMutation.isError && (
-        <StateBanner tone="danger" title="Transicao recusada">
+        <StateBanner tone="danger" title="Transição recusada">
           {transitionMutation.error instanceof Error
             ? transitionMutation.error.message
-            : "O backend recusou a transicao de estado."}
+            : "O sistema recusou a transição de estado."}
         </StateBanner>
       )}
 
       {!hasGovernanceParams ? (
         <EmptyState
-          title="Selecione uma versao para governanca"
-          description="As transicoes de estado e o AuditLog agora dependem do backend."
+          title="Selecione uma versão para governança"
+          description="As transições de estado e o registro de auditoria agora dependem do servidor."
           actions={
             <SimulationLinks
               loading={simulationsQuery.isLoading}
@@ -204,7 +204,7 @@ function Page() {
 
           <div className="mt-5 grid gap-2 md:grid-cols-4">
             <TransitionButton
-              label="Enviar para revisao"
+              label="Enviar para revisão"
               disabled={!hasGovernanceParams}
               onClick={() => setPendingAction("submit-review")}
             />
@@ -229,12 +229,12 @@ function Page() {
       )}
 
       <div className="mt-6 rounded-xl border border-border bg-card p-5">
-        <h3 className="text-sm font-semibold">Log de auditoria imutavel</h3>
+        <h3 className="text-sm font-semibold">Registro de auditoria imutável</h3>
         {hasGovernanceParams ? (
           <AuditLog events={auditQuery.data ?? []} loading={auditQuery.isLoading} />
         ) : (
           <div className="mt-4 rounded-md border border-border bg-background p-4 text-sm text-muted-foreground">
-            Selecione uma versao para carregar eventos reais.
+            Selecione uma versão para carregar eventos reais.
           </div>
         )}
       </div>
@@ -340,7 +340,7 @@ function AuditLog({ events, loading }: { events: AuditEventResponse[]; loading: 
   if (events.length === 0) {
     return (
       <div className="mt-4 rounded-md border border-border bg-background p-4 text-sm text-muted-foreground">
-        Nenhum evento de auditoria registrado para esta versao.
+        Nenhum evento de auditoria registrado para esta versão.
       </div>
     );
   }
@@ -377,7 +377,7 @@ function SimulationLinks({
   if (loading) {
     return (
       <div className="rounded-md border border-border bg-card px-4 py-3 text-sm">
-        Carregando simulacoes...
+        Carregando simulações...
       </div>
     );
   }
@@ -388,7 +388,7 @@ function SimulationLinks({
         to="/nova/avaliacao"
         className="rounded-md border border-border bg-card px-4 py-3 text-sm hover:bg-accent"
       >
-        Criar simulacao
+        Criar simulação
       </Link>
     );
   }
@@ -440,7 +440,7 @@ function stateTone(status: SimulationVersionStatus, current: SimulationVersionSt
 function statusLabel(status: SimulationVersionStatus) {
   const labels: Record<SimulationVersionStatus, string> = {
     draft: "rascunho",
-    inReview: "em revisao",
+    inReview: "em revisão",
     approved: "aprovada",
     rejected: "reprovada",
     published: "publicada",
