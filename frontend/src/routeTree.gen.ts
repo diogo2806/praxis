@@ -14,6 +14,7 @@ import { Route as LgpdRouteImport } from './routes/lgpd'
 import { Route as GovernancaRouteImport } from './routes/governanca'
 import { Route as EnviarLinkRouteImport } from './routes/enviar-link'
 import { Route as DefensabilidadeRouteImport } from './routes/defensabilidade'
+import { Route as ComecarRouteImport } from './routes/comecar'
 import { Route as CandidatoRouteImport } from './routes/candidato'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as NovaValidadorRouteImport } from './routes/nova.validador'
@@ -54,6 +55,11 @@ const EnviarLinkRoute = EnviarLinkRouteImport.update({
 const DefensabilidadeRoute = DefensabilidadeRouteImport.update({
   id: '/defensabilidade',
   path: '/defensabilidade',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ComecarRoute = ComecarRouteImport.update({
+  id: '/comecar',
+  path: '/comecar',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CandidatoRoute = CandidatoRouteImport.update({
@@ -140,6 +146,7 @@ const CandidatoTokenRoute = CandidatoTokenRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/candidato': typeof CandidatoRouteWithChildren
+  '/comecar': typeof ComecarRoute
   '/defensabilidade': typeof DefensabilidadeRoute
   '/enviar-link': typeof EnviarLinkRoute
   '/governanca': typeof GovernancaRoute
@@ -163,6 +170,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/candidato': typeof CandidatoRouteWithChildren
+  '/comecar': typeof ComecarRoute
   '/defensabilidade': typeof DefensabilidadeRoute
   '/enviar-link': typeof EnviarLinkRoute
   '/governanca': typeof GovernancaRoute
@@ -187,6 +195,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/candidato': typeof CandidatoRouteWithChildren
+  '/comecar': typeof ComecarRoute
   '/defensabilidade': typeof DefensabilidadeRoute
   '/enviar-link': typeof EnviarLinkRoute
   '/governanca': typeof GovernancaRoute
@@ -212,6 +221,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/candidato'
+    | '/comecar'
     | '/defensabilidade'
     | '/enviar-link'
     | '/governanca'
@@ -235,6 +245,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/candidato'
+    | '/comecar'
     | '/defensabilidade'
     | '/enviar-link'
     | '/governanca'
@@ -258,6 +269,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/candidato'
+    | '/comecar'
     | '/defensabilidade'
     | '/enviar-link'
     | '/governanca'
@@ -282,6 +294,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   CandidatoRoute: typeof CandidatoRouteWithChildren
+  ComecarRoute: typeof ComecarRoute
   DefensabilidadeRoute: typeof DefensabilidadeRoute
   EnviarLinkRoute: typeof EnviarLinkRoute
   GovernancaRoute: typeof GovernancaRoute
@@ -337,6 +350,13 @@ declare module '@tanstack/react-router' {
       path: '/defensabilidade'
       fullPath: '/defensabilidade'
       preLoaderRoute: typeof DefensabilidadeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/comecar': {
+      id: '/comecar'
+      path: '/comecar'
+      fullPath: '/comecar'
+      preLoaderRoute: typeof ComecarRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/candidato': {
@@ -469,6 +489,7 @@ const CandidatoRouteWithChildren = CandidatoRoute._addFileChildren(
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   CandidatoRoute: CandidatoRouteWithChildren,
+  ComecarRoute: ComecarRoute,
   DefensabilidadeRoute: DefensabilidadeRoute,
   EnviarLinkRoute: EnviarLinkRoute,
   GovernancaRoute: GovernancaRoute,
