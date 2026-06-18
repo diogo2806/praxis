@@ -19,18 +19,23 @@ import {
 } from "@/lib/api/praxis";
 import { maturityForStatus } from "@/lib/simulation-meta";
 import { useSession } from "@/lib/session";
+import { useLanguage } from "@/lib/language-context";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/")({
-  head: () => ({
-    meta: [
-      { title: "Painel - Praxis" },
-      {
-        name: "description",
-        content: "Painel: simulações ativas, qualidade, maturidade e vínculo com vagas Gupy.",
-      },
-    ],
-  }),
+  head: () => {
+    // Note: Can't use useLanguage here, using default English title
+    // The actual title will be set in the Dashboard component
+    return {
+      meta: [
+        { title: "Dashboard - Praxis" },
+        {
+          name: "description",
+          content: "Dashboard: active simulations, quality, maturity and link with Gupy jobs.",
+        },
+      ],
+    };
+  },
   component: Dashboard,
 });
 
@@ -44,22 +49,26 @@ const filters: Array<"todas" | SimulationVersionStatus> = [
   "archived",
 ];
 
-const filterLabels: Record<(typeof filters)[number], string> = {
-  todas: "todas",
-  published: "publicadas",
-  approved: "aprovadas",
-  inReview: "em revisão",
-  draft: "rascunhos",
-  rejected: "reprovadas",
-  archived: "arquivadas",
-};
+function getFilterLabels(t: any): Record<(typeof filters)[number], string> {
+  return {
+    todas: t.dashboard.filters.all,
+    published: t.dashboard.filters.published,
+    approved: t.dashboard.filters.approved,
+    inReview: t.dashboard.filters.inReview,
+    draft: t.dashboard.filters.draft,
+    rejected: t.dashboard.filters.rejected,
+    archived: t.dashboard.filters.archived,
+  };
+}
 
 function Dashboard() {
   const [filter, setFilter] = useState<(typeof filters)[number]>("todas");
   const [query, setQuery] = useState("");
+  const { t } = useLanguage();
+  const filterLabels = getFilterLabels(t);
   const queryClient = useQueryClient();
   const session = useSession();
-  const firstName = session.userName.trim().split(/\s+/)[0] || "bem-vindo";
+  const firstName = session.userName.trim().split(/\s+/)[0] || "user";
   const simulationsQuery = useQuery({
     queryKey: ["simulations"],
     queryFn: listSimulations,
@@ -94,16 +103,16 @@ function Dashboard() {
 
   return (
     <AppShell>
-      <ScreenStateStrip blockedReason="espaço de trabalho sem permissão ou Gupy desconectada" />
+      <ScreenStateStrip blockedReason={t.dashboard.blockedReason} />
       <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
         <div>
-          <div className="text-xs uppercase text-muted-foreground">Painel</div>
-          <h1 className="mt-1 text-3xl font-semibold text-foreground">Boa tarde, {firstName}.</h1>
+          <div className="text-xs uppercase text-muted-foreground">{t.common.dashboard}</div>
+          <h1 className="mt-1 text-3xl font-semibold text-foreground">{t.dashboard.greeting}, {firstName}.</h1>
           <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
-            Avaliação situacional estruturada para recrutamento, com{" "}
-            <Termo id="score-rubrica">pontuação por critérios definidos</Termo>,{" "}
-            <Termo id="decisao-contexto">escolha baseada na situação</Termo> e{" "}
-            <Termo id="trilha-auditavel">histórico completo de alterações</Termo>.
+            {t.dashboard.assessmentDescription.split(",")[0]},{" "}
+            <Termo id="score-rubrica">{t.dashboard.scoringTerm}</Termo>,{" "}
+            <Termo id="decisao-contexto">{t.dashboard.contextTerm}</Termo> e{" "}
+            <Termo id="trilha-auditavel">{t.dashboard.auditTerm}</Termo>.
           </p>
         </div>
         <div className="flex gap-2">
@@ -112,21 +121,21 @@ function Dashboard() {
             className="inline-flex items-center gap-2 rounded-md border border-border bg-card px-3 py-2 text-sm hover:bg-accent"
           >
             <BarChart3 className="h-4 w-4" />
-            Monitoramento
+            {t.common.monitoring}
           </Link>
           <Link
             to="/nova/avaliacao"
             className="inline-flex items-center gap-2 rounded-md border border-border bg-card px-3 py-2 text-sm hover:bg-accent"
           >
             <PlayCircle className="h-4 w-4" />
-            Fluxo guiado
+            {t.dashboard.guidedFlow}
           </Link>
           <Link
             to="/nova/avaliacao"
             className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
           >
             <FilePlus2 className="h-4 w-4" />
-            Nova simulação
+            {t.dashboard.newSimulation}
           </Link>
         </div>
       </div>
@@ -136,29 +145,29 @@ function Dashboard() {
           <SkeletonRows rows={5} />
         </section>
       ) : simulationsQuery.isError ? (
-        <StateBanner tone="danger" title="Não foi possível carregar as simulações">
+        <StateBanner tone="danger" title={t.dashboard.couldNotLoad}>
           {simulationsQuery.error instanceof Error
             ? simulationsQuery.error.message
-            : "Verifique se o sistema está disponível e tente novamente."}
+            : t.dashboard.verifySystem}
         </StateBanner>
       ) : simulations.length === 0 ? (
         <EmptyState
-          title="Nenhuma simulação cadastrada"
-          description="Crie ou importe uma simulação para que ela apareça aqui."
+          title={t.dashboard.noSimulations}
+          description={t.dashboard.createOrImport}
           actions={
             <>
               <Link
                 to="/nova/avaliacao"
                 className="inline-flex items-center justify-between rounded-md border border-primary bg-primary px-4 py-3 text-sm font-medium text-primary-foreground hover:bg-primary/90"
               >
-                Criar primeira simulação
+                Create first simulation
                 <FilePlus2 className="h-4 w-4" />
               </Link>
               <Link
                 to="/nova/avaliacao"
                 className="inline-flex items-center justify-between rounded-md border border-border bg-card px-4 py-3 text-sm hover:bg-accent"
               >
-                Abrir fluxo de cadastro
+                Open registration flow
                 <Table2 className="h-4 w-4" />
               </Link>
             </>
@@ -167,44 +176,44 @@ function Dashboard() {
       ) : (
         <div className="space-y-6">
           {archiveMutation.isError && (
-            <StateBanner tone="danger" title="Não foi possível arquivar a simulação">
+            <StateBanner tone="danger" title={t.dashboard.couldNotArchive}>
               {archiveMutation.error instanceof Error
                 ? archiveMutation.error.message
-                : "Tente novamente."}
+                : "Try again."}
             </StateBanner>
           )}
           <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
             <Stat
-              label="Publicadas"
+              label={t.dashboard.totals.published}
               value={totals.publicadas}
-              hint="Em vagas ativas"
+              hint={t.dashboard.table.activeJobs}
               onClick={() => setFilter("published")}
             />
             <Stat
-              label="Aprovadas"
+              label={t.dashboard.totals.approved}
               value={totals.aprovadas}
-              hint="Prontas para publicar"
+              hint={t.dashboard.table.readyPublish}
               onClick={() => setFilter("approved")}
             />
             <Stat
-              label="Rascunhos"
+              label={t.dashboard.totals.drafts}
               value={totals.rascunhos}
-              hint="Em construcao"
+              hint={t.dashboard.table.underConstruction}
               onClick={() => setFilter("draft")}
             />
             <Stat
-              label="Tentativas"
+              label={t.dashboard.totals.attempts}
               value={totals.tentativas}
-              hint="Total registrado"
+              hint={t.dashboard.table.totalRecorded}
               onClick={() => setFilter("todas")}
             />
           </div>
 
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
-              <h2 className="text-xl font-semibold">Simulações</h2>
+              <h2 className="text-xl font-semibold">Simulations</h2>
               <p className="text-xs text-muted-foreground">
-                Status técnico e maturidade aparecem juntos em todas as linhas.
+                Technical status and maturity appear together on all rows.
               </p>
             </div>
             <div className="flex min-w-0 flex-wrap gap-2">
@@ -217,7 +226,7 @@ function Dashboard() {
                   value={query}
                   onChange={(event) => setQuery(event.target.value)}
                   className="input w-64 pl-8"
-                  placeholder="Buscar simulação"
+                  placeholder={t.dashboard.searchSimulation}
                 />
               </label>
               <div className="inline-flex flex-wrap gap-1 rounded-md border border-border bg-card p-1">
@@ -241,8 +250,8 @@ function Dashboard() {
 
           {filtered.length === 0 ? (
             <EmptyState
-              title="Nenhuma simulação neste filtro"
-              description="Ajuste busca, limpe o filtro ou crie um novo rascunho."
+              title="No simulations in this filter"
+              description="Adjust search, clear the filter or create a new draft."
               actions={
                 <button
                   type="button"
@@ -252,7 +261,7 @@ function Dashboard() {
                   }}
                   className="rounded-md border border-border bg-card px-4 py-3 text-sm hover:bg-accent"
                 >
-                  Limpar filtros
+                  Clear filters
                 </button>
               }
             />
@@ -261,11 +270,11 @@ function Dashboard() {
               <table className="w-full text-sm">
                 <thead className="border-b border-border bg-muted/45 text-xs uppercase text-muted-foreground">
                   <tr>
-                    <th className="px-4 py-3 text-left font-medium">Simulação</th>
-                    <th className="px-4 py-3 text-left font-medium">Estado</th>
-                    <th className="px-4 py-3 text-left font-medium">Conclusão</th>
-                    <th className="px-4 py-3 text-left font-medium">Versão</th>
-                    <th className="px-4 py-3 text-left font-medium">Tentativas</th>
+                    <th className="px-4 py-3 text-left font-medium">Simulation</th>
+                    <th className="px-4 py-3 text-left font-medium">{t.dashboard.table.status}</th>
+                    <th className="px-4 py-3 text-left font-medium">{t.dashboard.table.completion}</th>
+                    <th className="px-4 py-3 text-left font-medium">{t.dashboard.table.version}</th>
+                    <th className="px-4 py-3 text-left font-medium">{t.dashboard.table.attempts}</th>
                     <th className="px-4 py-3" />
                   </tr>
                 </thead>

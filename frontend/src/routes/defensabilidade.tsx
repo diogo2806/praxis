@@ -4,6 +4,7 @@ import { ClipboardCheck, Scale, Shield } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
 import { Termo } from "@/components/glossario";
 import { EmptyState, ScreenStateStrip, StateBanner, StatusBadge } from "@/components/praxis-ui";
+import { useLanguage } from "@/lib/language-context";
 import {
   getSimulationVersion,
   listSimulationVersionAuditEvents,
@@ -52,6 +53,7 @@ const pillars = [
 ];
 
 function DefensibilityPage() {
+  const { t } = useLanguage();
   const search = Route.useSearch();
   const hasContext = Boolean(search.simulationId && search.versionNumber);
   const simulationsQuery = useQuery({
@@ -75,8 +77,8 @@ function DefensibilityPage() {
       <ScreenStateStrip blockedReason="promessa comercial indefensável precisa ser removida" />
       <div className="mb-5 flex flex-wrap items-start justify-between gap-4">
         <div>
-          <div className="text-xs uppercase text-primary">Conformidade</div>
-          <h1 className="mt-1 text-3xl font-semibold">Confiabilidade e segurança técnica</h1>
+          <div className="text-xs uppercase text-primary">{t.common.compliance}</div>
+          <h1 className="mt-1 text-3xl font-semibold">{t.defensability.heading}</h1>
           <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
             O produto mede <Termo id="julgamento-situacional">julgamento situacional</Termo>,{" "}
             <Termo id="decisao-contexto">escolha baseada na situação</Termo> e{" "}

@@ -5,6 +5,7 @@ import { ArchiveRestore, Lock, RefreshCw } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
 import { Termo } from "@/components/glossario";
 import { ScreenStateStrip, StateBanner, StatusBadge } from "@/components/praxis-ui";
+import { useLanguage } from "@/lib/language-context";
 import {
   cloneSimulationVersionToDraft,
   listSimulations,
@@ -32,6 +33,7 @@ export const Route = createFileRoute("/governanca")({
 });
 
 function GovernanceHub() {
+  const { t } = useLanguage();
   const search = Route.useSearch();
   const queryClient = useQueryClient();
   const [versionDialogOpen, setVersionDialogOpen] = useState(false);
@@ -60,8 +62,8 @@ function GovernanceHub() {
     <AppShell>
       <ScreenStateStrip blockedReason="papel atual não tem permissão para esta transição" />
       <div className="mb-5">
-        <div className="text-xs uppercase text-primary">Conformidade</div>
-        <h1 className="mt-1 text-3xl font-semibold">Governança e auditoria</h1>
+        <div className="text-xs uppercase text-primary">{t.common.compliance}</div>
+        <h1 className="mt-1 text-3xl font-semibold">{t.governance.heading}</h1>
         <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
           Trilha imutável de decisões, <Termo id="versionamento">versionamento</Termo> e
           reprocessamento restrito a admin.
@@ -69,13 +71,13 @@ function GovernanceHub() {
       </div>
 
       {hasGovernanceParams && auditQuery.isLoading && (
-        <StateBanner tone="info" title="Registro de auditoria conectado">
+        <StateBanner tone="info" title={t.governance.auditRecordConnected}>
           Buscando eventos da simulação {search.simulationId} v{search.versionNumber}.
         </StateBanner>
       )}
 
       {hasGovernanceParams && auditQuery.isError && (
-        <StateBanner tone="danger" title="Não foi possível carregar a auditoria">
+        <StateBanner tone="danger" title={t.governance.couldNotLoadAudit}>
           {auditQuery.error instanceof Error
             ? auditQuery.error.message
             : "Verifique sua conexão e tente novamente. Confira também se a versão existe."}
@@ -83,14 +85,14 @@ function GovernanceHub() {
       )}
 
       {cloneMutation.isSuccess && (
-        <StateBanner tone="ok" title="Nova versão criada">
+        <StateBanner tone="ok" title={t.governance.newVersionCreated}>
           Rascunho v{cloneMutation.data.newVersionNumber} criado a partir da v
           {cloneMutation.data.sourceVersionNumber}.
         </StateBanner>
       )}
 
       {cloneMutation.isError && (
-        <StateBanner tone="danger" title="Não foi possível criar a versão">
+        <StateBanner tone="danger" title="Could not create version">
           {cloneMutation.error instanceof Error
             ? cloneMutation.error.message
             : "A mudança não foi permitida pelo sistema."}
