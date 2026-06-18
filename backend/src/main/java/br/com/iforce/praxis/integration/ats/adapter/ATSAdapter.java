@@ -29,7 +29,9 @@ public interface ATSAdapter {
         WORKDAY,
         GREENHOUSE,
         LEVER,
-        LINKEDIN
+        LINKEDIN,
+        CATHO,
+        INDEED
     }
 
     record CreateCandidateCommand(
