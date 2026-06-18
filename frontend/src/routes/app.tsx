@@ -126,14 +126,14 @@ function Dashboard() {
             Monitoramento
           </Link>
           <Link
-            to="/nova/avaliacao"
+            to="/nova/blueprint"
             className="inline-flex items-center gap-2 rounded-md border border-border bg-card px-3 py-2 text-sm hover:bg-accent"
           >
             <PlayCircle className="h-4 w-4" />
             Fluxo guiado
           </Link>
           <Link
-            to="/nova/avaliacao"
+            to="/nova/blueprint"
             className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
           >
             <FilePlus2 className="h-4 w-4" />
@@ -159,14 +159,14 @@ function Dashboard() {
           actions={
             <>
               <Link
-                to="/nova/avaliacao"
+                to="/nova/blueprint"
                 className="inline-flex items-center justify-between rounded-md border border-primary bg-primary px-4 py-3 text-sm font-medium text-primary-foreground hover:bg-primary/90"
               >
                 Criar primeira simulação
                 <FilePlus2 className="h-4 w-4" />
               </Link>
               <Link
-                to="/nova/avaliacao"
+                to="/nova/blueprint"
                 className="inline-flex items-center justify-between rounded-md border border-border bg-card px-4 py-3 text-sm hover:bg-accent"
               >
                 Abrir fluxo de cadastro
@@ -393,7 +393,7 @@ function Dashboard() {
                             <Tooltip>
                               <TooltipTrigger asChild>
                                 <Link
-                                  to="/nova/revisao"
+                                  to="/nova/validador"
                                   search={simulationSearch(simulation)}
                                   aria-label={`Abrir ${simulation.name}`}
                                   className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-border bg-background text-primary hover:bg-primary/10"

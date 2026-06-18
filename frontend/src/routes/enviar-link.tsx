@@ -268,7 +268,7 @@ function SelectSimulationStep({
         description="Publique uma simulação antes de gerar links para candidatos. Só simulações publicadas podem ser enviadas."
         actions={
           <Link
-            to="/nova/avaliacao"
+            to="/nova/blueprint"
             className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-3 text-sm font-medium text-primary-foreground hover:bg-primary/90"
           >
             Criar simulação

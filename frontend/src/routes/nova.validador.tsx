@@ -422,7 +422,7 @@ function ValidatorPage() {
                     </button>
                   ) : (
                     <Link
-                      to="/nova/publicacao"
+                      to="/nova/piloto"
                       search={{
                         simulationId: search.simulationId,
                         versionNumber: search.versionNumber,
@@ -1442,7 +1442,7 @@ function SimulationLinks({
   if (simulations.length === 0) {
     return (
       <Link
-        to="/nova/avaliacao"
+        to="/nova/blueprint"
         className="rounded-md border border-border bg-card px-4 py-3 text-sm hover:bg-accent"
       >
         Criar simulação
@@ -1455,7 +1455,7 @@ function SimulationLinks({
       {simulations.slice(0, 3).map((simulation) => (
         <Link
           key={simulation.id}
-          to="/nova/revisao"
+          to="/nova/validador"
           search={{
             simulationId: simulation.id,
             versionNumber: simulation.versionNumber,

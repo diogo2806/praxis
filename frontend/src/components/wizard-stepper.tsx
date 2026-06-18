@@ -80,7 +80,7 @@ export function WizardStepper({
                 </div>
               ) : (
                 <Link
-                  to={`/nova/${s.slug}`}
+                  to={s.path}
                   search={currentSearch}
                   aria-current={active ? "step" : undefined}
                   className={cn(

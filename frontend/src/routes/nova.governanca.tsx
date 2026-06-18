@@ -385,7 +385,7 @@ function SimulationLinks({
   if (simulations.length === 0) {
     return (
       <Link
-        to="/nova/avaliacao"
+        to="/nova/blueprint"
         className="rounded-md border border-border bg-card px-4 py-3 text-sm hover:bg-accent"
       >
         Criar simulação
@@ -398,7 +398,7 @@ function SimulationLinks({
       {simulations.slice(0, 3).map((simulation) => (
         <Link
           key={simulation.id}
-          to="/nova/publicacao"
+          to="/nova/piloto"
           search={{
             simulationId: simulation.id,
             versionNumber: simulation.versionNumber,

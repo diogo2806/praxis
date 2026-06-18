@@ -38,7 +38,7 @@ const getNav = (t: TranslationMap) =>
   [
     { to: "/app", label: t.common.dashboard, icon: Home, desc: t.descriptions.dashboard },
     {
-      to: "/nova/avaliacao",
+      to: "/nova/blueprint",
       label: t.common.createTest,
       icon: ClipboardCheck,
       desc: t.descriptions.createTest,
@@ -244,17 +244,15 @@ export function AppShell({ children }: { children: ReactNode }) {
   const nav = getNav(t);
   const secondary = getSecondary(t);
   const productState =
-    pathname === "/nova/gupy" || pathname === "/nova/publicacao"
+    pathname === "/nova/gupy"
       ? {
           gupy: gupyState,
           draft: "published" as const,
           publication: hasGlobalError ? ("blocked" as const) : ("running" as const),
         }
-      : pathname === "/nova/validador" || pathname === "/nova/revisao"
+      : pathname === "/nova/validador"
         ? { gupy: gupyState, draft: "dirty" as const, publication: "blocked" as const }
-        : pathname === "/nova/piloto" ||
-            pathname === "/nova/publicacao" ||
-            pathname.startsWith("/nova/mapa")
+        : pathname === "/nova/piloto" || pathname.startsWith("/nova/mapa")
           ? {
               gupy: gupyState,
               draft: "published" as const,

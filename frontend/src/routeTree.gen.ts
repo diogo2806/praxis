@@ -19,8 +19,6 @@ import { Route as CandidatoRouteImport } from './routes/candidato'
 import { Route as AppRouteImport } from './routes/app'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as NovaValidadorRouteImport } from './routes/nova.validador'
-import { Route as NovaRevisaoRouteImport } from './routes/nova.revisao'
-import { Route as NovaPublicacaoRouteImport } from './routes/nova.publicacao'
 import { Route as NovaPilotoRouteImport } from './routes/nova.piloto'
 import { Route as NovaPersonagemRouteImport } from './routes/nova.personagem'
 import { Route as NovaObjetivoRouteImport } from './routes/nova.objetivo'
@@ -29,9 +27,7 @@ import { Route as NovaGupyRouteImport } from './routes/nova.gupy'
 import { Route as NovaGovernancaRouteImport } from './routes/nova.governanca'
 import { Route as NovaDialogoRouteImport } from './routes/nova.dialogo'
 import { Route as NovaCompetenciasRouteImport } from './routes/nova.competencias'
-import { Route as NovaCenarioRouteImport } from './routes/nova.cenario'
 import { Route as NovaBlueprintRouteImport } from './routes/nova.blueprint'
-import { Route as NovaAvaliacaoRouteImport } from './routes/nova.avaliacao'
 import { Route as CandidatoTokenRouteImport } from './routes/candidato.$token'
 
 const MonitoramentoRoute = MonitoramentoRouteImport.update({
@@ -84,16 +80,6 @@ const NovaValidadorRoute = NovaValidadorRouteImport.update({
   path: '/nova/validador',
   getParentRoute: () => rootRouteImport,
 } as any)
-const NovaRevisaoRoute = NovaRevisaoRouteImport.update({
-  id: '/nova/revisao',
-  path: '/nova/revisao',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const NovaPublicacaoRoute = NovaPublicacaoRouteImport.update({
-  id: '/nova/publicacao',
-  path: '/nova/publicacao',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const NovaPilotoRoute = NovaPilotoRouteImport.update({
   id: '/nova/piloto',
   path: '/nova/piloto',
@@ -134,19 +120,9 @@ const NovaCompetenciasRoute = NovaCompetenciasRouteImport.update({
   path: '/nova/competencias',
   getParentRoute: () => rootRouteImport,
 } as any)
-const NovaCenarioRoute = NovaCenarioRouteImport.update({
-  id: '/nova/cenario',
-  path: '/nova/cenario',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const NovaBlueprintRoute = NovaBlueprintRouteImport.update({
   id: '/nova/blueprint',
   path: '/nova/blueprint',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const NovaAvaliacaoRoute = NovaAvaliacaoRouteImport.update({
-  id: '/nova/avaliacao',
-  path: '/nova/avaliacao',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CandidatoTokenRoute = CandidatoTokenRouteImport.update({
@@ -166,9 +142,7 @@ export interface FileRoutesByFullPath {
   '/lgpd': typeof LgpdRoute
   '/monitoramento': typeof MonitoramentoRoute
   '/candidato/$token': typeof CandidatoTokenRoute
-  '/nova/avaliacao': typeof NovaAvaliacaoRoute
   '/nova/blueprint': typeof NovaBlueprintRoute
-  '/nova/cenario': typeof NovaCenarioRoute
   '/nova/competencias': typeof NovaCompetenciasRoute
   '/nova/dialogo': typeof NovaDialogoRoute
   '/nova/governanca': typeof NovaGovernancaRoute
@@ -177,8 +151,6 @@ export interface FileRoutesByFullPath {
   '/nova/objetivo': typeof NovaObjetivoRoute
   '/nova/personagem': typeof NovaPersonagemRoute
   '/nova/piloto': typeof NovaPilotoRoute
-  '/nova/publicacao': typeof NovaPublicacaoRoute
-  '/nova/revisao': typeof NovaRevisaoRoute
   '/nova/validador': typeof NovaValidadorRoute
 }
 export interface FileRoutesByTo {
@@ -192,9 +164,7 @@ export interface FileRoutesByTo {
   '/lgpd': typeof LgpdRoute
   '/monitoramento': typeof MonitoramentoRoute
   '/candidato/$token': typeof CandidatoTokenRoute
-  '/nova/avaliacao': typeof NovaAvaliacaoRoute
   '/nova/blueprint': typeof NovaBlueprintRoute
-  '/nova/cenario': typeof NovaCenarioRoute
   '/nova/competencias': typeof NovaCompetenciasRoute
   '/nova/dialogo': typeof NovaDialogoRoute
   '/nova/governanca': typeof NovaGovernancaRoute
@@ -203,8 +173,6 @@ export interface FileRoutesByTo {
   '/nova/objetivo': typeof NovaObjetivoRoute
   '/nova/personagem': typeof NovaPersonagemRoute
   '/nova/piloto': typeof NovaPilotoRoute
-  '/nova/publicacao': typeof NovaPublicacaoRoute
-  '/nova/revisao': typeof NovaRevisaoRoute
   '/nova/validador': typeof NovaValidadorRoute
 }
 export interface FileRoutesById {
@@ -219,9 +187,7 @@ export interface FileRoutesById {
   '/lgpd': typeof LgpdRoute
   '/monitoramento': typeof MonitoramentoRoute
   '/candidato/$token': typeof CandidatoTokenRoute
-  '/nova/avaliacao': typeof NovaAvaliacaoRoute
   '/nova/blueprint': typeof NovaBlueprintRoute
-  '/nova/cenario': typeof NovaCenarioRoute
   '/nova/competencias': typeof NovaCompetenciasRoute
   '/nova/dialogo': typeof NovaDialogoRoute
   '/nova/governanca': typeof NovaGovernancaRoute
@@ -230,8 +196,6 @@ export interface FileRoutesById {
   '/nova/objetivo': typeof NovaObjetivoRoute
   '/nova/personagem': typeof NovaPersonagemRoute
   '/nova/piloto': typeof NovaPilotoRoute
-  '/nova/publicacao': typeof NovaPublicacaoRoute
-  '/nova/revisao': typeof NovaRevisaoRoute
   '/nova/validador': typeof NovaValidadorRoute
 }
 export interface FileRouteTypes {
@@ -247,9 +211,7 @@ export interface FileRouteTypes {
     | '/lgpd'
     | '/monitoramento'
     | '/candidato/$token'
-    | '/nova/avaliacao'
     | '/nova/blueprint'
-    | '/nova/cenario'
     | '/nova/competencias'
     | '/nova/dialogo'
     | '/nova/governanca'
@@ -258,8 +220,6 @@ export interface FileRouteTypes {
     | '/nova/objetivo'
     | '/nova/personagem'
     | '/nova/piloto'
-    | '/nova/publicacao'
-    | '/nova/revisao'
     | '/nova/validador'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -273,9 +233,7 @@ export interface FileRouteTypes {
     | '/lgpd'
     | '/monitoramento'
     | '/candidato/$token'
-    | '/nova/avaliacao'
     | '/nova/blueprint'
-    | '/nova/cenario'
     | '/nova/competencias'
     | '/nova/dialogo'
     | '/nova/governanca'
@@ -284,8 +242,6 @@ export interface FileRouteTypes {
     | '/nova/objetivo'
     | '/nova/personagem'
     | '/nova/piloto'
-    | '/nova/publicacao'
-    | '/nova/revisao'
     | '/nova/validador'
   id:
     | '__root__'
@@ -299,9 +255,7 @@ export interface FileRouteTypes {
     | '/lgpd'
     | '/monitoramento'
     | '/candidato/$token'
-    | '/nova/avaliacao'
     | '/nova/blueprint'
-    | '/nova/cenario'
     | '/nova/competencias'
     | '/nova/dialogo'
     | '/nova/governanca'
@@ -310,8 +264,6 @@ export interface FileRouteTypes {
     | '/nova/objetivo'
     | '/nova/personagem'
     | '/nova/piloto'
-    | '/nova/publicacao'
-    | '/nova/revisao'
     | '/nova/validador'
   fileRoutesById: FileRoutesById
 }
@@ -325,9 +277,7 @@ export interface RootRouteChildren {
   GovernancaRoute: typeof GovernancaRoute
   LgpdRoute: typeof LgpdRoute
   MonitoramentoRoute: typeof MonitoramentoRoute
-  NovaAvaliacaoRoute: typeof NovaAvaliacaoRoute
   NovaBlueprintRoute: typeof NovaBlueprintRoute
-  NovaCenarioRoute: typeof NovaCenarioRoute
   NovaCompetenciasRoute: typeof NovaCompetenciasRoute
   NovaDialogoRoute: typeof NovaDialogoRoute
   NovaGovernancaRoute: typeof NovaGovernancaRoute
@@ -336,8 +286,6 @@ export interface RootRouteChildren {
   NovaObjetivoRoute: typeof NovaObjetivoRoute
   NovaPersonagemRoute: typeof NovaPersonagemRoute
   NovaPilotoRoute: typeof NovaPilotoRoute
-  NovaPublicacaoRoute: typeof NovaPublicacaoRoute
-  NovaRevisaoRoute: typeof NovaRevisaoRoute
   NovaValidadorRoute: typeof NovaValidadorRoute
 }
 
@@ -413,20 +361,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof NovaValidadorRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/nova/revisao': {
-      id: '/nova/revisao'
-      path: '/nova/revisao'
-      fullPath: '/nova/revisao'
-      preLoaderRoute: typeof NovaRevisaoRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/nova/publicacao': {
-      id: '/nova/publicacao'
-      path: '/nova/publicacao'
-      fullPath: '/nova/publicacao'
-      preLoaderRoute: typeof NovaPublicacaoRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/nova/piloto': {
       id: '/nova/piloto'
       path: '/nova/piloto'
@@ -483,25 +417,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof NovaCompetenciasRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/nova/cenario': {
-      id: '/nova/cenario'
-      path: '/nova/cenario'
-      fullPath: '/nova/cenario'
-      preLoaderRoute: typeof NovaCenarioRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/nova/blueprint': {
       id: '/nova/blueprint'
       path: '/nova/blueprint'
       fullPath: '/nova/blueprint'
       preLoaderRoute: typeof NovaBlueprintRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/nova/avaliacao': {
-      id: '/nova/avaliacao'
-      path: '/nova/avaliacao'
-      fullPath: '/nova/avaliacao'
-      preLoaderRoute: typeof NovaAvaliacaoRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/candidato/$token': {
@@ -536,9 +456,7 @@ const rootRouteChildren: RootRouteChildren = {
   GovernancaRoute: GovernancaRoute,
   LgpdRoute: LgpdRoute,
   MonitoramentoRoute: MonitoramentoRoute,
-  NovaAvaliacaoRoute: NovaAvaliacaoRoute,
   NovaBlueprintRoute: NovaBlueprintRoute,
-  NovaCenarioRoute: NovaCenarioRoute,
   NovaCompetenciasRoute: NovaCompetenciasRoute,
   NovaDialogoRoute: NovaDialogoRoute,
   NovaGovernancaRoute: NovaGovernancaRoute,
@@ -547,8 +465,6 @@ const rootRouteChildren: RootRouteChildren = {
   NovaObjetivoRoute: NovaObjetivoRoute,
   NovaPersonagemRoute: NovaPersonagemRoute,
   NovaPilotoRoute: NovaPilotoRoute,
-  NovaPublicacaoRoute: NovaPublicacaoRoute,
-  NovaRevisaoRoute: NovaRevisaoRoute,
   NovaValidadorRoute: NovaValidadorRoute,
 }
 export const routeTree = rootRouteImport
