@@ -104,10 +104,10 @@ public class MediaStorageService {
     }
 
     private MediaType resolveMediaType(String contentType) {
-        if (contentType.startsWith("image/")) {
+        if (IMAGE_EXTENSIONS.containsKey(contentType)) {
             return MediaType.IMAGE;
         }
-        if (contentType.startsWith("audio/")) {
+        if (AUDIO_EXTENSIONS.containsKey(contentType)) {
             return MediaType.AUDIO;
         }
         throw new ResponseStatusException(

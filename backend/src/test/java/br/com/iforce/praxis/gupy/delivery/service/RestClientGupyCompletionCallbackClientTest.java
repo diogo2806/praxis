@@ -32,6 +32,7 @@ class RestClientGupyCompletionCallbackClientTest {
                 0.001,
                 100,
                 30,
+                10,
                 webhookAllowedHosts
         );
         return new GupyOutboundUrlValidator(properties);

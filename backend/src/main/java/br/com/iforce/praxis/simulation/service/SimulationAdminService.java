@@ -388,7 +388,8 @@ public class SimulationAdminService {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Usuario autenticado obrigatorio.");
         }
 
-        SimulationEntity simulationEntity = simulationRepository.findById(simulationId)
+        String tenantId = currentTenantService.requiredTenantId();
+        SimulationEntity simulationEntity = simulationRepository.findByTenantIdAndId(tenantId, simulationId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Simulacao nao encontrada."));
 
         if (simulationEntity.isArchived() || simulationEntity.getDeletedAt() != null) {

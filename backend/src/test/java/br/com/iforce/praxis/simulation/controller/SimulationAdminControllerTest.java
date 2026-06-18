@@ -293,6 +293,13 @@ class SimulationAdminControllerTest {
     }
 
     @Test
+    @Sql(scripts = "/tenant-isolation-fixtures.sql")
+    void archiveSimulationDoesNotCrossTenantBoundary() throws Exception {
+        mockMvc.perform(delete("/api/v1/simulations/sim-tenant2"))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
     void monitorSeededVersionReturnsAttemptAndDeliveryIndicators() throws Exception {
         mockMvc.perform(post("/test/candidate")
                         .header("Authorization", "Bearer dev-company-token")

@@ -14,6 +14,7 @@ public record PraxisProperties(
         double competencyWeightTolerance,
         int gupyRateLimitRequestsPerMinute,
         int authoringRateLimitRequestsPerMinute,
+        int authLoginRateLimitRequestsPerMinute,
         List<String> webhookAllowedHosts
 ) {
 
@@ -32,6 +33,9 @@ public record PraxisProperties(
         }
         if (authoringRateLimitRequestsPerMinute == 0) {
             authoringRateLimitRequestsPerMinute = 30;
+        }
+        if (authLoginRateLimitRequestsPerMinute == 0) {
+            authLoginRateLimitRequestsPerMinute = 10;
         }
     }
 }

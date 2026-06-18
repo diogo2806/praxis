@@ -1,5 +1,6 @@
 package br.com.iforce.praxis.shared.outbox.service;
 
+import br.com.iforce.praxis.gupy.delivery.service.GupyOutboundUrlValidator;
 import br.com.iforce.praxis.gupy.dto.TestResultResponse;
 import br.com.iforce.praxis.gupy.model.PublishedSimulation;
 import br.com.iforce.praxis.gupy.persistence.entity.CandidateAttemptEntity;
@@ -19,6 +20,7 @@ import org.springframework.web.client.RestClientResponseException;
 import org.springframework.web.client.RestTemplate;
 
 import java.time.Instant;
+import java.net.URI;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -45,6 +47,9 @@ class OutboxProcessorTest {
     @Mock
     private GupyTestResultMapper gupyTestResultMapper;
 
+    @Mock
+    private GupyOutboundUrlValidator outboundUrlValidator;
+
     private OutboxProcessor outboxProcessor;
     private ObjectMapper objectMapper;
 
@@ -57,8 +62,11 @@ class OutboxProcessorTest {
             objectMapper,
             candidateAttemptRepository,
             simulationCatalogService,
-            gupyTestResultMapper
+            gupyTestResultMapper,
+            outboundUrlValidator
         );
+        lenient().when(outboundUrlValidator.validate(anyString()))
+                .thenAnswer(invocation -> URI.create(invocation.getArgument(0)));
     }
 
     @Test
@@ -72,7 +80,7 @@ class OutboxProcessorTest {
 
         assertThat(event.getStatus()).isEqualTo(OutboxEventEntity.OutboxEventStatus.SENT);
         assertThat(event.getNextAttemptAt()).isNull();
-        verify(restTemplate).postForObject(anyString(), any(), eq(Void.class));
+        verify(restTemplate).postForObject(any(URI.class), any(), eq(Void.class));
     }
 
     @Test
@@ -82,7 +90,7 @@ class OutboxProcessorTest {
         when(outboxEventRepository.findByStatusInAndNextAttemptAtLessThanEqualOrderByCreatedAtAsc(
             anyList(), any(Instant.class)
         )).thenReturn(List.of(event));
-        when(restTemplate.postForObject(anyString(), any(), eq(Void.class)))
+        when(restTemplate.postForObject(any(URI.class), any(), eq(Void.class)))
             .thenThrow(new RestClientResponseException("Server error", 500, "Internal Server Error", null, null, null));
 
         outboxProcessor.processReadyEvents();
@@ -99,7 +107,7 @@ class OutboxProcessorTest {
         when(outboxEventRepository.findByStatusInAndNextAttemptAtLessThanEqualOrderByCreatedAtAsc(
             anyList(), any(Instant.class)
         )).thenReturn(List.of(event));
-        when(restTemplate.postForObject(anyString(), any(), eq(Void.class)))
+        when(restTemplate.postForObject(any(URI.class), any(), eq(Void.class)))
             .thenThrow(new RestClientResponseException("Bad request", 400, "Bad Request", null, null, null));
 
         outboxProcessor.processReadyEvents();
@@ -115,7 +123,7 @@ class OutboxProcessorTest {
         when(outboxEventRepository.findByStatusInAndNextAttemptAtLessThanEqualOrderByCreatedAtAsc(
             anyList(), any(Instant.class)
         )).thenReturn(List.of(event));
-        when(restTemplate.postForObject(anyString(), any(), eq(Void.class)))
+        when(restTemplate.postForObject(any(URI.class), any(), eq(Void.class)))
             .thenThrow(new RuntimeException("Network error"));
 
         outboxProcessor.processReadyEvents();
@@ -130,7 +138,7 @@ class OutboxProcessorTest {
         when(outboxEventRepository.findByStatusInAndNextAttemptAtLessThanEqualOrderByCreatedAtAsc(
             anyList(), any(Instant.class)
         )).thenReturn(List.of(event));
-        when(restTemplate.postForObject(anyString(), any(), eq(Void.class)))
+        when(restTemplate.postForObject(any(URI.class), any(), eq(Void.class)))
             .thenThrow(new RuntimeException("Error"));
 
         Instant beforeRetry = Instant.now();
@@ -166,6 +174,7 @@ class OutboxProcessorTest {
         event.setNextAttemptAt(Instant.now());
 
         CandidateAttemptEntity attempt = new CandidateAttemptEntity();
+        attempt.setSimulationVersionId(100L);
         PublishedSimulation simulation = mock(PublishedSimulation.class);
         TestResultResponse testResult = mock(TestResultResponse.class);
 
@@ -174,7 +183,7 @@ class OutboxProcessorTest {
         )).thenReturn(List.of(event));
         when(candidateAttemptRepository.findByTenantIdAndId("tenant-1", "att_123"))
             .thenReturn(Optional.of(attempt));
-        when(simulationCatalogService.findByVersionId(null))
+        when(simulationCatalogService.findByVersionId(100L))
             .thenReturn(Optional.of(simulation));
         when(gupyTestResultMapper.toResponse(attempt, simulation))
             .thenReturn(testResult);
@@ -182,8 +191,23 @@ class OutboxProcessorTest {
         outboxProcessor.processReadyEvents();
 
         verify(gupyTestResultMapper).toResponse(attempt, simulation);
-        verify(restTemplate).postForObject("https://example.com/webhook", testResult, Void.class);
+        verify(restTemplate).postForObject(URI.create("https://example.com/webhook"), testResult, Void.class);
         assertThat(event.getStatus()).isEqualTo(OutboxEventEntity.OutboxEventStatus.SENT);
+    }
+
+    @Test
+    void shouldNotPostWhenWebhookUrlFailsOutboundValidation() {
+        OutboxEventEntity event = createPendingEvent();
+        when(outboxEventRepository.findByStatusInAndNextAttemptAtLessThanEqualOrderByCreatedAtAsc(
+            anyList(), any(Instant.class)
+        )).thenReturn(List.of(event));
+        when(outboundUrlValidator.validate("https://example.com/webhook"))
+            .thenThrow(new IllegalArgumentException("Host externo nao permitido."));
+
+        outboxProcessor.processReadyEvents();
+
+        verify(restTemplate, never()).postForObject(any(URI.class), any(), eq(Void.class));
+        assertThat(event.getStatus()).isEqualTo(OutboxEventEntity.OutboxEventStatus.RETRYING);
     }
 
     @Test
@@ -194,7 +218,7 @@ class OutboxProcessorTest {
 
         outboxProcessor.processReadyEvents();
 
-        verify(restTemplate, never()).postForObject(anyString(), any(), any());
+        verify(restTemplate, never()).postForObject(any(URI.class), any(), any());
     }
 
     private OutboxEventEntity createPendingEvent() {

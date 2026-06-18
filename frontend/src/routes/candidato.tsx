@@ -1,15 +1,35 @@
 import { createFileRoute, Link, Outlet, useChildMatches } from "@tanstack/react-router";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useEffect, useState, type CSSProperties } from "react";
-import { Pause, Play, RotateCcw, ShieldCheck, Wifi, WifiOff } from "lucide-react";
+import {
+  ExternalLink,
+  Pause,
+  Play,
+  RotateCcw,
+  Share2,
+  ShieldCheck,
+  Wifi,
+  WifiOff,
+} from "lucide-react";
 import { AppShell } from "@/components/app-shell";
 import { EmptyState, ScreenStateStrip, StateBanner } from "@/components/praxis-ui";
 import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  createCandidateLink,
   getCandidateAttempt,
+  listSimulations,
   submitCandidateAnswer,
   type CandidateAttemptResponse,
   type CandidateNodeResponse,
   type MediaType,
+  type SimulationSummaryResponse,
 } from "@/lib/api/praxis";
 import { cn } from "@/lib/utils";
 import { useViewMode } from "@/lib/view-mode";
@@ -37,7 +57,7 @@ function CandidateRouteLayout() {
   if (childMatches.length > 0) {
     return <Outlet />;
   }
-  return <CandidateEntryPage />;
+  return <CandidateLinksPage />;
 }
 
 function CandidateEntryPage() {
@@ -75,6 +95,230 @@ function CandidateEntryPage() {
           </div>
         }
       />
+    </AppShell>
+  );
+}
+
+type CandidateLinkRow = {
+  id: string;
+  name: string;
+  email: string;
+  url: string;
+  simulationName: string;
+};
+
+const CANDIDATE_LINKS_STORAGE_KEY = "praxis:candidate-links";
+
+function CandidateLinksPage() {
+  const [candidateName, setCandidateName] = useState("");
+  const [candidateEmail, setCandidateEmail] = useState("");
+  const [selectedSimulationId, setSelectedSimulationId] = useState("");
+  const [rows, setRows] = useState<CandidateLinkRow[]>(() => {
+    if (typeof window === "undefined") return [];
+    const stored = window.localStorage.getItem(CANDIDATE_LINKS_STORAGE_KEY);
+    if (!stored) return [];
+    try {
+      return JSON.parse(stored) as CandidateLinkRow[];
+    } catch {
+      return [];
+    }
+  });
+
+  const simulationsQuery = useQuery({
+    queryKey: ["simulations"],
+    queryFn: listSimulations,
+    retry: false,
+  });
+
+  const publishedSimulations = (simulationsQuery.data ?? []).filter(
+    (simulation) => simulation.status === "published",
+  );
+  const selectedSimulation =
+    publishedSimulations.find((simulation) => simulation.id === selectedSimulationId) ??
+    publishedSimulations[0] ??
+    null;
+  const canGenerate =
+    Boolean(selectedSimulation) && candidateName.trim().length > 0 && candidateEmail.includes("@");
+
+  useEffect(() => {
+    if (!selectedSimulationId && publishedSimulations.length > 0) {
+      setSelectedSimulationId(publishedSimulations[0].id);
+    }
+  }, [publishedSimulations, selectedSimulationId]);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      window.localStorage.setItem(CANDIDATE_LINKS_STORAGE_KEY, JSON.stringify(rows));
+    }
+  }, [rows]);
+
+  const linkMutation = useMutation({
+    mutationFn: createCandidateLink,
+    onSuccess: (data, variables) => {
+      const url = data.candidateUrl || `${window.location.origin}/candidato/${data.attemptId}`;
+      setRows((current) => {
+        const nextRow = {
+          id: data.attemptId,
+          name: variables.candidateName,
+          email: variables.candidateEmail,
+          url,
+          simulationName: data.simulationName,
+        };
+        return [nextRow, ...current.filter((row) => row.id !== nextRow.id)];
+      });
+      setCandidateName("");
+      setCandidateEmail("");
+    },
+  });
+
+  function handleSubmit() {
+    if (!canGenerate || !selectedSimulation) return;
+    linkMutation.mutate({
+      simulationId: selectedSimulation.id,
+      candidateName: candidateName.trim(),
+      candidateEmail: candidateEmail.trim(),
+    });
+  }
+
+  async function handleShare(row: CandidateLinkRow) {
+    const text = `Ola ${row.name}, voce foi convidado(a) para uma simulacao situacional. Acesse: ${row.url}`;
+    if (navigator.share) {
+      await navigator.share({
+        title: row.simulationName,
+        text,
+        url: row.url,
+      });
+      return;
+    }
+    await navigator.clipboard.writeText(text);
+  }
+
+  return (
+    <AppShell>
+      <ScreenStateStrip blockedReason="sem simulacoes publicadas para gerar link" />
+
+      <div className="mb-6">
+        <div className="text-xs uppercase text-primary">Candidatos</div>
+        <h1 className="mt-1 text-3xl font-semibold">Links de candidatos</h1>
+        <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
+          Gere o acesso e acompanhe em uma tabela com nome, email, link clicavel e compartilhamento.
+        </p>
+      </div>
+
+      {simulationsQuery.isError && (
+        <StateBanner tone="danger" title="Nao foi possivel carregar simulacoes">
+          {simulationsQuery.error instanceof Error
+            ? simulationsQuery.error.message
+            : "Verifique se o backend esta disponivel."}
+        </StateBanner>
+      )}
+
+      {linkMutation.isError && (
+        <StateBanner tone="danger" title="Nao foi possivel gerar o link">
+          {linkMutation.error instanceof Error
+            ? linkMutation.error.message
+            : "Verifique os dados do candidato e tente novamente."}
+        </StateBanner>
+      )}
+
+      <section className="mb-6 rounded-md border border-border bg-card p-5">
+        <div className="grid gap-3 lg:grid-cols-[minmax(180px,1fr)_minmax(180px,1fr)_minmax(220px,1fr)_auto]">
+          <label className="space-y-1 text-sm">
+            <span className="font-medium">Nome</span>
+            <input
+              className="input"
+              placeholder="Nome do candidato"
+              value={candidateName}
+              onChange={(event) => setCandidateName(event.target.value)}
+            />
+          </label>
+          <label className="space-y-1 text-sm">
+            <span className="font-medium">Email</span>
+            <input
+              className="input"
+              placeholder="email@empresa.com"
+              type="email"
+              value={candidateEmail}
+              onChange={(event) => setCandidateEmail(event.target.value)}
+            />
+          </label>
+          <label className="space-y-1 text-sm">
+            <span className="font-medium">Simulacao</span>
+            <select
+              className="input"
+              value={selectedSimulation?.id ?? ""}
+              onChange={(event) => setSelectedSimulationId(event.target.value)}
+              disabled={simulationsQuery.isLoading || publishedSimulations.length === 0}
+            >
+              {publishedSimulations.map((simulation: SimulationSummaryResponse) => (
+                <option key={simulation.id} value={simulation.id}>
+                  {simulation.name}
+                </option>
+              ))}
+            </select>
+          </label>
+          <div className="flex items-end">
+            <button
+              type="button"
+              onClick={handleSubmit}
+              disabled={!canGenerate || linkMutation.isPending}
+              className="inline-flex h-11 w-full items-center justify-center rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50 lg:w-auto"
+            >
+              {linkMutation.isPending ? "Gerando..." : "Gerar link"}
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <section className="rounded-md border border-border bg-card">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Nome</TableHead>
+              <TableHead>Email</TableHead>
+              <TableHead>Link</TableHead>
+              <TableHead className="text-right">Acao</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {rows.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={4} className="py-8 text-center text-sm text-muted-foreground">
+                  Nenhum link gerado ainda.
+                </TableCell>
+              </TableRow>
+            ) : (
+              rows.map((row) => (
+                <TableRow key={row.id}>
+                  <TableCell className="font-medium">{row.name}</TableCell>
+                  <TableCell>{row.email}</TableCell>
+                  <TableCell className="max-w-[420px]">
+                    <a
+                      href={row.url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex max-w-full items-center gap-2 text-primary hover:underline"
+                    >
+                      <span className="truncate">{row.url}</span>
+                      <ExternalLink className="h-4 w-4 shrink-0" />
+                    </a>
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <button
+                      type="button"
+                      onClick={() => void handleShare(row)}
+                      className="inline-flex items-center gap-2 rounded-md border border-border bg-card px-3 py-2 text-sm font-medium hover:bg-accent"
+                    >
+                      <Share2 className="h-4 w-4" />
+                      Compartilhar
+                    </button>
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
+          </TableBody>
+        </Table>
+      </section>
     </AppShell>
   );
 }

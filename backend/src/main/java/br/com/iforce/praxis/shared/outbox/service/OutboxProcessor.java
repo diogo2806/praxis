@@ -1,5 +1,6 @@
 package br.com.iforce.praxis.shared.outbox.service;
 
+import br.com.iforce.praxis.gupy.delivery.service.GupyOutboundUrlValidator;
 import br.com.iforce.praxis.gupy.dto.TestResultResponse;
 import br.com.iforce.praxis.gupy.model.PublishedSimulation;
 import br.com.iforce.praxis.gupy.persistence.entity.CandidateAttemptEntity;
@@ -20,6 +21,7 @@ import org.springframework.web.client.RestTemplate;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.Instant;
+import java.net.URI;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
@@ -37,6 +39,7 @@ public class OutboxProcessor {
     private final CandidateAttemptRepository candidateAttemptRepository;
     private final SimulationCatalogService simulationCatalogService;
     private final GupyTestResultMapper gupyTestResultMapper;
+    private final GupyOutboundUrlValidator outboundUrlValidator;
 
     public OutboxProcessor(
         OutboxEventRepository outboxEventRepository,
@@ -44,7 +47,8 @@ public class OutboxProcessor {
         ObjectMapper objectMapper,
         CandidateAttemptRepository candidateAttemptRepository,
         SimulationCatalogService simulationCatalogService,
-        GupyTestResultMapper gupyTestResultMapper
+        GupyTestResultMapper gupyTestResultMapper,
+        GupyOutboundUrlValidator outboundUrlValidator
     ) {
         this.outboxEventRepository = outboxEventRepository;
         this.restTemplate = restTemplate;
@@ -52,6 +56,7 @@ public class OutboxProcessor {
         this.candidateAttemptRepository = candidateAttemptRepository;
         this.simulationCatalogService = simulationCatalogService;
         this.gupyTestResultMapper = gupyTestResultMapper;
+        this.outboundUrlValidator = outboundUrlValidator;
     }
 
     /**
@@ -105,8 +110,9 @@ public class OutboxProcessor {
             testResult = fetchTestResult(attemptId, event.getTenantId());
         }
 
-        log.debug("Enviando resultado para webhook: {}", webhookUrl);
-        restTemplate.postForObject(webhookUrl, testResult, Void.class);
+        URI validatedWebhookUrl = outboundUrlValidator.validate(webhookUrl);
+        log.debug("Enviando resultado para webhook: {}", validatedWebhookUrl);
+        restTemplate.postForObject(validatedWebhookUrl, testResult, Void.class);
     }
 
     private Object fetchTestResult(String attemptId, String tenantId) {

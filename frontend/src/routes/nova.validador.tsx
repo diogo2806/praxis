@@ -1,6 +1,16 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { AlertTriangle, CheckCircle2, ExternalLink, XCircle } from "lucide-react";
+import { useState } from "react";
+import {
+  AlertTriangle,
+  CheckCircle2,
+  Download,
+  ExternalLink,
+  Flag,
+  History,
+  RefreshCw,
+  XCircle,
+} from "lucide-react";
 import { AppShell } from "@/components/app-shell";
 import {
   EmptyState,
@@ -11,9 +21,13 @@ import {
 } from "@/components/praxis-ui";
 import { WizardStepper } from "@/components/wizard-stepper";
 import {
+  getSimulationVersion,
   getSimulationValidation,
   listSimulations,
   type SimulationSummaryResponse,
+  type SimulationVersionDetailResponse,
+  type SimulationVersionNodeResponse,
+  type SimulationVersionOptionResponse,
   type SimulationValidationResponse,
 } from "@/lib/api/praxis";
 import { maturityForStatus } from "@/lib/simulation-meta";
@@ -45,13 +59,23 @@ type CheckTone = "ok" | "warn" | "danger";
 
 interface ValidationCheck {
   id: string;
+  nodeId: string | null;
   tone: CheckTone;
   text: string;
   target: string;
 }
 
+interface DiagnosticGroup {
+  id: string;
+  nodeIds: string[];
+  targets: string[];
+  text: string;
+  tone: CheckTone;
+}
+
 function ValidatorPage() {
   const search = Route.useSearch();
+  const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const hasValidationParams = Boolean(search.simulationId && search.versionNumber);
   const simulationsQuery = useQuery({
     queryKey: ["simulations"],
@@ -63,13 +87,50 @@ function ValidatorPage() {
     queryFn: () => getSimulationValidation(search.simulationId!, search.versionNumber!),
     enabled: hasValidationParams,
   });
+  const versionQuery = useQuery({
+    queryKey: ["simulation-version", search.simulationId, search.versionNumber],
+    queryFn: () => getSimulationVersion(search.simulationId!, search.versionNumber!),
+    enabled: hasValidationParams,
+  });
 
   const validation = validationQuery.data;
   const activeChecks = validation ? mapValidationIssues(validation) : [];
+  const filteredChecks = selectedNodeId
+    ? activeChecks.filter((check) => check.nodeId === selectedNodeId)
+    : activeChecks;
+  const diagnosticGroups = groupValidationChecks(filteredChecks);
+  const firstFixableBlocker = activeChecks.find((check) => check.tone === "danger" && check.nodeId);
   const blockers = validation?.blockerCount ?? 0;
   const warnings = validation?.warningCount ?? 0;
   const qualityScore = validation?.qualityScore ?? 0;
   const canPublish = Boolean(validation) && blockers === 0;
+  const scoreTone = scoreQualityTone(qualityScore);
+  const scoreWidth = Math.max(0, Math.min(qualityScore, 100));
+  const refreshValidation = () => {
+    void validationQuery.refetch();
+    void versionQuery.refetch();
+  };
+  const exportDiagnostics = () => {
+    if (!validation) return;
+
+    const payload = JSON.stringify(
+      {
+        exportedAt: new Date().toISOString(),
+        selectedNodeId,
+        validation,
+        version: versionQuery.data,
+      },
+      null,
+      2,
+    );
+    const blob = new Blob([payload], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = `diagnostico-${validation.simulationId}-v${validation.versionNumber}.json`;
+    anchor.click();
+    URL.revokeObjectURL(url);
+  };
 
   return (
     <AppShell>
@@ -84,6 +145,19 @@ function ValidatorPage() {
           </p>
         </div>
       </div>
+
+      {hasValidationParams && (
+        <ScoringModelPreview
+          error={versionQuery.error}
+          loading={versionQuery.isLoading}
+          onSelectNode={setSelectedNodeId}
+          selectedNodeId={selectedNodeId}
+          simulationId={search.simulationId}
+          version={versionQuery.data}
+          versionNumber={search.versionNumber}
+        />
+      )}
+
       {hasValidationParams && validationQuery.isLoading && (
         <StateBanner tone="info" title="Validador conectado">
           Buscando o diagnóstico da simulação {search.simulationId} v{search.versionNumber}.
@@ -114,14 +188,26 @@ function ValidatorPage() {
           {blockers > 0 ? (
             <StateBanner
               tone="danger"
-              title={`Publicação bloqueada — ${blockers} ${blockers === 1 ? "item crítico" : "itens críticos"}`}
+              title={`Publicação bloqueada - ${blockers} ${blockers === 1 ? "item crítico" : "itens críticos"}`}
             >
-              O botão Publicar não aparece. Resolva o bloqueio ou salve como rascunho.
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <span>
+                  O botão Publicar não aparece. Resolva o bloqueio ou salve como rascunho.
+                </span>
+                {firstFixableBlocker?.nodeId && (
+                  <Link
+                    to="/nova/dialogo"
+                    className="rounded-md bg-danger px-3 py-1.5 text-xs font-medium text-danger-foreground hover:opacity-90"
+                  >
+                    Corrigir {firstFixableBlocker.nodeId}
+                  </Link>
+                )}
+              </div>
             </StateBanner>
           ) : warnings > 0 ? (
             <StateBanner
               tone="warn"
-              title={`Pode publicar — ${warnings} ${warnings === 1 ? "alerta registrado" : "alertas registrados"}`}
+              title={`Pode publicar - ${warnings} ${warnings === 1 ? "alerta registrado" : "alertas registrados"}`}
             >
               A confirmação registra os alertas no log de auditoria antes de publicar.
             </StateBanner>
@@ -131,56 +217,134 @@ function ValidatorPage() {
             </StateBanner>
           )}
 
-          <div className="mt-5">
-            <NextStepContract
-              primary={
-                blockers > 0
-                  ? "Voltar ao editor. Piloto e publicação ficam travados."
-                  : warnings > 0
-                    ? "Confirmar publicação com alertas gravados no registro de auditoria."
-                    : "Publicar versão imutável e seguir para piloto."
-              }
-              secondary="Salvar rascunho nunca publica; volta ao editor mantendo o diagnóstico clicável."
-              versionRule="Depois de publicar, editar cria nova versão e preserva a publicada."
-              lockedAfter="Não existe ajuste manual para bloqueio crítico."
-            />
-          </div>
+          <details className="mt-5 rounded-md border border-border bg-card p-4">
+            <summary className="cursor-pointer text-sm font-medium">
+              Regras de publicação e versão
+            </summary>
+            <div className="mt-4">
+              <NextStepContract
+                primary={
+                  blockers > 0
+                    ? "Voltar ao editor. Piloto e publicação ficam travados."
+                    : warnings > 0
+                      ? "Confirmar publicação com alertas gravados no registro de auditoria."
+                      : "Publicar versão imutável e seguir para piloto."
+                }
+                secondary="Salvar rascunho nunca publica; volta ao editor mantendo o diagnóstico clicável."
+                versionRule="Depois de publicar, editar cria nova versão e preserva a publicada."
+                lockedAfter="Não existe ajuste manual para bloqueio crítico."
+              />
+            </div>
+          </details>
 
           <div className="mt-5 grid gap-5 lg:grid-cols-[360px_minmax(0,1fr)]">
             <section className="rounded-md border border-border bg-card p-5">
               <div className="text-xs uppercase text-muted-foreground">Pontuação de qualidade</div>
               <div className="mt-2 flex items-end gap-2">
-                <div className="text-6xl font-semibold tabular-nums">{qualityScore}</div>
+                <div className={cn("text-6xl font-semibold tabular-nums", scoreTone.textClass)}>
+                  {qualityScore}
+                </div>
                 <div className="mb-2 text-sm text-muted-foreground">/100</div>
               </div>
               <p className="mt-1 text-xs text-muted-foreground">
                 Calculado pelo sistema junto com os bloqueios e alertas.
               </p>
+              <div className="mt-4 h-2 overflow-hidden rounded-full bg-muted">
+                <div
+                  className={cn("h-full rounded-full", scoreTone.barClass)}
+                  style={{ width: `${scoreWidth}%` }}
+                />
+              </div>
+              <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-[11px] text-muted-foreground">
+                <span className="text-danger">Crítico &lt; 50</span>
+                <span className="text-warning-foreground">Aceitável 50-79</span>
+                <span className="text-success">Bom 80+</span>
+              </div>
               <div className="mt-4 rounded-md border border-border bg-background p-3 text-sm">
-                {blockers} bloqueios e {warnings} alertas.
+                {formatCount(blockers, "bloqueio", "bloqueios")} e{" "}
+                {formatCount(warnings, "alerta", "alertas")}.
               </div>
             </section>
 
             <section className="rounded-md border border-border bg-card p-5">
-              <div className="mb-4 flex items-center justify-between">
-                <h2 className="text-sm font-semibold">Diagnóstico</h2>
-                <span className="rounded-md border border-border bg-background px-2 py-1 text-[11px] text-muted-foreground">
-                  dados do sistema
-                </span>
+              <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
+                <div>
+                  <h2 className="text-sm font-semibold">Diagn?stico</h2>
+                  {selectedNodeId && (
+                    <div className="mt-1 text-xs text-muted-foreground">
+                      Filtrado por etapa{" "}
+                      <span className="font-mono text-foreground">{selectedNodeId}</span>
+                    </div>
+                  )}
+                </div>
+                <div className="flex flex-wrap items-center gap-2">
+                  {selectedNodeId && (
+                    <button
+                      type="button"
+                      onClick={() => setSelectedNodeId(null)}
+                      className="rounded-md border border-border bg-background px-2 py-1 text-[11px] text-muted-foreground hover:bg-accent"
+                    >
+                      Limpar filtro
+                    </button>
+                  )}
+                  <span className="rounded-md border border-border bg-background px-2 py-1 text-[11px] text-muted-foreground">
+                    dados do sistema
+                  </span>
+                </div>
               </div>
               <ul className="divide-y divide-border">
-                {activeChecks.map((check) => (
-                  <li key={check.id} className="flex items-start gap-3 py-3 text-sm">
-                    <CheckIcon tone={check.tone} />
-                    <span className="min-w-0 flex-1">
-                      <span className="block text-foreground/90">{check.text}</span>
-                      <span className="mt-1 inline-flex items-center gap-1 text-xs text-primary">
-                        <ExternalLink className="h-3 w-3" />
-                        {check.target}
+                {diagnosticGroups.map((group) => (
+                  <li key={group.id} className="flex items-start gap-3 py-3 text-sm">
+                    <CheckIcon tone={group.tone} />
+                    <div className="min-w-0 flex-1">
+                      <span className="block text-foreground/90">
+                        {group.nodeIds.length > 1
+                          ? `${group.nodeIds.length} etapas com o mesmo problema: ${group.text}`
+                          : group.text}
                       </span>
-                    </span>
+                      <div className="mt-2 flex flex-wrap items-center gap-2">
+                        {group.nodeIds.length > 0 ? (
+                          group.nodeIds.map((nodeId) => (
+                            <button
+                              key={nodeId}
+                              type="button"
+                              onClick={() => setSelectedNodeId(nodeId)}
+                              className="rounded-md border border-border bg-background px-2 py-1 font-mono text-[11px] text-primary hover:bg-accent"
+                            >
+                              {nodeId}
+                            </button>
+                          ))
+                        ) : (
+                          <span className="text-xs text-muted-foreground">{group.targets[0]}</span>
+                        )}
+                      </div>
+                      <div className="mt-3 flex flex-wrap gap-2">
+                        {group.nodeIds[0] && (
+                          <Link
+                            to="/nova/dialogo"
+                            className="inline-flex items-center gap-1 rounded-md border border-border bg-card px-3 py-1.5 text-xs font-medium hover:bg-accent"
+                          >
+                            <ExternalLink className="h-3 w-3" />
+                            Corrigir
+                          </Link>
+                        )}
+                        {group.tone === "warn" && (
+                          <button
+                            type="button"
+                            className="rounded-md border border-border bg-card px-3 py-1.5 text-xs font-medium hover:bg-accent"
+                          >
+                            Ignorar com justificativa
+                          </button>
+                        )}
+                      </div>
+                    </div>
                   </li>
                 ))}
+                {diagnosticGroups.length === 0 && (
+                  <li className="py-4 text-sm text-muted-foreground">
+                    Nenhum item de diagnóstico para a etapa selecionada.
+                  </li>
+                )}
               </ul>
 
               <div className="mt-5 flex flex-wrap justify-between gap-3">
@@ -190,27 +354,57 @@ function ValidatorPage() {
                 >
                   Voltar ao editor
                 </Link>
-                {blockers > 0 ? (
-                  <button className="rounded-md border border-border bg-card px-4 py-2 text-sm hover:bg-accent">
-                    Salvar rascunho
+                <div className="flex flex-wrap justify-end gap-2">
+                  <button
+                    type="button"
+                    onClick={refreshValidation}
+                    className="inline-flex items-center gap-1.5 rounded-md border border-border bg-card px-3 py-2 text-sm hover:bg-accent"
+                  >
+                    <RefreshCw className="h-3.5 w-3.5" />
+                    Revalidar
                   </button>
-                ) : (
+                  <button
+                    type="button"
+                    onClick={exportDiagnostics}
+                    disabled={!validation}
+                    className="inline-flex items-center gap-1.5 rounded-md border border-border bg-card px-3 py-2 text-sm hover:bg-accent disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    <Download className="h-3.5 w-3.5" />
+                    Exportar
+                  </button>
                   <Link
-                    to="/nova/publicacao"
+                    to="/nova/governanca"
                     search={{
                       simulationId: search.simulationId,
                       versionNumber: search.versionNumber,
                     }}
-                    className={cn(
-                      "rounded-md px-5 py-2 text-sm font-medium",
-                      warnings > 0
-                        ? "bg-warning text-warning-foreground hover:opacity-90"
-                        : "bg-success text-success-foreground hover:opacity-90",
-                    )}
+                    className="inline-flex items-center gap-1.5 rounded-md border border-border bg-card px-3 py-2 text-sm hover:bg-accent"
                   >
-                    Seguir para governança
+                    <History className="h-3.5 w-3.5" />
+                    Histórico
                   </Link>
-                )}
+                  {blockers > 0 ? (
+                    <button className="rounded-md border border-border bg-card px-4 py-2 text-sm hover:bg-accent">
+                      Salvar rascunho
+                    </button>
+                  ) : (
+                    <Link
+                      to="/nova/publicacao"
+                      search={{
+                        simulationId: search.simulationId,
+                        versionNumber: search.versionNumber,
+                      }}
+                      className={cn(
+                        "rounded-md px-5 py-2 text-sm font-medium",
+                        warnings > 0
+                          ? "bg-warning text-warning-foreground hover:opacity-90"
+                          : "bg-success text-success-foreground hover:opacity-90",
+                      )}
+                    >
+                      Seguir para governança
+                    </Link>
+                  )}
+                </div>
               </div>
             </section>
           </div>
@@ -220,11 +414,485 @@ function ValidatorPage() {
   );
 }
 
+function ScoringModelPreview({
+  error,
+  loading,
+  onSelectNode,
+  selectedNodeId,
+  simulationId,
+  version,
+  versionNumber,
+}: {
+  error: Error | null;
+  loading: boolean;
+  onSelectNode: (nodeId: string | null) => void;
+  selectedNodeId: string | null;
+  simulationId?: string;
+  version?: SimulationVersionDetailResponse;
+  versionNumber?: number;
+}) {
+  const steps = version ? buildStepScoreSummaries(version) : [];
+
+  return (
+    <section className="mb-5 grid gap-5 lg:grid-cols-[minmax(0,1fr)_340px]">
+      <div className="rounded-md border border-border bg-card p-5">
+        <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <div className="text-xs font-semibold uppercase text-muted-foreground">
+              Fluxo de pontuação
+            </div>
+            <h2 className="mt-1 text-lg font-semibold">
+              {version?.name ?? simulationId ?? "Simulação"}{" "}
+              {versionNumber ? `v${versionNumber}` : ""}
+            </h2>
+          </div>
+          <span className="rounded-md border border-border bg-background px-2 py-1 text-[11px] text-muted-foreground">
+            blocos da versão
+          </span>
+        </div>
+
+        {loading ? (
+          <div className="rounded-md border border-border bg-background px-4 py-6 text-sm text-muted-foreground">
+            Carregando etapas, tempos configurados e competências...
+          </div>
+        ) : error ? (
+          <StateBanner tone="danger" title="Não foi possível carregar o fluxo">
+            {error.message}
+          </StateBanner>
+        ) : steps.length > 0 ? (
+          <div className="grid gap-3">
+            {steps.map((step) => (
+              <button
+                key={step.node.id}
+                type="button"
+                onClick={() => onSelectNode(selectedNodeId === step.node.id ? null : step.node.id)}
+                className={cn(
+                  "flex min-h-[310px] flex-col rounded-md border bg-background p-4 text-left transition hover:border-primary/60 hover:bg-accent/40",
+                  selectedNodeId === step.node.id
+                    ? "border-primary ring-2 ring-primary/20"
+                    : "border-border",
+                )}
+              >
+                <div className="flex flex-wrap items-start justify-between gap-2">
+                  <div>
+                    <div className="font-mono text-[11px] uppercase text-primary">
+                      {step.node.id}
+                    </div>
+                    <div className="mt-1 text-sm font-semibold">Turno {step.node.turnIndex}</div>
+                  </div>
+                  {step.hasCriticalOption && (
+                    <span className="rounded-md border border-danger/30 bg-danger/10 px-2 py-1 text-[11px] font-medium text-danger">
+                      crítica
+                    </span>
+                  )}
+                </div>
+
+                <div className="mt-3">
+                  <div className="text-[11px] font-medium uppercase text-muted-foreground">
+                    Texto cadastrado
+                  </div>
+                  <p className="mt-1 line-clamp-4 text-sm leading-6 text-foreground/85">
+                    {step.node.clientMessage || "Sem texto cadastrado."}
+                  </p>
+                </div>
+
+                <dl className="mt-4 grid grid-cols-3 gap-2 text-xs">
+                  <MetricTile label="Tempo" value={formatTimeLimit(step.node.timeLimitSeconds)} />
+                  <MetricTile label="Atual" value={formatScore(step.currentScore)} />
+                  <MetricTile label="Acumulada" value={formatScore(step.accumulatedScore)} />
+                </dl>
+
+                <div className="mt-4">
+                  <div className="text-[11px] font-medium uppercase text-muted-foreground">
+                    Competências
+                  </div>
+                  <div className="mt-2 flex flex-wrap gap-1.5">
+                    {step.competencies.length > 0 ? (
+                      step.competencies.map((competency) => (
+                        <span
+                          key={competency.name}
+                          className="rounded-md border border-border bg-card px-2 py-1 text-[11px]"
+                        >
+                          {competency.name}:{" "}
+                          <span className="font-semibold tabular-nums">
+                            {formatScore(competency.value)}
+                          </span>
+                        </span>
+                      ))
+                    ) : (
+                      <span className="text-xs text-muted-foreground">
+                        Nenhuma competência configurada.
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                <div className="mt-4 border-t border-border pt-3">
+                  <div className="text-[11px] font-medium uppercase text-muted-foreground">
+                    Alternativas
+                  </div>
+                  <div className="mt-2 space-y-2">
+                    {step.node.options.map((option) => (
+                      <div
+                        key={option.id}
+                        className="rounded-md border border-border bg-card px-3 py-2"
+                      >
+                        <div className="flex flex-wrap items-center justify-between gap-2">
+                          <span className="font-mono text-[11px] text-muted-foreground">
+                            {option.id}
+                          </span>
+                          <span className="rounded bg-muted px-1.5 py-0.5 text-[11px] font-medium tabular-nums text-foreground">
+                            +{formatScore(scoreOption(option, version!))} pts
+                          </span>
+                        </div>
+                        <p className="mt-1 line-clamp-2 text-xs leading-5 text-foreground/80">
+                          {option.text}
+                        </p>
+                        <div className="mt-1 text-[11px] text-muted-foreground">
+                          Vai para {option.nextNodeId ?? "fim"}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="mt-auto pt-4 text-[11px] text-muted-foreground">
+                  {step.node.options.length} opções - próximo: {step.nextTargets.join(", ")}
+                </div>
+              </button>
+            ))}
+          </div>
+        ) : (
+          <div className="rounded-md border border-border bg-background px-4 py-6 text-sm text-muted-foreground">
+            Nenhuma etapa cadastrada para esta versão.
+          </div>
+        )}
+
+        {version && steps.length > 0 && <FlowOutcomeSummary version={version} />}
+      </div>
+
+      <aside className="space-y-4">
+        <div className="rounded-md border border-border bg-card p-5">
+          <div className="text-xs font-semibold uppercase text-muted-foreground">Fórmula</div>
+          <pre className="mt-2 overflow-x-auto rounded-md bg-muted/50 p-3 font-mono text-[11px] leading-relaxed">
+            {`score_competencia =
+  pts_obtidos / pts_possíveis_no_caminho
+
+score_final =
+${formatFormula(version)}`}
+          </pre>
+        </div>
+        <div className="rounded-md border border-danger/30 bg-danger/5 p-5 text-sm">
+          <div className="text-xs font-semibold uppercase text-danger">
+            Erro crítico não reprova automaticamente
+          </div>
+          <p className="mt-2 text-foreground/80">
+            Dispara revisão humana e bloqueia recomendação automática até a correção ficar
+            documentada.
+          </p>
+        </div>
+      </aside>
+    </section>
+  );
+}
+
+function MetricTile({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="min-w-0 rounded-md border border-border bg-card p-2">
+      <dt className="truncate text-[10px] uppercase text-muted-foreground">{label}</dt>
+      <dd className="mt-1 truncate text-sm font-semibold tabular-nums">{value}</dd>
+    </div>
+  );
+}
+
+function FlowOutcomeSummary({ version }: { version: SimulationVersionDetailResponse }) {
+  const endings = collectEndingTraces(version);
+  const maxScore = endings.length
+    ? Math.max(...endings.map((ending) => ending.accumulatedScore))
+    : 0;
+
+  return (
+    <div className="mt-5 grid gap-4 lg:grid-cols-2">
+      <section className="rounded-md border border-border bg-background p-4">
+        <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+          <h3 className="text-sm font-semibold">Finais alcan??veis</h3>
+          <span className="rounded-md bg-muted px-2 py-1 text-[11px] text-muted-foreground">
+            {endings.length} {endings.length === 1 ? "final" : "finais"}
+          </span>
+        </div>
+
+        {endings.length > 0 ? (
+          <ul className="space-y-2">
+            {endings.map((ending) => (
+              <li
+                key={`${ending.nodeId}-${ending.optionId}-${ending.path.join("-")}`}
+                className="flex items-start gap-3 rounded-md border border-border bg-card p-3 text-sm"
+              >
+                <Flag className="mt-0.5 h-4 w-4 shrink-0 text-success" />
+                <div className="min-w-0 flex-1">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="font-medium">{ending.label}</span>
+                    <span className="rounded bg-muted px-1.5 py-0.5 text-[11px] tabular-nums text-muted-foreground">
+                      {formatScore(ending.accumulatedScore)} pts acumulados
+                    </span>
+                  </div>
+                  <div className="mt-1 text-[11px] text-muted-foreground">
+                    via {ending.path.join(" -> ")}
+                  </div>
+                </div>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="text-sm text-muted-foreground">
+            Nenhum final alcan??vel foi encontrado a partir da etapa inicial.
+          </p>
+        )}
+      </section>
+
+      <section className="rounded-md border border-border bg-background p-4">
+        <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+          <h3 className="text-sm font-semibold">Texto do relat?rio final</h3>
+          <span className="rounded-md bg-muted px-2 py-1 text-[11px] text-muted-foreground">
+            m?ximo {formatScore(maxScore)} pts
+          </span>
+        </div>
+
+        {endings.length > 0 ? (
+          <div className="space-y-2">
+            {endings.map((ending) => (
+              <article
+                key={`${ending.nodeId}-${ending.optionId}-report-${ending.path.join("-")}`}
+                className="rounded-md border border-border bg-card p-3 text-sm"
+              >
+                <div className="mb-2 flex flex-wrap items-center justify-between gap-2 border-b border-border pb-2">
+                  <span className="font-medium">{ending.label}</span>
+                  <span className="text-[11px] text-muted-foreground">
+                    {formatScore(ending.accumulatedScore)} de {formatScore(maxScore)}
+                  </span>
+                </div>
+                <p className="leading-6 text-foreground/85">
+                  {ending.reportText || "Sem texto de relat?rio cadastrado para este final."}
+                </p>
+              </article>
+            ))}
+          </div>
+        ) : (
+          <p className="text-sm text-muted-foreground">
+            Cadastre uma alternativa final para ver o texto do relat?rio.
+          </p>
+        )}
+      </section>
+    </div>
+  );
+}
+
+interface StepScoreSummary {
+  accumulatedScore: number;
+  competencies: Array<{ name: string; value: number }>;
+  currentScore: number;
+  hasCriticalOption: boolean;
+  nextTargets: string[];
+  node: SimulationVersionNodeResponse;
+}
+
+interface EndingTrace {
+  accumulatedScore: number;
+  label: string;
+  nodeId: string;
+  optionId: string;
+  path: string[];
+  reportText: string;
+}
+
+function buildStepScoreSummaries(version: SimulationVersionDetailResponse): StepScoreSummary[] {
+  const nodes = [...version.nodes].sort((a, b) => a.turnIndex - b.turnIndex);
+  const bestBefore = new Map<string, number>([[version.blueprint.rootNodeId, 0]]);
+
+  return nodes.map((node) => {
+    const before = bestBefore.get(node.id) ?? 0;
+    const optionScores = node.options.map((option) => scoreOption(option, version));
+    const currentScore = optionScores.length > 0 ? Math.max(...optionScores) : 0;
+    const accumulatedScore = before + currentScore;
+
+    node.options.forEach((option) => {
+      if (!option.nextNodeId) return;
+      const nextScore = before + scoreOption(option, version);
+      const previousScore = bestBefore.get(option.nextNodeId) ?? Number.NEGATIVE_INFINITY;
+      if (nextScore > previousScore) {
+        bestBefore.set(option.nextNodeId, nextScore);
+      }
+    });
+
+    return {
+      accumulatedScore,
+      competencies: summarizeCompetencies(node),
+      currentScore,
+      hasCriticalOption: node.options.some((option) => option.isCritical),
+      nextTargets: summarizeNextTargets(node),
+      node,
+    };
+  });
+}
+
+function scoreOption(
+  option: SimulationVersionOptionResponse,
+  version: SimulationVersionDetailResponse,
+) {
+  const weights = version.blueprint.competencies;
+  if (weights.length > 0) {
+    const totalWeight = weights.reduce((sum, competency) => sum + competency.weight, 0);
+    if (totalWeight > 0) {
+      return (
+        weights.reduce(
+          (sum, competency) =>
+            sum + (option.competencyLevels[competency.name] ?? 0) * competency.weight,
+          0,
+        ) / totalWeight
+      );
+    }
+  }
+
+  const values = Object.values(option.competencyLevels);
+  return values.length > 0 ? values.reduce((sum, value) => sum + value, 0) / values.length : 0;
+}
+
+function collectEndingTraces(version: SimulationVersionDetailResponse): EndingTrace[] {
+  const nodesById = new Map(version.nodes.map((node) => [node.id, node]));
+  const endings: EndingTrace[] = [];
+  const maxDepth = version.nodes.length + 1;
+
+  function visit(nodeId: string, accumulatedScore: number, path: string[], depth: number) {
+    if (depth > maxDepth || path.includes(nodeId)) return;
+
+    const node = nodesById.get(nodeId);
+    if (!node) return;
+
+    const nextPath = [...path, node.id];
+    node.options.forEach((option) => {
+      const optionScore = scoreOption(option, version);
+      const nextScore = accumulatedScore + optionScore;
+
+      if (!option.nextNodeId) {
+        endings.push({
+          accumulatedScore: nextScore,
+          label: `Final via ${node.id}/${option.id}`,
+          nodeId: node.id,
+          optionId: option.id,
+          path: nextPath,
+          reportText: option.auditNote || option.text,
+        });
+        return;
+      }
+
+      visit(option.nextNodeId, nextScore, nextPath, depth + 1);
+    });
+  }
+
+  visit(version.blueprint.rootNodeId, 0, [], 0);
+  return endings.sort((a, b) => b.accumulatedScore - a.accumulatedScore);
+}
+
+function summarizeCompetencies(node: SimulationVersionNodeResponse) {
+  const valuesByName = new Map<string, number[]>();
+
+  node.options.forEach((option) => {
+    Object.entries(option.competencyLevels).forEach(([name, value]) => {
+      valuesByName.set(name, [...(valuesByName.get(name) ?? []), value]);
+    });
+  });
+
+  return Array.from(valuesByName.entries())
+    .map(([name, values]) => ({
+      name,
+      value: Math.max(...values),
+    }))
+    .sort((a, b) => a.name.localeCompare(b.name));
+}
+
+function summarizeNextTargets(node: SimulationVersionNodeResponse) {
+  const targets = Array.from(
+    new Set(node.options.map((option) => option.nextNodeId ?? "fim")),
+  ).sort((a, b) => a.localeCompare(b));
+
+  return targets.length > 0 ? targets : ["fim"];
+}
+
+function formatTimeLimit(seconds: number | null) {
+  if (seconds === null) return "Sem limite";
+  if (seconds < 60) return `${seconds}s`;
+
+  const minutes = Math.floor(seconds / 60);
+  const remainingSeconds = seconds % 60;
+  return remainingSeconds === 0 ? `${minutes}min` : `${minutes}m ${remainingSeconds}s`;
+}
+
+function formatScore(score: number) {
+  return Math.round(score).toString();
+}
+
+function formatFormula(version?: SimulationVersionDetailResponse) {
+  const competencies = version?.blueprint.competencies ?? [];
+  if (competencies.length === 0) {
+    return "    sem pesos configurados";
+  }
+
+  return competencies
+    .map((competency, index) => {
+      const prefix = index === 0 ? "    " : "  + ";
+      return `${prefix}${competency.name} x ${(competency.weight * 100).toFixed(0)}%`;
+    })
+    .join("\n");
+}
+
+function groupValidationChecks(checks: ValidationCheck[]): DiagnosticGroup[] {
+  const groups = new Map<string, DiagnosticGroup>();
+
+  checks.forEach((check) => {
+    const key = `${check.tone}-${check.text}`;
+    const current = groups.get(key);
+    if (!current) {
+      groups.set(key, {
+        id: key,
+        nodeIds: check.nodeId ? [check.nodeId] : [],
+        targets: [check.target],
+        text: check.text,
+        tone: check.tone,
+      });
+      return;
+    }
+
+    if (check.nodeId && !current.nodeIds.includes(check.nodeId)) {
+      current.nodeIds.push(check.nodeId);
+    }
+    if (!current.targets.includes(check.target)) {
+      current.targets.push(check.target);
+    }
+  });
+
+  return Array.from(groups.values());
+}
+
+function formatCount(count: number, singular: string, plural: string) {
+  return `${count} ${count === 1 ? singular : plural}`;
+}
+
+function scoreQualityTone(score: number) {
+  if (score < 50) {
+    return { barClass: "bg-danger", textClass: "text-danger" };
+  }
+  if (score < 80) {
+    return { barClass: "bg-warning", textClass: "text-warning-foreground" };
+  }
+  return { barClass: "bg-success", textClass: "text-success" };
+}
+
 function mapValidationIssues(validation: SimulationValidationResponse): ValidationCheck[] {
   if (validation.issues.length === 0) {
     return [
       {
         id: "publishable",
+        nodeId: null,
         tone: "ok",
         text: "Nenhum bloqueio ou alerta encontrado nesta versão",
         target: `Simulação ${validation.simulationId} v${validation.versionNumber}`,
@@ -234,6 +902,7 @@ function mapValidationIssues(validation: SimulationValidationResponse): Validati
 
   return validation.issues.map((issue, index) => ({
     id: `${issue.severity}-${issue.nodeId ?? "global"}-${index}`,
+    nodeId: issue.nodeId,
     tone: issue.severity === "blocker" ? "danger" : "warn",
     text: issue.message,
     target: issue.nodeId ? `Editor: ${issue.nodeId}` : "Simulação",
