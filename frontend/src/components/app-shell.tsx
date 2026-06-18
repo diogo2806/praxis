@@ -1,3 +1,5 @@
+"use client";
+
 import { Link, useRouterState } from "@tanstack/react-router";
 import type { ReactNode } from "react";
 import {
@@ -13,51 +15,53 @@ import {
   UserRound,
 } from "lucide-react";
 import { GlobalErrorFlow, GlobalProductStateBar, StateBanner } from "@/components/praxis-ui";
+import { LanguageSelector } from "@/components/language-selector";
 import { useSession } from "@/lib/session";
+import { useLanguage } from "@/lib/language-context";
 import { gupyConnectionLabels, useGupyConnectionState, useViewMode } from "@/lib/view-mode";
 import { cn } from "@/lib/utils";
 
-const nav = [
-  { to: "/", label: "Painel", icon: Home, desc: "Seus testes e resultados" },
+const getNav = (t: any) => [
+  { to: "/", label: t.common.dashboard, icon: Home, desc: t.descriptions.dashboard },
   {
     to: "/nova/avaliacao",
-    label: "Criar novo modelo de teste",
+    label: t.common.createTest,
     icon: ClipboardCheck,
-    desc: "Criar um novo teste",
+    desc: t.descriptions.createTest,
   },
   {
     to: "/monitoramento",
-    label: "Monitoramento",
+    label: t.common.monitoring,
     icon: BarChart3,
-    desc: "Acompanhe testes em andamento",
+    desc: t.descriptions.monitoring,
   },
-  { to: "/enviar-link", label: "Enviar link", icon: Link2, desc: "Convide um candidato" },
+  { to: "/enviar-link", label: t.common.sendLink, icon: Link2, desc: t.descriptions.sendLink },
   {
     to: "/candidato",
-    label: "Visão do candidato",
+    label: t.common.candidateView,
     icon: MessageSquare,
-    desc: "Veja como o candidato enxerga o teste",
+    desc: t.descriptions.candidateView,
   },
 ] as const;
 
-const secondary = [
+const getSecondary = (t: any) => [
   {
     to: "/governanca",
-    label: "Governança & Auditoria",
+    label: t.common.governance,
     icon: ShieldCheck,
-    desc: "Histórico e versões dos testes",
+    desc: t.descriptions.governance,
   },
   {
     to: "/lgpd",
-    label: "LGPD & Transparência do resultado",
+    label: t.common.lgpd,
     icon: UserRound,
-    desc: "Proteção de dados e transparência",
+    desc: t.descriptions.lgpd,
   },
   {
     to: "/defensabilidade",
-    label: "Confiabilidade e segurança técnica",
+    label: t.common.defensibility,
     icon: Scale,
-    desc: "Por que o resultado é confiável",
+    desc: t.descriptions.defensibility,
   },
 ] as const;
 
@@ -66,9 +70,13 @@ export function AppShell({ children }: { children: ReactNode }) {
   const mode = useViewMode();
   const session = useSession();
   const gupyState = useGupyConnectionState(pathname);
+  const { t } = useLanguage();
   const hasGlobalError = gupyState === "error";
   const modeHref = mode === "technical" ? pathname : `${pathname}?mode=technical`;
-  const modeLabel = mode === "technical" ? "Ver modo comercial" : "Visualizar configurações avançadas";
+  const modeLabel =
+    mode === "technical" ? t.common.viewCommercialMode : t.common.viewAdvancedSettings;
+  const nav = getNav(t);
+  const secondary = getSecondary(t);
   const productState =
     pathname === "/nova/gupy" || pathname === "/nova/publicacao"
       ? {
@@ -94,15 +102,15 @@ export function AppShell({ children }: { children: ReactNode }) {
         <div className="border-b border-sidebar-border px-6 py-5">
           <div className="flex items-center gap-2 text-xs uppercase text-sidebar-foreground/80">
             <span className="inline-block h-1.5 w-1.5 rounded-full bg-primary" />
-            Criador de Testes de Situação (SJT)
+            {t.common.testCreator}
           </div>
           <div className="mt-2 font-display text-2xl leading-tight">
-            Avaliação
+            {t.common.situationalAssessment.split("\n")[0]}
             <br />
-            <span className="text-sidebar-foreground/85">Situacional</span>
+            <span className="text-sidebar-foreground/85">{t.common.situationalAssessment.split("\n")[1] || "Situacional"}</span>
           </div>
           <div className="mt-3 text-[11px] uppercase text-sidebar-foreground/80">
-            Integração Gupy - v0.1
+            {t.common.integrationGupy}
           </div>
         </div>
 
@@ -118,15 +126,15 @@ export function AppShell({ children }: { children: ReactNode }) {
           >
             <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
             <span className="min-w-0 flex-1">
-              <span className="block font-medium">Comece por aqui</span>
+              <span className="block font-medium">{t.common.startHere}</span>
               <span className="mt-0.5 block text-[11px] leading-snug text-sidebar-foreground/65">
-                O que é o Práxis e como funciona
+                {t.common.whatIsPraxis}
               </span>
             </span>
           </Link>
 
           <div className="px-3 pb-2 text-[10px] font-semibold uppercase text-sidebar-foreground/75">
-            Operação
+            {t.common.operation}
           </div>
           {nav.map((item) => {
             const active =
@@ -159,7 +167,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           })}
 
           <div className="mt-6 px-3 pb-2 text-[10px] font-semibold uppercase text-sidebar-foreground/75">
-            Conformidade
+            {t.common.compliance}
           </div>
           {secondary.map((item) => {
             const active = pathname === item.to;
@@ -191,9 +199,9 @@ export function AppShell({ children }: { children: ReactNode }) {
             className="rounded-md border border-sidebar-border/60 bg-sidebar-accent/40 p-3 text-xs text-sidebar-foreground/80"
             title="A nota do candidato é calculada por regras declaradas (rubrica, peso e cálculo). Nenhum modelo de IA decide ou julga o resultado."
           >
-            <div className="font-medium text-sidebar-foreground">Baseado em regras fixas</div>
+            <div className="font-medium text-sidebar-foreground">{t.common.rulesBasedScoring}</div>
             <p className="mt-1 text-sidebar-foreground/80">
-              Sem respostas subjetivas. A nota sai de rubrica, peso e cálculo.
+              {t.common.noSubjectiveAnswers}
             </p>
           </div>
           <div className="mt-3 flex items-center gap-3 px-1">
@@ -211,15 +219,16 @@ export function AppShell({ children }: { children: ReactNode }) {
       <main className="flex min-w-0 flex-1 flex-col">
         <header className="sticky top-0 z-10 flex h-14 items-center gap-4 border-b border-border bg-background/85 px-6 backdrop-blur">
           <div className="text-xs text-muted-foreground">
-            Espaço de trabalho <span className="text-foreground">/ {session.workspaceName}</span>
+            {t.common.workspace} <span className="text-foreground">/ {session.workspaceName}</span>
           </div>
           <div className="ml-auto flex items-center gap-2 text-xs">
+            <LanguageSelector />
             <Link
               to="/comecar"
               className="inline-flex items-center gap-1.5 rounded-md border border-border bg-card px-2.5 py-1 text-muted-foreground hover:bg-accent"
             >
               <HelpCircle className="h-3.5 w-3.5" />
-              <span className="hidden sm:inline">Comece por aqui</span>
+              <span className="hidden sm:inline">{t.common.help}</span>
             </Link>
             <span className="inline-flex items-center gap-1.5 rounded-md border border-border bg-card px-2.5 py-1 text-muted-foreground">
               <span className="h-1.5 w-1.5 rounded-full bg-success" />
@@ -232,7 +241,7 @@ export function AppShell({ children }: { children: ReactNode }) {
               {modeLabel}
             </a>
             <button className="rounded-md border border-border bg-card px-3 py-1.5 text-foreground hover:bg-accent">
-              Buscar
+              {t.common.search}
             </button>
           </div>
         </header>
@@ -241,17 +250,17 @@ export function AppShell({ children }: { children: ReactNode }) {
           {hasGlobalError && mode === "commercial" && (
             <StateBanner
               tone="danger"
-              title="Erro na integração Gupy"
+              title={t.common.gupyConnectionError}
               action={
                 <a
                   href={`${pathname}?mode=technical&gupy=error`}
                   className="shrink-0 rounded-md border border-current/20 bg-background/60 px-3 py-1.5 text-xs font-medium"
                 >
-                  Abrir diagnóstico
+                  {t.common.openDiagnostics}
                 </a>
               }
             >
-              Não foi possível confirmar o envio do resultado.
+              {t.common.couldNotConfirmSubmission}
             </StateBanner>
           )}
           {(mode === "technical" || hasGlobalError) && <GlobalErrorFlow />}
