@@ -7,9 +7,14 @@ import {
   Download,
   ExternalLink,
   Flag,
+  GitBranch,
   History,
+  MousePointerClick,
   RefreshCw,
+  Workflow,
   XCircle,
+  ZoomIn,
+  ZoomOut,
 } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
 import {
@@ -434,164 +439,190 @@ function ScoringModelPreview({
   const steps = version ? buildStepScoreSummaries(version) : [];
 
   return (
-    <section className="mb-5 grid gap-5 lg:grid-cols-[minmax(0,1fr)_340px]">
-      <div className="rounded-md border border-border bg-card p-5">
-        <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
-          <div>
-            <div className="text-xs font-semibold uppercase text-muted-foreground">
-              Fluxo de pontuação
-            </div>
-            <h2 className="mt-1 text-lg font-semibold">
-              {version?.name ?? simulationId ?? "Simulação"}{" "}
-              {versionNumber ? `v${versionNumber}` : ""}
-            </h2>
-          </div>
-          <span className="rounded-md border border-border bg-background px-2 py-1 text-[11px] text-muted-foreground">
-            blocos da versão
-          </span>
-        </div>
-
-        {loading ? (
-          <div className="rounded-md border border-border bg-background px-4 py-6 text-sm text-muted-foreground">
-            Carregando etapas, tempos configurados e competências...
-          </div>
-        ) : error ? (
-          <StateBanner tone="danger" title="Não foi possível carregar o fluxo">
-            {error.message}
-          </StateBanner>
-        ) : steps.length > 0 ? (
-          <div className="grid gap-3">
-            {steps.map((step) => (
-              <button
-                key={step.node.id}
-                type="button"
-                onClick={() => onSelectNode(selectedNodeId === step.node.id ? null : step.node.id)}
-                className={cn(
-                  "flex min-h-[310px] flex-col rounded-md border bg-background p-4 text-left transition hover:border-primary/60 hover:bg-accent/40",
-                  selectedNodeId === step.node.id
-                    ? "border-primary ring-2 ring-primary/20"
-                    : "border-border",
-                )}
-              >
-                <div className="flex flex-wrap items-start justify-between gap-2">
-                  <div>
-                    <div className="font-mono text-[11px] uppercase text-primary">
-                      {step.node.id}
-                    </div>
-                    <div className="mt-1 text-sm font-semibold">Turno {step.node.turnIndex}</div>
-                  </div>
-                  {step.hasCriticalOption && (
-                    <span className="rounded-md border border-danger/30 bg-danger/10 px-2 py-1 text-[11px] font-medium text-danger">
-                      crítica
-                    </span>
-                  )}
-                </div>
-
-                <div className="mt-3">
-                  <div className="text-[11px] font-medium uppercase text-muted-foreground">
-                    Texto cadastrado
-                  </div>
-                  <p className="mt-1 line-clamp-4 text-sm leading-6 text-foreground/85">
-                    {step.node.clientMessage || "Sem texto cadastrado."}
-                  </p>
-                </div>
-
-                <dl className="mt-4 grid grid-cols-3 gap-2 text-xs">
-                  <MetricTile label="Tempo" value={formatTimeLimit(step.node.timeLimitSeconds)} />
-                  <MetricTile label="Atual" value={formatScore(step.currentScore)} />
-                  <MetricTile label="Acumulada" value={formatScore(step.accumulatedScore)} />
-                </dl>
-
-                <div className="mt-4">
-                  <div className="text-[11px] font-medium uppercase text-muted-foreground">
-                    Competências
-                  </div>
-                  <div className="mt-2 flex flex-wrap gap-1.5">
-                    {step.competencies.length > 0 ? (
-                      step.competencies.map((competency) => (
-                        <span
-                          key={competency.name}
-                          className="rounded-md border border-border bg-card px-2 py-1 text-[11px]"
-                        >
-                          {competency.name}:{" "}
-                          <span className="font-semibold tabular-nums">
-                            {formatScore(competency.value)}
-                          </span>
-                        </span>
-                      ))
-                    ) : (
-                      <span className="text-xs text-muted-foreground">
-                        Nenhuma competência configurada.
-                      </span>
-                    )}
-                  </div>
-                </div>
-
-                <div className="mt-4 border-t border-border pt-3">
-                  <div className="text-[11px] font-medium uppercase text-muted-foreground">
-                    Alternativas
-                  </div>
-                  <div className="mt-2 space-y-2">
-                    {step.node.options.map((option) => (
-                      <div
-                        key={option.id}
-                        className="rounded-md border border-border bg-card px-3 py-2"
-                      >
-                        <div className="flex flex-wrap items-center justify-between gap-2">
-                          <span className="font-mono text-[11px] text-muted-foreground">
-                            {option.id}
-                          </span>
-                          <span className="rounded bg-muted px-1.5 py-0.5 text-[11px] font-medium tabular-nums text-foreground">
-                            +{formatScore(scoreOption(option, version!))} pts
-                          </span>
-                        </div>
-                        <p className="mt-1 line-clamp-2 text-xs leading-5 text-foreground/80">
-                          {option.text}
-                        </p>
-                        <div className="mt-1 text-[11px] text-muted-foreground">
-                          Vai para {option.nextNodeId ?? "fim"}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="mt-auto pt-4 text-[11px] text-muted-foreground">
-                  {step.node.options.length} opções - próximo: {step.nextTargets.join(", ")}
-                </div>
-              </button>
-            ))}
-          </div>
-        ) : (
-          <div className="rounded-md border border-border bg-background px-4 py-6 text-sm text-muted-foreground">
-            Nenhuma etapa cadastrada para esta versão.
-          </div>
-        )}
-
-        {version && steps.length > 0 && <FlowOutcomeSummary version={version} />}
+    <section className="mb-5">
+      <div className="mb-5">
+        <h2 className="text-2xl font-semibold tracking-tight">Mapa & score normalizado</h2>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Dois candidatos têm o mesmo teto possível, independente do caminho.
+        </p>
       </div>
 
-      <aside className="space-y-4">
+      <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_340px]">
         <div className="rounded-md border border-border bg-card p-5">
-          <div className="text-xs font-semibold uppercase text-muted-foreground">Fórmula</div>
-          <pre className="mt-2 overflow-x-auto rounded-md bg-muted/50 p-3 font-mono text-[11px] leading-relaxed">
-            {`score_competencia =
+          <NormalizedScoreMap
+            onSelectNode={onSelectNode}
+            selectedNodeId={selectedNodeId}
+            simulationId={simulationId}
+            version={version}
+            versionNumber={versionNumber}
+          />
+
+          <div className="mt-6 border-t border-border pt-5">
+            <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <div className="text-xs font-semibold uppercase text-muted-foreground">
+                  Fluxo de pontuação
+                </div>
+                <h2 className="mt-1 text-lg font-semibold">
+                  {version?.name ?? simulationId ?? "Simulação"}{" "}
+                  {versionNumber ? `v${versionNumber}` : ""}
+                </h2>
+              </div>
+              <span className="rounded-md border border-border bg-background px-2 py-1 text-[11px] text-muted-foreground">
+                blocos da versão
+              </span>
+            </div>
+
+            {loading ? (
+              <div className="rounded-md border border-border bg-background px-4 py-6 text-sm text-muted-foreground">
+                Carregando etapas, tempos configurados e competências...
+              </div>
+            ) : error ? (
+              <StateBanner tone="danger" title="Não foi possível carregar o fluxo">
+                {error.message}
+              </StateBanner>
+            ) : steps.length > 0 ? (
+              <div className="grid gap-3">
+                {steps.map((step) => (
+                  <button
+                    key={step.node.id}
+                    type="button"
+                    onClick={() =>
+                      onSelectNode(selectedNodeId === step.node.id ? null : step.node.id)
+                    }
+                    className={cn(
+                      "flex min-h-[310px] flex-col rounded-md border bg-background p-4 text-left transition hover:border-primary/60 hover:bg-accent/40",
+                      selectedNodeId === step.node.id
+                        ? "border-primary ring-2 ring-primary/20"
+                        : "border-border",
+                    )}
+                  >
+                    <div className="flex flex-wrap items-start justify-between gap-2">
+                      <div>
+                        <div className="font-mono text-[11px] uppercase text-primary">
+                          {step.node.id}
+                        </div>
+                        <div className="mt-1 text-sm font-semibold">
+                          Turno {step.node.turnIndex}
+                        </div>
+                      </div>
+                      {step.hasCriticalOption && (
+                        <span className="rounded-md border border-danger/30 bg-danger/10 px-2 py-1 text-[11px] font-medium text-danger">
+                          crítica
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="mt-3">
+                      <div className="text-[11px] font-medium uppercase text-muted-foreground">
+                        Texto cadastrado
+                      </div>
+                      <p className="mt-1 line-clamp-4 text-sm leading-6 text-foreground/85">
+                        {step.node.clientMessage || "Sem texto cadastrado."}
+                      </p>
+                    </div>
+
+                    <dl className="mt-4 grid grid-cols-3 gap-2 text-xs">
+                      <MetricTile
+                        label="Tempo"
+                        value={formatTimeLimit(step.node.timeLimitSeconds)}
+                      />
+                      <MetricTile label="Atual" value={formatScore(step.currentScore)} />
+                      <MetricTile label="Acumulada" value={formatScore(step.accumulatedScore)} />
+                    </dl>
+
+                    <div className="mt-4">
+                      <div className="text-[11px] font-medium uppercase text-muted-foreground">
+                        Competências
+                      </div>
+                      <div className="mt-2 flex flex-wrap gap-1.5">
+                        {step.competencies.length > 0 ? (
+                          step.competencies.map((competency) => (
+                            <span
+                              key={competency.name}
+                              className="rounded-md border border-border bg-card px-2 py-1 text-[11px]"
+                            >
+                              {competency.name}:{" "}
+                              <span className="font-semibold tabular-nums">
+                                {formatScore(competency.value)}
+                              </span>
+                            </span>
+                          ))
+                        ) : (
+                          <span className="text-xs text-muted-foreground">
+                            Nenhuma competência configurada.
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="mt-4 border-t border-border pt-3">
+                      <div className="text-[11px] font-medium uppercase text-muted-foreground">
+                        Alternativas
+                      </div>
+                      <div className="mt-2 space-y-2">
+                        {step.node.options.map((option) => (
+                          <div
+                            key={option.id}
+                            className="rounded-md border border-border bg-card px-3 py-2"
+                          >
+                            <div className="flex flex-wrap items-center justify-between gap-2">
+                              <span className="font-mono text-[11px] text-muted-foreground">
+                                {option.id}
+                              </span>
+                              <span className="rounded bg-muted px-1.5 py-0.5 text-[11px] font-medium tabular-nums text-foreground">
+                                +{formatScore(scoreOption(option, version!))} pts
+                              </span>
+                            </div>
+                            <p className="mt-1 line-clamp-2 text-xs leading-5 text-foreground/80">
+                              {option.text}
+                            </p>
+                            <div className="mt-1 text-[11px] text-muted-foreground">
+                              Vai para {option.nextNodeId ?? "fim"}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="mt-auto pt-4 text-[11px] text-muted-foreground">
+                      {step.node.options.length} opções - próximo: {step.nextTargets.join(", ")}
+                    </div>
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <div className="rounded-md border border-border bg-background px-4 py-6 text-sm text-muted-foreground">
+                Nenhuma etapa cadastrada para esta versão.
+              </div>
+            )}
+
+            {version && steps.length > 0 && <FlowOutcomeSummary version={version} />}
+          </div>
+        </div>
+
+        <aside className="space-y-4">
+          <div className="rounded-md border border-border bg-card p-5">
+            <div className="text-xs font-semibold uppercase text-muted-foreground">Fórmula</div>
+            <pre className="mt-2 overflow-x-auto rounded-md bg-muted/50 p-3 font-mono text-[11px] leading-relaxed">
+              {`score_competencia =
   pts_obtidos / pts_possíveis_no_caminho
 
 score_final =
 ${formatFormula(version)}`}
-          </pre>
-        </div>
-        <div className="rounded-md border border-danger/30 bg-danger/5 p-5 text-sm">
-          <div className="text-xs font-semibold uppercase text-danger">
-            Erro crítico não reprova automaticamente
+            </pre>
           </div>
-          <p className="mt-2 text-foreground/80">
-            Dispara revisão humana e bloqueia recomendação automática até a correção ficar
-            documentada.
-          </p>
-        </div>
-      </aside>
+          <div className="rounded-md border border-danger/30 bg-danger/5 p-5 text-sm">
+            <div className="text-xs font-semibold uppercase text-danger">
+              Erro crítico não reprova automaticamente
+            </div>
+            <p className="mt-2 text-foreground/80">
+              Dispara revisão humana e bloqueia recomendação automática até a correção ficar
+              documentada.
+            </p>
+          </div>
+        </aside>
+      </div>
     </section>
   );
 }
@@ -602,6 +633,445 @@ function MetricTile({ label, value }: { label: string; value: string }) {
       <dt className="truncate text-[10px] uppercase text-muted-foreground">{label}</dt>
       <dd className="mt-1 truncate text-sm font-semibold tabular-nums">{value}</dd>
     </div>
+  );
+}
+
+function NormalizedScoreMap({
+  onSelectNode,
+  selectedNodeId,
+  simulationId,
+  version,
+  versionNumber,
+}: {
+  onSelectNode: (nodeId: string | null) => void;
+  selectedNodeId: string | null;
+  simulationId?: string;
+  version?: SimulationVersionDetailResponse;
+  versionNumber?: number;
+}) {
+  const [zoom, setZoom] = useState(1);
+  const title = version?.name ?? simulationId ?? "Simulação";
+  const flow = version ? buildInteractiveScoreFlow(version) : null;
+  const selectedFlowNode =
+    selectedNodeId && flow ? flow.nodes.find((node) => node.id === selectedNodeId) : null;
+  const selectedStep =
+    selectedFlowNode?.node && version
+      ? buildSingleStepScoreSummary(selectedFlowNode.node, version)
+      : null;
+  const selectedOutgoing = flow
+    ? flow.edges.filter((edge) => edge.from === selectedNodeId && edge.option)
+    : [];
+
+  return (
+    <div>
+      <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h3 className="text-sm font-semibold">
+            {title} {versionNumber ? `— v${versionNumber}` : ""}
+          </h3>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Clique em blocos e alternativas para filtrar o diagnóstico e ver a função da etapa.
+          </p>
+        </div>
+        <div className="flex items-center gap-1 rounded-md border border-border bg-background p-1">
+          <button
+            type="button"
+            onClick={() => setZoom((current) => Math.max(0.75, Number((current - 0.1).toFixed(2))))}
+            className="rounded p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground"
+            title="Reduzir zoom"
+          >
+            <ZoomOut className="h-4 w-4" />
+          </button>
+          <button
+            type="button"
+            onClick={() => setZoom(1)}
+            className="rounded px-2 py-1 text-xs font-medium tabular-nums hover:bg-muted"
+            title="Voltar para 100%"
+          >
+            {Math.round(zoom * 100)}%
+          </button>
+          <button
+            type="button"
+            onClick={() => setZoom((current) => Math.min(1.25, Number((current + 0.1).toFixed(2))))}
+            className="rounded p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground"
+            title="Aumentar zoom"
+          >
+            <ZoomIn className="h-4 w-4" />
+          </button>
+          {selectedNodeId && (
+            <button
+              type="button"
+              onClick={() => onSelectNode(null)}
+              className="ml-1 rounded px-2 py-1 text-xs font-medium text-muted-foreground hover:bg-muted hover:text-foreground"
+            >
+              limpar
+            </button>
+          )}
+        </div>
+      </div>
+
+      {flow ? (
+        <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_280px]">
+          <div className="overflow-auto rounded-md border border-border bg-muted/20">
+            <div
+              className="relative origin-top-left"
+              style={{
+                height: flow.height * zoom,
+                minWidth: flow.width * zoom,
+                width: flow.width * zoom,
+              }}
+            >
+              <div
+                className="absolute left-0 top-0"
+                style={{
+                  height: flow.height,
+                  transform: `scale(${zoom})`,
+                  transformOrigin: "top left",
+                  width: flow.width,
+                }}
+              >
+                <svg
+                  aria-hidden="true"
+                  className="absolute inset-0"
+                  height={flow.height}
+                  width={flow.width}
+                >
+                  <defs>
+                    <marker
+                      id="validator-flow-arrow"
+                      markerHeight="8"
+                      markerWidth="8"
+                      orient="auto"
+                      refX="7"
+                      refY="4"
+                    >
+                      <path d="M0,0 L8,4 L0,8 Z" className="fill-muted-foreground" />
+                    </marker>
+                  </defs>
+                  {flow.edges.map((edge) => (
+                    <path
+                      key={edge.id}
+                      className={cn(
+                        "fill-none stroke-muted-foreground/60",
+                        edge.option?.isCritical && "stroke-danger",
+                        selectedNodeId === edge.from && "stroke-primary",
+                      )}
+                      d={edge.path}
+                      markerEnd="url(#validator-flow-arrow)"
+                      strokeWidth={selectedNodeId === edge.from ? 2 : 1.5}
+                    />
+                  ))}
+                </svg>
+
+                {flow.edges.map((edge) =>
+                  edge.option ? (
+                    <button
+                      key={`${edge.id}-label`}
+                      type="button"
+                      onClick={() => onSelectNode(edge.toKind === "end" ? edge.from : edge.to)}
+                      className={cn(
+                        "absolute z-10 max-w-[150px] rounded-md border bg-card px-2 py-1 text-left text-[11px] shadow-sm transition hover:border-primary hover:bg-accent",
+                        edge.option.isCritical
+                          ? "border-danger/40 text-danger"
+                          : "border-border text-foreground",
+                      )}
+                      style={{ left: edge.labelX, top: edge.labelY }}
+                      title={edge.option.text}
+                    >
+                      <span className="flex items-center gap-1 font-mono">
+                        <GitBranch className="h-3 w-3" />
+                        {edge.option.id}
+                        <span className="font-sans tabular-nums">+{formatScore(edge.score)}</span>
+                      </span>
+                    </button>
+                  ) : null,
+                )}
+
+                {flow.nodes.map((flowNode) => (
+                  <button
+                    key={flowNode.id}
+                    type="button"
+                    onClick={() =>
+                      flowNode.kind === "step"
+                        ? onSelectNode(selectedNodeId === flowNode.id ? null : flowNode.id)
+                        : onSelectNode(flowNode.sourceNodeId ?? null)
+                    }
+                    className={cn(
+                      "absolute z-20 flex h-[104px] w-[176px] flex-col rounded-md border bg-card p-3 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-primary hover:shadow-md",
+                      flowNode.kind === "end" && "bg-muted",
+                      selectedNodeId === flowNode.id || selectedNodeId === flowNode.sourceNodeId
+                        ? "border-primary ring-2 ring-primary/20"
+                        : "border-border",
+                    )}
+                    style={{ left: flowNode.x, top: flowNode.y }}
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="font-mono text-[11px] font-semibold text-primary">
+                        {flowNode.label}
+                      </span>
+                      {flowNode.kind === "step" ? (
+                        <Workflow className="h-3.5 w-3.5 text-muted-foreground" />
+                      ) : (
+                        <Flag className="h-3.5 w-3.5 text-muted-foreground" />
+                      )}
+                    </div>
+                    <div className="mt-2 line-clamp-2 text-xs font-medium leading-5">
+                      {flowNode.title}
+                    </div>
+                    <div className="mt-auto flex items-center justify-between gap-2 text-[11px] text-muted-foreground">
+                      <span>{flowNode.meta}</span>
+                      <span className="font-semibold tabular-nums text-foreground">
+                        {flowNode.scoreLabel}
+                      </span>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <aside className="rounded-md border border-border bg-background p-4">
+            <div className="flex items-center gap-2 text-xs font-semibold uppercase text-muted-foreground">
+              <MousePointerClick className="h-4 w-4" />
+              Função do bloco
+            </div>
+
+            {selectedStep ? (
+              <div className="mt-3 space-y-4">
+                <div>
+                  <div className="font-mono text-xs text-primary">{selectedStep.node.id}</div>
+                  <p className="mt-1 line-clamp-5 text-sm leading-6">
+                    {selectedStep.node.clientMessage || "Sem texto cadastrado."}
+                  </p>
+                </div>
+                <dl className="grid grid-cols-2 gap-2 text-xs">
+                  <MetricTile
+                    label="Tempo"
+                    value={formatTimeLimit(selectedStep.node.timeLimitSeconds)}
+                  />
+                  <MetricTile label="Atual" value={formatScore(selectedStep.currentScore)} />
+                  <MetricTile
+                    label="Acumulada"
+                    value={formatScore(selectedStep.accumulatedScore)}
+                  />
+                  <MetricTile label="Saídas" value={selectedStep.node.options.length.toString()} />
+                </dl>
+                <div>
+                  <div className="mb-2 text-[11px] font-medium uppercase text-muted-foreground">
+                    Alternativas
+                  </div>
+                  <div className="space-y-2">
+                    {selectedOutgoing.map((edge) => (
+                      <button
+                        key={edge.id}
+                        type="button"
+                        onClick={() => onSelectNode(edge.toKind === "end" ? edge.from : edge.to)}
+                        className="w-full rounded-md border border-border bg-card p-2 text-left text-xs hover:border-primary hover:bg-accent"
+                      >
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="font-mono">{edge.option?.id}</span>
+                          <span className="font-semibold tabular-nums">
+                            +{formatScore(edge.score)} pts
+                          </span>
+                        </div>
+                        <p className="mt-1 line-clamp-2 text-muted-foreground">
+                          {edge.option?.text}
+                        </p>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="mt-4 rounded-md border border-dashed border-border p-4 text-sm text-muted-foreground">
+                Selecione um nó para ver texto, tempo, pontuação, competências e saídas sem sair da
+                tela.
+              </div>
+            )}
+          </aside>
+        </div>
+      ) : (
+        <div className="rounded-md border border-border bg-background px-4 py-6 text-sm text-muted-foreground">
+          Carregando mapa interativo do fluxo...
+        </div>
+      )}
+
+      <div className="mt-4 grid grid-cols-2 gap-3 text-xs md:grid-cols-4">
+        {(flow?.pathSummaries ?? ["A", "B", "C", "D"].map((path) => ({ label: path }))).map(
+          (path) => (
+            <div key={path.label} className="rounded-md border border-border bg-background p-3">
+              <div className="font-mono text-[11px] text-muted-foreground">
+                Caminho {path.label}
+              </div>
+              <div className="mt-1 text-xl font-semibold tabular-nums">máx 100</div>
+            </div>
+          ),
+        )}
+      </div>
+    </div>
+  );
+}
+
+interface InteractiveFlowNode {
+  id: string;
+  kind: "step" | "end";
+  label: string;
+  meta: string;
+  node?: SimulationVersionNodeResponse;
+  scoreLabel: string;
+  sourceNodeId?: string;
+  title: string;
+  x: number;
+  y: number;
+}
+
+interface InteractiveFlowEdge {
+  from: string;
+  id: string;
+  labelX: number;
+  labelY: number;
+  option?: SimulationVersionOptionResponse;
+  path: string;
+  score: number;
+  to: string;
+  toKind: "step" | "end";
+}
+
+interface InteractiveScoreFlow {
+  edges: InteractiveFlowEdge[];
+  height: number;
+  nodes: InteractiveFlowNode[];
+  pathSummaries: Array<{ label: string }>;
+  width: number;
+}
+
+function buildInteractiveScoreFlow(version: SimulationVersionDetailResponse): InteractiveScoreFlow {
+  const nodeWidth = 176;
+  const nodeHeight = 104;
+  const columnGap = 260;
+  const rowGap = 150;
+  const startX = 36;
+  const startY = 36;
+  const nodesById = new Map(version.nodes.map((node) => [node.id, node]));
+  const summariesById = new Map(
+    buildStepScoreSummaries(version).map((summary) => [summary.node.id, summary]),
+  );
+  const stepNodes = [...version.nodes].sort((a, b) => {
+    if (a.turnIndex !== b.turnIndex) return a.turnIndex - b.turnIndex;
+    return a.id.localeCompare(b.id);
+  });
+  const turnIndexes = Array.from(new Set(stepNodes.map((node) => node.turnIndex))).sort(
+    (a, b) => a - b,
+  );
+  const columnByTurn = new Map(turnIndexes.map((turn, index) => [turn, index]));
+  const rowsByTurn = new Map<number, SimulationVersionNodeResponse[]>();
+
+  stepNodes.forEach((node) => {
+    rowsByTurn.set(node.turnIndex, [...(rowsByTurn.get(node.turnIndex) ?? []), node]);
+  });
+
+  const flowNodes: InteractiveFlowNode[] = stepNodes.map((node) => {
+    const column = columnByTurn.get(node.turnIndex) ?? 0;
+    const row = rowsByTurn.get(node.turnIndex)?.findIndex((item) => item.id === node.id) ?? 0;
+    const summary = summariesById.get(node.id);
+
+    return {
+      id: node.id,
+      kind: "step",
+      label: node.id,
+      meta: `Turno ${node.turnIndex}`,
+      node,
+      scoreLabel: `${formatScore(summary?.accumulatedScore ?? 0)} pts`,
+      title: node.clientMessage || "Sem texto cadastrado.",
+      x: startX + column * columnGap,
+      y: startY + row * rowGap,
+    };
+  });
+  const endNodes: InteractiveFlowNode[] = [];
+  const edges: InteractiveFlowEdge[] = [];
+
+  stepNodes.forEach((node) => {
+    const fromNode = flowNodes.find((item) => item.id === node.id);
+    if (!fromNode) return;
+
+    node.options.forEach((option, optionIndex) => {
+      const score = scoreOption(option, version);
+      const targetNode = option.nextNodeId ? nodesById.get(option.nextNodeId) : undefined;
+      let toNode = targetNode ? flowNodes.find((item) => item.id === targetNode.id) : undefined;
+      let toKind: "step" | "end" = "step";
+
+      if (!toNode) {
+        const endId = `fim-${node.id}-${option.id}`;
+        const existingEnd = endNodes.find((item) => item.id === endId);
+        toNode =
+          existingEnd ??
+          ({
+            id: endId,
+            kind: "end",
+            label: "FIM",
+            meta: `via ${node.id}/${option.id}`,
+            scoreLabel: `+${formatScore(score)} pts`,
+            sourceNodeId: node.id,
+            title: option.auditNote || option.text || "Encerramento",
+            x: fromNode.x + columnGap,
+            y: fromNode.y + optionIndex * 118,
+          } satisfies InteractiveFlowNode);
+        if (!existingEnd) endNodes.push(toNode);
+        toKind = "end";
+      }
+
+      const start = { x: fromNode.x + nodeWidth, y: fromNode.y + nodeHeight / 2 };
+      const end = { x: toNode.x, y: toNode.y + nodeHeight / 2 };
+      const midX = start.x + Math.max(80, (end.x - start.x) / 2);
+      const path = `M ${start.x} ${start.y} C ${midX} ${start.y}, ${midX} ${end.y}, ${end.x} ${end.y}`;
+
+      edges.push({
+        from: node.id,
+        id: `${node.id}-${option.id}-${toNode.id}`,
+        labelX: start.x + Math.max(24, (end.x - start.x) / 2 - 42),
+        labelY: (start.y + end.y) / 2 - 18,
+        option,
+        path,
+        score,
+        to: toNode.id,
+        toKind,
+      });
+    });
+  });
+
+  const allNodes = [...flowNodes, ...endNodes];
+  const width = Math.max(760, Math.max(...allNodes.map((node) => node.x + nodeWidth + 36), 760));
+  const height = Math.max(330, Math.max(...allNodes.map((node) => node.y + nodeHeight + 36), 330));
+  const pathSummaries = collectEndingTraces(version)
+    .slice(0, 4)
+    .map((ending, index) => ({
+      label: ending.optionId || String.fromCharCode(65 + index),
+    }));
+
+  return {
+    edges,
+    height,
+    nodes: allNodes,
+    pathSummaries:
+      pathSummaries.length > 0 ? pathSummaries : ["A", "B", "C", "D"].map((label) => ({ label })),
+    width,
+  };
+}
+
+function buildSingleStepScoreSummary(
+  node: SimulationVersionNodeResponse,
+  version: SimulationVersionDetailResponse,
+): StepScoreSummary {
+  const summary = buildStepScoreSummaries(version).find((item) => item.node.id === node.id);
+  return (
+    summary ?? {
+      accumulatedScore: 0,
+      competencies: summarizeCompetencies(node),
+      currentScore: 0,
+      hasCriticalOption: node.options.some((option) => option.isCritical),
+      nextTargets: summarizeNextTargets(node),
+      node,
+    }
   );
 }
 
