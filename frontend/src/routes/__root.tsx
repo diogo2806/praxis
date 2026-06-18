@@ -13,6 +13,7 @@ import { useEffect, type ReactNode } from "react";
 import appCss from "../styles.css?url";
 import { reportAppError } from "../lib/app-error-reporting";
 import { resolveRuntimeConfigFromEnv } from "../lib/runtime-config.server";
+import { LanguageProvider, useLanguage } from "../lib/language-context";
 
 // Runs only on the server. Reads the public runtime config from env per request
 // so it can be injected into the page and picked up by the browser bundle.
@@ -21,20 +22,21 @@ const getRuntimeConfig = createServerFn({ method: "GET" }).handler(() =>
 );
 
 function NotFoundComponent() {
+  const { t } = useLanguage();
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
       <div className="max-w-md text-center">
         <h1 className="text-7xl font-bold text-foreground">404</h1>
-        <h2 className="mt-4 text-xl font-semibold text-foreground">Página não encontrada</h2>
+        <h2 className="mt-4 text-xl font-semibold text-foreground">{t.common.notFound}</h2>
         <p className="mt-2 text-sm text-muted-foreground">
-          A página que você procura não existe ou foi movida.
+          {t.common.pageNotFoundDesc}
         </p>
         <div className="mt-6">
           <Link
             to="/"
             className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
           >
-            Voltar ao painel
+            {t.common.backToPanel}
           </Link>
         </div>
       </div>
@@ -45,6 +47,7 @@ function NotFoundComponent() {
 function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
   console.error(error);
   const router = useRouter();
+  const { t } = useLanguage();
   useEffect(() => {
     reportAppError(error, { boundary: "tanstack_root_error_component" });
   }, [error]);
@@ -53,10 +56,10 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
       <div className="max-w-md text-center">
         <h1 className="text-xl font-semibold tracking-tight text-foreground">
-          Esta página não carregou
+          {t.common.pageDidNotLoad}
         </h1>
         <p className="mt-2 text-sm text-muted-foreground">
-          Algo deu errado. Tente novamente ou volte ao painel.
+          {t.common.somethingWentWrong}
         </p>
         <div className="mt-6 flex flex-wrap justify-center gap-2">
           <button
@@ -66,13 +69,13 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
             }}
             className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
           >
-            Tentar novamente
+            {t.common.tryAgain}
           </button>
           <a
             href="/"
             className="inline-flex items-center justify-center rounded-md border border-input bg-background px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-accent"
           >
-            Voltar ao painel
+            {t.common.backToPanel}
           </a>
         </div>
       </div>
@@ -125,7 +128,11 @@ function RootShell({ children }: { children: ReactNode }) {
         {/* Must run before the app bundle so getRuntimeConfig() sees it. */}
         <script
           dangerouslySetInnerHTML={{
-            __html: `window.__PRAXIS_CONFIG__=${JSON.stringify(runtimeConfig)};`,
+            __html: `window.__PRAXIS_CONFIG__=${JSON.stringify(runtimeConfig)};
+            (function() {
+              const lang = localStorage.getItem('praxis-language') || 'pt-BR';
+              document.documentElement.lang = lang;
+            })();`,
           }}
         />
       </head>
@@ -141,8 +148,10 @@ function RootComponent() {
   const { queryClient } = Route.useRouteContext();
 
   return (
-    <QueryClientProvider client={queryClient}>
-      <Outlet />
-    </QueryClientProvider>
+    <LanguageProvider>
+      <QueryClientProvider client={queryClient}>
+        <Outlet />
+      </QueryClientProvider>
+    </LanguageProvider>
   );
 }
