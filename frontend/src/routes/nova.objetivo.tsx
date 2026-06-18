@@ -22,8 +22,8 @@ export const Route = createFileRoute("/nova/objetivo")({
   }),
   head: () => ({
     meta: [
-      { title: "Objetivo & Modelo - Praxis" },
-      { name: "description", content: "Revisao do blueprint real antes da autoria do personagem." },
+      { title: "Objetivo & Modelo - Práxis" },
+      { name: "description", content: "Revisão do modelo base antes da autoria do personagem." },
     ],
   }),
   component: Page,
@@ -64,20 +64,20 @@ function Page() {
   return (
     <AppShell>
       <WizardStepper current="avaliacao" unlockedThrough="cenario" />
-      <ScreenStateStrip blockedReason="selecione uma versao real para continuar" />
+      <ScreenStateStrip blockedReason="selecione uma versão real para continuar" />
       <div className="mb-8">
         <div className="text-xs uppercase tracking-[0.2em] text-primary">Passo 1</div>
-        <h1 className="mt-1 font-display text-3xl">Objetivo do blueprint</h1>
+        <h1 className="mt-1 font-display text-3xl">Objetivo do modelo base</h1>
         <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
-          Esta etapa usa o blueprint persistido no backend. Ajustes estruturais continuam em Nova
-          simulacao.
+          Esta etapa usa o modelo base salvo no sistema. Ajustes estruturais continuam em Nova
+          simulação.
         </p>
       </div>
 
       {!hasDraftContext ? (
         <EmptyState
-          title="Escolha uma simulacao real"
-          description="Sem contexto de versao, esta tela nao cria objetivo local nem carrega exemplos."
+          title="Escolha uma simulação real"
+          description="Sem contexto de versão, esta tela não cria objetivo local nem carrega exemplos."
           actions={
             <SimulationLinks
               loading={simulationsQuery.isLoading}
@@ -86,12 +86,14 @@ function Page() {
           }
         />
       ) : versionQuery.isLoading ? (
-        <StateBanner tone="info" title="Carregando blueprint">
-          Buscando simulacao {search.simulationId} v{search.versionNumber}.
+        <StateBanner tone="info" title="Carregando modelo base">
+          Buscando simulação {search.simulationId} v{search.versionNumber}.
         </StateBanner>
       ) : versionQuery.isError ? (
-        <StateBanner tone="danger" title="Nao foi possivel carregar o blueprint">
-          {versionQuery.error instanceof Error ? versionQuery.error.message : "Verifique a API."}
+        <StateBanner tone="danger" title="Não foi possível carregar o modelo base">
+          {versionQuery.error instanceof Error
+            ? versionQuery.error.message
+            : "Não foi possível carregar agora. Verifique sua conexão e tente novamente."}
         </StateBanner>
       ) : versionQuery.data ? (
         <>
@@ -106,11 +108,11 @@ function Page() {
               <StatusBadge status={versionQuery.data.status} />
             </div>
             <div className="mt-5 grid gap-3 md:grid-cols-2">
-              <Info label="No raiz" value={versionQuery.data.blueprint.rootNodeId} />
-              <Info label="Versao" value={`v${versionQuery.data.versionNumber}`} />
+              <Info label="Primeira etapa" value={versionQuery.data.blueprint.rootNodeId} />
+              <Info label="Versão" value={`v${versionQuery.data.versionNumber}`} />
             </div>
             <div className="mt-5">
-              <h3 className="text-sm font-semibold">Competencias e pesos</h3>
+              <h3 className="text-sm font-semibold">Competências e pesos</h3>
               <div className="mt-3 grid gap-2 md:grid-cols-3">
                 {versionQuery.data.blueprint.competencies.map((competency) => (
                   <div
@@ -128,7 +130,7 @@ function Page() {
           </section>
           {saveMutation.isError && (
             <div className="mt-5">
-              <StateBanner tone="danger" title="Nao foi possivel confirmar o blueprint">
+              <StateBanner tone="danger" title="Não foi possível confirmar o modelo base">
                 {saveMutation.error instanceof Error
                   ? saveMutation.error.message
                   : "Tente novamente."}
@@ -142,14 +144,14 @@ function Page() {
               disabled={saveMutation.isPending}
               className="rounded-md bg-primary px-5 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50"
             >
-              {saveMutation.isPending ? "Salvando..." : "Personagem ->"}
+              {saveMutation.isPending ? "Salvando..." : "Personagem →"}
             </button>
             <Link
               to="/nova/avaliacao"
               search={{ simulationId: search.simulationId, versionNumber: search.versionNumber }}
               className="rounded-md border border-border bg-card px-4 py-2 text-sm hover:bg-accent"
             >
-              Voltar: Blueprint
+              Voltar: Modelo base
             </Link>
           </div>
         </>
@@ -181,7 +183,7 @@ function SimulationLinks({
         to="/nova/avaliacao"
         className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground"
       >
-        Criar blueprint
+        Criar modelo base
       </Link>
     );
   }

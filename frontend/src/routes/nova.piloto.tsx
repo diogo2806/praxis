@@ -26,8 +26,8 @@ export const Route = createFileRoute("/nova/piloto")({
   }),
   head: () => ({
     meta: [
-      { title: "Piloto & Calibracao - Praxis" },
-      { name: "description", content: "Indicadores reais de execucao antes da publicacao." },
+      { title: "Piloto & Calibração - Praxis" },
+      { name: "description", content: "Indicadores reais de execução antes da publicação." },
     ],
   }),
   component: Page,
@@ -51,19 +51,19 @@ function Page() {
   return (
     <AppShell>
       <WizardStepper current="publicacao" />
-      <ScreenStateStrip blockedReason="acompanhe tentativas reais antes de avancar" />
+      <ScreenStateStrip blockedReason="acompanhe tentativas reais antes de avançar" />
       <div className="mb-6">
         <div className="text-xs uppercase tracking-[0.2em] text-primary">Passo 4</div>
-        <h1 className="mt-1 font-display text-3xl">Piloto & Calibracao</h1>
+        <h1 className="mt-1 font-display text-3xl">Piloto & Calibração</h1>
         <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
-          Esta tela mostra somente indicadores retornados pelo backend.
+          Esta tela mostra os indicadores reais de quem já respondeu, calculados pelo sistema.
         </p>
       </div>
 
       {!hasContext ? (
         <EmptyState
-          title="Selecione uma versao para acompanhar"
-          description="Nao ha participantes ou checklist local nesta etapa."
+          title="Selecione uma versão para acompanhar"
+          description="Escolha uma versão abaixo para ver os indicadores de quem já respondeu."
           actions={
             <SimulationLinks
               loading={simulationsQuery.isLoading}
@@ -73,21 +73,21 @@ function Page() {
         />
       ) : monitoringQuery.isLoading ? (
         <StateBanner tone="info" title="Carregando piloto">
-          Buscando monitoramento da simulacao {search.simulationId} v{search.versionNumber}.
+          Buscando monitoramento da simulação {search.simulationId} v{search.versionNumber}.
         </StateBanner>
       ) : monitoringQuery.isError ? (
-        <StateBanner tone="danger" title="Nao foi possivel carregar o piloto">
+        <StateBanner tone="danger" title="Não foi possível carregar o piloto">
           {monitoringQuery.error instanceof Error
             ? monitoringQuery.error.message
-            : "Verifique a API."}
+            : "Verifique sua conexão e tente novamente."}
         </StateBanner>
       ) : monitoring ? (
         <>
           <NextStepContract
-            primary="Usar indicadores reais para decidir se a versao segue para mapa e governanca."
-            secondary="Voltar ao validador ou blueprint antes da publicacao final continua permitido."
-            versionRule="Ajustes posteriores criam nova versao quando a versao atual estiver publicada."
-            lockedAfter="Tentativas existentes permanecem na versao em que foram criadas."
+            primary="Usar os indicadores reais para decidir se a versão segue para mapa e governança."
+            secondary="Voltar ao validador ou ao modelo base antes da publicação final continua permitido."
+            versionRule="Ajustes posteriores criam uma nova versão quando a versão atual já estiver publicada."
+            lockedAfter="Tentativas existentes permanecem na versão em que foram criadas."
           />
           <div className="mt-5 grid gap-4 md:grid-cols-4">
             <Metric label="Criadas" value={monitoring.attemptsCreated} />
@@ -95,14 +95,14 @@ function Page() {
               label="Em andamento"
               value={monitoring.attemptsInProgress + monitoring.attemptsPaused}
             />
-            <Metric label="Concluidas" value={monitoring.attemptsCompleted} />
-            <Metric label="Conclusao" value={`${monitoring.completionRatePercent.toFixed(1)}%`} />
+            <Metric label="Concluídas" value={monitoring.attemptsCompleted} />
+            <Metric label="Conclusão" value={`${monitoring.completionRatePercent.toFixed(1)}%`} />
           </div>
           <div className="mt-5 grid gap-4 md:grid-cols-4">
             <Metric label="Abandonadas" value={monitoring.attemptsAbandoned} />
             <Metric label="Expiradas" value={monitoring.attemptsExpired} />
             <Metric label="Falhas" value={monitoring.attemptsFailed} />
-            <Metric label="Drop-off" value={`${monitoring.dropOffRatePercent.toFixed(1)}%`} />
+            <Metric label="Desistência" value={`${monitoring.dropOffRatePercent.toFixed(1)}%`} />
           </div>
           <div className="mt-8 flex justify-between">
             <Link

@@ -8,7 +8,7 @@ export const Route = createFileRoute("/nova/avaliacao")({
   head: () => ({
     meta: [
       { title: "Avaliação - Práxis" },
-      { name: "description", content: "Blueprint e objetivo da avaliação." },
+      { name: "description", content: "Modelo base e objetivo da avaliação." },
     ],
   }),
   component: Page,
@@ -25,7 +25,7 @@ function Page() {
   return (
     <AppShell>
       <StateBanner tone="info" title="Abrindo avaliação">
-        Redirecionando para o blueprint da avaliação.
+        Redirecionando para o modelo base da avaliação.
       </StateBanner>
       <div className="mt-4">
         <Link

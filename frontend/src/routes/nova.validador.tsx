@@ -73,20 +73,20 @@ function ValidatorPage() {
   return (
     <AppShell>
       <WizardStepper current="revisao" unlockedThrough={canPublish ? "publicacao" : "revisao"} />
-      <ScreenStateStrip blockedReason="qualquer blocker remove a acao de publicar" />
+      <ScreenStateStrip blockedReason="qualquer bloqueio remove a ação de publicar" />
       <div className="mb-5 flex flex-wrap items-start justify-between gap-4">
         <div>
           <div className="text-xs uppercase text-primary">Passo 3</div>
           <h1 className="mt-1 text-3xl font-semibold">Validador de Qualidade</h1>
           <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
-            Regras determinísticas, histórico completo de alterações e bloqueios sem override manual.
+            Regras fixas, histórico completo de alterações e bloqueios sem ajuste manual.
           </p>
         </div>
       </div>
 
       {hasValidationParams && validationQuery.isLoading && (
         <StateBanner tone="info" title="Validador conectado">
-          Buscando diagnóstico da simulação {search.simulationId} v{search.versionNumber}.
+          Buscando o diagnóstico da simulação {search.simulationId} v{search.versionNumber}.
         </StateBanner>
       )}
 
@@ -94,14 +94,14 @@ function ValidatorPage() {
         <StateBanner tone="danger" title="Não foi possível carregar a validação">
           {validationQuery.error instanceof Error
             ? validationQuery.error.message
-            : "Verifique se o backend está rodando e se a simulação existe."}
+            : "Verifique se o sistema está disponível e tente novamente."}
         </StateBanner>
       )}
 
       {!hasValidationParams ? (
         <EmptyState
           title="Selecione uma versão para validar"
-          description="O validador usa apenas o diagnóstico retornado pelo backend."
+          description="O validador usa apenas o diagnóstico calculado pelo sistema."
           actions={
             <SimulationLinks
               loading={simulationsQuery.isLoading}
@@ -116,7 +116,7 @@ function ValidatorPage() {
               tone="danger"
               title={`Publicação bloqueada — ${blockers} ${blockers === 1 ? "item crítico" : "itens críticos"}`}
             >
-              O botão Publicar não aparece. Resolva o blocker ou salve como rascunho.
+              O botão Publicar não aparece. Resolva o bloqueio ou salve como rascunho.
             </StateBanner>
           ) : warnings > 0 ? (
             <StateBanner
@@ -127,7 +127,7 @@ function ValidatorPage() {
             </StateBanner>
           ) : (
             <StateBanner tone="ok" title="Pronta para publicar">
-              Sem blocker ou warning ativo. A publicação usa a versão imutável atual.
+              Sem bloqueio ou alerta ativo. A publicação usa a versão imutável atual.
             </StateBanner>
           )}
 
@@ -137,12 +137,12 @@ function ValidatorPage() {
                 blockers > 0
                   ? "Voltar ao editor. Piloto e publicação ficam travados."
                   : warnings > 0
-                    ? "Confirmar publicação com alertas gravados no AuditLog."
+                    ? "Confirmar publicação com alertas gravados no registro de auditoria."
                     : "Publicar versão imutável e seguir para piloto."
               }
-              secondary="Salvar rascunho nunca publica; volta ao editor mantendo diagnostico clicavel."
+              secondary="Salvar rascunho nunca publica; volta ao editor mantendo o diagnóstico clicável."
               versionRule="Depois de publicar, editar cria nova versão e preserva a publicada."
-              lockedAfter="Não existe override manual para blocker crítico."
+              lockedAfter="Não existe ajuste manual para bloqueio crítico."
             />
           </div>
 
@@ -154,10 +154,10 @@ function ValidatorPage() {
                 <div className="mb-2 text-sm text-muted-foreground">/100</div>
               </div>
               <p className="mt-1 text-xs text-muted-foreground">
-                Retornado pelo backend junto com os blockers e warnings.
+                Calculado pelo sistema junto com os bloqueios e alertas.
               </p>
               <div className="mt-4 rounded-md border border-border bg-background p-3 text-sm">
-                {blockers} blockers e {warnings} warnings.
+                {blockers} bloqueios e {warnings} alertas.
               </div>
             </section>
 
@@ -165,7 +165,7 @@ function ValidatorPage() {
               <div className="mb-4 flex items-center justify-between">
                 <h2 className="text-sm font-semibold">Diagnóstico</h2>
                 <span className="rounded-md border border-border bg-background px-2 py-1 text-[11px] text-muted-foreground">
-                  dados do backend
+                  dados do sistema
                 </span>
               </div>
               <ul className="divide-y divide-border">
@@ -226,7 +226,7 @@ function mapValidationIssues(validation: SimulationValidationResponse): Validati
       {
         id: "publishable",
         tone: "ok",
-        text: "Nenhum blocker ou alerta encontrado nesta versão",
+        text: "Nenhum bloqueio ou alerta encontrado nesta versão",
         target: `Simulação ${validation.simulationId} v${validation.versionNumber}`,
       },
     ];

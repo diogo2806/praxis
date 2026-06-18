@@ -7,7 +7,7 @@ export const Route = createFileRoute("/candidato/$token")({
       { title: "Visão do Candidato — Práxis" },
       {
         name: "description",
-        content: "Acesso do candidato à simulação situacional por token de tentativa.",
+        content: "Acesso do candidato à simulação situacional pelo código de acesso do convite.",
       },
     ],
   }),

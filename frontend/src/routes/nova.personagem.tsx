@@ -25,8 +25,8 @@ export const Route = createFileRoute("/nova/personagem")({
   }),
   head: () => ({
     meta: [
-      { title: "Personagem Ficticio - Praxis" },
-      { name: "description", content: "Configura o contexto inicial persistido no grafo." },
+      { title: "Personagem Fictício - Práxis" },
+      { name: "description", content: "Configura o contexto inicial salvo no fluxo da conversa." },
     ],
   }),
   component: Page,
@@ -102,16 +102,16 @@ function Page() {
       <ScreenStateStrip blockedReason="contexto e checklist de linguagem precisam ser confirmados" />
       <div className="mb-6">
         <div className="text-xs uppercase tracking-[0.2em] text-primary">Passo 2</div>
-        <h1 className="mt-1 font-display text-3xl">Personagem do cliente ficticio</h1>
+        <h1 className="mt-1 font-display text-3xl">Personagem do cliente fictício</h1>
         <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
-          O contexto informado aqui e salvo no no raiz da versao selecionada.
+          O contexto informado aqui é salvo na primeira etapa da versão selecionada.
         </p>
       </div>
 
       {!hasDraftContext ? (
         <EmptyState
-          title="Escolha uma simulacao real"
-          description="Esta etapa nao usa personagem de exemplo."
+          title="Escolha uma simulação real"
+          description="Esta etapa não usa personagem de exemplo."
           actions={
             <SimulationLinks
               loading={simulationsQuery.isLoading}
@@ -120,25 +120,27 @@ function Page() {
           }
         />
       ) : versionQuery.isLoading ? (
-        <StateBanner tone="info" title="Carregando grafo">
-          Buscando no raiz da simulacao {search.simulationId} v{search.versionNumber}.
+        <StateBanner tone="info" title="Carregando fluxo da conversa">
+          Buscando a primeira etapa da simulação {search.simulationId} v{search.versionNumber}.
         </StateBanner>
       ) : versionQuery.isError ? (
-        <StateBanner tone="danger" title="Nao foi possivel carregar a versao">
-          {versionQuery.error instanceof Error ? versionQuery.error.message : "Verifique a API."}
+        <StateBanner tone="danger" title="Não foi possível carregar a versão">
+          {versionQuery.error instanceof Error
+            ? versionQuery.error.message
+            : "Não foi possível carregar agora. Verifique sua conexão e tente novamente."}
         </StateBanner>
       ) : (
         <>
           {existingMessage && (
             <div className="mb-5">
-              <StateBanner tone="info" title={`No raiz atual: ${rootNodeId}`}>
+              <StateBanner tone="info" title={`Primeira etapa atual: ${rootNodeId}`}>
                 {existingMessage}
               </StateBanner>
             </div>
           )}
           {saveCharacterMutation.isError && (
             <div className="mb-5">
-              <StateBanner tone="danger" title="Nao foi possivel salvar o personagem">
+              <StateBanner tone="danger" title="Não foi possível salvar o personagem">
                 {saveCharacterMutation.error instanceof Error
                   ? saveCharacterMutation.error.message
                   : "Tente novamente."}
@@ -211,7 +213,7 @@ function Page() {
               disabled={!canGoNext || saveCharacterMutation.isPending}
               className="rounded-md bg-primary px-5 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50"
             >
-              {saveCharacterMutation.isPending ? "Salvando..." : "Montar dialogo ->"}
+              {saveCharacterMutation.isPending ? "Salvando..." : "Montar diálogo →"}
             </button>
           </div>
         </>

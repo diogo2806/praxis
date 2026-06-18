@@ -64,7 +64,7 @@ function LgpdPage() {
 
   return (
     <AppShell>
-      <ScreenStateStrip blockedReason="canal de revisao humana nao configurado" />
+      <ScreenStateStrip blockedReason="canal de revisão humana não configurado" />
       <div className="mb-5 flex flex-wrap items-start justify-between gap-4">
         <div>
           <div className="text-xs uppercase text-primary">Conformidade</div>
@@ -129,7 +129,7 @@ function LgpdPage() {
                 ? versionQuery.error.message
                 : auditQuery.error instanceof Error
                   ? auditQuery.error.message
-                  : "Verifique a API."}
+                  : "Verifique sua conexão e tente novamente."}
             </StateBanner>
           ) : version ? (
             <div>
@@ -168,7 +168,7 @@ function LgpdPage() {
             </StateBanner>
           ) : privacyQuery.isError ? (
             <StateBanner tone="danger" title="Não foi possível carregar política LGPD">
-              {privacyQuery.error instanceof Error ? privacyQuery.error.message : "Verifique a API."}
+              {privacyQuery.error instanceof Error ? privacyQuery.error.message : "Verifique sua conexão e tente novamente."}
             </StateBanner>
           ) : privacyQuery.data ? (
             <div className="rounded-md border border-border bg-card p-5">

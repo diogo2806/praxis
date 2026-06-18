@@ -72,7 +72,7 @@ function DefensibilityPage() {
 
   return (
     <AppShell>
-      <ScreenStateStrip blockedReason="promessa comercial indefensavel precisa ser removida" />
+      <ScreenStateStrip blockedReason="promessa comercial indefensável precisa ser removida" />
       <div className="mb-5 flex flex-wrap items-start justify-between gap-4">
         <div>
           <div className="text-xs uppercase text-primary">Conformidade</div>
@@ -122,7 +122,7 @@ function DefensibilityPage() {
               ? versionQuery.error.message
               : auditQuery.error instanceof Error
                 ? auditQuery.error.message
-                : "Verifique a API."}
+                : "Verifique sua conexão e tente novamente."}
           </StateBanner>
         ) : versionQuery.data ? (
           <div className="grid gap-4 lg:grid-cols-[1fr_360px]">
@@ -159,7 +159,7 @@ function DefensibilityPage() {
             </section>
             <aside className="rounded-md border border-border bg-card p-5">
               <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                Eventos auditaveis
+                Eventos auditáveis
               </div>
               <div className="mt-3 space-y-3">
                 {(auditQuery.data ?? []).slice(0, 5).map((event) => (
@@ -172,7 +172,7 @@ function DefensibilityPage() {
                 ))}
                 {(auditQuery.data ?? []).length === 0 && (
                   <p className="text-sm text-muted-foreground">
-                    Nenhum evento registrado para esta versao.
+                    Nenhum evento registrado para esta versão.
                   </p>
                 )}
               </div>

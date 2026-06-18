@@ -246,7 +246,7 @@ const globalErrorItems = [
   },
   {
     title: "Publicação",
-    description: "Falha nunca some: permanece no topo ate publicar, salvar rascunho ou corrigir.",
+    description: "Falha nunca some: permanece no topo até publicar, salvar rascunho ou corrigir.",
     action: "Salvar rascunho",
     Icon: UploadCloud,
     tone: "info",
@@ -293,19 +293,19 @@ export function NextStepContract({
     <section className="rounded-md border border-border bg-card p-4">
       <div className="flex items-center gap-2 text-sm font-semibold">
         <Route className="h-4 w-4 text-primary" />
-        Proximo passo sempre
+        Próximo passo sempre
       </div>
       <div className="mt-3 grid gap-2 text-xs md:grid-cols-2">
         <div className="rounded-md border border-primary/25 bg-primary/10 p-3 text-primary">
-          <div className="font-semibold uppercase">acao primaria</div>
+          <div className="font-semibold uppercase">ação primária</div>
           <div className="mt-1 text-sm font-medium">{primary}</div>
         </div>
         <div className="rounded-md border border-border bg-background p-3 text-muted-foreground">
-          <div className="font-semibold uppercase">rota secundaria</div>
+          <div className="font-semibold uppercase">rota secundária</div>
           <div className="mt-1 text-sm text-foreground">{secondary}</div>
         </div>
         <div className="rounded-md border border-warning/35 bg-warning/15 p-3 text-warning-foreground">
-          <div className="font-semibold uppercase">regra de versao</div>
+          <div className="font-semibold uppercase">regra de versão</div>
           <div className="mt-1 text-sm font-medium">{versionRule}</div>
         </div>
         <div className="rounded-md border border-border bg-muted p-3 text-muted-foreground">
@@ -410,7 +410,7 @@ export function UndoRedoBar({
         <RotateCcw className="h-3.5 w-3.5 scale-x-[-1]" />
         Refazer
       </button>
-      <span className="ml-auto">Autosave: salvo as {savedAt}</span>
+      <span className="ml-auto">Salvamento automático: salvo às {savedAt}</span>
     </div>
   );
 }

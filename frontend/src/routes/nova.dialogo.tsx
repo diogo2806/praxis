@@ -40,8 +40,8 @@ export const Route = createFileRoute("/nova/dialogo")({
   }),
   head: () => ({
     meta: [
-      { title: "Editor de Simulação - Praxis" },
-      { name: "description", content: "Editor conectado ao grafo persistido no backend." },
+      { title: "Editor de Simulação - Práxis" },
+      { name: "description", content: "Editor conectado ao fluxo da conversa salvo no sistema." },
     ],
   }),
   component: DialogEditor,
@@ -109,7 +109,7 @@ function DialogEditor() {
     onSuccess: async (nodeId) => {
       setDraftMessage("");
       setSelectedId(nodeId);
-      setFeedbackMessage(`Nó ${nodeId} adicionado.`);
+      setFeedbackMessage(`Etapa ${nodeId} adicionada.`);
       await refetchVersion();
     },
   });
@@ -126,7 +126,7 @@ function DialogEditor() {
       deleteSimulationNode(search.simulationId!, search.versionNumber!, nodeId),
     onSuccess: async () => {
       setSelectedId(null);
-      setFeedbackMessage("Nó removido.");
+      setFeedbackMessage("Etapa removida.");
       await refetchVersion();
     },
   });
@@ -208,13 +208,13 @@ function DialogEditor() {
   return (
     <AppShell>
       <WizardStepper current="cenario" unlockedThrough={canReview ? "revisao" : "cenario"} />
-      <ScreenStateStrip blockedReason="grafo precisa existir no backend e passar pelo validador" />
+      <ScreenStateStrip blockedReason="o fluxo da conversa precisa existir no sistema e passar pelo validador" />
       <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
         <div>
           <div className="text-xs uppercase text-primary">Passo 3</div>
           <h1 className="mt-1 text-3xl font-semibold">Editor de diálogo</h1>
           <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
-            Nós e alternativas são lidos e gravados pela API administrativa.
+            Etapas e alternativas são lidas e gravadas pelo sistema.
           </p>
         </div>
         {versionQuery.data && <StatusBadge status={versionQuery.data.status} />}
@@ -223,7 +223,7 @@ function DialogEditor() {
       {!hasContext ? (
         <EmptyState
           title="Selecione uma versão para editar"
-          description="O editor não possui grafo local de exemplo."
+          description="O editor não possui fluxo da conversa local de exemplo."
           actions={
             <SimulationLinks
               loading={simulationsQuery.isLoading}
@@ -232,18 +232,20 @@ function DialogEditor() {
           }
         />
       ) : versionQuery.isLoading ? (
-        <StateBanner tone="info" title="Carregando grafo">
+        <StateBanner tone="info" title="Carregando fluxo da conversa">
           Buscando simulação {search.simulationId} v{search.versionNumber}.
         </StateBanner>
       ) : versionQuery.isError ? (
-        <StateBanner tone="danger" title="Não foi possível carregar o grafo">
-          {versionQuery.error instanceof Error ? versionQuery.error.message : "Verifique a API."}
+        <StateBanner tone="danger" title="Não foi possível carregar o fluxo da conversa">
+          {versionQuery.error instanceof Error
+            ? versionQuery.error.message
+            : "Não foi possível carregar agora. Verifique sua conexão e tente novamente."}
         </StateBanner>
       ) : (
         <>
           <NextStepContract
-            primary="Validar qualidade quando o grafo estiver completo."
-            secondary="Voltar à personagem ou blueprint continua permitido antes de publicar."
+            primary="Validar qualidade quando o fluxo da conversa estiver completo."
+            secondary="Voltar à personagem ou ao modelo base continua permitido antes de publicar."
             versionRule="Depois de publicar, editar cria nova versão."
             lockedAfter="Versão publicada não altera tentativas em andamento."
           />
@@ -263,7 +265,7 @@ function DialogEditor() {
           )}
           <div className="mt-5 grid gap-5 lg:grid-cols-[320px_minmax(0,1fr)]">
             <aside className="rounded-md border border-border bg-card p-4">
-              <div className="mb-3 text-sm font-semibold">Nós persistidos</div>
+              <div className="mb-3 text-sm font-semibold">Etapas salvas</div>
               <div className="space-y-2">
                 {nodes.map((node) => (
                   <button
@@ -584,8 +586,8 @@ function DialogEditor() {
               </section>
             ) : (
               <EmptyState
-                title="Nenhum nó encontrado"
-                description="Crie o primeiro nó para iniciar o grafo persistido."
+                title="Nenhuma etapa encontrada"
+                description="Crie a primeira etapa para iniciar o fluxo da conversa."
               />
             )}
           </div>
