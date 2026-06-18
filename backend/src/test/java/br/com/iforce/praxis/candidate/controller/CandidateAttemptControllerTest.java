@@ -225,6 +225,28 @@ class CandidateAttemptControllerTest {
     }
 
     @Test
+    void createCompanyLinkReturnsCandidatePageUrl() throws Exception {
+        MvcResult result = mockMvc.perform(post("/api/v1/candidate-links")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "simulationId": "sim-atendimento-caos",
+                                  "candidateName": "Thiago Souza",
+                                  "candidateEmail": "thiago.company-link@example.com"
+                                }
+                                """))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.candidateUrl").value(startsWith("http://localhost:8080/candidato/")))
+                .andReturn();
+
+        String responseBody = result.getResponse().getContentAsString();
+        String attemptId = JsonPath.read(responseBody, "$.attemptId");
+        String candidateUrl = JsonPath.read(responseBody, "$.candidateUrl");
+
+        assertThat(candidateUrl).endsWith("/candidato/" + attemptId);
+    }
+
+    @Test
     void expiredNotStartedAttemptReturnsExpiredWithoutStarting() throws Exception {
         String attemptId = createAttempt("candidate-expired-before-start");
         CandidateAttemptEntity candidateAttemptEntity = candidateAttemptRepository.findById(attemptId)

@@ -858,6 +858,30 @@ function NormalizedScoreMap({
                 </dl>
                 <div>
                   <div className="mb-2 text-[11px] font-medium uppercase text-muted-foreground">
+                    Competências
+                  </div>
+                  <div className="flex flex-wrap gap-1.5">
+                    {selectedStep.competencies.length > 0 ? (
+                      selectedStep.competencies.map((competency) => (
+                        <span
+                          key={competency.name}
+                          className="rounded-md border border-border bg-card px-2 py-1 text-[11px]"
+                        >
+                          {competency.name}:{" "}
+                          <span className="font-semibold tabular-nums">
+                            {formatScore(competency.value)}
+                          </span>
+                        </span>
+                      ))
+                    ) : (
+                      <span className="text-xs text-muted-foreground">
+                        Nenhuma competência configurada.
+                      </span>
+                    )}
+                  </div>
+                </div>
+                <div>
+                  <div className="mb-2 text-[11px] font-medium uppercase text-muted-foreground">
                     Alternativas
                   </div>
                   <div className="space-y-2">

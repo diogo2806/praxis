@@ -235,19 +235,21 @@ export function GlobalProductStateBar({
     },
   } as const;
   const items = [
-    { ...gupyMeta[current.gupy], hint: undefined as string | undefined },
-    draftMeta[current.draft],
-    publicationMeta[current.publication],
-  ];
+    current.gupy === "unknown" ? undefined : { ...gupyMeta[current.gupy], hint: undefined },
+    current.draft === "saved" ? undefined : draftMeta[current.draft],
+    current.publication === "idle" ? undefined : publicationMeta[current.publication],
+  ].filter(Boolean);
+
+  if (items.length === 0) return null;
 
   return (
-    <div className="mb-4 grid gap-2 rounded-md border border-border bg-card p-2 text-xs md:grid-cols-3">
+    <div className="mb-4 flex flex-wrap gap-2 text-xs">
       {items.map(({ label, Icon, tone, hint }) => (
         <div
           key={label}
           title={hint}
           className={cn(
-            "flex min-h-10 items-center gap-2 rounded-md border px-3 py-2",
+            "flex min-h-9 items-center gap-2 rounded-md border px-3 py-2",
             toneClass[tone],
           )}
         >

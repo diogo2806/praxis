@@ -16,6 +16,7 @@ services:
       - PRAXIS_JPA_DDL_AUTO=validate
       - PRAXIS_INTEGRATION_TOKEN=${PRAXIS_INTEGRATION_TOKEN:?PRAXIS_INTEGRATION_TOKEN must be set}
       - PRAXIS_JWT_SECRET=${PRAXIS_JWT_SECRET:?PRAXIS_JWT_SECRET must be set}
+      - PRAXIS_PUBLIC_BASE_URL=${PRAXIS_PUBLIC_BASE_URL:-http://localhost}
       - SPRING_PROFILES_ACTIVE=prod
     depends_on:
       - postgres
@@ -30,6 +31,8 @@ services:
     container_name: praxis-frontend
     ports:
       - "80:80"
+    environment:
+      - PRAXIS_API_BASE_URL=http://backend:8080
     depends_on:
       - backend
     restart: unless-stopped

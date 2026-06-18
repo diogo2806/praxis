@@ -1,4 +1,4 @@
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { AppShell } from "@/components/app-shell";
@@ -7,12 +7,23 @@ import { ScreenStateStrip, StateBanner } from "@/components/praxis-ui";
 import { WizardStepper } from "@/components/wizard-stepper";
 import {
   createSimulationDraft,
+  getSimulationVersion,
+  updateSimulationBlueprint,
   updateTenantConfig,
   type TenantConfigOption,
 } from "@/lib/api/praxis";
 import { useTenantConfig } from "@/lib/tenant-config";
 
 export const Route = createFileRoute("/nova/blueprint")({
+  validateSearch: (search: Record<string, unknown>) => ({
+    simulationId: typeof search.simulationId === "string" ? search.simulationId : undefined,
+    versionNumber:
+      typeof search.versionNumber === "number"
+        ? search.versionNumber
+        : typeof search.versionNumber === "string" && Number.isFinite(Number(search.versionNumber))
+          ? Number(search.versionNumber)
+          : undefined,
+  }),
   head: () => ({
     meta: [
       { title: "Plano da avaliação — Práxis" },
@@ -27,8 +38,10 @@ export const Route = createFileRoute("/nova/blueprint")({
 });
 
 function Page() {
+  const search = Route.useSearch();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const hasVersionContext = Boolean(search.simulationId && search.versionNumber);
   const {
     config,
     isLoading: tenantConfigLoading,
@@ -46,6 +59,7 @@ function Page() {
   const [selectedCompetencies, setSelectedCompetencies] = useState<string[]>([]);
   const [newCompetency, setNewCompetency] = useState("");
   const [submitAttempted, setSubmitAttempted] = useState(false);
+  const [hydratedVersionKey, setHydratedVersionKey] = useState<string | null>(null);
   const roleMaxLength = 180;
   const criticalSituationMaxLength = 1200;
   const performanceMaxLength = 1000;
@@ -67,12 +81,39 @@ function Page() {
   const canAddCompetency =
     newCompetency.trim().length > 0 &&
     !normalizedCompetencies.includes(newCompetency.trim().toLowerCase());
+  const versionQuery = useQuery({
+    queryKey: ["simulation-version", search.simulationId, search.versionNumber],
+    queryFn: () => getSimulationVersion(search.simulationId!, search.versionNumber!),
+    enabled: hasVersionContext,
+  });
 
   useEffect(() => {
     if (!selectedResultUse || !resultUses.some((use) => use.value === selectedResultUse)) {
       setSelectedResultUse(getDefaultOption(resultUses)?.value ?? "");
     }
   }, [selectedResultUse, resultUses]);
+
+  useEffect(() => {
+    if (!versionQuery.data || tenantConfigLoading) {
+      return;
+    }
+
+    const versionKey = `${versionQuery.data.simulationId}:${versionQuery.data.versionNumber}`;
+    if (hydratedVersionKey === versionKey) {
+      return;
+    }
+
+    const parsedBlueprint = parseBlueprintDescription(versionQuery.data.description);
+    setRole(parsedBlueprint.role || versionQuery.data.name);
+    setCriticalSituation(parsedBlueprint.criticalSituation);
+    setHighPerformance(parsedBlueprint.highPerformance);
+    setCriticalError(parsedBlueprint.criticalError);
+    setSelectedResultUse(parsedBlueprint.resultUse || defaultResultUse);
+    setSelectedCompetencies(
+      versionQuery.data.blueprint.competencies.map((competency) => competency.name),
+    );
+    setHydratedVersionKey(versionKey);
+  }, [defaultResultUse, hydratedVersionKey, tenantConfigLoading, versionQuery.data]);
 
   const createDraftMutation = useMutation({
     mutationFn: () =>
@@ -94,6 +135,27 @@ function Page() {
         resultUse: selectedResultUse,
       }),
     onSuccess: (simulation) => {
+      void navigate({
+        to: "/nova/personagem",
+        search: {
+          simulationId: simulation.id,
+          versionNumber: simulation.versionNumber,
+        },
+      });
+    },
+  });
+
+  const updateExistingMutation = useMutation({
+    mutationFn: () =>
+      updateSimulationBlueprint(search.simulationId!, search.versionNumber!, {
+        rootNodeId: versionQuery.data?.blueprint.rootNodeId ?? "turno-1",
+        competencies: buildCompetencyWeights(selectedCompetencies, versionQuery.data?.blueprint.competencies),
+      }),
+    onSuccess: async (simulation) => {
+      await queryClient.invalidateQueries({
+        queryKey: ["simulation-version", search.simulationId, search.versionNumber],
+      });
+      await queryClient.invalidateQueries({ queryKey: ["simulations"] });
       void navigate({
         to: "/nova/personagem",
         search: {
@@ -158,7 +220,35 @@ function Page() {
         </div>
       )}
 
-      {config && (
+      {updateExistingMutation.isError && (
+        <div className="mb-5">
+          <StateBanner tone="danger" title="Nao foi possivel atualizar o plano">
+            {updateExistingMutation.error instanceof Error
+              ? updateExistingMutation.error.message
+              : "Tente novamente quando o sistema estiver disponivel."}
+          </StateBanner>
+        </div>
+      )}
+
+      {versionQuery.isLoading && (
+        <div className="mb-5">
+          <StateBanner tone="info" title="Carregando plano cadastrado">
+            Buscando simulacao {search.simulationId} v{search.versionNumber}.
+          </StateBanner>
+        </div>
+      )}
+
+      {versionQuery.isError && (
+        <div className="mb-5">
+          <StateBanner tone="danger" title="Nao foi possivel carregar o plano cadastrado">
+            {versionQuery.error instanceof Error
+              ? versionQuery.error.message
+              : "Verifique se a simulacao e a versao existem."}
+          </StateBanner>
+        </div>
+      )}
+
+      {config && !versionQuery.isLoading && !versionQuery.isError && (
       <div className="space-y-6">
         <div className="rounded-xl border border-border bg-card p-5">
           <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
@@ -365,7 +455,7 @@ function Page() {
               )}
               <button
                 type="button"
-                disabled={createDraftMutation.isPending}
+                disabled={createDraftMutation.isPending || updateExistingMutation.isPending}
                 title={
                   canGoNext
                     ? "Criar rascunho e avançar"
@@ -376,11 +466,17 @@ function Page() {
                     setSubmitAttempted(true);
                     return;
                   }
+                  if (hasVersionContext) {
+                    updateExistingMutation.mutate();
+                    return;
+                  }
                   createDraftMutation.mutate();
                 }}
                 aria-disabled={!canGoNext}
                 className={`rounded-md bg-primary px-5 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 ${
-                  !canGoNext || createDraftMutation.isPending ? "cursor-not-allowed opacity-50" : ""
+                  !canGoNext || createDraftMutation.isPending || updateExistingMutation.isPending
+                    ? "cursor-not-allowed opacity-50"
+                    : ""
                 }`}
               >
                 {createDraftMutation.isPending ? "Criando rascunho..." : "Próximo: Cenário"}
@@ -428,6 +524,79 @@ function buildBlueprintDescription({
 
   const description = lines.join("\n");
   return description.length > 1000 ? `${description.slice(0, 997).trimEnd()}...` : description;
+}
+
+function buildCompetencyWeights(
+  competencies: string[],
+  existingCompetencies?: { name: string; weight: number }[],
+) {
+  const uniqueCompetencies = [...new Set(competencies.map((competency) => competency.trim()))].filter(
+    Boolean,
+  );
+  const normalizedUniqueCompetencies = uniqueCompetencies.map(normalizeLabel).sort();
+  const normalizedExistingCompetencies = (existingCompetencies ?? [])
+    .map((competency) => normalizeLabel(competency.name))
+    .sort();
+
+  if (
+    existingCompetencies &&
+    normalizedUniqueCompetencies.length === normalizedExistingCompetencies.length &&
+    normalizedUniqueCompetencies.every(
+      (competency, index) => competency === normalizedExistingCompetencies[index],
+    )
+  ) {
+    return uniqueCompetencies.map((name) => {
+      const existingCompetency = existingCompetencies.find(
+        (competency) => normalizeLabel(competency.name) === normalizeLabel(name),
+      );
+      return { name, weight: existingCompetency?.weight ?? 1 / uniqueCompetencies.length };
+    });
+  }
+
+  const weight = uniqueCompetencies.length > 0 ? 1 / uniqueCompetencies.length : 1;
+  return uniqueCompetencies.map((name) => ({ name, weight }));
+}
+
+function parseBlueprintDescription(description: string) {
+  const fields = {
+    role: "",
+    criticalSituation: "",
+    highPerformance: "",
+    criticalError: "",
+    resultUse: "",
+  };
+
+  for (const line of description.split("\n")) {
+    const separatorIndex = line.indexOf(":");
+    if (separatorIndex < 0) {
+      continue;
+    }
+
+    const label = normalizeLabel(line.slice(0, separatorIndex));
+    const value = line.slice(separatorIndex + 1).trim();
+
+    if (label === "cargo") {
+      fields.role = value;
+    } else if (label.includes("situa") && label.includes("cr")) {
+      fields.criticalSituation = value;
+    } else if (label === "alta performance faria") {
+      fields.highPerformance = value;
+    } else if (label.includes("erro") && label.includes("cr")) {
+      fields.criticalError = value;
+    } else if (label === "uso do resultado") {
+      fields.resultUse = value;
+    }
+  }
+
+  return fields;
+}
+
+function normalizeLabel(value: string) {
+  return value
+    .normalize("NFD")
+    .replace(/\p{Diacritic}/gu, "")
+    .trim()
+    .toLowerCase();
 }
 
 function Header({ kicker, title, lede }: { kicker: string; title: string; lede: string }) {

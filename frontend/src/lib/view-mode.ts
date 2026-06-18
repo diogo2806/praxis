@@ -1,3 +1,5 @@
+import { useEffect, useState } from "react";
+
 export type ViewMode = "commercial" | "technical";
 export type GupyConnectionState = "unknown" | "connected" | "connecting" | "disconnected" | "error";
 
@@ -50,4 +52,3 @@ export function useGupyConnectionState(pathname = "") {
   }, [pathname]);
   return state;
 }
-import { useEffect, useState } from "react";

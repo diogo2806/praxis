@@ -96,7 +96,7 @@ public class CandidateAttemptService {
                 .orElseGet(() -> createAndAuditAttemptSafely(tenantId, idempotencyKey, request, publishedSimulation));
 
         return new CreateCandidateResponse(
-                candidateUrl(candidateAttemptEntity.getId()),
+                candidateApiUrl(candidateAttemptEntity.getId()),
                 candidateAttemptEntity.getResultId()
         );
     }
@@ -157,7 +157,7 @@ public class CandidateAttemptService {
 
         return new CreateCandidateLinkResponse(
                 entity.getId(),
-                candidateUrl(entity.getId()),
+                candidatePageUrl(entity.getId()),
                 publishedSimulation.name()
         );
     }
@@ -457,7 +457,11 @@ public class CandidateAttemptService {
         return Optional.empty();
     }
 
-    private String candidateUrl(String attemptId) {
+    private String candidateApiUrl(String attemptId) {
         return praxisProperties.publicBaseUrl() + "/candidate/attempts/" + attemptId;
+    }
+
+    private String candidatePageUrl(String attemptId) {
+        return praxisProperties.publicBaseUrl() + "/candidato/" + attemptId;
     }
 }

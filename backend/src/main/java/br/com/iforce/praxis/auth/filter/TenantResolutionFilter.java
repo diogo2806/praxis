@@ -20,13 +20,16 @@ public class TenantResolutionFilter extends OncePerRequestFilter {
 
     private final CurrentTenantService currentTenantService;
     private final boolean securityEnabled;
+    private final String defaultTenantId;
 
     public TenantResolutionFilter(
             CurrentTenantService currentTenantService,
-            @Value("${praxis.security.enabled:true}") boolean securityEnabled
+            @Value("${praxis.security.enabled:true}") boolean securityEnabled,
+            @Value("${praxis.default-tenant-id:tenant-1}") String defaultTenantId
     ) {
         this.currentTenantService = currentTenantService;
         this.securityEnabled = securityEnabled;
+        this.defaultTenantId = defaultTenantId;
     }
 
     @Override
@@ -38,7 +41,9 @@ public class TenantResolutionFilter extends OncePerRequestFilter {
         try {
             Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
-            if (!securityEnabled || (authentication != null
+            if (isPublicCandidateRequest(request)) {
+                TenantContextHolder.set(defaultTenantId);
+            } else if (!securityEnabled || (authentication != null
                     && authentication.isAuthenticated()
                     && !(authentication instanceof AnonymousAuthenticationToken))) {
                 String tenantId = currentTenantService.requiredTenantId();
@@ -50,5 +55,9 @@ public class TenantResolutionFilter extends OncePerRequestFilter {
         } finally {
             TenantContextHolder.clear();
         }
+    }
+
+    private boolean isPublicCandidateRequest(HttpServletRequest request) {
+        return request.getRequestURI().startsWith("/candidate/");
     }
 }
