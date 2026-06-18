@@ -2,6 +2,8 @@ package br.com.iforce.praxis.auth.filter;
 
 import br.com.iforce.praxis.auth.context.TenantContextHolder;
 import br.com.iforce.praxis.auth.service.CurrentTenantService;
+import br.com.iforce.praxis.auth.service.JwtService;
+import io.jsonwebtoken.JwtException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -19,15 +21,18 @@ import java.io.IOException;
 public class TenantResolutionFilter extends OncePerRequestFilter {
 
     private final CurrentTenantService currentTenantService;
+    private final JwtService jwtService;
     private final boolean securityEnabled;
     private final String defaultTenantId;
 
     public TenantResolutionFilter(
             CurrentTenantService currentTenantService,
+            JwtService jwtService,
             @Value("${praxis.security.enabled:true}") boolean securityEnabled,
             @Value("${praxis.default-tenant-id:tenant-1}") String defaultTenantId
     ) {
         this.currentTenantService = currentTenantService;
+        this.jwtService = jwtService;
         this.securityEnabled = securityEnabled;
         this.defaultTenantId = defaultTenantId;
     }
@@ -42,7 +47,7 @@ public class TenantResolutionFilter extends OncePerRequestFilter {
             Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
             if (isPublicCandidateRequest(request)) {
-                TenantContextHolder.set(defaultTenantId);
+                TenantContextHolder.set(resolvePublicCandidateTenant(request));
             } else if (!securityEnabled || (authentication != null
                     && authentication.isAuthenticated()
                     && !(authentication instanceof AnonymousAuthenticationToken))) {
@@ -59,5 +64,29 @@ public class TenantResolutionFilter extends OncePerRequestFilter {
 
     private boolean isPublicCandidateRequest(HttpServletRequest request) {
         return request.getRequestURI().startsWith("/candidate/");
+    }
+
+    private String resolvePublicCandidateTenant(HttpServletRequest request) {
+        String token = extractCandidateAttemptToken(request);
+        if (token == null || token.isBlank()) {
+            return defaultTenantId;
+        }
+        try {
+            return jwtService.parseCandidateAttemptToken(token).tenantId();
+        } catch (IllegalArgumentException | JwtException exception) {
+            // Compatibilidade com links antigos que usavam attemptId cru no path.
+            return defaultTenantId;
+        }
+    }
+
+    private String extractCandidateAttemptToken(HttpServletRequest request) {
+        String uri = request.getRequestURI();
+        String prefix = "/candidate/attempts/";
+        if (!uri.startsWith(prefix)) {
+            return null;
+        }
+        String remaining = uri.substring(prefix.length());
+        int nextSlash = remaining.indexOf('/');
+        return nextSlash >= 0 ? remaining.substring(0, nextSlash) : remaining;
     }
 }

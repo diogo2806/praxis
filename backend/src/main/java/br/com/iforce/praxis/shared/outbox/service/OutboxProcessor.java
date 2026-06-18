@@ -85,6 +85,36 @@ public class OutboxProcessor {
         }
     }
 
+    @Transactional
+    public int processReadyEventsForTenant(String tenantId) {
+        List<OutboxEventEntity> readyEvents = outboxEventRepository
+            .findByTenantIdAndStatusInAndNextAttemptAtLessThanEqualOrderByCreatedAtAsc(
+                tenantId,
+                Arrays.asList(
+                    OutboxEventEntity.OutboxEventStatus.PENDING,
+                    OutboxEventEntity.OutboxEventStatus.RETRYING
+                ),
+                Instant.now()
+            );
+
+        for (OutboxEventEntity event : readyEvents) {
+            processEvent(event);
+        }
+        return readyEvents.size();
+    }
+
+    @Transactional
+    public void reprocessEvent(Long eventId, String tenantId) {
+        OutboxEventEntity event = outboxEventRepository.findByIdAndTenantId(eventId, tenantId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Evento de entrega nao encontrado."));
+        if (event.getStatus() == OutboxEventEntity.OutboxEventStatus.SENT) {
+            return;
+        }
+        event.setStatus(OutboxEventEntity.OutboxEventStatus.PENDING);
+        event.setNextAttemptAt(Instant.now());
+        processEvent(event);
+    }
+
     private void processEvent(OutboxEventEntity event) {
         try {
             if (RESULT_READY_EVENT.equals(event.getEventType())) {

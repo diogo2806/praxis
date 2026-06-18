@@ -8,6 +8,7 @@ import br.com.iforce.praxis.candidate.dto.CreateCandidateLinkResponse;
 import br.com.iforce.praxis.candidate.dto.SubmitAnswerRequest;
 import br.com.iforce.praxis.candidate.dto.SubmitAnswerResponse;
 import br.com.iforce.praxis.config.PraxisProperties;
+import br.com.iforce.praxis.auth.service.JwtService;
 import br.com.iforce.praxis.gupy.delivery.service.GupyCompletionCallbackService;
 import br.com.iforce.praxis.gupy.dto.CreateCandidateRequest;
 import br.com.iforce.praxis.gupy.dto.CreateCandidateResponse;
@@ -51,6 +52,7 @@ public class CandidateAttemptService {
     private final AuditEventService auditEventService;
     private final GupyCompletionCallbackService gupyCompletionCallbackService;
     private final OutboxService outboxService;
+    private final JwtService jwtService;
     private final PraxisProperties praxisProperties;
     private final SimulationCatalogService simulationCatalogService;
     private final CandidateAttemptMapper candidateAttemptMapper;
@@ -62,6 +64,7 @@ public class CandidateAttemptService {
             AuditEventService auditEventService,
             GupyCompletionCallbackService gupyCompletionCallbackService,
             OutboxService outboxService,
+            JwtService jwtService,
             PraxisProperties praxisProperties,
             SimulationCatalogService simulationCatalogService,
             CandidateAttemptMapper candidateAttemptMapper,
@@ -72,6 +75,7 @@ public class CandidateAttemptService {
         this.auditEventService = auditEventService;
         this.gupyCompletionCallbackService = gupyCompletionCallbackService;
         this.outboxService = outboxService;
+        this.jwtService = jwtService;
         this.praxisProperties = praxisProperties;
         this.simulationCatalogService = simulationCatalogService;
         this.candidateAttemptMapper = candidateAttemptMapper;
@@ -96,7 +100,7 @@ public class CandidateAttemptService {
                 .orElseGet(() -> createAndAuditAttemptSafely(tenantId, idempotencyKey, request, publishedSimulation));
 
         return new CreateCandidateResponse(
-                candidateApiUrl(candidateAttemptEntity.getId()),
+                candidateApiUrl(candidateAttemptEntity),
                 candidateAttemptEntity.getResultId()
         );
     }
@@ -157,7 +161,7 @@ public class CandidateAttemptService {
 
         return new CreateCandidateLinkResponse(
                 entity.getId(),
-                candidatePageUrl(entity.getId()),
+                candidatePageUrl(entity),
                 publishedSimulation.name()
         );
     }
@@ -200,8 +204,8 @@ public class CandidateAttemptService {
     }
 
     @Transactional
-    public CandidateAttemptResponse findCandidateAttempt(String attemptId) {
-        CandidateAttemptEntity candidateAttemptEntity = findAttemptEntityById(attemptId);
+    public CandidateAttemptResponse findCandidateAttempt(String attemptToken) {
+        CandidateAttemptEntity candidateAttemptEntity = findAttemptEntityByToken(attemptToken);
         CandidateAttempt attempt = attemptStateMachine.expireIfNeeded(candidateAttemptMapper.toDomain(candidateAttemptEntity));
         if (!attemptStateMachine.isTerminalBlocked(attempt.status())) {
             attempt = attemptStateMachine.startIfNeeded(attempt);
@@ -223,8 +227,9 @@ public class CandidateAttemptService {
     }
 
     @Transactional(noRollbackFor = ResponseStatusException.class)
-    public SubmitAnswerResponse submitAnswer(String attemptId, SubmitAnswerRequest request) {
+    public SubmitAnswerResponse submitAnswer(String attemptToken, SubmitAnswerRequest request) {
         String tenantId = TenantSecurity.requiredTenant();
+        String attemptId = resolveAttemptId(attemptToken);
         CandidateAttemptEntity candidateAttemptEntity = candidateAttemptRepository
                 .findByTenantIdAndIdForUpdate(tenantId, attemptId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Tentativa nao encontrada."));
@@ -424,10 +429,20 @@ public class CandidateAttemptService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Simulacao publicada nao encontrada."));
     }
 
-    private CandidateAttemptEntity findAttemptEntityById(String attemptId) {
+    private CandidateAttemptEntity findAttemptEntityByToken(String attemptToken) {
         String tenantId = TenantSecurity.requiredTenant();
+        String attemptId = resolveAttemptId(attemptToken);
         return candidateAttemptRepository.findByTenantIdAndId(tenantId, attemptId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Tentativa nao encontrada."));
+    }
+
+    private String resolveAttemptId(String attemptToken) {
+        try {
+            return jwtService.parseCandidateAttemptToken(attemptToken).attemptId();
+        } catch (RuntimeException exception) {
+            // Compatibilidade com links antigos que expunham o ID interno.
+            return attemptToken;
+        }
     }
 
     private Optional<ScenarioNode> findCurrentNode(CandidateAttempt attempt, PublishedSimulation simulation) {
@@ -457,11 +472,19 @@ public class CandidateAttemptService {
         return Optional.empty();
     }
 
-    private String candidateApiUrl(String attemptId) {
-        return praxisProperties.publicBaseUrl() + "/candidate/attempts/" + attemptId;
+    private String candidateApiUrl(CandidateAttemptEntity candidateAttemptEntity) {
+        return praxisProperties.publicBaseUrl() + "/candidate/attempts/" + publicCandidateToken(candidateAttemptEntity);
     }
 
-    private String candidatePageUrl(String attemptId) {
-        return praxisProperties.publicBaseUrl() + "/candidato/" + attemptId;
+    private String candidatePageUrl(CandidateAttemptEntity candidateAttemptEntity) {
+        return praxisProperties.publicBaseUrl() + "/candidato/" + publicCandidateToken(candidateAttemptEntity);
+    }
+
+    private String publicCandidateToken(CandidateAttemptEntity candidateAttemptEntity) {
+        return jwtService.generateCandidateAttemptToken(
+                candidateAttemptEntity.getTenantId(),
+                candidateAttemptEntity.getId(),
+                praxisProperties.attemptLinkTtlHours()
+        );
     }
 }

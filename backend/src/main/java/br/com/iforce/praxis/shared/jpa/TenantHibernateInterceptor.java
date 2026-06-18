@@ -19,9 +19,7 @@ public class TenantHibernateInterceptor extends EmptyInterceptor {
         if (entity instanceof TenantAwareEntity tenantAware) {
             String tenantId = TenantContextHolder.get();
             if (tenantId != null && !tenantAware.getTenantId().equals(tenantId)) {
-                throw new SecurityException(
-                        "Acesso negado: entidade pertence a outro tenant"
-                );
+                throw new SecurityException("Acesso negado: entidade pertence a outro tenant");
             }
         }
         return false;
@@ -35,12 +33,13 @@ public class TenantHibernateInterceptor extends EmptyInterceptor {
             String[] propertyNames,
             Type[] types
     ) {
-        if (entity instanceof TenantAwareEntity) {
+        if (entity instanceof TenantAwareEntity tenantAware) {
+            if (tenantAware.getTenantId() == null || tenantAware.getTenantId().isBlank()) {
+                throw new IllegalStateException("Entidade tenant-aware deve possuir tenantId.");
+            }
             String tenantId = TenantContextHolder.get();
-            if (tenantId == null) {
-                throw new IllegalStateException(
-                        "Tenant obrigatório não foi estabelecido no contexto"
-                );
+            if (tenantId != null && !tenantAware.getTenantId().equals(tenantId)) {
+                throw new SecurityException("Acesso negado: entidade pertence a outro tenant");
             }
         }
         return false;

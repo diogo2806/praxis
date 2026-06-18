@@ -5,7 +5,7 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 @Component
-@ConditionalOnProperty(name = "praxis.delivery-scheduler-enabled", havingValue = "true", matchIfMissing = true)
+@ConditionalOnProperty(name = "praxis.legacy-result-delivery-scheduler-enabled", havingValue = "true")
 public class ResultDeliveryProcessor {
 
     private final ResultDeliveryService resultDeliveryService;

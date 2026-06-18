@@ -48,7 +48,7 @@ class RestClientResultWebhookClientTest {
                 10,
                 webhookAllowedHosts
         );
-        return new GupyOutboundUrlValidator(properties);
+        return new GupyOutboundUrlValidator(properties, false);
     }
 
     private TestResultResponse response() {
