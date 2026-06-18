@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { useLanguage } from "@/lib/language-context";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { FileSearch, ShieldCheck } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
@@ -32,6 +33,7 @@ export const Route = createFileRoute("/lgpd")({
 });
 
 function LgpdPage() {
+  const { t } = useLanguage();
   const search = Route.useSearch();
   const hasContext = Boolean(search.simulationId && search.versionNumber);
   const simulationsQuery = useQuery({
@@ -67,8 +69,8 @@ function LgpdPage() {
       <ScreenStateStrip blockedReason="canal de revisão humana não configurado" />
       <div className="mb-5 flex flex-wrap items-start justify-between gap-4">
         <div>
-          <div className="text-xs uppercase text-primary">Conformidade</div>
-          <h1 className="mt-1 text-3xl font-semibold">LGPD e transparência do resultado</h1>
+          <div className="text-xs uppercase text-primary">{t.common.compliance}</div>
+          <h1 className="mt-1 text-3xl font-semibold">{t.lgpd.heading}</h1>
           <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
             O candidato pode pedir revisão. A explicação usa <Termo id="rubrica">rubrica</Termo>,
             escolha e caminho, sem <Termo id="caixa-preta">caixa-preta</Termo>.
