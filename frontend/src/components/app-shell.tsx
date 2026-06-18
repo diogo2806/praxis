@@ -21,7 +21,7 @@ const nav = [
   { to: "/", label: "Painel", icon: Home, desc: "Seus testes e resultados" },
   {
     to: "/nova/avaliacao",
-    label: "Nova simulação",
+    label: "Criar novo modelo de teste",
     icon: ClipboardCheck,
     desc: "Criar um novo teste",
   },
@@ -49,13 +49,13 @@ const secondary = [
   },
   {
     to: "/lgpd",
-    label: "LGPD & Explicabilidade",
+    label: "LGPD & Transparência do resultado",
     icon: UserRound,
     desc: "Proteção de dados e transparência",
   },
   {
     to: "/defensabilidade",
-    label: "Defensabilidade",
+    label: "Confiabilidade e segurança técnica",
     icon: Scale,
     desc: "Por que o resultado é confiável",
   },
@@ -68,7 +68,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   const gupyState = useGupyConnectionState(pathname);
   const hasGlobalError = gupyState === "error";
   const modeHref = mode === "technical" ? pathname : `${pathname}?mode=technical`;
-  const modeLabel = mode === "technical" ? "Ver modo comercial" : "Ver modo técnico";
+  const modeLabel = mode === "technical" ? "Ver modo comercial" : "Visualizar configurações avançadas";
   const productState =
     pathname === "/nova/gupy" || pathname === "/nova/publicacao"
       ? {
@@ -94,7 +94,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         <div className="border-b border-sidebar-border px-6 py-5">
           <div className="flex items-center gap-2 text-xs uppercase text-sidebar-foreground/80">
             <span className="inline-block h-1.5 w-1.5 rounded-full bg-primary" />
-            Motor SJT
+            Criador de Testes de Situação (SJT)
           </div>
           <div className="mt-2 font-display text-2xl leading-tight">
             Avaliação
@@ -191,9 +191,9 @@ export function AppShell({ children }: { children: ReactNode }) {
             className="rounded-md border border-sidebar-border/60 bg-sidebar-accent/40 p-3 text-xs text-sidebar-foreground/80"
             title="A nota do candidato é calculada por regras declaradas (rubrica, peso e cálculo). Nenhum modelo de IA decide ou julga o resultado."
           >
-            <div className="font-medium text-sidebar-foreground">100% determinístico</div>
+            <div className="font-medium text-sidebar-foreground">Baseado em regras fixas</div>
             <p className="mt-1 text-sidebar-foreground/80">
-              Sem IA julgando candidato. A nota sai de rubrica, peso e cálculo.
+              Sem respostas subjetivas. A nota sai de rubrica, peso e cálculo.
             </p>
           </div>
           <div className="mt-3 flex items-center gap-3 px-1">

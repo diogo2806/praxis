@@ -19,7 +19,7 @@ export function WizardStepper({
     <div className="mb-8 rounded-xl border border-border bg-card p-4">
       <div className="mb-3 flex items-center justify-between text-xs text-muted-foreground">
         <div>
-          <span className="font-semibold text-foreground">Nova simulação</span> · etapa {idx + 1} de{" "}
+          <span className="font-semibold text-foreground">Criar novo modelo de teste</span> · etapa {idx + 1} de{" "}
           {wizardSteps.length}
         </div>
         <div>

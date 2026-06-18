@@ -13,12 +13,12 @@ import { cn } from "@/lib/utils";
  */
 export const glossario = {
   "score-rubrica":
-    "Nota dada por uma tabela de critérios (a rubrica), não por opinião: cada ponto segue uma regra clara.",
+    "Pontuação por critérios definidos: cada ponto segue uma regra clara, não por opinião.",
   rubrica: "Tabela de critérios que diz quantos pontos cada resposta vale.",
   "decisao-contexto":
-    "Avaliar a pessoa pela decisão que toma diante de uma situação real, e não por uma prova teórica.",
+    "Escolha baseada na situação: avaliar a pessoa pela decisão que toma diante de um cenário real, e não por uma prova teórica.",
   "trilha-auditavel":
-    "Registro de todos os passos da avaliação, que pode ser conferido depois por outra pessoa.",
+    "Histórico completo de alterações: registro de todos os passos da avaliação, que pode ser conferido depois por outra pessoa.",
   "score-auditavel":
     "Cada ponto da nota pode ser conferido: dá para ver de qual regra e de qual resposta ele veio.",
   blueprint: "Modelo base (o plano) da avaliação: define o cargo, a situação e o que será medido.",
@@ -53,9 +53,9 @@ export const glossario = {
   taxonomia: "Catálogo de competências da sua empresa — lista de habilidades que você mede.",
   workspace: "Área de trabalho: seu espaço pessoal para criar e gerenciar simulações.",
   score: "Nota ou pontuação — resultado numérico da avaliação.",
-  defensabilidade: "Por que o resultado dessa avaliação se sustenta (inclusive se contestado na justiça).",
+  defensabilidade: "Confiabilidade e segurança técnica: por que o resultado dessa avaliação se sustenta (inclusive se contestado na justiça).",
   override: "Ajuste manual ou exceção — quando alguém altera um resultado fora das regras normais.",
-  "explicabilidade": "Capacidade de explicar de forma clara e transparente por que o candidato recebeu aquela nota.",
+  "explicabilidade": "Transparência do resultado: capacidade de explicar de forma clara por que o candidato recebeu aquela nota.",
 } as const;
 
 export type TermoId = keyof typeof glossario;

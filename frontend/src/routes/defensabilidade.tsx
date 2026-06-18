@@ -23,7 +23,7 @@ export const Route = createFileRoute("/defensabilidade")({
   }),
   head: () => ({
     meta: [
-      { title: "Defensabilidade - Praxis" },
+      { title: "Confiabilidade e segurança técnica - Praxis" },
       { name: "description", content: "Base técnica e jurídica do SJT determinístico." },
     ],
   }),
@@ -76,10 +76,10 @@ function DefensibilityPage() {
       <div className="mb-5 flex flex-wrap items-start justify-between gap-4">
         <div>
           <div className="text-xs uppercase text-primary">Conformidade</div>
-          <h1 className="mt-1 text-3xl font-semibold">Defensabilidade</h1>
+          <h1 className="mt-1 text-3xl font-semibold">Confiabilidade e segurança técnica</h1>
           <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
             O produto mede <Termo id="julgamento-situacional">julgamento situacional</Termo>,{" "}
-            <Termo id="decisao-contexto">decisão em contexto</Termo> e{" "}
+            <Termo id="decisao-contexto">escolha baseada na situação</Termo> e{" "}
             <Termo id="evidencia-comportamental">evidência comportamental</Termo> estruturada.
           </p>
         </div>
