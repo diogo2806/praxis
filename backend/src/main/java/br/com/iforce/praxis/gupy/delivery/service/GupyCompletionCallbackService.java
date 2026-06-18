@@ -3,7 +3,9 @@ package br.com.iforce.praxis.gupy.delivery.service;
 import br.com.iforce.praxis.gupy.persistence.entity.CandidateAttemptEntity;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.task.TaskExecutor;
 import org.springframework.stereotype.Service;
 
 import java.util.concurrent.CompletableFuture;
@@ -14,13 +16,16 @@ public class GupyCompletionCallbackService {
     private static final Logger LOGGER = LoggerFactory.getLogger(GupyCompletionCallbackService.class);
 
     private final GupyCompletionCallbackClient callbackClient;
+    private final TaskExecutor callbackTaskExecutor;
     private final boolean enabled;
 
     public GupyCompletionCallbackService(
             GupyCompletionCallbackClient callbackClient,
+            @Qualifier("gupyCallbackTaskExecutor") TaskExecutor callbackTaskExecutor,
             @Value("${praxis.callback-delivery-enabled:true}") boolean enabled
     ) {
         this.callbackClient = callbackClient;
+        this.callbackTaskExecutor = callbackTaskExecutor;
         this.enabled = enabled;
     }
 
@@ -31,7 +36,7 @@ public class GupyCompletionCallbackService {
 
         String callbackUrl = candidateAttemptEntity.getCallbackUrl();
         String attemptId = candidateAttemptEntity.getId();
-        CompletableFuture.runAsync(() -> notifyCompletion(callbackUrl, attemptId));
+        CompletableFuture.runAsync(() -> notifyCompletion(callbackUrl, attemptId), callbackTaskExecutor);
     }
 
     private void notifyCompletion(String callbackUrl, String attemptId) {

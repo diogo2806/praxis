@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+﻿import type { ReactNode } from "react";
 import {
   AlertTriangle,
   Archive,
@@ -42,24 +42,30 @@ const maturityMeta: Record<Maturity, { label: string; tone: keyof typeof toneCla
 export function StatusBadge({
   status,
   maturity,
+  variant = "both",
 }: {
   status: SimulationVersionStatus;
   maturity?: Maturity;
+  variant?: "both" | "status" | "maturity";
 }) {
   const statusInfo = statusMeta[status];
   const maturityInfo = maturity ? maturityMeta[maturity] : undefined;
+  const showStatus = variant !== "maturity";
+  const showMaturity = variant !== "status";
   return (
     <div className="flex flex-wrap gap-1.5">
-      <span
-        className={cn(
-          "inline-flex items-center gap-1.5 rounded-md border px-2 py-1 text-[11px] font-medium",
-          toneClass[statusInfo.tone],
-        )}
-      >
-        <CircleDot className="h-3 w-3" />
-        {statusInfo.label}
-      </span>
-      {maturityInfo && (
+      {showStatus && (
+        <span
+          className={cn(
+            "inline-flex items-center gap-1.5 rounded-md border px-2 py-1 text-[11px] font-medium",
+            toneClass[statusInfo.tone],
+          )}
+        >
+          <CircleDot className="h-3 w-3" />
+          {statusInfo.label}
+        </span>
+      )}
+      {showMaturity && maturityInfo && (
         <span
           className={cn(
             "inline-flex items-center gap-1.5 rounded-md border px-2 py-1 text-[11px] font-medium",
@@ -85,15 +91,21 @@ export function StateBanner({
   title,
   children,
   action,
+  live = tone === "danger" ? "assertive" : "polite",
 }: {
   tone: keyof typeof toneClass;
   title: string;
   children?: ReactNode;
   action?: ReactNode;
+  live?: "off" | "polite" | "assertive";
 }) {
   const Icon = tone === "danger" ? AlertTriangle : tone === "warn" ? AlertTriangle : CheckCircle2;
   return (
-    <div className={cn("flex items-start gap-3 rounded-md border p-3", toneClass[tone])}>
+    <div
+      role={tone === "danger" ? "alert" : "status"}
+      aria-live={live}
+      className={cn("flex items-start gap-3 rounded-md border p-3", toneClass[tone])}
+    >
       <Icon className="mt-0.5 h-4 w-4 shrink-0" />
       <div className="min-w-0 flex-1">
         <div className="text-sm font-semibold">{title}</div>
@@ -134,6 +146,29 @@ export function EmptyState({
   );
 }
 
+export function PageIntro({
+  eyebrow,
+  title,
+  children,
+  action,
+}: {
+  eyebrow?: string;
+  title: string;
+  children: ReactNode;
+  action?: ReactNode;
+}) {
+  return (
+    <div className="mb-5 flex flex-wrap items-start justify-between gap-4">
+      <div>
+        {eyebrow && <div className="text-xs uppercase text-primary">{eyebrow}</div>}
+        <h1 className="mt-1 text-3xl font-semibold">{title}</h1>
+        <p className="mt-1 max-w-2xl text-sm text-muted-foreground">{children}</p>
+      </div>
+      {action}
+    </div>
+  );
+}
+
 type GlobalProductState = {
   gupy: GupyConnectionState;
   draft: "saved" | "dirty" | "published";
@@ -141,7 +176,7 @@ type GlobalProductState = {
 };
 
 const defaultProductState: GlobalProductState = {
-  gupy: "connected",
+  gupy: "unknown",
   draft: "saved",
   publication: "idle",
 };
@@ -153,6 +188,7 @@ export function GlobalProductStateBar({
 }) {
   const current = { ...defaultProductState, ...state };
   const gupyMeta = {
+    unknown: { label: gupyConnectionLabels.unknown, Icon: CircleDot, tone: "muted" },
     connected: { label: gupyConnectionLabels.connected, Icon: CheckCircle2, tone: "ok" },
     connecting: { label: gupyConnectionLabels.connecting, Icon: Loader2, tone: "warn" },
     disconnected: { label: gupyConnectionLabels.disconnected, Icon: CloudOff, tone: "danger" },
@@ -199,19 +235,21 @@ export function GlobalProductStateBar({
     },
   } as const;
   const items = [
-    { ...gupyMeta[current.gupy], hint: undefined as string | undefined },
-    draftMeta[current.draft],
-    publicationMeta[current.publication],
-  ];
+    current.gupy === "unknown" ? undefined : { ...gupyMeta[current.gupy], hint: undefined },
+    current.draft === "saved" ? undefined : draftMeta[current.draft],
+    current.publication === "idle" ? undefined : publicationMeta[current.publication],
+  ].filter(Boolean);
+
+  if (items.length === 0) return null;
 
   return (
-    <div className="mb-4 grid gap-2 rounded-md border border-border bg-card p-2 text-xs md:grid-cols-3">
+    <div className="mb-4 flex flex-wrap gap-2 text-xs">
       {items.map(({ label, Icon, tone, hint }) => (
         <div
           key={label}
           title={hint}
           className={cn(
-            "flex min-h-10 items-center gap-2 rounded-md border px-3 py-2",
+            "flex min-h-9 items-center gap-2 rounded-md border px-3 py-2",
             toneClass[tone],
           )}
         >
@@ -397,7 +435,7 @@ export function UndoRedoBar({
       <button
         type="button"
         onClick={onUndo}
-        className="inline-flex items-center gap-1 rounded-md border border-border bg-card px-2 py-1 hover:bg-accent"
+        className="inline-flex items-center gap-1 rounded-md border border-border bg-card px-3 py-2 hover:bg-accent"
       >
         <RotateCcw className="h-3.5 w-3.5" />
         Desfazer
@@ -405,7 +443,7 @@ export function UndoRedoBar({
       <button
         type="button"
         onClick={onRedo}
-        className="inline-flex items-center gap-1 rounded-md border border-border bg-card px-2 py-1 hover:bg-accent"
+        className="inline-flex items-center gap-1 rounded-md border border-border bg-card px-3 py-2 hover:bg-accent"
       >
         <RotateCcw className="h-3.5 w-3.5 scale-x-[-1]" />
         Refazer

@@ -1,5 +1,6 @@
 package br.com.iforce.praxis.candidate.controller;
 
+import br.com.iforce.praxis.auth.service.JwtService;
 import br.com.iforce.praxis.gupy.persistence.entity.CandidateAttemptEntity;
 import br.com.iforce.praxis.gupy.persistence.repository.CandidateAttemptRepository;
 import br.com.iforce.praxis.gupy.model.AttemptStatus;
@@ -36,19 +37,26 @@ class CandidateAttemptControllerTest {
     @Autowired
     private CandidateAttemptRepository candidateAttemptRepository;
 
+    @Autowired
+    private JwtService jwtService;
+
     @Test
     void getCandidateAttemptReturnsCurrentNodeWithoutScoringInternals() throws Exception {
-        String attemptId = createAttempt("candidate-public-payload");
+        MvcResult createResult = createAttemptResult("candidate-public-payload");
+        String responseBody = createResult.getResponse().getContentAsString();
+        String attemptId = attemptIdFromResponse(responseBody);
+        String publicToken = tokenFromResponse(responseBody);
 
-        mockMvc.perform(get("/candidate/attempts/" + attemptId))
+        mockMvc.perform(get("/candidate/attempts/" + publicToken))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.attemptId").value(attemptId))
-                .andExpect(jsonPath("$.status").value("inProgress"))
-                .andExpect(jsonPath("$.currentNode.id").value("turno-1"))
-                .andExpect(jsonPath("$.currentNode.options[0].id").value(startsWith("opcao-")))
-                .andExpect(jsonPath("$.currentNode.options[0].competencyScores").doesNotExist())
-                .andExpect(jsonPath("$.currentNode.options[0].critical").doesNotExist())
-                .andExpect(jsonPath("$.currentNode.options[0].auditNote").doesNotExist());
+                .andExpect(jsonPath("$.participacaoId").value(attemptId))
+                .andExpect(jsonPath("$.status").value("em_andamento"))
+                .andExpect(jsonPath("$.etapaAtual.descricao").exists())
+                .andExpect(jsonPath("$.etapaAtual.alternativas[0].id").value("A"))
+                .andExpect(jsonPath("$.etapaAtual.alternativas[0].competencyScores").doesNotExist())
+                .andExpect(jsonPath("$.etapaAtual.alternativas[0].critical").doesNotExist())
+                .andExpect(jsonPath("$.etapaAtual.alternativas[0].auditNote").doesNotExist())
+                .andExpect(jsonPath("$.etapaAtual.id").doesNotExist());
 
         CandidateAttemptEntity candidateAttemptEntity = candidateAttemptRepository.findById(attemptId)
                 .orElseThrow();
@@ -73,9 +81,9 @@ class CandidateAttemptControllerTest {
                                 }
                                 """))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.status").value("completed"))
-                .andExpect(jsonPath("$.completed").value(true))
-                .andExpect(jsonPath("$.currentNode").doesNotExist());
+                .andExpect(jsonPath("$.status").value("concluida"))
+                .andExpect(jsonPath("$.finalizado").value(true))
+                .andExpect(jsonPath("$.etapaAtual").doesNotExist());
 
         mockMvc.perform(get("/test/result/" + resultId)
                         .header("Authorization", AUTHORIZATION)
@@ -114,14 +122,14 @@ class CandidateAttemptControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(answerPayload))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.duplicate").value(false));
+                .andExpect(jsonPath("$.repetida").value(false));
 
         mockMvc.perform(post("/candidate/attempts/" + attemptId + "/answers")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(answerPayload))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.duplicate").value(true))
-                .andExpect(jsonPath("$.completed").value(true));
+                .andExpect(jsonPath("$.repetida").value(true))
+                .andExpect(jsonPath("$.finalizado").value(true));
     }
 
     @Test
@@ -140,7 +148,7 @@ class CandidateAttemptControllerTest {
                                 }
                                 """))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.status").value("completed"));
+                .andExpect(jsonPath("$.status").value("concluida"));
 
         mockMvc.perform(get("/test/result/" + resultId)
                         .header("Authorization", AUTHORIZATION)
@@ -167,9 +175,9 @@ class CandidateAttemptControllerTest {
                                 }
                                 """))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.status").value("completed"))
-                .andExpect(jsonPath("$.completed").value(true))
-                .andExpect(jsonPath("$.currentNode").doesNotExist());
+                .andExpect(jsonPath("$.status").value("concluida"))
+                .andExpect(jsonPath("$.finalizado").value(true))
+                .andExpect(jsonPath("$.etapaAtual").doesNotExist());
 
         mockMvc.perform(get("/test/result/" + resultId)
                         .header("Authorization", AUTHORIZATION)
@@ -225,6 +233,59 @@ class CandidateAttemptControllerTest {
     }
 
     @Test
+    void createCompanyLinkReturnsCandidatePageUrl() throws Exception {
+        MvcResult result = mockMvc.perform(post("/api/v1/candidate-links")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "simulationId": "sim-atendimento-caos",
+                                  "candidateName": "Thiago Souza",
+                                  "candidateEmail": "thiago.company-link@example.com"
+                                }
+                                """))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.candidateUrl").value(startsWith("http://localhost:8080/candidato/")))
+                .andReturn();
+
+        String responseBody = result.getResponse().getContentAsString();
+        String attemptId = JsonPath.read(responseBody, "$.attemptId");
+        String candidateUrl = JsonPath.read(responseBody, "$.candidateUrl");
+
+        assertThat(attemptId).startsWith("att_");
+        assertThat(candidateUrl).contains("/candidato/");
+        assertThat(candidateUrl).doesNotEndWith("/" + attemptId);
+    }
+
+    @Test
+    void listCompanyLinksReturnsExistingCandidateAttempts() throws Exception {
+        MvcResult result = mockMvc.perform(post("/api/v1/candidate-links")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "simulationId": "sim-atendimento-caos",
+                                  "candidateName": "Maria Souza",
+                                  "candidateEmail": "maria.company-link@example.com"
+                                }
+                                """))
+                .andExpect(status().isCreated())
+                .andReturn();
+
+        String responseBody = result.getResponse().getContentAsString();
+        String attemptId = JsonPath.read(responseBody, "$.attemptId");
+
+        mockMvc.perform(get("/api/v1/candidate-links"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].attemptId").value(attemptId))
+                .andExpect(jsonPath("$[0].candidateName").value("Maria Souza"))
+                .andExpect(jsonPath("$[0].candidateEmail").value("maria.company-link@example.com"))
+                .andExpect(jsonPath("$[0].simulationId").value("sim-atendimento-caos"))
+                .andExpect(jsonPath("$[0].simulationName").value("Cenario Seed de Teste"))
+                .andExpect(jsonPath("$[0].status").value("notStarted"))
+                .andExpect(jsonPath("$[0].candidateUrl").value(startsWith("http://localhost:8080/candidato/")))
+                .andExpect(jsonPath("$[0].createdAt").exists());
+    }
+
+    @Test
     void expiredNotStartedAttemptReturnsExpiredWithoutStarting() throws Exception {
         String attemptId = createAttempt("candidate-expired-before-start");
         CandidateAttemptEntity candidateAttemptEntity = candidateAttemptRepository.findById(attemptId)
@@ -234,9 +295,9 @@ class CandidateAttemptControllerTest {
 
         mockMvc.perform(get("/candidate/attempts/" + attemptId))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.status").value("expired"))
-                .andExpect(jsonPath("$.completed").value(false))
-                .andExpect(jsonPath("$.currentNode").doesNotExist());
+                .andExpect(jsonPath("$.status").value("expirada"))
+                .andExpect(jsonPath("$.finalizado").value(false))
+                .andExpect(jsonPath("$.etapaAtual").doesNotExist());
 
         CandidateAttemptEntity expiredAttemptEntity = candidateAttemptRepository.findById(attemptId)
                 .orElseThrow();
@@ -255,7 +316,7 @@ class CandidateAttemptControllerTest {
         String attemptId = createAttempt("candidate-abandoned-running");
         mockMvc.perform(get("/candidate/attempts/" + attemptId))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.status").value("inProgress"));
+                .andExpect(jsonPath("$.status").value("em_andamento"));
 
         CandidateAttemptEntity candidateAttemptEntity = candidateAttemptRepository.findById(attemptId)
                 .orElseThrow();
@@ -271,7 +332,7 @@ class CandidateAttemptControllerTest {
                                 }
                                 """))
                 .andExpect(status().isConflict())
-                .andExpect(jsonPath("$.message").value("Tentativa expirada ou abandonada."));
+                .andExpect(jsonPath("$.mensagem").value("Tentativa expirada ou abandonada."));
 
         CandidateAttemptEntity abandonedAttemptEntity = candidateAttemptRepository.findById(attemptId)
                 .orElseThrow();
@@ -307,6 +368,15 @@ class CandidateAttemptControllerTest {
     }
 
     private String attemptIdFromResponse(String responseBody) {
+        String token = tokenFromResponse(responseBody);
+        try {
+            return jwtService.parseCandidateAttemptToken(token).attemptId();
+        } catch (RuntimeException exception) {
+            return token;
+        }
+    }
+
+    private String tokenFromResponse(String responseBody) {
         String testUrl = JsonPath.read(responseBody, "$.test_url");
         return testUrl.substring(testUrl.lastIndexOf('/') + 1);
     }

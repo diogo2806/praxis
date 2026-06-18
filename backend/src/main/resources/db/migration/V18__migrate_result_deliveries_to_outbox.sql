@@ -18,12 +18,13 @@ SELECT
     'RESULT_READY',
     'CandidateAttempt',
     ca.id,
-    jsonb_build_object(
-        'webhookUrl', rd.webhook_url,
-        'attemptId', ca.id,
-        'migratedFromResultDeliveryId', rd.id,
-        'originalAttemptCount', rd.attempt_count
-    )::text,
+    CONCAT(
+        '{"webhookUrl":"', rd.webhook_url,
+        '","attemptId":"', ca.id,
+        '","migratedFromResultDeliveryId":', rd.id,
+        ',"originalAttemptCount":', rd.attempt_count,
+        '}'
+    ),
     CASE
         WHEN rd.status = 'PENDING' THEN 'PENDING'
         WHEN rd.status = 'RETRYING' THEN 'RETRYING'
@@ -44,5 +45,4 @@ WHERE rd.status IN ('PENDING', 'RETRYING', 'SENT')
     WHERE oe.aggregate_id = ca.id
       AND oe.aggregate_type = 'CandidateAttempt'
       AND oe.event_type = 'RESULT_READY'
-  )
-ON CONFLICT DO NOTHING;
+  );

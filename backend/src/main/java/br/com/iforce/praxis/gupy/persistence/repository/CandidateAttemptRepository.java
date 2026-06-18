@@ -41,6 +41,8 @@ public interface CandidateAttemptRepository extends JpaRepository<CandidateAttem
             AttemptStatus status
     );
 
+    List<CandidateAttemptEntity> findByTenantIdOrderByCreatedAtDesc(String tenantId, Pageable pageable);
+
     @EntityGraph(attributePaths = {"answers", "resultItems"})
     @Query("SELECT c FROM CandidateAttemptEntity c WHERE c.tenantId = :tenantId AND c.anonymizedAt IS NULL AND c.status IN :statuses AND c.finishedAt < :finishedBefore ORDER BY c.createdAt ASC")
     List<CandidateAttemptEntity> findByTenantIdAndAnonymizedAtIsNullAndStatusInAndFinishedAtBefore(

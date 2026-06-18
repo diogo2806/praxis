@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+﻿import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { ClipboardCheck, Scale, Shield } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
@@ -36,19 +36,19 @@ const pillars = [
     icon: ClipboardCheck,
     term: "construto" as const,
     title: "Construto definido",
-    text: "O blueprint (modelo base) fixa cargo, situação crítica e comportamento observável.",
+    text: "O plano da avaliação fixa cargo, situação crítica e comportamento observável.",
   },
   {
     icon: Scale,
     term: "score-auditavel" as const,
     title: "Score auditável",
-    text: "Rubrica, peso e caminho explicam cada ponto do resultado.",
+    text: "Critérios de pontuação, peso e caminho explicam cada ponto do resultado.",
   },
   {
     icon: Shield,
     term: "pontuacao-deterministica" as const,
     title: "Pontuação determinística",
-    text: "Cálculo por rubrica, peso e regra declarada.",
+    text: "Cálculo por critérios de pontuação, peso e regra declarada.",
   },
 ];
 
@@ -71,6 +71,8 @@ function DefensibilityPage() {
     queryFn: () => listSimulationVersionAuditEvents(search.simulationId!, search.versionNumber!),
     enabled: hasContext,
   });
+  const version = versionQuery.data;
+  const auditEvents = auditQuery.data ?? [];
 
   return (
     <AppShell>
@@ -85,7 +87,7 @@ function DefensibilityPage() {
             <Termo id="evidencia-comportamental">evidência comportamental</Termo> estruturada.
           </p>
         </div>
-        {versionQuery.data && <StatusBadge status={versionQuery.data.status} />}
+        {version && <StatusBadge status={version.status} />}
       </div>
 
       <div className="grid gap-4 md:grid-cols-3">
@@ -110,12 +112,17 @@ function DefensibilityPage() {
         {!hasContext ? (
           <EmptyState
             title="Selecione uma simulação para ver a sustentação"
-            description="Escolha uma simulação abaixo para entender como ela se sustenta tecnicamente e juridicamente. Você verá o planejamento, as competências medidas e o histórico de aprovações."
-            actions={<SimulationLinks loading={simulationsQuery.isLoading} simulations={simulationsQuery.data ?? []} />}
+            description="Escolha uma simulação abaixo para entender como ela se sustenta tecnicamente e juridicamente."
+            actions={
+              <SimulationLinks
+                loading={simulationsQuery.isLoading}
+                simulations={simulationsQuery.data ?? []}
+              />
+            }
           />
         ) : versionQuery.isLoading || auditQuery.isLoading ? (
           <StateBanner tone="info" title="Carregando evidências">
-            Buscando blueprint e trilha de auditoria da simulação {search.simulationId} v
+            Buscando plano da avaliação e trilha de auditoria da simulação {search.simulationId} v
             {search.versionNumber}.
           </StateBanner>
         ) : versionQuery.isError || auditQuery.isError ? (
@@ -126,30 +133,24 @@ function DefensibilityPage() {
                 ? auditQuery.error.message
                 : "Verifique sua conexão e tente novamente."}
           </StateBanner>
-        ) : versionQuery.data ? (
+        ) : version ? (
           <div className="grid gap-4 lg:grid-cols-[1fr_360px]">
             <section className="rounded-md border border-border bg-card p-5">
               <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                Blueprint defensável
+                Plano defensável
               </div>
-              <h2 className="mt-2 text-xl font-semibold">{versionQuery.data.name}</h2>
-              <p className="mt-2 text-sm text-muted-foreground">{versionQuery.data.description}</p>
+              <h2 className="mt-2 text-xl font-semibold">{version.name}</h2>
+              <p className="mt-2 text-sm text-muted-foreground">{version.description}</p>
               <div className="mt-4 grid gap-3 md:grid-cols-3">
-                <Metric label="Nós" value={versionQuery.data.nodes.length} />
+                <Metric label="Nos" value={version.nodes.length} />
                 <Metric
                   label="Alternativas"
-                  value={versionQuery.data.nodes.reduce(
-                    (total, node) => total + node.options.length,
-                    0,
-                  )}
+                  value={version.nodes.reduce((total, node) => total + node.options.length, 0)}
                 />
-                <Metric
-                  label="Competências"
-                  value={versionQuery.data.blueprint.competencies.length}
-                />
+                <Metric label="Competencias" value={version.blueprint.competencies.length} />
               </div>
               <div className="mt-4 flex flex-wrap gap-2">
-                {versionQuery.data.blueprint.competencies.map((competency) => (
+                {version.blueprint.competencies.map((competency) => (
                   <span
                     key={competency.name}
                     className="rounded-md border border-border bg-background px-3 py-2 text-sm"
@@ -161,44 +162,36 @@ function DefensibilityPage() {
             </section>
             <aside className="rounded-md border border-border bg-card p-5">
               <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                Eventos auditáveis
+                Eventos de auditoria
               </div>
               <div className="mt-3 space-y-3">
-                {(auditQuery.data ?? []).slice(0, 5).map((event) => (
-                  <div key={event.id} className="rounded-md border border-border bg-background p-3 text-sm">
+                {auditEvents.slice(0, 5).map((event) => (
+                  <div
+                    key={event.id}
+                    className="rounded-md border border-border bg-background p-3 text-sm"
+                  >
                     <div className="font-medium">{event.message}</div>
                     <div className="mt-1 text-xs text-muted-foreground">
-                      {event.eventType} - {new Date(event.createdAt).toLocaleString("pt-BR")}
+                      {new Date(event.createdAt).toLocaleString("pt-BR")}
                     </div>
                   </div>
                 ))}
-                {(auditQuery.data ?? []).length === 0 && (
-                  <p className="text-sm text-muted-foreground">
-                    Nenhum evento registrado para esta versão.
-                  </p>
+                {auditEvents.length === 0 && (
+                  <p className="text-sm text-muted-foreground">Nenhum evento registrado.</p>
                 )}
               </div>
             </aside>
           </div>
         ) : null}
       </div>
-
-      <div className="mt-6">
-        <Link
-          to="/"
-          className="inline-flex rounded-md border border-border bg-card px-4 py-2 text-sm hover:bg-accent"
-        >
-          Voltar ao painel
-        </Link>
-      </div>
     </AppShell>
   );
 }
 
-function Metric({ label, value }: { label: string; value: number }) {
+function Metric({ label, value }: { label: string; value: number | string }) {
   return (
     <div className="rounded-md border border-border bg-background p-3">
-      <div className="text-xs uppercase text-muted-foreground">{label}</div>
+      <div className="text-xs text-muted-foreground">{label}</div>
       <div className="mt-1 text-2xl font-semibold tabular-nums">{value}</div>
     </div>
   );
@@ -212,6 +205,9 @@ function SimulationLinks({
   simulations: SimulationSummaryResponse[];
 }) {
   if (loading) return <span className="text-sm text-muted-foreground">Carregando...</span>;
+  if (simulations.length === 0) {
+    return <span className="text-sm text-muted-foreground">Nenhuma simulação encontrada.</span>;
+  }
   return (
     <div className="flex flex-wrap gap-2">
       {simulations.map((simulation) => (

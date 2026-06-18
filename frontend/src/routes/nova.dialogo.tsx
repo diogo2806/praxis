@@ -31,6 +31,7 @@ import { defaultAnswerTimeLimitSeconds, useTenantConfig } from "@/lib/tenant-con
 export const Route = createFileRoute("/nova/dialogo")({
   validateSearch: (search: Record<string, unknown>) => ({
     simulationId: typeof search.simulationId === "string" ? search.simulationId : undefined,
+    nodeId: typeof search.nodeId === "string" ? search.nodeId : undefined,
     versionNumber:
       typeof search.versionNumber === "number"
         ? search.versionNumber
@@ -51,8 +52,13 @@ function DialogEditor() {
   const search = Route.useSearch();
   const queryClient = useQueryClient();
   const hasContext = Boolean(search.simulationId && search.versionNumber);
-  const { config } = useTenantConfig();
-  const answerTimeLimits = config.answerTimeLimits;
+  const {
+    config,
+    isLoading: tenantConfigLoading,
+    isError: tenantConfigError,
+    error: tenantConfigQueryError,
+  } = useTenantConfig();
+  const answerTimeLimits = config?.answerTimeLimits ?? [];
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [draftMessage, setDraftMessage] = useState("");
   const [selectedMessage, setSelectedMessage] = useState("");
@@ -94,6 +100,14 @@ function DialogEditor() {
     setSelectedMessage(selected?.clientMessage ?? "");
   }, [selected?.id, selected?.clientMessage]);
 
+  useEffect(() => {
+    if (!search.nodeId || nodes.length === 0) return;
+
+    if (nodes.some((node) => node.id === search.nodeId)) {
+      setSelectedId(search.nodeId);
+    }
+  }, [nodes, search.nodeId]);
+
   const refetchVersion = async () => {
     await queryClient.refetchQueries({
       queryKey: ["simulation-version", search.simulationId, search.versionNumber],
@@ -102,10 +116,15 @@ function DialogEditor() {
   };
   const addNodeMutation = useMutation({
     mutationFn: () =>
-      createSimulationNode(search.simulationId!, search.versionNumber!, {
-        clientMessage: draftMessage.trim(),
-        timeLimitSeconds: defaultAnswerTimeLimitSeconds(config),
-      }),
+      {
+        if (!config) {
+          throw new Error("Configuracao da empresa ainda nao foi carregada pelo backend.");
+        }
+        return createSimulationNode(search.simulationId!, search.versionNumber!, {
+          clientMessage: draftMessage.trim(),
+          timeLimitSeconds: defaultAnswerTimeLimitSeconds(config),
+        });
+      },
     onSuccess: async (nodeId) => {
       setDraftMessage("");
       setSelectedId(nodeId);
@@ -231,9 +250,15 @@ function DialogEditor() {
             />
           }
         />
-      ) : versionQuery.isLoading ? (
+      ) : tenantConfigLoading || versionQuery.isLoading ? (
         <StateBanner tone="info" title="Carregando fluxo da conversa">
           Buscando simulação {search.simulationId} v{search.versionNumber}.
+        </StateBanner>
+      ) : tenantConfigError ? (
+        <StateBanner tone="danger" title="Nao foi possivel carregar a configuracao">
+          {tenantConfigQueryError instanceof Error
+            ? tenantConfigQueryError.message
+            : "Verifique se o backend esta disponivel antes de editar o fluxo."}
         </StateBanner>
       ) : versionQuery.isError ? (
         <StateBanner tone="danger" title="Não foi possível carregar o fluxo da conversa">
@@ -611,7 +636,7 @@ function DialogEditor() {
               <button
                 type="button"
                 disabled
-                title="Cada nó precisa ter de 2 a 4 alternativas com rubrica antes da revisão"
+                title="Cada nó precisa ter de 2 a 4 alternativas com critérios de pontuação antes da revisão"
                 className="cursor-not-allowed rounded-md bg-primary px-5 py-2 text-sm font-medium text-primary-foreground opacity-50"
               >
                 Validar qualidade

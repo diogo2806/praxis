@@ -1,5 +1,6 @@
 package br.com.iforce.praxis.shared.outbox.persistence.entity;
 
+import br.com.iforce.praxis.shared.jpa.TenantAwareEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -23,7 +24,7 @@ import java.time.Instant;
     name = "outbox_events",
     indexes = @Index(name = "idx_outbox_pending", columnList = "status,next_attempt_at,tenant_id")
 )
-public class OutboxEventEntity {
+public class OutboxEventEntity implements TenantAwareEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -54,6 +55,15 @@ public class OutboxEventEntity {
 
     @Column(name = "next_attempt_at")
     private Instant nextAttemptAt;
+
+    @Column(name = "last_attempt_at")
+    private Instant lastAttemptAt;
+
+    @Column(name = "sent_at")
+    private Instant sentAt;
+
+    @Column(name = "last_error", columnDefinition = "TEXT")
+    private String lastError;
 
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;

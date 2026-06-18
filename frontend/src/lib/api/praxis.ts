@@ -10,6 +10,15 @@ export type AttemptStatus =
   | "expired"
   | "failed";
 
+export type ParticipacaoStatus =
+  | "nao_iniciada"
+  | "em_andamento"
+  | "pausada"
+  | "concluida"
+  | "abandonada"
+  | "expirada"
+  | "falhou";
+
 export type MediaType = "IMAGE" | "AUDIO";
 
 export interface MediaUploadResponse {
@@ -21,42 +30,41 @@ export interface MediaUploadResponse {
 
 export interface CandidateOptionResponse {
   id: string;
-  text: string;
+  texto: string;
   mediaUrl?: string | null;
-  mediaType?: MediaType | null;
+  tipoMidia?: MediaType | null;
 }
 
 export interface CandidateNodeResponse {
-  id: string;
-  turnIndex: number;
-  speaker: string;
-  message: string;
-  timeLimitSeconds: number | null;
-  mediaUrl?: string | null;
-  mediaType?: MediaType | null;
-  options: CandidateOptionResponse[];
+  numero: number;
+  pessoa: string;
+  descricao: string;
+  tempoLimiteSegundos: number | null;
+  midiaUrl?: string | null;
+  tipoMidia?: MediaType | null;
+  alternativas: CandidateOptionResponse[];
 }
 
 export interface CandidateAttemptResponse {
-  attemptId: string;
-  simulationName: string;
-  status: AttemptStatus;
-  completed: boolean;
-  currentNode: CandidateNodeResponse | null;
+  participacaoId: string;
+  avaliacaoNome: string;
+  status: ParticipacaoStatus;
+  finalizado: boolean;
+  etapaAtual: CandidateNodeResponse | null;
 }
 
 export interface SubmitAnswerRequest {
-  nodeId: string;
-  optionId?: string | null;
-  timedOut: boolean;
+  etapaId?: string | null;
+  respostaId?: string | null;
+  tempoEsgotado: boolean;
 }
 
 export interface SubmitAnswerResponse {
-  attemptId: string;
-  status: AttemptStatus;
-  duplicate: boolean;
-  completed: boolean;
-  currentNode: CandidateNodeResponse | null;
+  participacaoId: string;
+  status: ParticipacaoStatus;
+  repetida: boolean;
+  finalizado: boolean;
+  etapaAtual: CandidateNodeResponse | null;
 }
 
 export type ValidationIssueSeverity = "warning" | "blocker";
@@ -115,8 +123,6 @@ export interface CreateSimulationDraftRequest {
   rootNodeId: string;
   competencies: string[];
   criticalSituation?: string;
-  highPerformance?: string;
-  criticalError?: string;
   resultUse?: string;
 }
 
@@ -331,6 +337,7 @@ export interface TenantConfigOption {
   label: string;
   locked: boolean;
   selectedByDefault: boolean;
+  active?: boolean;
 }
 
 export interface TenantConfig {
@@ -371,8 +378,12 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   if (!response.ok) {
     let message = `Falha na API (${response.status})`;
     try {
-      const body = (await response.json()) as { message?: string; error?: string };
-      message = body.message ?? body.error ?? message;
+      const body = (await response.json()) as {
+        mensagem?: string;
+        message?: string;
+        error?: string;
+      };
+      message = body.mensagem ?? body.message ?? body.error ?? message;
     } catch {
       // Mantem a mensagem HTTP padrao quando a resposta nao vem em JSON.
     }
@@ -439,6 +450,21 @@ export function updateTenantConfig(configType: TenantConfigType, options: Tenant
   return request<TenantConfigOption[]>(`/api/v1/tenant-config/${configType}`, {
     method: "PUT",
     body: JSON.stringify({ options }),
+  });
+}
+
+export function getAllConfigOptions(configType: TenantConfigType) {
+  return request<TenantConfigOption[]>(`/api/v1/tenant-config/${configType}/all`);
+}
+
+export function updateConfigOption(
+  configType: TenantConfigType,
+  optionValue: string,
+  update: { label: string; locked: boolean; selectedByDefault: boolean; active: boolean },
+) {
+  return request<TenantConfigOption>(`/api/v1/tenant-config/${configType}/${encodeURIComponent(optionValue)}`, {
+    method: "PATCH",
+    body: JSON.stringify(update),
   });
 }
 
@@ -677,6 +703,21 @@ export interface CreateCandidateLinkResponse {
   attemptId: string;
   candidateUrl: string;
   simulationName: string;
+}
+
+export interface CandidateLinkResponse {
+  attemptId: string;
+  candidateUrl: string;
+  candidateName: string;
+  candidateEmail: string;
+  simulationId: string;
+  simulationName: string;
+  status: AttemptStatus;
+  createdAt: string;
+}
+
+export function listCandidateLinks() {
+  return request<CandidateLinkResponse[]>("/api/v1/candidate-links");
 }
 
 export function createCandidateLink(body: CreateCandidateLinkRequest) {

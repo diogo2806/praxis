@@ -1,5 +1,6 @@
 package br.com.iforce.praxis.gupy.delivery.controller;
 
+import br.com.iforce.praxis.auth.service.JwtService;
 import br.com.iforce.praxis.gupy.delivery.service.ResultWebhookClient;
 import br.com.iforce.praxis.gupy.dto.TestResultResponse;
 import com.jayway.jsonpath.JsonPath;
@@ -39,6 +40,9 @@ class ResultDeliveryControllerTest {
 
     @MockitoBean
     private ResultWebhookClient resultWebhookClient;
+
+    @Autowired
+    private JwtService jwtService;
 
     @Test
     void completedAttemptCreatesPendingResultDelivery() throws Exception {
@@ -208,7 +212,8 @@ class ResultDeliveryControllerTest {
 
     private String attemptIdFromResponse(String responseBody) {
         String testUrl = JsonPath.read(responseBody, "$.test_url");
-        return testUrl.substring(testUrl.lastIndexOf('/') + 1);
+        String token = testUrl.substring(testUrl.lastIndexOf('/') + 1);
+        return jwtService.parseCandidateAttemptToken(token).attemptId();
     }
 
     private Long findDeliveryId(String attemptId, String deliveryStatus) throws Exception {

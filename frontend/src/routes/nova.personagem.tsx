@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { AppShell } from "@/components/app-shell";
 import { EmptyState, ScreenStateStrip, StateBanner } from "@/components/praxis-ui";
 import { WizardStepper } from "@/components/wizard-stepper";
@@ -36,8 +36,13 @@ function Page() {
   const search = Route.useSearch();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const { config } = useTenantConfig();
-  const checklist = config.languageChecklist.map((item) => item.value);
+  const {
+    config,
+    isLoading: tenantConfigLoading,
+    isError: tenantConfigError,
+    error: tenantConfigQueryError,
+  } = useTenantConfig();
+  const checklist = config?.languageChecklist.map((item) => item.value) ?? [];
   const hasDraftContext = Boolean(search.simulationId && search.versionNumber);
   const [name, setName] = useState("");
   const [emotion, setEmotion] = useState("");
@@ -54,7 +59,11 @@ function Page() {
     enabled: hasDraftContext,
   });
   const rootNodeId = versionQuery.data?.blueprint.rootNodeId;
-  const rootNode = versionQuery.data?.nodes.find((node) => node.id === rootNodeId);
+  const orderedNodes = useMemo(
+    () => [...(versionQuery.data?.nodes ?? [])].sort((a, b) => a.turnIndex - b.turnIndex),
+    [versionQuery.data?.nodes],
+  );
+  const rootNode = orderedNodes.find((node) => node.id === rootNodeId) ?? orderedNodes[0];
   const existingMessage = rootNode?.clientMessage;
   const canGoNext = checkedItems.length === checklist.length && context.trim().length > 0;
   const clientMessage = useMemo(() => {
@@ -74,6 +83,9 @@ function Page() {
         });
         return rootNode.id;
       }
+      if (!config) {
+        throw new Error("Configuracao da empresa ainda nao foi carregada pelo backend.");
+      }
       return createSimulationNode(search.simulationId!, search.versionNumber!, {
         clientMessage,
         timeLimitSeconds: defaultAnswerTimeLimitSeconds(config),
@@ -89,6 +101,20 @@ function Page() {
       });
     },
   });
+
+  useEffect(() => {
+    if (!existingMessage) {
+      setName("");
+      setEmotion("");
+      setContext("");
+      return;
+    }
+
+    const parsed = parseCharacterMessage(existingMessage);
+    setName(parsed.name);
+    setEmotion(parsed.emotion);
+    setContext(parsed.context);
+  }, [existingMessage]);
 
   function toggleChecklist(item: string) {
     setCheckedItems((current) =>
@@ -119,9 +145,15 @@ function Page() {
             />
           }
         />
-      ) : versionQuery.isLoading ? (
+      ) : tenantConfigLoading || versionQuery.isLoading ? (
         <StateBanner tone="info" title="Carregando fluxo da conversa">
           Buscando a primeira etapa da simulação {search.simulationId} v{search.versionNumber}.
+        </StateBanner>
+      ) : tenantConfigError ? (
+        <StateBanner tone="danger" title="Nao foi possivel carregar a configuracao">
+          {tenantConfigQueryError instanceof Error
+            ? tenantConfigQueryError.message
+            : "Verifique se o backend esta disponivel antes de continuar."}
         </StateBanner>
       ) : versionQuery.isError ? (
         <StateBanner tone="danger" title="Não foi possível carregar a versão">
@@ -220,6 +252,29 @@ function Page() {
       )}
     </AppShell>
   );
+}
+
+function parseCharacterMessage(message: string) {
+  const parts = message
+    .split(/\n{2,}/)
+    .map((part) => part.trim())
+    .filter(Boolean);
+  const namePrefix = "Personagem:";
+  const namePart = parts.at(-1)?.startsWith(namePrefix) ? parts.pop() : undefined;
+
+  if (namePart) {
+    return {
+      emotion: parts.length > 1 ? parts[0] : "",
+      context: parts.length > 1 ? parts.slice(1).join("\n\n") : (parts[0] ?? ""),
+      name: namePart.slice(namePrefix.length).trim(),
+    };
+  }
+
+  return {
+    emotion: "",
+    context: message.trim(),
+    name: "",
+  };
 }
 
 function SimulationLinks({

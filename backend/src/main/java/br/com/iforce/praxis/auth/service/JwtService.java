@@ -15,6 +15,8 @@ import java.util.Set;
 @Service
 public class JwtService {
 
+    private static final String CANDIDATE_ATTEMPT_TOKEN_TYPE = "candidate_attempt";
+
     private final SecretKey secretKey;
     private final int expirationHours;
 
@@ -49,11 +51,40 @@ public class JwtService {
                 .compact();
     }
 
+    public String generateCandidateAttemptToken(String tenantId, String attemptId, int ttlHours) {
+        Instant now = Instant.now();
+        return Jwts.builder()
+                .subject(attemptId)
+                .claim("typ", CANDIDATE_ATTEMPT_TOKEN_TYPE)
+                .claim("tenant_id", tenantId)
+                .claim("attempt_id", attemptId)
+                .issuedAt(Date.from(now))
+                .expiration(Date.from(now.plusSeconds(ttlHours * 60L * 60L)))
+                .signWith(secretKey)
+                .compact();
+    }
+
+    public CandidateAttemptToken parseCandidateAttemptToken(String token) {
+        Claims claims = parse(token);
+        if (!CANDIDATE_ATTEMPT_TOKEN_TYPE.equals(claims.get("typ", String.class))) {
+            throw new IllegalArgumentException("Token publico de candidato invalido.");
+        }
+        String tenantId = claims.get("tenant_id", String.class);
+        String attemptId = claims.get("attempt_id", String.class);
+        if (tenantId == null || tenantId.isBlank() || attemptId == null || attemptId.isBlank()) {
+            throw new IllegalArgumentException("Token publico de candidato incompleto.");
+        }
+        return new CandidateAttemptToken(tenantId, attemptId);
+    }
+
     public Claims parse(String token) {
         return Jwts.parser()
                 .verifyWith(secretKey)
                 .build()
                 .parseSignedClaims(token)
                 .getPayload();
+    }
+
+    public record CandidateAttemptToken(String tenantId, String attemptId) {
     }
 }

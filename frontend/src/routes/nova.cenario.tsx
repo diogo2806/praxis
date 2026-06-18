@@ -8,7 +8,7 @@ export const Route = createFileRoute("/nova/cenario")({
   head: () => ({
     meta: [
       { title: "Cenário - Práxis" },
-      { name: "description", content: "Personagem, diálogo e rubricas do cenário." },
+      { name: "description", content: "Personagem, diálogo e critérios de pontuação do cenário." },
     ],
   }),
   component: Page,

@@ -10,12 +10,13 @@ services:
       - DB_HOST=postgres
       - DB_PORT=5432
       - DB_NAME=praxis
-      - DB_USER=postgres
-      - SPRING_DATASOURCE_PASSWORD=postgres
+      - DB_USER=${POSTGRES_USER:?POSTGRES_USER must be set}
+      - SPRING_DATASOURCE_PASSWORD=${POSTGRES_PASSWORD:?POSTGRES_PASSWORD must be set}
       - DB_SCHEMA=public
       - PRAXIS_JPA_DDL_AUTO=validate
-      - PRAXIS_INTEGRATION_TOKEN=dev-integration-token
-      - PRAXIS_JWT_SECRET=dev-jwt-secret-change-me
+      - PRAXIS_INTEGRATION_TOKEN=${PRAXIS_INTEGRATION_TOKEN:?PRAXIS_INTEGRATION_TOKEN must be set}
+      - PRAXIS_JWT_SECRET=${PRAXIS_JWT_SECRET:?PRAXIS_JWT_SECRET must be set}
+      - PRAXIS_PUBLIC_BASE_URL=${PRAXIS_PUBLIC_BASE_URL:-http://localhost}
       - SPRING_PROFILES_ACTIVE=prod
     depends_on:
       - postgres
@@ -30,6 +31,8 @@ services:
     container_name: praxis-frontend
     ports:
       - "80:80"
+    environment:
+      - PRAXIS_API_BASE_URL=http://backend:8080
     depends_on:
       - backend
     restart: unless-stopped
@@ -41,12 +44,10 @@ services:
     container_name: praxis-postgres
     environment:
       - POSTGRES_DB=praxis
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_USER=${POSTGRES_USER:?POSTGRES_USER must be set}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:?POSTGRES_PASSWORD must be set}
     volumes:
       - postgres_data:/var/lib/postgresql/data
-    ports:
-      - "5432:5432"
     restart: unless-stopped
     networks:
       - praxis-network

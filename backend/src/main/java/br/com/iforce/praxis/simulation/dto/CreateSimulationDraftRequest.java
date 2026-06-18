@@ -7,7 +7,7 @@ import jakarta.validation.constraints.Size;
 
 import java.util.List;
 
-@Schema(description = "Payload para criar uma simulacao em rascunho a partir do blueprint inicial.")
+@Schema(description = "Payload para criar uma simulacao em rascunho a partir do plano da avaliacao inicial.")
 public record CreateSimulationDraftRequest(
         @NotBlank
         @Size(max = 180)
@@ -26,20 +26,12 @@ public record CreateSimulationDraftRequest(
 
         @NotEmpty
         @Size(max = 12)
-        @Schema(description = "Competencias avaliadas no blueprint.")
+        @Schema(description = "Competencias avaliadas no plano da avaliacao.")
         List<@NotBlank @Size(max = 140) String> competencies,
 
         @Size(max = 1200)
         @Schema(example = "Cliente exige solucao imediata para atraso recorrente.")
         String criticalSituation,
-
-        @Size(max = 1000)
-        @Schema(example = "Reconhece o impacto, aplica a politica e propoe proximos passos.")
-        String highPerformance,
-
-        @Size(max = 1000)
-        @Schema(example = "Prometer excecao proibida ou culpar outra area.")
-        String criticalError,
 
         @Size(max = 120)
         @Schema(example = "Triagem")

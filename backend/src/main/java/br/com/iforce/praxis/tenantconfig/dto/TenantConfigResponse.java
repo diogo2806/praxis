@@ -6,7 +6,7 @@ import java.util.List;
 
 @Schema(description = "Catalogos configuraveis por tenant para as telas de autoria.")
 public record TenantConfigResponse(
-        @Schema(description = "Competencias avaliaveis no blueprint.")
+        @Schema(description = "Competencias avaliaveis no plano da avaliacao.")
         List<ConfigOptionDto> competencies,
 
         @Schema(description = "Niveis de senioridade reconhecidos pela empresa.")

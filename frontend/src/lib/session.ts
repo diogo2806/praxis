@@ -1,4 +1,3 @@
-import { isDemoMode } from "@/lib/runtime-config";
 import { useEffect, useState } from "react";
 
 export type PraxisSession = {
@@ -7,23 +6,19 @@ export type PraxisSession = {
   workspaceName: string;
   userName: string;
   userRole: string;
-  demo: boolean;
 };
 
-const demoSession: PraxisSession = {
+const anonymousSession: PraxisSession = {
   token: null,
-  tenantId: "tenant-1",
-  workspaceName: "Acme S.A.",
-  userName: "Renata Silveira",
-  userRole: "RH - Aprovadora",
-  demo: true,
+  tenantId: null,
+  workspaceName: "Workspace",
+  userName: "Usuario",
+  userRole: "Operador",
 };
 
 export function getSession(): PraxisSession {
-  const demoEnabled = isDemoMode();
-
-  if (demoEnabled || typeof window === "undefined") {
-    return demoSession;
+  if (typeof window === "undefined") {
+    return anonymousSession;
   }
 
   return {
@@ -32,12 +27,11 @@ export function getSession(): PraxisSession {
     workspaceName: localStorage.getItem("praxis.workspaceName") ?? "Workspace",
     userName: localStorage.getItem("praxis.userName") ?? "Usuario",
     userRole: localStorage.getItem("praxis.userRole") ?? "Operador",
-    demo: false,
   };
 }
 
 export function useSession() {
-  const [session, setSession] = useState<PraxisSession>(demoSession);
+  const [session, setSession] = useState<PraxisSession>(anonymousSession);
 
   useEffect(() => {
     setSession(getSession());

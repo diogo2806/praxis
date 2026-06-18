@@ -1,5 +1,6 @@
 package br.com.iforce.praxis.simulation.persistence.entity;
 
+import br.com.iforce.praxis.shared.jpa.TenantAwareEntity;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -19,7 +20,7 @@ import java.util.Set;
 @NoArgsConstructor
 @Entity
 @Table(name = "simulations")
-public class SimulationEntity {
+public class SimulationEntity implements TenantAwareEntity {
 
     @Id
     @Column(name = "id", nullable = false, length = 120)

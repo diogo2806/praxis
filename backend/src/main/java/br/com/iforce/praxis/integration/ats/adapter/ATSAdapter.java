@@ -4,8 +4,8 @@ import br.com.iforce.praxis.integration.ats.model.CandidateContext;
 import br.com.iforce.praxis.integration.ats.model.ResultPayload;
 
 /**
- * Interface padrão para adapters de diferentes ATS (Applicant Tracking Systems).
- * Implementações dessa interface permitem o Praxis funcionar com Gupy, Workday, Greenhouse, etc.
+ * Interface padrao para adapters de ATS (Applicant Tracking Systems).
+ * Apenas adapters com integracao real devem ser registrados como beans.
  */
 public interface ATSAdapter {
 
@@ -15,7 +15,7 @@ public interface ATSAdapter {
     CandidateContext createCandidate(CreateCandidateCommand cmd);
 
     /**
-     * Envia o resultado da avaliação de volta para o ATS.
+     * Envia o resultado da avaliacao de volta para o ATS.
      */
     void pushResult(ResultPayload payload);
 
@@ -25,13 +25,7 @@ public interface ATSAdapter {
     ATSPlatform type();
 
     enum ATSPlatform {
-        GUPY,
-        WORKDAY,
-        GREENHOUSE,
-        LEVER,
-        LINKEDIN,
-        CATHO,
-        INDEED
+        GUPY
     }
 
     record CreateCandidateCommand(

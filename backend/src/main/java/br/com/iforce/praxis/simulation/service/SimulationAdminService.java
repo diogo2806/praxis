@@ -171,7 +171,7 @@ public class SimulationAdminService {
                 savedSimulationEntity.getId(),
                 versionEntity.getVersionNumber(),
                 AuditEventType.SIMULATION_VERSION_DRAFT_CREATED,
-                "Versao inicial criada a partir do blueprint.",
+                "Versao inicial criada a partir do plano da avaliacao.",
                 "{\"status\":\"draft\"}"
         );
 
@@ -205,7 +205,7 @@ public class SimulationAdminService {
                 simulationId,
                 versionNumber,
                 AuditEventType.SIMULATION_VERSION_BLUEPRINT_UPDATED,
-                "Blueprint atualizado.",
+                "Plano da avaliacao atualizado.",
                 "{\"rootNodeId\":\"" + escapeJson(savedVersionEntity.getRootNodeId())
                         + "\",\"competencyCount\":" + savedVersionEntity.getCompetencies().size() + "}"
         );
@@ -388,7 +388,8 @@ public class SimulationAdminService {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Usuario autenticado obrigatorio.");
         }
 
-        SimulationEntity simulationEntity = simulationRepository.findById(simulationId)
+        String tenantId = currentTenantService.requiredTenantId();
+        SimulationEntity simulationEntity = simulationRepository.findByTenantIdAndId(tenantId, simulationId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Simulacao nao encontrada."));
 
         if (simulationEntity.isArchived() || simulationEntity.getDeletedAt() != null) {
@@ -585,8 +586,6 @@ public class SimulationAdminService {
 
     private String createDraftDescription(CreateSimulationDraftRequest request) {
         boolean hasStructuredBlueprint = hasText(request.criticalSituation())
-                || hasText(request.highPerformance())
-                || hasText(request.criticalError())
                 || hasText(request.resultUse());
 
         if (!hasStructuredBlueprint) {
@@ -599,8 +598,6 @@ public class SimulationAdminService {
         if (request.competencies() != null && !request.competencies().isEmpty()) {
             appendLine(description, "Competências", String.join(", ", request.competencies()));
         }
-        appendLine(description, "Erro crítico", request.criticalError());
-        appendLine(description, "Alta performance faria", request.highPerformance());
         appendLine(description, "Uso do resultado", request.resultUse());
         return truncateDescription(description.toString().trim());
     }

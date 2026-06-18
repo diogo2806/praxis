@@ -59,7 +59,6 @@ function Page() {
           Esta tela mostra os indicadores reais de quem já respondeu, calculados pelo sistema.
         </p>
       </div>
-
       {!hasContext ? (
         <EmptyState
           title="Selecione uma versão para acompanhar"
@@ -107,14 +106,20 @@ function Page() {
           <div className="mt-8 flex justify-between">
             <Link
               to="/nova/validador"
-              search={{ simulationId: search.simulationId, versionNumber: search.versionNumber }}
+              search={{
+                simulationId: search.simulationId,
+                versionNumber: search.versionNumber,
+              }}
               className="rounded-md border border-border bg-card px-4 py-2 text-sm hover:bg-accent"
             >
               Voltar: Validador
             </Link>
             <Link
               to="/nova/mapa"
-              search={{ simulationId: search.simulationId, versionNumber: search.versionNumber }}
+              search={{
+                simulationId: search.simulationId,
+                versionNumber: search.versionNumber,
+              }}
               className="rounded-md bg-primary px-5 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
             >
               Ver mapa & score

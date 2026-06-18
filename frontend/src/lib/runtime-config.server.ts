@@ -9,14 +9,11 @@ import process from "node:process";
 // the browser config; src/server.ts proxies same-origin API calls instead.
 export function resolveRuntimeConfigFromEnv(): {
   apiBaseUrl?: string;
-  demoMode?: boolean;
 } {
   const apiBaseUrl =
     process.env.VITE_PRAXIS_BROWSER_API_BASE_URL ?? process.env.PRAXIS_BROWSER_API_BASE_URL;
-  const demoMode = process.env.VITE_PRAXIS_DEMO_MODE ?? process.env.PRAXIS_DEMO_MODE;
 
-  const config: { apiBaseUrl?: string; demoMode?: boolean } = {};
+  const config: { apiBaseUrl?: string } = {};
   if (apiBaseUrl) config.apiBaseUrl = apiBaseUrl.replace(/\/$/, "");
-  if (demoMode != null && demoMode !== "") config.demoMode = demoMode === "true";
   return config;
 }

@@ -4,7 +4,7 @@ import br.com.iforce.praxis.gupy.delivery.dto.ProcessReadyDeliveriesResponse;
 import br.com.iforce.praxis.gupy.delivery.dto.ReprocessDeliveryResponse;
 import br.com.iforce.praxis.gupy.delivery.dto.ResultDeliveryResponse;
 import br.com.iforce.praxis.gupy.delivery.model.ResultDeliveryStatus;
-import br.com.iforce.praxis.gupy.delivery.service.ResultDeliveryService;
+import br.com.iforce.praxis.gupy.delivery.service.OutboxResultDeliveryService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.ResponseEntity;
@@ -22,9 +22,9 @@ import java.util.List;
 @Tag(name = "Gupy Result Delivery", description = "Fila de entrega assíncrona de resultados para result_webhook_url.")
 public class ResultDeliveryController {
 
-    private final ResultDeliveryService resultDeliveryService;
+    private final OutboxResultDeliveryService resultDeliveryService;
 
-    public ResultDeliveryController(ResultDeliveryService resultDeliveryService) {
+    public ResultDeliveryController(OutboxResultDeliveryService resultDeliveryService) {
         this.resultDeliveryService = resultDeliveryService;
     }
 

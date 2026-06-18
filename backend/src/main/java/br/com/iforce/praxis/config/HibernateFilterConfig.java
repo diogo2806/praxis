@@ -1,5 +1,6 @@
 package br.com.iforce.praxis.config;
 
+import br.com.iforce.praxis.shared.jpa.TenantHibernateInterceptor;
 import org.springframework.boot.autoconfigure.orm.jpa.HibernatePropertiesCustomizer;
 import org.springframework.stereotype.Component;
 
@@ -10,7 +11,6 @@ public class HibernateFilterConfig implements HibernatePropertiesCustomizer {
 
     @Override
     public void customize(Map<String, Object> hibernateProperties) {
-        // Hibernate filters são configurados via anotações nas entidades
-        // Este componente serve como ponto de hook para configurações futuras
+        hibernateProperties.put("hibernate.session_factory.interceptor", new TenantHibernateInterceptor());
     }
 }

@@ -13,7 +13,7 @@ import jakarta.validation.constraints.Size;
 import java.util.List;
 
 @SumWeightsEqualsOne
-@Schema(description = "Payload para atualizar o blueprint estrutural de uma versao de simulacao.")
+@Schema(description = "Payload para atualizar o plano estrutural de uma versao de simulacao.")
 public record UpdateBlueprintRequest(
         @NotBlank
         @Size(max = 120)

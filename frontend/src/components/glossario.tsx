@@ -12,16 +12,17 @@ import { cn } from "@/lib/utils";
  * explicação ao passar o mouse ou ao focar pelo teclado.
  */
 export const glossario = {
-  "score-rubrica":
+  "pontuacao-criterios":
     "Pontuação por critérios definidos: cada ponto segue uma regra clara, não por opinião.",
-  rubrica: "Tabela de critérios que diz quantos pontos cada resposta vale.",
+  "criterios-pontuacao":
+    "Critérios de pontuação: regras simples que dizem quantos pontos cada resposta vale.",
   "decisao-contexto":
     "Escolha baseada na situação: avaliar a pessoa pela decisão que toma diante de um cenário real, e não por uma prova teórica.",
   "trilha-auditavel":
     "Histórico completo de alterações: registro de todos os passos da avaliação, que pode ser conferido depois por outra pessoa.",
   "score-auditavel":
     "Cada ponto da nota pode ser conferido: dá para ver de qual regra e de qual resposta ele veio.",
-  blueprint: "Modelo base (o plano) da avaliação: define o cargo, a situação e o que será medido.",
+  blueprint: "Plano da avaliação: define o cargo, a situação e o que será medido.",
   validador:
     "Etapa que confere se a avaliação realmente mede o que prometeu antes de ser publicada.",
   calibracao: "Ajuste da avaliação com base em dados reais para que as notas fiquem justas.",

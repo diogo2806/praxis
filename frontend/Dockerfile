@@ -9,9 +9,7 @@ WORKDIR /app
 # must be present here (not only at container runtime). On EasyPanel the
 # service's environment variables are passed as build args automatically.
 ARG VITE_PRAXIS_API_BASE_URL
-ARG VITE_PRAXIS_DEMO_MODE
 ENV VITE_PRAXIS_API_BASE_URL=${VITE_PRAXIS_API_BASE_URL}
-ENV VITE_PRAXIS_DEMO_MODE=${VITE_PRAXIS_DEMO_MODE}
 ENV CI=true
 ENV NO_COLOR=1
 ENV FORCE_COLOR=0

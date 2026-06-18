@@ -189,20 +189,16 @@ const ChartTooltipContent = React.forwardRef<
                       ) : (
                         !hideIndicator && (
                           <div
-                            className={cn(
-                              "shrink-0 rounded-[2px] border-(--color-border) bg-(--color-bg)",
-                              {
-                                "h-2.5 w-2.5": indicator === "dot",
-                                "w-1": indicator === "line",
-                                "w-0 border-[1.5px] border-dashed bg-transparent":
-                                  indicator === "dashed",
-                                "my-0.5": nestLabel && indicator === "dashed",
-                              },
-                            )}
+                            className={cn("praxis-chart-indicator", {
+                              "praxis-chart-indicator-dot": indicator === "dot",
+                              "praxis-chart-indicator-line": indicator === "line",
+                              "praxis-chart-indicator-dashed": indicator === "dashed",
+                              "praxis-chart-indicator-nested-dashed":
+                                nestLabel && indicator === "dashed",
+                            })}
                             style={
                               {
-                                "--color-bg": indicatorColor,
-                                "--color-border": indicatorColor,
+                                "--praxis-chart-indicator-color": indicatorColor,
                               } as React.CSSProperties
                             }
                           />
@@ -280,10 +276,12 @@ const ChartLegendContent = React.forwardRef<
                 <itemConfig.icon />
               ) : (
                 <div
-                  className="h-2 w-2 shrink-0 rounded-[2px]"
-                  style={{
-                    backgroundColor: item.color,
-                  }}
+                  className="praxis-chart-legend-swatch"
+                  style={
+                    {
+                      "--praxis-chart-legend-color": item.color,
+                    } as React.CSSProperties
+                  }
                 />
               )}
               {itemConfig?.label}

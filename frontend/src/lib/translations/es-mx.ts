@@ -26,7 +26,7 @@ export const esMx = {
     gupyConnectionError: "Error en la integración de Gupy",
     couldNotConfirmSubmission: "No se pudo confirmar el envío del resultado.",
     openDiagnostics: "Abrir diagnósticos",
-    viewAdvancedSettings: "Ver configuración avanzada",
+    viewAdvancedSettings: "Ver modo técnico",
     viewCommercialMode: "Ver modo comercial",
     integrationGupy: "Integración Gupy - v0.1",
     testCreator: "Creador de Pruebas de Situación (SJT)",

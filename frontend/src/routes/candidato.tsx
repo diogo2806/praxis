@@ -1,15 +1,37 @@
 import { createFileRoute, Link, Outlet, useChildMatches } from "@tanstack/react-router";
-import { useMutation, useQuery } from "@tanstack/react-query";
-import { useEffect, useState } from "react";
-import { Pause, Play, RotateCcw, ShieldCheck, Wifi, WifiOff } from "lucide-react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useEffect, useState, type CSSProperties } from "react";
+import {
+  ExternalLink,
+  Pause,
+  Play,
+  RotateCcw,
+  Share2,
+  ShieldCheck,
+  Wifi,
+  WifiOff,
+} from "lucide-react";
 import { AppShell } from "@/components/app-shell";
 import { EmptyState, ScreenStateStrip, StateBanner } from "@/components/praxis-ui";
 import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  createCandidateLink,
   getCandidateAttempt,
+  listCandidateLinks,
+  listSimulations,
   submitCandidateAnswer,
   type CandidateAttemptResponse,
+  type CandidateLinkResponse,
   type CandidateNodeResponse,
   type MediaType,
+  type SimulationSummaryResponse,
 } from "@/lib/api/praxis";
 import { cn } from "@/lib/utils";
 import { useViewMode } from "@/lib/view-mode";
@@ -17,10 +39,10 @@ import { useViewMode } from "@/lib/view-mode";
 export const Route = createFileRoute("/candidato")({
   head: () => ({
     meta: [
-      { title: "Visão do Candidato - Praxis" },
+      { title: "Avaliação do Candidato - Praxis" },
       {
         name: "description",
-        content: "Experiência mobile-first com timer, chat, retomada e acessibilidade.",
+        content: "Experiência mobile-first com timer, respostas claras, retomada e acessibilidade.",
       },
     ],
   }),
@@ -37,7 +59,7 @@ function CandidateRouteLayout() {
   if (childMatches.length > 0) {
     return <Outlet />;
   }
-  return <CandidateEntryPage />;
+  return <CandidateLinksPage />;
 }
 
 function CandidateEntryPage() {
@@ -48,7 +70,7 @@ function CandidateEntryPage() {
     <AppShell>
       <EmptyState
         title="Código de acesso obrigatório"
-        description="Para visualizar o teste do candidato, use o código de acesso enviado pelo convite. Cole aqui ou abra o link do e-mail."
+        description="Para abrir a avaliação, use o código de acesso enviado pelo convite. Cole aqui ou abra o link do e-mail."
         actions={
           <div className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_auto_auto]">
             <input
@@ -64,7 +86,7 @@ function CandidateEntryPage() {
                 !normalizedToken ? "pointer-events-none opacity-50" : ""
               }`}
             >
-              Abrir tentativa
+              Abrir avaliação
             </Link>
             <Link
               to="/"
@@ -75,6 +97,216 @@ function CandidateEntryPage() {
           </div>
         }
       />
+    </AppShell>
+  );
+}
+
+function CandidateLinksPage() {
+  const queryClient = useQueryClient();
+  const [candidateName, setCandidateName] = useState("");
+  const [candidateEmail, setCandidateEmail] = useState("");
+  const [selectedSimulationId, setSelectedSimulationId] = useState("");
+
+  const simulationsQuery = useQuery({
+    queryKey: ["simulations"],
+    queryFn: listSimulations,
+    retry: false,
+  });
+  const candidateLinksQuery = useQuery({
+    queryKey: ["candidate-links"],
+    queryFn: listCandidateLinks,
+    retry: false,
+  });
+
+  const publishedSimulations = (simulationsQuery.data ?? []).filter(
+    (simulation) => simulation.status === "published",
+  );
+  const selectedSimulation =
+    publishedSimulations.find((simulation) => simulation.id === selectedSimulationId) ??
+    publishedSimulations[0] ??
+    null;
+  const canGenerate =
+    Boolean(selectedSimulation) && candidateName.trim().length > 0 && candidateEmail.includes("@");
+
+  useEffect(() => {
+    if (!selectedSimulationId && publishedSimulations.length > 0) {
+      setSelectedSimulationId(publishedSimulations[0].id);
+    }
+  }, [publishedSimulations, selectedSimulationId]);
+
+  const linkMutation = useMutation({
+    mutationFn: createCandidateLink,
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["candidate-links"] });
+      setCandidateName("");
+      setCandidateEmail("");
+    },
+  });
+
+  function handleSubmit() {
+    if (!canGenerate || !selectedSimulation) return;
+    linkMutation.mutate({
+      simulationId: selectedSimulation.id,
+      candidateName: candidateName.trim(),
+      candidateEmail: candidateEmail.trim(),
+    });
+  }
+
+  async function handleShare(row: CandidateLinkResponse) {
+    const text = `Olá ${row.candidateName}, você foi convidado(a) para uma avaliação. Acesse: ${row.candidateUrl}`;
+    if (navigator.share) {
+      await navigator.share({
+        title: row.simulationName,
+        text,
+        url: row.candidateUrl,
+      });
+      return;
+    }
+    await navigator.clipboard.writeText(text);
+  }
+
+  const rows = candidateLinksQuery.data ?? [];
+
+  return (
+    <AppShell>
+      <ScreenStateStrip blockedReason="sem avaliações publicadas para gerar link" />
+
+      <div className="mb-6">
+        <div className="text-xs uppercase text-primary">Candidatos</div>
+        <h1 className="mt-1 text-3xl font-semibold">Links de candidatos</h1>
+        <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
+          Gere o acesso e acompanhe em uma tabela com nome, email, link clicavel e compartilhamento.
+        </p>
+      </div>
+
+      {simulationsQuery.isError && (
+        <StateBanner tone="danger" title="Não foi possível carregar avaliações">
+          {simulationsQuery.error instanceof Error
+            ? simulationsQuery.error.message
+            : "Verifique se o servidor está disponível."}
+        </StateBanner>
+      )}
+
+      {candidateLinksQuery.isError && (
+        <StateBanner tone="danger" title="Nao foi possivel carregar links de candidatos">
+          {candidateLinksQuery.error instanceof Error
+            ? candidateLinksQuery.error.message
+            : "Verifique se o servidor está disponível."}
+        </StateBanner>
+      )}
+
+      {linkMutation.isError && (
+        <StateBanner tone="danger" title="Nao foi possivel gerar o link">
+          {linkMutation.error instanceof Error
+            ? linkMutation.error.message
+            : "Verifique os dados do candidato e tente novamente."}
+        </StateBanner>
+      )}
+
+      <section className="mb-6 rounded-md border border-border bg-card p-5">
+        <div className="grid gap-3 lg:grid-cols-[minmax(180px,1fr)_minmax(180px,1fr)_minmax(220px,1fr)_auto]">
+          <label className="space-y-1 text-sm">
+            <span className="font-medium">Nome</span>
+            <input
+              className="input"
+              placeholder="Nome do candidato"
+              value={candidateName}
+              onChange={(event) => setCandidateName(event.target.value)}
+            />
+          </label>
+          <label className="space-y-1 text-sm">
+            <span className="font-medium">Email</span>
+            <input
+              className="input"
+              placeholder="email@empresa.com"
+              type="email"
+              value={candidateEmail}
+              onChange={(event) => setCandidateEmail(event.target.value)}
+            />
+          </label>
+          <label className="space-y-1 text-sm">
+            <span className="font-medium">Avaliação</span>
+            <select
+              className="input"
+              value={selectedSimulation?.id ?? ""}
+              onChange={(event) => setSelectedSimulationId(event.target.value)}
+              disabled={simulationsQuery.isLoading || publishedSimulations.length === 0}
+            >
+              {publishedSimulations.map((simulation: SimulationSummaryResponse) => (
+                <option key={simulation.id} value={simulation.id}>
+                  {simulation.name}
+                </option>
+              ))}
+            </select>
+          </label>
+          <div className="flex items-end">
+            <button
+              type="button"
+              onClick={handleSubmit}
+              disabled={!canGenerate || linkMutation.isPending}
+              className="inline-flex h-11 w-full items-center justify-center rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50 lg:w-auto"
+            >
+              {linkMutation.isPending ? "Gerando..." : "Gerar link"}
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <section className="rounded-md border border-border bg-card">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Nome</TableHead>
+              <TableHead>Email</TableHead>
+              <TableHead>Link</TableHead>
+              <TableHead className="text-right">Acao</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {candidateLinksQuery.isLoading ? (
+              <TableRow>
+                <TableCell colSpan={4} className="py-8 text-center text-sm text-muted-foreground">
+                  Carregando links de candidatos...
+                </TableCell>
+              </TableRow>
+            ) : rows.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={4} className="py-8 text-center text-sm text-muted-foreground">
+                  Nenhum link gerado ainda.
+                </TableCell>
+              </TableRow>
+            ) : (
+              rows.map((row) => (
+                <TableRow key={row.attemptId}>
+                  <TableCell className="font-medium">{row.candidateName}</TableCell>
+                  <TableCell>{row.candidateEmail}</TableCell>
+                  <TableCell className="max-w-[420px]">
+                    <a
+                      href={row.candidateUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex max-w-full items-center gap-2 text-primary hover:underline"
+                    >
+                      <span className="truncate">{row.candidateUrl}</span>
+                      <ExternalLink className="h-4 w-4 shrink-0" />
+                    </a>
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <button
+                      type="button"
+                      onClick={() => void handleShare(row)}
+                      className="inline-flex items-center gap-2 rounded-md border border-border bg-card px-3 py-2 text-sm font-medium hover:bg-accent"
+                    >
+                      <Share2 className="h-4 w-4" />
+                      Compartilhar
+                    </button>
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
+          </TableBody>
+        </Table>
+      </section>
     </AppShell>
   );
 }
@@ -135,15 +367,15 @@ export function CandidateExperience({ token }: { token: string }) {
       node: CandidateNodeResponse;
       optionId?: string | null;
       timedOut: boolean;
-    }) => submitCandidateAnswer(token, { nodeId: node.id, optionId, timedOut }),
+    }) => submitCandidateAnswer(token, { respostaId: optionId, tempoEsgotado: timedOut }),
     onSuccess: (response) => {
       setLiveAttempt({
-        attemptId: response.attemptId,
-        simulationName:
-          liveAttempt?.simulationName ?? attemptQuery.data?.simulationName ?? "Praxis",
+        participacaoId: response.participacaoId,
+        avaliacaoNome:
+          liveAttempt?.avaliacaoNome ?? attemptQuery.data?.avaliacaoNome ?? "Praxis",
         status: response.status,
-        completed: response.completed,
-        currentNode: response.currentNode,
+        finalizado: response.finalizado,
+        etapaAtual: response.etapaAtual,
       });
       setSelected(null);
       setPaused(false);
@@ -151,15 +383,15 @@ export function CandidateExperience({ token }: { token: string }) {
   });
 
   const attempt = liveAttempt ?? attemptQuery.data;
-  const currentNode = attempt?.currentNode ?? null;
-  const finished = Boolean(attempt && (attempt.completed || !currentNode));
+  const currentNode = attempt?.etapaAtual ?? null;
+  const finished = Boolean(attempt && (attempt.finalizado || !currentNode));
   const showTurn = Boolean(currentNode && !finished);
-  const timeLimit = currentNode?.timeLimitSeconds ?? 30;
+  const timeLimit = currentNode?.tempoLimiteSegundos ?? 30;
 
   useEffect(() => {
     setRemaining(timeLimit);
     setSelected(null);
-  }, [currentNode?.id, timeLimit]);
+  }, [currentNode?.numero, timeLimit]);
 
   useEffect(() => {
     if (paused || finished || answerMutation.isPending) return;
@@ -171,7 +403,7 @@ export function CandidateExperience({ token }: { token: string }) {
 
   useEffect(() => {
     if (remaining === 0 && !finished && currentNode && !selected) {
-      setSelected("Sem resposta neste turno");
+      setSelected("Sem resposta nesta etapa");
       answerMutation.mutate({ node: currentNode, timedOut: true });
     }
   }, [answerMutation, currentNode, finished, remaining, selected]);
@@ -181,25 +413,25 @@ export function CandidateExperience({ token }: { token: string }) {
 
   return (
     <AppShell>
-      <ScreenStateStrip blockedReason="link expirado ou tentativa abandonada fora da janela" />
+      <ScreenStateStrip blockedReason="link expirado ou participação abandonada fora da janela" />
       <div className="mb-5">
-        <div className="text-xs uppercase text-primary">Visão do candidato</div>
+        <div className="text-xs uppercase text-primary">Avaliação do candidato</div>
         <h1 className="mt-1 text-3xl font-semibold">
-          {attempt?.simulationName ?? "Simulação situacional"}
+          {attempt?.avaliacaoNome ?? "Avaliação"}
         </h1>
         <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
-          Chat estruturado, timer legível, navegação por teclado e retomada após queda.
+          Uma situação por vez, timer claro, respostas objetivas e retomada após queda.
         </p>
       </div>
 
       {attemptQuery.isLoading && (
-        <StateBanner tone="info" title="Carregando tentativa">
-          Buscando a simulação e o turno atual no sistema.
+        <StateBanner tone="info" title="Carregando participação">
+          Buscando a avaliação e a etapa atual.
         </StateBanner>
       )}
 
       {attemptQuery.isError && (
-        <StateBanner tone="danger" title="Não foi possível carregar a tentativa">
+        <StateBanner tone="danger" title="Não foi possível carregar a participação">
           {attemptQuery.error instanceof Error
             ? attemptQuery.error.message
             : "Verifique se o servidor está rodando e se o código de acesso é válido."}
@@ -214,7 +446,7 @@ export function CandidateExperience({ token }: { token: string }) {
 
       {offline && (
         <StateBanner tone="warn" title="Conexão perdida - reconectando">
-          A resposta salva no último turno será retomada automaticamente quando a conexão voltar.
+          A resposta salva na última etapa será retomada automaticamente quando a conexão voltar.
         </StateBanner>
       )}
 
@@ -235,26 +467,30 @@ export function CandidateExperience({ token }: { token: string }) {
                   <div className="mb-4">
                     <div className="mb-1 flex items-center justify-between text-xs">
                       <span aria-live="polite">{remaining}s restantes</span>
-                      <span>{paused ? "pausado" : `turno ${currentNode?.turnIndex ?? 1}`}</span>
+                      <span>{paused ? "pausado" : `etapa ${currentNode?.numero ?? 1}`}</span>
                     </div>
                     <div
-                      className="h-2 overflow-hidden rounded-full bg-muted"
+                      className="praxis-progress-track praxis-progress-track-md"
                       aria-label={`${remaining} segundos restantes`}
                       role="timer"
                     >
                       <div
-                        className={cn("h-full rounded-full transition-all", timerTone)}
-                        style={{ width: `${pct * 100}%` }}
+                        className={cn("praxis-progress-fill transition-all", timerTone)}
+                        style={
+                          {
+                            "--praxis-progress-value": `${pct * 100}%`,
+                          } as CSSProperties
+                        }
                       />
                     </div>
                   </div>
                   <div className="space-y-3" aria-live="polite">
                     <div className="mr-8 space-y-2 rounded-md bg-muted px-3 py-2 text-sm">
-                      <div>{currentNode?.message}</div>
-                      {currentNode?.mediaUrl && (
+                      <div>{currentNode?.descricao}</div>
+                      {currentNode?.midiaUrl && (
                         <CandidateMedia
-                          mediaUrl={currentNode.mediaUrl}
-                          mediaType={currentNode.mediaType ?? null}
+                          mediaUrl={currentNode.midiaUrl}
+                          mediaType={currentNode.tipoMidia ?? null}
                         />
                       )}
                     </div>
@@ -271,7 +507,7 @@ export function CandidateExperience({ token }: { token: string }) {
                   </div>
                   {!selected && (
                     <div className="mt-5 space-y-2">
-                      {(currentNode?.options ?? []).map((option) => (
+                      {(currentNode?.alternativas ?? []).map((option) => (
                         <div
                           key={option.id}
                           className="space-y-2 rounded-md border border-border bg-card p-2 hover:border-primary"
@@ -279,7 +515,7 @@ export function CandidateExperience({ token }: { token: string }) {
                           <button
                             type="button"
                             onClick={() => {
-                              setSelected(option.text);
+                              setSelected(option.texto);
                               if (currentNode) {
                                 answerMutation.mutate({
                                   node: currentNode,
@@ -291,12 +527,12 @@ export function CandidateExperience({ token }: { token: string }) {
                             disabled={answerMutation.isPending}
                             className="w-full rounded-md p-1 text-left text-sm hover:bg-primary/5 disabled:cursor-not-allowed disabled:opacity-60"
                           >
-                            {option.text}
+                            {option.texto}
                           </button>
-                          {option.mediaUrl && (
+                          {option.midiaUrl && (
                             <CandidateMedia
-                              mediaUrl={option.mediaUrl}
-                              mediaType={option.mediaType ?? null}
+                              mediaUrl={option.midiaUrl}
+                              mediaType={option.tipoMidia ?? null}
                             />
                           )}
                         </div>
@@ -307,17 +543,17 @@ export function CandidateExperience({ token }: { token: string }) {
               ) : attemptQuery.isLoading ? (
                 <div className="flex min-h-[560px] flex-col justify-center">
                   <div className="text-xs uppercase text-primary">Carregando</div>
-                  <h2 className="mt-2 text-2xl font-semibold">Preparando sua simulação.</h2>
+                  <h2 className="mt-2 text-2xl font-semibold">Preparando sua avaliação.</h2>
                   <p className="mt-2 text-sm text-muted-foreground">
-                    Buscando o turno atual e as alternativas disponíveis.
+                    Buscando a etapa atual e as respostas disponíveis.
                   </p>
                 </div>
               ) : (
                 <div className="flex min-h-[560px] flex-col justify-center">
-                  <div className="text-xs uppercase text-success">Tentativa finalizada</div>
+                  <div className="text-xs uppercase text-success">Participação finalizada</div>
                   <h2 className="mt-2 text-2xl font-semibold">Obrigado por participar.</h2>
                   <p className="mt-2 text-sm text-muted-foreground">
-                    O resultado será processado pelo sistema e entregue para o fluxo configurado.
+                    O resultado será processado e entregue para a equipe responsável.
                   </p>
                 </div>
               )}
@@ -369,14 +605,14 @@ export function CandidateExperience({ token }: { token: string }) {
                   className="inline-flex items-center gap-2 rounded-md border border-border bg-card px-3 py-2 text-sm hover:bg-accent"
                 >
                   <RotateCcw className="h-4 w-4" />
-                  Reiniciar turno
+                  Reiniciar etapa
                 </button>
               </div>
             </div>
           )}
 
-          <StateBanner tone="info" title="Tempo esgotado encerra só o turno">
-            Quando chega a zero, registra sem resposta e avança. A simulação inteira não fecha.
+          <StateBanner tone="info" title="Tempo esgotado encerra a etapa">
+            Quando chega a zero, registra sem resposta e segue o fluxo configurado.
           </StateBanner>
         </aside>
       </div>

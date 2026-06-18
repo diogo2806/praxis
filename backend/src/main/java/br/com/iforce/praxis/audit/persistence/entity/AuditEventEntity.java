@@ -1,6 +1,7 @@
 package br.com.iforce.praxis.audit.persistence.entity;
 
 import br.com.iforce.praxis.audit.model.AuditEventType;
+import br.com.iforce.praxis.shared.jpa.TenantAwareEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -20,7 +21,7 @@ import java.time.Instant;
 @NoArgsConstructor
 @Entity
 @Table(name = "audit_events")
-public class AuditEventEntity {
+public class AuditEventEntity implements TenantAwareEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

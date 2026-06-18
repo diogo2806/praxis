@@ -1,6 +1,7 @@
 package br.com.iforce.praxis.gupy.delivery.service;
 
 import br.com.iforce.praxis.config.PraxisProperties;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.net.Inet6Address;
@@ -13,9 +14,14 @@ import java.util.Locale;
 public class GupyOutboundUrlValidator {
 
     private final PraxisProperties praxisProperties;
+    private final boolean securityEnabled;
 
-    public GupyOutboundUrlValidator(PraxisProperties praxisProperties) {
+    public GupyOutboundUrlValidator(
+            PraxisProperties praxisProperties,
+            @Value("${praxis.security.enabled:true}") boolean securityEnabled
+    ) {
         this.praxisProperties = praxisProperties;
+        this.securityEnabled = securityEnabled;
     }
 
     public URI validate(String outboundUrl) {
@@ -25,6 +31,9 @@ public class GupyOutboundUrlValidator {
 
         if (!scheme.equals("https") && !scheme.equals("http")) {
             throw new IllegalArgumentException("URL externa deve usar HTTP ou HTTPS.");
+        }
+        if (securityEnabled && !scheme.equals("https")) {
+            throw new IllegalArgumentException("URL externa deve usar HTTPS em producao.");
         }
         if (host.isBlank() || uri.getUserInfo() != null) {
             throw new IllegalArgumentException("URL externa invalida.");

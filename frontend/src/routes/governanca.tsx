@@ -69,7 +69,6 @@ function GovernanceHub() {
           reprocessamento restrito a admin.
         </p>
       </div>
-
       {hasGovernanceParams && auditQuery.isLoading && (
         <StateBanner tone="info" title={t.governance.auditRecordConnected}>
           Buscando eventos da simulação {search.simulationId} v{search.versionNumber}.
@@ -99,7 +98,7 @@ function GovernanceHub() {
         </StateBanner>
       )}
 
-      <div className="mt-5 grid gap-5 lg:grid-cols-[minmax(0,1fr)_340px]">
+      <div className="mt-5 space-y-5">
         <section className="rounded-md border border-border bg-card p-5">
           <h2 className="text-sm font-semibold">
             <Termo id="auditlog">AuditLog</Termo> (registro de auditoria) imutável
@@ -107,52 +106,58 @@ function GovernanceHub() {
           {hasGovernanceParams ? (
             <AuditEventList events={auditQuery.data ?? []} loading={auditQuery.isLoading} />
           ) : (
-            <SimulationLinks
-              loading={simulationsQuery.isLoading}
-              simulations={simulationsQuery.data ?? []}
-            />
+            <>
+              <SimulationLinks
+                loading={simulationsQuery.isLoading}
+                simulations={simulationsQuery.data ?? []}
+              />
+            </>
           )}
         </section>
         <aside className="space-y-3">
           <StateBanner tone="warn" title="Edição de publicada cria nova versão">
             Candidatos em andamento continuam na versão atual.
           </StateBanner>
-          <button
-            type="button"
-            onClick={() => setVersionDialogOpen(true)}
-            className="inline-flex w-full items-center justify-center gap-2 rounded-md border border-border bg-card px-4 py-2 text-sm hover:bg-accent disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            <RefreshCw className="h-4 w-4" />
-            {hasGovernanceParams
-              ? `Criar nova versão a partir da v${search.versionNumber}`
-              : "Selecione uma versão"}
-          </button>
-          <button
-            disabled
-            className="inline-flex w-full cursor-not-allowed items-center justify-center gap-2 rounded-md border border-border bg-card px-4 py-2 text-sm opacity-60"
-          >
-            <ArchiveRestore className="h-4 w-4" />
-            Restaurar arquivada
-          </button>
+          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+            <button
+              type="button"
+              onClick={() => setVersionDialogOpen(true)}
+              className="inline-flex min-h-10 items-center justify-center gap-2 rounded-md border border-border bg-card px-4 py-2 text-sm hover:bg-accent disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              <RefreshCw className="h-4 w-4 shrink-0" />
+              <span className="min-w-0 truncate">
+                {hasGovernanceParams
+                  ? `Criar nova versão a partir da v${search.versionNumber}`
+                  : "Selecione uma versão"}
+              </span>
+            </button>
+            <button
+              disabled
+              className="inline-flex min-h-10 cursor-not-allowed items-center justify-center gap-2 rounded-md border border-border bg-card px-4 py-2 text-sm opacity-60"
+            >
+              <ArchiveRestore className="h-4 w-4 shrink-0" />
+              Restaurar arquivada
+            </button>
+            <Link
+              to="/nova/publicacao"
+              className="inline-flex min-h-10 items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground"
+            >
+              Ver etapa do guia (wizard)
+            </Link>
+            <Link
+              to="/"
+              className="inline-flex min-h-10 items-center justify-center rounded-md border border-border bg-card px-4 py-2 text-sm hover:bg-accent"
+            >
+              Voltar ao painel
+            </Link>
+          </div>
           <div className="flex items-start gap-2 rounded-md border border-border bg-muted/40 p-3 text-xs text-muted-foreground">
             <Lock className="mt-0.5 h-3.5 w-3.5" />
             <span>
-              Publicar com <Termo id="blocker">bloqueio</Termo> é impedido na mudança de
-              estado, não apenas no registro.
+              Publicar com <Termo id="blocker">bloqueio</Termo> é impedido na mudança de estado, não
+              apenas no registro.
             </span>
           </div>
-          <Link
-            to="/nova/publicacao"
-            className="inline-flex w-full justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground"
-          >
-            Ver etapa do guia (wizard)
-          </Link>
-          <Link
-            to="/"
-            className="inline-flex w-full justify-center rounded-md border border-border bg-card px-4 py-2 text-sm hover:bg-accent"
-          >
-            Voltar ao painel
-          </Link>
         </aside>
       </div>
       {versionDialogOpen && (
@@ -165,7 +170,8 @@ function GovernanceHub() {
                 : "Escolha uma simulação real antes de criar nova versão."}
             </p>
             <div className="mt-4 rounded-md border border-border bg-muted/45 p-3 text-xs text-muted-foreground">
-              Um erro de digitação conta como mudança menor. Mudanças em pontuação, peso ou no fluxo da conversa contam como mudança maior.
+              Um erro de digitação conta como mudança menor. Mudanças em pontuação, peso ou no fluxo
+              da conversa contam como mudança maior.
             </div>
             <div className="mt-5 flex justify-end gap-2">
               <button

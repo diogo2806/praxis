@@ -2,6 +2,7 @@ package br.com.iforce.praxis.gupy.delivery.service;
 
 import br.com.iforce.praxis.gupy.persistence.entity.CandidateAttemptEntity;
 import org.junit.jupiter.api.Test;
+import org.springframework.core.task.SyncTaskExecutor;
 
 import java.util.concurrent.TimeUnit;
 
@@ -15,7 +16,7 @@ class GupyCompletionCallbackServiceTest {
     @Test
     void notifyCompletionCallsCallbackUrlWhenEnabled() {
         GupyCompletionCallbackClient callbackClient = mock(GupyCompletionCallbackClient.class);
-        GupyCompletionCallbackService service = new GupyCompletionCallbackService(callbackClient, true);
+        GupyCompletionCallbackService service = new GupyCompletionCallbackService(callbackClient, new SyncTaskExecutor(), true);
 
         CandidateAttemptEntity attempt = new CandidateAttemptEntity();
         attempt.setId("att_123");
@@ -30,7 +31,7 @@ class GupyCompletionCallbackServiceTest {
     @Test
     void notifyCompletionDoesNothingWhenDisabled() {
         GupyCompletionCallbackClient callbackClient = mock(GupyCompletionCallbackClient.class);
-        GupyCompletionCallbackService service = new GupyCompletionCallbackService(callbackClient, false);
+        GupyCompletionCallbackService service = new GupyCompletionCallbackService(callbackClient, new SyncTaskExecutor(), false);
 
         CandidateAttemptEntity attempt = new CandidateAttemptEntity();
         attempt.setId("att_123");

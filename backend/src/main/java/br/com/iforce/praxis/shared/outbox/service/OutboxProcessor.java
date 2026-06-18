@@ -1,5 +1,7 @@
 package br.com.iforce.praxis.shared.outbox.service;
 
+import br.com.iforce.praxis.gupy.delivery.service.ResultWebhookClient;
+import br.com.iforce.praxis.gupy.delivery.service.GupyOutboundUrlValidator;
 import br.com.iforce.praxis.gupy.dto.TestResultResponse;
 import br.com.iforce.praxis.gupy.model.PublishedSimulation;
 import br.com.iforce.praxis.gupy.persistence.entity.CandidateAttemptEntity;
@@ -8,21 +10,20 @@ import br.com.iforce.praxis.gupy.service.GupyTestResultMapper;
 import br.com.iforce.praxis.gupy.service.SimulationCatalogService;
 import br.com.iforce.praxis.shared.outbox.persistence.entity.OutboxEventEntity;
 import br.com.iforce.praxis.shared.outbox.persistence.repository.OutboxEventRepository;
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestClientResponseException;
-import org.springframework.web.client.RestTemplate;
 import org.springframework.web.server.ResponseStatusException;
 
-import java.time.Instant;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
+import java.time.Instant;
 
 @Slf4j
 @Component
@@ -32,32 +33,31 @@ public class OutboxProcessor {
     private static final String RESULT_READY_EVENT = "RESULT_READY";
 
     private final OutboxEventRepository outboxEventRepository;
-    private final RestTemplate restTemplate;
+    private final ResultWebhookClient resultWebhookClient;
     private final ObjectMapper objectMapper;
     private final CandidateAttemptRepository candidateAttemptRepository;
     private final SimulationCatalogService simulationCatalogService;
     private final GupyTestResultMapper gupyTestResultMapper;
+    private final GupyOutboundUrlValidator outboundUrlValidator;
 
     public OutboxProcessor(
         OutboxEventRepository outboxEventRepository,
-        RestTemplate restTemplate,
+        ResultWebhookClient resultWebhookClient,
         ObjectMapper objectMapper,
         CandidateAttemptRepository candidateAttemptRepository,
         SimulationCatalogService simulationCatalogService,
-        GupyTestResultMapper gupyTestResultMapper
+        GupyTestResultMapper gupyTestResultMapper,
+        GupyOutboundUrlValidator outboundUrlValidator
     ) {
         this.outboxEventRepository = outboxEventRepository;
-        this.restTemplate = restTemplate;
+        this.resultWebhookClient = resultWebhookClient;
         this.objectMapper = objectMapper;
         this.candidateAttemptRepository = candidateAttemptRepository;
         this.simulationCatalogService = simulationCatalogService;
         this.gupyTestResultMapper = gupyTestResultMapper;
+        this.outboundUrlValidator = outboundUrlValidator;
     }
 
-    /**
-     * Processa eventos pendentes de todos os tenants a cada 5 segundos.
-     */
-    @Scheduled(fixedDelay = 5000)
     @Transactional
     public void processReadyEvents() {
         List<OutboxEventEntity> readyEvents = outboxEventRepository
@@ -80,14 +80,48 @@ public class OutboxProcessor {
         }
     }
 
+    @Transactional
+    public int processReadyEventsForTenant(String tenantId) {
+        List<OutboxEventEntity> readyEvents = outboxEventRepository
+            .findByTenantIdAndStatusInAndNextAttemptAtLessThanEqualOrderByCreatedAtAsc(
+                tenantId,
+                Arrays.asList(
+                    OutboxEventEntity.OutboxEventStatus.PENDING,
+                    OutboxEventEntity.OutboxEventStatus.RETRYING
+                ),
+                Instant.now()
+            );
+
+        for (OutboxEventEntity event : readyEvents) {
+            processEvent(event);
+        }
+        return readyEvents.size();
+    }
+
+    @Transactional
+    public void reprocessEvent(Long eventId, String tenantId) {
+        OutboxEventEntity event = outboxEventRepository.findByIdAndTenantId(eventId, tenantId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Evento de entrega nao encontrado."));
+        if (event.getStatus() == OutboxEventEntity.OutboxEventStatus.SENT) {
+            return;
+        }
+        event.setStatus(OutboxEventEntity.OutboxEventStatus.PENDING);
+        event.setNextAttemptAt(Instant.now());
+        processEvent(event);
+    }
+
     private void processEvent(OutboxEventEntity event) {
         try {
+            event.setLastAttemptAt(Instant.now());
+            event.setAttempts(event.getAttempts() + 1);
             if (RESULT_READY_EVENT.equals(event.getEventType())) {
                 processResultReadyEvent(event);
             }
 
             event.setStatus(OutboxEventEntity.OutboxEventStatus.SENT);
             event.setNextAttemptAt(null);
+            event.setSentAt(Instant.now());
+            event.setLastError(null);
         } catch (Exception ex) {
             handleEventFailure(event, ex);
         }
@@ -97,7 +131,11 @@ public class OutboxProcessor {
         JsonNode payload = parsePayload(event.getPayload());
 
         String webhookUrl = payload.get("webhookUrl").asText();
-        Object testResult = payload.get("testResult");
+        TestResultResponse testResult = null;
+        JsonNode testResultNode = payload.get("testResult");
+        if (testResultNode != null && !testResultNode.isNull()) {
+            testResult = toTestResult(testResultNode);
+        }
 
         if (testResult == null) {
             // Migrated event: need to fetch test result from database
@@ -105,11 +143,12 @@ public class OutboxProcessor {
             testResult = fetchTestResult(attemptId, event.getTenantId());
         }
 
+        outboundUrlValidator.validate(webhookUrl);
         log.debug("Enviando resultado para webhook: {}", webhookUrl);
-        restTemplate.postForObject(webhookUrl, testResult, Void.class);
+        resultWebhookClient.postResult(webhookUrl, testResult);
     }
 
-    private Object fetchTestResult(String attemptId, String tenantId) {
+    private TestResultResponse fetchTestResult(String attemptId, String tenantId) {
         Optional<CandidateAttemptEntity> attempt = candidateAttemptRepository.findByTenantIdAndId(tenantId, attemptId);
         if (attempt.isEmpty()) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "CandidateAttempt nao encontrado: " + attemptId);
@@ -118,6 +157,16 @@ public class OutboxProcessor {
         CandidateAttemptEntity candidateAttemptEntity = attempt.get();
         PublishedSimulation simulation = getSimulation(candidateAttemptEntity);
         return gupyTestResultMapper.toResponse(candidateAttemptEntity, simulation);
+    }
+
+    private TestResultResponse toTestResult(JsonNode testResultNode) {
+        try {
+            return objectMapper.readerFor(TestResultResponse.class)
+                    .without(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+                    .readValue(testResultNode);
+        } catch (Exception exception) {
+            throw new RuntimeException("Falha ao deserializar TestResultResponse do outbox event", exception);
+        }
     }
 
     private PublishedSimulation getSimulation(CandidateAttemptEntity candidateAttemptEntity) {
@@ -139,9 +188,8 @@ public class OutboxProcessor {
     }
 
     private void handleEventFailure(OutboxEventEntity event, Exception exception) {
-        event.setAttempts(event.getAttempts() + 1);
-
         String errorMessage = limitMessage(exception.getMessage());
+        event.setLastError(errorMessage);
         log.warn("Falha ao processar evento {} (tentativa {}): {}", event.getId(), event.getAttempts(), errorMessage);
 
         boolean isContractError = exception instanceof RestClientResponseException responseException
