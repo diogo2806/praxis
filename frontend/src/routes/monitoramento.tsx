@@ -36,11 +36,11 @@ export const Route = createFileRoute("/monitoramento")({
 const deliveryMeta: Record<ResultDeliveryStatus, { label: string; className: string }> = {
   pending: { label: "Pendente", className: "border-border bg-muted text-muted-foreground" },
   retrying: {
-    label: "Retry",
+    label: "Reenviando",
     className: "border-warning/40 bg-warning/15 text-warning-foreground",
   },
   sent: { label: "Enviado", className: "border-success/30 bg-success/10 text-success" },
-  dlq: { label: "DLQ", className: "border-danger/30 bg-danger/10 text-danger" },
+  dlq: { label: "Falha no envio", className: "border-danger/30 bg-danger/10 text-danger" },
 };
 
 function buildLiveCohorts(monitoring?: SimulationMonitoringResponse) {
@@ -169,13 +169,13 @@ function MonitoringPage() {
             tone={failedDeliveries > 0 ? "danger" : riskyDeliveries.length > 0 ? "warn" : "ok"}
             title={
               failedDeliveries > 0
-                ? "Entregas em DLQ exigem ação"
+                ? "Envios com falha precisam de atenção"
                 : riskyDeliveries.length > 0
-                  ? "Entregas em retry"
+                  ? "Resultados sendo reenviados"
                   : "Fila de resultados saudável"
             }
           >
-            {`${sentDeliveries} resultados enviados, ${monitoring?.deliveriesRetrying ?? 0} em retry e ${failedDeliveries} em DLQ.`}
+            {`${sentDeliveries} resultados enviados, ${monitoring?.deliveriesRetrying ?? 0} sendo reenviados e ${failedDeliveries} com falha.`}
           </StateBanner>
 
           <div className="grid gap-3 md:grid-cols-4">
@@ -221,7 +221,7 @@ function MonitoringPage() {
                 <ul className="space-y-2 text-sm">
                   <li className="flex gap-2">
                     <CheckCircle2 className="mt-0.5 h-4 w-4 text-success" />
-                    Retry exponencial ativo
+                    Reenvio automático ativo
                   </li>
                   <li className="flex gap-2">
                     <CheckCircle2 className="mt-0.5 h-4 w-4 text-success" />

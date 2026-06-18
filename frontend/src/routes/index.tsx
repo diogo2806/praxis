@@ -27,7 +27,7 @@ export const Route = createFileRoute("/")({
       { title: "Painel - Praxis" },
       {
         name: "description",
-        content: "Painel: simulacoes ativas, qualidade, maturidade e vinculo com vagas Gupy.",
+        content: "Painel: simulações ativas, qualidade, maturidade e vínculo com vagas Gupy.",
       },
     ],
   }),
@@ -48,7 +48,7 @@ const filterLabels: Record<(typeof filters)[number], string> = {
   todas: "todas",
   published: "publicadas",
   approved: "aprovadas",
-  inReview: "em revisao",
+  inReview: "em revisão",
   draft: "rascunhos",
   rejected: "reprovadas",
   archived: "arquivadas",
@@ -94,7 +94,7 @@ function Dashboard() {
 
   return (
     <AppShell>
-      <ScreenStateStrip blockedReason="workspace sem permissao ou Gupy desconectada" />
+      <ScreenStateStrip blockedReason="espaço de trabalho sem permissão ou Gupy desconectada" />
       <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
         <div>
           <div className="text-xs uppercase text-muted-foreground">Painel</div>
@@ -126,7 +126,7 @@ function Dashboard() {
             className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
           >
             <FilePlus2 className="h-4 w-4" />
-            Nova simulacao
+            Nova simulação
           </Link>
         </div>
       </div>
@@ -136,22 +136,22 @@ function Dashboard() {
           <SkeletonRows rows={5} />
         </section>
       ) : simulationsQuery.isError ? (
-        <StateBanner tone="danger" title="Nao foi possivel carregar as simulacoes">
+        <StateBanner tone="danger" title="Não foi possível carregar as simulações">
           {simulationsQuery.error instanceof Error
             ? simulationsQuery.error.message
-            : "Verifique se o backend esta rodando."}
+            : "Verifique se o sistema está disponível e tente novamente."}
         </StateBanner>
       ) : simulations.length === 0 ? (
         <EmptyState
-          title="Nenhuma simulacao cadastrada"
-          description="O painel depende do backend. Crie ou importe uma simulacao para que ela apareca aqui."
+          title="Nenhuma simulação cadastrada"
+          description="Crie ou importe uma simulação para que ela apareça aqui."
           actions={
             <>
               <Link
                 to="/nova/avaliacao"
                 className="inline-flex items-center justify-between rounded-md border border-primary bg-primary px-4 py-3 text-sm font-medium text-primary-foreground hover:bg-primary/90"
               >
-                Criar primeira simulacao
+                Criar primeira simulação
                 <FilePlus2 className="h-4 w-4" />
               </Link>
               <Link
@@ -167,7 +167,7 @@ function Dashboard() {
       ) : (
         <div className="space-y-6">
           {archiveMutation.isError && (
-            <StateBanner tone="danger" title="Nao foi possivel arquivar a simulacao">
+            <StateBanner tone="danger" title="Não foi possível arquivar a simulação">
               {archiveMutation.error instanceof Error
                 ? archiveMutation.error.message
                 : "Tente novamente."}
@@ -202,9 +202,9 @@ function Dashboard() {
 
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
-              <h2 className="text-xl font-semibold">Simulacoes</h2>
+              <h2 className="text-xl font-semibold">Simulações</h2>
               <p className="text-xs text-muted-foreground">
-                Status tecnico e maturidade aparecem juntos em todas as linhas.
+                Status técnico e maturidade aparecem juntos em todas as linhas.
               </p>
             </div>
             <div className="flex min-w-0 flex-wrap gap-2">
@@ -217,7 +217,7 @@ function Dashboard() {
                   value={query}
                   onChange={(event) => setQuery(event.target.value)}
                   className="input w-64 pl-8"
-                  placeholder="Buscar simulacao"
+                  placeholder="Buscar simulação"
                 />
               </label>
               <div className="inline-flex flex-wrap gap-1 rounded-md border border-border bg-card p-1">
@@ -241,7 +241,7 @@ function Dashboard() {
 
           {filtered.length === 0 ? (
             <EmptyState
-              title="Nenhuma simulacao neste filtro"
+              title="Nenhuma simulação neste filtro"
               description="Ajuste busca, limpe o filtro ou crie um novo rascunho."
               actions={
                 <button
@@ -261,10 +261,10 @@ function Dashboard() {
               <table className="w-full text-sm">
                 <thead className="border-b border-border bg-muted/45 text-xs uppercase text-muted-foreground">
                   <tr>
-                    <th className="px-4 py-3 text-left font-medium">Simulacao</th>
+                    <th className="px-4 py-3 text-left font-medium">Simulação</th>
                     <th className="px-4 py-3 text-left font-medium">Estado</th>
-                    <th className="px-4 py-3 text-left font-medium">Conclusao</th>
-                    <th className="px-4 py-3 text-left font-medium">Versao</th>
+                    <th className="px-4 py-3 text-left font-medium">Conclusão</th>
+                    <th className="px-4 py-3 text-left font-medium">Versão</th>
                     <th className="px-4 py-3 text-left font-medium">Tentativas</th>
                     <th className="px-4 py-3" />
                   </tr>
@@ -324,7 +324,7 @@ function Dashboard() {
                       <td className="px-4 py-3 text-xs tabular-nums">
                         {simulation.attemptsCreated.toLocaleString("pt-BR")}
                         <div className="text-[10px] text-muted-foreground">
-                          {simulation.attemptsCompleted.toLocaleString("pt-BR")} concluidas
+                          {simulation.attemptsCompleted.toLocaleString("pt-BR")} concluídas
                         </div>
                       </td>
                       <td className="px-4 py-3 text-right">

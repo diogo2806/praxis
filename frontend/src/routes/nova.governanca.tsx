@@ -70,7 +70,7 @@ const transitionCopy: Record<
   },
   publish: {
     title: "Publicar versão?",
-    description: "A publicação torna a versão imutável. Bloqueios críticos continuam sem override manual.",
+    description: "A publicação protege a versão contra alterações. Bloqueios críticos continuam sem ajuste manual.",
     cta: "Publicar",
   },
 };
@@ -252,7 +252,7 @@ function Page() {
           search={{ simulationId: search.simulationId, versionNumber: search.versionNumber }}
           className="rounded-md bg-primary px-5 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
         >
-          Gupy Preflight
+          Gupy: verificação
         </Link>
       </div>
 

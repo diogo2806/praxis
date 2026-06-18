@@ -134,7 +134,7 @@ function Page() {
           <StateBanner tone="danger" title="Não foi possível criar o rascunho">
             {createDraftMutation.error instanceof Error
               ? createDraftMutation.error.message
-              : "Tente novamente quando a API estiver disponível."}
+              : "Tente novamente quando o sistema estiver disponível."}
           </StateBanner>
         </div>
       )}
@@ -246,8 +246,8 @@ function Page() {
               </button>
             </div>
             <Help>
-              Ao salvar, a competência entra no catálogo deste tenant e fica disponível só para esta
-              empresa.
+              Ao salvar, a competência entra no catálogo da sua empresa e fica disponível só para
+              ela.
             </Help>
             {addCompetencyMutation.isError && (
               <p className="mt-2 text-xs text-danger">
@@ -256,7 +256,9 @@ function Page() {
                   : "Não foi possível salvar a competência."}
               </p>
             )}
-            <Help>Competências customizadas podem ser mapeadas para a taxonomia interna.</Help>
+            <Help>
+              Competências personalizadas podem ser organizadas no catálogo interno de competências.
+            </Help>
           </Card>
 
           <div className="space-y-6">

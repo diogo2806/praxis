@@ -33,10 +33,10 @@ export const Route = createFileRoute("/nova/gupy")({
   }),
   head: () => ({
     meta: [
-      { title: "Gupy - Ativacao & Conferencia - Praxis" },
+      { title: "Gupy - Ativação & Conferência - Praxis" },
       {
         name: "description",
-        content: "Diagnostico tecnico da integracao do Praxis com testes externos da Gupy.",
+        content: "Diagnóstico técnico da integração do Praxis com testes externos da Gupy.",
       },
     ],
   }),
@@ -44,7 +44,7 @@ export const Route = createFileRoute("/nova/gupy")({
 });
 
 const endpoints = [
-  { method: "GET", path: "/test", description: "lista simulacoes publicadas como Test[]" },
+  { method: "GET", path: "/test", description: "lista simulações publicadas como Test[]" },
   {
     method: "POST",
     path: "/test/candidate",
@@ -53,7 +53,7 @@ const endpoints = [
   {
     method: "GET",
     path: "/test/result/{resultId}",
-    description: "devolve TestResult com score e competencias",
+    description: "devolve TestResult com score e competências",
   },
 ];
 
@@ -96,22 +96,22 @@ function GupyActivation() {
   return (
     <AppShell>
       <WizardStepper current="publicacao" />
-      <ScreenStateStrip blockedReason="checklist de ativacao incompleto bloqueia integracao ativa" />
+      <ScreenStateStrip blockedReason="checklist de ativação incompleto bloqueia integração ativa" />
       <div className="mb-5 flex flex-wrap items-start justify-between gap-4">
         <div>
           <div className="text-xs uppercase text-primary">Passo 4</div>
-          <h1 className="mt-1 text-3xl font-semibold">Gupy - Ativacao & Conferencia</h1>
+          <h1 className="mt-1 text-3xl font-semibold">Gupy - Ativação & Conferência</h1>
           <p className="mt-1 max-w-3xl text-sm text-muted-foreground">
-            A Gupy consome nossos endpoints externos; esta tela mostra o preflight real da versao e
-            a fila real de entrega de resultados.
+            A Gupy consome nossas conexões externas; esta tela mostra a verificação prévia desta
+            versão e a fila de envio dos resultados.
           </p>
         </div>
       </div>
 
       {!hasParams ? (
         <EmptyState
-          title="Selecione uma versao para executar o preflight"
-          description="A ativacao Gupy agora depende do diagnostico retornado pelo backend."
+          title="Selecione uma versão para executar a verificação prévia"
+          description="A ativação Gupy agora depende do diagnóstico calculado pelo sistema."
           actions={
             <SimulationLinks
               loading={simulationsQuery.isLoading}
@@ -122,38 +122,38 @@ function GupyActivation() {
       ) : (
         <>
           {preflightQuery.isLoading && (
-            <StateBanner tone="info" title="Preflight conectado">
-              Validando simulacao {search.simulationId} v{search.versionNumber}.
+            <StateBanner tone="info" title="Verificação conectada">
+              Validando a simulação {search.simulationId} v{search.versionNumber}.
             </StateBanner>
           )}
 
           {preflightQuery.isError && (
-            <StateBanner tone="danger" title="Nao foi possivel executar o preflight">
+            <StateBanner tone="danger" title="Não foi possível executar a verificação prévia">
               {preflightQuery.error instanceof Error
                 ? preflightQuery.error.message
-                : "Verifique se o backend esta rodando."}
+                : "Verifique se o sistema está disponível e tente novamente."}
             </StateBanner>
           )}
 
           {preflightQuery.data && (
             <StateBanner
               tone={hasFailure ? "danger" : "ok"}
-              title={hasFailure ? "Preflight bloqueado" : "Preflight aprovado"}
+              title={hasFailure ? "Verificação bloqueada" : "Verificação aprovada"}
             >
               {hasFailure
-                ? "Corrija os blockers retornados pelo backend antes de ativar a integracao."
+                ? "Corrija os bloqueios calculados pelo sistema antes de ativar a integração."
                 : preflightQuery.data.integrationActive
-                  ? `Integracao ativa desde ${formatDateTime(preflightQuery.data.integrationActivatedAt)}.`
-                  : "A versao passou nas verificacoes exigidas para integracao."}
+                  ? `Integração ativa desde ${formatDateTime(preflightQuery.data.integrationActivatedAt)}.`
+                  : "A versão passou nas verificações exigidas para integração."}
             </StateBanner>
           )}
 
           {activateMutation.isError && (
             <div className="mt-3">
-              <StateBanner tone="danger" title="Nao foi possivel ativar a integracao">
+              <StateBanner tone="danger" title="Não foi possível ativar a integração">
                 {activateMutation.error instanceof Error
                   ? activateMutation.error.message
-                  : "Verifique se a versao esta publicada e se o preflight esta aprovado."}
+                  : "Verifique se a versão está publicada e se a verificação prévia está aprovada."}
               </StateBanner>
             </div>
           )}
@@ -162,12 +162,12 @@ function GupyActivation() {
             <NextStepContract
               primary={
                 hasFailure
-                  ? "Corrigir checklist de ativacao antes de marcar integracao ativa."
-                  : "Registrar conferencia e aguardar ativacao/vinculo dentro da Gupy."
+                  ? "Corrigir checklist de ativação antes de marcar integração ativa."
+                  : "Registrar conferência e aguardar ativação/vínculo dentro da Gupy."
               }
-              secondary="Cliente vincula a simulacao na vaga dentro da Gupy; gestor nao usa tela externa."
-              versionRule="A Gupy lista apenas testes publicados e versoes imutaveis."
-              lockedAfter="Integracao ativa nao publica rascunho nem altera tentativa ja iniciada."
+              secondary="Cliente vincula a simulação na vaga dentro da Gupy; o gestor não usa tela externa."
+              versionRule="A Gupy lista apenas testes publicados e versões imutáveis."
+              lockedAfter="Integração ativa não publica rascunho nem altera tentativa já iniciada."
             />
           </div>
 
@@ -179,7 +179,7 @@ function GupyActivation() {
                 disabled={!preflightQuery.data.ok || activateMutation.isPending}
                 className="rounded-md bg-primary px-5 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-60"
               >
-                {activateMutation.isPending ? "Ativando..." : "Marcar integracao como ativa"}
+                {activateMutation.isPending ? "Ativando..." : "Marcar integração como ativa"}
               </button>
             </div>
           )}
@@ -189,7 +189,7 @@ function GupyActivation() {
               <section className="rounded-md border border-border bg-card p-5">
                 <div className="mb-4 flex items-center gap-2 text-sm font-semibold">
                   <Server className="h-4 w-4" />
-                  Endpoints que expomos
+                  Conexões que o sistema oferece
                 </div>
                 <div className="grid gap-3">
                   {endpoints.map((endpoint) => (
@@ -208,7 +208,7 @@ function GupyActivation() {
               </section>
 
               <section className="rounded-md border border-border bg-card p-5">
-                <h2 className="text-sm font-semibold">Checklist de ativacao</h2>
+                <h2 className="text-sm font-semibold">Lista de verificação para ativar</h2>
                 <div className="mt-4 space-y-3">
                   {(preflightQuery.data?.checks ?? []).map((item) => (
                     <PreflightCheck key={item.code} item={item} />
@@ -220,7 +220,7 @@ function GupyActivation() {
             <aside className="rounded-md border border-border bg-card p-5">
               <div className="mb-4 flex items-center gap-2 text-sm font-semibold">
                 <Webhook className="h-4 w-4" />
-                Fila de entrega
+                Fila de envio
               </div>
               <DeliveryList
                 deliveries={deliveriesQuery.data ?? []}
@@ -265,7 +265,7 @@ function DeliveryList({
   if (loading) {
     return (
       <div className="rounded-md border border-border bg-background p-3 text-sm">
-        Carregando entregas...
+        Carregando envios...
       </div>
     );
   }
@@ -273,7 +273,7 @@ function DeliveryList({
   if (error) {
     return (
       <div className="rounded-md border border-danger/30 bg-danger/10 p-3 text-sm text-danger">
-        Nao foi possivel carregar entregas.
+        Não foi possível carregar os envios.
       </div>
     );
   }
@@ -281,7 +281,7 @@ function DeliveryList({
   if (deliveries.length === 0) {
     return (
       <div className="rounded-md border border-border bg-background p-3 text-sm text-muted-foreground">
-        Nenhuma entrega registrada.
+        Nenhum envio registrado.
       </div>
     );
   }
@@ -302,7 +302,7 @@ function DeliveryList({
           {delivery.status === "retrying" && (
             <div className="mt-2 inline-flex items-center gap-2 text-xs text-muted-foreground">
               <RefreshCw className="h-3.5 w-3.5" />
-              proxima tentativa {formatDateTime(delivery.nextAttemptAt)}
+              próxima tentativa {formatDateTime(delivery.nextAttemptAt)}
             </div>
           )}
         </div>
@@ -321,7 +321,7 @@ function SimulationLinks({
   if (loading) {
     return (
       <div className="rounded-md border border-border bg-card px-4 py-3 text-sm">
-        Carregando simulacoes...
+        Carregando simulações...
       </div>
     );
   }
@@ -332,7 +332,7 @@ function SimulationLinks({
         to="/nova/avaliacao"
         className="rounded-md border border-border bg-card px-4 py-3 text-sm hover:bg-accent"
       >
-        Criar simulacao
+        Criar simulação
       </Link>
     );
   }

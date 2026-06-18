@@ -22,7 +22,7 @@ export const Route = createFileRoute("/nova/mapa")({
   head: () => ({
     meta: [
       { title: "Mapa & Score - Praxis" },
-      { name: "description", content: "Grafo persistido e pesos reais da versao." },
+      { name: "description", content: "Fluxo da conversa e pesos reais da versão." },
     ],
   }),
   component: Page,
@@ -46,19 +46,19 @@ function Page() {
   return (
     <AppShell>
       <WizardStepper current="revisao" unlockedThrough="publicacao" />
-      <ScreenStateStrip blockedReason="grafo invalido ou caminho morto precisa voltar ao editor" />
+      <ScreenStateStrip blockedReason="fluxo da conversa inválido ou com caminho sem saída precisa voltar ao editor" />
       <div className="mb-6">
         <div className="text-xs uppercase tracking-[0.2em] text-primary">Passo 3</div>
-        <h1 className="mt-1 font-display text-3xl">Mapa & score normalizado</h1>
+        <h1 className="mt-1 font-display text-3xl">Mapa & pontuação</h1>
         <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
-          Visualizacao derivada dos nos, alternativas e pesos persistidos.
+          Visão geral das etapas, das alternativas e dos pesos de cada competência.
         </p>
       </div>
 
       {!hasContext ? (
         <EmptyState
-          title="Selecione uma versao para ver o mapa"
-          description="Nao ha SVG ou grafo local nesta tela."
+          title="Selecione uma versão para ver o mapa"
+          description="Escolha uma versão abaixo para ver o mapa completo da conversa."
           actions={
             <SimulationLinks
               loading={simulationsQuery.isLoading}
@@ -68,11 +68,11 @@ function Page() {
         />
       ) : versionQuery.isLoading ? (
         <StateBanner tone="info" title="Carregando mapa">
-          Buscando grafo da simulacao {search.simulationId} v{search.versionNumber}.
+          Buscando o fluxo da conversa da simulação {search.simulationId} v{search.versionNumber}.
         </StateBanner>
       ) : versionQuery.isError ? (
-        <StateBanner tone="danger" title="Nao foi possivel carregar o mapa">
-          {versionQuery.error instanceof Error ? versionQuery.error.message : "Verifique a API."}
+        <StateBanner tone="danger" title="Não foi possível carregar o mapa">
+          {versionQuery.error instanceof Error ? versionQuery.error.message : "Verifique sua conexão e tente novamente."}
         </StateBanner>
       ) : version ? (
         <>
@@ -98,7 +98,7 @@ function Page() {
                           <div>{option.text}</div>
                           <div className="mt-2 flex flex-wrap gap-1.5 text-[11px] text-muted-foreground">
                             <span className="rounded border border-border px-2 py-1">
-                              proximo: {option.nextNodeId ?? "fim"}
+                              próximo: {option.nextNodeId ?? "fim"}
                             </span>
                             {Object.entries(option.competencyLevels).map(([name, value]) => (
                               <span key={name} className="rounded border border-border px-2 py-1">
@@ -107,7 +107,7 @@ function Page() {
                             ))}
                             {option.isCritical && (
                               <span className="rounded border border-danger/30 px-2 py-1 text-danger">
-                                critica
+                                crítica
                               </span>
                             )}
                           </div>
@@ -150,7 +150,7 @@ function Page() {
               search={{ simulationId: search.simulationId, versionNumber: search.versionNumber }}
               className="rounded-md bg-primary px-5 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
             >
-              Governanca
+              Governança
             </Link>
           </div>
         </>

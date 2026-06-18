@@ -32,7 +32,7 @@ export const Route = createFileRoute("/enviar-link")({
       {
         name: "description",
         content:
-          "Gere um link de simulacao para enviar ao candidato por email ou WhatsApp.",
+          "Gere um link de simulação para enviar ao candidato por e-mail ou WhatsApp.",
       },
     ],
   }),
@@ -95,17 +95,17 @@ function EnviarLinkPage() {
 
   function handleShareEmail() {
     const subject = encodeURIComponent(
-      `Simulacao: ${simulationName}`,
+      `Simulação: ${simulationName}`,
     );
     const body = encodeURIComponent(
-      `Ola ${candidateName},\n\nVoce foi convidado(a) para participar de uma simulacao situacional.\n\nAcesse o link abaixo para iniciar:\n${generatedLink}\n\nBoa sorte!`,
+      `Olá ${candidateName},\n\nVocê foi convidado(a) para participar de uma simulação situacional.\n\nAcesse o link abaixo para iniciar:\n${generatedLink}\n\nBoa sorte!`,
     );
     window.open(`mailto:${candidateEmail}?subject=${subject}&body=${body}`);
   }
 
   function handleShareWhatsApp() {
     const text = encodeURIComponent(
-      `Ola ${candidateName}! Voce foi convidado(a) para uma simulacao situacional. Acesse: ${generatedLink}`,
+      `Olá ${candidateName}! Você foi convidado(a) para uma simulação situacional. Acesse: ${generatedLink}`,
     );
     window.open(`https://wa.me/?text=${text}`, "_blank");
   }
@@ -123,21 +123,21 @@ function EnviarLinkPage() {
 
   return (
     <AppShell>
-      <ScreenStateStrip blockedReason="sem simulacoes publicadas para gerar link" />
+      <ScreenStateStrip blockedReason="sem simulações publicadas para gerar link" />
 
       <div className="mb-6">
         <div className="text-xs uppercase text-primary">Envio direto</div>
         <h1 className="mt-1 text-3xl font-semibold">Enviar link ao candidato</h1>
         <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
-          Selecione uma simulacao publicada, preencha os dados do candidato e
-          compartilhe o link por email ou WhatsApp.
+          Selecione uma simulação publicada, preencha os dados do candidato e
+          compartilhe o link por e-mail ou WhatsApp.
         </p>
       </div>
 
       <div className="mb-6 flex gap-4">
         <StepIndicator
           number={1}
-          label="Simulacao"
+          label="Simulação"
           active={step === "select"}
           done={step === "form" || step === "share"}
         />
@@ -156,10 +156,10 @@ function EnviarLinkPage() {
       </div>
 
       {linkMutation.isError && (
-        <StateBanner tone="danger" title="Nao foi possivel gerar o link">
+        <StateBanner tone="danger" title="Não foi possível gerar o link">
           {linkMutation.error instanceof Error
             ? linkMutation.error.message
-            : "Verifique se o backend esta rodando e a simulacao esta publicada."}
+            : "Verifique se o sistema está disponível e se a simulação está publicada."}
         </StateBanner>
       )}
 
@@ -267,8 +267,8 @@ function SelectSimulationStep({
 
   if (error) {
     return (
-      <StateBanner tone="danger" title="Nao foi possivel carregar as simulacoes">
-        {errorMessage ?? "Verifique se o backend esta rodando."}
+      <StateBanner tone="danger" title="Não foi possível carregar as simulações">
+        {errorMessage ?? "Verifique se o sistema está disponível e tente novamente."}
       </StateBanner>
     );
   }
@@ -276,14 +276,14 @@ function SelectSimulationStep({
   if (simulations.length === 0) {
     return (
       <EmptyState
-        title="Nenhuma simulacao publicada"
-        description="Publique uma simulacao antes de gerar links para candidatos."
+        title="Nenhuma simulação publicada"
+        description="Publique uma simulação antes de gerar links para candidatos. Só simulações publicadas podem ser enviadas."
         actions={
           <Link
             to="/nova/avaliacao"
             className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-3 text-sm font-medium text-primary-foreground hover:bg-primary/90"
           >
-            Criar simulacao
+            Criar simulação
           </Link>
         }
       />
@@ -293,7 +293,7 @@ function SelectSimulationStep({
   return (
     <div className="space-y-4">
       <h2 className="text-lg font-semibold">
-        Selecione a simulacao publicada
+        Selecione a simulação publicada
       </h2>
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {simulations.map((simulation) => (
@@ -359,7 +359,7 @@ function CandidateFormStep({
       <div className="rounded-md border border-border bg-card p-6">
         <h2 className="text-lg font-semibold">Dados do candidato</h2>
         <p className="mt-1 text-sm text-muted-foreground">
-          Preencha o nome e email do candidato para gerar o link de acesso.
+          Preencha o nome e o e-mail do candidato para gerar o link de acesso.
         </p>
 
         <div className="mt-5 space-y-4">
@@ -385,7 +385,7 @@ function CandidateFormStep({
               htmlFor="candidate-email"
               className="mb-1.5 block text-sm font-medium"
             >
-              Email do candidato
+              E-mail do candidato
             </label>
             <input
               id="candidate-email"
@@ -419,7 +419,7 @@ function CandidateFormStep({
       </div>
 
       <aside className="rounded-md border border-border bg-card p-5">
-        <h3 className="text-sm font-semibold">Simulacao selecionada</h3>
+        <h3 className="text-sm font-semibold">Simulação selecionada</h3>
         <div className="mt-3 space-y-2">
           <div className="font-medium text-foreground">{simulation.name}</div>
           <div className="text-xs text-muted-foreground">
@@ -440,7 +440,7 @@ function CandidateFormStep({
             ))}
           </div>
           <div className="mt-3 text-xs text-muted-foreground">
-            Versao v{simulation.versionNumber} -{" "}
+            Versão v{simulation.versionNumber} -{" "}
             {simulation.attemptsCreated.toLocaleString("pt-BR")} tentativas
             criadas
           </div>
@@ -474,7 +474,7 @@ function ShareStep({
   return (
     <div className="space-y-6">
       <StateBanner tone="ok" title="Link gerado com sucesso">
-        O link de acesso a simulacao "{simulationName}" foi criado para{" "}
+        O link de acesso à simulação "{simulationName}" foi criado para{" "}
         {candidateName} ({candidateEmail}).
       </StateBanner>
 
@@ -483,7 +483,7 @@ function ShareStep({
           <div className="rounded-md border border-border bg-card p-6">
             <h2 className="text-lg font-semibold">Link do candidato</h2>
             <p className="mt-1 text-sm text-muted-foreground">
-              Copie o link abaixo ou use os botoes para compartilhar diretamente.
+              Copie o link abaixo ou use os botões para compartilhar diretamente.
             </p>
             <div className="mt-4 flex items-center gap-2">
               <div className="min-w-0 flex-1 rounded-md border border-border bg-background px-3 py-2.5">
@@ -523,7 +523,7 @@ function ShareStep({
                 className="inline-flex items-center gap-2 rounded-md border border-border bg-card px-5 py-3 text-sm font-medium transition hover:bg-accent"
               >
                 <Mail className="h-4 w-4" />
-                Enviar por email
+                Enviar por e-mail
               </button>
               <button
                 type="button"
@@ -555,16 +555,16 @@ function ShareStep({
               </div>
               <div>
                 <dt className="text-xs uppercase text-muted-foreground">
-                  Simulacao
+                  Simulação
                 </dt>
                 <dd className="mt-0.5 text-sm">{simulationName}</dd>
               </div>
             </dl>
           </div>
 
-          <StateBanner tone="info" title="Link unico por candidato">
-            Se gerar novamente com o mesmo email e simulacao, o link sera o mesmo
-            (idempotente).
+          <StateBanner tone="info" title="Um link por candidato">
+            Se você gerar o link de novo com o mesmo e-mail e a mesma simulação,
+            o link será sempre o mesmo. Pode reenviar sem medo de duplicar.
           </StateBanner>
         </aside>
       </div>

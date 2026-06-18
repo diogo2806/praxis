@@ -78,7 +78,7 @@ function GovernanceHub() {
         <StateBanner tone="danger" title="Não foi possível carregar a auditoria">
           {auditQuery.error instanceof Error
             ? auditQuery.error.message
-            : "Verifique se o servidor está rodando e se a versão existe."}
+            : "Verifique sua conexão e tente novamente. Confira também se a versão existe."}
         </StateBanner>
       )}
 
@@ -93,7 +93,7 @@ function GovernanceHub() {
         <StateBanner tone="danger" title="Não foi possível criar a versão">
           {cloneMutation.error instanceof Error
             ? cloneMutation.error.message
-            : "A transição foi recusada pelo servidor."}
+            : "A mudança não foi permitida pelo sistema."}
         </StateBanner>
       )}
 
@@ -135,8 +135,8 @@ function GovernanceHub() {
           <div className="flex items-start gap-2 rounded-md border border-border bg-muted/40 p-3 text-xs text-muted-foreground">
             <Lock className="mt-0.5 h-3.5 w-3.5" />
             <span>
-              Publicar com <Termo id="blocker">blocker</Termo> (bloqueio) é barrado na transição de
-              estado, não apenas no log.
+              Publicar com <Termo id="blocker">bloqueio</Termo> é impedido na mudança de
+              estado, não apenas no registro.
             </span>
           </div>
           <Link
@@ -156,14 +156,14 @@ function GovernanceHub() {
       {versionDialogOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-foreground/30 p-4">
           <div className="w-full max-w-md rounded-md border border-border bg-card p-5 shadow-xl">
-            <div className="text-sm font-semibold">Criar nova versao?</div>
+            <div className="text-sm font-semibold">Criar nova versão?</div>
             <p className="mt-2 text-sm text-muted-foreground">
               {hasGovernanceParams
-                ? `Isto cria um rascunho a partir da versao ${search.versionNumber}. Candidatos em andamento continuam na versao atual.`
-                : "Escolha uma simulacao real antes de criar nova versao."}
+                ? `Isto cria um rascunho a partir da versão ${search.versionNumber}. Candidatos em andamento continuam na versão atual.`
+                : "Escolha uma simulação real antes de criar nova versão."}
             </p>
             <div className="mt-4 rounded-md border border-border bg-muted/45 p-3 text-xs text-muted-foreground">
-              Typo entra como minor. Pontuacao, peso ou grafo entram como major.
+              Um erro de digitação conta como mudança menor. Mudanças em pontuação, peso ou no fluxo da conversa contam como mudança maior.
             </div>
             <div className="mt-5 flex justify-end gap-2">
               <button
@@ -185,7 +185,7 @@ function GovernanceHub() {
                 disabled={cloneMutation.isPending}
                 className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground disabled:cursor-not-allowed disabled:opacity-60"
               >
-                {cloneMutation.isPending ? "Criando..." : "Confirmar nova versao"}
+                {cloneMutation.isPending ? "Criando..." : "Confirmar nova versão"}
               </button>
             </div>
           </div>
@@ -207,7 +207,7 @@ function AuditEventList({ events, loading }: { events: AuditEventResponse[]; loa
   if (events.length === 0) {
     return (
       <div className="mt-4 rounded-md border border-border bg-background p-4 text-sm text-muted-foreground">
-        Nenhum evento de auditoria registrado para esta versao.
+        Nenhum evento de auditoria registrado para esta versão.
       </div>
     );
   }
@@ -242,7 +242,7 @@ function SimulationLinks({
   if (loading) {
     return (
       <div className="mt-4 rounded-md border border-border bg-background p-4 text-sm">
-        Carregando simulacoes...
+        Carregando simulações...
       </div>
     );
   }
@@ -250,7 +250,7 @@ function SimulationLinks({
   if (simulations.length === 0) {
     return (
       <div className="mt-4 rounded-md border border-border bg-background p-4 text-sm text-muted-foreground">
-        Nenhuma simulacao ativa encontrada.
+        Nenhuma simulação ativa encontrada.
       </div>
     );
   }
