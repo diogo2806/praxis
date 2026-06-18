@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+﻿import type { ReactNode } from "react";
 import {
   AlertTriangle,
   Archive,
@@ -91,15 +91,21 @@ export function StateBanner({
   title,
   children,
   action,
+  live = tone === "danger" ? "assertive" : "polite",
 }: {
   tone: keyof typeof toneClass;
   title: string;
   children?: ReactNode;
   action?: ReactNode;
+  live?: "off" | "polite" | "assertive";
 }) {
   const Icon = tone === "danger" ? AlertTriangle : tone === "warn" ? AlertTriangle : CheckCircle2;
   return (
-    <div className={cn("flex items-start gap-3 rounded-md border p-3", toneClass[tone])}>
+    <div
+      role={tone === "danger" ? "alert" : "status"}
+      aria-live={live}
+      className={cn("flex items-start gap-3 rounded-md border p-3", toneClass[tone])}
+    >
       <Icon className="mt-0.5 h-4 w-4 shrink-0" />
       <div className="min-w-0 flex-1">
         <div className="text-sm font-semibold">{title}</div>
@@ -137,6 +143,29 @@ export function EmptyState({
         </div>
       </div>
     </section>
+  );
+}
+
+export function PageIntro({
+  eyebrow,
+  title,
+  children,
+  action,
+}: {
+  eyebrow?: string;
+  title: string;
+  children: ReactNode;
+  action?: ReactNode;
+}) {
+  return (
+    <div className="mb-5 flex flex-wrap items-start justify-between gap-4">
+      <div>
+        {eyebrow && <div className="text-xs uppercase text-primary">{eyebrow}</div>}
+        <h1 className="mt-1 text-3xl font-semibold">{title}</h1>
+        <p className="mt-1 max-w-2xl text-sm text-muted-foreground">{children}</p>
+      </div>
+      {action}
+    </div>
   );
 }
 
@@ -404,7 +433,7 @@ export function UndoRedoBar({
       <button
         type="button"
         onClick={onUndo}
-        className="inline-flex items-center gap-1 rounded-md border border-border bg-card px-2 py-1 hover:bg-accent"
+        className="inline-flex items-center gap-1 rounded-md border border-border bg-card px-3 py-2 hover:bg-accent"
       >
         <RotateCcw className="h-3.5 w-3.5" />
         Desfazer
@@ -412,7 +441,7 @@ export function UndoRedoBar({
       <button
         type="button"
         onClick={onRedo}
-        className="inline-flex items-center gap-1 rounded-md border border-border bg-card px-2 py-1 hover:bg-accent"
+        className="inline-flex items-center gap-1 rounded-md border border-border bg-card px-3 py-2 hover:bg-accent"
       >
         <RotateCcw className="h-3.5 w-3.5 scale-x-[-1]" />
         Refazer

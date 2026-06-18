@@ -122,16 +122,17 @@ Implementadas **4 prioridades** do relatório de usabilidade, focando em **acent
 
 ---
 
-## 📋 Prioridade 5: Acessibilidade Técnica (NÃO INCLUÍDA)
+## 📋 Prioridade 5: Acessibilidade Técnica (IMPLEMENTAÇÃO EM CÓDIGO CONCLUÍDA)
 
-O relatório menciona que esta prioridade precisa de auditoria **no site renderizado**, não no código:
+Implementada a parte que podia ser feita diretamente no código da interface. A auditoria completa
+WCAG 2.2 AA ainda deve ser executada no site renderizado/publicado:
 
 - [ ] Contraste de cores (WCAG AA 4.5:1)
 - [ ] Tamanho de fonte e zoom
 - [ ] Navegação por teclado
 - [ ] Leitor de tela (acentos agora corrigidos ✅)
-- [ ] Estados de carregamento com `aria-live`
-- [ ] Alvos de toque ≥ 44×44px
+- [x] Estados de carregamento/erro com `aria-live`
+- [x] Alvos de toque ≥ 44×44px em links e botões
 
 **Ação recomendada:** Rodar auditoria WCAG 2.2 AA no site publicado.
 
@@ -164,7 +165,8 @@ Conforme priorização do relatório original:
 - ✅ **Glossário expandido** com 9 novos termos
 - ✅ **Estados vazios com contexto** em 4 telas
 - ✅ **Commits criados e pushed**
-- ⏭️ **Acessibilidade técnica** (pendente auditoria no site)
+- ✅ **Acessibilidade técnica em código** (`aria-live` e alvos de toque)
+- ⏭️ **Auditoria WCAG renderizada** (pendente no site publicado)
 - ⏭️ **Contexto em cada tela** (pendente implementação)
 
 ---

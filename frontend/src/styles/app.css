@@ -177,11 +177,14 @@
   }
 
   button,
-  a,
+  a {
+    min-height: 2.75rem;
+  }
+
   input,
   select,
   textarea {
-    min-height: 2.25rem;
+    min-height: 2.5rem;
   }
 
   button:disabled,

@@ -54,7 +54,6 @@ function Page() {
           Visão geral das etapas, das alternativas e dos pesos de cada competência.
         </p>
       </div>
-
       {!hasContext ? (
         <EmptyState
           title="Selecione uma versão para ver o mapa"
@@ -72,7 +71,9 @@ function Page() {
         </StateBanner>
       ) : versionQuery.isError ? (
         <StateBanner tone="danger" title="Não foi possível carregar o mapa">
-          {versionQuery.error instanceof Error ? versionQuery.error.message : "Verifique sua conexão e tente novamente."}
+          {versionQuery.error instanceof Error
+            ? versionQuery.error.message
+            : "Verifique sua conexão e tente novamente."}
         </StateBanner>
       ) : version ? (
         <>
@@ -140,14 +141,20 @@ function Page() {
           <div className="mt-8 flex justify-between">
             <Link
               to="/nova/piloto"
-              search={{ simulationId: search.simulationId, versionNumber: search.versionNumber }}
+              search={{
+                simulationId: search.simulationId,
+                versionNumber: search.versionNumber,
+              }}
               className="rounded-md border border-border bg-card px-4 py-2 text-sm hover:bg-accent"
             >
               Voltar: Piloto
             </Link>
             <Link
               to="/nova/governanca"
-              search={{ simulationId: search.simulationId, versionNumber: search.versionNumber }}
+              search={{
+                simulationId: search.simulationId,
+                versionNumber: search.versionNumber,
+              }}
               className="rounded-md bg-primary px-5 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
             >
               Governança

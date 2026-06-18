@@ -64,11 +64,12 @@ function ValidatorPage() {
     enabled: hasValidationParams,
   });
 
-  const activeChecks = validationQuery.data ? mapValidationIssues(validationQuery.data) : [];
-  const blockers = validationQuery.data?.blockerCount ?? 0;
-  const warnings = validationQuery.data?.warningCount ?? 0;
-  const qualityScore = validationQuery.data?.qualityScore ?? 0;
-  const canPublish = Boolean(validationQuery.data) && blockers === 0;
+  const validation = validationQuery.data;
+  const activeChecks = validation ? mapValidationIssues(validation) : [];
+  const blockers = validation?.blockerCount ?? 0;
+  const warnings = validation?.warningCount ?? 0;
+  const qualityScore = validation?.qualityScore ?? 0;
+  const canPublish = Boolean(validation) && blockers === 0;
 
   return (
     <AppShell>
@@ -83,7 +84,6 @@ function ValidatorPage() {
           </p>
         </div>
       </div>
-
       {hasValidationParams && validationQuery.isLoading && (
         <StateBanner tone="info" title="Validador conectado">
           Buscando o diagnóstico da simulação {search.simulationId} v{search.versionNumber}.
@@ -198,8 +198,8 @@ function ValidatorPage() {
                   <Link
                     to="/nova/publicacao"
                     search={{
-                      simulationId: search.simulationId!,
-                      versionNumber: search.versionNumber!,
+                      simulationId: search.simulationId,
+                      versionNumber: search.versionNumber,
                     }}
                     className={cn(
                       "rounded-md px-5 py-2 text-sm font-medium",

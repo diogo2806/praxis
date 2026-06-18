@@ -6,7 +6,6 @@ export type PraxisSession = {
   workspaceName: string;
   userName: string;
   userRole: string;
-  demo: boolean;
 };
 
 const anonymousSession: PraxisSession = {
@@ -15,7 +14,6 @@ const anonymousSession: PraxisSession = {
   workspaceName: "Workspace",
   userName: "Usuario",
   userRole: "Operador",
-  demo: false,
 };
 
 export function getSession(): PraxisSession {
@@ -29,7 +27,6 @@ export function getSession(): PraxisSession {
     workspaceName: localStorage.getItem("praxis.workspaceName") ?? "Workspace",
     userName: localStorage.getItem("praxis.userName") ?? "Usuario",
     userRole: localStorage.getItem("praxis.userRole") ?? "Operador",
-    demo: false,
   };
 }
 

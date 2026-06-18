@@ -96,12 +96,12 @@ function MonitoringPage() {
   });
 
   const monitoring = monitoringQuery.data;
+  const deliveries = deliveriesQuery.data ?? [];
   const cohorts = buildLiveCohorts(monitoring);
   const hasData = monitoringQuery.isLoading || Boolean(monitoring);
-  const riskyDeliveries =
-    deliveriesQuery.data?.filter(
-      (delivery) => delivery.status === "retrying" || delivery.status === "dlq",
-    ) ?? [];
+  const riskyDeliveries = deliveries.filter(
+    (delivery) => delivery.status === "retrying" || delivery.status === "dlq",
+  );
   const sentDeliveries = monitoring?.deliveriesSent ?? 0;
   const failedDeliveries = monitoring?.deliveriesDeadLetter ?? 0;
 
@@ -125,7 +125,6 @@ function MonitoringPage() {
           Voltar ao painel
         </Link>
       </div>
-
       {hasMonitoringParams && monitoringQuery.isLoading && (
         <StateBanner tone="info" title="Monitoramento conectado">
           Buscando indicadores da simulação {search.simulationId} v{search.versionNumber}.
@@ -208,7 +207,7 @@ function MonitoringPage() {
                 Fila de entregas Gupy da versão
               </div>
               <DeliveryList
-                deliveries={deliveriesQuery.data ?? []}
+                deliveries={deliveries}
                 loading={deliveriesQuery.isLoading}
                 error={deliveriesQuery.isError}
               />

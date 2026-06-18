@@ -67,7 +67,6 @@ function GovernanceHub() {
           reprocessamento restrito a admin.
         </p>
       </div>
-
       {hasGovernanceParams && auditQuery.isLoading && (
         <StateBanner tone="info" title="Registro de auditoria conectado">
           Buscando eventos da simulação {search.simulationId} v{search.versionNumber}.
@@ -105,10 +104,12 @@ function GovernanceHub() {
           {hasGovernanceParams ? (
             <AuditEventList events={auditQuery.data ?? []} loading={auditQuery.isLoading} />
           ) : (
-            <SimulationLinks
-              loading={simulationsQuery.isLoading}
-              simulations={simulationsQuery.data ?? []}
-            />
+            <>
+              <SimulationLinks
+                loading={simulationsQuery.isLoading}
+                simulations={simulationsQuery.data ?? []}
+              />
+            </>
           )}
         </section>
         <aside className="space-y-3">
