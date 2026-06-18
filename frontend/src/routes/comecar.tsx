@@ -18,6 +18,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
+import { useLanguage } from "@/lib/language-context";
 
 export const Route = createFileRoute("/comecar")({
   head: () => ({
@@ -117,22 +118,21 @@ const faq = [
 ];
 
 function GettingStartedPage() {
+  const { t } = useLanguage();
+
   return (
     <AppShell>
       <div className="mx-auto max-w-3xl">
         <div className="mb-8">
           <div className="inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
             <Sparkles className="h-3.5 w-3.5" />
-            Comece por aqui
+            {t.common.startHere}
           </div>
           <h1 className="mt-3 text-3xl font-semibold text-foreground sm:text-4xl">
-            Bem-vindo ao Práxis 👋
+            {t.getStarted.heading}
           </h1>
           <p className="mt-3 text-base leading-relaxed text-muted-foreground">
-            O Práxis é uma plataforma para <strong>avaliar candidatos</strong> em processos
-            seletivos. Em vez de uma prova teórica, a pessoa enfrenta{" "}
-            <strong>situações reais do trabalho</strong> e mostra como decidiria. Você recebe um
-            resultado claro e justo, com o porquê de cada ponto.
+            {t.getStarted.description}
           </p>
         </div>
 
@@ -142,7 +142,7 @@ function GettingStartedPage() {
             className="mb-4 flex items-center gap-2 text-xl font-semibold text-foreground"
           >
             <ListChecks className="h-5 w-5 text-primary" />
-            Como funciona?
+            {t.getStarted.howItWorks}
           </h2>
           <div className="grid gap-3 sm:grid-cols-3">
             {steps.map(({ icon: Icon, title, text }) => (
@@ -161,7 +161,7 @@ function GettingStartedPage() {
             className="mb-4 flex items-center gap-2 text-xl font-semibold text-foreground"
           >
             <Users className="h-5 w-5 text-primary" />
-            Para quem é?
+            {t.getStarted.forWhom}
           </h2>
           <ul className="space-y-2">
             {audiences.map((item) => (
@@ -182,7 +182,7 @@ function GettingStartedPage() {
             className="mb-4 flex items-center gap-2 text-xl font-semibold text-foreground"
           >
             <Rocket className="h-5 w-5 text-primary" />
-            Por onde começar?
+            {t.getStarted.whereToStart}
           </h2>
           <div className="grid gap-3 sm:grid-cols-3">
             {startActions.map(({ icon: Icon, title, text, to, primary }) => (
@@ -217,7 +217,7 @@ function GettingStartedPage() {
             className="mb-2 flex items-center gap-2 text-xl font-semibold text-foreground"
           >
             <HelpCircle className="h-5 w-5 text-primary" />
-            Perguntas frequentes
+            {t.getStarted.faq}
           </h2>
           <div className="rounded-lg border border-border bg-card px-5">
             <Accordion type="single" collapsible>
