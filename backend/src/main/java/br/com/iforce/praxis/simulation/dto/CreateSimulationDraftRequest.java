@@ -33,14 +33,6 @@ public record CreateSimulationDraftRequest(
         @Schema(example = "Cliente exige solucao imediata para atraso recorrente.")
         String criticalSituation,
 
-        @Size(max = 1000)
-        @Schema(example = "Reconhece o impacto, aplica a politica e propoe proximos passos.")
-        String highPerformance,
-
-        @Size(max = 1000)
-        @Schema(example = "Prometer excecao proibida ou culpar outra area.")
-        String criticalError,
-
         @Size(max = 120)
         @Schema(example = "Triagem")
         String resultUse

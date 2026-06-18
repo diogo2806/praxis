@@ -15,7 +15,6 @@ import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.hasItem;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -145,37 +144,6 @@ class SimulationAdminControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[*].eventType").value(hasItem("simulationVersionCloned")))
                 .andExpect(jsonPath("$[*].metadata").value(hasItem(containsString("\"sourceVersionNumber\":1"))));
-    }
-
-    @Test
-    @Sql(scripts = "/simulation-review-fixtures.sql")
-    void updateBlueprintPersistsEditablePlanText() throws Exception {
-        mockMvc.perform(patch("/api/v1/simulations/sim-review-flow/versions/1/blueprint")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("""
-                                {
-                                  "name": "Analista de Teste Automatizado",
-                                  "criticalSituation": "Pipeline de regressao falha antes de uma release critica.",
-                                  "highPerformance": "Prioriza o risco, isola a causa, corrige ou sinaliza o bloqueio com evidencias reproduziveis.",
-                                  "criticalError": "Ignorar falha intermitente sem investigacao e liberar a release sem evidencias.",
-                                  "resultUse": "Triagem",
-                                  "rootNodeId": "turno-1",
-                                  "competencies": [
-                                    { "name": "Empatia", "weight": 0.5 },
-                                    { "name": "Resolucao", "weight": 0.5 }
-                                  ]
-                                }
-                                """))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.name").value("Analista de Teste Automatizado"))
-                .andExpect(jsonPath("$.description").value(containsString("Alta performance faria: Prioriza o risco")));
-
-        mockMvc.perform(get("/api/v1/simulations/sim-review-flow/versions/1"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.name").value("Analista de Teste Automatizado"))
-                .andExpect(jsonPath("$.description").value(containsString("Erro crítico: Ignorar falha intermitente")))
-                .andExpect(jsonPath("$.nodes[?(@.id=='turno-1')].clientMessage")
-                        .value(hasItem("Pipeline de regressao falha antes de uma release critica.")));
     }
 
     @Test

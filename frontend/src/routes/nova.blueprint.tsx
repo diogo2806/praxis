@@ -30,7 +30,7 @@ export const Route = createFileRoute("/nova/blueprint")({
       {
         name: "description",
         content:
-          "Defina cargo, situação crítica, competências, comportamentos esperados e erros críticos.",
+          "Defina cargo, situação crítica, competências avaliadas e uso do resultado.",
       },
     ],
   }),
@@ -53,8 +53,6 @@ function Page() {
   const defaultResultUse = getDefaultOption(resultUses)?.value ?? "";
   const [role, setRole] = useState("");
   const [criticalSituation, setCriticalSituation] = useState("");
-  const [highPerformance, setHighPerformance] = useState("");
-  const [criticalError, setCriticalError] = useState("");
   const [selectedResultUse, setSelectedResultUse] = useState(defaultResultUse);
   const [selectedCompetencies, setSelectedCompetencies] = useState<string[]>([]);
   const [newCompetency, setNewCompetency] = useState("");
@@ -62,18 +60,14 @@ function Page() {
   const [hydratedVersionKey, setHydratedVersionKey] = useState<string | null>(null);
   const roleMaxLength = 180;
   const criticalSituationMaxLength = 1200;
-  const performanceMaxLength = 1000;
-  const criticalErrorMaxLength = 1000;
   const missingFields = [
     role.trim().length === 0 && "cargo-alvo",
     criticalSituation.trim().length === 0 && "situação crítica",
-    criticalError.trim().length === 0 && "erros críticos",
     selectedCompetencies.length === 0 && "ao menos uma competência",
   ].filter((field): field is string => Boolean(field));
   const canGoNext =
     role.trim().length > 0 &&
     criticalSituation.trim().length > 0 &&
-    criticalError.trim().length > 0 &&
     selectedCompetencies.length > 0;
   const normalizedCompetencies = competencies.map((competency) =>
     competency.value.trim().toLowerCase(),
@@ -106,8 +100,6 @@ function Page() {
     const parsedBlueprint = parseBlueprintDescription(versionQuery.data.description);
     setRole(parsedBlueprint.role || versionQuery.data.name);
     setCriticalSituation(parsedBlueprint.criticalSituation);
-    setHighPerformance(parsedBlueprint.highPerformance);
-    setCriticalError(parsedBlueprint.criticalError);
     setSelectedResultUse(parsedBlueprint.resultUse || defaultResultUse);
     setSelectedCompetencies(
       versionQuery.data.blueprint.competencies.map((competency) => competency.name),
@@ -123,15 +115,11 @@ function Page() {
           role,
           criticalSituation,
           competencies: selectedCompetencies,
-          highPerformance,
-          criticalError,
           resultUse: selectedResultUse,
         }),
         rootNodeId: "turno-1",
         competencies: selectedCompetencies,
         criticalSituation: criticalSituation.trim(),
-        highPerformance: highPerformance.trim(),
-        criticalError: criticalError.trim(),
         resultUse: selectedResultUse,
       }),
     onSuccess: (simulation) => {
@@ -148,11 +136,6 @@ function Page() {
   const updateExistingMutation = useMutation({
     mutationFn: () =>
       updateSimulationBlueprint(search.simulationId!, search.versionNumber!, {
-        name: role.trim(),
-        criticalSituation: criticalSituation.trim(),
-        highPerformance: highPerformance.trim(),
-        criticalError: criticalError.trim(),
-        resultUse: selectedResultUse,
         rootNodeId: versionQuery.data?.blueprint.rootNodeId ?? "turno-1",
         competencies: buildCompetencyWeights(selectedCompetencies, versionQuery.data?.blueprint.competencies),
       }),
@@ -199,7 +182,7 @@ function Page() {
   return (
     <AppShell>
       <WizardStepper current="avaliacao" unlockedThrough={canGoNext ? "cenario" : "avaliacao"} />
-      <ScreenStateStrip blockedReason="cargo, situação crítica e erro crítico obrigatórios" />
+      <ScreenStateStrip blockedReason="cargo, situação crítica e competência obrigatórios" />
 
       {tenantConfigLoading && (
         <StateBanner tone="info" title="Carregando configuracao da empresa">
@@ -376,41 +359,6 @@ function Page() {
             </Help>
           </Card>
 
-          <div className="space-y-6">
-            <Card title="O que alta performance faria" tone="ok">
-              <textarea
-                aria-label="O que alta performance faria"
-                className="input min-h-24"
-                placeholder="Descreva uma resposta observavel, especifica do cargo e da situacao critica."
-                maxLength={performanceMaxLength}
-                value={highPerformance}
-                onChange={(event) => setHighPerformance(event.target.value)}
-              />
-              <FieldMeta count={highPerformance.length} max={performanceMaxLength} />
-            </Card>
-            <Card title="Erros críticos" tone="danger" required>
-              <textarea
-                aria-label="Erros críticos"
-                className={`input min-h-24 ${submitAttempted && criticalError.trim().length === 0 ? "border-danger" : ""}`}
-                maxLength={criticalErrorMaxLength}
-                required
-                aria-required="true"
-                value={criticalError}
-                onChange={(event) => setCriticalError(event.target.value)}
-              />
-              <FieldMeta
-                error={
-                  submitAttempted && criticalError.trim().length === 0
-                    ? "Informe os erros críticos."
-                    : undefined
-                }
-                count={criticalError.length}
-                max={criticalErrorMaxLength}
-              />
-              <Help>Dispara revisão humana obrigatória e bloqueia recomendação sem validação.</Help>
-            </Card>
-          </div>
-
           <Card title="Uso do resultado">
             <div className="grid gap-2 md:grid-cols-4">
               {resultUses.map((use) => (
@@ -464,7 +412,7 @@ function Page() {
                 title={
                   canGoNext
                     ? "Criar rascunho e avançar"
-                    : "Preencha cargo, situação crítica, erro crítico e competências para avançar"
+                    : "Preencha cargo, situação crítica e competências para avançar"
                 }
                 onClick={() => {
                   if (!canGoNext) {
@@ -507,23 +455,17 @@ function buildBlueprintDescription({
   role,
   criticalSituation,
   competencies,
-  highPerformance,
-  criticalError,
   resultUse,
 }: {
   role: string;
   criticalSituation: string;
   competencies: string[];
-  highPerformance: string;
-  criticalError: string;
   resultUse: string;
 }) {
   const lines = [
     `Cargo: ${role.trim()}`,
     `Situação crítica: ${criticalSituation.trim()}`,
     competencies.length > 0 && `Competências: ${competencies.join(", ")}`,
-    highPerformance.trim() && `Alta performance faria: ${highPerformance.trim()}`,
-    `Erro crítico: ${criticalError.trim()}`,
     resultUse.trim() && `Uso do resultado: ${resultUse.trim()}`,
   ].filter((line): line is string => Boolean(line));
 
@@ -566,8 +508,6 @@ function parseBlueprintDescription(description: string) {
   const fields = {
     role: "",
     criticalSituation: "",
-    highPerformance: "",
-    criticalError: "",
     resultUse: "",
   };
 
@@ -584,10 +524,6 @@ function parseBlueprintDescription(description: string) {
       fields.role = value;
     } else if (label.includes("situa") && label.includes("cr")) {
       fields.criticalSituation = value;
-    } else if (label === "alta performance faria") {
-      fields.highPerformance = value;
-    } else if (label.includes("erro") && label.includes("cr")) {
-      fields.criticalError = value;
     } else if (label === "uso do resultado") {
       fields.resultUse = value;
     }

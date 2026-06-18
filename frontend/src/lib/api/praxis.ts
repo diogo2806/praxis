@@ -115,8 +115,6 @@ export interface CreateSimulationDraftRequest {
   rootNodeId: string;
   competencies: string[];
   criticalSituation?: string;
-  highPerformance?: string;
-  criticalError?: string;
   resultUse?: string;
 }
 
@@ -126,11 +124,6 @@ export interface UpdateBlueprintCompetencyRequest {
 }
 
 export interface UpdateBlueprintRequest {
-  name?: string;
-  criticalSituation?: string;
-  highPerformance?: string;
-  criticalError?: string;
-  resultUse?: string;
   rootNodeId: string;
   competencies: UpdateBlueprintCompetencyRequest[];
 }

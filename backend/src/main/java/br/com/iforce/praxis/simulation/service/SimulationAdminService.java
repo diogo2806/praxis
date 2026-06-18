@@ -197,23 +197,6 @@ public class SimulationAdminService {
                 .stream()
                 .map(UpdateBlueprintRequest.CompetencyRequest::name)
                 .toList());
-        if (hasBlueprintTextUpdate(request)) {
-            String simulationName = hasText(request.name())
-                    ? request.name().trim()
-                    : versionEntity.getSimulation().getName();
-            versionEntity.getSimulation().setName(simulationName);
-            versionEntity.getSimulation().setDescription(createBlueprintDescription(
-                    simulationName,
-                    request.criticalSituation(),
-                    request.competencies().stream().map(UpdateBlueprintRequest.CompetencyRequest::name).toList(),
-                    request.highPerformance(),
-                    request.criticalError(),
-                    request.resultUse()
-            ));
-        }
-        if (hasText(request.criticalSituation())) {
-            findNode(versionEntity, request.rootNodeId().trim()).setMessage(request.criticalSituation().trim());
-        }
         simulationMapperService.applyBlueprintUpdate(versionEntity, request);
         SimulationVersionEntity savedVersionEntity = simulationVersionRepository.save(versionEntity);
 
@@ -603,8 +586,6 @@ public class SimulationAdminService {
 
     private String createDraftDescription(CreateSimulationDraftRequest request) {
         boolean hasStructuredBlueprint = hasText(request.criticalSituation())
-                || hasText(request.highPerformance())
-                || hasText(request.criticalError())
                 || hasText(request.resultUse());
 
         if (!hasStructuredBlueprint) {
@@ -612,48 +593,13 @@ public class SimulationAdminService {
         }
 
         StringBuilder description = new StringBuilder();
-        appendBlueprintDescriptionLines(
-                description,
-                request.name(),
-                request.criticalSituation(),
-                request.competencies(),
-                request.highPerformance(),
-                request.criticalError(),
-                request.resultUse()
-        );
-        return truncateDescription(description.toString().trim());
-    }
-
-    private String createBlueprintDescription(
-            String name,
-            String criticalSituation,
-            List<String> competencies,
-            String highPerformance,
-            String criticalError,
-            String resultUse
-    ) {
-        StringBuilder description = new StringBuilder();
-        appendBlueprintDescriptionLines(description, name, criticalSituation, competencies, highPerformance, criticalError, resultUse);
-        return truncateDescription(description.toString().trim());
-    }
-
-    private void appendBlueprintDescriptionLines(
-            StringBuilder description,
-            String name,
-            String criticalSituation,
-            List<String> competencies,
-            String highPerformance,
-            String criticalError,
-            String resultUse
-    ) {
-        appendLine(description, "Cargo", name);
-        appendLine(description, "Situação crítica", criticalSituation);
-        if (competencies != null && !competencies.isEmpty()) {
-            appendLine(description, "Competências", String.join(", ", competencies));
+        appendLine(description, "Cargo", request.name());
+        appendLine(description, "Situação crítica", request.criticalSituation());
+        if (request.competencies() != null && !request.competencies().isEmpty()) {
+            appendLine(description, "Competências", String.join(", ", request.competencies()));
         }
-        appendLine(description, "Alta performance faria", highPerformance);
-        appendLine(description, "Erro crítico", criticalError);
-        appendLine(description, "Uso do resultado", resultUse);
+        appendLine(description, "Uso do resultado", request.resultUse());
+        return truncateDescription(description.toString().trim());
     }
 
     private void appendLine(StringBuilder description, String label, String value) {
@@ -668,14 +614,6 @@ public class SimulationAdminService {
 
     private boolean hasText(String value) {
         return value != null && !value.isBlank();
-    }
-
-    private boolean hasBlueprintTextUpdate(UpdateBlueprintRequest request) {
-        return hasText(request.name())
-                || hasText(request.criticalSituation())
-                || hasText(request.highPerformance())
-                || hasText(request.criticalError())
-                || hasText(request.resultUse());
     }
 
     private String truncateDescription(String description) {
