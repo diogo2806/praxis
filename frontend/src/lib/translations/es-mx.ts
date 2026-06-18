@@ -68,10 +68,10 @@ export const esMx = {
       "Define puesto, situación crítica, competencias evaluadas y uso del resultado.",
     blockedReason: "puesto, situación crítica y competencia son obligatorios",
     loadingConfigTitle: "Cargando configuración de la empresa",
-    loadingConfigBody: "Buscando competencias y usos del resultado en el backend.",
+    loadingConfigBody: "Buscando competencias y usos del resultado de tu empresa.",
     configErrorTitle: "No se pudo cargar la configuración",
     configErrorFallback:
-      "Verifica que el backend esté disponible antes de crear una simulación.",
+      "Verifica que el sistema esté disponible antes de crear una evaluación.",
     createErrorTitle: "No se pudo crear el borrador",
     createErrorFallback: "Intenta de nuevo cuando el sistema esté disponible.",
     updateErrorTitle: "No se pudo actualizar el plan",

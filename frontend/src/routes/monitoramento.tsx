@@ -230,7 +230,7 @@ function MonitoringPage() {
                   <li className="flex gap-2">
                     <CheckCircle2 className="mt-0.5 h-4 w-4 text-success" />
                     <span>
-                      <Termo id="auditlog">AuditLog</Termo> (registro de auditoria) imutável
+                      Registro de auditoria imutável
                     </span>
                   </li>
                   <li className="flex gap-2">

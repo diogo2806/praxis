@@ -108,6 +108,8 @@ export interface SimulationSummaryResponse {
   id: string;
   name: string;
   description: string;
+  criticalSituation?: string | null;
+  resultUse?: string | null;
   versionNumber: number;
   status: SimulationVersionStatus;
   updatedAt: string;
@@ -134,6 +136,8 @@ export interface UpdateBlueprintCompetencyRequest {
 export interface UpdateBlueprintRequest {
   rootNodeId: string;
   competencies: UpdateBlueprintCompetencyRequest[];
+  criticalSituation?: string | null;
+  resultUse?: string | null;
 }
 
 export interface SimulationVersionOptionResponse {
@@ -162,6 +166,8 @@ export interface SimulationVersionDetailResponse {
   simulationId: string;
   name: string;
   description: string;
+  criticalSituation?: string | null;
+  resultUse?: string | null;
   versionNumber: number;
   status: SimulationVersionStatus;
   blueprint: {

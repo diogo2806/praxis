@@ -9,6 +9,8 @@ public record SimulationSummaryResponse(
         String id,
         String name,
         String description,
+        String criticalSituation,
+        String resultUse,
         int versionNumber,
         SimulationVersionStatus status,
         Instant updatedAt,

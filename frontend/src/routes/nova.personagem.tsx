@@ -82,7 +82,7 @@ function Page() {
         return rootNode.id;
       }
       if (!config) {
-        throw new Error("Configuracao da empresa ainda nao foi carregada pelo backend.");
+        throw new Error("A configuração da empresa ainda não foi carregada pelo sistema.");
       }
       return createSimulationNode(search.simulationId!, search.versionNumber!, {
         clientMessage,
@@ -142,10 +142,10 @@ function Page() {
           Buscando a primeira etapa da simulação {search.simulationId} v{search.versionNumber}.
         </StateBanner>
       ) : tenantConfigError ? (
-        <StateBanner tone="danger" title="Nao foi possivel carregar a configuracao">
+        <StateBanner tone="danger" title="Não foi possível carregar a configuração">
           {tenantConfigQueryError instanceof Error
             ? tenantConfigQueryError.message
-            : "Verifique se o backend esta disponivel antes de continuar."}
+            : "Verifique se o sistema está disponível antes de continuar."}
         </StateBanner>
       ) : versionQuery.isError ? (
         <StateBanner tone="danger" title="Não foi possível carregar a versão">

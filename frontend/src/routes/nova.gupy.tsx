@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { CheckCircle2, RefreshCw, Server, Webhook, XCircle } from "lucide-react";
+import { CheckCircle2, Link2, RefreshCw, Send, XCircle } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
 import {
   EmptyState,
@@ -43,18 +43,10 @@ export const Route = createFileRoute("/nova/gupy")({
   component: GupyActivation,
 });
 
-const endpoints = [
-  { method: "GET", path: "/test", description: "lista simulações publicadas como Test[]" },
-  {
-    method: "POST",
-    path: "/test/candidate",
-    description: "registra candidato e devolve test_url + test_result_id",
-  },
-  {
-    method: "GET",
-    path: "/test/result/{resultId}",
-    description: "devolve TestResult com score e competências",
-  },
+const integrationChecks = [
+  "A Gupy consegue encontrar as avaliações publicadas.",
+  "O convite do candidato abre a avaliação correta.",
+  "A pontuação e as competências são enviadas de volta após a conclusão.",
 ];
 
 function GupyActivation() {
@@ -96,14 +88,14 @@ function GupyActivation() {
   return (
     <AppShell>
       <WizardStepper current="publicacao" />
-      <ScreenStateStrip blockedReason="checklist de ativação incompleto bloqueia integração ativa" />
+      <ScreenStateStrip blockedReason="lista de verificação incompleta bloqueia a integração ativa" />
       <div className="mb-5 flex flex-wrap items-start justify-between gap-4">
         <div>
           <div className="text-xs uppercase text-primary">Passo 4</div>
-          <h1 className="mt-1 text-3xl font-semibold">Gupy - Ativação & Conferência</h1>
+          <h1 className="mt-1 text-3xl font-semibold">Gupy - Ativação e conferência</h1>
           <p className="mt-1 max-w-3xl text-sm text-muted-foreground">
-            A Gupy consome nossas conexões externas; esta tela mostra a verificação prévia desta
-            versão e a fila de envio dos resultados.
+            Confira se esta avaliação está pronta para aparecer na Gupy e se os resultados serão
+            enviados corretamente depois que o candidato terminar.
           </p>
         </div>
       </div>
@@ -162,8 +154,8 @@ function GupyActivation() {
             <NextStepContract
               primary={
                 hasFailure
-                  ? "Corrigir checklist de ativação antes de marcar integração ativa."
-                  : "Registrar conferência e aguardar ativação/vínculo dentro da Gupy."
+                  ? "Corrigir a lista de verificação antes de marcar a integração como ativa."
+                  : "Registrar conferência e aguardar o vínculo dentro da Gupy."
               }
               secondary="Cliente vincula a simulação na vaga dentro da Gupy; o gestor não usa tela externa."
               versionRule="A Gupy lista apenas testes publicados e versões imutáveis."
@@ -188,20 +180,17 @@ function GupyActivation() {
             <main className="space-y-5">
               <section className="rounded-md border border-border bg-card p-5">
                 <div className="mb-4 flex items-center gap-2 text-sm font-semibold">
-                  <Server className="h-4 w-4" />
-                  Conexões que o sistema oferece
+                  <Link2 className="h-4 w-4" />
+                  O que será conferido
                 </div>
                 <div className="grid gap-3">
-                  {endpoints.map((endpoint) => (
+                  {integrationChecks.map((check) => (
                     <div
-                      key={`${endpoint.method}-${endpoint.path}`}
-                      className="grid gap-3 rounded-md border border-border bg-background p-3 md:grid-cols-[72px_220px_1fr]"
+                      key={check}
+                      className="flex items-start gap-3 rounded-md border border-border bg-background p-3"
                     >
-                      <span className="rounded-md border border-border bg-card px-2 py-1 text-xs font-semibold">
-                        {endpoint.method}
-                      </span>
-                      <code className="text-sm text-foreground">{endpoint.path}</code>
-                      <span className="text-sm text-muted-foreground">{endpoint.description}</span>
+                      <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-success" />
+                      <span className="text-sm text-muted-foreground">{check}</span>
                     </div>
                   ))}
                 </div>
@@ -219,8 +208,8 @@ function GupyActivation() {
 
             <aside className="rounded-md border border-border bg-card p-5">
               <div className="mb-4 flex items-center gap-2 text-sm font-semibold">
-                <Webhook className="h-4 w-4" />
-                Fila de envio
+                <Send className="h-4 w-4" />
+                Envios de resultado
               </div>
               <DeliveryList
                 deliveries={deliveriesQuery.data ?? []}

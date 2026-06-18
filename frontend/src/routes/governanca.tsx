@@ -101,7 +101,7 @@ function GovernanceHub() {
       <div className="mt-5 space-y-5">
         <section className="rounded-md border border-border bg-card p-5">
           <h2 className="text-sm font-semibold">
-            <Termo id="auditlog">AuditLog</Termo> (registro de auditoria) imutável
+            Registro de auditoria imutável
           </h2>
           {hasGovernanceParams ? (
             <AuditEventList events={auditQuery.data ?? []} loading={auditQuery.isLoading} />

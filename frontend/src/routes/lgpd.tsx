@@ -25,7 +25,7 @@ export const Route = createFileRoute("/lgpd")({
   head: () => ({
     meta: [
       { title: "LGPD & Transparencia do resultado - Praxis" },
-      { name: "description", content: "Explicação de score e revisão humana." },
+      { name: "description", content: "Explicação da pontuação e revisão humana." },
     ],
   }),
   component: LgpdPage,

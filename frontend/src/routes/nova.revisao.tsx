@@ -8,7 +8,7 @@ export const Route = createFileRoute("/nova/revisao")({
   head: () => ({
     meta: [
       { title: "Revisão - Práxis" },
-      { name: "description", content: "Validador, mapa e score da simulação." },
+      { name: "description", content: "Validador, mapa e pontuação da avaliação." },
     ],
   }),
   component: Page,

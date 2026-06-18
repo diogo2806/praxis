@@ -80,7 +80,7 @@ const features = [
   {
     icon: Sparkles,
     title: "Sem IA julgando candidato",
-    body: "O score vem de rubrica, peso e cálculo. Zero caixa-preta, zero custo de IA, totalmente explicável.",
+    body: "A pontuação vem de critérios, pesos e cálculo. Zero caixa-preta, zero custo de IA, totalmente explicável.",
   },
   {
     icon: Scale,
@@ -146,18 +146,18 @@ const accessibility = [
   {
     icon: Timer,
     title: "Tempo ajustável",
-    body: "Limite por turno pode ser estendido conforme a LBI, sem afetar o cálculo do score.",
+    body: "Limite por turno pode ser estendido conforme a LBI, sem afetar o cálculo da pontuação.",
   },
 ];
 
 const faq = [
   {
     q: "O Práxis usa IA generativa para avaliar o candidato?",
-    a: "Não. A avaliação é determinística: o score sai de critérios e pesos versionados definidos pela sua equipe.",
+    a: "Não. A avaliação é determinística: a pontuação sai de critérios e pesos versionados definidos pela sua equipe.",
   },
   {
     q: "Como funciona a integração com a Gupy?",
-    a: "A Práxis implementa o contrato de provedores externos da Gupy: rotas /test, /test/candidate e /test/result/{id}, autenticação Bearer e devolução por webhook assíncrono com retentativas.",
+    a: "Sim. A Práxis se conecta à Gupy para listar avaliações, abrir convites de candidatos e devolver resultados automaticamente com retentativas quando há falha temporária.",
   },
   {
     q: "Funciona com outros sistemas além da Gupy?",
@@ -239,7 +239,7 @@ function LandingPage() {
               </h1>
               <p className="mt-5 max-w-xl text-base leading-relaxed text-muted-foreground md:text-lg">
                 Antes de gastar a agenda do gestor com entrevista, a Práxis mostra a decisão da
-                pessoa numa situação real do cargo, com score por competência e trilha auditável.
+                pessoa numa situação real do cargo, com pontuação por competência e trilha auditável.
               </p>
               <div className="mt-7 flex flex-wrap gap-3">
                 <a
@@ -479,7 +479,7 @@ function LandingPage() {
                     <code className="font-mono text-xs">/test</code>,{" "}
                     <code className="font-mono text-xs">/test/candidate</code>,{" "}
                     <code className="font-mono text-xs">/test/result/{"{id}"}</code>, auth Bearer
-                    e webhook assíncrono com retry.
+                    e envio automático com retentativas.
                   </p>
                   <p className="mt-4 inline-flex items-center gap-2 rounded-md border border-white/15 bg-white/5 px-3 py-2 text-xs text-sidebar-foreground/75">
                     <Plug className="h-3.5 w-3.5" aria-hidden />

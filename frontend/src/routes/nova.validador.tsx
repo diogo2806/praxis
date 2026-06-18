@@ -292,7 +292,7 @@ function ValidatorPage() {
             <section className="rounded-md border border-border bg-card p-5">
               <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
                 <div>
-                  <h2 className="text-sm font-semibold">Diagn?stico</h2>
+                  <h2 className="text-sm font-semibold">Diagnóstico</h2>
                   {selectedNodeId && (
                     <div className="mt-1 text-xs text-muted-foreground">
                       Filtrado por etapa{" "}
@@ -469,9 +469,9 @@ function ScoringModelPreview({
   return (
     <section className="mb-5">
       <div className="mb-5">
-        <h2 className="text-2xl font-semibold tracking-tight">Mapa & score normalizado</h2>
+        <h2 className="text-2xl font-semibold tracking-tight">Mapa e pontuação normalizada</h2>
         <p className="mt-1 text-sm text-muted-foreground">
-          Dois candidatos têm o mesmo teto possível, independente do caminho.
+          Dois candidatos têm o mesmo teto possível, independentemente do caminho.
         </p>
       </div>
 
@@ -933,7 +933,7 @@ function NormalizedScoreMap({
               </div>
             ) : (
               <div className="mt-4 rounded-md border border-dashed border-border p-4 text-sm text-muted-foreground">
-                Selecione um nó para ver texto, tempo, pontuação, competências e saídas sem sair da
+                Selecione uma etapa para ver texto, tempo, pontuação, competências e saídas sem sair da
                 tela.
               </div>
             )}
@@ -1144,7 +1144,7 @@ function FlowOutcomeSummary({ version }: { version: SimulationVersionDetailRespo
     <div className="mt-5 grid gap-4 lg:grid-cols-2">
       <section className="rounded-md border border-border bg-background p-4">
         <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-          <h3 className="text-sm font-semibold">Finais alcan??veis</h3>
+          <h3 className="text-sm font-semibold">Finais alcançáveis</h3>
           <span className="rounded-md bg-muted px-2 py-1 text-[11px] text-muted-foreground">
             {endings.length} {endings.length === 1 ? "final" : "finais"}
           </span>
@@ -1174,16 +1174,16 @@ function FlowOutcomeSummary({ version }: { version: SimulationVersionDetailRespo
           </ul>
         ) : (
           <p className="text-sm text-muted-foreground">
-            Nenhum final alcan??vel foi encontrado a partir da etapa inicial.
+            Nenhum final alcançável foi encontrado a partir da etapa inicial.
           </p>
         )}
       </section>
 
       <section className="rounded-md border border-border bg-background p-4">
         <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-          <h3 className="text-sm font-semibold">Texto do relat?rio final</h3>
+          <h3 className="text-sm font-semibold">Texto do relatório final</h3>
           <span className="rounded-md bg-muted px-2 py-1 text-[11px] text-muted-foreground">
-            m?ximo {formatScore(maxScore)} pts
+            máximo {formatScore(maxScore)} pts
           </span>
         </div>
 
@@ -1201,14 +1201,14 @@ function FlowOutcomeSummary({ version }: { version: SimulationVersionDetailRespo
                   </span>
                 </div>
                 <p className="leading-6 text-foreground/85">
-                  {ending.reportText || "Sem texto de relat?rio cadastrado para este final."}
+                  {ending.reportText || "Sem texto de relatório cadastrado para este final."}
                 </p>
               </article>
             ))}
           </div>
         ) : (
           <p className="text-sm text-muted-foreground">
-            Cadastre uma alternativa final para ver o texto do relat?rio.
+            Cadastre uma alternativa final para ver o texto do relatório.
           </p>
         )}
       </section>

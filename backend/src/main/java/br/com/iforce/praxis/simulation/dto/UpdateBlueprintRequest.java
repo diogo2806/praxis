@@ -23,7 +23,15 @@ public record UpdateBlueprintRequest(
         @Valid
         @NotEmpty
         @Schema(description = "Competencias avaliadas e pesos normalizados.")
-        List<CompetencyRequest> competencies
+        List<CompetencyRequest> competencies,
+
+        @Size(max = 1200)
+        @Schema(example = "Cliente exige solucao imediata para atraso recorrente.")
+        String criticalSituation,
+
+        @Size(max = 120)
+        @Schema(example = "Triagem")
+        String resultUse
 ) {
 
     public record CompetencyRequest(

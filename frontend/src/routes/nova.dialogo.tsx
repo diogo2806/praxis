@@ -5,7 +5,6 @@ import { GitBranch, ImagePlus, Music, Plus, Save, Trash2, X } from "lucide-react
 import { AppShell } from "@/components/app-shell";
 import {
   EmptyState,
-  NextStepContract,
   ScreenStateStrip,
   StateBanner,
   StatusBadge,
@@ -118,7 +117,7 @@ function DialogEditor() {
     mutationFn: () =>
       {
         if (!config) {
-          throw new Error("Configuracao da empresa ainda nao foi carregada pelo backend.");
+          throw new Error("A configuração da empresa ainda não foi carregada pelo sistema.");
         }
         return createSimulationNode(search.simulationId!, search.versionNumber!, {
           clientMessage: draftMessage.trim(),
@@ -230,8 +229,8 @@ function DialogEditor() {
       <ScreenStateStrip blockedReason="o fluxo da conversa precisa existir no sistema e passar pelo validador" />
       <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
         <div>
-          <div className="text-xs uppercase text-primary">Passo 3</div>
-          <h1 className="mt-1 text-3xl font-semibold">Editor de diálogo</h1>
+          <div className="text-xs uppercase text-primary">Passo 2</div>
+          <h1 className="mt-1 text-3xl font-semibold">Diálogo do cenário</h1>
           <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
             Etapas e alternativas são lidas e gravadas pelo sistema.
           </p>
@@ -255,10 +254,10 @@ function DialogEditor() {
           Buscando simulação {search.simulationId} v{search.versionNumber}.
         </StateBanner>
       ) : tenantConfigError ? (
-        <StateBanner tone="danger" title="Nao foi possivel carregar a configuracao">
+        <StateBanner tone="danger" title="Não foi possível carregar a configuração">
           {tenantConfigQueryError instanceof Error
             ? tenantConfigQueryError.message
-            : "Verifique se o backend esta disponivel antes de editar o fluxo."}
+            : "Verifique se o sistema está disponível antes de editar o fluxo."}
         </StateBanner>
       ) : versionQuery.isError ? (
         <StateBanner tone="danger" title="Não foi possível carregar o fluxo da conversa">
@@ -268,12 +267,6 @@ function DialogEditor() {
         </StateBanner>
       ) : (
         <>
-          <NextStepContract
-            primary="Validar qualidade quando o fluxo da conversa estiver completo."
-            secondary="Voltar à personagem ou ao modelo base continua permitido antes de publicar."
-            versionRule="Depois de publicar, editar cria nova versão."
-            lockedAfter="Versão publicada não altera tentativas em andamento."
-          />
           {feedbackMessage && (
             <div className="mt-5">
               <StateBanner tone="info" title="Alteração salva">
@@ -332,7 +325,7 @@ function DialogEditor() {
                 className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-md border border-border bg-card px-3 py-2 text-sm hover:bg-accent disabled:cursor-not-allowed disabled:opacity-50"
               >
                 <Plus className="h-4 w-4" />
-                {addNodeMutation.isPending ? "Adicionando..." : "Adicionar nó"}
+                {addNodeMutation.isPending ? "Adicionando..." : "Adicionar etapa"}
               </button>
             </aside>
 
@@ -348,7 +341,7 @@ function DialogEditor() {
                     onClick={() => {
                       if (
                         window.confirm(
-                          `Remover o nó ${selected.id}? Esta ação não pode ser desfeita.`,
+                          `Remover a etapa ${selected.id}? Esta ação não pode ser desfeita.`,
                         )
                       ) {
                         setFeedbackMessage(null);
@@ -362,7 +355,7 @@ function DialogEditor() {
                     className="inline-flex items-center gap-2 rounded-md border border-danger/25 bg-danger/5 px-3 py-2 text-xs text-danger hover:bg-danger/10 disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     <Trash2 className="h-4 w-4" />
-                    {deleteNodeMutation.isPending ? "Removendo..." : "Remover nó"}
+                    {deleteNodeMutation.isPending ? "Removendo..." : "Remover etapa"}
                   </button>
                 </div>
                 <label className="block">
@@ -491,7 +484,7 @@ function DialogEditor() {
                           onClick={() => {
                             if (
                               window.confirm(
-                                `Remover a alternativa ${option.id} do nó ${selected.id}?`,
+                                `Remover a alternativa ${option.id} da etapa ${selected.id}?`,
                               )
                             ) {
                               setFeedbackMessage(null);
@@ -630,16 +623,16 @@ function DialogEditor() {
                 search={{ simulationId: search.simulationId, versionNumber: search.versionNumber }}
                 className="rounded-md bg-primary px-5 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
               >
-                Validar qualidade
+                Seguir para revisão
               </Link>
             ) : (
               <button
                 type="button"
                 disabled
-                title="Cada nó precisa ter de 2 a 4 alternativas com critérios de pontuação antes da revisão"
+                title="Cada etapa precisa ter de 2 a 4 alternativas com critérios de pontuação antes da revisão"
                 className="cursor-not-allowed rounded-md bg-primary px-5 py-2 text-sm font-medium text-primary-foreground opacity-50"
               >
-                Validar qualidade
+                Seguir para revisão
               </button>
             )}
           </div>

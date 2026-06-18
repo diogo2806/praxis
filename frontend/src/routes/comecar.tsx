@@ -112,8 +112,8 @@ const faq = [
     a: "Não. A criação do teste é guiada por etapas. Termos técnicos têm uma explicação simples quando você passa o mouse sobre eles.",
   },
   {
-    q: "O candidato me pediu um token. O que é isso?",
-    a: "O token é o código do convite, que vai junto com o link enviado ao candidato. Quem recebe o link já entra com o token incluído; se ele se perder, basta reenviar o link pela tela Enviar link.",
+    q: "O candidato me pediu um código de acesso. O que é isso?",
+    a: "É o código do convite. Ele já vai dentro do link enviado ao candidato; se a pessoa perder o acesso, basta reenviar o link pela tela Enviar link.",
   },
 ];
 

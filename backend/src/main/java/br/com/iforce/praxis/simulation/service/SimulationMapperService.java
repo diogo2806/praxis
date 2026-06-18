@@ -91,6 +91,8 @@ public class SimulationMapperService {
                 simulationVersionEntity.getSimulation().getId(),
                 simulationVersionEntity.getSimulation().getName(),
                 simulationVersionEntity.getSimulation().getDescription(),
+                simulationVersionEntity.getSimulation().getCriticalSituation(),
+                simulationVersionEntity.getSimulation().getResultUse(),
                 simulationVersionEntity.getVersionNumber(),
                 simulationVersionEntity.getStatus(),
                 new SimulationVersionDetailResponse.BlueprintDto(

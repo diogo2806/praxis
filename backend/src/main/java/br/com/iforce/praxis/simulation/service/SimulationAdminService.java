@@ -104,6 +104,8 @@ public class SimulationAdminService {
         simulationEntity.setTenantId(currentTenantService.requiredTenantId());
         simulationEntity.setName(request.name().trim());
         simulationEntity.setDescription(createDescription(request));
+        simulationEntity.setCriticalSituation(trimToNull(request.criticalSituation()));
+        simulationEntity.setResultUse(trimToNull(request.objective()));
         simulationEntity.setCreatedAt(createdAt);
         simulationEntity.setArchived(false);
 
@@ -151,7 +153,9 @@ public class SimulationAdminService {
         simulationEntity.setId(generateSimulationId(request.name()));
         simulationEntity.setTenantId(currentTenantService.requiredTenantId());
         simulationEntity.setName(request.name().trim());
-        simulationEntity.setDescription(createDraftDescription(request));
+        simulationEntity.setDescription(truncateDescription(request.description().trim()));
+        simulationEntity.setCriticalSituation(trimToNull(request.criticalSituation()));
+        simulationEntity.setResultUse(trimToNull(request.resultUse()));
         simulationEntity.setCreatedAt(createdAt);
         simulationEntity.setArchived(false);
 
@@ -198,6 +202,15 @@ public class SimulationAdminService {
                 .map(UpdateBlueprintRequest.CompetencyRequest::name)
                 .toList());
         simulationMapperService.applyBlueprintUpdate(versionEntity, request);
+        SimulationEntity simulationEntity = versionEntity.getSimulation();
+        simulationEntity.setCriticalSituation(trimToNull(request.criticalSituation()));
+        simulationEntity.setResultUse(trimToNull(request.resultUse()));
+        simulationEntity.setDescription(createPlanningDescription(
+                simulationEntity.getName(),
+                request.criticalSituation(),
+                request.competencies().stream().map(UpdateBlueprintRequest.CompetencyRequest::name).toList(),
+                request.resultUse()
+        ));
         SimulationVersionEntity savedVersionEntity = simulationVersionRepository.save(versionEntity);
 
         auditEventService.appendSimulationVersionEvent(
@@ -584,21 +597,19 @@ public class SimulationAdminService {
         return description.length() > 1000 ? description.substring(0, 1000) : description;
     }
 
-    private String createDraftDescription(CreateSimulationDraftRequest request) {
-        boolean hasStructuredBlueprint = hasText(request.criticalSituation())
-                || hasText(request.resultUse());
-
-        if (!hasStructuredBlueprint) {
-            return truncateDescription(request.description().trim());
-        }
-
+    private String createPlanningDescription(
+            String role,
+            String criticalSituation,
+            List<String> competencies,
+            String resultUse
+    ) {
         StringBuilder description = new StringBuilder();
-        appendLine(description, "Cargo", request.name());
-        appendLine(description, "Situação crítica", request.criticalSituation());
-        if (request.competencies() != null && !request.competencies().isEmpty()) {
-            appendLine(description, "Competências", String.join(", ", request.competencies()));
+        appendLine(description, "Cargo", role);
+        appendLine(description, "Situação crítica", criticalSituation);
+        if (competencies != null && !competencies.isEmpty()) {
+            appendLine(description, "Competências", String.join(", ", competencies));
         }
-        appendLine(description, "Uso do resultado", request.resultUse());
+        appendLine(description, "Uso do resultado", resultUse);
         return truncateDescription(description.toString().trim());
     }
 
@@ -855,6 +866,8 @@ public class SimulationAdminService {
                 simulationEntity.getId(),
                 simulationEntity.getName(),
                 simulationEntity.getDescription(),
+                simulationEntity.getCriticalSituation(),
+                simulationEntity.getResultUse(),
                 versionEntity.getVersionNumber(),
                 versionEntity.getStatus(),
                 versionEntity.getPublishedAt() != null ? versionEntity.getPublishedAt() : versionEntity.getCreatedAt(),

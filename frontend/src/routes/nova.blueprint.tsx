@@ -123,8 +123,8 @@ function Page() {
 
     const parsedBlueprint = parseBlueprintDescription(versionQuery.data.description);
     setRole(parsedBlueprint.role || versionQuery.data.name);
-    setCriticalSituation(parsedBlueprint.criticalSituation);
-    setSelectedResultUse(parsedBlueprint.resultUse || defaultResultUse);
+    setCriticalSituation(versionQuery.data.criticalSituation ?? parsedBlueprint.criticalSituation);
+    setSelectedResultUse((versionQuery.data.resultUse ?? parsedBlueprint.resultUse) || defaultResultUse);
     setSelectedCompetencies(
       versionQuery.data.blueprint.competencies.map((competency) => competency.name),
     );
@@ -168,6 +168,8 @@ function Page() {
       updateSimulationBlueprint(search.simulationId!, search.versionNumber!, {
         rootNodeId: versionQuery.data?.blueprint.rootNodeId ?? "turno-1",
         competencies: buildCompetencyWeights(selectedCompetencies, versionQuery.data?.blueprint.competencies),
+        criticalSituation: criticalSituation.trim(),
+        resultUse: selectedResultUse,
       }),
     onSuccess: async (simulation) => {
       await queryClient.invalidateQueries({

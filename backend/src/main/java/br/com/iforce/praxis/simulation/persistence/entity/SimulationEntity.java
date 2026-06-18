@@ -35,6 +35,12 @@ public class SimulationEntity implements TenantAwareEntity {
     @Column(name = "description", nullable = false, length = 1000)
     private String description;
 
+    @Column(name = "critical_situation", length = 1200)
+    private String criticalSituation;
+
+    @Column(name = "result_use", length = 120)
+    private String resultUse;
+
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
 

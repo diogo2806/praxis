@@ -10,6 +10,8 @@ public record SimulationVersionDetailResponse(
         String simulationId,
         String name,
         String description,
+        String criticalSituation,
+        String resultUse,
         int versionNumber,
         SimulationVersionStatus status,
         BlueprintDto blueprint,

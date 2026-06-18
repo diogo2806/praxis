@@ -121,7 +121,7 @@ function Page() {
             </div>
             <aside className="rounded-md border border-border bg-card p-5">
               <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                Pesos do score
+                Pesos da pontuação
               </div>
               <div className="mt-3 space-y-2">
                 {version.blueprint.competencies.map((competency) => (
