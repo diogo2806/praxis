@@ -795,7 +795,7 @@ function NormalizedScoreMap({
                       type="button"
                       onClick={() => onSelectNode(edge.toKind === "end" ? edge.from : edge.to)}
                       className={cn(
-                        "absolute z-10 max-w-[150px] rounded-md border bg-card px-2 py-1 text-left text-[11px] shadow-sm transition hover:border-primary hover:bg-accent",
+                        "absolute z-10 w-[132px] rounded-md border bg-card px-2 py-1 text-left text-[11px] shadow-sm transition hover:border-primary hover:bg-accent",
                         edge.option.isCritical
                           ? "border-danger/40 text-danger"
                           : "border-border text-foreground",
@@ -997,8 +997,9 @@ interface InteractiveScoreFlow {
 function buildInteractiveScoreFlow(version: SimulationVersionDetailResponse): InteractiveScoreFlow {
   const nodeWidth = 176;
   const nodeHeight = 104;
-  const columnGap = 260;
-  const rowGap = 150;
+  const optionLabelWidth = 132;
+  const columnGap = 420;
+  const rowGap = 154;
   const startX = 36;
   const startY = 36;
   const nodesById = new Map(version.nodes.map((node) => [node.id, node]));
@@ -1043,6 +1044,10 @@ function buildInteractiveScoreFlow(version: SimulationVersionDetailResponse): In
     const fromNode = flowNodes.find((item) => item.id === node.id);
     if (!fromNode) return;
 
+    const terminalOptions = node.options.filter(
+      (option) => !option.nextNodeId || !nodesById.has(option.nextNodeId),
+    );
+
     node.options.forEach((option, optionIndex) => {
       const score = scoreOption(option, version);
       const targetNode = option.nextNodeId ? nodesById.get(option.nextNodeId) : undefined;
@@ -1063,7 +1068,11 @@ function buildInteractiveScoreFlow(version: SimulationVersionDetailResponse): In
             sourceNodeId: node.id,
             title: option.auditNote || option.text || "Encerramento",
             x: fromNode.x + columnGap,
-            y: fromNode.y + optionIndex * 118,
+            y: Math.max(
+              startY,
+              fromNode.y +
+                terminalOptions.findIndex((item) => item.id === option.id) * (nodeHeight + 14),
+            ),
           } satisfies InteractiveFlowNode);
         if (!existingEnd) endNodes.push(toNode);
         toKind = "end";
@@ -1073,11 +1082,12 @@ function buildInteractiveScoreFlow(version: SimulationVersionDetailResponse): In
       const end = { x: toNode.x, y: toNode.y + nodeHeight / 2 };
       const midX = start.x + Math.max(80, (end.x - start.x) / 2);
       const path = `M ${start.x} ${start.y} C ${midX} ${start.y}, ${midX} ${end.y}, ${end.x} ${end.y}`;
+      const labelX = Math.min(end.x - optionLabelWidth - 20, start.x + 40);
 
       edges.push({
         from: node.id,
         id: `${node.id}-${option.id}-${toNode.id}`,
-        labelX: start.x + Math.max(24, (end.x - start.x) / 2 - 42),
+        labelX: Math.max(start.x + 12, labelX),
         labelY: (start.y + end.y) / 2 - 18,
         option,
         path,

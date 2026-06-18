@@ -28,6 +28,7 @@ import { Route as NovaMapaRouteImport } from './routes/nova.mapa'
 import { Route as NovaGupyRouteImport } from './routes/nova.gupy'
 import { Route as NovaGovernancaRouteImport } from './routes/nova.governanca'
 import { Route as NovaDialogoRouteImport } from './routes/nova.dialogo'
+import { Route as NovaCompetenciasRouteImport } from './routes/nova.competencias'
 import { Route as NovaCenarioRouteImport } from './routes/nova.cenario'
 import { Route as NovaBlueprintRouteImport } from './routes/nova.blueprint'
 import { Route as NovaAvaliacaoRouteImport } from './routes/nova.avaliacao'
@@ -128,6 +129,11 @@ const NovaDialogoRoute = NovaDialogoRouteImport.update({
   path: '/nova/dialogo',
   getParentRoute: () => rootRouteImport,
 } as any)
+const NovaCompetenciasRoute = NovaCompetenciasRouteImport.update({
+  id: '/nova/competencias',
+  path: '/nova/competencias',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const NovaCenarioRoute = NovaCenarioRouteImport.update({
   id: '/nova/cenario',
   path: '/nova/cenario',
@@ -163,6 +169,7 @@ export interface FileRoutesByFullPath {
   '/nova/avaliacao': typeof NovaAvaliacaoRoute
   '/nova/blueprint': typeof NovaBlueprintRoute
   '/nova/cenario': typeof NovaCenarioRoute
+  '/nova/competencias': typeof NovaCompetenciasRoute
   '/nova/dialogo': typeof NovaDialogoRoute
   '/nova/governanca': typeof NovaGovernancaRoute
   '/nova/gupy': typeof NovaGupyRoute
@@ -188,6 +195,7 @@ export interface FileRoutesByTo {
   '/nova/avaliacao': typeof NovaAvaliacaoRoute
   '/nova/blueprint': typeof NovaBlueprintRoute
   '/nova/cenario': typeof NovaCenarioRoute
+  '/nova/competencias': typeof NovaCompetenciasRoute
   '/nova/dialogo': typeof NovaDialogoRoute
   '/nova/governanca': typeof NovaGovernancaRoute
   '/nova/gupy': typeof NovaGupyRoute
@@ -214,6 +222,7 @@ export interface FileRoutesById {
   '/nova/avaliacao': typeof NovaAvaliacaoRoute
   '/nova/blueprint': typeof NovaBlueprintRoute
   '/nova/cenario': typeof NovaCenarioRoute
+  '/nova/competencias': typeof NovaCompetenciasRoute
   '/nova/dialogo': typeof NovaDialogoRoute
   '/nova/governanca': typeof NovaGovernancaRoute
   '/nova/gupy': typeof NovaGupyRoute
@@ -241,6 +250,7 @@ export interface FileRouteTypes {
     | '/nova/avaliacao'
     | '/nova/blueprint'
     | '/nova/cenario'
+    | '/nova/competencias'
     | '/nova/dialogo'
     | '/nova/governanca'
     | '/nova/gupy'
@@ -266,6 +276,7 @@ export interface FileRouteTypes {
     | '/nova/avaliacao'
     | '/nova/blueprint'
     | '/nova/cenario'
+    | '/nova/competencias'
     | '/nova/dialogo'
     | '/nova/governanca'
     | '/nova/gupy'
@@ -291,6 +302,7 @@ export interface FileRouteTypes {
     | '/nova/avaliacao'
     | '/nova/blueprint'
     | '/nova/cenario'
+    | '/nova/competencias'
     | '/nova/dialogo'
     | '/nova/governanca'
     | '/nova/gupy'
@@ -316,6 +328,7 @@ export interface RootRouteChildren {
   NovaAvaliacaoRoute: typeof NovaAvaliacaoRoute
   NovaBlueprintRoute: typeof NovaBlueprintRoute
   NovaCenarioRoute: typeof NovaCenarioRoute
+  NovaCompetenciasRoute: typeof NovaCompetenciasRoute
   NovaDialogoRoute: typeof NovaDialogoRoute
   NovaGovernancaRoute: typeof NovaGovernancaRoute
   NovaGupyRoute: typeof NovaGupyRoute
@@ -463,6 +476,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof NovaDialogoRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/nova/competencias': {
+      id: '/nova/competencias'
+      path: '/nova/competencias'
+      fullPath: '/nova/competencias'
+      preLoaderRoute: typeof NovaCompetenciasRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/nova/cenario': {
       id: '/nova/cenario'
       path: '/nova/cenario'
@@ -519,6 +539,7 @@ const rootRouteChildren: RootRouteChildren = {
   NovaAvaliacaoRoute: NovaAvaliacaoRoute,
   NovaBlueprintRoute: NovaBlueprintRoute,
   NovaCenarioRoute: NovaCenarioRoute,
+  NovaCompetenciasRoute: NovaCompetenciasRoute,
   NovaDialogoRoute: NovaDialogoRoute,
   NovaGovernancaRoute: NovaGovernancaRoute,
   NovaGupyRoute: NovaGupyRoute,

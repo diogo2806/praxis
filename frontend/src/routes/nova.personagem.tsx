@@ -42,12 +42,10 @@ function Page() {
     isError: tenantConfigError,
     error: tenantConfigQueryError,
   } = useTenantConfig();
-  const checklist = config?.languageChecklist.map((item) => item.value) ?? [];
   const hasDraftContext = Boolean(search.simulationId && search.versionNumber);
   const [name, setName] = useState("");
   const [emotion, setEmotion] = useState("");
   const [context, setContext] = useState("");
-  const [checkedItems, setCheckedItems] = useState<string[]>([]);
   const simulationsQuery = useQuery({
     queryKey: ["simulations"],
     queryFn: listSimulations,
@@ -65,7 +63,7 @@ function Page() {
   );
   const rootNode = orderedNodes.find((node) => node.id === rootNodeId) ?? orderedNodes[0];
   const existingMessage = rootNode?.clientMessage;
-  const canGoNext = checkedItems.length === checklist.length && context.trim().length > 0;
+  const canGoNext = context.trim().length > 0;
   const clientMessage = useMemo(() => {
     const parts = [
       emotion.trim(),
@@ -116,16 +114,10 @@ function Page() {
     setContext(parsed.context);
   }, [existingMessage]);
 
-  function toggleChecklist(item: string) {
-    setCheckedItems((current) =>
-      current.includes(item) ? current.filter((value) => value !== item) : [...current, item],
-    );
-  }
-
   return (
     <AppShell>
       <WizardStepper current="cenario" />
-      <ScreenStateStrip blockedReason="contexto e checklist de linguagem precisam ser confirmados" />
+      <ScreenStateStrip blockedReason="contexto do cliente precisa ser preenchido" />
       <div className="mb-6">
         <div className="text-xs uppercase tracking-[0.2em] text-primary">Passo 2</div>
         <h1 className="mt-1 font-display text-3xl">Personagem do cliente fictício</h1>
@@ -212,23 +204,17 @@ function Page() {
                 onChange={(event) => setContext(event.target.value)}
               />
             </label>
-            <div className="mt-6 rounded-md border border-warning/30 bg-warning/10 p-4">
+            <div className="mt-6 rounded-md border border-warning/30 bg-warning/10 p-4 text-sm">
               <div className="text-sm font-semibold text-warning-foreground">
-                Checklist de linguagem
+                Como preencher este card
               </div>
-              <ul className="mt-3 space-y-2">
-                {checklist.map((item) => (
-                  <li key={item} className="flex items-start gap-3 text-sm">
-                    <input
-                      type="checkbox"
-                      checked={checkedItems.includes(item)}
-                      onChange={() => toggleChecklist(item)}
-                      className="mt-0.5 h-4 w-4 accent-primary"
-                    />
-                    <span>{item}</span>
-                  </li>
-                ))}
-              </ul>
+              <p className="mt-2 text-muted-foreground">
+                Use o nome ou identificador apenas para reconhecer o personagem no roteiro. No
+                estado emocional inicial, descreva como o cliente chega ao atendimento, por exemplo
+                calmo, frustrado, confuso ou com pressa. No contexto, informe a situação que ele
+                vive, o objetivo da conversa, o que já tentou fazer e qualquer limite importante
+                para orientar as respostas do participante.
+              </p>
             </div>
           </div>
           <div className="mt-8 flex justify-between">

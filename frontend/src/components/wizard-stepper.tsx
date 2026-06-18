@@ -1,5 +1,6 @@
 import { Link, useRouterState } from "@tanstack/react-router";
 import { wizardSteps, type WizardSlug } from "@/lib/simulation-meta";
+import { useLanguage } from "@/lib/language-context";
 import { cn } from "@/lib/utils";
 
 export function WizardStepper({
@@ -10,6 +11,7 @@ export function WizardStepper({
   unlockedThrough?: WizardSlug;
 }) {
   const currentSearch = useRouterState({ select: (state) => state.location.search });
+  const { t } = useLanguage();
   const idx = wizardSteps.findIndex((s) => s.slug === current);
   const unlockedIdx = Math.max(
     idx,
@@ -19,11 +21,14 @@ export function WizardStepper({
     <div className="mb-8 rounded-xl border border-border bg-card p-4">
       <div className="mb-3 flex items-center justify-between text-xs text-muted-foreground">
         <div>
-          <span className="font-semibold text-foreground">Criar novo modelo de teste</span> · etapa {idx + 1} de{" "}
-          {wizardSteps.length}
+          <span className="font-semibold text-foreground">{t.wizard.createTest}</span>{" "}
+          ·{" "}
+          {t.wizard.stepOf
+            .replace("{current}", String(idx + 1))
+            .replace("{total}", String(wizardSteps.length))}
         </div>
         <div>
-          Salvo automaticamente <span className="text-success">●</span>
+          {t.wizard.autosaved} <span className="text-success">●</span>
         </div>
       </div>
       <ol className="flex gap-2 overflow-x-auto pb-1 md:grid md:grid-cols-4 md:overflow-visible md:pb-0">
@@ -53,9 +58,11 @@ export function WizardStepper({
                 >
                   {done ? "✓" : s.n}
                 </span>
-                Passo {s.n}
+                {t.wizard.step} {s.n}
               </div>
-              <div className="mt-1 truncate text-xs font-medium text-foreground">{s.label}</div>
+              <div className="mt-1 truncate text-xs font-medium text-foreground">
+                {t.wizard.steps[s.slug]}
+              </div>
             </>
           );
           return (
@@ -63,7 +70,7 @@ export function WizardStepper({
               {locked ? (
                 <div
                   aria-disabled="true"
-                  title="Conclua o passo atual para desbloquear"
+                  title={t.wizard.completeCurrentStep}
                   className={cn(
                     "block cursor-default rounded-md border px-2 py-2 text-left opacity-70",
                     "border-border bg-muted/40",

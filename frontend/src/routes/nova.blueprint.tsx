@@ -12,7 +12,9 @@ import {
   updateTenantConfig,
   type TenantConfigOption,
 } from "@/lib/api/praxis";
+import { useLanguage } from "@/lib/language-context";
 import { useTenantConfig } from "@/lib/tenant-config";
+import { getTranslations, type Language } from "@/lib/translations";
 
 export const Route = createFileRoute("/nova/blueprint")({
   validateSearch: (search: Record<string, unknown>) => ({
@@ -24,23 +26,45 @@ export const Route = createFileRoute("/nova/blueprint")({
           ? Number(search.versionNumber)
           : undefined,
   }),
-  head: () => ({
-    meta: [
-      { title: "Plano da avaliação — Práxis" },
-      {
-        name: "description",
-        content:
-          "Defina cargo, situação crítica, competências avaliadas e uso do resultado.",
-      },
-    ],
-  }),
+  head: () => {
+    const copy = getTranslations(getStoredLanguage()).blueprint;
+
+    return {
+      meta: [
+        { title: copy.metaTitle },
+        {
+          name: "description",
+          content: copy.metaDescription,
+        },
+      ],
+    };
+  },
   component: Page,
 });
+
+function getStoredLanguage(): Language {
+  if (typeof window === "undefined") {
+    return "pt-BR";
+  }
+
+  try {
+    const stored = localStorage.getItem("praxis-language");
+    if (stored === "pt-BR" || stored === "en" || stored === "es-MX") {
+      return stored;
+    }
+  } catch {
+    return "pt-BR";
+  }
+
+  return "pt-BR";
+}
 
 function Page() {
   const search = Route.useSearch();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const { t } = useLanguage();
+  const copy = t.blueprint;
   const hasVersionContext = Boolean(search.simulationId && search.versionNumber);
   const {
     config,
@@ -61,9 +85,9 @@ function Page() {
   const roleMaxLength = 180;
   const criticalSituationMaxLength = 1200;
   const missingFields = [
-    role.trim().length === 0 && "cargo-alvo",
-    criticalSituation.trim().length === 0 && "situação crítica",
-    selectedCompetencies.length === 0 && "ao menos uma competência",
+    role.trim().length === 0 && copy.missingRole,
+    criticalSituation.trim().length === 0 && copy.missingCriticalSituation,
+    selectedCompetencies.length === 0 && copy.missingCompetency,
   ].filter((field): field is string => Boolean(field));
   const canGoNext =
     role.trim().length > 0 &&
@@ -116,6 +140,12 @@ function Page() {
           criticalSituation,
           competencies: selectedCompetencies,
           resultUse: selectedResultUse,
+          labels: {
+            role: copy.descriptionRoleLabel,
+            criticalSituation: copy.descriptionCriticalSituationLabel,
+            competencies: copy.descriptionCompetenciesLabel,
+            resultUse: copy.descriptionResultUseLabel,
+          },
         }),
         rootNodeId: "turno-1",
         competencies: selectedCompetencies,
@@ -182,56 +212,58 @@ function Page() {
   return (
     <AppShell>
       <WizardStepper current="avaliacao" unlockedThrough={canGoNext ? "cenario" : "avaliacao"} />
-      <ScreenStateStrip blockedReason="cargo, situação crítica e competência obrigatórios" />
+      <ScreenStateStrip blockedReason={copy.blockedReason} />
 
       {tenantConfigLoading && (
-        <StateBanner tone="info" title="Carregando configuracao da empresa">
-          Buscando competencias e usos de resultado no backend.
+        <StateBanner tone="info" title={copy.loadingConfigTitle}>
+          {copy.loadingConfigBody}
         </StateBanner>
       )}
 
       {tenantConfigError && (
-        <StateBanner tone="danger" title="Nao foi possivel carregar a configuracao">
+        <StateBanner tone="danger" title={copy.configErrorTitle}>
           {tenantConfigQueryError instanceof Error
             ? tenantConfigQueryError.message
-            : "Verifique se o backend esta disponivel antes de criar uma simulacao."}
+            : copy.configErrorFallback}
         </StateBanner>
       )}
 
       {createDraftMutation.isError && (
         <div className="mb-5">
-          <StateBanner tone="danger" title="Não foi possível criar o rascunho">
+          <StateBanner tone="danger" title={copy.createErrorTitle}>
             {createDraftMutation.error instanceof Error
               ? createDraftMutation.error.message
-              : "Tente novamente quando o sistema estiver disponível."}
+              : copy.createErrorFallback}
           </StateBanner>
         </div>
       )}
 
       {updateExistingMutation.isError && (
         <div className="mb-5">
-          <StateBanner tone="danger" title="Nao foi possivel atualizar o plano">
+          <StateBanner tone="danger" title={copy.updateErrorTitle}>
             {updateExistingMutation.error instanceof Error
               ? updateExistingMutation.error.message
-              : "Tente novamente quando o sistema estiver disponivel."}
+              : copy.updateErrorFallback}
           </StateBanner>
         </div>
       )}
 
       {versionQuery.isLoading && (
         <div className="mb-5">
-          <StateBanner tone="info" title="Carregando plano cadastrado">
-            Buscando simulacao {search.simulationId} v{search.versionNumber}.
+          <StateBanner tone="info" title={copy.loadingPlanTitle}>
+            {copy.loadingPlanBody
+              .replace("{simulationId}", search.simulationId ?? "")
+              .replace("{versionNumber}", String(search.versionNumber ?? ""))}
           </StateBanner>
         </div>
       )}
 
       {versionQuery.isError && (
         <div className="mb-5">
-          <StateBanner tone="danger" title="Nao foi possivel carregar o plano cadastrado">
+          <StateBanner tone="danger" title={copy.planErrorTitle}>
             {versionQuery.error instanceof Error
               ? versionQuery.error.message
-              : "Verifique se a simulacao e a versao existem."}
+              : copy.planErrorFallback}
           </StateBanner>
         </div>
       )}
@@ -240,34 +272,36 @@ function Page() {
       <div className="space-y-6">
         <div className="rounded-xl border border-border bg-card p-5">
           <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-            Por que plano da avaliação?
+            {copy.whyTitle}
           </div>
           <p className="mt-2 text-sm text-foreground/80">
-            O <Termo id="blueprint">plano da avaliação</Termo> vira referência fixa para o{" "}
-            <Termo id="validador">Validador</Termo> checar se a simulação mede o que prometeu.
+            {copy.whyBodyStart} <Termo id="blueprint">{copy.whyTerm}</Termo>{" "}
+            {copy.whyBodyEnd.split("{validator}")[0]}
+            <Termo id="validador">{copy.validatorTerm}</Termo>
+            {copy.whyBodyEnd.split("{validator}")[1]}
           </p>
         </div>
         <div className="rounded-xl border border-warning/30 bg-warning/10 p-5">
           <div className="text-xs font-semibold uppercase tracking-wider text-warning-foreground">
-            Critérios de pontuação, peso e cálculo
+            {copy.scoringTitle}
           </div>
           <p className="mt-2 text-sm text-foreground/80">
-            A nota sai de regras declaradas. O <Termo id="blueprint">plano da avaliação</Termo> registra o
-            porquê comportamental que a auditoria vai pedir.
+            {copy.scoringBodyStart} <Termo id="blueprint">{copy.whyTerm}</Termo>{" "}
+            {copy.scoringBodyEnd}
           </p>
         </div>
         <div className="space-y-6">
           <Header
-            kicker="Passo 1"
-            title="Plano da avaliação"
-            lede="Antes de escrever qualquer diálogo, defina o porquê. O plano da avaliação vira referência fixa para o Validador de Qualidade."
+            kicker={copy.kicker}
+            title={copy.heading}
+            lede={copy.lede}
           />
 
-          <Card title="Cargo" required>
-            <Field label="Cargo-alvo">
+          <Card title={copy.roleCard} required requiredLabel={copy.required}>
+            <Field label={copy.roleLabel}>
               <input
                 className={`input ${submitAttempted && role.trim().length === 0 ? "border-danger" : ""}`}
-                placeholder="Ex.: Analista de Atendimento N2"
+                placeholder={copy.rolePlaceholder}
                 maxLength={roleMaxLength}
                 required
                 aria-required="true"
@@ -276,7 +310,9 @@ function Page() {
               />
               <FieldMeta
                 error={
-                  submitAttempted && role.trim().length === 0 ? "Informe o cargo-alvo." : undefined
+                  submitAttempted && role.trim().length === 0
+                    ? copy.roleRequiredError
+                    : undefined
                 }
                 count={role.length}
                 max={roleMaxLength}
@@ -284,9 +320,9 @@ function Page() {
             </Field>
           </Card>
 
-          <Card title="Situação crítica do cargo" required>
+          <Card title={copy.criticalSituationCard} required requiredLabel={copy.required}>
             <textarea
-              aria-label="Situação crítica do cargo"
+              aria-label={copy.criticalSituationAria}
               className={`input min-h-24 ${submitAttempted && criticalSituation.trim().length === 0 ? "border-danger" : ""}`}
               maxLength={criticalSituationMaxLength}
               required
@@ -297,16 +333,16 @@ function Page() {
             <FieldMeta
               error={
                 submitAttempted && criticalSituation.trim().length === 0
-                  ? "Descreva a situação crítica do cargo."
+                  ? copy.criticalSituationRequiredError
                   : undefined
               }
               count={criticalSituation.length}
               max={criticalSituationMaxLength}
             />
-            <Help>Use situação que de fato acontece nesta empresa, não um caso genérico.</Help>
+            <Help>{copy.criticalSituationHelp}</Help>
           </Card>
 
-          <Card title="Competências avaliadas" required>
+          <Card title={copy.competenciesCard} required requiredLabel={copy.required}>
             <div className="flex flex-wrap gap-2">
               {competencies.map((competency) => (
                 <label
@@ -330,7 +366,7 @@ function Page() {
             <div className="mt-4 grid gap-2 md:grid-cols-[1fr_auto]">
               <input
                 className="input"
-                placeholder="Adicionar competência da empresa"
+                placeholder={copy.addCompetencyPlaceholder}
                 value={newCompetency}
                 onChange={(event) => setNewCompetency(event.target.value)}
               />
@@ -340,26 +376,21 @@ function Page() {
                 disabled={!canAddCompetency || addCompetencyMutation.isPending}
                 className="rounded-md border border-border bg-card px-4 py-2 text-sm hover:bg-accent disabled:cursor-not-allowed disabled:opacity-50"
               >
-                {addCompetencyMutation.isPending ? "Salvando..." : "Adicionar e salvar"}
+                {addCompetencyMutation.isPending ? copy.saving : copy.addAndSave}
               </button>
             </div>
-            <Help>
-              Ao salvar, a competência entra no catálogo da sua empresa e fica disponível só para
-              ela.
-            </Help>
+            <Help>{copy.addedCompetencyHelp}</Help>
             {addCompetencyMutation.isError && (
               <p className="mt-2 text-xs text-danger">
                 {addCompetencyMutation.error instanceof Error
                   ? addCompetencyMutation.error.message
-                  : "Não foi possível salvar a competência."}
+                  : copy.competencySaveError}
               </p>
             )}
-            <Help>
-              Competências personalizadas podem ser organizadas no catálogo interno de competências.
-            </Help>
+            <Help>{copy.customCompetencyHelp}</Help>
           </Card>
 
-          <Card title="Uso do resultado">
+          <Card title={copy.resultUseCard}>
             <div className="grid gap-2 md:grid-cols-4">
               {resultUses.map((use) => (
                 <label
@@ -384,10 +415,7 @@ function Page() {
                 </label>
               ))}
             </div>
-            <Help>
-              O Práxis entrega evidência comportamental estruturada. A decisão do processo continua
-              com a empresa, dentro da Gupy.
-            </Help>
+            <Help>{copy.resultUseHelp}</Help>
           </Card>
 
           <div className="sticky bottom-0 -mx-6 mt-2 flex flex-col gap-3 border-t border-border bg-background/90 px-6 py-4 backdrop-blur sm:flex-row sm:items-center sm:justify-between lg:-mx-10 lg:px-10">
@@ -395,7 +423,7 @@ function Page() {
               to="/"
               className="rounded-md border border-border bg-card px-4 py-2 text-sm hover:bg-accent"
             >
-              Cancelar
+              {copy.cancel}
             </Link>
             <div className="flex flex-col items-start gap-2 sm:items-end">
               {!canGoNext && (
@@ -403,7 +431,7 @@ function Page() {
                   className={`text-xs ${submitAttempted ? "text-danger" : "text-muted-foreground"}`}
                   aria-live="polite"
                 >
-                  Para avançar, preencha {missingFields.join(", ")}.
+                  {copy.missingFieldsPrefix} {missingFields.join(", ")}.
                 </p>
               )}
               <button
@@ -411,8 +439,8 @@ function Page() {
                 disabled={createDraftMutation.isPending || updateExistingMutation.isPending}
                 title={
                   canGoNext
-                    ? "Criar rascunho e avançar"
-                    : "Preencha cargo, situação crítica e competências para avançar"
+                    ? copy.createDraftTitle
+                    : copy.disabledNextTitle
                 }
                 onClick={() => {
                   if (!canGoNext) {
@@ -432,7 +460,7 @@ function Page() {
                     : ""
                 }`}
               >
-                {createDraftMutation.isPending ? "Criando rascunho..." : "Próximo: Cenário"}
+                {createDraftMutation.isPending ? copy.creatingDraft : copy.next}
               </button>
             </div>
           </div>
@@ -456,17 +484,24 @@ function buildBlueprintDescription({
   criticalSituation,
   competencies,
   resultUse,
+  labels,
 }: {
   role: string;
   criticalSituation: string;
   competencies: string[];
   resultUse: string;
+  labels: {
+    role: string;
+    criticalSituation: string;
+    competencies: string;
+    resultUse: string;
+  };
 }) {
   const lines = [
-    `Cargo: ${role.trim()}`,
-    `Situação crítica: ${criticalSituation.trim()}`,
-    competencies.length > 0 && `Competências: ${competencies.join(", ")}`,
-    resultUse.trim() && `Uso do resultado: ${resultUse.trim()}`,
+    `${labels.role}: ${role.trim()}`,
+    `${labels.criticalSituation}: ${criticalSituation.trim()}`,
+    competencies.length > 0 && `${labels.competencies}: ${competencies.join(", ")}`,
+    resultUse.trim() && `${labels.resultUse}: ${resultUse.trim()}`,
   ].filter((line): line is string => Boolean(line));
 
   const description = lines.join("\n");
@@ -520,11 +555,15 @@ function parseBlueprintDescription(description: string) {
     const label = normalizeLabel(line.slice(0, separatorIndex));
     const value = line.slice(separatorIndex + 1).trim();
 
-    if (label === "cargo") {
+    if (["cargo", "role", "puesto"].includes(label)) {
       fields.role = value;
-    } else if (label.includes("situa") && label.includes("cr")) {
+    } else if (
+      (label.includes("situa") && label.includes("cr")) ||
+      label === "critical situation" ||
+      label === "critical role situation"
+    ) {
       fields.criticalSituation = value;
-    } else if (label === "uso do resultado") {
+    } else if (["uso do resultado", "result usage", "uso del resultado"].includes(label)) {
       fields.resultUse = value;
     }
   }
@@ -555,11 +594,13 @@ function Card({
   children,
   tone,
   required,
+  requiredLabel = "Obrigatório",
 }: {
   title: string;
   children: React.ReactNode;
   tone?: "ok" | "danger";
   required?: boolean;
+  requiredLabel?: string;
 }) {
   const accent =
     tone === "ok"
@@ -575,7 +616,7 @@ function Card({
         {title}
         {required && (
           <span className="rounded-full border border-danger/40 bg-danger/10 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-danger">
-            Obrigatório
+            {requiredLabel}
           </span>
         )}
       </h2>
