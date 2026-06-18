@@ -2,6 +2,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { AppShell } from "@/components/app-shell";
+import { Termo } from "@/components/glossario";
 import { ScreenStateStrip, StateBanner } from "@/components/praxis-ui";
 import { WizardStepper } from "@/components/wizard-stepper";
 import {
@@ -144,8 +145,8 @@ function Page() {
             Por que blueprint?
           </div>
           <p className="mt-2 text-sm text-foreground/80">
-            O blueprint vira referência fixa para o Validador checar se a simulação mede o que
-            prometeu.
+            O <Termo id="blueprint">blueprint</Termo> (modelo base) vira referência fixa para o{" "}
+            <Termo id="validador">Validador</Termo> checar se a simulação mede o que prometeu.
           </p>
         </div>
         <div className="rounded-xl border border-warning/30 bg-warning/10 p-5">
@@ -153,8 +154,8 @@ function Page() {
             Rubrica, peso e cálculo
           </div>
           <p className="mt-2 text-sm text-foreground/80">
-            A nota sai de regras declaradas. O blueprint registra o porquê comportamental que a
-            auditoria vai pedir.
+            A nota sai de regras declaradas. O <Termo id="blueprint">blueprint</Termo> registra o
+            porquê comportamental que a auditoria vai pedir.
           </p>
         </div>
         <div className="space-y-6">

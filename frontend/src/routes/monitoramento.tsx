@@ -2,6 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { AlertTriangle, BarChart3, CheckCircle2, Clock, RefreshCw, Send } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
+import { Termo } from "@/components/glossario";
 import { EmptyState, ScreenStateStrip, StateBanner, StatusBadge } from "@/components/praxis-ui";
 import {
   getSimulationMonitoring,
@@ -111,7 +112,9 @@ function MonitoringPage() {
           <div className="text-xs uppercase text-primary">Monitoramento</div>
           <h1 className="mt-1 text-3xl font-semibold">Pos-publicacao</h1>
           <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
-            Acompanhe calibracao, vazamento de prova, maturidade e envio de resultados.
+            Acompanhe <Termo id="calibracao">calibração</Termo>,{" "}
+            <Termo id="vazamento-prova">vazamento de prova</Termo>,{" "}
+            <Termo id="maturidade">maturidade</Termo> e envio de resultados.
           </p>
         </div>
         <Link
@@ -139,7 +142,7 @@ function MonitoringPage() {
       {!hasMonitoringParams ? (
         <EmptyState
           title="Selecione uma simulacao para monitorar"
-          description="O monitoramento usa apenas dados do backend. Abra uma versao real para carregar indicadores e entregas Gupy."
+          description="O monitoramento usa apenas dados do sistema interno (servidor). Abra uma versao real para carregar indicadores e entregas Gupy."
           actions={
             <SimulationLinks
               loading={simulationsQuery.isLoading}
@@ -222,7 +225,9 @@ function MonitoringPage() {
                   </li>
                   <li className="flex gap-2">
                     <CheckCircle2 className="mt-0.5 h-4 w-4 text-success" />
-                    AuditLog imutavel
+                    <span>
+                      <Termo id="auditlog">AuditLog</Termo> (registro de auditoria) imutável
+                    </span>
                   </li>
                   <li className="flex gap-2">
                     <AlertTriangle className="mt-0.5 h-4 w-4 text-warning-foreground" />

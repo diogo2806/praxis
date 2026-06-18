@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { ClipboardCheck, Scale, Shield } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
+import { Termo } from "@/components/glossario";
 import { EmptyState, ScreenStateStrip, StateBanner, StatusBadge } from "@/components/praxis-ui";
 import {
   getSimulationVersion,
@@ -32,18 +33,21 @@ export const Route = createFileRoute("/defensabilidade")({
 const pillars = [
   {
     icon: ClipboardCheck,
+    term: "construto" as const,
     title: "Construto definido",
-    text: "Blueprint fixa cargo, situacao critica e comportamento observavel.",
+    text: "O blueprint (modelo base) fixa cargo, situação crítica e comportamento observável.",
   },
   {
     icon: Scale,
-    title: "Score auditavel",
+    term: "score-auditavel" as const,
+    title: "Score auditável",
     text: "Rubrica, peso e caminho explicam cada ponto do resultado.",
   },
   {
     icon: Shield,
-    title: "Pontuacao deterministica",
-    text: "Calculo por rubrica, peso e regra declarada.",
+    term: "pontuacao-deterministica" as const,
+    title: "Pontuação determinística",
+    text: "Cálculo por rubrica, peso e regra declarada.",
   },
 ];
 
@@ -74,18 +78,21 @@ function DefensibilityPage() {
           <div className="text-xs uppercase text-primary">Conformidade</div>
           <h1 className="mt-1 text-3xl font-semibold">Defensabilidade</h1>
           <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
-            O produto mede julgamento situacional, decisao em contexto e evidencia comportamental
-            estruturada.
+            O produto mede <Termo id="julgamento-situacional">julgamento situacional</Termo>,{" "}
+            <Termo id="decisao-contexto">decisão em contexto</Termo> e{" "}
+            <Termo id="evidencia-comportamental">evidência comportamental</Termo> estruturada.
           </p>
         </div>
         {versionQuery.data && <StatusBadge status={versionQuery.data.status} />}
       </div>
 
       <div className="grid gap-4 md:grid-cols-3">
-        {pillars.map(({ icon: Icon, title, text }) => (
+        {pillars.map(({ icon: Icon, term, title, text }) => (
           <div key={title} className="rounded-md border border-border bg-card p-5">
             <Icon className="h-5 w-5 text-primary" />
-            <h2 className="mt-3 text-sm font-semibold">{title}</h2>
+            <h2 className="mt-3 text-sm font-semibold">
+              <Termo id={term}>{title}</Termo>
+            </h2>
             <p className="mt-1 text-sm text-muted-foreground">{text}</p>
           </div>
         ))}
