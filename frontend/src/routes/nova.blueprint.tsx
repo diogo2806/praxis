@@ -148,6 +148,11 @@ function Page() {
   const updateExistingMutation = useMutation({
     mutationFn: () =>
       updateSimulationBlueprint(search.simulationId!, search.versionNumber!, {
+        name: role.trim(),
+        criticalSituation: criticalSituation.trim(),
+        highPerformance: highPerformance.trim(),
+        criticalError: criticalError.trim(),
+        resultUse: selectedResultUse,
         rootNodeId: versionQuery.data?.blueprint.rootNodeId ?? "turno-1",
         competencies: buildCompetencyWeights(selectedCompetencies, versionQuery.data?.blueprint.competencies),
       }),
@@ -372,11 +377,11 @@ function Page() {
           </Card>
 
           <div className="space-y-6">
-            <Card title="Alta performance faria" tone="ok">
+            <Card title="O que alta performance faria" tone="ok">
               <textarea
-                aria-label="Alta performance faria"
+                aria-label="O que alta performance faria"
                 className="input min-h-24"
-                placeholder="Descreva o comportamento esperado para alta performance."
+                placeholder="Descreva uma resposta observavel, especifica do cargo e da situacao critica."
                 maxLength={performanceMaxLength}
                 value={highPerformance}
                 onChange={(event) => setHighPerformance(event.target.value)}
@@ -517,8 +522,8 @@ function buildBlueprintDescription({
     `Cargo: ${role.trim()}`,
     `Situação crítica: ${criticalSituation.trim()}`,
     competencies.length > 0 && `Competências: ${competencies.join(", ")}`,
-    `Erro crítico: ${criticalError.trim()}`,
     highPerformance.trim() && `Alta performance faria: ${highPerformance.trim()}`,
+    `Erro crítico: ${criticalError.trim()}`,
     resultUse.trim() && `Uso do resultado: ${resultUse.trim()}`,
   ].filter((line): line is string => Boolean(line));
 
