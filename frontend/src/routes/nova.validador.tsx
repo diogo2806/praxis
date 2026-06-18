@@ -79,7 +79,7 @@ function ValidatorPage() {
           <div className="text-xs uppercase text-primary">Passo 3</div>
           <h1 className="mt-1 text-3xl font-semibold">Validador de Qualidade</h1>
           <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
-            Regras determinísticas, trilha auditável e bloqueios sem override manual.
+            Regras determinísticas, histórico completo de alterações e bloqueios sem override manual.
           </p>
         </div>
       </div>

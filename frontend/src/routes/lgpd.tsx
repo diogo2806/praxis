@@ -24,7 +24,7 @@ export const Route = createFileRoute("/lgpd")({
   }),
   head: () => ({
     meta: [
-      { title: "LGPD & Explicabilidade - Praxis" },
+      { title: "LGPD & Transparência do resultado - Praxis" },
       { name: "description", content: "Explicação de score e revisão humana." },
     ],
   }),
@@ -68,7 +68,7 @@ function LgpdPage() {
       <div className="mb-5 flex flex-wrap items-start justify-between gap-4">
         <div>
           <div className="text-xs uppercase text-primary">Conformidade</div>
-          <h1 className="mt-1 text-3xl font-semibold">LGPD e explicabilidade</h1>
+          <h1 className="mt-1 text-3xl font-semibold">LGPD e transparência do resultado</h1>
           <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
             O candidato pode pedir revisão. A explicação usa <Termo id="rubrica">rubrica</Termo>,
             escolha e caminho, sem <Termo id="caixa-preta">caixa-preta</Termo>.
@@ -120,7 +120,7 @@ function LgpdPage() {
               actions={<SimulationLinks loading={simulationsQuery.isLoading} simulations={simulationsQuery.data ?? []} />}
             />
           ) : versionQuery.isLoading || auditQuery.isLoading ? (
-            <StateBanner tone="info" title="Carregando explicabilidade">
+            <StateBanner tone="info" title="Carregando transparência do resultado">
               Buscando versão {search.simulationId} v{search.versionNumber}.
             </StateBanner>
           ) : versionQuery.isError || auditQuery.isError ? (

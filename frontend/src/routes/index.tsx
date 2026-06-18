@@ -101,9 +101,9 @@ function Dashboard() {
           <h1 className="mt-1 text-3xl font-semibold text-foreground">Boa tarde, {firstName}.</h1>
           <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
             Avaliação situacional estruturada para recrutamento, com{" "}
-            <Termo id="score-rubrica">score por rubrica</Termo>,{" "}
-            <Termo id="decisao-contexto">decisão em contexto</Termo> e{" "}
-            <Termo id="trilha-auditavel">trilha auditável</Termo>.
+            <Termo id="score-rubrica">pontuação por critérios definidos</Termo>,{" "}
+            <Termo id="decisao-contexto">escolha baseada na situação</Termo> e{" "}
+            <Termo id="trilha-auditavel">histórico completo de alterações</Termo>.
           </p>
         </div>
         <div className="flex gap-2">
