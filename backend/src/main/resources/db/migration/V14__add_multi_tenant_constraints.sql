@@ -34,7 +34,8 @@ ALTER TABLE audit_events ALTER COLUMN tenant_id SET NOT NULL;
 DROP INDEX IF EXISTS idx_candidate_attempts_tenant_idempotency;
 
 CREATE UNIQUE INDEX idx_candidate_attempts_tenant_idempotency
-    ON candidate_attempts(tenant_id, idempotency_key);
+    ON candidate_attempts(tenant_id, idempotency_key)
+    WHERE idempotency_key IS NOT NULL;
 
 -- Criar indices para isolamento multi-tenant em queries criticas.
 CREATE INDEX IF NOT EXISTS idx_candidate_attempts_tenant_simulation
