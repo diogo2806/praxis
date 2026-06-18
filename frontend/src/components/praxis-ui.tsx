@@ -7,6 +7,7 @@ import {
   CloudOff,
   Clock3,
   FileText,
+  Info,
   Loader2,
   Lock,
   RotateCcw,
@@ -124,7 +125,7 @@ export function EmptyState({
         </div>
         <div className="grid min-w-0 gap-2 sm:min-w-[420px]">
           <div className="text-[10px] font-semibold uppercase text-muted-foreground">
-            Acao recomendada
+            Ação recomendada
           </div>
           {actions}
         </div>
@@ -158,26 +159,57 @@ export function GlobalProductStateBar({
     error: { label: gupyConnectionLabels.error, Icon: ServerCrash, tone: "danger" },
   } as const;
   const draftMeta = {
-    saved: { label: "Rascunho global salvo", Icon: FileText, tone: "muted" },
-    dirty: { label: "Rascunho global alterado", Icon: FileText, tone: "warn" },
-    published: { label: "Versao publicada imutavel", Icon: Lock, tone: "ok" },
+    saved: {
+      label: "Rascunho global salvo",
+      Icon: FileText,
+      tone: "muted",
+      hint: "Todas as alterações foram gravadas no rascunho. Nada está publicado ainda.",
+    },
+    dirty: {
+      label: "Rascunho global alterado",
+      Icon: FileText,
+      tone: "warn",
+      hint: "Há mudanças não publicadas. Elas ficam salvas no rascunho até você publicar uma nova versão.",
+    },
+    published: {
+      label: "Versão publicada imutável",
+      Icon: Lock,
+      tone: "ok",
+      hint: "A versão em produção está congelada. Editar cria uma nova versão sem afetar a publicada.",
+    },
   } as const;
   const publicationMeta = {
-    idle: { label: "Publicação parada", Icon: Send, tone: "muted" },
-    running: { label: "Publicação em andamento", Icon: UploadCloud, tone: "info" },
-    blocked: { label: "Publicação bloqueada", Icon: Lock, tone: "danger" },
+    idle: {
+      label: "Publicação parada",
+      Icon: Send,
+      tone: "muted",
+      hint: "Nenhuma publicação em andamento para esta simulação.",
+    },
+    running: {
+      label: "Publicação em andamento",
+      Icon: UploadCloud,
+      tone: "info",
+      hint: "A versão está sendo publicada. Aguarde a confirmação antes de novas edições.",
+    },
+    blocked: {
+      label: "Publicação bloqueada",
+      Icon: Lock,
+      tone: "danger",
+      hint: "Há item crítico pendente. Resolva os bloqueios no Validador para liberar a publicação.",
+    },
   } as const;
   const items = [
-    gupyMeta[current.gupy],
+    { ...gupyMeta[current.gupy], hint: undefined as string | undefined },
     draftMeta[current.draft],
     publicationMeta[current.publication],
   ];
 
   return (
     <div className="mb-4 grid gap-2 rounded-md border border-border bg-card p-2 text-xs md:grid-cols-3">
-      {items.map(({ label, Icon, tone }) => (
+      {items.map(({ label, Icon, tone, hint }) => (
         <div
           key={label}
+          title={hint}
           className={cn(
             "flex min-h-10 items-center gap-2 rounded-md border px-3 py-2",
             toneClass[tone],
@@ -190,6 +222,7 @@ export function GlobalProductStateBar({
             )}
           />
           <span className="font-medium">{label}</span>
+          {hint && <Info className="ml-auto h-3 w-3 shrink-0 opacity-60" aria-hidden />}
         </div>
       ))}
     </div>
@@ -205,8 +238,8 @@ const globalErrorItems = [
     tone: "danger",
   },
   {
-    title: "Carregamento da simulacao",
-    description: "Fallback unico: skeleton, recarregar e manter rascunho local visivel.",
+    title: "Carregamento da simulação",
+    description: "Fallback único: skeleton, recarregar e manter rascunho local visível.",
     action: "Recarregar",
     Icon: Loader2,
     tone: "warn",
@@ -307,7 +340,7 @@ const stateItems = [
   { label: "loading", tone: "muted", text: "skeleton pronto" },
   { label: "vazio", tone: "info", text: "estado vazio com CTA" },
   { label: "erro", tone: "danger", text: "banner + tentar de novo" },
-  { label: "sucesso", tone: "ok", text: "confirmacao nao bloqueante" },
+  { label: "sucesso", tone: "ok", text: "confirmação não bloqueante" },
   { label: "bloqueado", tone: "warn", text: "motivo + destravar" },
 ] as const;
 

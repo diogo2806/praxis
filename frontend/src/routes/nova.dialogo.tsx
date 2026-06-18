@@ -40,7 +40,7 @@ export const Route = createFileRoute("/nova/dialogo")({
   }),
   head: () => ({
     meta: [
-      { title: "Editor de Simulacao - Praxis" },
+      { title: "Editor de Simulação - Praxis" },
       { name: "description", content: "Editor conectado ao grafo persistido no backend." },
     ],
   }),
@@ -109,7 +109,7 @@ function DialogEditor() {
     onSuccess: async (nodeId) => {
       setDraftMessage("");
       setSelectedId(nodeId);
-      setFeedbackMessage(`No ${nodeId} adicionado.`);
+      setFeedbackMessage(`Nó ${nodeId} adicionado.`);
       await refetchVersion();
     },
   });
@@ -126,7 +126,7 @@ function DialogEditor() {
       deleteSimulationNode(search.simulationId!, search.versionNumber!, nodeId),
     onSuccess: async () => {
       setSelectedId(null);
-      setFeedbackMessage("No removido.");
+      setFeedbackMessage("Nó removido.");
       await refetchVersion();
     },
   });
@@ -212,9 +212,9 @@ function DialogEditor() {
       <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
         <div>
           <div className="text-xs uppercase text-primary">Passo 3</div>
-          <h1 className="mt-1 text-3xl font-semibold">Editor de dialogo</h1>
+          <h1 className="mt-1 text-3xl font-semibold">Editor de diálogo</h1>
           <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
-            Nos e alternativas sao lidos e gravados pela API administrativa.
+            Nós e alternativas são lidos e gravados pela API administrativa.
           </p>
         </div>
         {versionQuery.data && <StatusBadge status={versionQuery.data.status} />}
@@ -222,8 +222,8 @@ function DialogEditor() {
 
       {!hasContext ? (
         <EmptyState
-          title="Selecione uma versao para editar"
-          description="O editor nao possui grafo local de exemplo."
+          title="Selecione uma versão para editar"
+          description="O editor não possui grafo local de exemplo."
           actions={
             <SimulationLinks
               loading={simulationsQuery.isLoading}
@@ -233,37 +233,37 @@ function DialogEditor() {
         />
       ) : versionQuery.isLoading ? (
         <StateBanner tone="info" title="Carregando grafo">
-          Buscando simulacao {search.simulationId} v{search.versionNumber}.
+          Buscando simulação {search.simulationId} v{search.versionNumber}.
         </StateBanner>
       ) : versionQuery.isError ? (
-        <StateBanner tone="danger" title="Nao foi possivel carregar o grafo">
+        <StateBanner tone="danger" title="Não foi possível carregar o grafo">
           {versionQuery.error instanceof Error ? versionQuery.error.message : "Verifique a API."}
         </StateBanner>
       ) : (
         <>
           <NextStepContract
             primary="Validar qualidade quando o grafo estiver completo."
-            secondary="Voltar a personagem ou blueprint continua permitido antes de publicar."
-            versionRule="Depois de publicar, editar cria nova versao."
-            lockedAfter="Versao publicada nao altera tentativas em andamento."
+            secondary="Voltar à personagem ou blueprint continua permitido antes de publicar."
+            versionRule="Depois de publicar, editar cria nova versão."
+            lockedAfter="Versão publicada não altera tentativas em andamento."
           />
           {feedbackMessage && (
             <div className="mt-5">
-              <StateBanner tone="info" title="Alteracao salva">
+              <StateBanner tone="info" title="Alteração salva">
                 {feedbackMessage}
               </StateBanner>
             </div>
           )}
           {mutationError && (
             <div className="mt-5">
-              <StateBanner tone="danger" title="Nao foi possivel salvar a alteracao">
+              <StateBanner tone="danger" title="Não foi possível salvar a alteração">
                 {mutationError instanceof Error ? mutationError.message : "Tente novamente."}
               </StateBanner>
             </div>
           )}
           <div className="mt-5 grid gap-5 lg:grid-cols-[320px_minmax(0,1fr)]">
             <aside className="rounded-md border border-border bg-card p-4">
-              <div className="mb-3 text-sm font-semibold">Nos persistidos</div>
+              <div className="mb-3 text-sm font-semibold">Nós persistidos</div>
               <div className="space-y-2">
                 {nodes.map((node) => (
                   <button
@@ -305,7 +305,7 @@ function DialogEditor() {
                 className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-md border border-border bg-card px-3 py-2 text-sm hover:bg-accent disabled:cursor-not-allowed disabled:opacity-50"
               >
                 <Plus className="h-4 w-4" />
-                {addNodeMutation.isPending ? "Adicionando..." : "Adicionar no"}
+                {addNodeMutation.isPending ? "Adicionando..." : "Adicionar nó"}
               </button>
             </aside>
 
@@ -321,7 +321,7 @@ function DialogEditor() {
                     onClick={() => {
                       if (
                         window.confirm(
-                          `Remover o no ${selected.id}? Esta acao nao pode ser desfeita.`,
+                          `Remover o nó ${selected.id}? Esta ação não pode ser desfeita.`,
                         )
                       ) {
                         setFeedbackMessage(null);
@@ -335,7 +335,7 @@ function DialogEditor() {
                     className="inline-flex items-center gap-2 rounded-md border border-danger/25 bg-danger/5 px-3 py-2 text-xs text-danger hover:bg-danger/10 disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     <Trash2 className="h-4 w-4" />
-                    {deleteNodeMutation.isPending ? "Removendo..." : "Remover no"}
+                    {deleteNodeMutation.isPending ? "Removendo..." : "Remover nó"}
                   </button>
                 </div>
                 <label className="block">
@@ -464,7 +464,7 @@ function DialogEditor() {
                           onClick={() => {
                             if (
                               window.confirm(
-                                `Remover a alternativa ${option.id} do no ${selected.id}?`,
+                                `Remover a alternativa ${option.id} do nó ${selected.id}?`,
                               )
                             ) {
                               setFeedbackMessage(null);
@@ -503,7 +503,7 @@ function DialogEditor() {
                                 ) {
                                   event.target.value = String(value);
                                   setFeedbackMessage(
-                                    `Peso invalido para ${name}. Use um numero inteiro de 0 a 100.`,
+                                    `Peso inválido para ${name}. Use um número inteiro de 0 a 100.`,
                                   );
                                   return;
                                 }
@@ -532,7 +532,7 @@ function DialogEditor() {
                               })
                             }
                           />
-                          critica
+                          crítica
                         </label>
                       </div>
                       <MediaAttachment
@@ -584,8 +584,8 @@ function DialogEditor() {
               </section>
             ) : (
               <EmptyState
-                title="Nenhum no encontrado"
-                description="Crie o primeiro no para iniciar o grafo persistido."
+                title="Nenhum nó encontrado"
+                description="Crie o primeiro nó para iniciar o grafo persistido."
               />
             )}
           </div>
