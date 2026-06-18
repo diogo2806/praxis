@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, Outlet, useChildMatches } from "@tanstack/react-router";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { Pause, Play, RotateCcw, ShieldCheck, Wifi, WifiOff } from "lucide-react";
@@ -24,8 +24,21 @@ export const Route = createFileRoute("/candidato")({
       },
     ],
   }),
-  component: CandidateEntryPage,
+  component: CandidateRouteLayout,
 });
+
+// `candidato.tsx` is the parent route of `candidato.$token.tsx`, so it must
+// render an <Outlet /> for the token experience to show. Without it, opening
+// `/candidato/:token` (a link that already carries the token) would fall back
+// to this entry form and ask for the token again. We only show the entry form
+// when no child route (token) is active.
+function CandidateRouteLayout() {
+  const childMatches = useChildMatches();
+  if (childMatches.length > 0) {
+    return <Outlet />;
+  }
+  return <CandidateEntryPage />;
+}
 
 function CandidateEntryPage() {
   const [token, setToken] = useState("");
