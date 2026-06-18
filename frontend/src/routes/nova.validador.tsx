@@ -447,7 +447,7 @@ function ScoringModelPreview({
         </p>
       </div>
 
-      <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_340px]">
+      <div className="grid gap-5">
         <div className="rounded-md border border-border bg-card p-5">
           <NormalizedScoreMap
             onSelectNode={onSelectNode}
@@ -601,27 +601,6 @@ function ScoringModelPreview({
           </div>
         </div>
 
-        <aside className="space-y-4">
-          <div className="rounded-md border border-border bg-card p-5">
-            <div className="text-xs font-semibold uppercase text-muted-foreground">Fórmula</div>
-            <pre className="mt-2 overflow-x-auto rounded-md bg-muted/50 p-3 font-mono text-[11px] leading-relaxed">
-              {`score_competencia =
-  pts_obtidos / pts_possíveis_no_caminho
-
-score_final =
-${formatFormula(version)}`}
-            </pre>
-          </div>
-          <div className="rounded-md border border-danger/30 bg-danger/5 p-5 text-sm">
-            <div className="text-xs font-semibold uppercase text-danger">
-              Erro crítico não reprova automaticamente
-            </div>
-            <p className="mt-2 text-foreground/80">
-              Dispara revisão humana e bloqueia recomendação automática até a correção ficar
-              documentada.
-            </p>
-          </div>
-        </aside>
       </div>
     </section>
   );
@@ -1323,20 +1302,6 @@ function formatTimeLimit(seconds: number | null) {
 
 function formatScore(score: number) {
   return Math.round(score).toString();
-}
-
-function formatFormula(version?: SimulationVersionDetailResponse) {
-  const competencies = version?.blueprint.competencies ?? [];
-  if (competencies.length === 0) {
-    return "    sem pesos configurados";
-  }
-
-  return competencies
-    .map((competency, index) => {
-      const prefix = index === 0 ? "    " : "  + ";
-      return `${prefix}${competency.name} x ${(competency.weight * 100).toFixed(0)}%`;
-    })
-    .join("\n");
 }
 
 function groupValidationChecks(checks: ValidationCheck[]): DiagnosticGroup[] {
