@@ -17,10 +17,10 @@ import { useViewMode } from "@/lib/view-mode";
 export const Route = createFileRoute("/candidato")({
   head: () => ({
     meta: [
-      { title: "Visao do Candidato - Praxis" },
+      { title: "Visão do Candidato - Praxis" },
       {
         name: "description",
-        content: "Experiencia mobile-first com timer, chat, retomada e acessibilidade.",
+        content: "Experiência mobile-first com timer, chat, retomada e acessibilidade.",
       },
     ],
   }),
@@ -47,13 +47,13 @@ function CandidateEntryPage() {
   return (
     <AppShell>
       <EmptyState
-        title="Link de tentativa obrigatorio"
-        description="A experiencia do candidato depende de uma tentativa criada pelo backend. Cole o token recebido ou acesse pelo link /candidato/:token enviado pela integracao."
+        title="Código de acesso obrigatório"
+        description="Para visualizar o teste do candidato, use o código de acesso enviado pelo convite. Cole aqui ou abra o link do e-mail."
         actions={
           <div className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_auto_auto]">
             <input
               className="input"
-              placeholder="Token da tentativa"
+              placeholder="Código de acesso"
               value={token}
               onChange={(event) => setToken(event.target.value)}
             />
@@ -183,43 +183,43 @@ export function CandidateExperience({ token }: { token: string }) {
     <AppShell>
       <ScreenStateStrip blockedReason="link expirado ou tentativa abandonada fora da janela" />
       <div className="mb-5">
-        <div className="text-xs uppercase text-primary">Visao do candidato</div>
+        <div className="text-xs uppercase text-primary">Visão do candidato</div>
         <h1 className="mt-1 text-3xl font-semibold">
-          {attempt?.simulationName ?? "Simulacao situacional"}
+          {attempt?.simulationName ?? "Simulação situacional"}
         </h1>
         <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
-          Chat estruturado, timer legivel, navegacao por teclado e retomada apos queda.
+          Chat estruturado, timer legível, navegação por teclado e retomada após queda.
         </p>
       </div>
 
       {attemptQuery.isLoading && (
         <StateBanner tone="info" title="Carregando tentativa">
-          Buscando a simulacao e o turno atual no backend.
+          Buscando a simulação e o turno atual no sistema.
         </StateBanner>
       )}
 
       {attemptQuery.isError && (
-        <StateBanner tone="danger" title="Nao foi possivel carregar a tentativa">
+        <StateBanner tone="danger" title="Não foi possível carregar a tentativa">
           {attemptQuery.error instanceof Error
             ? attemptQuery.error.message
-            : "Verifique se o backend esta rodando e se o token e valido."}
+            : "Verifique se o servidor está rodando e se o código de acesso é válido."}
         </StateBanner>
       )}
 
       {technical && (
-        <StateBanner tone="info" title="Token de tentativa carregado">
-          Token visualizado apenas no modo tecnico: <code>{token}</code>.
+        <StateBanner tone="info" title="Código de acesso carregado">
+          Código visualizado apenas no modo técnico: <code>{token}</code>.
         </StateBanner>
       )}
 
       {offline && (
-        <StateBanner tone="warn" title="Conexao perdida - reconectando">
-          A resposta salva no ultimo turno sera retomada automaticamente quando a conexao voltar.
+        <StateBanner tone="warn" title="Conexão perdida - reconectando">
+          A resposta salva no último turno será retomada automaticamente quando a conexão voltar.
         </StateBanner>
       )}
 
       {answerMutation.isError && (
-        <StateBanner tone="danger" title="Resposta nao enviada">
+        <StateBanner tone="danger" title="Resposta não enviada">
           {answerMutation.error instanceof Error
             ? answerMutation.error.message
             : "Tente enviar a resposta novamente."}
@@ -307,9 +307,9 @@ export function CandidateExperience({ token }: { token: string }) {
               ) : attemptQuery.isLoading ? (
                 <div className="flex min-h-[560px] flex-col justify-center">
                   <div className="text-xs uppercase text-primary">Carregando</div>
-                  <h2 className="mt-2 text-2xl font-semibold">Preparando sua simulacao.</h2>
+                  <h2 className="mt-2 text-2xl font-semibold">Preparando sua simulação.</h2>
                   <p className="mt-2 text-sm text-muted-foreground">
-                    Buscando o turno atual e as alternativas disponiveis.
+                    Buscando o turno atual e as alternativas disponíveis.
                   </p>
                 </div>
               ) : (
@@ -317,7 +317,7 @@ export function CandidateExperience({ token }: { token: string }) {
                   <div className="text-xs uppercase text-success">Tentativa finalizada</div>
                   <h2 className="mt-2 text-2xl font-semibold">Obrigado por participar.</h2>
                   <p className="mt-2 text-sm text-muted-foreground">
-                    O resultado sera processado pelo backend e entregue para o fluxo configurado.
+                    O resultado será processado pelo sistema e entregue para o fluxo configurado.
                   </p>
                 </div>
               )}
@@ -332,10 +332,10 @@ export function CandidateExperience({ token }: { token: string }) {
               Recursos de acessibilidade
             </div>
             <ul className="space-y-2 text-sm text-muted-foreground">
-              <li>Compativel com leitor de tela</li>
+              <li>Compatível com leitor de tela</li>
               <li>Alto contraste</li>
               <li>Tempo estendido quando configurado</li>
-              <li>Navegacao por teclado</li>
+              <li>Navegação por teclado</li>
             </ul>
           </div>
 
@@ -375,8 +375,8 @@ export function CandidateExperience({ token }: { token: string }) {
             </div>
           )}
 
-          <StateBanner tone="info" title="Tempo esgotado encerra so o turno">
-            Quando chega a zero, registra sem resposta e avanca. A simulacao inteira nao fecha.
+          <StateBanner tone="info" title="Tempo esgotado encerra só o turno">
+            Quando chega a zero, registra sem resposta e avança. A simulação inteira não fecha.
           </StateBanner>
         </aside>
       </div>

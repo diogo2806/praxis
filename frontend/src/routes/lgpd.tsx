@@ -25,7 +25,7 @@ export const Route = createFileRoute("/lgpd")({
   head: () => ({
     meta: [
       { title: "LGPD & Explicabilidade - Praxis" },
-      { name: "description", content: "Explicacao de score e revisao humana." },
+      { name: "description", content: "Explicação de score e revisão humana." },
     ],
   }),
   component: LgpdPage,
@@ -101,7 +101,7 @@ function LgpdPage() {
             <ShieldCheck className="h-5 w-5 text-success" />
             <div className="mt-3 text-sm font-semibold">{item.title}</div>
             <p className="mt-1 text-sm text-muted-foreground">
-              Evidencia rastreavel por versao, tentativa, turno e alternativa escolhida.
+              Evidência rastreável por versão, tentativa, turno e alternativa escolhida.
             </p>
           </div>
         ))}
@@ -111,20 +111,20 @@ function LgpdPage() {
         <section className="rounded-md border border-border bg-card p-5">
           <div className="mb-3 flex items-center gap-2 text-sm font-semibold">
             <FileSearch className="h-4 w-4" />
-            Explicacao baseada em contrato real
+            Explicação baseada em contrato real
           </div>
           {!hasContext ? (
             <EmptyState
-              title="Selecione uma versao para explicar"
-              description="A tela usa blueprint, opcoes e eventos reais quando a URL tem simulationId e versionNumber."
+              title="Selecione uma versão para explicar"
+              description="A tela usa blueprint, opções e eventos reais quando a URL tem simulationId e versionNumber."
               actions={<SimulationLinks loading={simulationsQuery.isLoading} simulations={simulationsQuery.data ?? []} />}
             />
           ) : versionQuery.isLoading || auditQuery.isLoading ? (
             <StateBanner tone="info" title="Carregando explicabilidade">
-              Buscando versao {search.simulationId} v{search.versionNumber}.
+              Buscando versão {search.simulationId} v{search.versionNumber}.
             </StateBanner>
           ) : versionQuery.isError || auditQuery.isError ? (
-            <StateBanner tone="danger" title="Nao foi possivel carregar dados LGPD">
+            <StateBanner tone="danger" title="Não foi possível carregar dados LGPD">
               {versionQuery.error instanceof Error
                 ? versionQuery.error.message
                 : auditQuery.error instanceof Error
@@ -138,7 +138,7 @@ function LgpdPage() {
               <div className="mt-4 grid gap-3 md:grid-cols-3">
                 <Metric label="Turnos" value={version.nodes.length} />
                 <Metric label="Alternativas" value={optionsCount} />
-                <Metric label="Criticas" value={criticalOptionsCount} />
+                <Metric label="Críticas" value={criticalOptionsCount} />
               </div>
               <div className="mt-5 space-y-3">
                 {version.nodes.slice(0, 3).map((node) => (
@@ -163,40 +163,40 @@ function LgpdPage() {
 
         <aside className="space-y-4">
           {privacyQuery.isLoading ? (
-            <StateBanner tone="info" title="Carregando politica LGPD">
-              Buscando bases legais, retencao e canal de revisao.
+            <StateBanner tone="info" title="Carregando política LGPD">
+              Buscando bases legais, retenção e canal de revisão.
             </StateBanner>
           ) : privacyQuery.isError ? (
-            <StateBanner tone="danger" title="Nao foi possivel carregar politica LGPD">
+            <StateBanner tone="danger" title="Não foi possível carregar política LGPD">
               {privacyQuery.error instanceof Error ? privacyQuery.error.message : "Verifique a API."}
             </StateBanner>
           ) : privacyQuery.data ? (
             <div className="rounded-md border border-border bg-card p-5">
               <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                Politica operacional
+                Política operacional
               </div>
               <div className="mt-3 space-y-3 text-sm">
                 <div className="rounded-md border border-border bg-background p-3">
-                  <div className="font-medium">Retencao: {privacyQuery.data.retentionDays} dias</div>
+                  <div className="font-medium">Retenção: {privacyQuery.data.retentionDays} dias</div>
                   <p className="mt-1 text-xs text-muted-foreground">{privacyQuery.data.retentionPolicy}</p>
                 </div>
                 <div className="rounded-md border border-border bg-background p-3">
-                  <div className="font-medium">Revisao humana</div>
+                  <div className="font-medium">Revisão humana</div>
                   <p className="mt-1 text-xs text-muted-foreground">
                     {privacyQuery.data.reviewChannel} - SLA {privacyQuery.data.reviewSla}
                   </p>
                 </div>
                 <div className="rounded-md border border-border bg-background p-3">
-                  <div className="font-medium">Decisao automatizada sem revisao</div>
+                  <div className="font-medium">Decisão automatizada sem revisão</div>
                   <p className="mt-1 text-xs text-muted-foreground">
-                    {privacyQuery.data.automatedDecisionWithoutReviewAllowed ? "Permitida" : "Nao permitida"}
+                    {privacyQuery.data.automatedDecisionWithoutReviewAllowed ? "Permitida" : "Não permitida"}
                   </p>
                 </div>
               </div>
             </div>
           ) : null}
-          <StateBanner tone="warn" title="Canal de revisao obrigatorio">
-            Uso eliminatorio so e permitido para simulacao validada, com aprovacao e revisao humana.
+          <StateBanner tone="warn" title="Canal de revisão obrigatório">
+            Uso eliminatório só é permitido para simulação validada, com aprovação e revisão humana.
           </StateBanner>
           {privacyQuery.data && (
             <div className="rounded-md border border-border bg-card p-5">
@@ -216,7 +216,7 @@ function LgpdPage() {
           {hasContext && (
             <div className="rounded-md border border-border bg-card p-5">
               <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                Evidencias auditaveis
+                Evidências auditáveis
               </div>
               <div className="mt-3 space-y-3">
                 {(auditQuery.data ?? []).slice(0, 4).map((event) => (

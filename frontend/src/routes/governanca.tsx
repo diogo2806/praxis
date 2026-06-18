@@ -24,7 +24,7 @@ export const Route = createFileRoute("/governanca")({
   }),
   head: () => ({
     meta: [
-      { title: "Governanca & Auditoria - Praxis" },
+      { title: "Governança & Auditoria - Praxis" },
       { name: "description", content: "Controles operacionais, auditoria e versionamento." },
     ],
   }),
@@ -58,10 +58,10 @@ function GovernanceHub() {
 
   return (
     <AppShell>
-      <ScreenStateStrip blockedReason="papel atual nao tem permissao para esta transicao" />
+      <ScreenStateStrip blockedReason="papel atual não tem permissão para esta transição" />
       <div className="mb-5">
         <div className="text-xs uppercase text-primary">Conformidade</div>
-        <h1 className="mt-1 text-3xl font-semibold">Governanca e auditoria</h1>
+        <h1 className="mt-1 text-3xl font-semibold">Governança e auditoria</h1>
         <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
           Trilha imutável de decisões, <Termo id="versionamento">versionamento</Termo> e
           reprocessamento restrito a admin.
@@ -69,31 +69,31 @@ function GovernanceHub() {
       </div>
 
       {hasGovernanceParams && auditQuery.isLoading && (
-        <StateBanner tone="info" title="AuditLog conectado">
-          Buscando eventos da simulacao {search.simulationId} v{search.versionNumber}.
+        <StateBanner tone="info" title="Registro de auditoria conectado">
+          Buscando eventos da simulação {search.simulationId} v{search.versionNumber}.
         </StateBanner>
       )}
 
       {hasGovernanceParams && auditQuery.isError && (
-        <StateBanner tone="danger" title="Nao foi possivel carregar a auditoria">
+        <StateBanner tone="danger" title="Não foi possível carregar a auditoria">
           {auditQuery.error instanceof Error
             ? auditQuery.error.message
-            : "Verifique se o backend esta rodando e se a versao existe."}
+            : "Verifique se o servidor está rodando e se a versão existe."}
         </StateBanner>
       )}
 
       {cloneMutation.isSuccess && (
-        <StateBanner tone="ok" title="Nova versao criada">
+        <StateBanner tone="ok" title="Nova versão criada">
           Rascunho v{cloneMutation.data.newVersionNumber} criado a partir da v
           {cloneMutation.data.sourceVersionNumber}.
         </StateBanner>
       )}
 
       {cloneMutation.isError && (
-        <StateBanner tone="danger" title="Nao foi possivel criar a versao">
+        <StateBanner tone="danger" title="Não foi possível criar a versão">
           {cloneMutation.error instanceof Error
             ? cloneMutation.error.message
-            : "A transicao foi recusada pelo backend."}
+            : "A transição foi recusada pelo servidor."}
         </StateBanner>
       )}
 
@@ -112,8 +112,8 @@ function GovernanceHub() {
           )}
         </section>
         <aside className="space-y-3">
-          <StateBanner tone="warn" title="Edicao de publicada cria nova versao">
-            Candidatos em andamento continuam na versao atual.
+          <StateBanner tone="warn" title="Edição de publicada cria nova versão">
+            Candidatos em andamento continuam na versão atual.
           </StateBanner>
           <button
             type="button"
@@ -122,8 +122,8 @@ function GovernanceHub() {
           >
             <RefreshCw className="h-4 w-4" />
             {hasGovernanceParams
-              ? `Criar nova versao a partir da v${search.versionNumber}`
-              : "Selecione uma versao"}
+              ? `Criar nova versão a partir da v${search.versionNumber}`
+              : "Selecione uma versão"}
           </button>
           <button
             disabled

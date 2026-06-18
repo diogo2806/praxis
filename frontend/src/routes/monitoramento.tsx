@@ -27,7 +27,7 @@ export const Route = createFileRoute("/monitoramento")({
   head: () => ({
     meta: [
       { title: "Monitoramento - Praxis" },
-      { name: "description", content: "Acompanhamento pos-publicacao e sinais de calibracao." },
+      { name: "description", content: "Acompanhamento pós-publicação e sinais de calibração." },
     ],
   }),
   component: MonitoringPage,
@@ -49,7 +49,7 @@ function buildLiveCohorts(monitoring?: SimulationMonitoringResponse) {
   const total = Math.max(monitoring.attemptsCreated, 1);
   return [
     {
-      label: "Concluidas",
+      label: "Concluídas",
       value: monitoring.attemptsCompleted,
       pct: monitoring.completionRatePercent,
     },
@@ -106,11 +106,11 @@ function MonitoringPage() {
 
   return (
     <AppShell>
-      <ScreenStateStrip blockedReason="sem dados suficientes para calibracao" />
+      <ScreenStateStrip blockedReason="sem dados suficientes para calibração" />
       <div className="mb-5 flex flex-wrap items-end justify-between gap-4">
         <div>
           <div className="text-xs uppercase text-primary">Monitoramento</div>
-          <h1 className="mt-1 text-3xl font-semibold">Pos-publicacao</h1>
+          <h1 className="mt-1 text-3xl font-semibold">Pós-publicação</h1>
           <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
             Acompanhe <Termo id="calibracao">calibração</Termo>,{" "}
             <Termo id="vazamento-prova">vazamento de prova</Termo>,{" "}
@@ -127,22 +127,22 @@ function MonitoringPage() {
 
       {hasMonitoringParams && monitoringQuery.isLoading && (
         <StateBanner tone="info" title="Monitoramento conectado">
-          Buscando indicadores da simulacao {search.simulationId} v{search.versionNumber}.
+          Buscando indicadores da simulação {search.simulationId} v{search.versionNumber}.
         </StateBanner>
       )}
 
       {hasMonitoringParams && monitoringQuery.isError && (
-        <StateBanner tone="danger" title="Nao foi possivel carregar o monitoramento">
+        <StateBanner tone="danger" title="Não foi possível carregar o monitoramento">
           {monitoringQuery.error instanceof Error
             ? monitoringQuery.error.message
-            : "Verifique se o backend esta rodando e se a versao existe."}
+            : "Verifique se o servidor está rodando e se a versão existe."}
         </StateBanner>
       )}
 
       {!hasMonitoringParams ? (
         <EmptyState
-          title="Selecione uma simulacao para monitorar"
-          description="O monitoramento usa apenas dados do sistema interno (servidor). Abra uma versao real para carregar indicadores e entregas Gupy."
+          title="Selecione uma simulação para monitorar"
+          description="O monitoramento usa apenas dados do sistema interno (servidor). Abra uma versão real para carregar indicadores e entregas Gupy."
           actions={
             <SimulationLinks
               loading={simulationsQuery.isLoading}
@@ -152,8 +152,8 @@ function MonitoringPage() {
         />
       ) : !hasData ? (
         <EmptyState
-          title="Nao foi possivel exibir monitoramento"
-          description="A versao solicitada nao retornou indicadores. Verifique o erro acima ou escolha outra simulacao."
+          title="Não foi possível exibir monitoramento"
+          description="A versão solicitada não retornou indicadores. Verifique o erro acima ou escolha outra simulação."
           actions={
             <Link
               to="/"
@@ -169,10 +169,10 @@ function MonitoringPage() {
             tone={failedDeliveries > 0 ? "danger" : riskyDeliveries.length > 0 ? "warn" : "ok"}
             title={
               failedDeliveries > 0
-                ? "Entregas em DLQ exigem acao"
+                ? "Entregas em DLQ exigem ação"
                 : riskyDeliveries.length > 0
                   ? "Entregas em retry"
-                  : "Fila de resultados saudavel"
+                  : "Fila de resultados saudável"
             }
           >
             {`${sentDeliveries} resultados enviados, ${monitoring?.deliveriesRetrying ?? 0} em retry e ${failedDeliveries} em DLQ.`}
@@ -200,7 +200,7 @@ function MonitoringPage() {
             <section className="rounded-md border border-border bg-card p-5">
               <div className="mb-4 flex items-center gap-2 text-sm font-semibold">
                 <BarChart3 className="h-4 w-4" />
-                Fila de entregas Gupy da versao
+                Fila de entregas Gupy da versão
               </div>
               <DeliveryList
                 deliveries={deliveriesQuery.data ?? []}
@@ -210,11 +210,11 @@ function MonitoringPage() {
             </section>
 
             <aside className="space-y-3">
-              <StateBanner tone="ok" title="Calibracao ativa">
-                Referencias internas continuam separadas dos candidatos reais.
+              <StateBanner tone="ok" title="Calibração ativa">
+                Referências internas continuam separadas dos candidatos reais.
               </StateBanner>
               <StateBanner tone={failedDeliveries > 0 ? "danger" : "warn"} title="Regra de alerta">
-                Erro critico gera revisao humana obrigatoria; nao decide o processo sozinho.
+                Erro crítico gera revisão humana obrigatória; não decide o processo sozinho.
               </StateBanner>
               <div className="rounded-md border border-border bg-card p-4">
                 <div className="mb-3 text-sm font-semibold">Checklist operacional</div>
@@ -263,7 +263,7 @@ function DeliveryList({
   if (error) {
     return (
       <div className="rounded-md border border-danger/30 bg-danger/10 p-4 text-sm text-danger">
-        Nao foi possivel carregar a fila de entregas.
+        Não foi possível carregar a fila de entregas.
       </div>
     );
   }
@@ -329,7 +329,7 @@ function SimulationLinks({
   if (loading) {
     return (
       <div className="rounded-md border border-border bg-card px-4 py-3 text-sm">
-        Carregando simulacoes...
+        Carregando simulações...
       </div>
     );
   }
@@ -340,7 +340,7 @@ function SimulationLinks({
         to="/nova/avaliacao"
         className="rounded-md border border-border bg-card px-4 py-3 text-sm hover:bg-accent"
       >
-        Criar simulacao
+        Criar simulação
       </Link>
     );
   }
