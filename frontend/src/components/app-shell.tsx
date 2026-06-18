@@ -11,6 +11,7 @@ import {
   Menu,
   MessageSquare,
   Scale,
+  Settings,
   ShieldCheck,
   Sparkles,
   UserRound,
@@ -59,6 +60,12 @@ const getNav = (t: TranslationMap) =>
 
 const getSecondary = (t: TranslationMap) =>
   [
+    {
+      to: "/nova/competencias",
+      label: "Competências",
+      icon: Settings,
+      desc: "Gerenciar competências",
+    },
     {
       to: "/governanca",
       label: t.common.governance,

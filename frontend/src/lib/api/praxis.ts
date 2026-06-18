@@ -337,6 +337,7 @@ export interface TenantConfigOption {
   label: string;
   locked: boolean;
   selectedByDefault: boolean;
+  active?: boolean;
 }
 
 export interface TenantConfig {
@@ -449,6 +450,21 @@ export function updateTenantConfig(configType: TenantConfigType, options: Tenant
   return request<TenantConfigOption[]>(`/api/v1/tenant-config/${configType}`, {
     method: "PUT",
     body: JSON.stringify({ options }),
+  });
+}
+
+export function getAllConfigOptions(configType: TenantConfigType) {
+  return request<TenantConfigOption[]>(`/api/v1/tenant-config/${configType}/all`);
+}
+
+export function updateConfigOption(
+  configType: TenantConfigType,
+  optionValue: string,
+  update: { label: string; locked: boolean; selectedByDefault: boolean; active: boolean },
+) {
+  return request<TenantConfigOption>(`/api/v1/tenant-config/${configType}/${encodeURIComponent(optionValue)}`, {
+    method: "PATCH",
+    body: JSON.stringify(update),
   });
 }
 
