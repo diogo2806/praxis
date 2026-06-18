@@ -31,6 +31,7 @@ import { defaultAnswerTimeLimitSeconds, useTenantConfig } from "@/lib/tenant-con
 export const Route = createFileRoute("/nova/dialogo")({
   validateSearch: (search: Record<string, unknown>) => ({
     simulationId: typeof search.simulationId === "string" ? search.simulationId : undefined,
+    nodeId: typeof search.nodeId === "string" ? search.nodeId : undefined,
     versionNumber:
       typeof search.versionNumber === "number"
         ? search.versionNumber
@@ -98,6 +99,14 @@ function DialogEditor() {
   useEffect(() => {
     setSelectedMessage(selected?.clientMessage ?? "");
   }, [selected?.id, selected?.clientMessage]);
+
+  useEffect(() => {
+    if (!search.nodeId || nodes.length === 0) return;
+
+    if (nodes.some((node) => node.id === search.nodeId)) {
+      setSelectedId(search.nodeId);
+    }
+  }, [nodes, search.nodeId]);
 
   const refetchVersion = async () => {
     await queryClient.refetchQueries({

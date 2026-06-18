@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import {
   AlertTriangle,
   CheckCircle2,
@@ -81,6 +81,19 @@ interface DiagnosticGroup {
 function ValidatorPage() {
   const search = Route.useSearch();
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
+  const selectNode = useCallback((nodeId: string | null) => {
+    if (typeof window === "undefined") {
+      setSelectedNodeId(nodeId);
+      return;
+    }
+
+    const scrollX = window.scrollX;
+    const scrollY = window.scrollY;
+    setSelectedNodeId(nodeId);
+    window.requestAnimationFrame(() => {
+      window.scrollTo(scrollX, scrollY);
+    });
+  }, []);
   const hasValidationParams = Boolean(search.simulationId && search.versionNumber);
   const simulationsQuery = useQuery({
     queryKey: ["simulations"],
@@ -155,7 +168,7 @@ function ValidatorPage() {
         <ScoringModelPreview
           error={versionQuery.error}
           loading={versionQuery.isLoading}
-          onSelectNode={setSelectedNodeId}
+          onSelectNode={selectNode}
           selectedNodeId={selectedNodeId}
           simulationId={search.simulationId}
           version={versionQuery.data}
@@ -202,6 +215,11 @@ function ValidatorPage() {
                 {firstFixableBlocker?.nodeId && (
                   <Link
                     to="/nova/dialogo"
+                    search={{
+                      simulationId: search.simulationId,
+                      versionNumber: search.versionNumber,
+                      nodeId: firstFixableBlocker.nodeId,
+                    }}
                     className="rounded-md bg-danger px-3 py-1.5 text-xs font-medium text-danger-foreground hover:opacity-90"
                   >
                     Corrigir {firstFixableBlocker.nodeId}
@@ -286,7 +304,7 @@ function ValidatorPage() {
                   {selectedNodeId && (
                     <button
                       type="button"
-                      onClick={() => setSelectedNodeId(null)}
+                      onClick={() => selectNode(null)}
                       className="rounded-md border border-border bg-background px-2 py-1 text-[11px] text-muted-foreground hover:bg-accent"
                     >
                       Limpar filtro
@@ -313,7 +331,7 @@ function ValidatorPage() {
                             <button
                               key={nodeId}
                               type="button"
-                              onClick={() => setSelectedNodeId(nodeId)}
+                              onClick={() => selectNode(nodeId)}
                               className="rounded-md border border-border bg-background px-2 py-1 font-mono text-[11px] text-primary hover:bg-accent"
                             >
                               {nodeId}
@@ -327,6 +345,11 @@ function ValidatorPage() {
                         {group.nodeIds[0] && (
                           <Link
                             to="/nova/dialogo"
+                            search={{
+                              simulationId: search.simulationId,
+                              versionNumber: search.versionNumber,
+                              nodeId: group.nodeIds[0],
+                            }}
                             className="inline-flex items-center gap-1 rounded-md border border-border bg-card px-3 py-1.5 text-xs font-medium hover:bg-accent"
                           >
                             <ExternalLink className="h-3 w-3" />
@@ -355,6 +378,11 @@ function ValidatorPage() {
               <div className="mt-5 flex flex-wrap justify-between gap-3">
                 <Link
                   to="/nova/dialogo"
+                  search={{
+                    simulationId: search.simulationId,
+                    versionNumber: search.versionNumber,
+                    nodeId: selectedNodeId ?? undefined,
+                  }}
                   className="rounded-md border border-border bg-card px-4 py-2 text-sm hover:bg-accent"
                 >
                   Voltar ao editor
@@ -484,14 +512,10 @@ function ScoringModelPreview({
             ) : steps.length > 0 ? (
               <div className="grid gap-3">
                 {steps.map((step) => (
-                  <button
+                  <article
                     key={step.node.id}
-                    type="button"
-                    onClick={() =>
-                      onSelectNode(selectedNodeId === step.node.id ? null : step.node.id)
-                    }
                     className={cn(
-                      "flex min-h-[310px] flex-col rounded-md border bg-background p-4 text-left transition hover:border-primary/60 hover:bg-accent/40",
+                      "flex min-h-[310px] flex-col rounded-md border bg-background p-4 text-left transition",
                       selectedNodeId === step.node.id
                         ? "border-primary ring-2 ring-primary/20"
                         : "border-border",
@@ -511,6 +535,29 @@ function ScoringModelPreview({
                           crítica
                         </span>
                       )}
+                      <div className="ml-auto flex flex-wrap gap-2">
+                        <button
+                          type="button"
+                          onClick={() =>
+                            onSelectNode(selectedNodeId === step.node.id ? null : step.node.id)
+                          }
+                          className="rounded-md border border-border bg-card px-3 py-1.5 text-xs font-medium hover:bg-accent"
+                        >
+                          {selectedNodeId === step.node.id ? "Selecionado" : "Selecionar"}
+                        </button>
+                        <Link
+                          to="/nova/dialogo"
+                          search={{
+                            simulationId,
+                            versionNumber,
+                            nodeId: step.node.id,
+                          }}
+                          className="inline-flex items-center gap-1 rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary/90"
+                        >
+                          <ExternalLink className="h-3 w-3" />
+                          Editar
+                        </Link>
+                      </div>
                     </div>
 
                     <div className="mt-3">
@@ -588,7 +635,7 @@ function ScoringModelPreview({
                     <div className="mt-auto pt-4 text-[11px] text-muted-foreground">
                       {step.node.options.length} opções - próximo: {step.nextTargets.join(", ")}
                     </div>
-                  </button>
+                  </article>
                 ))}
               </div>
             ) : (
@@ -600,7 +647,6 @@ function ScoringModelPreview({
             {version && steps.length > 0 && <FlowOutcomeSummary version={version} />}
           </div>
         </div>
-
       </div>
     </section>
   );
