@@ -35,19 +35,19 @@ const pillars = [
     icon: ClipboardCheck,
     term: "construto" as const,
     title: "Construto definido",
-    text: "O blueprint (modelo base) fixa cargo, situação crítica e comportamento observável.",
+    text: "O plano da avaliação fixa cargo, situação crítica e comportamento observável.",
   },
   {
     icon: Scale,
     term: "score-auditavel" as const,
     title: "Score auditável",
-    text: "Rubrica, peso e caminho explicam cada ponto do resultado.",
+    text: "Critérios de pontuação, peso e caminho explicam cada ponto do resultado.",
   },
   {
     icon: Shield,
     term: "pontuacao-deterministica" as const,
     title: "Pontuação determinística",
-    text: "Cálculo por rubrica, peso e regra declarada.",
+    text: "Cálculo por critérios de pontuação, peso e regra declarada.",
   },
 ];
 
@@ -113,7 +113,7 @@ function DefensibilityPage() {
           />
         ) : versionQuery.isLoading || auditQuery.isLoading ? (
           <StateBanner tone="info" title="Carregando evidências">
-            Buscando blueprint e trilha de auditoria da simulação {search.simulationId} v
+            Buscando plano da avaliação e trilha de auditoria da simulação {search.simulationId} v
             {search.versionNumber}.
           </StateBanner>
         ) : versionQuery.isError || auditQuery.isError ? (
@@ -128,7 +128,7 @@ function DefensibilityPage() {
           <div className="grid gap-4 lg:grid-cols-[1fr_360px]">
             <section className="rounded-md border border-border bg-card p-5">
               <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                Blueprint defensável
+                Plano defensável
               </div>
               <h2 className="mt-2 text-xl font-semibold">{versionQuery.data.name}</h2>
               <p className="mt-2 text-sm text-muted-foreground">{versionQuery.data.description}</p>

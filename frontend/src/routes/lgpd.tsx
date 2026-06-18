@@ -70,7 +70,8 @@ function LgpdPage() {
           <div className="text-xs uppercase text-primary">Conformidade</div>
           <h1 className="mt-1 text-3xl font-semibold">LGPD e transparência do resultado</h1>
           <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
-            O candidato pode pedir revisão. A explicação usa <Termo id="rubrica">rubrica</Termo>,
+            O candidato pode pedir revisão. A explicação usa{" "}
+            <Termo id="criterios-pontuacao">critérios de pontuação</Termo>,
             escolha e caminho, sem <Termo id="caixa-preta">caixa-preta</Termo>.
           </p>
         </div>
@@ -150,7 +151,7 @@ function LgpdPage() {
                     <div className="mt-2 flex flex-wrap gap-1.5 text-[11px] text-muted-foreground">
                       {node.options.slice(0, 3).map((option) => (
                         <span key={option.id} className="rounded border border-border px-2 py-1">
-                          {option.id}: {Object.keys(option.competencyLevels).join(", ") || "sem rubrica"}
+                          {option.id}: {Object.keys(option.competencyLevels).join(", ") || "sem critério de pontuação"}
                         </span>
                       ))}
                     </div>

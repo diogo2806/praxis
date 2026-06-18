@@ -171,7 +171,7 @@ public class SimulationAdminService {
                 savedSimulationEntity.getId(),
                 versionEntity.getVersionNumber(),
                 AuditEventType.SIMULATION_VERSION_DRAFT_CREATED,
-                "Versao inicial criada a partir do blueprint.",
+                "Versao inicial criada a partir do plano da avaliacao.",
                 "{\"status\":\"draft\"}"
         );
 
@@ -205,7 +205,7 @@ public class SimulationAdminService {
                 simulationId,
                 versionNumber,
                 AuditEventType.SIMULATION_VERSION_BLUEPRINT_UPDATED,
-                "Blueprint atualizado.",
+                "Plano da avaliacao atualizado.",
                 "{\"rootNodeId\":\"" + escapeJson(savedVersionEntity.getRootNodeId())
                         + "\",\"competencyCount\":" + savedVersionEntity.getCompetencies().size() + "}"
         );

@@ -26,7 +26,7 @@ export const en = {
     gupyConnectionError: "Gupy integration error",
     couldNotConfirmSubmission: "Could not confirm result submission.",
     openDiagnostics: "Open diagnostics",
-    viewAdvancedSettings: "View advanced settings",
+    viewAdvancedSettings: "View technical mode",
     viewCommercialMode: "View commercial mode",
     integrationGupy: "Gupy Integration - v0.1",
     testCreator: "Situation Test Creator (SJT)",

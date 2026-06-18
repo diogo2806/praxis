@@ -103,7 +103,7 @@ public class SimulationAdminController {
     @PostMapping("/drafts")
     @Operation(
             summary = "Cria simulacao em rascunho",
-            description = "Cria uma simulacao com versao inicial em rascunho a partir do blueprint."
+            description = "Cria uma simulacao com versao inicial em rascunho a partir do plano da avaliacao."
     )
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Rascunho criado."),
@@ -119,7 +119,7 @@ public class SimulationAdminController {
     @GetMapping("/{simulationId}/versions/{versionNumber}")
     @Operation(
             summary = "Detalha versao de simulacao",
-            description = "Retorna blueprint, competencias, turnos e alternativas da versao para telas de autoria."
+            description = "Retorna plano da avaliacao, competencias, turnos e alternativas da versao para telas de autoria."
     )
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Versao retornada."),
@@ -134,11 +134,11 @@ public class SimulationAdminController {
 
     @PatchMapping("/{simulationId}/versions/{versionNumber}/blueprint")
     @Operation(
-            summary = "Atualiza blueprint da versao",
+            summary = "Atualiza plano da avaliacao da versao",
             description = "Atualiza rootNodeId, competencias e pesos de uma versao em rascunho."
     )
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Blueprint atualizado."),
+            @ApiResponse(responseCode = "200", description = "Plano da avaliacao atualizado."),
             @ApiResponse(responseCode = "400", description = "Payload invalido.", content = @Content(examples = @ExampleObject(value = ERROR_EXAMPLE))),
             @ApiResponse(responseCode = "403", description = "Acesso negado.", content = @Content(examples = @ExampleObject(value = ERROR_EXAMPLE))),
             @ApiResponse(responseCode = "409", description = "Versao nao pode ser editada neste estado.", content = @Content(examples = @ExampleObject(value = ERROR_EXAMPLE)))

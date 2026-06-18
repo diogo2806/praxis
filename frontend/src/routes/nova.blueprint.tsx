@@ -15,7 +15,7 @@ import { useTenantConfig } from "@/lib/tenant-config";
 export const Route = createFileRoute("/nova/blueprint")({
   head: () => ({
     meta: [
-      { title: "Blueprint — Práxis" },
+      { title: "Plano da avaliação — Práxis" },
       {
         name: "description",
         content:
@@ -29,9 +29,14 @@ export const Route = createFileRoute("/nova/blueprint")({
 function Page() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const { config } = useTenantConfig();
-  const competencies = config.competencies;
-  const resultUses = config.resultUses;
+  const {
+    config,
+    isLoading: tenantConfigLoading,
+    isError: tenantConfigError,
+    error: tenantConfigQueryError,
+  } = useTenantConfig();
+  const competencies = config?.competencies ?? [];
+  const resultUses = config?.resultUses ?? [];
   const defaultResultUse = getDefaultOption(resultUses)?.value ?? "";
   const [role, setRole] = useState("");
   const [criticalSituation, setCriticalSituation] = useState("");
@@ -129,6 +134,20 @@ function Page() {
       <WizardStepper current="avaliacao" unlockedThrough={canGoNext ? "cenario" : "avaliacao"} />
       <ScreenStateStrip blockedReason="cargo, situação crítica e erro crítico obrigatórios" />
 
+      {tenantConfigLoading && (
+        <StateBanner tone="info" title="Carregando configuracao da empresa">
+          Buscando competencias e usos de resultado no backend.
+        </StateBanner>
+      )}
+
+      {tenantConfigError && (
+        <StateBanner tone="danger" title="Nao foi possivel carregar a configuracao">
+          {tenantConfigQueryError instanceof Error
+            ? tenantConfigQueryError.message
+            : "Verifique se o backend esta disponivel antes de criar uma simulacao."}
+        </StateBanner>
+      )}
+
       {createDraftMutation.isError && (
         <div className="mb-5">
           <StateBanner tone="danger" title="Não foi possível criar o rascunho">
@@ -139,30 +158,31 @@ function Page() {
         </div>
       )}
 
+      {config && (
       <div className="space-y-6">
         <div className="rounded-xl border border-border bg-card p-5">
           <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-            Por que blueprint?
+            Por que plano da avaliação?
           </div>
           <p className="mt-2 text-sm text-foreground/80">
-            O <Termo id="blueprint">blueprint</Termo> (modelo base) vira referência fixa para o{" "}
+            O <Termo id="blueprint">plano da avaliação</Termo> vira referência fixa para o{" "}
             <Termo id="validador">Validador</Termo> checar se a simulação mede o que prometeu.
           </p>
         </div>
         <div className="rounded-xl border border-warning/30 bg-warning/10 p-5">
           <div className="text-xs font-semibold uppercase tracking-wider text-warning-foreground">
-            Rubrica, peso e cálculo
+            Critérios de pontuação, peso e cálculo
           </div>
           <p className="mt-2 text-sm text-foreground/80">
-            A nota sai de regras declaradas. O <Termo id="blueprint">blueprint</Termo> registra o
+            A nota sai de regras declaradas. O <Termo id="blueprint">plano da avaliação</Termo> registra o
             porquê comportamental que a auditoria vai pedir.
           </p>
         </div>
         <div className="space-y-6">
           <Header
             kicker="Passo 1"
-            title="Blueprint da avaliação"
-            lede="Antes de escrever qualquer diálogo, defina o porquê. O blueprint vira referência fixa para o Validador de Qualidade."
+            title="Plano da avaliação"
+            lede="Antes de escrever qualquer diálogo, defina o porquê. O plano da avaliação vira referência fixa para o Validador de Qualidade."
           />
 
           <Card title="Cargo" required>
@@ -369,6 +389,7 @@ function Page() {
           </div>
         </div>
       </div>
+      )}
     </AppShell>
   );
 }

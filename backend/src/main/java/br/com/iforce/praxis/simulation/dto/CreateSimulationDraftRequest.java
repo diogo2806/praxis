@@ -7,7 +7,7 @@ import jakarta.validation.constraints.Size;
 
 import java.util.List;
 
-@Schema(description = "Payload para criar uma simulacao em rascunho a partir do blueprint inicial.")
+@Schema(description = "Payload para criar uma simulacao em rascunho a partir do plano da avaliacao inicial.")
 public record CreateSimulationDraftRequest(
         @NotBlank
         @Size(max = 180)
@@ -26,7 +26,7 @@ public record CreateSimulationDraftRequest(
 
         @NotEmpty
         @Size(max = 12)
-        @Schema(description = "Competencias avaliadas no blueprint.")
+        @Schema(description = "Competencias avaliadas no plano da avaliacao.")
         List<@NotBlank @Size(max = 140) String> competencies,
 
         @Size(max = 1200)

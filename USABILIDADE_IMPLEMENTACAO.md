@@ -98,7 +98,7 @@ Implementadas **4 prioridades** do relatório de usabilidade, focando em **acent
 | Tela | Antes | Depois |
 |---|---|---|
 | **Monitoramento** | "O monitoramento usa apenas dados do backend" | "Você verá os indicadores depois que uma avaliação for publicada na Gupy" |
-| **LGPD** | "A tela usa blueprint, opções e eventos reais" | "Escolha uma simulação para entender como funciona a explicação da nota" |
+| **LGPD** | "A tela usa plano da avaliação, opções e eventos reais" | "Escolha uma simulação para entender como funciona a explicação da nota" |
 | **Defensabilidade** | "A base conceitual é fixa, mas eventos..." | "Escolha para entender como se sustenta tecnicamente e juridicamente" |
 | **Candidato** | "Link de tentativa obrigatório" | "Código de acesso obrigatório" |
 

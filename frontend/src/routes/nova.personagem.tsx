@@ -36,8 +36,13 @@ function Page() {
   const search = Route.useSearch();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const { config } = useTenantConfig();
-  const checklist = config.languageChecklist.map((item) => item.value);
+  const {
+    config,
+    isLoading: tenantConfigLoading,
+    isError: tenantConfigError,
+    error: tenantConfigQueryError,
+  } = useTenantConfig();
+  const checklist = config?.languageChecklist.map((item) => item.value) ?? [];
   const hasDraftContext = Boolean(search.simulationId && search.versionNumber);
   const [name, setName] = useState("");
   const [emotion, setEmotion] = useState("");
@@ -73,6 +78,9 @@ function Page() {
           timeLimitSeconds: rootNode.timeLimitSeconds,
         });
         return rootNode.id;
+      }
+      if (!config) {
+        throw new Error("Configuracao da empresa ainda nao foi carregada pelo backend.");
       }
       return createSimulationNode(search.simulationId!, search.versionNumber!, {
         clientMessage,
@@ -119,9 +127,15 @@ function Page() {
             />
           }
         />
-      ) : versionQuery.isLoading ? (
+      ) : tenantConfigLoading || versionQuery.isLoading ? (
         <StateBanner tone="info" title="Carregando fluxo da conversa">
           Buscando a primeira etapa da simulação {search.simulationId} v{search.versionNumber}.
+        </StateBanner>
+      ) : tenantConfigError ? (
+        <StateBanner tone="danger" title="Nao foi possivel carregar a configuracao">
+          {tenantConfigQueryError instanceof Error
+            ? tenantConfigQueryError.message
+            : "Verifique se o backend esta disponivel antes de continuar."}
         </StateBanner>
       ) : versionQuery.isError ? (
         <StateBanner tone="danger" title="Não foi possível carregar a versão">

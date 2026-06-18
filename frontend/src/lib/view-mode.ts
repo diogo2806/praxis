@@ -1,7 +1,8 @@
 export type ViewMode = "commercial" | "technical";
-export type GupyConnectionState = "connected" | "connecting" | "disconnected" | "error";
+export type GupyConnectionState = "unknown" | "connected" | "connecting" | "disconnected" | "error";
 
 export const gupyConnectionLabels: Record<GupyConnectionState, string> = {
+  unknown: "Gupy não verificada",
   connected: "Gupy conectada",
   connecting: "Conectando à Gupy",
   disconnected: "Gupy desconectada",
@@ -20,6 +21,7 @@ export function getGupyConnectionState(pathname = ""): GupyConnectionState {
     const query = new URLSearchParams(window.location.search);
     const forced = query.get("gupy");
     if (
+      forced === "unknown" ||
       forced === "connected" ||
       forced === "connecting" ||
       forced === "disconnected" ||
@@ -28,7 +30,7 @@ export function getGupyConnectionState(pathname = ""): GupyConnectionState {
       return forced;
     }
   }
-  return pathname === "/nova/gupy" || pathname === "/nova/publicacao" ? "connecting" : "connected";
+  return pathname === "/nova/gupy" || pathname === "/nova/publicacao" ? "connecting" : "unknown";
 }
 
 export function useViewMode() {
@@ -41,7 +43,7 @@ export function useViewMode() {
 
 export function useGupyConnectionState(pathname = "") {
   const [state, setState] = useState<GupyConnectionState>(
-    pathname === "/nova/gupy" || pathname === "/nova/publicacao" ? "connecting" : "connected",
+    pathname === "/nova/gupy" || pathname === "/nova/publicacao" ? "connecting" : "unknown",
   );
   useEffect(() => {
     setState(getGupyConnectionState(pathname));

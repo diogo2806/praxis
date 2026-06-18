@@ -2,10 +2,15 @@ package br.com.iforce.praxis.integration.ats.adapter;
 
 import br.com.iforce.praxis.integration.ats.model.CandidateContext;
 import br.com.iforce.praxis.integration.ats.model.ResultPayload;
-import br.com.iforce.praxis.gupy.dto.TestResultResponse;
 import br.com.iforce.praxis.gupy.delivery.service.ResultWebhookClient;
+import br.com.iforce.praxis.gupy.dto.TestResultItemResponse;
+import br.com.iforce.praxis.gupy.dto.TestResultResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
+
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Adapter para integração com Gupy.
@@ -43,14 +48,16 @@ public class GupyAdapter implements ATSAdapter {
         log.info("Enviando resultado para Gupy: candidateId={}, score={}", payload.candidateId(), payload.score());
 
         TestResultResponse testResult = new TestResultResponse(
-            payload.candidateId(),
             payload.simulationId(),
-            payload.score(),
-            payload.resultId(),
-            payload.decision(),
-            payload.humanReviewRequired(),
+            payload.simulationId(),
+            "Resultado da avaliacao Praxis",
+            "Praxis",
             payload.explanation(),
-            null // additionalMetadata
+            null,
+            "done",
+            null,
+            null,
+            toResultItems(payload)
         );
 
         try {
@@ -70,5 +77,47 @@ public class GupyAdapter implements ATSAdapter {
         // Link do candidato será construído quando a tentativa for criada
         // Formato: /candidato/:token
         return null;
+    }
+
+    private List<TestResultItemResponse> toResultItems(ResultPayload payload) {
+        if (payload.competencies() == null || payload.competencies().isEmpty()) {
+            return List.of(new TestResultItemResponse(
+                    payload.score(),
+                    payload.score() + "%",
+                    "percentage",
+                    payload.decision(),
+                    "Resultado geral",
+                    payload.explanation(),
+                    null,
+                    otherInformations(payload)
+            ));
+        }
+
+        return payload.competencies().stream()
+                .map(competency -> new TestResultItemResponse(
+                        competency.score(),
+                        competency.score() + "%",
+                        "percentage",
+                        competency.level(),
+                        competency.name(),
+                        "Pontuacao da competencia " + competency.name() + ".",
+                        null,
+                        Map.of()
+                ))
+                .toList();
+    }
+
+    private Map<String, Object> otherInformations(ResultPayload payload) {
+        Map<String, Object> otherInformations = new LinkedHashMap<>();
+        otherInformations.put("humanReviewRequired", payload.humanReviewRequired());
+        putIfPresent(otherInformations, "candidateId", payload.candidateId());
+        putIfPresent(otherInformations, "attemptId", payload.attemptId());
+        return otherInformations;
+    }
+
+    private void putIfPresent(Map<String, Object> target, String key, Object value) {
+        if (value != null) {
+            target.put(key, value);
+        }
     }
 }

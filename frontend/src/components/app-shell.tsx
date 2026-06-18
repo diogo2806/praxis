@@ -18,7 +18,7 @@ import { GlobalErrorFlow, GlobalProductStateBar, StateBanner } from "@/component
 import { LanguageSelector } from "@/components/language-selector";
 import { useSession } from "@/lib/session";
 import { useLanguage } from "@/lib/language-context";
-import { gupyConnectionLabels, useGupyConnectionState, useViewMode } from "@/lib/view-mode";
+import { useGupyConnectionState, useViewMode } from "@/lib/view-mode";
 import { cn } from "@/lib/utils";
 
 const getNav = (t: any) => [
@@ -197,7 +197,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         <div className="border-t border-sidebar-border p-4">
           <div
             className="rounded-md border border-sidebar-border/60 bg-sidebar-accent/40 p-3 text-xs text-sidebar-foreground/80"
-            title="A nota do candidato é calculada por regras declaradas (rubrica, peso e cálculo). Nenhum modelo de IA decide ou julga o resultado."
+            title="A nota do candidato é calculada por regras declaradas (critérios de pontuação, peso e cálculo). Nenhum modelo de IA decide ou julga o resultado."
           >
             <div className="font-medium text-sidebar-foreground">{t.common.rulesBasedScoring}</div>
             <p className="mt-1 text-sidebar-foreground/80">
@@ -230,10 +230,6 @@ export function AppShell({ children }: { children: ReactNode }) {
               <HelpCircle className="h-3.5 w-3.5" />
               <span className="hidden sm:inline">{t.common.help}</span>
             </Link>
-            <span className="inline-flex items-center gap-1.5 rounded-md border border-border bg-card px-2.5 py-1 text-muted-foreground">
-              <span className="h-1.5 w-1.5 rounded-full bg-success" />
-              {gupyConnectionLabels[gupyState]}
-            </span>
             <a
               href={modeHref}
               className="rounded-md border border-border bg-card px-2.5 py-1 text-muted-foreground hover:bg-accent"

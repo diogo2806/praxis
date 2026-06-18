@@ -13,12 +13,11 @@
 
 export type PraxisRuntimeConfig = {
   apiBaseUrl: string;
-  demoMode: boolean;
 };
 
 declare global {
   interface Window {
-    __PRAXIS_CONFIG__?: { apiBaseUrl?: string; demoMode?: boolean };
+    __PRAXIS_CONFIG__?: { apiBaseUrl?: string };
   }
 }
 
@@ -27,21 +26,14 @@ const buildTimeApiBaseUrl = (import.meta.env.VITE_PRAXIS_BROWSER_API_BASE_URL ??
   "",
 );
 
-const buildTimeDemoMode = import.meta.env.VITE_PRAXIS_DEMO_MODE === "true";
-
 export function getRuntimeConfig(): PraxisRuntimeConfig {
   const injected = typeof window !== "undefined" ? window.__PRAXIS_CONFIG__ : undefined;
 
   return {
     apiBaseUrl: (injected?.apiBaseUrl ?? buildTimeApiBaseUrl).replace(/\/$/, ""),
-    demoMode: injected?.demoMode ?? buildTimeDemoMode,
   };
 }
 
 export function getApiBaseUrl(): string {
   return getRuntimeConfig().apiBaseUrl;
-}
-
-export function isDemoMode(): boolean {
-  return getRuntimeConfig().demoMode;
 }

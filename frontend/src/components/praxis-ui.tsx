@@ -147,7 +147,7 @@ type GlobalProductState = {
 };
 
 const defaultProductState: GlobalProductState = {
-  gupy: "connected",
+  gupy: "unknown",
   draft: "saved",
   publication: "idle",
 };
@@ -159,6 +159,7 @@ export function GlobalProductStateBar({
 }) {
   const current = { ...defaultProductState, ...state };
   const gupyMeta = {
+    unknown: { label: gupyConnectionLabels.unknown, Icon: CircleDot, tone: "muted" },
     connected: { label: gupyConnectionLabels.connected, Icon: CheckCircle2, tone: "ok" },
     connecting: { label: gupyConnectionLabels.connecting, Icon: Loader2, tone: "warn" },
     disconnected: { label: gupyConnectionLabels.disconnected, Icon: CloudOff, tone: "danger" },
