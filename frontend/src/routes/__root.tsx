@@ -86,16 +86,17 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Motor de Avaliação Situacional — Práxis" },
+      { title: "Práxis — Avaliação de candidatos de forma justa e clara" },
       {
         name: "description",
         content:
-          "Crie, valide, calibre e audite simulações situacionais para seleção, com score por rubrica e trilha auditável.",
+          "Práxis é uma plataforma para avaliar candidatos com situações reais do trabalho. Resultados justos e transparentes, sem inteligência artificial decidindo. Veja como funciona.",
       },
-      { property: "og:title", content: "Práxis — Avaliação Situacional" },
+      { property: "og:title", content: "Práxis — Avaliação de candidatos" },
       {
         property: "og:description",
-        content: "SJT determinístico com rubricas, score normalizado e trilha auditável.",
+        content:
+          "Avalie candidatos com situações reais do trabalho. Resultados justos e transparentes, sem IA decidindo sozinha.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },

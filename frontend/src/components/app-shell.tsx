@@ -6,8 +6,10 @@ import {
   Home,
   Link2,
   MessageSquare,
+  HelpCircle,
   Scale,
   ShieldCheck,
+  Sparkles,
   UserRound,
 } from "lucide-react";
 import { GlobalErrorFlow, GlobalProductStateBar, StateBanner } from "@/components/praxis-ui";
@@ -16,17 +18,47 @@ import { gupyConnectionLabels, useGupyConnectionState, useViewMode } from "@/lib
 import { cn } from "@/lib/utils";
 
 const nav = [
-  { to: "/", label: "Painel", icon: Home },
-  { to: "/nova/avaliacao", label: "Nova simulação", icon: ClipboardCheck },
-  { to: "/monitoramento", label: "Monitoramento", icon: BarChart3 },
-  { to: "/enviar-link", label: "Enviar link", icon: Link2 },
-  { to: "/candidato", label: "Visão do candidato", icon: MessageSquare },
+  { to: "/", label: "Painel", icon: Home, desc: "Seus testes e resultados" },
+  {
+    to: "/nova/avaliacao",
+    label: "Nova simulação",
+    icon: ClipboardCheck,
+    desc: "Criar um novo teste",
+  },
+  {
+    to: "/monitoramento",
+    label: "Monitoramento",
+    icon: BarChart3,
+    desc: "Acompanhe testes em andamento",
+  },
+  { to: "/enviar-link", label: "Enviar link", icon: Link2, desc: "Convide um candidato" },
+  {
+    to: "/candidato",
+    label: "Visão do candidato",
+    icon: MessageSquare,
+    desc: "Veja como o candidato enxerga o teste",
+  },
 ] as const;
 
 const secondary = [
-  { to: "/governanca", label: "Governança & Auditoria", icon: ShieldCheck },
-  { to: "/lgpd", label: "LGPD & Explicabilidade", icon: UserRound },
-  { to: "/defensabilidade", label: "Defensabilidade", icon: Scale },
+  {
+    to: "/governanca",
+    label: "Governança & Auditoria",
+    icon: ShieldCheck,
+    desc: "Histórico e versões dos testes",
+  },
+  {
+    to: "/lgpd",
+    label: "LGPD & Explicabilidade",
+    icon: UserRound,
+    desc: "Proteção de dados e transparência",
+  },
+  {
+    to: "/defensabilidade",
+    label: "Defensabilidade",
+    icon: Scale,
+    desc: "Por que o resultado é confiável",
+  },
 ] as const;
 
 export function AppShell({ children }: { children: ReactNode }) {
@@ -75,6 +107,24 @@ export function AppShell({ children }: { children: ReactNode }) {
         </div>
 
         <nav className="flex-1 overflow-y-auto px-3 py-4">
+          <Link
+            to="/comecar"
+            className={cn(
+              "mb-3 flex items-start gap-3 rounded-md border px-3 py-2.5 text-sm transition",
+              pathname === "/comecar"
+                ? "border-primary/40 bg-primary/15 text-sidebar-foreground"
+                : "border-sidebar-border/60 bg-sidebar-accent/30 text-sidebar-foreground/85 hover:bg-sidebar-accent/60 hover:text-sidebar-foreground",
+            )}
+          >
+            <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+            <span className="min-w-0 flex-1">
+              <span className="block font-medium">Comece por aqui</span>
+              <span className="mt-0.5 block text-[11px] leading-snug text-sidebar-foreground/65">
+                O que é o Práxis e como funciona
+              </span>
+            </span>
+          </Link>
+
           <div className="px-3 pb-2 text-[10px] font-semibold uppercase text-sidebar-foreground/75">
             Operação
           </div>
@@ -88,15 +138,22 @@ export function AppShell({ children }: { children: ReactNode }) {
                 key={item.to}
                 to={item.to}
                 className={cn(
-                  "mb-1.5 flex items-center gap-3 rounded-md px-3 py-2.5 text-sm transition",
+                  "mb-1.5 flex items-start gap-3 rounded-md px-3 py-2.5 text-sm transition",
                   active
                     ? "bg-sidebar-accent text-sidebar-accent-foreground"
                     : "text-sidebar-foreground/85 hover:bg-sidebar-accent/60 hover:text-sidebar-foreground",
                 )}
               >
-                <item.icon className="h-4 w-4 text-sidebar-foreground/80" />
-                {item.label}
-                {active && <span className="ml-auto h-1.5 w-1.5 rounded-full bg-primary" />}
+                <item.icon className="mt-0.5 h-4 w-4 shrink-0 text-sidebar-foreground/80" />
+                <span className="min-w-0 flex-1">
+                  <span className="flex items-center gap-2">
+                    {item.label}
+                    {active && <span className="h-1.5 w-1.5 rounded-full bg-primary" />}
+                  </span>
+                  <span className="mt-0.5 block text-[11px] leading-snug text-sidebar-foreground/65">
+                    {item.desc}
+                  </span>
+                </span>
               </Link>
             );
           })}
@@ -111,14 +168,19 @@ export function AppShell({ children }: { children: ReactNode }) {
                 key={item.to}
                 to={item.to}
                 className={cn(
-                  "mb-1.5 flex items-center gap-3 rounded-md px-3 py-2.5 text-sm transition",
+                  "mb-1.5 flex items-start gap-3 rounded-md px-3 py-2.5 text-sm transition",
                   active
                     ? "bg-sidebar-accent text-sidebar-accent-foreground"
                     : "text-sidebar-foreground/85 hover:bg-sidebar-accent/60 hover:text-sidebar-foreground",
                 )}
               >
-                <item.icon className="h-4 w-4 text-sidebar-foreground/80" />
-                {item.label}
+                <item.icon className="mt-0.5 h-4 w-4 shrink-0 text-sidebar-foreground/80" />
+                <span className="min-w-0 flex-1">
+                  <span className="block">{item.label}</span>
+                  <span className="mt-0.5 block text-[11px] leading-snug text-sidebar-foreground/65">
+                    {item.desc}
+                  </span>
+                </span>
               </Link>
             );
           })}
@@ -152,6 +214,13 @@ export function AppShell({ children }: { children: ReactNode }) {
             Espaço de trabalho <span className="text-foreground">/ {session.workspaceName}</span>
           </div>
           <div className="ml-auto flex items-center gap-2 text-xs">
+            <Link
+              to="/comecar"
+              className="inline-flex items-center gap-1.5 rounded-md border border-border bg-card px-2.5 py-1 text-muted-foreground hover:bg-accent"
+            >
+              <HelpCircle className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">Comece por aqui</span>
+            </Link>
             <span className="inline-flex items-center gap-1.5 rounded-md border border-border bg-card px-2.5 py-1 text-muted-foreground">
               <span className="h-1.5 w-1.5 rounded-full bg-success" />
               {gupyConnectionLabels[gupyState]}
