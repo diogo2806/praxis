@@ -1,19 +1,28 @@
 package br.com.iforce.praxis.shared.outbox.service;
 
+import br.com.iforce.praxis.gupy.dto.TestResultResponse;
+import br.com.iforce.praxis.gupy.model.PublishedSimulation;
+import br.com.iforce.praxis.gupy.persistence.entity.CandidateAttemptEntity;
+import br.com.iforce.praxis.gupy.persistence.repository.CandidateAttemptRepository;
+import br.com.iforce.praxis.gupy.service.GupyTestResultMapper;
+import br.com.iforce.praxis.gupy.service.SimulationCatalogService;
 import br.com.iforce.praxis.shared.outbox.persistence.entity.OutboxEventEntity;
 import br.com.iforce.praxis.shared.outbox.persistence.repository.OutboxEventRepository;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestClientResponseException;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 
 @Slf4j
 @Component
@@ -25,15 +34,24 @@ public class OutboxProcessor {
     private final OutboxEventRepository outboxEventRepository;
     private final RestTemplate restTemplate;
     private final ObjectMapper objectMapper;
+    private final CandidateAttemptRepository candidateAttemptRepository;
+    private final SimulationCatalogService simulationCatalogService;
+    private final GupyTestResultMapper gupyTestResultMapper;
 
     public OutboxProcessor(
         OutboxEventRepository outboxEventRepository,
         RestTemplate restTemplate,
-        ObjectMapper objectMapper
+        ObjectMapper objectMapper,
+        CandidateAttemptRepository candidateAttemptRepository,
+        SimulationCatalogService simulationCatalogService,
+        GupyTestResultMapper gupyTestResultMapper
     ) {
         this.outboxEventRepository = outboxEventRepository;
         this.restTemplate = restTemplate;
         this.objectMapper = objectMapper;
+        this.candidateAttemptRepository = candidateAttemptRepository;
+        this.simulationCatalogService = simulationCatalogService;
+        this.gupyTestResultMapper = gupyTestResultMapper;
     }
 
     /**
@@ -81,8 +99,35 @@ public class OutboxProcessor {
         String webhookUrl = payload.get("webhookUrl").asText();
         Object testResult = payload.get("testResult");
 
+        if (testResult == null) {
+            // Migrated event: need to fetch test result from database
+            String attemptId = payload.get("attemptId").asText();
+            testResult = fetchTestResult(attemptId, event.getTenantId());
+        }
+
         log.debug("Enviando resultado para webhook: {}", webhookUrl);
         restTemplate.postForObject(webhookUrl, testResult, Void.class);
+    }
+
+    private Object fetchTestResult(String attemptId, String tenantId) {
+        Optional<CandidateAttemptEntity> attempt = candidateAttemptRepository.findByTenantIdAndId(tenantId, attemptId);
+        if (attempt.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "CandidateAttempt nao encontrado: " + attemptId);
+        }
+
+        CandidateAttemptEntity candidateAttemptEntity = attempt.get();
+        PublishedSimulation simulation = getSimulation(candidateAttemptEntity);
+        return gupyTestResultMapper.toResponse(candidateAttemptEntity, simulation);
+    }
+
+    private PublishedSimulation getSimulation(CandidateAttemptEntity candidateAttemptEntity) {
+        if (candidateAttemptEntity.getSimulationVersionId() != null) {
+            return simulationCatalogService.findByVersionId(candidateAttemptEntity.getSimulationVersionId())
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Versao da simulacao nao encontrada."));
+        }
+
+        return simulationCatalogService.findPublishedById(candidateAttemptEntity.getTenantId(), candidateAttemptEntity.getSimulationId())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Simulacao publicada nao encontrada."));
     }
 
     private JsonNode parsePayload(String payload) {
