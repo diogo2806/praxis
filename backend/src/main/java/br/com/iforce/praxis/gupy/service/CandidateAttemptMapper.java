@@ -2,6 +2,8 @@ package br.com.iforce.praxis.gupy.service;
 
 import br.com.iforce.praxis.candidate.dto.CandidateNodeResponse;
 import br.com.iforce.praxis.candidate.dto.CandidateOptionResponse;
+import br.com.iforce.praxis.candidate.dto.EtapaAtualResponse;
+import br.com.iforce.praxis.candidate.dto.RespostaResponse;
 import br.com.iforce.praxis.gupy.dto.CreateCandidateRequest;
 import br.com.iforce.praxis.gupy.model.AttemptAnswer;
 import br.com.iforce.praxis.gupy.model.AttemptStatus;
@@ -189,5 +191,65 @@ public class CandidateAttemptMapper {
                 node.mediaType(),
                 options
         );
+    }
+
+    public EtapaAtualResponse toEtapaAtualResponse(ScenarioNode node) {
+        if (node == null) {
+            return null;
+        }
+
+        List<RespostaResponse> alternativas = node.options().stream()
+                .map(option -> new RespostaResponse(
+                        publicOptionId(node, option.id()),
+                        option.text(),
+                        option.mediaUrl(),
+                        option.mediaType()
+                ))
+                .toList();
+
+        return new EtapaAtualResponse(
+                node.turnIndex(),
+                node.speaker(),
+                node.message(),
+                node.timeLimitSeconds(),
+                node.mediaUrl(),
+                node.mediaType(),
+                alternativas
+        );
+    }
+
+    public String resolveInternalOptionId(ScenarioNode node, String publicOptionId) {
+        if (publicOptionId == null) {
+            return null;
+        }
+
+        String trimmed = publicOptionId.trim();
+        for (int index = 0; index < node.options().size(); index++) {
+            String label = optionLabel(index);
+            if (label.equalsIgnoreCase(trimmed)) {
+                return node.options().get(index).id();
+            }
+        }
+
+        return trimmed;
+    }
+
+    private String publicOptionId(ScenarioNode node, String internalOptionId) {
+        for (int index = 0; index < node.options().size(); index++) {
+            if (node.options().get(index).id().equals(internalOptionId)) {
+                return optionLabel(index);
+            }
+        }
+        return internalOptionId;
+    }
+
+    private String optionLabel(int index) {
+        int value = index;
+        StringBuilder label = new StringBuilder();
+        do {
+            label.insert(0, (char) ('A' + (value % 26)));
+            value = (value / 26) - 1;
+        } while (value >= 0);
+        return label.toString();
     }
 }

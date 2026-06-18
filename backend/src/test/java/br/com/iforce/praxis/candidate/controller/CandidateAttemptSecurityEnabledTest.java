@@ -55,7 +55,8 @@ class CandidateAttemptSecurityEnabledTest {
 
         mockMvc.perform(get("/candidate/attempts/" + attemptId))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.attemptId").value(org.hamcrest.Matchers.startsWith("att_")))
-                .andExpect(jsonPath("$.currentNode.id").value("turno-1"));
+                .andExpect(jsonPath("$.participacaoId").value(org.hamcrest.Matchers.startsWith("att_")))
+                .andExpect(jsonPath("$.etapaAtual.descricao").exists())
+                .andExpect(jsonPath("$.etapaAtual.id").doesNotExist());
     }
 }

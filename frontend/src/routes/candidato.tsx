@@ -39,10 +39,10 @@ import { useViewMode } from "@/lib/view-mode";
 export const Route = createFileRoute("/candidato")({
   head: () => ({
     meta: [
-      { title: "Visão do Candidato - Praxis" },
+      { title: "Avaliação do Candidato - Praxis" },
       {
         name: "description",
-        content: "Experiência mobile-first com timer, chat, retomada e acessibilidade.",
+        content: "Experiência mobile-first com timer, respostas claras, retomada e acessibilidade.",
       },
     ],
   }),
@@ -70,7 +70,7 @@ function CandidateEntryPage() {
     <AppShell>
       <EmptyState
         title="Código de acesso obrigatório"
-        description="Para visualizar o teste do candidato, use o código de acesso enviado pelo convite. Cole aqui ou abra o link do e-mail."
+        description="Para abrir a avaliação, use o código de acesso enviado pelo convite. Cole aqui ou abra o link do e-mail."
         actions={
           <div className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_auto_auto]">
             <input
@@ -86,7 +86,7 @@ function CandidateEntryPage() {
                 !normalizedToken ? "pointer-events-none opacity-50" : ""
               }`}
             >
-              Abrir tentativa
+              Abrir avaliação
             </Link>
             <Link
               to="/"
@@ -153,7 +153,7 @@ function CandidateLinksPage() {
   }
 
   async function handleShare(row: CandidateLinkResponse) {
-    const text = `Ola ${row.candidateName}, voce foi convidado(a) para uma simulacao situacional. Acesse: ${row.candidateUrl}`;
+    const text = `Olá ${row.candidateName}, você foi convidado(a) para uma avaliação. Acesse: ${row.candidateUrl}`;
     if (navigator.share) {
       await navigator.share({
         title: row.simulationName,
@@ -169,7 +169,7 @@ function CandidateLinksPage() {
 
   return (
     <AppShell>
-      <ScreenStateStrip blockedReason="sem simulacoes publicadas para gerar link" />
+      <ScreenStateStrip blockedReason="sem avaliações publicadas para gerar link" />
 
       <div className="mb-6">
         <div className="text-xs uppercase text-primary">Candidatos</div>
@@ -180,10 +180,10 @@ function CandidateLinksPage() {
       </div>
 
       {simulationsQuery.isError && (
-        <StateBanner tone="danger" title="Nao foi possivel carregar simulacoes">
+        <StateBanner tone="danger" title="Não foi possível carregar avaliações">
           {simulationsQuery.error instanceof Error
             ? simulationsQuery.error.message
-            : "Verifique se o backend esta disponivel."}
+            : "Verifique se o servidor está disponível."}
         </StateBanner>
       )}
 
@@ -191,7 +191,7 @@ function CandidateLinksPage() {
         <StateBanner tone="danger" title="Nao foi possivel carregar links de candidatos">
           {candidateLinksQuery.error instanceof Error
             ? candidateLinksQuery.error.message
-            : "Verifique se o backend esta disponivel."}
+            : "Verifique se o servidor está disponível."}
         </StateBanner>
       )}
 
@@ -225,7 +225,7 @@ function CandidateLinksPage() {
             />
           </label>
           <label className="space-y-1 text-sm">
-            <span className="font-medium">Simulacao</span>
+            <span className="font-medium">Avaliação</span>
             <select
               className="input"
               value={selectedSimulation?.id ?? ""}
@@ -367,15 +367,15 @@ export function CandidateExperience({ token }: { token: string }) {
       node: CandidateNodeResponse;
       optionId?: string | null;
       timedOut: boolean;
-    }) => submitCandidateAnswer(token, { nodeId: node.id, optionId, timedOut }),
+    }) => submitCandidateAnswer(token, { respostaId: optionId, tempoEsgotado: timedOut }),
     onSuccess: (response) => {
       setLiveAttempt({
-        attemptId: response.attemptId,
-        simulationName:
-          liveAttempt?.simulationName ?? attemptQuery.data?.simulationName ?? "Praxis",
+        participacaoId: response.participacaoId,
+        avaliacaoNome:
+          liveAttempt?.avaliacaoNome ?? attemptQuery.data?.avaliacaoNome ?? "Praxis",
         status: response.status,
-        completed: response.completed,
-        currentNode: response.currentNode,
+        finalizado: response.finalizado,
+        etapaAtual: response.etapaAtual,
       });
       setSelected(null);
       setPaused(false);
@@ -383,15 +383,15 @@ export function CandidateExperience({ token }: { token: string }) {
   });
 
   const attempt = liveAttempt ?? attemptQuery.data;
-  const currentNode = attempt?.currentNode ?? null;
-  const finished = Boolean(attempt && (attempt.completed || !currentNode));
+  const currentNode = attempt?.etapaAtual ?? null;
+  const finished = Boolean(attempt && (attempt.finalizado || !currentNode));
   const showTurn = Boolean(currentNode && !finished);
-  const timeLimit = currentNode?.timeLimitSeconds ?? 30;
+  const timeLimit = currentNode?.tempoLimiteSegundos ?? 30;
 
   useEffect(() => {
     setRemaining(timeLimit);
     setSelected(null);
-  }, [currentNode?.id, timeLimit]);
+  }, [currentNode?.numero, timeLimit]);
 
   useEffect(() => {
     if (paused || finished || answerMutation.isPending) return;
@@ -403,7 +403,7 @@ export function CandidateExperience({ token }: { token: string }) {
 
   useEffect(() => {
     if (remaining === 0 && !finished && currentNode && !selected) {
-      setSelected("Sem resposta neste turno");
+      setSelected("Sem resposta nesta etapa");
       answerMutation.mutate({ node: currentNode, timedOut: true });
     }
   }, [answerMutation, currentNode, finished, remaining, selected]);
@@ -413,25 +413,25 @@ export function CandidateExperience({ token }: { token: string }) {
 
   return (
     <AppShell>
-      <ScreenStateStrip blockedReason="link expirado ou tentativa abandonada fora da janela" />
+      <ScreenStateStrip blockedReason="link expirado ou participação abandonada fora da janela" />
       <div className="mb-5">
-        <div className="text-xs uppercase text-primary">Visão do candidato</div>
+        <div className="text-xs uppercase text-primary">Avaliação do candidato</div>
         <h1 className="mt-1 text-3xl font-semibold">
-          {attempt?.simulationName ?? "Simulação situacional"}
+          {attempt?.avaliacaoNome ?? "Avaliação"}
         </h1>
         <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
-          Chat estruturado, timer legível, navegação por teclado e retomada após queda.
+          Uma situação por vez, timer claro, respostas objetivas e retomada após queda.
         </p>
       </div>
 
       {attemptQuery.isLoading && (
-        <StateBanner tone="info" title="Carregando tentativa">
-          Buscando a simulação e o turno atual no sistema.
+        <StateBanner tone="info" title="Carregando participação">
+          Buscando a avaliação e a etapa atual.
         </StateBanner>
       )}
 
       {attemptQuery.isError && (
-        <StateBanner tone="danger" title="Não foi possível carregar a tentativa">
+        <StateBanner tone="danger" title="Não foi possível carregar a participação">
           {attemptQuery.error instanceof Error
             ? attemptQuery.error.message
             : "Verifique se o servidor está rodando e se o código de acesso é válido."}
@@ -446,7 +446,7 @@ export function CandidateExperience({ token }: { token: string }) {
 
       {offline && (
         <StateBanner tone="warn" title="Conexão perdida - reconectando">
-          A resposta salva no último turno será retomada automaticamente quando a conexão voltar.
+          A resposta salva na última etapa será retomada automaticamente quando a conexão voltar.
         </StateBanner>
       )}
 
@@ -467,7 +467,7 @@ export function CandidateExperience({ token }: { token: string }) {
                   <div className="mb-4">
                     <div className="mb-1 flex items-center justify-between text-xs">
                       <span aria-live="polite">{remaining}s restantes</span>
-                      <span>{paused ? "pausado" : `turno ${currentNode?.turnIndex ?? 1}`}</span>
+                      <span>{paused ? "pausado" : `etapa ${currentNode?.numero ?? 1}`}</span>
                     </div>
                     <div
                       className="praxis-progress-track praxis-progress-track-md"
@@ -486,11 +486,11 @@ export function CandidateExperience({ token }: { token: string }) {
                   </div>
                   <div className="space-y-3" aria-live="polite">
                     <div className="mr-8 space-y-2 rounded-md bg-muted px-3 py-2 text-sm">
-                      <div>{currentNode?.message}</div>
-                      {currentNode?.mediaUrl && (
+                      <div>{currentNode?.descricao}</div>
+                      {currentNode?.midiaUrl && (
                         <CandidateMedia
-                          mediaUrl={currentNode.mediaUrl}
-                          mediaType={currentNode.mediaType ?? null}
+                          mediaUrl={currentNode.midiaUrl}
+                          mediaType={currentNode.tipoMidia ?? null}
                         />
                       )}
                     </div>
@@ -507,7 +507,7 @@ export function CandidateExperience({ token }: { token: string }) {
                   </div>
                   {!selected && (
                     <div className="mt-5 space-y-2">
-                      {(currentNode?.options ?? []).map((option) => (
+                      {(currentNode?.alternativas ?? []).map((option) => (
                         <div
                           key={option.id}
                           className="space-y-2 rounded-md border border-border bg-card p-2 hover:border-primary"
@@ -515,7 +515,7 @@ export function CandidateExperience({ token }: { token: string }) {
                           <button
                             type="button"
                             onClick={() => {
-                              setSelected(option.text);
+                              setSelected(option.texto);
                               if (currentNode) {
                                 answerMutation.mutate({
                                   node: currentNode,
@@ -527,12 +527,12 @@ export function CandidateExperience({ token }: { token: string }) {
                             disabled={answerMutation.isPending}
                             className="w-full rounded-md p-1 text-left text-sm hover:bg-primary/5 disabled:cursor-not-allowed disabled:opacity-60"
                           >
-                            {option.text}
+                            {option.texto}
                           </button>
-                          {option.mediaUrl && (
+                          {option.midiaUrl && (
                             <CandidateMedia
-                              mediaUrl={option.mediaUrl}
-                              mediaType={option.mediaType ?? null}
+                              mediaUrl={option.midiaUrl}
+                              mediaType={option.tipoMidia ?? null}
                             />
                           )}
                         </div>
@@ -543,17 +543,17 @@ export function CandidateExperience({ token }: { token: string }) {
               ) : attemptQuery.isLoading ? (
                 <div className="flex min-h-[560px] flex-col justify-center">
                   <div className="text-xs uppercase text-primary">Carregando</div>
-                  <h2 className="mt-2 text-2xl font-semibold">Preparando sua simulação.</h2>
+                  <h2 className="mt-2 text-2xl font-semibold">Preparando sua avaliação.</h2>
                   <p className="mt-2 text-sm text-muted-foreground">
-                    Buscando o turno atual e as alternativas disponíveis.
+                    Buscando a etapa atual e as respostas disponíveis.
                   </p>
                 </div>
               ) : (
                 <div className="flex min-h-[560px] flex-col justify-center">
-                  <div className="text-xs uppercase text-success">Tentativa finalizada</div>
+                  <div className="text-xs uppercase text-success">Participação finalizada</div>
                   <h2 className="mt-2 text-2xl font-semibold">Obrigado por participar.</h2>
                   <p className="mt-2 text-sm text-muted-foreground">
-                    O resultado será processado pelo sistema e entregue para o fluxo configurado.
+                    O resultado será processado e entregue para a equipe responsável.
                   </p>
                 </div>
               )}
@@ -605,14 +605,14 @@ export function CandidateExperience({ token }: { token: string }) {
                   className="inline-flex items-center gap-2 rounded-md border border-border bg-card px-3 py-2 text-sm hover:bg-accent"
                 >
                   <RotateCcw className="h-4 w-4" />
-                  Reiniciar turno
+                  Reiniciar etapa
                 </button>
               </div>
             </div>
           )}
 
-          <StateBanner tone="info" title="Tempo esgotado encerra só o turno">
-            Quando chega a zero, registra sem resposta e avança. A simulação inteira não fecha.
+          <StateBanner tone="info" title="Tempo esgotado encerra a etapa">
+            Quando chega a zero, registra sem resposta e segue o fluxo configurado.
           </StateBanner>
         </aside>
       </div>

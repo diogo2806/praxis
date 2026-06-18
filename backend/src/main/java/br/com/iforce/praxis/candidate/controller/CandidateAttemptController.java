@@ -1,8 +1,8 @@
 package br.com.iforce.praxis.candidate.controller;
 
-import br.com.iforce.praxis.candidate.dto.CandidateAttemptResponse;
-import br.com.iforce.praxis.candidate.dto.SubmitAnswerRequest;
-import br.com.iforce.praxis.candidate.dto.SubmitAnswerResponse;
+import br.com.iforce.praxis.candidate.dto.ParticipacaoResponse;
+import br.com.iforce.praxis.candidate.dto.RegistrarRespostaRequest;
+import br.com.iforce.praxis.candidate.dto.RegistrarRespostaResponse;
 import br.com.iforce.praxis.gupy.service.CandidateAttemptService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -17,7 +17,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/candidate/attempts")
-@Tag(name = "Candidate Attempts", description = "Fluxo público do candidato para executar a simulação situacional.")
+@Tag(name = "Participacoes", description = "Fluxo publico do candidato para executar a avaliacao.")
 public class CandidateAttemptController {
 
     private final CandidateAttemptService candidateAttemptService;
@@ -28,21 +28,21 @@ public class CandidateAttemptController {
 
     @GetMapping("/{attemptId}")
     @Operation(
-            summary = "Carrega tentativa do candidato",
-            description = "Retorna o turno atual sem expor gabarito, pesos, marcadores críticos ou regras internas."
+            summary = "Carrega participacao do candidato",
+            description = "Retorna a etapa atual sem expor gabarito, pesos, identificadores internos ou regras tecnicas."
     )
-    public ResponseEntity<CandidateAttemptResponse> getCandidateAttempt(@PathVariable String attemptId) {
+    public ResponseEntity<ParticipacaoResponse> getCandidateAttempt(@PathVariable String attemptId) {
         return ResponseEntity.ok(candidateAttemptService.findCandidateAttempt(attemptId));
     }
 
     @PostMapping("/{attemptId}/answers")
     @Operation(
-            summary = "Salva resposta do candidato",
-            description = "Persiste resposta de forma idempotente por attemptId e nodeId, recalculando o resultado ao finalizar."
+            summary = "Registra resposta do candidato",
+            description = "Registra a resposta da etapa atual e recalcula o resultado quando a avaliacao termina."
     )
-    public ResponseEntity<SubmitAnswerResponse> submitAnswer(
+    public ResponseEntity<RegistrarRespostaResponse> submitAnswer(
             @PathVariable String attemptId,
-            @Valid @RequestBody SubmitAnswerRequest request
+            @Valid @RequestBody RegistrarRespostaRequest request
     ) {
         return ResponseEntity.ok(candidateAttemptService.submitAnswer(attemptId, request));
     }
