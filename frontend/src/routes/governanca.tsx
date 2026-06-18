@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { ArchiveRestore, Lock, RefreshCw } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
+import { Termo } from "@/components/glossario";
 import { ScreenStateStrip, StateBanner, StatusBadge } from "@/components/praxis-ui";
 import {
   cloneSimulationVersionToDraft,
@@ -62,7 +63,8 @@ function GovernanceHub() {
         <div className="text-xs uppercase text-primary">Conformidade</div>
         <h1 className="mt-1 text-3xl font-semibold">Governanca e auditoria</h1>
         <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
-          Trilha imutavel de decisoes, versionamento e reprocessamento restrito a admin.
+          Trilha imutável de decisões, <Termo id="versionamento">versionamento</Termo> e
+          reprocessamento restrito a admin.
         </p>
       </div>
 
@@ -97,7 +99,9 @@ function GovernanceHub() {
 
       <div className="mt-5 grid gap-5 lg:grid-cols-[minmax(0,1fr)_340px]">
         <section className="rounded-md border border-border bg-card p-5">
-          <h2 className="text-sm font-semibold">AuditLog imutavel</h2>
+          <h2 className="text-sm font-semibold">
+            <Termo id="auditlog">AuditLog</Termo> (registro de auditoria) imutável
+          </h2>
           {hasGovernanceParams ? (
             <AuditEventList events={auditQuery.data ?? []} loading={auditQuery.isLoading} />
           ) : (
@@ -130,13 +134,16 @@ function GovernanceHub() {
           </button>
           <div className="flex items-start gap-2 rounded-md border border-border bg-muted/40 p-3 text-xs text-muted-foreground">
             <Lock className="mt-0.5 h-3.5 w-3.5" />
-            Publicar com blocker e barrado na transicao de estado, nao apenas no log.
+            <span>
+              Publicar com <Termo id="blocker">blocker</Termo> (bloqueio) é barrado na transição de
+              estado, não apenas no log.
+            </span>
           </div>
           <Link
             to="/nova/publicacao"
             className="inline-flex w-full justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground"
           >
-            Ver etapa do wizard
+            Ver etapa do guia (wizard)
           </Link>
           <Link
             to="/"

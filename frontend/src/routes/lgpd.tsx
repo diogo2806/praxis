@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { FileSearch, ShieldCheck } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
+import { Termo } from "@/components/glossario";
 import { EmptyState, ScreenStateStrip, StateBanner, StatusBadge } from "@/components/praxis-ui";
 import {
   getPrivacyCompliance,
@@ -69,8 +70,8 @@ function LgpdPage() {
           <div className="text-xs uppercase text-primary">Conformidade</div>
           <h1 className="mt-1 text-3xl font-semibold">LGPD e explicabilidade</h1>
           <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
-            O candidato pode pedir revisao. A explicacao usa rubrica, escolha e caminho, sem
-            caixa-preta.
+            O candidato pode pedir revisão. A explicação usa <Termo id="rubrica">rubrica</Termo>,
+            escolha e caminho, sem <Termo id="caixa-preta">caixa-preta</Termo>.
           </p>
         </div>
         {version && <StatusBadge status={version.status} />}
@@ -78,13 +79,27 @@ function LgpdPage() {
 
       <div className="grid gap-5 lg:grid-cols-3">
         {[
-          "Pontuacao normalizada por caminho",
-          "Erro critico gera revisao humana",
-          "Sem IA julgando candidato",
+          {
+            key: "normalizada",
+            title: (
+              <>
+                <Termo id="pontuacao-normalizada">Pontuação normalizada</Termo> por caminho
+              </>
+            ),
+          },
+          {
+            key: "erro-critico",
+            title: (
+              <>
+                <Termo id="erro-critico">Erro crítico</Termo> gera revisão humana
+              </>
+            ),
+          },
+          { key: "sem-ia", title: <>Sem IA julgando candidato</> },
         ].map((item) => (
-          <div key={item} className="rounded-md border border-border bg-card p-5">
+          <div key={item.key} className="rounded-md border border-border bg-card p-5">
             <ShieldCheck className="h-5 w-5 text-success" />
-            <div className="mt-3 text-sm font-semibold">{item}</div>
+            <div className="mt-3 text-sm font-semibold">{item.title}</div>
             <p className="mt-1 text-sm text-muted-foreground">
               Evidencia rastreavel por versao, tentativa, turno e alternativa escolhida.
             </p>
