@@ -1,5 +1,5 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useCallback, useState } from "react";
 import {
   AlertTriangle,
@@ -26,6 +26,7 @@ import {
 } from "@/components/praxis-ui";
 import { WizardStepper } from "@/components/wizard-stepper";
 import {
+  cloneSimulationVersionToDraft,
   getSimulationVersion,
   getSimulationValidation,
   listSimulations,
@@ -35,7 +36,7 @@ import {
   type SimulationVersionOptionResponse,
   type SimulationValidationResponse,
 } from "@/lib/api/praxis";
-import { maturityForStatus } from "@/lib/simulation-meta";
+import { canEditSimulationVersion, maturityForStatus, statusMeta } from "@/lib/simulation-meta";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/nova/validador")({
@@ -80,6 +81,8 @@ interface DiagnosticGroup {
 
 function ValidatorPage() {
   const search = Route.useSearch();
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const selectNode = useCallback((nodeId: string | null) => {
     if (typeof window === "undefined") {
@@ -112,6 +115,9 @@ function ValidatorPage() {
   });
 
   const validation = validationQuery.data;
+  const versionStatus = versionQuery.data?.status;
+  const isEditable = versionStatus ? canEditSimulationVersion(versionStatus) : true;
+  const canCloneForEdit = versionStatus === "published";
   const activeChecks = validation ? mapValidationIssues(validation) : [];
   const filteredChecks = selectedNodeId
     ? activeChecks.filter((check) => check.nodeId === selectedNodeId)
@@ -127,6 +133,43 @@ function ValidatorPage() {
   const refreshValidation = () => {
     void validationQuery.refetch();
     void versionQuery.refetch();
+  };
+  const cloneDraftMutation = useMutation({
+    mutationFn: (nodeId?: string) =>
+      cloneSimulationVersionToDraft(search.simulationId!, search.versionNumber!).then((draft) => ({
+        draft,
+        nodeId,
+      })),
+    onSuccess: async ({ draft, nodeId }) => {
+      await queryClient.invalidateQueries({ queryKey: ["simulations"] });
+      void navigate({
+        to: "/nova/dialogo",
+        search: {
+          simulationId: draft.simulationId,
+          versionNumber: draft.newVersionNumber,
+          nodeId,
+        },
+      });
+    },
+  });
+  const openEditor = (nodeId?: string) => {
+    if (!search.simulationId || !search.versionNumber) return;
+
+    if (isEditable) {
+      void navigate({
+        to: "/nova/dialogo",
+        search: {
+          simulationId: search.simulationId,
+          versionNumber: search.versionNumber,
+          nodeId,
+        },
+      });
+      return;
+    }
+
+    if (canCloneForEdit) {
+      cloneDraftMutation.mutate(nodeId);
+    }
   };
   const exportDiagnostics = () => {
     if (!validation) return;
@@ -166,8 +209,10 @@ function ValidatorPage() {
 
       {hasValidationParams && (
         <ScoringModelPreview
+          creatingDraft={cloneDraftMutation.isPending}
           error={versionQuery.error}
           loading={versionQuery.isLoading}
+          onEditNode={openEditor}
           onSelectNode={selectNode}
           selectedNodeId={selectedNodeId}
           simulationId={search.simulationId}
@@ -187,6 +232,24 @@ function ValidatorPage() {
           {validationQuery.error instanceof Error
             ? validationQuery.error.message
             : "Verifique se o sistema está disponível e tente novamente."}
+        </StateBanner>
+      )}
+
+      {hasValidationParams && cloneDraftMutation.isError && (
+        <StateBanner tone="danger" title="Nao foi possivel criar o rascunho para edicao">
+          {cloneDraftMutation.error instanceof Error
+            ? cloneDraftMutation.error.message
+            : "Tente novamente."}
+        </StateBanner>
+      )}
+
+      {hasValidationParams && versionStatus && !isEditable && !canCloneForEdit && (
+        <StateBanner
+          tone="warn"
+          title={`Versao ${statusMeta[versionStatus].label.toLowerCase()} nao pode ser editada`}
+        >
+          Para alterar esta versao, mova o fluxo para rascunho/reprovada ou publique uma versao para
+          clonar como novo rascunho.
         </StateBanner>
       )}
 
@@ -213,17 +276,16 @@ function ValidatorPage() {
                   O botão Publicar não aparece. Resolva o bloqueio ou salve como rascunho.
                 </span>
                 {firstFixableBlocker?.nodeId && (
-                  <Link
-                    to="/nova/dialogo"
-                    search={{
-                      simulationId: search.simulationId,
-                      versionNumber: search.versionNumber,
-                      nodeId: firstFixableBlocker.nodeId,
-                    }}
+                  <button
+                    type="button"
+                    onClick={() => openEditor(firstFixableBlocker.nodeId!)}
+                    disabled={!isEditable && !canCloneForEdit}
                     className="rounded-md bg-danger px-3 py-1.5 text-xs font-medium text-danger-foreground hover:opacity-90"
                   >
-                    Corrigir {firstFixableBlocker.nodeId}
-                  </Link>
+                    {cloneDraftMutation.isPending
+                      ? "Criando rascunho..."
+                      : `Corrigir ${firstFixableBlocker.nodeId}`}
+                  </button>
                 )}
               </div>
             </StateBanner>
@@ -343,18 +405,15 @@ function ValidatorPage() {
                       </div>
                       <div className="mt-3 flex flex-wrap gap-2">
                         {group.nodeIds[0] && (
-                          <Link
-                            to="/nova/dialogo"
-                            search={{
-                              simulationId: search.simulationId,
-                              versionNumber: search.versionNumber,
-                              nodeId: group.nodeIds[0],
-                            }}
+                          <button
+                            type="button"
+                            onClick={() => openEditor(group.nodeIds[0])}
+                            disabled={!isEditable && !canCloneForEdit}
                             className="inline-flex items-center gap-1 rounded-md border border-border bg-card px-3 py-1.5 text-xs font-medium hover:bg-accent"
                           >
                             <ExternalLink className="h-3 w-3" />
-                            Corrigir
-                          </Link>
+                            {cloneDraftMutation.isPending ? "Criando..." : "Corrigir"}
+                          </button>
                         )}
                         {group.tone === "warn" && (
                           <button
@@ -376,17 +435,14 @@ function ValidatorPage() {
               </ul>
 
               <div className="mt-5 flex flex-wrap justify-between gap-3">
-                <Link
-                  to="/nova/dialogo"
-                  search={{
-                    simulationId: search.simulationId,
-                    versionNumber: search.versionNumber,
-                    nodeId: selectedNodeId ?? undefined,
-                  }}
+                <button
+                  type="button"
+                  onClick={() => openEditor(selectedNodeId ?? undefined)}
+                  disabled={!isEditable && !canCloneForEdit}
                   className="rounded-md border border-border bg-card px-4 py-2 text-sm hover:bg-accent"
                 >
-                  Voltar ao editor
-                </Link>
+                  {canCloneForEdit ? "Criar rascunho e editar" : "Voltar ao editor"}
+                </button>
                 <div className="flex flex-wrap justify-end gap-2">
                   <button
                     type="button"
@@ -417,8 +473,15 @@ function ValidatorPage() {
                     Histórico
                   </Link>
                   {blockers > 0 ? (
-                    <button className="rounded-md border border-border bg-card px-4 py-2 text-sm hover:bg-accent">
-                      Salvar rascunho
+                    <button
+                      type="button"
+                      onClick={() =>
+                        openEditor(selectedNodeId ?? firstFixableBlocker?.nodeId ?? undefined)
+                      }
+                      disabled={!isEditable && !canCloneForEdit}
+                      className="rounded-md border border-border bg-card px-4 py-2 text-sm hover:bg-accent disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      {canCloneForEdit ? "Criar rascunho e corrigir" : "Salvar rascunho"}
                     </button>
                   ) : (
                     <Link
@@ -448,16 +511,20 @@ function ValidatorPage() {
 }
 
 function ScoringModelPreview({
+  creatingDraft,
   error,
   loading,
+  onEditNode,
   onSelectNode,
   selectedNodeId,
   simulationId,
   version,
   versionNumber,
 }: {
+  creatingDraft: boolean;
   error: Error | null;
   loading: boolean;
+  onEditNode: (nodeId?: string) => void;
   onSelectNode: (nodeId: string | null) => void;
   selectedNodeId: string | null;
   simulationId?: string;
@@ -478,6 +545,8 @@ function ScoringModelPreview({
       <div className="grid gap-5">
         <div className="rounded-md border border-border bg-card p-5">
           <NormalizedScoreMap
+            creatingDraft={creatingDraft}
+            onEditNode={onEditNode}
             onSelectNode={onSelectNode}
             selectedNodeId={selectedNodeId}
             simulationId={simulationId}
@@ -545,18 +614,14 @@ function ScoringModelPreview({
                         >
                           {selectedNodeId === step.node.id ? "Selecionado" : "Selecionar"}
                         </button>
-                        <Link
-                          to="/nova/dialogo"
-                          search={{
-                            simulationId,
-                            versionNumber,
-                            nodeId: step.node.id,
-                          }}
+                        <button
+                          type="button"
+                          onClick={() => onEditNode(step.node.id)}
                           className="inline-flex items-center gap-1 rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary/90"
                         >
                           <ExternalLink className="h-3 w-3" />
-                          Editar
-                        </Link>
+                          {creatingDraft ? "Criando..." : "Editar"}
+                        </button>
                       </div>
                     </div>
 
@@ -662,12 +727,16 @@ function MetricTile({ label, value }: { label: string; value: string }) {
 }
 
 function NormalizedScoreMap({
+  creatingDraft,
+  onEditNode,
   onSelectNode,
   selectedNodeId,
   simulationId,
   version,
   versionNumber,
 }: {
+  creatingDraft: boolean;
+  onEditNode: (nodeId?: string) => void;
   onSelectNode: (nodeId: string | null) => void;
   selectedNodeId: string | null;
   simulationId?: string;
@@ -868,6 +937,14 @@ function NormalizedScoreMap({
                   <p className="mt-1 line-clamp-5 text-sm leading-6">
                     {selectedStep.node.clientMessage || "Sem texto cadastrado."}
                   </p>
+                  <button
+                    type="button"
+                    onClick={() => onEditNode(selectedStep.node.id)}
+                    className="mt-3 inline-flex items-center gap-1 rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary/90"
+                  >
+                    <ExternalLink className="h-3 w-3" />
+                    {creatingDraft ? "Criando..." : "Editar"}
+                  </button>
                 </div>
                 <dl className="grid grid-cols-2 gap-2 text-xs">
                   <MetricTile

@@ -520,7 +520,7 @@ public class CandidateAttemptService {
     }
 
     private String candidatePageUrl(CandidateAttemptEntity candidateAttemptEntity) {
-        return praxisProperties.publicBaseUrl() + "/candidato/" + publicCandidateToken(candidateAttemptEntity);
+        return praxisProperties.candidatePageBaseUrl() + "/candidato/" + publicCandidateToken(candidateAttemptEntity);
     }
 
     private String publicCandidateToken(CandidateAttemptEntity candidateAttemptEntity) {

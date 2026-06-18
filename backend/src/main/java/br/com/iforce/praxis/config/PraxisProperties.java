@@ -7,6 +7,7 @@ import java.util.List;
 @ConfigurationProperties(prefix = "praxis")
 public record PraxisProperties(
         String publicBaseUrl,
+        String candidatePageBaseUrl,
         String integrationToken,
         int attemptLinkTtlHours,
         int attemptSessionTtlHours,
@@ -19,6 +20,9 @@ public record PraxisProperties(
 ) {
 
     public PraxisProperties {
+        if (candidatePageBaseUrl == null || candidatePageBaseUrl.isBlank()) {
+            candidatePageBaseUrl = publicBaseUrl;
+        }
         if (webhookAllowedHosts == null) {
             webhookAllowedHosts = List.of();
         }
