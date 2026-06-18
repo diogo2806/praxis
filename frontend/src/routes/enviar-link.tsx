@@ -1,14 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useState } from "react";
-import {
-  CheckCircle2,
-  Copy,
-  Link2,
-  Mail,
-  MessageCircle,
-  Send,
-} from "lucide-react";
+import { CheckCircle2, Copy, Link2, Mail, MessageCircle, Send } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
 import {
   EmptyState,
@@ -17,6 +10,14 @@ import {
   StateBanner,
   StatusBadge,
 } from "@/components/praxis-ui";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import {
   createCandidateLink,
   listSimulations,
@@ -31,8 +32,7 @@ export const Route = createFileRoute("/enviar-link")({
       { title: "Enviar Link ao Candidato - Praxis" },
       {
         name: "description",
-        content:
-          "Gere um link de simulação para enviar ao candidato por e-mail ou WhatsApp.",
+        content: "Gere um link de simulação para enviar ao candidato por e-mail ou WhatsApp.",
       },
     ],
   }),
@@ -43,8 +43,9 @@ type Step = "select" | "form" | "share";
 
 function EnviarLinkPage() {
   const [step, setStep] = useState<Step>("select");
-  const [selectedSimulation, setSelectedSimulation] =
-    useState<SimulationSummaryResponse | null>(null);
+  const [selectedSimulation, setSelectedSimulation] = useState<SimulationSummaryResponse | null>(
+    null,
+  );
   const [candidateName, setCandidateName] = useState("");
   const [candidateEmail, setCandidateEmail] = useState("");
   const [generatedLink, setGeneratedLink] = useState("");
@@ -77,8 +78,7 @@ function EnviarLinkPage() {
   }
 
   function handleGenerateLink() {
-    if (!selectedSimulation || !candidateName.trim() || !candidateEmail.trim())
-      return;
+    if (!selectedSimulation || !candidateName.trim() || !candidateEmail.trim()) return;
     linkMutation.mutate({
       simulationId: selectedSimulation.id,
       candidateName: candidateName.trim(),
@@ -94,9 +94,7 @@ function EnviarLinkPage() {
   }
 
   function handleShareEmail() {
-    const subject = encodeURIComponent(
-      `Simulação: ${simulationName}`,
-    );
+    const subject = encodeURIComponent(`Simulação: ${simulationName}`);
     const body = encodeURIComponent(
       `Olá ${candidateName},\n\nVocê foi convidado(a) para participar de uma simulação situacional.\n\nAcesse o link abaixo para iniciar:\n${generatedLink}\n\nBoa sorte!`,
     );
@@ -129,8 +127,8 @@ function EnviarLinkPage() {
         <div className="text-xs uppercase text-primary">Envio direto</div>
         <h1 className="mt-1 text-3xl font-semibold">Enviar link ao candidato</h1>
         <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
-          Selecione uma simulação publicada, preencha os dados do candidato e
-          compartilhe o link por e-mail ou WhatsApp.
+          Selecione uma simulação publicada, preencha os dados do candidato e compartilhe o link por
+          e-mail ou WhatsApp.
         </p>
       </div>
 
@@ -147,12 +145,7 @@ function EnviarLinkPage() {
           active={step === "form"}
           done={step === "share"}
         />
-        <StepIndicator
-          number={3}
-          label="Compartilhar"
-          active={step === "share"}
-          done={false}
-        />
+        <StepIndicator number={3} label="Compartilhar" active={step === "share"} done={false} />
       </div>
 
       {linkMutation.isError && (
@@ -169,9 +162,7 @@ function EnviarLinkPage() {
           loading={simulationsQuery.isLoading}
           error={simulationsQuery.isError}
           errorMessage={
-            simulationsQuery.error instanceof Error
-              ? simulationsQuery.error.message
-              : undefined
+            simulationsQuery.error instanceof Error ? simulationsQuery.error.message : undefined
           }
           onSelect={handleSelectSimulation}
         />
@@ -233,10 +224,7 @@ function StepIndicator({
         {done ? <CheckCircle2 className="h-4 w-4" /> : number}
       </div>
       <span
-        className={cn(
-          "text-sm",
-          active ? "font-medium text-foreground" : "text-muted-foreground",
-        )}
+        className={cn("text-sm", active ? "font-medium text-foreground" : "text-muted-foreground")}
       >
         {label}
       </span>
@@ -292,43 +280,70 @@ function SelectSimulationStep({
 
   return (
     <div className="space-y-4">
-      <h2 className="text-lg font-semibold">
-        Selecione a simulação publicada
-      </h2>
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-        {simulations.map((simulation) => (
-          <button
-            key={simulation.id}
-            type="button"
-            onClick={() => onSelect(simulation)}
-            className="rounded-md border border-border bg-card p-4 text-left transition hover:border-primary hover:bg-accent"
-          >
-            <div className="font-medium text-foreground">{simulation.name}</div>
-            <div className="mt-1 text-xs text-muted-foreground">
-              {simulation.description}
-            </div>
-            <div className="mt-2 flex items-center justify-between">
-              <StatusBadge
-                status={simulation.status}
-                maturity={maturityForStatus(simulation.status)}
-              />
-              <span className="text-xs tabular-nums text-muted-foreground">
-                v{simulation.versionNumber}
-              </span>
-            </div>
-            <div className="mt-2 flex flex-wrap gap-1">
-              {simulation.competencies.slice(0, 3).map((competency) => (
-                <span
-                  key={competency}
-                  className="rounded-md border border-border bg-background px-2 py-0.5 text-[10px] text-muted-foreground"
-                >
-                  {competency}
-                </span>
-              ))}
-            </div>
-          </button>
-        ))}
-      </div>
+      <h2 className="text-lg font-semibold">Selecione a simulação publicada</h2>
+      <section className="rounded-md border border-border bg-card">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Simulação</TableHead>
+              <TableHead>Descrição</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead className="text-right">Versão</TableHead>
+              <TableHead>Competências</TableHead>
+              <TableHead className="text-right">Tentativas</TableHead>
+              <TableHead className="text-right">Ação</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {simulations.map((simulation) => (
+              <TableRow key={simulation.id}>
+                <TableCell className="min-w-[180px] font-medium">{simulation.name}</TableCell>
+                <TableCell className="min-w-[220px] max-w-[360px] text-muted-foreground">
+                  <span className="line-clamp-2">{simulation.description}</span>
+                </TableCell>
+                <TableCell>
+                  <StatusBadge
+                    status={simulation.status}
+                    maturity={maturityForStatus(simulation.status)}
+                  />
+                </TableCell>
+                <TableCell className="text-right tabular-nums">
+                  v{simulation.versionNumber}
+                </TableCell>
+                <TableCell className="min-w-[220px]">
+                  <div className="flex flex-wrap gap-1">
+                    {simulation.competencies.slice(0, 3).map((competency) => (
+                      <span
+                        key={competency}
+                        className="rounded-md border border-border bg-background px-2 py-0.5 text-[10px] text-muted-foreground"
+                      >
+                        {competency}
+                      </span>
+                    ))}
+                    {simulation.competencies.length > 3 && (
+                      <span className="rounded-md border border-border bg-background px-2 py-0.5 text-[10px] text-muted-foreground">
+                        +{simulation.competencies.length - 3}
+                      </span>
+                    )}
+                  </div>
+                </TableCell>
+                <TableCell className="text-right tabular-nums">
+                  {simulation.attemptsCreated.toLocaleString("pt-BR")}
+                </TableCell>
+                <TableCell className="text-right">
+                  <button
+                    type="button"
+                    onClick={() => onSelect(simulation)}
+                    className="inline-flex items-center justify-center rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
+                  >
+                    Selecionar
+                  </button>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </section>
     </div>
   );
 }
@@ -364,10 +379,7 @@ function CandidateFormStep({
 
         <div className="mt-5 space-y-4">
           <div>
-            <label
-              htmlFor="candidate-name"
-              className="mb-1.5 block text-sm font-medium"
-            >
+            <label htmlFor="candidate-name" className="mb-1.5 block text-sm font-medium">
               Nome do candidato
             </label>
             <input
@@ -381,10 +393,7 @@ function CandidateFormStep({
           </div>
 
           <div>
-            <label
-              htmlFor="candidate-email"
-              className="mb-1.5 block text-sm font-medium"
-            >
+            <label htmlFor="candidate-email" className="mb-1.5 block text-sm font-medium">
               E-mail do candidato
             </label>
             <input
@@ -422,13 +431,8 @@ function CandidateFormStep({
         <h3 className="text-sm font-semibold">Simulação selecionada</h3>
         <div className="mt-3 space-y-2">
           <div className="font-medium text-foreground">{simulation.name}</div>
-          <div className="text-xs text-muted-foreground">
-            {simulation.description}
-          </div>
-          <StatusBadge
-            status={simulation.status}
-            maturity={maturityForStatus(simulation.status)}
-          />
+          <div className="text-xs text-muted-foreground">{simulation.description}</div>
+          <StatusBadge status={simulation.status} maturity={maturityForStatus(simulation.status)} />
           <div className="mt-2 flex flex-wrap gap-1">
             {simulation.competencies.map((competency) => (
               <span
@@ -441,8 +445,7 @@ function CandidateFormStep({
           </div>
           <div className="mt-3 text-xs text-muted-foreground">
             Versão v{simulation.versionNumber} -{" "}
-            {simulation.attemptsCreated.toLocaleString("pt-BR")} tentativas
-            criadas
+            {simulation.attemptsCreated.toLocaleString("pt-BR")} tentativas criadas
           </div>
         </div>
       </aside>
@@ -474,8 +477,8 @@ function ShareStep({
   return (
     <div className="space-y-6">
       <StateBanner tone="ok" title="Link gerado com sucesso">
-        O link de acesso à simulação "{simulationName}" foi criado para{" "}
-        {candidateName} ({candidateEmail}).
+        O link de acesso à simulação "{simulationName}" foi criado para {candidateName} (
+        {candidateEmail}).
       </StateBanner>
 
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_360px]">
@@ -487,9 +490,7 @@ function ShareStep({
             </p>
             <div className="mt-4 flex items-center gap-2">
               <div className="min-w-0 flex-1 rounded-md border border-border bg-background px-3 py-2.5">
-                <code className="block truncate text-sm text-foreground">
-                  {link}
-                </code>
+                <code className="block truncate text-sm text-foreground">{link}</code>
               </div>
               <button
                 type="button"
@@ -501,11 +502,7 @@ function ShareStep({
                     : "border-border bg-card hover:bg-accent",
                 )}
               >
-                {copied ? (
-                  <CheckCircle2 className="h-4 w-4" />
-                ) : (
-                  <Copy className="h-4 w-4" />
-                )}
+                {copied ? <CheckCircle2 className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
                 {copied ? "Copiado" : "Copiar"}
               </button>
             </div>
@@ -542,29 +539,23 @@ function ShareStep({
             <h3 className="text-sm font-semibold">Resumo do envio</h3>
             <dl className="mt-3 space-y-3">
               <div>
-                <dt className="text-xs uppercase text-muted-foreground">
-                  Candidato
-                </dt>
+                <dt className="text-xs uppercase text-muted-foreground">Candidato</dt>
                 <dd className="mt-0.5 text-sm font-medium">{candidateName}</dd>
               </div>
               <div>
-                <dt className="text-xs uppercase text-muted-foreground">
-                  Email
-                </dt>
+                <dt className="text-xs uppercase text-muted-foreground">Email</dt>
                 <dd className="mt-0.5 text-sm">{candidateEmail}</dd>
               </div>
               <div>
-                <dt className="text-xs uppercase text-muted-foreground">
-                  Simulação
-                </dt>
+                <dt className="text-xs uppercase text-muted-foreground">Simulação</dt>
                 <dd className="mt-0.5 text-sm">{simulationName}</dd>
               </div>
             </dl>
           </div>
 
           <StateBanner tone="info" title="Um link por candidato">
-            Se você gerar o link de novo com o mesmo e-mail e a mesma simulação,
-            o link será sempre o mesmo. Pode reenviar sem medo de duplicar.
+            Se você gerar o link de novo com o mesmo e-mail e a mesma simulação, o link será sempre
+            o mesmo. Pode reenviar sem medo de duplicar.
           </StateBanner>
         </aside>
       </div>

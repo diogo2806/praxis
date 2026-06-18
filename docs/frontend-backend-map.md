@@ -5,6 +5,7 @@
 - Frontend: React + TanStack Router/Start em `frontend/src/routes`.
 - Backend: Spring Boot em `backend/src/main/java/br/com/iforce/praxis`.
 - Camada HTTP iniciada em `frontend/src/lib/api/praxis.ts`.
+- CSS padrao centralizado em `frontend/src/styles/app.css`, carregado uma unica vez no root da aplicacao (`frontend/src/routes/__root.tsx`).
 - Integracoes feitas:
   - Painel inicial em `/`, via listagem resumida de simulacoes.
   - Fluxo publico do candidato em `/candidato/:token`.
@@ -21,6 +22,13 @@
   - LGPD e explicabilidade em `/lgpd?simulationId=ID&versionNumber=1`, com grafo, AuditLog e politica de privacidade reais.
   - Transicoes do wizard de governanca em `/nova/governanca?simulationId=ID&versionNumber=1`.
   - Preflight e ativacao Gupy em `/nova/gupy?simulationId=ID&versionNumber=1`.
+
+## Padrao de CSS e telas
+
+- Todo CSS global, tokens de design, variaveis de tema, camada base e utilitarios compartilhados devem ficar em `frontend/src/styles/`.
+- O arquivo padrao da aplicacao e `frontend/src/styles/app.css`; ele e importado somente por `frontend/src/routes/__root.tsx`, garantindo que todas as telas recebam a mesma formatacao base.
+- Novas telas em `frontend/src/routes` devem usar os componentes compartilhados e classes/utilitarios baseados nesse CSS padrao. Nao devem criar arquivos CSS avulsos por tela nem importar CSS diretamente em rotas especificas.
+- Estilos especificos de componentes devem ser expressos por classes Tailwind, variantes dos componentes de `frontend/src/components/ui` ou utilitarios definidos em `frontend/src/styles/app.css` quando forem reutilizaveis.
 
 ## Rotas frontend
 

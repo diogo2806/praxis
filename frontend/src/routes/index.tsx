@@ -1,7 +1,17 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
-import { Archive, BarChart3, FilePlus2, Filter, PlayCircle, Search, Table2 } from "lucide-react";
+import {
+  Archive,
+  BarChart3,
+  CircleHelp,
+  ExternalLink,
+  FilePlus2,
+  Filter,
+  PlayCircle,
+  Search,
+  Table2,
+} from "lucide-react";
 import { AppShell } from "@/components/app-shell";
 import { Termo } from "@/components/glossario";
 import {
@@ -11,6 +21,7 @@ import {
   StateBanner,
   StatusBadge,
 } from "@/components/praxis-ui";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import {
   archiveSimulation,
   listSimulations,
@@ -204,7 +215,7 @@ function Dashboard() {
             <div>
               <h2 className="text-xl font-semibold">Simulações</h2>
               <p className="text-xs text-muted-foreground">
-                Status técnico e maturidade aparecem juntos em todas as linhas.
+                Status, maturidade, competências e tentativas organizados por coluna.
               </p>
             </div>
             <div className="flex min-w-0 flex-wrap gap-2">
@@ -257,108 +268,144 @@ function Dashboard() {
               }
             />
           ) : (
-            <div className="overflow-hidden rounded-md border border-border bg-card">
-              <table className="w-full text-sm">
-                <thead className="border-b border-border bg-muted/45 text-xs uppercase text-muted-foreground">
-                  <tr>
-                    <th className="px-4 py-3 text-left font-medium">Simulação</th>
-                    <th className="px-4 py-3 text-left font-medium">Estado</th>
-                    <th className="px-4 py-3 text-left font-medium">Conclusão</th>
-                    <th className="px-4 py-3 text-left font-medium">Versão</th>
-                    <th className="px-4 py-3 text-left font-medium">Tentativas</th>
-                    <th className="px-4 py-3" />
-                  </tr>
-                </thead>
-                <tbody>
-                  {filtered.map((simulation) => (
-                    <tr
-                      key={simulation.id}
-                      className="border-b border-border last:border-0 hover:bg-accent/35"
-                    >
-                      <td className="px-4 py-3">
-                        <div className="font-medium text-foreground">{simulation.name}</div>
-                        <div className="text-xs text-muted-foreground">
-                          {simulation.description} - atualizada{" "}
-                          {formatDateTime(simulation.updatedAt)}
-                        </div>
-                        <div className="mt-1 flex flex-wrap gap-1">
-                          {simulation.competencies.map((competency) => (
-                            <span
-                              key={competency}
-                              className="rounded-md border border-border bg-background px-2 py-0.5 text-[10px] text-muted-foreground"
-                            >
-                              {competency}
-                            </span>
-                          ))}
-                        </div>
-                      </td>
-                      <td className="px-4 py-3">
-                        <StatusBadge
-                          status={simulation.status}
-                          maturity={maturityForStatus(simulation.status)}
-                        />
-                      </td>
-                      <td className="px-4 py-3">
-                        <div className="flex items-center gap-2">
-                          <div className="h-1.5 w-24 overflow-hidden rounded-full bg-muted">
-                            <div
-                              className={cn(
-                                "h-full rounded-full",
-                                simulation.completionRatePercent >= 80
-                                  ? "bg-success"
-                                  : simulation.completionRatePercent >= 60
-                                    ? "bg-warning"
-                                    : "bg-danger",
-                              )}
-                              style={{ width: `${simulation.completionRatePercent}%` }}
-                            />
-                          </div>
-                          <span className="text-xs font-medium tabular-nums">
-                            {formatPercent(simulation.completionRatePercent)}
-                          </span>
-                        </div>
-                      </td>
-                      <td className="px-4 py-3 text-xs tabular-nums text-muted-foreground">
-                        v{simulation.versionNumber}
-                      </td>
-                      <td className="px-4 py-3 text-xs tabular-nums">
-                        {simulation.attemptsCreated.toLocaleString("pt-BR")}
-                        <div className="text-[10px] text-muted-foreground">
-                          {simulation.attemptsCompleted.toLocaleString("pt-BR")} concluídas
-                        </div>
-                      </td>
-                      <td className="px-4 py-3 text-right">
-                        <div className="flex justify-end gap-3">
-                          <button
-                            type="button"
-                            onClick={() => {
-                              if (
-                                window.confirm(
-                                  `Arquivar "${simulation.name}"? Ela sairá do painel ativo.`,
-                                )
-                              ) {
-                                archiveMutation.mutate(simulation.id);
-                              }
-                            }}
-                            disabled={archiveMutation.isPending}
-                            className="inline-flex items-center gap-1 text-xs font-medium text-danger hover:underline disabled:cursor-not-allowed disabled:opacity-50"
-                          >
-                            <Archive className="h-3.5 w-3.5" />
-                            Arquivar
-                          </button>
-                          <Link
-                            to="/nova/revisao"
-                            search={simulationSearch(simulation)}
-                            className="text-xs font-medium text-primary hover:underline"
-                          >
-                            Abrir
-                          </Link>
-                        </div>
-                      </td>
+            <div className="overflow-x-auto">
+              <TooltipProvider delayDuration={150}>
+                <table className="w-full min-w-[1180px] text-sm">
+                  <thead className="border-b border-border bg-muted/45 text-xs uppercase text-muted-foreground">
+                    <tr>
+                      <th className="px-4 py-3 text-left font-medium">Simulação</th>
+                      <th className="px-4 py-3 text-left font-medium">Competências</th>
+                      <th className="px-4 py-3 text-left font-medium">Status da versão</th>
+                      <th className="px-4 py-3 text-left font-medium">Maturidade</th>
+                      <th className="px-4 py-3 text-left font-medium">Conclusão</th>
+                      <th className="px-4 py-3 text-left font-medium">Versão</th>
+                      <th className="px-4 py-3 text-left font-medium">Tentativas</th>
+                      <th className="px-4 py-3 text-right font-medium">Ações</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {filtered.map((simulation) => (
+                      <tr
+                        key={simulation.id}
+                        className="border-b border-border last:border-0 hover:bg-accent/35"
+                      >
+                        <td className="px-4 py-3">
+                          <div className="flex items-center gap-2">
+                            <div className="font-medium text-foreground">{simulation.name}</div>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <button
+                                  type="button"
+                                  aria-label={`Descrição de ${simulation.name}`}
+                                  className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-md border border-border bg-background text-muted-foreground hover:bg-accent hover:text-foreground"
+                                >
+                                  <CircleHelp className="h-3.5 w-3.5" />
+                                </button>
+                              </TooltipTrigger>
+                              <TooltipContent className="max-w-sm text-left leading-snug">
+                                {simulation.description}
+                              </TooltipContent>
+                            </Tooltip>
+                          </div>
+                          <div className="mt-1 text-xs text-muted-foreground">
+                            Atualizada {formatDateTime(simulation.updatedAt)}
+                          </div>
+                        </td>
+                        <td className="px-4 py-3">
+                          <div className="flex max-w-[220px] flex-wrap gap-1">
+                            {simulation.competencies.map((competency) => (
+                              <span
+                                key={competency}
+                                className="rounded-md border border-border bg-background px-2 py-0.5 text-[10px] text-muted-foreground"
+                              >
+                                {competency}
+                              </span>
+                            ))}
+                          </div>
+                        </td>
+                        <td className="px-4 py-3">
+                          <StatusBadge status={simulation.status} variant="status" />
+                        </td>
+                        <td className="px-4 py-3">
+                          <StatusBadge
+                            status={simulation.status}
+                            maturity={maturityForStatus(simulation.status)}
+                            variant="maturity"
+                          />
+                        </td>
+                        <td className="px-4 py-3">
+                          <div className="flex items-center gap-2">
+                            <div className="h-1.5 w-24 overflow-hidden rounded-full bg-muted">
+                              <div
+                                className={cn(
+                                  "h-full rounded-full",
+                                  simulation.completionRatePercent >= 80
+                                    ? "bg-success"
+                                    : simulation.completionRatePercent >= 60
+                                      ? "bg-warning"
+                                      : "bg-danger",
+                                )}
+                                style={{ width: `${simulation.completionRatePercent}%` }}
+                              />
+                            </div>
+                            <span className="text-xs font-medium tabular-nums">
+                              {formatPercent(simulation.completionRatePercent)}
+                            </span>
+                          </div>
+                        </td>
+                        <td className="px-4 py-3 text-xs tabular-nums text-muted-foreground">
+                          v{simulation.versionNumber}
+                        </td>
+                        <td className="px-4 py-3 text-xs tabular-nums">
+                          {simulation.attemptsCreated.toLocaleString("pt-BR")}
+                          <div className="text-[10px] text-muted-foreground">
+                            {simulation.attemptsCompleted.toLocaleString("pt-BR")} concluídas
+                          </div>
+                        </td>
+                        <td className="px-4 py-3 text-right">
+                          <div className="flex justify-end gap-2">
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <button
+                                  type="button"
+                                  aria-label={`Arquivar ${simulation.name}`}
+                                  onClick={() => {
+                                    if (
+                                      window.confirm(
+                                        `Arquivar "${simulation.name}"? Ela sairá do painel ativo.`,
+                                      )
+                                    ) {
+                                      archiveMutation.mutate(simulation.id);
+                                    }
+                                  }}
+                                  disabled={archiveMutation.isPending}
+                                  className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-border bg-background text-danger hover:bg-danger/10 disabled:cursor-not-allowed disabled:opacity-50"
+                                >
+                                  <Archive className="h-3.5 w-3.5" />
+                                </button>
+                              </TooltipTrigger>
+                              <TooltipContent>Arquivar</TooltipContent>
+                            </Tooltip>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Link
+                                  to="/nova/revisao"
+                                  search={simulationSearch(simulation)}
+                                  aria-label={`Abrir ${simulation.name}`}
+                                  className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-border bg-background text-primary hover:bg-primary/10"
+                                >
+                                  <ExternalLink className="h-3.5 w-3.5" />
+                                </Link>
+                              </TooltipTrigger>
+                              <TooltipContent>Abrir</TooltipContent>
+                            </Tooltip>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </TooltipProvider>
             </div>
           )}
         </div>

@@ -10,7 +10,7 @@ import {
 import { createServerFn } from "@tanstack/react-start";
 import { useEffect, type ReactNode } from "react";
 
-import appCss from "../styles.css?url";
+import appCss from "../styles/app.css?url";
 import { reportAppError } from "../lib/app-error-reporting";
 import { resolveRuntimeConfigFromEnv } from "../lib/runtime-config.server";
 import { LanguageProvider, useLanguage } from "../lib/language-context";

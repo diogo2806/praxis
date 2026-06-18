@@ -42,24 +42,30 @@ const maturityMeta: Record<Maturity, { label: string; tone: keyof typeof toneCla
 export function StatusBadge({
   status,
   maturity,
+  variant = "both",
 }: {
   status: SimulationVersionStatus;
   maturity?: Maturity;
+  variant?: "both" | "status" | "maturity";
 }) {
   const statusInfo = statusMeta[status];
   const maturityInfo = maturity ? maturityMeta[maturity] : undefined;
+  const showStatus = variant !== "maturity";
+  const showMaturity = variant !== "status";
   return (
     <div className="flex flex-wrap gap-1.5">
-      <span
-        className={cn(
-          "inline-flex items-center gap-1.5 rounded-md border px-2 py-1 text-[11px] font-medium",
-          toneClass[statusInfo.tone],
-        )}
-      >
-        <CircleDot className="h-3 w-3" />
-        {statusInfo.label}
-      </span>
-      {maturityInfo && (
+      {showStatus && (
+        <span
+          className={cn(
+            "inline-flex items-center gap-1.5 rounded-md border px-2 py-1 text-[11px] font-medium",
+            toneClass[statusInfo.tone],
+          )}
+        >
+          <CircleDot className="h-3 w-3" />
+          {statusInfo.label}
+        </span>
+      )}
+      {showMaturity && maturityInfo && (
         <span
           className={cn(
             "inline-flex items-center gap-1.5 rounded-md border px-2 py-1 text-[11px] font-medium",
