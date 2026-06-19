@@ -298,7 +298,7 @@ function ValidatorPage() {
             </StateBanner>
           ) : (
             <StateBanner tone="ok" title="Pronta para publicar">
-              Sem bloqueio ou alerta ativo. A publicação usa a versão imutável atual.
+              Sem bloqueio ou alerta ativo. A publicação usa a versão protegida atual.
             </StateBanner>
           )}
 
@@ -313,7 +313,7 @@ function ValidatorPage() {
                     ? "Voltar ao editor. Piloto e publicação ficam travados."
                     : warnings > 0
                       ? "Confirmar publicação com alertas gravados no registro de auditoria."
-                      : "Publicar versão imutável e seguir para piloto."
+                      : "Publicar versão protegida e seguir para piloto."
                 }
                 secondary="Salvar rascunho nunca publica; volta ao editor mantendo o diagnóstico clicável."
                 versionRule="Depois de publicar, editar cria nova versão e preserva a versão no ar."

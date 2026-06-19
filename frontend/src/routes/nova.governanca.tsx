@@ -32,7 +32,7 @@ export const Route = createFileRoute("/nova/governanca")({
   head: () => ({
     meta: [
       { title: "Governança & Aprovações - Praxis" },
-      { name: "description", content: "Estados, papéis e versionamento imutável." },
+      { name: "description", content: "Revisão, aprovação e entrada no ar da avaliação." },
     ],
   }),
   component: Page,
