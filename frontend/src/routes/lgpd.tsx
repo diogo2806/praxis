@@ -1,11 +1,10 @@
 ﻿import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { FileSearch, ShieldCheck } from "lucide-react";
+import { FileSearch, FileText, ShieldCheck } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
 import { ComplianceScope } from "@/components/compliance-scope";
 import { Termo } from "@/components/glossario";
 import {
-  EmptyState,
   ScreenStateStrip,
   StateBanner,
   StatusBadge,
@@ -120,16 +119,31 @@ function LgpdPage() {
             Explicacao baseada em contrato real
           </div>
           {!hasContext ? (
-            <EmptyState
-              title="Selecione uma simulação para ver a explicação"
-              description="Escolha uma simulação abaixo para entender a explicação da nota que o candidato recebe."
-              actions={
+            <>
+              <section className="rounded-md border border-border bg-card p-6">
+                <div className="max-w-2xl">
+                  <div className="mb-3 inline-flex h-10 w-10 items-center justify-center rounded-md bg-primary/10 text-primary">
+                    <FileText className="h-5 w-5" />
+                  </div>
+                  <h2 className="text-2xl font-semibold text-foreground">
+                    Selecione uma simulação para ver a explicação
+                  </h2>
+                  <p className="mt-2 text-sm text-muted-foreground">
+                    Escolha uma simulação abaixo para entender a explicação da nota que o candidato
+                    recebe.
+                  </p>
+                </div>
+              </section>
+              <section className="mt-4 space-y-2">
+                <div className="text-[10px] font-semibold uppercase text-muted-foreground">
+                  Ação recomendada
+                </div>
                 <SimulationLinks
                   loading={simulationsQuery.isLoading}
                   simulations={simulationsQuery.data ?? []}
                 />
-              }
-            />
+              </section>
+            </>
           ) : versionQuery.isLoading || auditQuery.isLoading ? (
             <StateBanner tone="info" title="Carregando transparencia do resultado">
               Buscando versao {search.simulationId} v{search.versionNumber}.
