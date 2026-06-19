@@ -47,6 +47,25 @@ class CandidateAttemptControllerTest {
     private JwtService jwtService;
 
     @Test
+    void getCandidateAttemptRejectsInvalidAttemptToken() throws Exception {
+        mockMvc.perform(get("/candidate/attempts/not-a-valid-token"))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void submitAnswerRejectsInvalidAttemptToken() throws Exception {
+        mockMvc.perform(post("/candidate/attempts/not-a-valid-token/answers")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "nodeId": "turno-1",
+                                  "optionId": "opcao-equilibrada"
+                                }
+                                """))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
     void getCandidateAttemptReturnsCurrentNodeWithoutScoringInternals() throws Exception {
         MvcResult createResult = createAttemptResult("candidate-public-payload");
         String responseBody = createResult.getResponse().getContentAsString();

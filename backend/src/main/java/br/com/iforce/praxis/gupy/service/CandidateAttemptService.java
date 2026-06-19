@@ -773,11 +773,16 @@ public class CandidateAttemptService {
     }
 
     private String resolveAttemptId(String attemptToken) {
+        if (attemptToken == null || attemptToken.isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Token da tentativa e obrigatorio.");
+        }
         try {
             return jwtService.parseCandidateAttemptToken(attemptToken).attemptId();
         } catch (RuntimeException exception) {
-            // Compatibilidade com links antigos que expunham o ID interno.
-            return attemptToken;
+            throw new ResponseStatusException(
+                    HttpStatus.UNAUTHORIZED,
+                    "Token da tentativa do candidato invalido."
+            );
         }
     }
 

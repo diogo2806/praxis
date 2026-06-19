@@ -35,6 +35,10 @@ public class SecurityConfig {
 
         if (!securityEnabled) {
             http.authorizeHttpRequests(auth -> auth.anyRequest().permitAll());
+            http.headers(headers -> headers
+                    .frameOptions(frame -> frame.deny())
+                    .contentTypeOptions(contentType -> {})
+            );
             return http.build();
         }
 
@@ -60,6 +64,10 @@ public class SecurityConfig {
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
+        http.headers(headers -> headers
+                .frameOptions(frame -> frame.deny())
+                .contentTypeOptions(contentType -> {})
+        );
 
         return http.build();
     }

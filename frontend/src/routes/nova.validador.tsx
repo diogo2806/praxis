@@ -1,11 +1,11 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useCallback, useState } from "react";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { useCallback, useEffect, useState } from "react";
 import {
+  Pencil,
   AlertTriangle,
   CheckCircle2,
   Download,
-  ExternalLink,
   Flag,
   GitBranch,
   History,
@@ -35,6 +35,7 @@ import {
   type SimulationVersionNodeResponse,
   type SimulationVersionOptionResponse,
   type SimulationValidationResponse,
+  updateSimulationNode,
 } from "@/lib/api/praxis";
 import { canEditSimulationVersion, maturityForStatus, statusMeta } from "@/lib/simulation-meta";
 import { cn } from "@/lib/utils";
@@ -81,9 +82,14 @@ interface DiagnosticGroup {
 
 function ValidatorPage() {
   const search = Route.useSearch();
-  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
+  const [activeEditNodeId, setActiveEditNodeId] = useState<string | null>(null);
+  const [editDraft, setEditDraft] = useState<{ simulationId: string; versionNumber: number } | null>(
+    null,
+  );
+  const [editingMessage, setEditingMessage] = useState("");
+  const [editingTimeLimit, setEditingTimeLimit] = useState("");
   const selectNode = useCallback((nodeId: string | null) => {
     if (typeof window === "undefined") {
       setSelectedNodeId(nodeId);
@@ -113,6 +119,31 @@ function ValidatorPage() {
     queryFn: () => getSimulationVersion(search.simulationId!, search.versionNumber!),
     enabled: hasValidationParams,
   });
+  const editDraftQuery = useQuery({
+    queryKey: ["simulation-version", editDraft?.simulationId, editDraft?.versionNumber],
+    queryFn: () => getSimulationVersion(editDraft!.simulationId, editDraft!.versionNumber),
+    enabled: Boolean(editDraft?.simulationId && editDraft?.versionNumber),
+  });
+  const editVersion = editDraft ? editDraftQuery.data : versionQuery.data;
+  const editingNode =
+    activeEditNodeId && editVersion
+      ? editVersion.nodes.find((node) => node.id === activeEditNodeId) ?? null
+      : null;
+  const editingContext = editDraft
+    ? { simulationId: editDraft.simulationId, versionNumber: editDraft.versionNumber }
+    : {
+        simulationId: search.simulationId,
+        versionNumber: search.versionNumber,
+      };
+  useEffect(() => {
+    if (!editingNode) {
+      setEditingMessage("");
+      setEditingTimeLimit("");
+      return;
+    }
+    setEditingMessage(editingNode.clientMessage);
+    setEditingTimeLimit(String(editingNode.timeLimitSeconds));
+  }, [editingNode]);
 
   const validation = validationQuery.data;
   const validationIssues = validation?.issues ?? [];
@@ -137,6 +168,26 @@ function ValidatorPage() {
     void validationQuery.refetch();
     void versionQuery.refetch();
   };
+  const saveNodeMutation = useMutation({
+    mutationFn: (payload: {
+      nodeId: string;
+      clientMessage: string;
+      timeLimitSeconds: number;
+      simulationId: string;
+      versionNumber: number;
+    }) =>
+      updateSimulationNode(payload.simulationId, payload.versionNumber, payload.nodeId, {
+        clientMessage: payload.clientMessage,
+        timeLimitSeconds: payload.timeLimitSeconds,
+      }),
+    onSuccess: async () => {
+      await versionQuery.refetch();
+      if (editDraft?.simulationId) {
+        await editDraftQuery.refetch();
+      }
+      setActiveEditNodeId(null);
+    },
+  });
   const cloneDraftMutation = useMutation({
     mutationFn: (nodeId?: string) =>
       cloneSimulationVersionToDraft(search.simulationId!, search.versionNumber!).then((draft) => ({
@@ -145,28 +196,16 @@ function ValidatorPage() {
       })),
     onSuccess: async ({ draft, nodeId }) => {
       await queryClient.invalidateQueries({ queryKey: ["simulations"] });
-      void navigate({
-        to: "/nova/dialogo",
-        search: {
-          simulationId: draft.simulationId,
-          versionNumber: draft.newVersionNumber,
-          nodeId,
-        },
-      });
+      setEditDraft({ simulationId: draft.simulationId, versionNumber: draft.newVersionNumber });
+      setActiveEditNodeId(nodeId ?? null);
     },
   });
   const openEditor = (nodeId?: string) => {
     if (!search.simulationId || !search.versionNumber) return;
 
     if (isEditable) {
-      void navigate({
-        to: "/nova/dialogo",
-        search: {
-          simulationId: search.simulationId,
-          versionNumber: search.versionNumber,
-          nodeId,
-        },
-      });
+      setEditDraft(null);
+      setActiveEditNodeId(nodeId ?? versionQuery.data?.blueprint.rootNodeId ?? null);
       return;
     }
 
@@ -304,7 +343,7 @@ function ValidatorPage() {
                           disabled={!isEditable && !canCloneForEdit}
                           className="inline-flex items-center gap-1 rounded-md border border-border bg-card px-3 py-1.5 text-xs font-medium hover:bg-accent disabled:cursor-not-allowed disabled:opacity-50"
                         >
-                          <ExternalLink className="h-3 w-3" />
+                          <Pencil className="h-3 w-3" />
                           {cloneDraftMutation.isPending ? "Criando rascunho..." : "Abrir etapa"}
                         </button>
                       )}
@@ -460,7 +499,7 @@ function ValidatorPage() {
                             disabled={!isEditable && !canCloneForEdit}
                             className="inline-flex items-center gap-1 rounded-md border border-border bg-card px-3 py-1.5 text-xs font-medium hover:bg-accent"
                           >
-                            <ExternalLink className="h-3 w-3" />
+                            <Pencil className="h-3 w-3" />
                             {cloneDraftMutation.isPending ? "Criando..." : "Corrigir"}
                           </button>
                         )}
@@ -551,6 +590,76 @@ function ValidatorPage() {
                   )}
                 </div>
               </div>
+
+              {editingNode ? (
+                <section className="mt-4 rounded-md border border-dashed border-border bg-background p-3">
+                  <p className="mb-2 text-sm font-medium">Edição rápida da etapa</p>
+                  <label className="mb-2 block text-xs text-muted-foreground">
+                    Texto
+                    <textarea
+                      value={editingMessage}
+                      onChange={(event) => setEditingMessage(event.target.value)}
+                      rows={4}
+                      className="mt-1 block w-full rounded-md border border-border bg-card px-2 py-1 text-sm"
+                    />
+                  </label>
+                  <label className="mb-3 block text-xs text-muted-foreground">
+                    Tempo (segundos)
+                    <input
+                      type="number"
+                      min={1}
+                      value={editingTimeLimit}
+                      onChange={(event) => setEditingTimeLimit(event.target.value)}
+                      className="mt-1 block rounded-md border border-border bg-card px-2 py-1 text-sm"
+                    />
+                  </label>
+                  <div className="flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const timeLimitSeconds = Number.parseInt(editingTimeLimit, 10);
+                        const editingSimulationId = editingContext.simulationId;
+                        const editingVersionNumber = editingContext.versionNumber;
+                        if (
+                          !editingNode ||
+                          Number.isNaN(timeLimitSeconds) ||
+                          !editingSimulationId ||
+                          !editingVersionNumber
+                        ) {
+                          return;
+                        }
+
+                        saveNodeMutation.mutate({
+                          nodeId: editingNode.id,
+                          clientMessage: editingMessage.trim(),
+                          timeLimitSeconds,
+                          simulationId: editingSimulationId,
+                          versionNumber: editingVersionNumber,
+                        });
+                      }}
+                      disabled={
+                        saveNodeMutation.isPending ||
+                        editingMessage.trim().length === 0 ||
+                        editingTimeLimit.trim().length === 0
+                      }
+                      className="rounded-md border border-border bg-card px-3 py-1.5 text-xs hover:bg-accent disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      {saveNodeMutation.isPending ? "Salvando..." : "Salvar etapa"}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setActiveEditNodeId(null)}
+                      className="rounded-md border border-border bg-card px-3 py-1.5 text-xs hover:bg-accent"
+                    >
+                      Fechar editor
+                    </button>
+                  </div>
+                  <p className="mt-3 text-[11px] text-muted-foreground">
+                    Editando {editingNode.id} em {editingContext.simulationId} v
+                    {editingContext.versionNumber}
+                  </p>
+                </section>
+              ) : null}
             </section>
           </div>
         </>

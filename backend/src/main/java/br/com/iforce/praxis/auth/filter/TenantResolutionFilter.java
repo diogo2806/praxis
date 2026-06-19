@@ -13,6 +13,8 @@ import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
@@ -74,8 +76,10 @@ public class TenantResolutionFilter extends OncePerRequestFilter {
         try {
             return jwtService.parseCandidateAttemptToken(token).tenantId();
         } catch (IllegalArgumentException | JwtException exception) {
-            // Compatibilidade com links antigos que usavam attemptId cru no path.
-            return defaultTenantId;
+            throw new ResponseStatusException(
+                    HttpStatus.UNAUTHORIZED,
+                    "Token de tentativa do candidato invalido."
+            );
         }
     }
 
