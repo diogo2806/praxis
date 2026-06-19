@@ -28,7 +28,7 @@ export const Route = createFileRoute("/nova/governanca")({
   head: () => ({
     meta: [
       { title: "Governança & Aprovações - Praxis" },
-      { name: "description", content: "Publicacao validada da avaliacao." },
+      { name: "description", content: "Publicação validada da avaliação." },
     ],
   }),
   component: Page,
@@ -46,8 +46,9 @@ const transitionCopy: Record<
   { title: string; description: string; cta: string }
 > = {
   publish: {
-    title: "Colocar versao no ar?",
-    description: "Ao entrar no ar, a versao fica protegida contra alteracoes. Bloqueios criticos continuam sem ajuste manual.",
+    title: "Colocar versão no ar?",
+    description:
+      "Ao entrar no ar, a versão fica protegida contra alterações. Bloqueios críticos continuam sem ajuste manual.",
     cta: "Publicar",
   },
 };
@@ -78,6 +79,9 @@ function Page() {
         queryKey: ["simulation-version-audit", search.simulationId, search.versionNumber],
       });
     },
+    onError: () => {
+      setPendingAction(null);
+    },
   });
 
   const visibleStatus = currentStatus ?? inferStatusFromEvents(auditQuery.data);
@@ -85,11 +89,12 @@ function Page() {
   return (
     <AppShell>
       <WizardStepper current="publicacao" />
-      <ScreenStateStrip blockedReason="validacao automatica pendente" />
+      <ScreenStateStrip blockedReason="validação automática pendente" />
       <div className="mb-6">
         <div className="text-xs uppercase tracking-[0.2em] text-primary">Passo 4</div>
-        <h1 className="mt-1 font-display text-3xl">Publicacao para colocar no ar</h1>
-        <p className="mt-2 max-w-2xl text-sm text-muted-foreground">          Antes de entrar no ar, a avaliacao passa pela validacao automatica e pelo preflight.
+        <h1 className="mt-1 font-display text-3xl">Publicação para colocar no ar</h1>
+        <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
+          Antes de entrar no ar, a avaliação passa pela validação automática e pelo preflight.
         </p>
       </div>
 
@@ -116,7 +121,7 @@ function Page() {
       {transitionMutation.isError && (
         <StateBanner tone="danger" title="Transição recusada">
           {transitionMutation.error instanceof Error
-            ? transitionMutation.error.message
+            ? transitionMutation.error.message.replace("publicacao", "publicação")
             : "O sistema recusou a transição de estado."}
         </StateBanner>
       )}

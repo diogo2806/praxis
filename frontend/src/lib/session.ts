@@ -12,7 +12,7 @@ const anonymousSession: PraxisSession = {
   token: null,
   tenantId: null,
   workspaceName: "Workspace",
-  userName: "Usuario",
+  userName: "Usuário",
   userRole: "Operador",
 };
 
@@ -25,7 +25,7 @@ export function getSession(): PraxisSession {
     token: localStorage.getItem("praxis.token"),
     tenantId: localStorage.getItem("praxis.tenantId"),
     workspaceName: localStorage.getItem("praxis.workspaceName") ?? "Workspace",
-    userName: localStorage.getItem("praxis.userName") ?? "Usuario",
+    userName: localStorage.getItem("praxis.userName") ?? "Usuário",
     userRole: localStorage.getItem("praxis.userRole") ?? "Operador",
   };
 }

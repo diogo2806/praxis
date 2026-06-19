@@ -9,22 +9,22 @@ const areas = [
     id: "governanca",
     to: "/governanca",
     icon: ShieldCheck,
-    title: "Governanca e auditoria",
-    body: "Historico de versoes, eventos registrados, aprovacoes e criacao de novo rascunho.",
+    title: "Governança e auditoria",
+    body: "Histórico de versões, eventos registrados, aprovações e criação de novo rascunho.",
   },
   {
     id: "lgpd",
     to: "/lgpd",
     icon: UserRound,
     title: "LGPD e direitos do candidato",
-    body: "Retencao de dados, canal de revisao humana e explicacao do resultado para o titular.",
+    body: "Retenção de dados, canal de revisão humana e explicação do resultado para o titular.",
   },
   {
     id: "defensabilidade",
     to: "/defensabilidade",
     icon: Scale,
     title: "Confiabilidade do resultado",
-    body: "Base tecnica do teste: construto, score auditavel, pesos e limites da promessa comercial.",
+    body: "Base técnica do teste: construto, score auditável, pesos e limites da promessa comercial.",
   },
 ] as const;
 
@@ -36,7 +36,7 @@ export function ComplianceScope({ current }: { current: ComplianceArea }) {
           Como estas telas se dividem
         </div>
         <p className="mt-1 text-sm text-muted-foreground">
-          As tres telas usam parte das mesmas evidencias, mas respondem perguntas diferentes.
+          As três telas usam parte das mesmas evidências, mas respondem perguntas diferentes.
         </p>
       </div>
       <div className="grid gap-3 lg:grid-cols-3">

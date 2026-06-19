@@ -70,7 +70,7 @@ const getSecondary = (t: TranslationMap) =>
       to: "/governanca",
       label: t.common.governance,
       icon: ShieldCheck,
-      desc: "Historico, versoes e auditoria",
+      desc: "Histórico, versões e auditoria",
     },
     {
       to: "/lgpd",
@@ -82,7 +82,7 @@ const getSecondary = (t: TranslationMap) =>
       to: "/defensabilidade",
       label: t.common.defensibility,
       icon: Scale,
-      desc: "Base tecnica do resultado",
+      desc: "Base técnica do resultado",
     },
   ] as const;
 
@@ -251,11 +251,11 @@ export function AppShell({ children }: { children: ReactNode }) {
           publication: hasGlobalError ? ("blocked" as const) : ("running" as const),
         }
       : pathname === "/nova/validador"
-        ? { gupy: gupyState, draft: "dirty" as const, publication: "blocked" as const }
+        ? { gupy: gupyState, draft: "dirty" as const, publication: "idle" as const }
         : pathname === "/nova/piloto" || pathname.startsWith("/nova/mapa")
           ? {
               gupy: gupyState,
-              draft: "published" as const,
+              draft: "saved" as const,
               publication: "idle" as const,
             }
           : { gupy: gupyState, draft: "saved" as const, publication: "idle" as const };

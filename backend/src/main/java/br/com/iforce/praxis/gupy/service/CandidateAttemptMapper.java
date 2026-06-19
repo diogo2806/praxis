@@ -21,9 +21,11 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Instant;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 /**
@@ -107,16 +109,31 @@ public class CandidateAttemptMapper {
         candidateAttemptEntity.setStartedAt(attempt.startedAt());
         candidateAttemptEntity.setFinishedAt(attempt.finishedAt());
 
-        candidateAttemptEntity.getAnswers().clear();
+        Map<String, AttemptAnswerEntity> existingAnswersByNodeId = new LinkedHashMap<>();
+        for (AttemptAnswerEntity existingAnswer : candidateAttemptEntity.getAnswers()) {
+            existingAnswersByNodeId.put(existingAnswer.getNodeId(), existingAnswer);
+        }
+
+        Set<String> desiredAnswerNodeIds = new HashSet<>();
         for (AttemptAnswer answer : attempt.answersByNodeId().values()) {
-            AttemptAnswerEntity attemptAnswerEntity = new AttemptAnswerEntity();
+            desiredAnswerNodeIds.add(answer.nodeId());
+            AttemptAnswerEntity attemptAnswerEntity = existingAnswersByNodeId.computeIfAbsent(
+                    answer.nodeId(),
+                    ignored -> {
+                        AttemptAnswerEntity newAnswer = new AttemptAnswerEntity();
+                        newAnswer.setCandidateAttempt(candidateAttemptEntity);
+                        newAnswer.setNodeId(answer.nodeId());
+                        candidateAttemptEntity.getAnswers().add(newAnswer);
+                        return newAnswer;
+                    }
+            );
             attemptAnswerEntity.setCandidateAttempt(candidateAttemptEntity);
             attemptAnswerEntity.setNodeId(answer.nodeId());
             attemptAnswerEntity.setOptionId(answer.optionId());
             attemptAnswerEntity.setTimedOut(answer.timedOut());
             attemptAnswerEntity.setAnsweredAt(answer.answeredAt());
-            candidateAttemptEntity.getAnswers().add(attemptAnswerEntity);
         }
+        candidateAttemptEntity.getAnswers().removeIf(answer -> !desiredAnswerNodeIds.contains(answer.getNodeId()));
 
         candidateAttemptEntity.getResultItems().clear();
         for (ResultItem resultItem : attempt.results()) {
