@@ -209,10 +209,8 @@ function ValidatorPage() {
 
       {hasValidationParams && (
         <ScoringModelPreview
-          creatingDraft={cloneDraftMutation.isPending}
           error={versionQuery.error}
           loading={versionQuery.isLoading}
-          onEditNode={openEditor}
           onSelectNode={selectNode}
           selectedNodeId={selectedNodeId}
           simulationId={search.simulationId}
@@ -511,20 +509,16 @@ function ValidatorPage() {
 }
 
 function ScoringModelPreview({
-  creatingDraft,
   error,
   loading,
-  onEditNode,
   onSelectNode,
   selectedNodeId,
   simulationId,
   version,
   versionNumber,
 }: {
-  creatingDraft: boolean;
   error: Error | null;
   loading: boolean;
-  onEditNode: (nodeId?: string) => void;
   onSelectNode: (nodeId: string | null) => void;
   selectedNodeId: string | null;
   simulationId?: string;
@@ -545,8 +539,6 @@ function ScoringModelPreview({
       <div className="grid gap-5">
         <div className="rounded-md border border-border bg-card p-5">
           <NormalizedScoreMap
-            creatingDraft={creatingDraft}
-            onEditNode={onEditNode}
             onSelectNode={onSelectNode}
             selectedNodeId={selectedNodeId}
             simulationId={simulationId}
@@ -616,11 +608,11 @@ function ScoringModelPreview({
                         </button>
                         <button
                           type="button"
-                          onClick={() => onEditNode(step.node.id)}
+                          onClick={() => onSelectNode(step.node.id)}
                           className="inline-flex items-center gap-1 rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary/90"
                         >
-                          <ExternalLink className="h-3 w-3" />
-                          {creatingDraft ? "Criando..." : "Editar"}
+                          <ZoomIn className="h-3 w-3" />
+                          Detalhes
                         </button>
                       </div>
                     </div>
@@ -727,16 +719,12 @@ function MetricTile({ label, value }: { label: string; value: string }) {
 }
 
 function NormalizedScoreMap({
-  creatingDraft,
-  onEditNode,
   onSelectNode,
   selectedNodeId,
   simulationId,
   version,
   versionNumber,
 }: {
-  creatingDraft: boolean;
-  onEditNode: (nodeId?: string) => void;
   onSelectNode: (nodeId: string | null) => void;
   selectedNodeId: string | null;
   simulationId?: string;
@@ -939,11 +927,11 @@ function NormalizedScoreMap({
                   </p>
                   <button
                     type="button"
-                    onClick={() => onEditNode(selectedStep.node.id)}
+                    onClick={() => onSelectNode(selectedStep.node.id)}
                     className="mt-3 inline-flex items-center gap-1 rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary/90"
                   >
-                    <ExternalLink className="h-3 w-3" />
-                    {creatingDraft ? "Criando..." : "Editar"}
+                    <ZoomIn className="h-3 w-3" />
+                    Detalhes
                   </button>
                 </div>
                 <dl className="grid grid-cols-2 gap-2 text-xs">
