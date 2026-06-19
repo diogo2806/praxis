@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { Link, useRouterState } from "@tanstack/react-router";
 import type { ReactNode } from "react";
@@ -9,12 +9,10 @@ import {
   Home,
   Link2,
   Menu,
-  Scale,
   Settings,
   ShieldCheck,
   Sparkles,
   Target,
-  UserRound,
 } from "lucide-react";
 import { GlobalErrorFlow, GlobalProductStateBar, StateBanner } from "@/components/praxis-ui";
 import { LanguageSelector } from "@/components/language-selector";
@@ -73,16 +71,10 @@ const getSecondary = (t: TranslationMap) =>
       desc: "Histórico, versões e auditoria",
     },
     {
-      to: "/lgpd",
-      label: t.common.lgpd,
-      icon: UserRound,
-      desc: "Direitos do candidato e dados",
-    },
-    {
-      to: "/defensabilidade",
-      label: t.common.defensibility,
-      icon: Scale,
-      desc: "Base técnica do resultado",
+      to: "/compliance",
+      label: "Compliance",
+      icon: ShieldCheck,
+      desc: "LGPD, transparência e base técnica do resultado",
     },
   ] as const;
 
@@ -352,3 +344,7 @@ export function AppShell({ children }: { children: ReactNode }) {
     </div>
   );
 }
+
+
+
+
