@@ -358,7 +358,7 @@ function Page() {
                 placeholder="Buscar competÃªncia"
                 value={competencySearch}
                 onChange={(event) => setCompetencySearch(event.target.value)}
-                disabled={tenantConfigLoading || saveCatalogMutation.isPending}
+                disabled={tenantConfigLoading || addCompetencyMutation.isPending}
               />
               <div className="mt-1 text-xs text-muted-foreground">
                 {visibleCompetencies.length} de {competencies.length} disponÃ­veis
