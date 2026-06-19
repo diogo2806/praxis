@@ -8,6 +8,7 @@ import br.com.iforce.praxis.gupy.persistence.entity.CandidateAttemptEntity;
 import br.com.iforce.praxis.gupy.persistence.repository.CandidateAttemptRepository;
 import br.com.iforce.praxis.gupy.service.GupyTestResultMapper;
 import br.com.iforce.praxis.gupy.service.SimulationCatalogService;
+import br.com.iforce.praxis.shared.notification.service.ResultDeliveryDlqAlertService;
 import br.com.iforce.praxis.shared.outbox.persistence.entity.OutboxEventEntity;
 import br.com.iforce.praxis.shared.outbox.persistence.repository.OutboxEventRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -49,6 +50,9 @@ class OutboxProcessorTest {
     @Mock
     private GupyOutboundUrlValidator outboundUrlValidator;
 
+    @Mock
+    private ResultDeliveryDlqAlertService dlqAlertService;
+
     private OutboxProcessor outboxProcessor;
     private ObjectMapper objectMapper;
 
@@ -62,7 +66,8 @@ class OutboxProcessorTest {
             candidateAttemptRepository,
             simulationCatalogService,
             gupyTestResultMapper,
-            outboundUrlValidator
+            outboundUrlValidator,
+            dlqAlertService
         );
     }
 
@@ -111,6 +116,7 @@ class OutboxProcessorTest {
 
         assertThat(event.getStatus()).isEqualTo(OutboxEventEntity.OutboxEventStatus.DLQ);
         assertThat(event.getNextAttemptAt()).isNull();
+        verify(dlqAlertService).alertTenantAdmins(event);
     }
 
     @Test
@@ -127,6 +133,7 @@ class OutboxProcessorTest {
 
         assertThat(event.getStatus()).isEqualTo(OutboxEventEntity.OutboxEventStatus.DLQ);
         assertThat(event.getNextAttemptAt()).isNull();
+        verify(dlqAlertService).alertTenantAdmins(event);
     }
 
     @Test

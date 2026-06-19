@@ -11,6 +11,7 @@ import {
   PlayCircle,
   Search,
   Table2,
+  Target,
 } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
 import { Termo } from "@/components/glossario";
@@ -48,20 +49,14 @@ export const Route = createFileRoute("/app")({
 const filters: Array<"todas" | SimulationVersionStatus> = [
   "todas",
   "published",
-  "approved",
-  "inReview",
   "draft",
-  "rejected",
   "archived",
 ];
 
 const filterLabels: Record<(typeof filters)[number], string> = {
   todas: "todas",
   published: "no ar",
-  approved: "aprovadas",
-  inReview: "em revisão",
   draft: "rascunhos",
-  rejected: "reprovadas",
   archived: "arquivadas",
 };
 
@@ -86,8 +81,8 @@ function Dashboard() {
 
   const totals = {
     noAr: simulations.filter((s) => s.status === "published").length,
-    aprovadas: simulations.filter((s) => s.status === "approved").length,
     rascunhos: simulations.filter((s) => s.status === "draft").length,
+    arquivadas: simulations.filter((s) => s.status === "archived").length,
     tentativas: simulations.reduce((a, s) => a + s.attemptsCreated, 0),
   };
 
@@ -124,6 +119,13 @@ function Dashboard() {
           >
             <BarChart3 className="h-4 w-4" />
             Monitoramento
+          </Link>
+          <Link
+            to="/talent-match"
+            className="inline-flex items-center gap-2 rounded-md border border-border bg-card px-3 py-2 text-sm hover:bg-accent"
+          >
+            <Target className="h-4 w-4" />
+            Talent Match
           </Link>
           <Link
             to="/nova/blueprint"
@@ -192,10 +194,10 @@ function Dashboard() {
               onClick={() => setFilter("published")}
             />
             <Stat
-              label="Aprovadas"
-              value={totals.aprovadas}
-              hint="Prontas para publicar"
-              onClick={() => setFilter("approved")}
+              label="Arquivadas"
+              value={totals.arquivadas}
+              hint="Fora de uso"
+              onClick={() => setFilter("archived")}
             />
             <Stat
               label="Rascunhos"
@@ -402,6 +404,19 @@ function Dashboard() {
                                 </Link>
                               </TooltipTrigger>
                               <TooltipContent>Abrir</TooltipContent>
+                            </Tooltip>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Link
+                                  to="/talent-match"
+                                  search={simulationSearch(simulation)}
+                                  aria-label={`Comparar candidatos de ${simulation.name}`}
+                                  className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-border bg-background text-primary hover:bg-primary/10"
+                                >
+                                  <Target className="h-3.5 w-3.5" />
+                                </Link>
+                              </TooltipTrigger>
+                              <TooltipContent>Talent Match</TooltipContent>
                             </Tooltip>
                           </div>
                         </td>

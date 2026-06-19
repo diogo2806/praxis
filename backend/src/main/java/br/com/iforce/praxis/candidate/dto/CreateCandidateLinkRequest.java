@@ -4,6 +4,8 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 
+import java.math.BigDecimal;
+
 @Schema(description = "Pedido da empresa para gerar link de simulacao para um candidato.")
 public record CreateCandidateLinkRequest(
         @NotBlank
@@ -17,6 +19,9 @@ public record CreateCandidateLinkRequest(
         @Email
         @NotBlank
         @Schema(example = "maria@example.com")
-        String candidateEmail
+        String candidateEmail,
+
+        @Schema(example = "1.50", description = "Multiplicador de tempo para acomodacoes de acessibilidade.")
+        BigDecimal accommodationTimeMultiplier
 ) {
 }

@@ -15,7 +15,6 @@ import br.com.iforce.praxis.simulation.dto.PublishSimulationResponse;
 import br.com.iforce.praxis.simulation.dto.SimulationSummaryResponse;
 import br.com.iforce.praxis.simulation.dto.SimulationValidationResponse;
 import br.com.iforce.praxis.simulation.dto.SimulationVersionDetailResponse;
-import br.com.iforce.praxis.simulation.dto.SimulationVersionStatusResponse;
 import br.com.iforce.praxis.simulation.dto.UpdateBlueprintRequest;
 import br.com.iforce.praxis.simulation.dto.UpdateNodeRequest;
 import br.com.iforce.praxis.simulation.dto.UpdateOptionRequest;
@@ -238,6 +237,8 @@ public class SimulationAdminService {
         nodeEntity.setSpeaker("Cliente");
         nodeEntity.setMessage(request.clientMessage().trim());
         nodeEntity.setTimeLimitSeconds(request.timeLimitSeconds());
+        nodeEntity.setPlainTextDescription(trimToNull(request.plainTextDescription()));
+        nodeEntity.setAudioDescriptionUrl(trimToNull(request.audioDescriptionUrl()));
         applyMedia(request.mediaUrl(), request.mediaType(), nodeEntity::setMediaUrl, nodeEntity::setMediaType);
         versionEntity.getNodes().add(nodeEntity);
 
@@ -264,6 +265,12 @@ public class SimulationAdminService {
         }
         if (request.timeLimitSeconds() != null) {
             nodeEntity.setTimeLimitSeconds(request.timeLimitSeconds());
+        }
+        if (request.plainTextDescription() != null) {
+            nodeEntity.setPlainTextDescription(trimToNull(request.plainTextDescription()));
+        }
+        if (request.audioDescriptionUrl() != null) {
+            nodeEntity.setAudioDescriptionUrl(trimToNull(request.audioDescriptionUrl()));
         }
         if (request.mediaUrl() != null) {
             applyMedia(request.mediaUrl(), request.mediaType(), nodeEntity::setMediaUrl, nodeEntity::setMediaType);
@@ -316,6 +323,8 @@ public class SimulationAdminService {
         optionEntity.setNextNodeId(trimToNull(request.nextNodeId()));
         optionEntity.setCritical(request.isCritical());
         optionEntity.setAuditNote(defaultIfBlank(request.resultingTone(), ""));
+        optionEntity.setPlainTextDescription(trimToNull(request.plainTextDescription()));
+        optionEntity.setAudioDescriptionUrl(trimToNull(request.audioDescriptionUrl()));
         applyMedia(request.mediaUrl(), request.mediaType(), optionEntity::setMediaUrl, optionEntity::setMediaType);
         applyCompetencyScores(optionEntity, request.competencyLevels());
         nodeEntity.getOptions().add(optionEntity);
@@ -357,6 +366,12 @@ public class SimulationAdminService {
         }
         if (request.resultingTone() != null) {
             optionEntity.setAuditNote(defaultIfBlank(request.resultingTone(), ""));
+        }
+        if (request.plainTextDescription() != null) {
+            optionEntity.setPlainTextDescription(trimToNull(request.plainTextDescription()));
+        }
+        if (request.audioDescriptionUrl() != null) {
+            optionEntity.setAudioDescriptionUrl(trimToNull(request.audioDescriptionUrl()));
         }
         if (request.mediaUrl() != null) {
             applyMedia(request.mediaUrl(), request.mediaType(), optionEntity::setMediaUrl, optionEntity::setMediaType);
@@ -461,82 +476,6 @@ public class SimulationAdminService {
         );
     }
 
-    @Transactional
-    public SimulationVersionStatusResponse submitVersionForReview(String simulationId, int versionNumber) {
-        SimulationVersionEntity simulationVersionEntity = findVersion(simulationId, versionNumber);
-        requireStatus(
-                simulationVersionEntity,
-                "Somente versoes em rascunho ou reprovadas podem ir para revisao.",
-                SimulationVersionStatus.DRAFT,
-                SimulationVersionStatus.REJECTED
-        );
-
-        SimulationValidationResponse validationResponse = simulationValidationService.validate(simulationVersionEntity);
-        if (!validationResponse.publishable()) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "Revisao bloqueada por itens criticos do validador.");
-        }
-
-        simulationVersionEntity.setStatus(SimulationVersionStatus.IN_REVIEW);
-        SimulationVersionEntity savedSimulationVersionEntity = simulationVersionRepository.save(simulationVersionEntity);
-        auditEventService.appendSimulationVersionEvent(
-                savedSimulationVersionEntity.getSimulation().getTenantId(),
-                savedSimulationVersionEntity.getSimulation().getId(),
-                savedSimulationVersionEntity.getVersionNumber(),
-                AuditEventType.SIMULATION_VERSION_SUBMITTED_FOR_REVIEW,
-                "Versao de simulacao enviada para revisao.",
-                "{\"status\":\"" + savedSimulationVersionEntity.getStatus().getDescricao()
-                        + "\",\"warningCount\":" + validationResponse.warningCount() + "}"
-        );
-
-        return toStatusResponse(savedSimulationVersionEntity);
-    }
-
-    @Transactional
-    public SimulationVersionStatusResponse approveVersion(String simulationId, int versionNumber) {
-        SimulationVersionEntity simulationVersionEntity = findVersion(simulationId, versionNumber);
-        requireStatus(
-                simulationVersionEntity,
-                "Somente versoes em revisao podem ser aprovadas.",
-                SimulationVersionStatus.IN_REVIEW
-        );
-
-        simulationVersionEntity.setStatus(SimulationVersionStatus.APPROVED);
-        SimulationVersionEntity savedSimulationVersionEntity = simulationVersionRepository.save(simulationVersionEntity);
-        auditEventService.appendSimulationVersionEvent(
-                savedSimulationVersionEntity.getSimulation().getTenantId(),
-                savedSimulationVersionEntity.getSimulation().getId(),
-                savedSimulationVersionEntity.getVersionNumber(),
-                AuditEventType.SIMULATION_VERSION_APPROVED,
-                "Versao de simulacao aprovada para publicacao.",
-                "{\"status\":\"" + savedSimulationVersionEntity.getStatus().getDescricao() + "\"}"
-        );
-
-        return toStatusResponse(savedSimulationVersionEntity);
-    }
-
-    @Transactional
-    public SimulationVersionStatusResponse rejectVersion(String simulationId, int versionNumber, String reason) {
-        SimulationVersionEntity simulationVersionEntity = findVersion(simulationId, versionNumber);
-        requireStatus(
-                simulationVersionEntity,
-                "Somente versoes em revisao podem ser reprovadas.",
-                SimulationVersionStatus.IN_REVIEW
-        );
-
-        simulationVersionEntity.setStatus(SimulationVersionStatus.REJECTED);
-        SimulationVersionEntity savedSimulationVersionEntity = simulationVersionRepository.save(simulationVersionEntity);
-        auditEventService.appendSimulationVersionEvent(
-                savedSimulationVersionEntity.getSimulation().getTenantId(),
-                savedSimulationVersionEntity.getSimulation().getId(),
-                savedSimulationVersionEntity.getVersionNumber(),
-                AuditEventType.SIMULATION_VERSION_REJECTED,
-                "Versao de simulacao reprovada na revisao.",
-                "{\"status\":\"" + savedSimulationVersionEntity.getStatus().getDescricao()
-                        + "\",\"reason\":\"" + escapeJson(reason) + "\"}"
-        );
-
-        return toStatusResponse(savedSimulationVersionEntity);
-    }
 
     @Transactional
     public PublishSimulationResponse publishVersion(String simulationId, int versionNumber) {
@@ -547,9 +486,9 @@ public class SimulationAdminService {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Publicacao bloqueada por itens criticos do validador.");
         }
 
-        if (simulationVersionEntity.getStatus() != SimulationVersionStatus.APPROVED
+        if (simulationVersionEntity.getStatus() != SimulationVersionStatus.DRAFT
                 && simulationVersionEntity.getStatus() != SimulationVersionStatus.PUBLISHED) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "Versao precisa estar aprovada antes da publicacao.");
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Somente versoes em rascunho podem ser publicadas.");
         }
 
         GupyPreflightResponse gupyPreflightResponse = gupyPreflightService.evaluate(simulationVersionEntity);
@@ -639,9 +578,8 @@ public class SimulationAdminService {
         SimulationVersionEntity versionEntity = findVersion(simulationId, versionNumber);
         requireStatus(
                 versionEntity,
-                "Somente versoes em rascunho ou reprovadas podem ser editadas.",
-                SimulationVersionStatus.DRAFT,
-                SimulationVersionStatus.REJECTED
+                "Somente versoes em rascunho podem ser editadas.",
+                SimulationVersionStatus.DRAFT
         );
         return versionEntity;
     }
@@ -657,6 +595,7 @@ public class SimulationAdminService {
             competencyEntity.setSimulationVersion(versionEntity);
             competencyEntity.setName(competency.name().trim());
             competencyEntity.setWeight(competency.weight());
+            competencyEntity.setTargetScore(competency.normalizedTargetScore());
             versionEntity.getCompetencies().add(competencyEntity);
         }
     }
@@ -940,6 +879,7 @@ public class SimulationAdminService {
             clonedCompetencyEntity.setSimulationVersion(clonedVersionEntity);
             clonedCompetencyEntity.setName(sourceCompetencyEntity.getName());
             clonedCompetencyEntity.setWeight(sourceCompetencyEntity.getWeight());
+            clonedCompetencyEntity.setTargetScore(sourceCompetencyEntity.getTargetScore());
             clonedVersionEntity.getCompetencies().add(clonedCompetencyEntity);
         }
 
@@ -962,6 +902,8 @@ public class SimulationAdminService {
         clonedNodeEntity.setSpeaker(sourceNodeEntity.getSpeaker());
         clonedNodeEntity.setMessage(sourceNodeEntity.getMessage());
         clonedNodeEntity.setTimeLimitSeconds(sourceNodeEntity.getTimeLimitSeconds());
+        clonedNodeEntity.setPlainTextDescription(sourceNodeEntity.getPlainTextDescription());
+        clonedNodeEntity.setAudioDescriptionUrl(sourceNodeEntity.getAudioDescriptionUrl());
         clonedNodeEntity.setMediaUrl(sourceNodeEntity.getMediaUrl());
         clonedNodeEntity.setMediaType(sourceNodeEntity.getMediaType());
 
@@ -984,6 +926,8 @@ public class SimulationAdminService {
         clonedOptionEntity.setNextNodeId(sourceOptionEntity.getNextNodeId());
         clonedOptionEntity.setCritical(sourceOptionEntity.isCritical());
         clonedOptionEntity.setAuditNote(sourceOptionEntity.getAuditNote());
+        clonedOptionEntity.setPlainTextDescription(sourceOptionEntity.getPlainTextDescription());
+        clonedOptionEntity.setAudioDescriptionUrl(sourceOptionEntity.getAudioDescriptionUrl());
         clonedOptionEntity.setMediaUrl(sourceOptionEntity.getMediaUrl());
         clonedOptionEntity.setMediaType(sourceOptionEntity.getMediaType());
 
@@ -1010,15 +954,6 @@ public class SimulationAdminService {
         }
 
         throw new ResponseStatusException(HttpStatus.CONFLICT, message);
-    }
-
-    private SimulationVersionStatusResponse toStatusResponse(SimulationVersionEntity simulationVersionEntity) {
-        return new SimulationVersionStatusResponse(
-                simulationVersionEntity.getSimulation().getId(),
-                simulationVersionEntity.getVersionNumber(),
-                simulationVersionEntity.getStatus(),
-                simulationVersionEntity.getPublishedAt()
-        );
     }
 
     private String escapeJson(String value) {

@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as TalentMatchRouteImport } from './routes/talent-match'
 import { Route as MonitoramentoRouteImport } from './routes/monitoramento'
 import { Route as LgpdRouteImport } from './routes/lgpd'
 import { Route as GovernancaRouteImport } from './routes/governanca'
@@ -30,6 +31,11 @@ import { Route as NovaCompetenciasRouteImport } from './routes/nova.competencias
 import { Route as NovaBlueprintRouteImport } from './routes/nova.blueprint'
 import { Route as CandidatoTokenRouteImport } from './routes/candidato.$token'
 
+const TalentMatchRoute = TalentMatchRouteImport.update({
+  id: '/talent-match',
+  path: '/talent-match',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const MonitoramentoRoute = MonitoramentoRouteImport.update({
   id: '/monitoramento',
   path: '/monitoramento',
@@ -141,6 +147,7 @@ export interface FileRoutesByFullPath {
   '/governanca': typeof GovernancaRoute
   '/lgpd': typeof LgpdRoute
   '/monitoramento': typeof MonitoramentoRoute
+  '/talent-match': typeof TalentMatchRoute
   '/candidato/$token': typeof CandidatoTokenRoute
   '/nova/blueprint': typeof NovaBlueprintRoute
   '/nova/competencias': typeof NovaCompetenciasRoute
@@ -163,6 +170,7 @@ export interface FileRoutesByTo {
   '/governanca': typeof GovernancaRoute
   '/lgpd': typeof LgpdRoute
   '/monitoramento': typeof MonitoramentoRoute
+  '/talent-match': typeof TalentMatchRoute
   '/candidato/$token': typeof CandidatoTokenRoute
   '/nova/blueprint': typeof NovaBlueprintRoute
   '/nova/competencias': typeof NovaCompetenciasRoute
@@ -186,6 +194,7 @@ export interface FileRoutesById {
   '/governanca': typeof GovernancaRoute
   '/lgpd': typeof LgpdRoute
   '/monitoramento': typeof MonitoramentoRoute
+  '/talent-match': typeof TalentMatchRoute
   '/candidato/$token': typeof CandidatoTokenRoute
   '/nova/blueprint': typeof NovaBlueprintRoute
   '/nova/competencias': typeof NovaCompetenciasRoute
@@ -210,6 +219,7 @@ export interface FileRouteTypes {
     | '/governanca'
     | '/lgpd'
     | '/monitoramento'
+    | '/talent-match'
     | '/candidato/$token'
     | '/nova/blueprint'
     | '/nova/competencias'
@@ -232,6 +242,7 @@ export interface FileRouteTypes {
     | '/governanca'
     | '/lgpd'
     | '/monitoramento'
+    | '/talent-match'
     | '/candidato/$token'
     | '/nova/blueprint'
     | '/nova/competencias'
@@ -254,6 +265,7 @@ export interface FileRouteTypes {
     | '/governanca'
     | '/lgpd'
     | '/monitoramento'
+    | '/talent-match'
     | '/candidato/$token'
     | '/nova/blueprint'
     | '/nova/competencias'
@@ -277,6 +289,7 @@ export interface RootRouteChildren {
   GovernancaRoute: typeof GovernancaRoute
   LgpdRoute: typeof LgpdRoute
   MonitoramentoRoute: typeof MonitoramentoRoute
+  TalentMatchRoute: typeof TalentMatchRoute
   NovaBlueprintRoute: typeof NovaBlueprintRoute
   NovaCompetenciasRoute: typeof NovaCompetenciasRoute
   NovaDialogoRoute: typeof NovaDialogoRoute
@@ -291,6 +304,13 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/talent-match': {
+      id: '/talent-match'
+      path: '/talent-match'
+      fullPath: '/talent-match'
+      preLoaderRoute: typeof TalentMatchRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/monitoramento': {
       id: '/monitoramento'
       path: '/monitoramento'
@@ -456,6 +476,7 @@ const rootRouteChildren: RootRouteChildren = {
   GovernancaRoute: GovernancaRoute,
   LgpdRoute: LgpdRoute,
   MonitoramentoRoute: MonitoramentoRoute,
+  TalentMatchRoute: TalentMatchRoute,
   NovaBlueprintRoute: NovaBlueprintRoute,
   NovaCompetenciasRoute: NovaCompetenciasRoute,
   NovaDialogoRoute: NovaDialogoRoute,

@@ -38,4 +38,7 @@ public class SimulationCompetencyEntity {
 
     @Column(name = "weight", nullable = false)
     private double weight;
+
+    @Column(name = "target_score", nullable = false)
+    private int targetScore = 70;
 }

@@ -1,0 +1,177 @@
+package br.com.iforce.praxis.shared.notification.service;
+
+import br.com.iforce.praxis.auth.persistence.entity.UserEntity;
+import br.com.iforce.praxis.auth.persistence.repository.UserRepository;
+import br.com.iforce.praxis.gupy.persistence.entity.CandidateAttemptEntity;
+import br.com.iforce.praxis.gupy.persistence.repository.CandidateAttemptRepository;
+import br.com.iforce.praxis.shared.notification.model.InAppNotificationType;
+import br.com.iforce.praxis.shared.notification.persistence.entity.InAppNotificationEntity;
+import br.com.iforce.praxis.shared.notification.persistence.repository.InAppNotificationRepository;
+import br.com.iforce.praxis.shared.outbox.persistence.entity.OutboxEventEntity;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.time.Instant;
+import java.util.List;
+import java.util.Optional;
+
+@Slf4j
+@Service
+public class ResultDeliveryDlqAlertService {
+
+    private static final String ADMIN_ROLE = "EMPRESA";
+
+    private final UserRepository userRepository;
+    private final CandidateAttemptRepository candidateAttemptRepository;
+    private final InAppNotificationRepository inAppNotificationRepository;
+    private final EmailAlertSender emailAlertSender;
+    private final ObjectMapper objectMapper;
+
+    public ResultDeliveryDlqAlertService(
+            UserRepository userRepository,
+            CandidateAttemptRepository candidateAttemptRepository,
+            InAppNotificationRepository inAppNotificationRepository,
+            EmailAlertSender emailAlertSender,
+            ObjectMapper objectMapper
+    ) {
+        this.userRepository = userRepository;
+        this.candidateAttemptRepository = candidateAttemptRepository;
+        this.inAppNotificationRepository = inAppNotificationRepository;
+        this.emailAlertSender = emailAlertSender;
+        this.objectMapper = objectMapper;
+    }
+
+    @Transactional(propagation = Propagation.MANDATORY)
+    public void alertTenantAdmins(OutboxEventEntity event) {
+        String attemptId = resolveAttemptId(event);
+        CandidateImpact impact = resolveCandidateImpact(event.getTenantId(), attemptId);
+        List<UserEntity> admins = userRepository.findByTenantIdAndRole(event.getTenantId(), ADMIN_ROLE);
+
+        if (admins.isEmpty()) {
+            log.error(
+                    "Evento {} entrou em DLQ, mas nenhum administrador foi encontrado para tenant={}",
+                    event.getId(),
+                    event.getTenantId()
+            );
+            return;
+        }
+
+        for (UserEntity admin : admins) {
+            if (alreadyNotified(event, admin)) {
+                continue;
+            }
+            createInAppNotification(event, impact, admin);
+            try {
+                sendEmail(event, impact, admin);
+            } catch (RuntimeException exception) {
+                log.error(
+                        "Falha ao enviar e-mail de alerta DLQ para tenant={} usuario={} evento={}",
+                        event.getTenantId(),
+                        admin.getId(),
+                        event.getId(),
+                        exception
+                );
+            }
+        }
+    }
+
+    private boolean alreadyNotified(OutboxEventEntity event, UserEntity admin) {
+        return inAppNotificationRepository.existsByTenantIdAndOutboxEventIdAndRecipientUserIdAndType(
+                event.getTenantId(),
+                event.getId(),
+                admin.getId(),
+                InAppNotificationType.RESULT_DELIVERY_DLQ
+        );
+    }
+
+    private void createInAppNotification(OutboxEventEntity event, CandidateImpact impact, UserEntity admin) {
+        InAppNotificationEntity notification = new InAppNotificationEntity();
+        notification.setTenantId(event.getTenantId());
+        notification.setRecipientUserId(admin.getId());
+        notification.setType(InAppNotificationType.RESULT_DELIVERY_DLQ);
+        notification.setTitle("Resultado retido na integracao com a Gupy");
+        notification.setMessage(messageFor(impact));
+        notification.setCandidateAttemptId(impact.attemptId());
+        notification.setCandidateName(impact.candidateName());
+        notification.setCandidateEmail(impact.candidateEmail());
+        notification.setOutboxEventId(event.getId());
+        notification.setCreatedAt(Instant.now());
+
+        inAppNotificationRepository.save(notification);
+    }
+
+    private void sendEmail(OutboxEventEntity event, CandidateImpact impact, UserEntity admin) {
+        emailAlertSender.send(new EmailAlertMessage(
+                event.getTenantId(),
+                admin.getEmail(),
+                "Acao necessaria: resultado retido na integracao Gupy",
+                """
+                Um resultado de candidato falhou nas tentativas automaticas de envio para a Gupy e foi retido para suporte.
+
+                Candidato: %s <%s>
+                Attempt ID: %s
+                Result ID: %s
+                Evento outbox: %s
+                Ultimo erro: %s
+                """.formatted(
+                        impact.candidateName(),
+                        impact.candidateEmail(),
+                        impact.attemptId(),
+                        impact.resultId(),
+                        event.getId(),
+                        event.getLastError()
+                )
+        ));
+    }
+
+    private String messageFor(CandidateImpact impact) {
+        return "O resultado de " + impact.candidateName()
+                + " (" + impact.candidateEmail()
+                + ") falhou nas tentativas automaticas de envio para a Gupy e precisa de suporte.";
+    }
+
+    private CandidateImpact resolveCandidateImpact(String tenantId, String attemptId) {
+        Optional<CandidateAttemptEntity> attempt = candidateAttemptRepository.findByTenantIdAndId(tenantId, attemptId);
+        if (attempt.isEmpty()) {
+            return new CandidateImpact(attemptId, "Candidato nao localizado", "email-nao-localizado@praxis.local", "resultado-nao-localizado");
+        }
+
+        CandidateAttemptEntity entity = attempt.get();
+        return new CandidateImpact(
+                entity.getId(),
+                entity.getCandidateName(),
+                entity.getCandidateEmail(),
+                entity.getResultId()
+        );
+    }
+
+    private String resolveAttemptId(OutboxEventEntity event) {
+        if (event.getAggregateId() != null && !event.getAggregateId().isBlank()) {
+            return event.getAggregateId();
+        }
+
+        try {
+            JsonNode payload = objectMapper.readTree(event.getPayload());
+            JsonNode attemptId = payload.get("attemptId");
+            if (attemptId != null && !attemptId.isNull() && !attemptId.asText().isBlank()) {
+                return attemptId.asText();
+            }
+        } catch (Exception exception) {
+            log.warn("Nao foi possivel extrair attemptId do evento outbox {}", event.getId(), exception);
+        }
+
+        return "attempt-nao-localizado";
+    }
+
+    private record CandidateImpact(
+            String attemptId,
+            String candidateName,
+            String candidateEmail,
+            String resultId
+    ) {
+    }
+}

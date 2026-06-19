@@ -364,7 +364,242 @@ function CandidateMedia({
   );
 }
 
+function FocusedCandidateExperience({ token }: { token: string }) {
+  const [liveAttempt, setLiveAttempt] = useState<CandidateAttemptResponse | null>(null);
+  const [remaining, setRemaining] = useState(30);
+  const [selected, setSelected] = useState<string | null>(null);
+  const [highContrast, setHighContrast] = useState(false);
+  const [largeText, setLargeText] = useState(false);
+  const [dyslexiaFont, setDyslexiaFont] = useState(false);
+
+  const attemptQuery = useQuery({
+    queryKey: ["candidate-attempt", token],
+    queryFn: () => getCandidateAttempt(token),
+  });
+
+  useEffect(() => {
+    if (attemptQuery.data) {
+      setLiveAttempt(attemptQuery.data);
+    }
+  }, [attemptQuery.data]);
+
+  const answerMutation = useMutation({
+    mutationFn: ({
+      node,
+      optionId,
+      timedOut,
+    }: {
+      node: CandidateNodeResponse;
+      optionId?: string | null;
+      timedOut: boolean;
+    }) => submitCandidateAnswer(token, { respostaId: optionId, tempoEsgotado: timedOut }),
+    onSuccess: (response) => {
+      setLiveAttempt({
+        participacaoId: response.participacaoId,
+        avaliacaoNome: liveAttempt?.avaliacaoNome ?? attemptQuery.data?.avaliacaoNome ?? "Praxis",
+        status: response.status,
+        finalizado: response.finalizado,
+        acaoSugeridaFrontend: liveAttempt?.acaoSugeridaFrontend,
+        progresso: response.progresso,
+        etapaAtual: response.etapaAtual,
+      });
+      setSelected(null);
+    },
+  });
+
+  const attempt = liveAttempt ?? attemptQuery.data;
+  const currentNode = attempt?.etapaAtual ?? null;
+  const finished = Boolean(attempt && (attempt.finalizado || !currentNode));
+  const timeLimit = Math.max(
+    1,
+    currentNode?.tempoLimiteSegundosAcomodado ?? currentNode?.tempoLimiteSegundos ?? 30,
+  );
+  const timePercentage = finished ? 0 : Math.max(0, Math.min(100, (remaining / timeLimit) * 100));
+
+  useEffect(() => {
+    setRemaining(timeLimit);
+    setSelected(null);
+  }, [currentNode?.numero, timeLimit]);
+
+  useEffect(() => {
+    if (finished || answerMutation.isPending || !currentNode) return;
+    const id = window.setInterval(() => {
+      setRemaining((value) => Math.max(0, value - 1));
+    }, 1000);
+    return () => window.clearInterval(id);
+  }, [answerMutation.isPending, currentNode, finished]);
+
+  useEffect(() => {
+    if (remaining === 0 && !finished && currentNode && !selected && !answerMutation.isPending) {
+      setSelected("Sem resposta nesta etapa");
+      answerMutation.mutate({ node: currentNode, timedOut: true });
+    }
+  }, [answerMutation, currentNode, finished, remaining, selected]);
+
+  const pageClass = cn(
+    "min-h-screen px-4 py-5 transition-colors sm:px-6",
+    highContrast ? "bg-black text-white" : "bg-slate-50 text-slate-950",
+    largeText ? "text-lg" : "text-base",
+  );
+  const fontStyle = {
+    fontFamily: dyslexiaFont
+      ? "'OpenDyslexic', 'Atkinson Hyperlegible', Verdana, Arial, sans-serif"
+      : undefined,
+  } satisfies CSSProperties;
+  const panelClass = cn(
+    "mx-auto flex min-h-[calc(100vh-2.5rem)] w-full max-w-3xl flex-col",
+    "rounded-md border p-4 shadow-sm sm:p-6",
+    highContrast ? "border-white bg-black" : "border-slate-200 bg-white",
+  );
+  const controlClass = cn(
+    "inline-flex h-10 items-center gap-2 rounded-md border px-3 text-sm font-medium transition-colors",
+    highContrast
+      ? "border-white bg-black text-white hover:bg-white hover:text-black"
+      : "border-slate-300 bg-white text-slate-900 hover:bg-slate-100",
+  );
+  const optionClass = cn(
+    "w-full rounded-md border-2 p-4 text-left leading-relaxed transition-colors disabled:cursor-not-allowed disabled:opacity-60",
+    highContrast
+      ? "border-white bg-black text-white hover:bg-white hover:text-black"
+      : "border-slate-200 bg-white text-slate-950 hover:border-blue-600 hover:bg-blue-50",
+  );
+
+  return (
+    <main className={pageClass} style={fontStyle}>
+      <section className={panelClass}>
+        <div className="mb-5 flex flex-wrap items-center justify-end gap-2">
+          <button type="button" className={controlClass} onClick={() => setHighContrast((value) => !value)}>
+            Contraste
+          </button>
+          <button type="button" className={controlClass} onClick={() => setLargeText((value) => !value)}>
+            A{largeText ? "-" : "+"}
+          </button>
+          <button type="button" className={controlClass} onClick={() => setDyslexiaFont((value) => !value)}>
+            Leitura
+          </button>
+        </div>
+
+        {currentNode && !finished && (
+          <div className="mb-8" aria-hidden="true">
+            <div className={cn("h-2 w-full overflow-hidden rounded-full", highContrast ? "bg-zinc-800" : "bg-slate-200")}>
+              <div
+                className={cn(
+                  "h-full rounded-full transition-all duration-1000 ease-linear",
+                  timePercentage > 35 ? "bg-blue-600" : "bg-amber-500",
+                )}
+                style={{ width: `${timePercentage}%` }}
+              />
+            </div>
+          </div>
+        )}
+
+        {attemptQuery.isLoading ? (
+          <div className="flex flex-1 flex-col justify-center">
+            <div className="text-sm font-medium uppercase tracking-wide opacity-70">Carregando</div>
+            <h1 className="mt-3 text-3xl font-semibold">Preparando sua avaliação.</h1>
+          </div>
+        ) : attemptQuery.isError ? (
+          <div className="flex flex-1 flex-col justify-center">
+            <div className="text-sm font-medium uppercase tracking-wide text-red-600">Acesso indisponível</div>
+            <h1 className="mt-3 text-3xl font-semibold">Não foi possível carregar a avaliação.</h1>
+            <p className="mt-3 max-w-xl opacity-80">
+              {attemptQuery.error instanceof Error
+                ? attemptQuery.error.message
+                : "Verifique o link recebido e tente novamente."}
+            </p>
+          </div>
+        ) : currentNode && !finished ? (
+          <div className="flex flex-1 flex-col justify-center">
+            <div className="mx-auto w-full max-w-2xl">
+              <div className="mb-6 text-center">
+                <div className="text-sm font-medium uppercase tracking-wide opacity-70">
+                  {attempt?.avaliacaoNome ?? "Avaliação"}
+                </div>
+                <h1 className="mt-3 text-2xl font-semibold sm:text-3xl">{currentNode.pessoa}</h1>
+              </div>
+
+              <div className="space-y-4 text-center">
+                <p
+                  className="text-pretty text-xl leading-relaxed sm:text-2xl"
+                  aria-label={currentNode.descricaoAcessivel || currentNode.descricao}
+                >
+                  {currentNode.descricao}
+                </p>
+                {currentNode.audioDescricaoUrl && (
+                  <audio controls src={currentNode.audioDescricaoUrl} className="mx-auto w-full max-w-md">
+                    Seu navegador não suporta áudio.
+                  </audio>
+                )}
+                {currentNode.midiaUrl && (
+                  <div className="flex justify-center">
+                    <CandidateMedia
+                      mediaUrl={currentNode.midiaUrl}
+                      mediaType={currentNode.tipoMidia ?? null}
+                    />
+                  </div>
+                )}
+              </div>
+
+              <div className="mt-8 grid gap-3">
+                {currentNode.alternativas.map((option) => (
+                  <div key={option.id} className="space-y-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelected(option.texto);
+                        answerMutation.mutate({
+                          node: currentNode,
+                          optionId: option.id,
+                          timedOut: false,
+                        });
+                      }}
+                      disabled={answerMutation.isPending || selected !== null}
+                      className={optionClass}
+                      aria-label={option.descricaoAcessivel || option.texto}
+                    >
+                      {option.texto}
+                    </button>
+                    {option.audioDescricaoUrl && (
+                      <audio controls src={option.audioDescricaoUrl} className="w-full">
+                        Seu navegador não suporta áudio.
+                      </audio>
+                    )}
+                    {option.midiaUrl && (
+                      <CandidateMedia
+                        mediaUrl={option.midiaUrl}
+                        mediaType={option.tipoMidia ?? null}
+                      />
+                    )}
+                  </div>
+                ))}
+              </div>
+
+              {selected && (
+                <div className="mt-5 text-center text-sm font-medium opacity-75" aria-live="polite">
+                  {answerMutation.isPending ? "Registrando resposta..." : "Resposta registrada."}
+                </div>
+              )}
+            </div>
+          </div>
+        ) : (
+          <div className="flex flex-1 flex-col justify-center text-center">
+            <div className="text-sm font-medium uppercase tracking-wide text-emerald-700">
+              Participação finalizada
+            </div>
+            <h1 className="mt-3 text-3xl font-semibold">Obrigado por participar.</h1>
+            <p className="mx-auto mt-3 max-w-xl opacity-80">
+              O resultado será processado e entregue para a equipe responsável.
+            </p>
+          </div>
+        )}
+      </section>
+    </main>
+  );
+}
+
 export function CandidateExperience({ token }: { token: string }) {
+  return <FocusedCandidateExperience token={token} />;
+  /*
   const [liveAttempt, setLiveAttempt] = useState<CandidateAttemptResponse | null>(null);
   const [remaining, setRemaining] = useState(30);
   const [paused, setPaused] = useState(false);
@@ -400,6 +635,7 @@ export function CandidateExperience({ token }: { token: string }) {
           liveAttempt?.avaliacaoNome ?? attemptQuery.data?.avaliacaoNome ?? "Praxis",
         status: response.status,
         finalizado: response.finalizado,
+        progresso: response.progresso,
         etapaAtual: response.etapaAtual,
       });
       setSelected(null);
@@ -409,6 +645,7 @@ export function CandidateExperience({ token }: { token: string }) {
 
   const attempt = liveAttempt ?? attemptQuery.data;
   const currentNode = attempt?.etapaAtual ?? null;
+  const progress = attempt?.progresso ?? null;
   const finished = Boolean(attempt && (attempt.finalizado || !currentNode));
   const showTurn = Boolean(currentNode && !finished);
   const timeLimit = currentNode?.tempoLimiteSegundos ?? 30;
@@ -489,6 +726,34 @@ export function CandidateExperience({ token }: { token: string }) {
             <div className="min-h-[620px] rounded-[24px] bg-background p-4">
               {showTurn ? (
                 <>
+                  {progress && (
+                    <div className="mb-4 rounded-md border border-border bg-card p-3">
+                      <div className="mb-2 flex items-center justify-between gap-3 text-xs">
+                        <span className="font-medium text-foreground" aria-live="polite">
+                          Passo {progress.passoAtual} de aproximadamente{" "}
+                          {progress.passosEstimados}
+                        </span>
+                        <span className="text-muted-foreground">{progress.percentual}%</span>
+                      </div>
+                      <div
+                        className="praxis-progress-track praxis-progress-track-sm"
+                        aria-label={`Passo ${progress.passoAtual} de aproximadamente ${progress.passosEstimados}`}
+                        aria-valuemin={0}
+                        aria-valuemax={100}
+                        aria-valuenow={progress.percentual}
+                        role="progressbar"
+                      >
+                        <div
+                          className="praxis-progress-fill bg-success transition-all duration-700 ease-out"
+                          style={
+                            {
+                              "--praxis-progress-value": `${progress.percentual}%`,
+                            } as CSSProperties
+                          }
+                        />
+                      </div>
+                    </div>
+                  )}
                   <div className="mb-4">
                     <div className="mb-1 flex items-center justify-between text-xs">
                       <span aria-live="polite">{remaining}s restantes</span>
@@ -651,4 +916,5 @@ export function CandidateExperience({ token }: { token: string }) {
       </div>
     </AppShell>
   );
+  */
 }

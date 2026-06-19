@@ -5,16 +5,12 @@ import { AppShell } from "@/components/app-shell";
 import { EmptyState, ScreenStateStrip, StateBanner, StatusBadge } from "@/components/praxis-ui";
 import { WizardStepper } from "@/components/wizard-stepper";
 import {
-  approveSimulationVersion,
   listSimulations,
   listSimulationVersionAuditEvents,
   publishSimulationVersion,
-  rejectSimulationVersion,
-  submitSimulationVersionForReview,
   type AuditEventResponse,
   type SimulationSummaryResponse,
   type SimulationVersionStatus,
-  type SimulationVersionStatusResponse,
 } from "@/lib/api/praxis";
 import { maturityForStatus } from "@/lib/simulation-meta";
 import { cn } from "@/lib/utils";
@@ -32,45 +28,26 @@ export const Route = createFileRoute("/nova/governanca")({
   head: () => ({
     meta: [
       { title: "Governança & Aprovações - Praxis" },
-      { name: "description", content: "Revisão, aprovação e entrada no ar da avaliação." },
+      { name: "description", content: "Publicacao validada da avaliacao." },
     ],
   }),
   component: Page,
 });
 
-const workflowStates: Array<{ status: SimulationVersionStatus; label: string }> = [
+const workflowStates: Array<{ status: string; label: string }> = [
   { status: "draft", label: "Rascunho" },
-  { status: "inReview", label: "Em revisão" },
-  { status: "approved", label: "Aprovada" },
   { status: "published", label: "No ar" },
 ];
 
-type TransitionAction = "submit-review" | "approve" | "reject" | "publish";
+type TransitionAction = "publish";
 
 const transitionCopy: Record<
   TransitionAction,
   { title: string; description: string; cta: string }
 > = {
-  "submit-review": {
-    title: "Enviar para revisão?",
-    description:
-      "O sistema só aceita esta transição quando a versão está em rascunho ou reprovada e sem bloqueios críticos.",
-    cta: "Enviar para revisão",
-  },
-  approve: {
-    title: "Aprovar versão?",
-    description: "A versão ficará aprovada e pronta para entrar no ar.",
-    cta: "Aprovar",
-  },
-  reject: {
-    title: "Reprovar versão?",
-    description:
-      "Informe uma justificativa. Ela será enviada ao sistema e preservada no histórico de governança.",
-    cta: "Reprovar",
-  },
   publish: {
-    title: "Colocar versão no ar?",
-    description: "Ao entrar no ar, a versão fica protegida contra alterações. Bloqueios críticos continuam sem ajuste manual.",
+    title: "Colocar versao no ar?",
+    description: "Ao entrar no ar, a versao fica protegida contra alteracoes. Bloqueios criticos continuam sem ajuste manual.",
     cta: "Publicar",
   },
 };
@@ -86,7 +63,6 @@ function Page() {
   });
   const [currentStatus, setCurrentStatus] = useState<SimulationVersionStatus | null>(null);
   const [pendingAction, setPendingAction] = useState<TransitionAction | null>(null);
-  const [rejectReason, setRejectReason] = useState("Ajustar pontos indicados pela revisão.");
   const auditQuery = useQuery({
     queryKey: ["simulation-version-audit", search.simulationId, search.versionNumber],
     queryFn: () => listSimulationVersionAuditEvents(search.simulationId!, search.versionNumber!),
@@ -94,18 +70,7 @@ function Page() {
   });
 
   const transitionMutation = useMutation({
-    mutationFn: async (action: TransitionAction) => {
-      if (action === "submit-review") {
-        return submitSimulationVersionForReview(search.simulationId!, search.versionNumber!);
-      }
-      if (action === "approve") {
-        return approveSimulationVersion(search.simulationId!, search.versionNumber!);
-      }
-      if (action === "reject") {
-        return rejectSimulationVersion(search.simulationId!, search.versionNumber!, rejectReason);
-      }
-      return publishSimulationVersion(search.simulationId!, search.versionNumber!);
-    },
+    mutationFn: async () => publishSimulationVersion(search.simulationId!, search.versionNumber!),
     onSuccess: async (response) => {
       setCurrentStatus(response.status);
       setPendingAction(null);
@@ -120,12 +85,11 @@ function Page() {
   return (
     <AppShell>
       <WizardStepper current="publicacao" />
-      <ScreenStateStrip blockedReason="aguardando aprovação de gestor ou compliance" />
+      <ScreenStateStrip blockedReason="validacao automatica pendente" />
       <div className="mb-6">
         <div className="text-xs uppercase tracking-[0.2em] text-primary">Passo 4</div>
-        <h1 className="mt-1 font-display text-3xl">Governança para colocar no ar</h1>
-        <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
-          Antes de entrar no ar, a avaliação passa por revisão e aprovação.
+        <h1 className="mt-1 font-display text-3xl">Publicacao para colocar no ar</h1>
+        <p className="mt-2 max-w-2xl text-sm text-muted-foreground">          Antes de entrar no ar, a avaliacao passa pela validacao automatica e pelo preflight.
         </p>
       </div>
 
@@ -195,29 +159,9 @@ function Page() {
                 Sem eventos suficientes para inferir estado
               </li>
             )}
-            {visibleStatus === "rejected" && (
-              <li className="rounded-full border border-danger/30 bg-danger/10 px-3 py-1.5 text-danger">
-                atual Reprovada
-              </li>
-            )}
           </ol>
 
-          <div className="mt-5 grid gap-2 md:grid-cols-4">
-            <TransitionButton
-              label="Enviar para revisão"
-              disabled={!hasGovernanceParams}
-              onClick={() => setPendingAction("submit-review")}
-            />
-            <TransitionButton
-              label="Aprovar"
-              disabled={!hasGovernanceParams}
-              onClick={() => setPendingAction("approve")}
-            />
-            <TransitionButton
-              label="Reprovar"
-              disabled={!hasGovernanceParams}
-              onClick={() => setPendingAction("reject")}
-            />
+          <div className="mt-5 grid gap-2 md:grid-cols-1">
             <TransitionButton
               label="Publicar"
               disabled={!hasGovernanceParams}
@@ -263,16 +207,6 @@ function Page() {
             <p className="mt-2 text-sm text-muted-foreground">
               {transitionCopy[pendingAction].description}
             </p>
-            {pendingAction === "reject" && (
-              <label className="mt-4 block text-sm">
-                <span className="text-xs font-medium text-muted-foreground">Justificativa</span>
-                <textarea
-                  value={rejectReason}
-                  onChange={(event) => setRejectReason(event.target.value)}
-                  className="mt-1 min-h-24 w-full rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
-                />
-              </label>
-            )}
             <div className="mt-5 flex justify-end gap-2">
               <button
                 type="button"
@@ -284,10 +218,7 @@ function Page() {
               <button
                 type="button"
                 onClick={() => transitionMutation.mutate(pendingAction)}
-                disabled={
-                  transitionMutation.isPending ||
-                  (pendingAction === "reject" && !rejectReason.trim())
-                }
+                disabled={transitionMutation.isPending}
                 className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {transitionMutation.isPending ? "Enviando..." : "Confirmar"}
@@ -422,14 +353,11 @@ function inferStatusFromEvents(events?: AuditEventResponse[]): SimulationVersion
   if (!events?.length) return null;
   const eventTypes = events.map((event) => event.eventType);
   if (eventTypes.includes("simulationVersionPublished")) return "published";
-  if (eventTypes.includes("simulationVersionApproved")) return "approved";
-  if (eventTypes.includes("simulationVersionRejected")) return "rejected";
-  if (eventTypes.includes("simulationVersionSubmittedForReview")) return "inReview";
   return "draft";
 }
 
-function stateTone(status: SimulationVersionStatus, current: SimulationVersionStatus) {
-  const order: SimulationVersionStatus[] = ["draft", "inReview", "approved", "published"];
+function stateTone(status: string, current: SimulationVersionStatus) {
+  const order = ["draft", "published"];
   const statusIndex = order.indexOf(status);
   const currentIndex = order.indexOf(current);
   if (status === current) return "current";
@@ -438,11 +366,8 @@ function stateTone(status: SimulationVersionStatus, current: SimulationVersionSt
 }
 
 function statusLabel(status: SimulationVersionStatus) {
-  const labels: Record<SimulationVersionStatus, string> = {
+  const labels: Record<string, string> = {
     draft: "rascunho",
-    inReview: "em revisão",
-    approved: "aprovada",
-    rejected: "reprovada",
     published: "no ar",
     archived: "arquivada",
   };

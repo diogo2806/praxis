@@ -16,6 +16,8 @@ public record RegistrarRespostaResponse(
         @Schema(example = "true")
         boolean finalizado,
 
+        ParticipacaoResponse.ProgressoResponse progresso,
+
         EtapaAtualResponse etapaAtual
 ) {
 }

@@ -43,7 +43,6 @@ class CandidateAttemptSecurityEnabledTest {
                                   "test_id": "sim-atendimento-caos",
                                   "name": "Thiago Souza",
                                   "email": "thiago@example.com",
-                                  "callback_url": "https://cliente.gupy.io/callback",
                                   "result_webhook_url": "https://cliente.gupy.io/result-webhook",
                                   "candidate_type": "external",
                                   "previous_result": "none"
@@ -74,7 +73,6 @@ class CandidateAttemptSecurityEnabledTest {
                                   "test_id": "sim-atendimento-caos",
                                   "name": "Thiago Souza",
                                   "email": "thiago@example.com",
-                                  "callback_url": "https://cliente.gupy.io/callback",
                                   "result_webhook_url": "https://cliente.gupy.io/result-webhook",
                                   "candidate_type": "external",
                                   "previous_result": "none"

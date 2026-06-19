@@ -2,9 +2,6 @@ import type { SimulationVersionStatus } from "@/lib/api/praxis";
 
 export type Maturity =
   | "Rascunho"
-  | "Em revisão"
-  | "Aprovada"
-  | "Reprovada"
   | "Pronta para uso"
   | "Arquivada";
 
@@ -13,9 +10,6 @@ export const statusMeta: Record<
   { label: string; tone: "muted" | "warn" | "info" | "ok" | "danger" }
 > = {
   draft: { label: "Rascunho", tone: "muted" },
-  inReview: { label: "Em revisão", tone: "warn" },
-  approved: { label: "Aprovada", tone: "info" },
-  rejected: { label: "Reprovada", tone: "danger" },
   published: { label: "No ar", tone: "ok" },
   archived: { label: "Arquivada", tone: "muted" },
 };
@@ -46,9 +40,6 @@ export type LegacyWizardSlug = keyof typeof legacyWizardStepMap;
 export function maturityForStatus(status: SimulationVersionStatus): Maturity {
   const maturity: Record<SimulationVersionStatus, Maturity> = {
     draft: "Rascunho",
-    inReview: "Em revisão",
-    approved: "Aprovada",
-    rejected: "Reprovada",
     published: "Pronta para uso",
     archived: "Arquivada",
   };
@@ -56,5 +47,5 @@ export function maturityForStatus(status: SimulationVersionStatus): Maturity {
 }
 
 export function canEditSimulationVersion(status: SimulationVersionStatus) {
-  return status === "draft" || status === "rejected";
+  return status === "draft";
 }

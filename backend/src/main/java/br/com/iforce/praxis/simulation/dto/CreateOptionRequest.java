@@ -30,6 +30,14 @@ public record CreateOptionRequest(
         @Size(max = 1000)
         String resultingTone,
 
+        @Size(max = 1500)
+        @Schema(description = "Texto simplificado para leitores de tela.", nullable = true)
+        String plainTextDescription,
+
+        @Size(max = 1000)
+        @Schema(description = "URL publica de audio descritivo da alternativa.", nullable = true)
+        String audioDescriptionUrl,
+
         @Size(max = 1000)
         @Schema(description = "URL pública da imagem ou áudio anexado à alternativa.", nullable = true)
         String mediaUrl,

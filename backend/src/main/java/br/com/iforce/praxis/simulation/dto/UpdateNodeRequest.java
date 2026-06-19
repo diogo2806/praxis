@@ -14,6 +14,14 @@ public record UpdateNodeRequest(
         @Size(max = 1000)
         String timeJustification,
 
+        @Size(max = 1500)
+        @Schema(description = "Texto simplificado para leitores de tela. Envie string vazia para remover.", nullable = true)
+        String plainTextDescription,
+
+        @Size(max = 1000)
+        @Schema(description = "URL publica de audio descritivo do turno. Envie string vazia para remover.", nullable = true)
+        String audioDescriptionUrl,
+
         @Size(max = 1000)
         @Schema(description = "URL pública da mídia. Envie string vazia para remover a mídia.", nullable = true)
         String mediaUrl,

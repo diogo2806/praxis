@@ -3,6 +3,7 @@ package br.com.iforce.praxis.gupy.service;
 import br.com.iforce.praxis.config.PraxisProperties;
 import br.com.iforce.praxis.gupy.model.AttemptAnswer;
 import br.com.iforce.praxis.gupy.model.PublishedSimulation;
+import br.com.iforce.praxis.gupy.model.ReliabilityLevel;
 import br.com.iforce.praxis.gupy.model.ResultDecision;
 import br.com.iforce.praxis.gupy.model.ResultItem;
 import br.com.iforce.praxis.gupy.model.ScenarioNode;
@@ -125,6 +126,42 @@ class ResultScoringServiceTest {
         assertThat(result.score()).isEqualTo(50);
         assertThat(result.humanReviewRequired()).isFalse();
         assertThat(result.auditTrail()).contains("timeout");
+    }
+
+    @Test
+    void test7_fastHighScoringCriticalAnswerIsLowReliability() {
+        PublishedSimulation simulation = singleNodeSimulation(
+                List.of("Empatia"),
+                Map.of("Empatia", 1.0),
+                option("opcao-alta", null, Map.of("Empatia", 100), true),
+                option("opcao-baixa", null, Map.of("Empatia", 20), false)
+        );
+
+        ScoreCalculationResult result = resultScoringService.calculate(
+                simulation,
+                Map.of("turno-1", AttemptAnswer.answered("turno-1", "opcao-alta", T0.plusMillis(500))),
+                T0
+        );
+
+        assertThat(result.reliabilityLevel()).isEqualTo(ReliabilityLevel.LOW_RELIABILITY);
+    }
+
+    @Test
+    void test8_highScoringCriticalAnswerKeepsNormalReliabilityWhenTimeIsPlausible() {
+        PublishedSimulation simulation = singleNodeSimulation(
+                List.of("Empatia"),
+                Map.of("Empatia", 1.0),
+                option("opcao-alta", null, Map.of("Empatia", 100), true),
+                option("opcao-baixa", null, Map.of("Empatia", 20), false)
+        );
+
+        ScoreCalculationResult result = resultScoringService.calculate(
+                simulation,
+                Map.of("turno-1", AttemptAnswer.answered("turno-1", "opcao-alta", T0.plusSeconds(2))),
+                T0
+        );
+
+        assertThat(result.reliabilityLevel()).isEqualTo(ReliabilityLevel.NORMAL);
     }
 
     private Map<String, AttemptAnswer> bestChoices(int turns) {

@@ -6,6 +6,7 @@ import br.com.iforce.praxis.gupy.dto.TestResultResponse;
 import br.com.iforce.praxis.gupy.model.AttemptStatus;
 import br.com.iforce.praxis.gupy.model.CandidateAttempt;
 import br.com.iforce.praxis.gupy.model.PublishedSimulation;
+import br.com.iforce.praxis.gupy.model.ReliabilityLevel;
 import br.com.iforce.praxis.gupy.model.ResultItem;
 import br.com.iforce.praxis.gupy.persistence.entity.CandidateAttemptEntity;
 import br.com.iforce.praxis.gupy.persistence.entity.ResultItemEntity;
@@ -40,6 +41,7 @@ public class GupyTestResultMapper {
                 toGupyStatus(attempt.status()),
                 resultPageUrl(attempt.resultId(), attempt.companyId()),
                 candidatePageUrl(attempt.id()),
+                attempt.reliabilityLevel() == null ? ReliabilityLevel.NORMAL : attempt.reliabilityLevel(),
                 attempt.results().stream()
                         .sorted(Comparator.comparing(ResultItem::name))
                         .map(resultItem -> toItemResponse(
@@ -63,6 +65,7 @@ public class GupyTestResultMapper {
                 toGupyStatus(attempt.getStatus()),
                 resultPageUrl(attempt.getResultId(), attempt.getCompanyId()),
                 candidatePageUrl(attempt.getId()),
+                attempt.getReliabilityLevel() == null ? ReliabilityLevel.NORMAL : attempt.getReliabilityLevel(),
                 attempt.getResultItems().stream()
                         .sorted(Comparator.comparing(ResultItemEntity::getName))
                         .map(resultItem -> toItemResponse(

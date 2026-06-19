@@ -8,18 +8,18 @@ import br.com.iforce.praxis.simulation.dto.CreateSimulationDraftRequest;
 import br.com.iforce.praxis.simulation.dto.CreateSimulationRequest;
 import br.com.iforce.praxis.simulation.dto.GupyPreflightResponse;
 import br.com.iforce.praxis.simulation.dto.PublishSimulationResponse;
-import br.com.iforce.praxis.simulation.dto.RejectSimulationVersionRequest;
 import br.com.iforce.praxis.simulation.dto.SimulationMonitoringResponse;
 import br.com.iforce.praxis.simulation.dto.SimulationSummaryResponse;
 import br.com.iforce.praxis.simulation.dto.SimulationValidationResponse;
 import br.com.iforce.praxis.simulation.dto.SimulationVersionDetailResponse;
-import br.com.iforce.praxis.simulation.dto.SimulationVersionStatusResponse;
+import br.com.iforce.praxis.simulation.dto.TalentMatchResponse;
 import br.com.iforce.praxis.simulation.dto.UpdateBlueprintRequest;
 import br.com.iforce.praxis.simulation.dto.UpdateNodeRequest;
 import br.com.iforce.praxis.simulation.dto.UpdateOptionRequest;
 import br.com.iforce.praxis.simulation.service.GupyPreflightService;
 import br.com.iforce.praxis.simulation.service.SimulationAdminService;
 import br.com.iforce.praxis.simulation.service.SimulationMonitoringService;
+import br.com.iforce.praxis.simulation.service.TalentMatchService;
 import jakarta.validation.Valid;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -37,6 +37,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
@@ -60,15 +61,18 @@ public class SimulationAdminController {
     private final SimulationAdminService simulationAdminService;
     private final SimulationMonitoringService simulationMonitoringService;
     private final GupyPreflightService gupyPreflightService;
+    private final TalentMatchService talentMatchService;
 
     public SimulationAdminController(
             SimulationAdminService simulationAdminService,
             SimulationMonitoringService simulationMonitoringService,
-            GupyPreflightService gupyPreflightService
+            GupyPreflightService gupyPreflightService,
+            TalentMatchService talentMatchService
     ) {
         this.simulationAdminService = simulationAdminService;
         this.simulationMonitoringService = simulationMonitoringService;
         this.gupyPreflightService = gupyPreflightService;
+        this.talentMatchService = talentMatchService;
     }
 
     @GetMapping
@@ -256,60 +260,6 @@ public class SimulationAdminController {
         return ResponseEntity.ok(simulationAdminService.clonePublishedVersionToDraft(simulationId, versionNumber));
     }
 
-    @PostMapping("/{simulationId}/versions/{versionNumber}/submit-review")
-    @Operation(
-            summary = "Envia versao para revisao",
-            description = "Move uma versao em rascunho ou reprovada para revisao quando o validador nao possui blockers."
-    )
-    @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Versao enviada para revisao."),
-            @ApiResponse(responseCode = "400", description = "Parametro invalido.", content = @Content(examples = @ExampleObject(value = ERROR_EXAMPLE))),
-            @ApiResponse(responseCode = "403", description = "Acesso negado.", content = @Content(examples = @ExampleObject(value = ERROR_EXAMPLE))),
-            @ApiResponse(responseCode = "409", description = "Revisao bloqueada.", content = @Content(examples = @ExampleObject(value = ERROR_EXAMPLE)))
-    })
-    public ResponseEntity<SimulationVersionStatusResponse> submitVersionForReview(
-            @PathVariable String simulationId,
-            @PathVariable int versionNumber
-    ) {
-        return ResponseEntity.ok(simulationAdminService.submitVersionForReview(simulationId, versionNumber));
-    }
-
-    @PostMapping("/{simulationId}/versions/{versionNumber}/approve")
-    @Operation(
-            summary = "Aprova versao revisada",
-            description = "Move uma versao em revisao para aprovada, liberando a publicacao."
-    )
-    @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Versao aprovada."),
-            @ApiResponse(responseCode = "400", description = "Parametro invalido.", content = @Content(examples = @ExampleObject(value = ERROR_EXAMPLE))),
-            @ApiResponse(responseCode = "403", description = "Acesso negado.", content = @Content(examples = @ExampleObject(value = ERROR_EXAMPLE))),
-            @ApiResponse(responseCode = "409", description = "Versao nao pode ser aprovada neste estado.", content = @Content(examples = @ExampleObject(value = ERROR_EXAMPLE)))
-    })
-    public ResponseEntity<SimulationVersionStatusResponse> approveVersion(
-            @PathVariable String simulationId,
-            @PathVariable int versionNumber
-    ) {
-        return ResponseEntity.ok(simulationAdminService.approveVersion(simulationId, versionNumber));
-    }
-
-    @PostMapping("/{simulationId}/versions/{versionNumber}/reject")
-    @Operation(
-            summary = "Reprova versao revisada",
-            description = "Move uma versao em revisao para reprovada com justificativa obrigatoria."
-    )
-    @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Versao reprovada."),
-            @ApiResponse(responseCode = "400", description = "Payload invalido.", content = @Content(examples = @ExampleObject(value = ERROR_EXAMPLE))),
-            @ApiResponse(responseCode = "403", description = "Acesso negado.", content = @Content(examples = @ExampleObject(value = ERROR_EXAMPLE))),
-            @ApiResponse(responseCode = "409", description = "Versao nao pode ser reprovada neste estado.", content = @Content(examples = @ExampleObject(value = ERROR_EXAMPLE)))
-    })
-    public ResponseEntity<SimulationVersionStatusResponse> rejectVersion(
-            @PathVariable String simulationId,
-            @PathVariable int versionNumber,
-            @Valid @RequestBody RejectSimulationVersionRequest request
-    ) {
-        return ResponseEntity.ok(simulationAdminService.rejectVersion(simulationId, versionNumber, request.reason()));
-    }
 
     @PostMapping("/{simulationId}/versions/{versionNumber}/publish")
     @Operation(
@@ -381,6 +331,25 @@ public class SimulationAdminController {
             @PathVariable int versionNumber
     ) {
         return ResponseEntity.ok(simulationMonitoringService.getMonitoring(simulationId, versionNumber));
+    }
+
+    @GetMapping("/{simulationId}/versions/{versionNumber}/talent-match")
+    @Operation(
+            summary = "Compara candidatos contra benchmark",
+            description = "Retorna benchmark da vaga e resultados por competencia de ate 5 tentativas da mesma versao."
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Comparativo retornado."),
+            @ApiResponse(responseCode = "400", description = "Parametros invalidos.", content = @Content(examples = @ExampleObject(value = ERROR_EXAMPLE))),
+            @ApiResponse(responseCode = "403", description = "Tentativa fora do tenant autenticado.", content = @Content(examples = @ExampleObject(value = ERROR_EXAMPLE))),
+            @ApiResponse(responseCode = "404", description = "Versao ou tentativa nao encontrada.", content = @Content(examples = @ExampleObject(value = ERROR_EXAMPLE)))
+    })
+    public ResponseEntity<TalentMatchResponse> getTalentMatch(
+            @PathVariable String simulationId,
+            @PathVariable int versionNumber,
+            @RequestParam List<String> attemptIds
+    ) {
+        return ResponseEntity.ok(talentMatchService.getTalentMatch(simulationId, versionNumber, attemptIds));
     }
 
     @DeleteMapping("/{simulationId}")

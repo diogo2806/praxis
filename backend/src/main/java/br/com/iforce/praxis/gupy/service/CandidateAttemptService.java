@@ -6,11 +6,11 @@ import br.com.iforce.praxis.candidate.dto.CandidateLinkResponse;
 import br.com.iforce.praxis.candidate.dto.CreateCandidateLinkRequest;
 import br.com.iforce.praxis.candidate.dto.CreateCandidateLinkResponse;
 import br.com.iforce.praxis.candidate.dto.ParticipacaoResponse;
+import br.com.iforce.praxis.candidate.dto.ParticipacaoResponse.ProgressoResponse;
 import br.com.iforce.praxis.candidate.dto.RegistrarRespostaRequest;
 import br.com.iforce.praxis.candidate.dto.RegistrarRespostaResponse;
 import br.com.iforce.praxis.config.PraxisProperties;
 import br.com.iforce.praxis.auth.service.JwtService;
-import br.com.iforce.praxis.gupy.delivery.service.GupyCompletionCallbackService;
 import br.com.iforce.praxis.gupy.dto.CreateCandidateRequest;
 import br.com.iforce.praxis.gupy.dto.CreateCandidateResponse;
 import br.com.iforce.praxis.gupy.dto.TestResultResponse;
@@ -18,6 +18,7 @@ import br.com.iforce.praxis.gupy.model.AttemptAnswer;
 import br.com.iforce.praxis.gupy.model.AttemptStatus;
 import br.com.iforce.praxis.gupy.model.CandidateAttempt;
 import br.com.iforce.praxis.gupy.model.PublishedSimulation;
+import br.com.iforce.praxis.gupy.model.ReliabilityLevel;
 import br.com.iforce.praxis.gupy.model.ResultDecision;
 import br.com.iforce.praxis.gupy.model.ResultItem;
 import br.com.iforce.praxis.gupy.model.ResultTier;
@@ -34,11 +35,14 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.math.BigDecimal;
 import java.time.Instant;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 
 /**
@@ -52,7 +56,6 @@ public class CandidateAttemptService {
 
     private final CandidateAttemptRepository candidateAttemptRepository;
     private final AuditEventService auditEventService;
-    private final GupyCompletionCallbackService gupyCompletionCallbackService;
     private final OutboxService outboxService;
     private final JwtService jwtService;
     private final PraxisProperties praxisProperties;
@@ -64,7 +67,6 @@ public class CandidateAttemptService {
     public CandidateAttemptService(
             CandidateAttemptRepository candidateAttemptRepository,
             AuditEventService auditEventService,
-            GupyCompletionCallbackService gupyCompletionCallbackService,
             OutboxService outboxService,
             JwtService jwtService,
             PraxisProperties praxisProperties,
@@ -75,7 +77,6 @@ public class CandidateAttemptService {
     ) {
         this.candidateAttemptRepository = candidateAttemptRepository;
         this.auditEventService = auditEventService;
-        this.gupyCompletionCallbackService = gupyCompletionCallbackService;
         this.outboxService = outboxService;
         this.jwtService = jwtService;
         this.praxisProperties = praxisProperties;
@@ -139,6 +140,8 @@ public class CandidateAttemptService {
                             Map.of(),
                             ResultDecision.IN_PROGRESS,
                             false,
+                            ReliabilityLevel.NORMAL,
+                            normalizeAccommodationMultiplier(request.accommodationTimeMultiplier()),
                             "Resultado ainda nao finalizado.",
                             Instant.now(),
                             null,
@@ -247,7 +250,9 @@ public class CandidateAttemptService {
                 simulation.name(),
                 publicStatus(savedAttempt.status()),
                 savedAttempt.status() == AttemptStatus.COMPLETED,
-                candidateAttemptMapper.toEtapaAtualResponse(currentNode)
+                suggestedFrontendAction(savedAttempt.status()),
+                progressFor(savedAttempt, simulation, currentNode),
+                candidateAttemptMapper.toEtapaAtualResponse(currentNode, savedAttempt.accommodationTimeMultiplier())
         );
     }
 
@@ -289,7 +294,6 @@ public class CandidateAttemptService {
         CandidateAttempt savedAttempt = persist(updatedAttempt, candidateAttemptEntity);
         auditAnswerSubmission(candidateAttemptEntity.getTenantId(), candidateAttemptEntity.getId(), answer, savedAttempt);
         if (savedAttempt.status() == AttemptStatus.COMPLETED) {
-            gupyCompletionCallbackService.notifyCompletionIfNeeded(candidateAttemptEntity);
             publishResultReadyEvent(candidateAttemptEntity);
         }
 
@@ -302,7 +306,8 @@ public class CandidateAttemptService {
                 publicStatus(savedAttempt.status()),
                 false,
                 savedAttempt.status() == AttemptStatus.COMPLETED,
-                candidateAttemptMapper.toEtapaAtualResponse(nextNode)
+                progressFor(savedAttempt, simulation, nextNode),
+                candidateAttemptMapper.toEtapaAtualResponse(nextNode, savedAttempt.accommodationTimeMultiplier())
         );
     }
 
@@ -369,8 +374,42 @@ public class CandidateAttemptService {
                 publicStatus(attempt.status()),
                 true,
                 attempt.status() == AttemptStatus.COMPLETED,
-                candidateAttemptMapper.toEtapaAtualResponse(currentNode)
+                progressFor(attempt, simulation, currentNode),
+                candidateAttemptMapper.toEtapaAtualResponse(currentNode, attempt.accommodationTimeMultiplier())
         ));
+    }
+
+    private ProgressoResponse progressFor(
+            CandidateAttempt attempt,
+            PublishedSimulation simulation,
+            ScenarioNode currentNode
+    ) {
+        int answeredSteps = attempt.answersByNodeId().size();
+        int remainingSteps = currentNode == null ? 0 : maxRemainingDepth(simulation, currentNode.id(), new HashSet<>());
+        int estimatedSteps = Math.max(1, answeredSteps + remainingSteps);
+        int currentStep = currentNode == null ? estimatedSteps : Math.min(estimatedSteps, answeredSteps + 1);
+        int percent = currentNode == null
+                ? 100
+                : Math.min(100, Math.max(1, Math.round((currentStep * 100f) / estimatedSteps)));
+
+        return new ProgressoResponse(currentStep, estimatedSteps, percent);
+    }
+
+    private int maxRemainingDepth(PublishedSimulation simulation, String nodeId, Set<String> visitedNodeIds) {
+        if (nodeId == null || !visitedNodeIds.add(nodeId)) {
+            return 0;
+        }
+
+        ScenarioNode node = simulationCatalogService.findNode(simulation, nodeId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Grafo da simulacao invalido."));
+
+        int maxChildDepth = node.options().stream()
+                .map(ScenarioOption::nextNodeId)
+                .mapToInt(nextNodeId -> maxRemainingDepth(simulation, nextNodeId, new HashSet<>(visitedNodeIds)))
+                .max()
+                .orElse(0);
+
+        return 1 + maxChildDepth;
     }
 
     private Optional<ScenarioNode> resolveRequestNode(
@@ -541,5 +580,23 @@ public class CandidateAttemptService {
             case EXPIRED -> "expirada";
             case FAILED -> "falhou";
         };
+    }
+
+    private String suggestedFrontendAction(AttemptStatus status) {
+        return switch (status) {
+            case NOT_STARTED -> "INICIAR";
+            case IN_PROGRESS, PAUSED -> "CONTINUAR_TESTE";
+            case COMPLETED, ABANDONED, EXPIRED, FAILED -> "VER_RESULTADOS";
+        };
+    }
+
+    private BigDecimal normalizeAccommodationMultiplier(BigDecimal value) {
+        if (value == null || value.compareTo(BigDecimal.ONE) < 0) {
+            return BigDecimal.ONE;
+        }
+        if (value.compareTo(BigDecimal.valueOf(9.99)) > 0) {
+            return BigDecimal.valueOf(9.99);
+        }
+        return value;
     }
 }

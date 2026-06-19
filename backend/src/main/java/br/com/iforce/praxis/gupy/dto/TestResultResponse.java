@@ -1,5 +1,6 @@
 package br.com.iforce.praxis.gupy.dto;
 
+import br.com.iforce.praxis.gupy.model.ReliabilityLevel;
 import io.swagger.v3.oas.annotations.media.Schema;
 
 import java.util.List;
@@ -15,6 +16,7 @@ public record TestResultResponse(
         String status,                       // "done"
         String result_page_url,
         String result_candidate_page_url,
+        ReliabilityLevel reliabilityLevel,
         List<TestResultItemResponse> results
 ) {
 }

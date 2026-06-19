@@ -16,8 +16,17 @@ public record EtapaAtualResponse(
         @Schema(example = "Preciso de ajuda com este atendimento.")
         String descricao,
 
+        @Schema(description = "Texto alternativo simplificado para leitores de tela.", nullable = true)
+        String descricaoAcessivel,
+
         @Schema(example = "45", nullable = true)
         Integer tempoLimiteSegundos,
+
+        @Schema(description = "Tempo permitido considerando acomodacoes de acessibilidade.", example = "90", nullable = true)
+        Integer tempoLimiteSegundosAcomodado,
+
+        @Schema(description = "URL publica de audio descritivo da situacao.", nullable = true)
+        String audioDescricaoUrl,
 
         @Schema(description = "URL publica da imagem ou audio da situacao.", nullable = true)
         String midiaUrl,

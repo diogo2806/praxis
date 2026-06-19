@@ -19,8 +19,14 @@ public record CandidateNodeResponse(
         @Schema(example = "Preciso de ajuda com este atendimento.")
         String message,
 
+        @Schema(description = "Texto alternativo simplificado para leitores de tela.", nullable = true)
+        String plainTextDescription,
+
         @Schema(example = "45", nullable = true)
         Integer timeLimitSeconds,
+
+        @Schema(description = "URL publica de audio descritivo do turno.", nullable = true)
+        String audioDescriptionUrl,
 
         @Schema(description = "URL pública da imagem ou áudio do turno.", nullable = true)
         String mediaUrl,

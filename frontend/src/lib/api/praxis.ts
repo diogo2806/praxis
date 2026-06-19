@@ -31,6 +31,8 @@ export interface MediaUploadResponse {
 export interface CandidateOptionResponse {
   id: string;
   texto: string;
+  descricaoAcessivel?: string | null;
+  audioDescricaoUrl?: string | null;
   mediaUrl?: string | null;
   tipoMidia?: MediaType | null;
 }
@@ -39,10 +41,19 @@ export interface CandidateNodeResponse {
   numero: number;
   pessoa: string;
   descricao: string;
+  descricaoAcessivel?: string | null;
   tempoLimiteSegundos: number | null;
+  tempoLimiteSegundosAcomodado?: number | null;
+  audioDescricaoUrl?: string | null;
   midiaUrl?: string | null;
   tipoMidia?: MediaType | null;
   alternativas: CandidateOptionResponse[];
+}
+
+export interface CandidateProgressResponse {
+  passoAtual: number;
+  passosEstimados: number;
+  percentual: number;
 }
 
 export interface CandidateAttemptResponse {
@@ -50,6 +61,8 @@ export interface CandidateAttemptResponse {
   avaliacaoNome: string;
   status: ParticipacaoStatus;
   finalizado: boolean;
+  acaoSugeridaFrontend?: "INICIAR" | "CONTINUAR_TESTE" | "VER_RESULTADOS";
+  progresso: CandidateProgressResponse;
   etapaAtual: CandidateNodeResponse | null;
 }
 
@@ -64,6 +77,7 @@ export interface SubmitAnswerResponse {
   status: ParticipacaoStatus;
   repetida: boolean;
   finalizado: boolean;
+  progresso: CandidateProgressResponse;
   etapaAtual: CandidateNodeResponse | null;
 }
 
@@ -131,6 +145,7 @@ export interface CreateSimulationDraftRequest {
 export interface UpdateBlueprintCompetencyRequest {
   name: string;
   weight: number;
+  targetScore?: number | null;
 }
 
 export interface UpdateBlueprintRequest {
@@ -147,6 +162,8 @@ export interface SimulationVersionOptionResponse {
   isCritical: boolean;
   nextNodeId: string | null;
   auditNote: string;
+  plainTextDescription?: string | null;
+  audioDescriptionUrl?: string | null;
   mediaUrl: string | null;
   mediaType: MediaType | null;
 }
@@ -157,6 +174,8 @@ export interface SimulationVersionNodeResponse {
   speaker: string;
   clientMessage: string;
   timeLimitSeconds: number | null;
+  plainTextDescription?: string | null;
+  audioDescriptionUrl?: string | null;
   mediaUrl: string | null;
   mediaType: MediaType | null;
   options: SimulationVersionOptionResponse[];
@@ -181,6 +200,8 @@ export interface CreateNodeRequest {
   clientMessage: string;
   timeLimitSeconds?: number | null;
   timeJustification?: string | null;
+  plainTextDescription?: string | null;
+  audioDescriptionUrl?: string | null;
   mediaUrl?: string | null;
   mediaType?: MediaType | null;
 }
@@ -189,6 +210,8 @@ export interface UpdateNodeRequest {
   clientMessage?: string;
   timeLimitSeconds?: number | null;
   timeJustification?: string | null;
+  plainTextDescription?: string | null;
+  audioDescriptionUrl?: string | null;
   mediaUrl?: string | null;
   mediaType?: MediaType | null;
 }
@@ -200,6 +223,8 @@ export interface CreateOptionRequest {
   isCritical: boolean;
   nextNodeId?: string | null;
   resultingTone?: string | null;
+  plainTextDescription?: string | null;
+  audioDescriptionUrl?: string | null;
   mediaUrl?: string | null;
   mediaType?: MediaType | null;
 }
@@ -211,6 +236,8 @@ export interface UpdateOptionRequest {
   isCritical?: boolean;
   nextNodeId?: string | null;
   resultingTone?: string | null;
+  plainTextDescription?: string | null;
+  audioDescriptionUrl?: string | null;
   mediaUrl?: string | null;
   mediaType?: MediaType | null;
 }
@@ -231,13 +258,7 @@ export interface ResultDeliveryResponse {
   createdAt: string;
 }
 
-export type SimulationVersionStatus =
-  | "draft"
-  | "inReview"
-  | "approved"
-  | "rejected"
-  | "published"
-  | "archived";
+export type SimulationVersionStatus = "draft" | "published" | "archived";
 
 export type AuditEventType =
   | "attemptCreated"
@@ -248,9 +269,6 @@ export type AuditEventType =
   | "attemptCompleted"
   | "simulationVersionDraftCreated"
   | "simulationVersionBlueprintUpdated"
-  | "simulationVersionSubmittedForReview"
-  | "simulationVersionApproved"
-  | "simulationVersionRejected"
   | "simulationVersionCloned"
   | "simulationVersionPublished"
   | "simulationNodeAdded"
@@ -272,12 +290,6 @@ export interface AuditEventResponse {
   createdAt: string;
 }
 
-export interface SimulationVersionStatusResponse {
-  simulationId: string;
-  versionNumber: number;
-  status: SimulationVersionStatus;
-  publishedAt: string | null;
-}
 
 export interface CloneSimulationVersionResponse {
   simulationId: string;
@@ -647,33 +659,6 @@ export function cloneSimulationVersionToDraft(simulationId: string, versionNumbe
   );
 }
 
-export function submitSimulationVersionForReview(simulationId: string, versionNumber: number) {
-  return request<SimulationVersionStatusResponse>(
-    `/api/v1/simulations/${encodeURIComponent(simulationId)}/versions/${versionNumber}/submit-review`,
-    { method: "POST" },
-  );
-}
-
-export function approveSimulationVersion(simulationId: string, versionNumber: number) {
-  return request<SimulationVersionStatusResponse>(
-    `/api/v1/simulations/${encodeURIComponent(simulationId)}/versions/${versionNumber}/approve`,
-    { method: "POST" },
-  );
-}
-
-export function rejectSimulationVersion(
-  simulationId: string,
-  versionNumber: number,
-  reason: string,
-) {
-  return request<SimulationVersionStatusResponse>(
-    `/api/v1/simulations/${encodeURIComponent(simulationId)}/versions/${versionNumber}/reject`,
-    {
-      method: "POST",
-      body: JSON.stringify({ reason }),
-    },
-  );
-}
 
 export function publishSimulationVersion(simulationId: string, versionNumber: number) {
   return request<PublishSimulationResponse>(
@@ -703,6 +688,7 @@ export interface CreateCandidateLinkRequest {
   simulationId: string;
   candidateName: string;
   candidateEmail: string;
+  accommodationTimeMultiplier?: number | null;
 }
 
 export interface CreateCandidateLinkResponse {
@@ -722,6 +708,30 @@ export interface CandidateLinkResponse {
   createdAt: string;
 }
 
+export interface CompetencyBenchmarkDto {
+  competencyName: string;
+  targetScore: number;
+}
+
+export interface CompetencyScoreDto {
+  competencyName: string;
+  score: number;
+}
+
+export interface CandidateRadarDto {
+  attemptId: string;
+  candidateName: string;
+  generalScore: number;
+  competencies: CompetencyScoreDto[];
+}
+
+export interface TalentMatchResponse {
+  simulationId: string;
+  versionNumber: number;
+  benchmark: CompetencyBenchmarkDto[];
+  candidates: CandidateRadarDto[];
+}
+
 export function listCandidateLinks() {
   return request<CandidateLinkResponse[]>("/api/v1/candidate-links");
 }
@@ -731,4 +741,17 @@ export function createCandidateLink(body: CreateCandidateLinkRequest) {
     method: "POST",
     body: JSON.stringify(body),
   });
+}
+
+export function getTalentMatch(
+  simulationId: string,
+  versionNumber: number,
+  attemptIds: string[],
+) {
+  const searchParams = new URLSearchParams();
+  searchParams.set("attemptIds", attemptIds.join(","));
+
+  return request<TalentMatchResponse>(
+    `/api/v1/simulations/${encodeURIComponent(simulationId)}/versions/${versionNumber}/talent-match?${searchParams.toString()}`,
+  );
 }

@@ -14,6 +14,7 @@ import {
   Settings,
   ShieldCheck,
   Sparkles,
+  Target,
   UserRound,
 } from "lucide-react";
 import { GlobalErrorFlow, GlobalProductStateBar, StateBanner } from "@/components/praxis-ui";
@@ -48,6 +49,12 @@ const getNav = (t: TranslationMap) =>
       label: t.common.monitoring,
       icon: BarChart3,
       desc: t.descriptions.monitoring,
+    },
+    {
+      to: "/talent-match",
+      label: "Talent Match",
+      icon: Target,
+      desc: "Comparar candidatos",
     },
     { to: "/enviar-link", label: t.common.sendLink, icon: Link2, desc: t.descriptions.sendLink },
     {

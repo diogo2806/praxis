@@ -1,0 +1,2 @@
+ALTER TABLE candidate_attempts
+    ADD COLUMN IF NOT EXISTS reliability_level VARCHAR(40) NOT NULL DEFAULT 'NORMAL';

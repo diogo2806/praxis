@@ -56,6 +56,12 @@ public class SimulationNodeEntity {
     @Column(name = "time_limit_seconds")
     private Integer timeLimitSeconds;
 
+    @Column(name = "plain_text_description", length = 1500)
+    private String plainTextDescription;
+
+    @Column(name = "audio_description_url", length = 1000)
+    private String audioDescriptionUrl;
+
     @Column(name = "media_url", length = 1000)
     private String mediaUrl;
 

@@ -16,6 +16,23 @@ public record ParticipacaoResponse(
         @Schema(example = "false")
         boolean finalizado,
 
+        @Schema(example = "CONTINUAR_TESTE", allowableValues = {"INICIAR", "CONTINUAR_TESTE", "VER_RESULTADOS"})
+        String acaoSugeridaFrontend,
+
+        ProgressoResponse progresso,
+
         EtapaAtualResponse etapaAtual
 ) {
+    @Schema(description = "Resumo narrativo do progresso do candidato, sem expor gabarito ou proximas escolhas.")
+    public record ProgressoResponse(
+            @Schema(example = "2")
+            int passoAtual,
+
+            @Schema(example = "5")
+            int passosEstimados,
+
+            @Schema(example = "40")
+            int percentual
+    ) {
+    }
 }

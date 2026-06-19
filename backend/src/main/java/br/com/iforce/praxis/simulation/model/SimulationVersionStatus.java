@@ -8,9 +8,6 @@ import com.fasterxml.jackson.annotation.JsonValue;
 public enum SimulationVersionStatus implements DescribedEnum {
 
     DRAFT("draft"),
-    IN_REVIEW("inReview"),
-    APPROVED("approved"),
-    REJECTED("rejected"),
     PUBLISHED("published"),
     ARCHIVED("archived");
 

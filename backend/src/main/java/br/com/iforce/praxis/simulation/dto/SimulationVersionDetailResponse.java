@@ -29,6 +29,8 @@ public record SimulationVersionDetailResponse(
             String speaker,
             String clientMessage,
             Integer timeLimitSeconds,
+            String plainTextDescription,
+            String audioDescriptionUrl,
             String mediaUrl,
             MediaType mediaType,
             List<OptionDto> options
@@ -42,6 +44,8 @@ public record SimulationVersionDetailResponse(
             boolean isCritical,
             String nextNodeId,
             String auditNote,
+            String plainTextDescription,
+            String audioDescriptionUrl,
             String mediaUrl,
             MediaType mediaType
     ) {

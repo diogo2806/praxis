@@ -33,6 +33,9 @@ public record ResultPayload(
     @JsonProperty("human_review_required")
     boolean humanReviewRequired,
 
+    @JsonProperty("reliability_level")
+    String reliabilityLevel,
+
     @JsonProperty("explanation")
     String explanation
 ) {

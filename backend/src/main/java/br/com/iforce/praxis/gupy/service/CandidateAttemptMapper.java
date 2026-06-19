@@ -9,6 +9,7 @@ import br.com.iforce.praxis.gupy.model.AttemptAnswer;
 import br.com.iforce.praxis.gupy.model.AttemptStatus;
 import br.com.iforce.praxis.gupy.model.CandidateAttempt;
 import br.com.iforce.praxis.gupy.model.PublishedSimulation;
+import br.com.iforce.praxis.gupy.model.ReliabilityLevel;
 import br.com.iforce.praxis.gupy.model.ResultDecision;
 import br.com.iforce.praxis.gupy.model.ResultItem;
 import br.com.iforce.praxis.gupy.model.ResultTier;
@@ -18,6 +19,8 @@ import br.com.iforce.praxis.gupy.persistence.entity.CandidateAttemptEntity;
 import br.com.iforce.praxis.gupy.persistence.entity.ResultItemEntity;
 import org.springframework.stereotype.Component;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.Instant;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
@@ -56,6 +59,8 @@ public class CandidateAttemptMapper {
                 Map.of(),
                 ResultDecision.IN_PROGRESS,
                 false,
+                ReliabilityLevel.NORMAL,
+                normalizeAccommodationMultiplier(request.accommodationTimeMultiplier()),
                 "Resultado ainda nao finalizado. A trilha auditavel sera preenchida apos a conclusao da simulacao.",
                 Instant.now(),
                 null,
@@ -64,7 +69,6 @@ public class CandidateAttemptMapper {
 
         CandidateAttemptEntity candidateAttemptEntity = new CandidateAttemptEntity();
         applyDomainToEntity(initialAttempt, candidateAttemptEntity);
-        candidateAttemptEntity.setCallbackUrl(request.callbackUrl() == null ? null : request.callbackUrl().toString());
         candidateAttemptEntity.setResultWebhookUrl(request.resultWebhookUrl() == null ? null : request.resultWebhookUrl().toString());
         return candidateAttemptEntity;
     }
@@ -98,6 +102,8 @@ public class CandidateAttemptMapper {
         candidateAttemptEntity.setScore(attempt.score());
         candidateAttemptEntity.setDecision(attempt.decision());
         candidateAttemptEntity.setHumanReviewRequired(attempt.humanReviewRequired());
+        candidateAttemptEntity.setReliabilityLevel(attempt.reliabilityLevel());
+        candidateAttemptEntity.setAccommodationTimeMultiplier(normalizeAccommodationMultiplier(attempt.accommodationTimeMultiplier()));
         candidateAttemptEntity.setCompanyResultString(attempt.companyResultString());
         candidateAttemptEntity.setCreatedAt(attempt.createdAt());
         candidateAttemptEntity.setStartedAt(attempt.startedAt());
@@ -160,6 +166,10 @@ public class CandidateAttemptMapper {
                 answersByNodeId,
                 candidateAttemptEntity.getDecision(),
                 candidateAttemptEntity.isHumanReviewRequired(),
+                candidateAttemptEntity.getReliabilityLevel() == null
+                        ? ReliabilityLevel.NORMAL
+                        : candidateAttemptEntity.getReliabilityLevel(),
+                normalizeAccommodationMultiplier(candidateAttemptEntity.getAccommodationTimeMultiplier()),
                 candidateAttemptEntity.getCompanyResultString(),
                 candidateAttemptEntity.getCreatedAt(),
                 candidateAttemptEntity.getStartedAt(),
@@ -176,6 +186,8 @@ public class CandidateAttemptMapper {
                 .map(option -> new CandidateOptionResponse(
                         option.id(),
                         option.text(),
+                        option.plainTextDescription(),
+                        option.audioDescriptionUrl(),
                         option.mediaUrl(),
                         option.mediaType()
                 ))
@@ -186,14 +198,16 @@ public class CandidateAttemptMapper {
                 node.turnIndex(),
                 node.speaker(),
                 node.message(),
+                node.plainTextDescription(),
                 node.timeLimitSeconds(),
+                node.audioDescriptionUrl(),
                 node.mediaUrl(),
                 node.mediaType(),
                 options
         );
     }
 
-    public EtapaAtualResponse toEtapaAtualResponse(ScenarioNode node) {
+    public EtapaAtualResponse toEtapaAtualResponse(ScenarioNode node, BigDecimal accommodationTimeMultiplier) {
         if (node == null) {
             return null;
         }
@@ -202,6 +216,8 @@ public class CandidateAttemptMapper {
                 .map(option -> new RespostaResponse(
                         publicOptionId(node, option.id()),
                         option.text(),
+                        option.plainTextDescription(),
+                        option.audioDescriptionUrl(),
                         option.mediaUrl(),
                         option.mediaType()
                 ))
@@ -211,11 +227,18 @@ public class CandidateAttemptMapper {
                 node.turnIndex(),
                 node.speaker(),
                 node.message(),
+                node.plainTextDescription(),
                 node.timeLimitSeconds(),
+                accommodatedTimeLimit(node.timeLimitSeconds(), accommodationTimeMultiplier),
+                node.audioDescriptionUrl(),
                 node.mediaUrl(),
                 node.mediaType(),
                 alternativas
         );
+    }
+
+    public EtapaAtualResponse toEtapaAtualResponse(ScenarioNode node) {
+        return toEtapaAtualResponse(node, BigDecimal.ONE);
     }
 
     public String resolveInternalOptionId(ScenarioNode node, String publicOptionId) {
@@ -251,5 +274,26 @@ public class CandidateAttemptMapper {
             value = (value / 26) - 1;
         } while (value >= 0);
         return label.toString();
+    }
+
+    private Integer accommodatedTimeLimit(Integer timeLimitSeconds, BigDecimal accommodationTimeMultiplier) {
+        if (timeLimitSeconds == null) {
+            return null;
+        }
+
+        return normalizeAccommodationMultiplier(accommodationTimeMultiplier)
+                .multiply(BigDecimal.valueOf(timeLimitSeconds))
+                .setScale(0, RoundingMode.CEILING)
+                .intValue();
+    }
+
+    private BigDecimal normalizeAccommodationMultiplier(BigDecimal value) {
+        if (value == null || value.compareTo(BigDecimal.ONE) < 0) {
+            return BigDecimal.ONE.setScale(2, RoundingMode.HALF_UP);
+        }
+        if (value.compareTo(BigDecimal.valueOf(9.99)) > 0) {
+            return BigDecimal.valueOf(9.99).setScale(2, RoundingMode.HALF_UP);
+        }
+        return value.setScale(2, RoundingMode.HALF_UP);
     }
 }

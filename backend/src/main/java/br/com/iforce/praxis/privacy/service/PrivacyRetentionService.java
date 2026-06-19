@@ -73,7 +73,6 @@ public class PrivacyRetentionService {
         for (CandidateAttemptEntity attempt : attempts) {
             attempt.setCandidateName("Anonimizado");
             attempt.setCandidateEmail("anon+" + attempt.getId() + "@praxis.local");
-            attempt.setCallbackUrl(null);
             attempt.setResultWebhookUrl(null);
             attempt.setAnonymizedAt(anonymizedAt);
         }

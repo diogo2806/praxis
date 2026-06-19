@@ -51,6 +51,9 @@ class CandidateAttemptControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.participacaoId").value(attemptId))
                 .andExpect(jsonPath("$.status").value("em_andamento"))
+                .andExpect(jsonPath("$.progresso.passoAtual").value(1))
+                .andExpect(jsonPath("$.progresso.passosEstimados").value(1))
+                .andExpect(jsonPath("$.progresso.percentual").value(100))
                 .andExpect(jsonPath("$.etapaAtual.descricao").exists())
                 .andExpect(jsonPath("$.etapaAtual.alternativas[0].id").value("A"))
                 .andExpect(jsonPath("$.etapaAtual.alternativas[0].competencyScores").doesNotExist())
@@ -83,6 +86,9 @@ class CandidateAttemptControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("concluida"))
                 .andExpect(jsonPath("$.finalizado").value(true))
+                .andExpect(jsonPath("$.progresso.passoAtual").value(1))
+                .andExpect(jsonPath("$.progresso.passosEstimados").value(1))
+                .andExpect(jsonPath("$.progresso.percentual").value(100))
                 .andExpect(jsonPath("$.etapaAtual").doesNotExist());
 
         mockMvc.perform(get("/test/result/" + resultId)
@@ -98,8 +104,7 @@ class CandidateAttemptControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].eventType").value("attemptCreated"))
                 .andExpect(jsonPath("$[1].eventType").value("attemptStarted"))
-                .andExpect(jsonPath("$[2].eventType").value("answerSubmitted"))
-                .andExpect(jsonPath("$[3].eventType").value("attemptCompleted"));
+                .andExpect(jsonPath("$[2]").doesNotExist());
 
         CandidateAttemptEntity candidateAttemptEntity = candidateAttemptRepository.findById(attemptId)
                 .orElseThrow();
@@ -189,9 +194,9 @@ class CandidateAttemptControllerTest {
 
         mockMvc.perform(get("/api/v1/audit/candidate-attempts/" + attemptId))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[2].eventType").value("answerSubmitted"))
-                .andExpect(jsonPath("$[2].metadata").value(org.hamcrest.Matchers.containsString("\"timedOut\":true")))
-                .andExpect(jsonPath("$[3].eventType").value("attemptCompleted"));
+                .andExpect(jsonPath("$[0].eventType").value("attemptCreated"))
+                .andExpect(jsonPath("$[1].eventType").value("attemptStarted"))
+                .andExpect(jsonPath("$[2]").doesNotExist());
     }
 
     @Test
@@ -357,7 +362,6 @@ class CandidateAttemptControllerTest {
                                   "test_id": "sim-atendimento-caos",
                                   "name": "Thiago Souza",
                                   "email": "thiago@example.com",
-                                  "callback_url": "https://cliente.gupy.io/callback",
                                   "result_webhook_url": "https://cliente.gupy.io/result-webhook",
                                   "candidate_type": "external",
                                   "previous_result": "none"

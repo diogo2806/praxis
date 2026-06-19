@@ -42,8 +42,17 @@ public class SimulationMapperService {
 
         request.competencies()
                 .stream()
-                .map(competency -> new NormalizedCompetency(competency.name().trim(), competency.weight()))
-                .forEach(competency -> addCompetency(simulationVersionEntity, competency.name(), competency.weight()));
+                .map(competency -> new NormalizedCompetency(
+                        competency.name().trim(),
+                        competency.weight(),
+                        competency.normalizedTargetScore()
+                ))
+                .forEach(competency -> addCompetency(
+                        simulationVersionEntity,
+                        competency.name(),
+                        competency.weight(),
+                        competency.targetScore()
+                ));
     }
 
     public PublishedSimulation toPublishedSimulation(SimulationVersionEntity simulationVersionEntity) {
@@ -79,7 +88,11 @@ public class SimulationMapperService {
     public SimulationVersionDetailResponse toVersionDetail(SimulationVersionEntity simulationVersionEntity) {
         List<CompetencyWeightDto> competencies = simulationVersionEntity.getCompetencies().stream()
                 .sorted(Comparator.comparing(SimulationCompetencyEntity::getName))
-                .map(competency -> new CompetencyWeightDto(competency.getName(), competency.getWeight()))
+                .map(competency -> new CompetencyWeightDto(
+                        competency.getName(),
+                        competency.getWeight(),
+                        competency.getTargetScore()
+                ))
                 .toList();
 
         List<SimulationVersionDetailResponse.NodeDto> nodes = simulationVersionEntity.getNodes().stream()
@@ -115,6 +128,8 @@ public class SimulationMapperService {
                 simulationNodeEntity.getSpeaker(),
                 simulationNodeEntity.getMessage(),
                 simulationNodeEntity.getTimeLimitSeconds(),
+                simulationNodeEntity.getPlainTextDescription(),
+                simulationNodeEntity.getAudioDescriptionUrl(),
                 simulationNodeEntity.getMediaUrl(),
                 simulationNodeEntity.getMediaType(),
                 options
@@ -134,6 +149,8 @@ public class SimulationMapperService {
                 competencyScores,
                 simulationOptionEntity.isCritical(),
                 simulationOptionEntity.getAuditNote(),
+                simulationOptionEntity.getPlainTextDescription(),
+                simulationOptionEntity.getAudioDescriptionUrl(),
                 simulationOptionEntity.getMediaUrl(),
                 simulationOptionEntity.getMediaType()
         );
@@ -151,6 +168,8 @@ public class SimulationMapperService {
                 simulationNodeEntity.getSpeaker(),
                 simulationNodeEntity.getMessage(),
                 simulationNodeEntity.getTimeLimitSeconds(),
+                simulationNodeEntity.getPlainTextDescription(),
+                simulationNodeEntity.getAudioDescriptionUrl(),
                 simulationNodeEntity.getMediaUrl(),
                 simulationNodeEntity.getMediaType(),
                 options
@@ -170,19 +189,31 @@ public class SimulationMapperService {
                 simulationOptionEntity.isCritical(),
                 simulationOptionEntity.getNextNodeId(),
                 simulationOptionEntity.getAuditNote(),
+                simulationOptionEntity.getPlainTextDescription(),
+                simulationOptionEntity.getAudioDescriptionUrl(),
                 simulationOptionEntity.getMediaUrl(),
                 simulationOptionEntity.getMediaType()
         );
     }
 
     private void addCompetency(SimulationVersionEntity simulationVersionEntity, String name, double weight) {
+        addCompetency(simulationVersionEntity, name, weight, 70);
+    }
+
+    private void addCompetency(
+            SimulationVersionEntity simulationVersionEntity,
+            String name,
+            double weight,
+            int targetScore
+    ) {
         SimulationCompetencyEntity competencyEntity = new SimulationCompetencyEntity();
         competencyEntity.setSimulationVersion(simulationVersionEntity);
         competencyEntity.setName(name);
         competencyEntity.setWeight(weight);
+        competencyEntity.setTargetScore(targetScore);
         simulationVersionEntity.getCompetencies().add(competencyEntity);
     }
 
-    private record NormalizedCompetency(String name, double weight) {
+    private record NormalizedCompetency(String name, double weight, int targetScore) {
     }
 }

@@ -1,6 +1,7 @@
 package br.com.iforce.praxis.config;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.boot.context.properties.bind.ConstructorBinding;
 
 import java.util.List;
 
@@ -46,6 +47,7 @@ public record PraxisProperties(
         );
     }
 
+    @ConstructorBinding
     public PraxisProperties {
         if (candidatePageBaseUrl == null || candidatePageBaseUrl.isBlank()) {
             candidatePageBaseUrl = publicBaseUrl;

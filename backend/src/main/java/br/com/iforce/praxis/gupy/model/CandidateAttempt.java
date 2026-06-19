@@ -1,5 +1,6 @@
 package br.com.iforce.praxis.gupy.model;
 
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
@@ -21,6 +22,8 @@ public record CandidateAttempt(
         Map<String, AttemptAnswer> answersByNodeId,
         ResultDecision decision,
         boolean humanReviewRequired,
+        ReliabilityLevel reliabilityLevel,
+        BigDecimal accommodationTimeMultiplier,
         String companyResultString,
         Instant createdAt,
         Instant startedAt,

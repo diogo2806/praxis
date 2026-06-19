@@ -11,6 +11,8 @@ public record ScenarioOption(
         Map<String, Integer> competencyScores,
         boolean critical,
         String auditNote,
+        String plainTextDescription,
+        String audioDescriptionUrl,
         String mediaUrl,
         MediaType mediaType
 ) {
@@ -26,6 +28,6 @@ public record ScenarioOption(
             boolean critical,
             String auditNote
     ) {
-        this(id, text, nextNodeId, competencyScores, critical, auditNote, null, null);
+        this(id, text, nextNodeId, competencyScores, critical, auditNote, null, null, null, null);
     }
 }

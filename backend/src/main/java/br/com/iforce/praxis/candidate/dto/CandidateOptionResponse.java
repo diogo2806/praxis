@@ -11,6 +11,12 @@ public record CandidateOptionResponse(
         @Schema(example = "Acolho a frustração, peço os dados mínimos e explico o próximo passo.")
         String text,
 
+        @Schema(description = "Texto alternativo simplificado para leitores de tela.", nullable = true)
+        String plainTextDescription,
+
+        @Schema(description = "URL publica de audio descritivo da alternativa.", nullable = true)
+        String audioDescriptionUrl,
+
         @Schema(description = "URL pública da imagem ou áudio da alternativa.", nullable = true)
         String mediaUrl,
 

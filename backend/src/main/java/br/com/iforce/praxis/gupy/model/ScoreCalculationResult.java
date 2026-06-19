@@ -6,6 +6,7 @@ public record ScoreCalculationResult(
         int score,
         List<ResultItem> resultItems,
         boolean humanReviewRequired,
+        ReliabilityLevel reliabilityLevel,
         String auditTrail,
         ResultDecision decision
 ) {

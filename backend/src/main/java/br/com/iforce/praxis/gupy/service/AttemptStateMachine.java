@@ -7,6 +7,7 @@ import br.com.iforce.praxis.gupy.model.AttemptAnswer;
 import br.com.iforce.praxis.gupy.model.AttemptStatus;
 import br.com.iforce.praxis.gupy.model.CandidateAttempt;
 import br.com.iforce.praxis.gupy.model.PublishedSimulation;
+import br.com.iforce.praxis.gupy.model.ReliabilityLevel;
 import br.com.iforce.praxis.gupy.model.ResultDecision;
 import br.com.iforce.praxis.gupy.model.ResultItem;
 import br.com.iforce.praxis.gupy.model.ScenarioOption;
@@ -97,6 +98,7 @@ public class AttemptStateMachine {
                 attempt.answersByNodeId(),
                 attempt.decision(),
                 attempt.humanReviewRequired(),
+                attempt.reliabilityLevel(),
                 attempt.companyResultString(),
                 startedAt,
                 attempt.finishedAt()
@@ -126,13 +128,14 @@ public class AttemptStateMachine {
                     answersByNodeId,
                     ResultDecision.IN_PROGRESS,
                     attempt.humanReviewRequired(),
+                    attempt.reliabilityLevel(),
                     attempt.companyResultString(),
                     attempt.startedAt(),
                     attempt.finishedAt()
             );
         }
 
-        ScoreCalculationResult scoreResult = resultScoringService.calculate(simulation, answersByNodeId);
+        ScoreCalculationResult scoreResult = resultScoringService.calculate(simulation, answersByNodeId, attempt.startedAt());
         return copy(
                 attempt,
                 AttemptStatus.COMPLETED,
@@ -141,6 +144,7 @@ public class AttemptStateMachine {
                 answersByNodeId,
                 scoreResult.decision(),
                 scoreResult.humanReviewRequired(),
+                scoreResult.reliabilityLevel(),
                 buildCompanyResultString(simulation, scoreResult),
                 attempt.startedAt(),
                 Instant.now()
@@ -156,6 +160,7 @@ public class AttemptStateMachine {
                 + "Simulação: " + simulation.name() + "\n\n"
                 + "Score geral: " + scoreResult.score() + "/100\n\n"
                 + reviewLine + "\n\n"
+                + "Confiabilidade comportamental: " + scoreResult.reliabilityLevel() + ".\n\n"
                 + "Trilha auditável: " + scoreResult.auditTrail();
     }
 
@@ -168,6 +173,7 @@ public class AttemptStateMachine {
                 attempt.answersByNodeId(),
                 attempt.decision(),
                 attempt.humanReviewRequired(),
+                attempt.reliabilityLevel(),
                 attempt.companyResultString(),
                 attempt.startedAt(),
                 finishedAt
@@ -182,6 +188,7 @@ public class AttemptStateMachine {
             Map<String, AttemptAnswer> answersByNodeId,
             ResultDecision decision,
             boolean humanReviewRequired,
+            ReliabilityLevel reliabilityLevel,
             String companyResultString,
             Instant startedAt,
             Instant finishedAt
@@ -203,6 +210,8 @@ public class AttemptStateMachine {
                 answersByNodeId,
                 decision,
                 humanReviewRequired,
+                reliabilityLevel,
+                attempt.accommodationTimeMultiplier(),
                 companyResultString,
                 attempt.createdAt(),
                 startedAt,

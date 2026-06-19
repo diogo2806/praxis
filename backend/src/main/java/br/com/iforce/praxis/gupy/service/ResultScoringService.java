@@ -3,6 +3,7 @@ package br.com.iforce.praxis.gupy.service;
 import br.com.iforce.praxis.config.PraxisProperties;
 import br.com.iforce.praxis.gupy.model.AttemptAnswer;
 import br.com.iforce.praxis.gupy.model.PublishedSimulation;
+import br.com.iforce.praxis.gupy.model.ReliabilityLevel;
 import br.com.iforce.praxis.gupy.model.ResultDecision;
 import br.com.iforce.praxis.gupy.model.ResultItem;
 import br.com.iforce.praxis.gupy.model.ResultTier;
@@ -12,6 +13,8 @@ import br.com.iforce.praxis.gupy.model.ScoreCalculationResult;
 import org.springframework.stereotype.Service;
 
 import java.text.Normalizer;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -33,6 +36,10 @@ import java.util.Map;
 public class ResultScoringService {
 
     private static final String POLICY_ADHERENCE_COMPETENCY = "aderencia a politica";
+    private static final double FAST_RESPONSE_THRESHOLD_RATIO = 0.20;
+    private static final double HIGH_SCORE_OPTION_RATIO = 0.80;
+    private static final long MILLIS_PER_VISIBLE_WORD = 300L;
+    private static final long MIN_REASONABLE_RESPONSE_MILLIS = 5_000L;
 
     private final PraxisProperties praxisProperties;
 
@@ -44,7 +51,15 @@ public class ResultScoringService {
             PublishedSimulation simulation,
             Map<String, AttemptAnswer> answersByNodeId
     ) {
-        List<PathStep> path = walkPath(simulation, answersByNodeId);
+        return calculate(simulation, answersByNodeId, null);
+    }
+
+    public ScoreCalculationResult calculate(
+            PublishedSimulation simulation,
+            Map<String, AttemptAnswer> answersByNodeId,
+            Instant firstTurnReceivedAt
+    ) {
+        List<PathStep> path = walkPath(simulation, answersByNodeId, firstTurnReceivedAt);
 
         boolean humanReviewRequired = path.stream()
                 .map(PathStep::pickedOption)
@@ -105,8 +120,11 @@ public class ResultScoringService {
 
         int finalScore = (int) Math.round(weighted * 100);
         ResultDecision decision = deriveDecision(finalScore, humanReviewRequired);
+        ReliabilityLevel reliabilityLevel = hasLowReliabilitySignal(path, simulation.competencies())
+                ? ReliabilityLevel.LOW_RELIABILITY
+                : ReliabilityLevel.NORMAL;
 
-        return new ScoreCalculationResult(finalScore, resultItems, humanReviewRequired, auditTrail, decision);
+        return new ScoreCalculationResult(finalScore, resultItems, humanReviewRequired, reliabilityLevel, auditTrail, decision);
     }
 
     /**
@@ -126,10 +144,12 @@ public class ResultScoringService {
 
     private List<PathStep> walkPath(
             PublishedSimulation simulation,
-            Map<String, AttemptAnswer> answersByNodeId
+            Map<String, AttemptAnswer> answersByNodeId,
+            Instant firstTurnReceivedAt
     ) {
         List<PathStep> path = new ArrayList<>();
         String currentNodeId = simulation.rootNodeId();
+        Instant currentTurnReceivedAt = firstTurnReceivedAt;
 
         while (currentNodeId != null) {
             ScenarioNode currentNode = findNode(simulation, currentNodeId);
@@ -140,12 +160,13 @@ public class ResultScoringService {
 
             if (answer.timedOut() || answer.optionId() == null) {
                 // Timeout do turno: nível 0 naquele nó e o caminho termina ali.
-                path.add(new PathStep(currentNode, null));
+                path.add(new PathStep(currentNode, null, answer, currentTurnReceivedAt));
                 break;
             }
 
             ScenarioOption pickedOption = findOption(currentNode, answer.optionId());
-            path.add(new PathStep(currentNode, pickedOption));
+            path.add(new PathStep(currentNode, pickedOption, answer, currentTurnReceivedAt));
+            currentTurnReceivedAt = answer.answeredAt();
             currentNodeId = pickedOption.nextNodeId();
         }
 
@@ -179,7 +200,72 @@ public class ResultScoringService {
                 .toLowerCase();
     }
 
-    private record PathStep(ScenarioNode node, ScenarioOption pickedOption) {
+    private boolean hasLowReliabilitySignal(List<PathStep> path, List<String> competencies) {
+        return path.stream()
+                .anyMatch(step -> isSuspiciousFastCriticalAnswer(step, competencies));
+    }
+
+    private boolean isSuspiciousFastCriticalAnswer(PathStep step, List<String> competencies) {
+        if (step.pickedOption() == null
+                || step.answer() == null
+                || step.answer().answeredAt() == null
+                || step.turnReceivedAt() == null
+                || !isCriticalForReliability(step.node(), step.pickedOption(), competencies)) {
+            return false;
+        }
+
+        long elapsedMillis = Duration.between(step.turnReceivedAt(), step.answer().answeredAt()).toMillis();
+        if (elapsedMillis < 0) {
+            return false;
+        }
+
+        long reasonableMinimumMillis = reasonableMinimumMillis(step.node());
+        return elapsedMillis < Math.round(reasonableMinimumMillis * FAST_RESPONSE_THRESHOLD_RATIO);
+    }
+
+    private boolean isCriticalForReliability(
+            ScenarioNode node,
+            ScenarioOption pickedOption,
+            List<String> competencies
+    ) {
+        if (pickedOption.critical()) {
+            return true;
+        }
+
+        for (String competency : competencies) {
+            int bestAtNode = node.options().stream()
+                    .mapToInt(option -> option.competencyScores().getOrDefault(competency, 0))
+                    .max()
+                    .orElse(0);
+            if (bestAtNode > 0
+                    && pickedOption.competencyScores().getOrDefault(competency, 0) >= Math.ceil(bestAtNode * HIGH_SCORE_OPTION_RATIO)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private long reasonableMinimumMillis(ScenarioNode node) {
+        int visibleWords = countWords(node.message());
+        for (ScenarioOption option : node.options()) {
+            visibleWords += countWords(option.text());
+        }
+        return Math.max(MIN_REASONABLE_RESPONSE_MILLIS, visibleWords * MILLIS_PER_VISIBLE_WORD);
+    }
+
+    private int countWords(String text) {
+        if (text == null || text.isBlank()) {
+            return 0;
+        }
+        return text.trim().split("\\s+").length;
+    }
+
+    private record PathStep(
+            ScenarioNode node,
+            ScenarioOption pickedOption,
+            AttemptAnswer answer,
+            Instant turnReceivedAt
+    ) {
 
         String auditNote() {
             return pickedOption == null

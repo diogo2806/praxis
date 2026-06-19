@@ -90,35 +90,28 @@ class SimulationAdminControllerTest {
 
     @Test
     @Sql(scripts = "/simulation-review-fixtures.sql")
-    void publishDraftVersionRequiresApproval() throws Exception {
+    void publishDraftVersionDirectly() throws Exception {
         mockMvc.perform(post("/api/v1/simulations/sim-publish-gate/versions/1/publish"))
-                .andExpect(status().isConflict())
-                .andExpect(jsonPath("$.message").value("Versao precisa estar aprovada antes da publicacao."));
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.simulationId").value("sim-publish-gate"))
+                .andExpect(jsonPath("$.versionNumber").value(1))
+                .andExpect(jsonPath("$.status").value("published"))
+                .andExpect(jsonPath("$.publishedAt").exists());
     }
 
     @Test
     @Sql(scripts = "/simulation-review-fixtures.sql")
-    void reviewApproveAndPublishDraftVersion() throws Exception {
+    void reviewApprovalEndpointsAreRemoved() throws Exception {
         mockMvc.perform(post("/api/v1/simulations/sim-review-flow/versions/1/submit-review"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.simulationId").value("sim-review-flow"))
-                .andExpect(jsonPath("$.versionNumber").value(1))
-                .andExpect(jsonPath("$.status").value("inReview"));
+                .andExpect(status().isNotFound());
 
         mockMvc.perform(post("/api/v1/simulations/sim-review-flow/versions/1/approve"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.status").value("approved"));
+                .andExpect(status().isNotFound());
 
-        mockMvc.perform(post("/api/v1/simulations/sim-review-flow/versions/1/publish"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.status").value("published"))
-                .andExpect(jsonPath("$.publishedAt").exists());
-
-        mockMvc.perform(get("/api/v1/audit/simulations/sim-review-flow/versions/1"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$[*].eventType").value(hasItem("simulationVersionSubmittedForReview")))
-                .andExpect(jsonPath("$[*].eventType").value(hasItem("simulationVersionApproved")))
-                .andExpect(jsonPath("$[*].eventType").value(hasItem("simulationVersionPublished")));
+        mockMvc.perform(post("/api/v1/simulations/sim-review-flow/versions/1/reject")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"reason\":\"Nao aprovar\"}"))
+                .andExpect(status().isNotFound());
     }
 
     @Test
@@ -321,6 +314,45 @@ class SimulationAdminControllerTest {
                 .andExpect(jsonPath("$.deliveriesDeadLetter").exists());
     }
 
+    @Test
+    @Sql(statements = {
+            "UPDATE simulation_competencies SET target_score = 82 WHERE simulation_version_id = 1 AND name = 'Empatia'",
+            "INSERT INTO candidate_attempts (id, tenant_id, company_id, result_id, simulation_id, simulation_version_id, simulation_version_number, idempotency_key, candidate_name, candidate_email, result_webhook_url, status, score, decision, human_review_required, company_result_string, created_at, started_at, finished_at, anonymized_at) VALUES ('attempt-match-1', 'tenant-1', 'empresa-123', 'result-match-1', 'sim-atendimento-caos', 1, 1, 'idem-match-1', 'Ana Costa', 'ana@example.com', 'https://cliente.gupy.io/result-webhook', 'COMPLETED', 85, 'RECOMMEND_INTERVIEW', FALSE, 'Resultado Ana', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, NULL)",
+            "INSERT INTO candidate_attempts (id, tenant_id, company_id, result_id, simulation_id, simulation_version_id, simulation_version_number, idempotency_key, candidate_name, candidate_email, result_webhook_url, status, score, decision, human_review_required, company_result_string, created_at, started_at, finished_at, anonymized_at) VALUES ('attempt-match-2', 'tenant-1', 'empresa-123', 'result-match-2', 'sim-atendimento-caos', 1, 1, 'idem-match-2', 'Bruno Lima', 'bruno@example.com', 'https://cliente.gupy.io/result-webhook', 'COMPLETED', 85, 'RECOMMEND_INTERVIEW', FALSE, 'Resultado Bruno', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, NULL)",
+            "INSERT INTO result_items (candidate_attempt_id, name, score, tier) VALUES ('attempt-match-1', 'Empatia', 94, 'MAJOR')",
+            "INSERT INTO result_items (candidate_attempt_id, name, score, tier) VALUES ('attempt-match-1', 'Resolucao de conflito', 76, 'MAJOR')",
+            "INSERT INTO result_items (candidate_attempt_id, name, score, tier) VALUES ('attempt-match-1', 'Aderencia a politica', 68, 'MINOR')",
+            "INSERT INTO result_items (candidate_attempt_id, name, score, tier) VALUES ('attempt-match-2', 'Empatia', 72, 'MAJOR')",
+            "INSERT INTO result_items (candidate_attempt_id, name, score, tier) VALUES ('attempt-match-2', 'Resolucao de conflito', 91, 'MAJOR')",
+            "INSERT INTO result_items (candidate_attempt_id, name, score, tier) VALUES ('attempt-match-2', 'Aderencia a politica', 79, 'MINOR')"
+    })
+    void talentMatchReturnsBenchmarkAndSelectedCandidates() throws Exception {
+        mockMvc.perform(get("/api/v1/simulations/sim-atendimento-caos/versions/1/talent-match")
+                        .queryParam("attemptIds", "attempt-match-1,attempt-match-2"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.simulationId").value("sim-atendimento-caos"))
+                .andExpect(jsonPath("$.versionNumber").value(1))
+                .andExpect(jsonPath("$.benchmark[?(@.competencyName=='Empatia')].targetScore").value(hasItem(82)))
+                .andExpect(jsonPath("$.candidates[0].attemptId").value("attempt-match-1"))
+                .andExpect(jsonPath("$.candidates[0].candidateName").value("Ana Costa"))
+                .andExpect(jsonPath("$.candidates[0].generalScore").value(85))
+                .andExpect(jsonPath("$.candidates[0].competencies[?(@.competencyName=='Empatia')].score").value(hasItem(94)))
+                .andExpect(jsonPath("$.candidates[1].attemptId").value("attempt-match-2"))
+                .andExpect(jsonPath("$.candidates[1].competencies[?(@.competencyName=='Resolucao de conflito')].score").value(hasItem(91)));
+    }
+
+    @Test
+    @Sql(scripts = "/tenant-isolation-fixtures.sql")
+    @Sql(statements = {
+            "INSERT INTO candidate_attempts (id, tenant_id, company_id, result_id, simulation_id, simulation_version_id, simulation_version_number, idempotency_key, candidate_name, candidate_email, result_webhook_url, status, score, decision, human_review_required, company_result_string, created_at, started_at, finished_at, anonymized_at) VALUES ('attempt-match-safe', 'tenant-1', 'empresa-123', 'result-match-safe', 'sim-atendimento-caos', 1, 1, 'idem-match-safe', 'Carla Nunes', 'carla@example.com', 'https://cliente.gupy.io/result-webhook', 'COMPLETED', 80, 'RECOMMEND_INTERVIEW', FALSE, 'Resultado Carla', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, NULL)",
+            "INSERT INTO candidate_attempts (id, tenant_id, company_id, result_id, simulation_id, simulation_version_id, simulation_version_number, idempotency_key, candidate_name, candidate_email, result_webhook_url, status, score, decision, human_review_required, company_result_string, created_at, started_at, finished_at, anonymized_at) VALUES ('attempt-match-tenant2', 'tenant-2', 'empresa-456', 'result-match-tenant2', 'sim-tenant2', 9001, 1, 'idem-match-tenant2', 'Outro Tenant', 'tenant2@example.com', 'https://cliente.gupy.io/result-webhook', 'COMPLETED', 88, 'RECOMMEND_INTERVIEW', FALSE, 'Resultado Tenant 2', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, NULL)"
+    })
+    void talentMatchRejectsCrossTenantAttemptIds() throws Exception {
+        mockMvc.perform(get("/api/v1/simulations/sim-atendimento-caos/versions/1/talent-match")
+                        .queryParam("attemptIds", "attempt-match-safe,attempt-match-tenant2"))
+                .andExpect(status().isForbidden());
+    }
+
     private String validCandidateRequest(String documentId) {
         return """
                 {
@@ -329,7 +361,6 @@ class SimulationAdminControllerTest {
                   "test_id": "sim-atendimento-caos",
                   "name": "Thiago Souza",
                   "email": "thiago@example.com",
-                  "callback_url": "https://cliente.gupy.io/callback",
                   "result_webhook_url": "https://cliente.gupy.io/result-webhook",
                   "candidate_type": "external",
                   "previous_result": "none"

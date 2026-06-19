@@ -8,6 +8,7 @@ import br.com.iforce.praxis.gupy.persistence.entity.CandidateAttemptEntity;
 import br.com.iforce.praxis.gupy.persistence.repository.CandidateAttemptRepository;
 import br.com.iforce.praxis.gupy.service.GupyTestResultMapper;
 import br.com.iforce.praxis.gupy.service.SimulationCatalogService;
+import br.com.iforce.praxis.shared.notification.service.ResultDeliveryDlqAlertService;
 import br.com.iforce.praxis.shared.outbox.persistence.entity.OutboxEventEntity;
 import br.com.iforce.praxis.shared.outbox.persistence.repository.OutboxEventRepository;
 import com.fasterxml.jackson.databind.DeserializationFeature;
@@ -39,6 +40,7 @@ public class OutboxProcessor {
     private final SimulationCatalogService simulationCatalogService;
     private final GupyTestResultMapper gupyTestResultMapper;
     private final GupyOutboundUrlValidator outboundUrlValidator;
+    private final ResultDeliveryDlqAlertService dlqAlertService;
 
     public OutboxProcessor(
         OutboxEventRepository outboxEventRepository,
@@ -47,7 +49,8 @@ public class OutboxProcessor {
         CandidateAttemptRepository candidateAttemptRepository,
         SimulationCatalogService simulationCatalogService,
         GupyTestResultMapper gupyTestResultMapper,
-        GupyOutboundUrlValidator outboundUrlValidator
+        GupyOutboundUrlValidator outboundUrlValidator,
+        ResultDeliveryDlqAlertService dlqAlertService
     ) {
         this.outboxEventRepository = outboxEventRepository;
         this.resultWebhookClient = resultWebhookClient;
@@ -56,6 +59,7 @@ public class OutboxProcessor {
         this.simulationCatalogService = simulationCatalogService;
         this.gupyTestResultMapper = gupyTestResultMapper;
         this.outboundUrlValidator = outboundUrlValidator;
+        this.dlqAlertService = dlqAlertService;
     }
 
     @Transactional
@@ -199,6 +203,7 @@ public class OutboxProcessor {
             event.setStatus(OutboxEventEntity.OutboxEventStatus.DLQ);
             event.setNextAttemptAt(null);
             log.error("Evento {} movido para DLQ após {} tentativas", event.getId(), event.getAttempts());
+            dlqAlertService.alertTenantAdmins(event);
             return;
         }
 

@@ -19,6 +19,14 @@ public record CreateNodeRequest(
         @Schema(example = "Turno inicial com pressao alta.")
         String timeJustification,
 
+        @Size(max = 1500)
+        @Schema(description = "Texto simplificado para leitores de tela.", nullable = true)
+        String plainTextDescription,
+
+        @Size(max = 1000)
+        @Schema(description = "URL publica de audio descritivo do turno.", nullable = true)
+        String audioDescriptionUrl,
+
         @Size(max = 1000)
         @Schema(description = "URL pública da imagem ou áudio anexado ao turno.", nullable = true)
         String mediaUrl,
