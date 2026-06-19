@@ -1838,6 +1838,7 @@ Auditoria:        registra (não bloqueia), EXCETO publicar-com-blocker que é b
 ✓ Retry exponencial + DLQ + reenvio manual para integração Gupy
 ✓ Nenhuma chamada a serviço de IA em runtime (todo cálculo determinístico)
 ✓ Toda transição de estado registra AuditLog imutável
+✓ Telas de compliance e transparência, incluindo LGPD, devem usar layout de coluna única; não usar grids, sidebars ou cards lado a lado para conteúdo principal.
 ```
 
 ---

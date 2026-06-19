@@ -81,7 +81,7 @@ function LgpdPage() {
   return (
     <AppShell>
       <ScreenStateStrip blockedReason="canal de revisão humana não configurado" />
-      <div className="mb-5 flex flex-wrap items-start justify-between gap-4">
+      <div className="mb-5 space-y-4">
         <div>
           <div className="text-xs uppercase text-primary">Conformidade</div>
           <h1 className="mt-1 text-3xl font-semibold">LGPD e transparencia do resultado</h1>
@@ -97,7 +97,7 @@ function LgpdPage() {
 
       <ComplianceScope current="lgpd" />
 
-      <div className="grid gap-5 lg:grid-cols-3">
+      <div className="space-y-5">
         {[
           { key: "normalizada", title: "Pontuacao normalizada por caminho" },
           { key: "erro-critico", title: "Erro crítico gera revisão humana" },
@@ -113,7 +113,7 @@ function LgpdPage() {
         ))}
       </div>
 
-      <div className="mt-5 grid gap-5 lg:grid-cols-[minmax(0,1fr)_340px]">
+      <div className="mt-5 space-y-5">
         <section className="rounded-md border border-border bg-card p-5">
           <div className="mb-3 flex items-center gap-2 text-sm font-semibold">
             <FileSearch className="h-4 w-4" />
@@ -146,7 +146,7 @@ function LgpdPage() {
             <div>
               <h2 className="text-xl font-semibold">{version.name}</h2>
               <p className="mt-2 text-sm text-muted-foreground">{version.description}</p>
-              <div className="mt-4 grid gap-3 md:grid-cols-3">
+              <div className="mt-4 space-y-3">
                 <Metric label="Turnos" value={version.nodes.length} />
                 <Metric label="Alternativas" value={optionsCount} />
                 <Metric label="Criticas" value={criticalOptionsCount} />
@@ -173,7 +173,7 @@ function LgpdPage() {
           ) : null}
         </section>
 
-        <aside className="space-y-4">
+        <section className="space-y-4">
           {privacyQuery.isLoading ? (
             <StateBanner tone="info" title="Carregando política LGPD">
               Buscando bases legais, retenção e canal de revisão.
@@ -229,7 +229,7 @@ function LgpdPage() {
               </div>
             </div>
           )}
-        </aside>
+        </section>
       </div>
 
       <div className="mt-6">
