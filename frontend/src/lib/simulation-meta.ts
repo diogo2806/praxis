@@ -1,6 +1,12 @@
 import type { SimulationVersionStatus } from "@/lib/api/praxis";
 
-export type Maturity = "Rascunho" | "Em revisão" | "Aprovada" | "Calibrada" | "Arquivada";
+export type Maturity =
+  | "Rascunho"
+  | "Em revisão"
+  | "Aprovada"
+  | "Reprovada"
+  | "Pronta para uso"
+  | "Arquivada";
 
 export const statusMeta: Record<
   SimulationVersionStatus,
@@ -10,7 +16,7 @@ export const statusMeta: Record<
   inReview: { label: "Em revisão", tone: "warn" },
   approved: { label: "Aprovada", tone: "info" },
   rejected: { label: "Reprovada", tone: "danger" },
-  published: { label: "Publicada", tone: "ok" },
+  published: { label: "No ar", tone: "ok" },
   archived: { label: "Arquivada", tone: "muted" },
 };
 
@@ -42,8 +48,8 @@ export function maturityForStatus(status: SimulationVersionStatus): Maturity {
     draft: "Rascunho",
     inReview: "Em revisão",
     approved: "Aprovada",
-    rejected: "Rascunho",
-    published: "Calibrada",
+    rejected: "Reprovada",
+    published: "Pronta para uso",
     archived: "Arquivada",
   };
   return maturity[status];

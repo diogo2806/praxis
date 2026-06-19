@@ -2,8 +2,22 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { FileSearch, ShieldCheck } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
+import { ComplianceScope } from "@/components/compliance-scope";
 import { Termo } from "@/components/glossario";
-import { EmptyState, ScreenStateStrip, StateBanner, StatusBadge } from "@/components/praxis-ui";
+import {
+  EmptyState,
+  ScreenStateStrip,
+  StateBanner,
+  StatusBadge,
+} from "@/components/praxis-ui";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import {
   getPrivacyCompliance,
   getSimulationVersion,
@@ -11,6 +25,7 @@ import {
   listSimulations,
   type SimulationSummaryResponse,
 } from "@/lib/api/praxis";
+import { maturityForStatus } from "@/lib/simulation-meta";
 
 export const Route = createFileRoute("/lgpd")({
   validateSearch: (search: Record<string, unknown>) => ({
@@ -71,13 +86,16 @@ function LgpdPage() {
           <div className="text-xs uppercase text-primary">Conformidade</div>
           <h1 className="mt-1 text-3xl font-semibold">LGPD e transparencia do resultado</h1>
           <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
-            O candidato pode pedir revisão. A explicação usa{" "}
+            Esta tela responde o que o candidato tem direito de saber: dados tratados, prazo de
+            retencao, canal de revisao humana e explicacao do resultado. A explicação usa{" "}
             <Termo id="criterios-pontuacao">critérios de pontuação</Termo>, escolha e caminho, sem{" "}
             <Termo id="caixa-preta">caixa-preta</Termo>.
           </p>
         </div>
         {version && <StatusBadge status={version.status} />}
       </div>
+
+      <ComplianceScope current="lgpd" />
 
       <div className="grid gap-5 lg:grid-cols-3">
         {[
@@ -247,17 +265,40 @@ function SimulationLinks({
     return <span className="text-sm text-muted-foreground">Nenhuma simulação encontrada.</span>;
   }
   return (
-    <div className="flex flex-wrap gap-2">
-      {simulations.map((simulation) => (
-        <Link
-          key={`${simulation.id}-${simulation.versionNumber}`}
-          to="/lgpd"
-          search={{ simulationId: simulation.id, versionNumber: simulation.versionNumber }}
-          className="rounded-md border border-border bg-card px-3 py-2 text-sm hover:bg-accent"
-        >
-          {simulation.name} v{simulation.versionNumber}
-        </Link>
-      ))}
+    <div className="rounded-md border border-border bg-card">
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Simulação</TableHead>
+            <TableHead>Status</TableHead>
+            <TableHead className="text-right">Versão</TableHead>
+            <TableHead className="text-right">Ação</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {simulations.map((simulation) => (
+            <TableRow key={`${simulation.id}-${simulation.versionNumber}`}>
+              <TableCell className="min-w-[180px] font-medium">{simulation.name}</TableCell>
+              <TableCell>
+                <StatusBadge
+                  status={simulation.status}
+                  maturity={maturityForStatus(simulation.status)}
+                />
+              </TableCell>
+              <TableCell className="text-right tabular-nums">v{simulation.versionNumber}</TableCell>
+              <TableCell className="text-right">
+                <Link
+                  to="/lgpd"
+                  search={{ simulationId: simulation.id, versionNumber: simulation.versionNumber }}
+                  className="inline-flex items-center justify-center rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
+                >
+                  Ver explicação
+                </Link>
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
     </div>
   );
 }

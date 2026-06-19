@@ -198,7 +198,7 @@ function Page() {
                 }
               >
                 {versionStatus === "published"
-                  ? "A versao publicada fica congelada. Crie um rascunho para editar sem afetar candidatos em andamento."
+                  ? "A versão no ar fica protegida. Crie um rascunho para editar sem afetar candidatos em andamento."
                   : "Atualize a etapa atual da versao antes de alterar o personagem."}
               </StateBanner>
             </div>

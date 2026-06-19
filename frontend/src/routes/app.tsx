@@ -38,7 +38,7 @@ export const Route = createFileRoute("/app")({
       { title: "Painel - Praxis" },
       {
         name: "description",
-        content: "Painel: simulações ativas, qualidade, maturidade e vínculo com vagas Gupy.",
+        content: "Painel: simulações ativas, qualidade, prontidão e vínculo com vagas Gupy.",
       },
     ],
   }),
@@ -57,7 +57,7 @@ const filters: Array<"todas" | SimulationVersionStatus> = [
 
 const filterLabels: Record<(typeof filters)[number], string> = {
   todas: "todas",
-  published: "publicadas",
+  published: "no ar",
   approved: "aprovadas",
   inReview: "em revisão",
   draft: "rascunhos",
@@ -85,7 +85,7 @@ function Dashboard() {
   });
 
   const totals = {
-    publicadas: simulations.filter((s) => s.status === "published").length,
+    noAr: simulations.filter((s) => s.status === "published").length,
     aprovadas: simulations.filter((s) => s.status === "approved").length,
     rascunhos: simulations.filter((s) => s.status === "draft").length,
     tentativas: simulations.reduce((a, s) => a + s.attemptsCreated, 0),
@@ -186,8 +186,8 @@ function Dashboard() {
           )}
           <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
             <Stat
-              label="Publicadas"
-              value={totals.publicadas}
+              label="No ar"
+              value={totals.noAr}
               hint="Em vagas ativas"
               onClick={() => setFilter("published")}
             />
@@ -215,7 +215,7 @@ function Dashboard() {
             <div>
               <h2 className="text-xl font-semibold">Simulações</h2>
               <p className="text-xs text-muted-foreground">
-                Status, maturidade, competências e tentativas organizados por coluna.
+                Status, prontidão, competências e tentativas organizados por coluna.
               </p>
             </div>
             <div className="flex min-w-0 flex-wrap gap-2">
@@ -276,7 +276,7 @@ function Dashboard() {
                       <th className="px-4 py-3 text-left font-medium">Simulação</th>
                       <th className="px-4 py-3 text-left font-medium">Competências</th>
                       <th className="px-4 py-3 text-left font-medium">Status da versão</th>
-                      <th className="px-4 py-3 text-left font-medium">Maturidade</th>
+                      <th className="px-4 py-3 text-left font-medium">Prontidão</th>
                       <th className="px-4 py-3 text-left font-medium">Conclusão</th>
                       <th className="px-4 py-3 text-left font-medium">Versão</th>
                       <th className="px-4 py-3 text-left font-medium">Tentativas</th>

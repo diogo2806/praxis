@@ -70,19 +70,19 @@ const getSecondary = (t: TranslationMap) =>
       to: "/governanca",
       label: t.common.governance,
       icon: ShieldCheck,
-      desc: t.descriptions.governance,
+      desc: "Historico, versoes e auditoria",
     },
     {
       to: "/lgpd",
       label: t.common.lgpd,
       icon: UserRound,
-      desc: t.descriptions.lgpd,
+      desc: "Direitos do candidato e dados",
     },
     {
       to: "/defensabilidade",
       label: t.common.defensibility,
       icon: Scale,
-      desc: t.descriptions.defensibility,
+      desc: "Base tecnica do resultado",
     },
   ] as const;
 

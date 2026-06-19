@@ -100,7 +100,7 @@ const features = [
   {
     icon: Library,
     title: "Biblioteca de cenários",
-    body: "Modelos prontos por área e senioridade. O RH edita, calibra num piloto e publica quando estiver pronto.",
+    body: "Modelos prontos por área e senioridade. O RH edita, testa com um piloto e publica quando estiver pronto.",
   },
   {
     icon: GitBranch,

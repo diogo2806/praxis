@@ -32,10 +32,10 @@ const toneClass = {
 
 const maturityMeta: Record<Maturity, { label: string; tone: keyof typeof toneClass }> = {
   Rascunho: { label: "Rascunho", tone: "muted" },
-  Piloto: { label: "Piloto", tone: "info" },
-  Calibrada: { label: "Calibrada", tone: "ok" },
-  "Validada internamente": { label: "Validada", tone: "ok" },
-  Expirada: { label: "Expirada", tone: "danger" },
+  "Em revisão": { label: "Em revisão", tone: "warn" },
+  Aprovada: { label: "Aprovada", tone: "info" },
+  Reprovada: { label: "Reprovada", tone: "danger" },
+  "Pronta para uso": { label: "Pronta para uso", tone: "ok" },
   Arquivada: { label: "Arquivada", tone: "muted" },
 };
 
@@ -72,7 +72,7 @@ export function StatusBadge({
             toneClass[maturityInfo.tone],
           )}
         >
-          {maturityInfo.label === "Piloto" ? (
+          {maturityInfo.label === "Em revisão" ? (
             <Clock3 className="h-3 w-3" />
           ) : maturityInfo.label === "Arquivada" ? (
             <Archive className="h-3 w-3" />
@@ -199,19 +199,19 @@ export function GlobalProductStateBar({
       label: "Rascunho global salvo",
       Icon: FileText,
       tone: "muted",
-      hint: "Todas as alterações foram gravadas no rascunho. Nada está publicado ainda.",
+      hint: "Todas as alterações foram gravadas no rascunho. Nada está no ar ainda.",
     },
     dirty: {
       label: "Rascunho global alterado",
       Icon: FileText,
       tone: "warn",
-      hint: "Há mudanças não publicadas. Elas ficam salvas no rascunho até você publicar uma nova versão.",
+      hint: "Há mudanças que ainda não estão no ar. Elas ficam salvas no rascunho até você publicar uma nova versão.",
     },
     published: {
-      label: "Versão publicada imutável",
+      label: "No ar para candidatos",
       Icon: Lock,
       tone: "ok",
-      hint: "A versão em produção está congelada. Editar cria uma nova versão sem afetar a publicada.",
+      hint: "Esta versão pode ser enviada para candidatos. Editar cria uma nova versão sem afetar quem já recebeu o teste.",
     },
   } as const;
   const publicationMeta = {
@@ -225,7 +225,7 @@ export function GlobalProductStateBar({
       label: "Publicação em andamento",
       Icon: UploadCloud,
       tone: "info",
-      hint: "A versão está sendo publicada. Aguarde a confirmação antes de novas edições.",
+      hint: "A versão está entrando no ar. Aguarde a confirmação antes de novas edições.",
     },
     blocked: {
       label: "Publicação bloqueada",

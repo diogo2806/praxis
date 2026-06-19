@@ -42,7 +42,7 @@ const workflowStates: Array<{ status: SimulationVersionStatus; label: string }> 
   { status: "draft", label: "Rascunho" },
   { status: "inReview", label: "Em revisão" },
   { status: "approved", label: "Aprovada" },
-  { status: "published", label: "Publicada" },
+  { status: "published", label: "No ar" },
 ];
 
 type TransitionAction = "submit-review" | "approve" | "reject" | "publish";
@@ -59,7 +59,7 @@ const transitionCopy: Record<
   },
   approve: {
     title: "Aprovar versão?",
-    description: "A versão ficará aprovada e liberada para publicação.",
+    description: "A versão ficará aprovada e pronta para entrar no ar.",
     cta: "Aprovar",
   },
   reject: {
@@ -69,8 +69,8 @@ const transitionCopy: Record<
     cta: "Reprovar",
   },
   publish: {
-    title: "Publicar versão?",
-    description: "A publicação protege a versão contra alterações. Bloqueios críticos continuam sem ajuste manual.",
+    title: "Colocar versão no ar?",
+    description: "Ao entrar no ar, a versão fica protegida contra alterações. Bloqueios críticos continuam sem ajuste manual.",
     cta: "Publicar",
   },
 };
@@ -123,9 +123,9 @@ function Page() {
       <ScreenStateStrip blockedReason="aguardando aprovação de gestor ou compliance" />
       <div className="mb-6">
         <div className="text-xs uppercase tracking-[0.2em] text-primary">Passo 4</div>
-        <h1 className="mt-1 font-display text-3xl">Governança de publicação</h1>
+        <h1 className="mt-1 font-display text-3xl">Governança para colocar no ar</h1>
         <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
-          RH não publica direto em vaga crítica. Estados, papéis, versionamento imutável.
+          Antes de entrar no ar, a avaliação passa por revisão e aprovação.
         </p>
       </div>
 
@@ -443,7 +443,7 @@ function statusLabel(status: SimulationVersionStatus) {
     inReview: "em revisão",
     approved: "aprovada",
     rejected: "reprovada",
-    published: "publicada",
+    published: "no ar",
     archived: "arquivada",
   };
   return labels[status];

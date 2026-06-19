@@ -121,13 +121,13 @@ function EnviarLinkPage() {
 
   return (
     <AppShell>
-      <ScreenStateStrip blockedReason="sem simulações publicadas para gerar link" />
+      <ScreenStateStrip blockedReason="sem simulações no ar para gerar link" />
 
       <div className="mb-6">
         <div className="text-xs uppercase text-primary">Envio direto</div>
         <h1 className="mt-1 text-3xl font-semibold">Enviar link ao candidato</h1>
         <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
-          Selecione uma simulação publicada, preencha os dados do candidato e compartilhe o link por
+          Selecione uma simulação no ar, preencha os dados do candidato e compartilhe o link por
           e-mail ou WhatsApp.
         </p>
       </div>
@@ -152,7 +152,7 @@ function EnviarLinkPage() {
         <StateBanner tone="danger" title="Não foi possível gerar o link">
           {linkMutation.error instanceof Error
             ? linkMutation.error.message
-            : "Verifique se o sistema está disponível e se a simulação está publicada."}
+            : "Verifique se o sistema está disponível e se a simulação está no ar."}
         </StateBanner>
       )}
 
@@ -264,8 +264,8 @@ function SelectSimulationStep({
   if (simulations.length === 0) {
     return (
       <EmptyState
-        title="Nenhuma simulação publicada"
-        description="Publique uma simulação antes de gerar links para candidatos. Só simulações publicadas podem ser enviadas."
+        title="Nenhuma simulação no ar"
+        description="Coloque uma simulação no ar antes de gerar links para candidatos. Só simulações no ar podem ser enviadas."
         actions={
           <Link
             to="/nova/blueprint"
@@ -280,7 +280,7 @@ function SelectSimulationStep({
 
   return (
     <div className="space-y-4">
-      <h2 className="text-lg font-semibold">Selecione a simulação publicada</h2>
+      <h2 className="text-lg font-semibold">Selecione a simulação no ar</h2>
       <section className="rounded-md border border-border bg-card">
         <Table>
           <TableHeader>

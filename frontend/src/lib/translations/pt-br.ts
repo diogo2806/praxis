@@ -131,7 +131,7 @@ export const ptBr = {
   },
   dashboard: {
     title: "Painel - Praxis",
-    metaDescription: "Painel: simulações ativas, qualidade, maturidade e vínculo com vagas Gupy.",
+    metaDescription: "Painel: simulações ativas, qualidade, prontidão e vínculo com vagas Gupy.",
     greeting: "Boa tarde",
     noSimulations: "Nenhuma simulação cadastrada",
     createOrImport: "Crie ou importe uma simulação para que ela apareça aqui.",
@@ -148,7 +148,7 @@ export const ptBr = {
     auditTerm: "histórico completo de alterações",
     filters: {
       all: "todas",
-      published: "publicadas",
+      published: "no ar",
       approved: "aprovadas",
       inReview: "em revisão",
       draft: "rascunhos",
@@ -166,7 +166,7 @@ export const ptBr = {
       totalRecorded: "Total registrado",
     },
     totals: {
-      published: "Publicadas",
+      published: "No ar",
       approved: "Aprovadas",
       drafts: "Rascunhos",
       attempts: "Tentativas",
@@ -192,7 +192,7 @@ export const ptBr = {
   governance: {
     title: "Governança & Auditoria - Praxis",
     heading: "Governança e auditoria",
-    editingPublished: "Edição de publicada cria nova versão",
+    editingPublished: "Editar teste no ar cria nova versão",
     candidatesInProgress: "Candidatos em andamento continuam na versão atual",
     createNewVersion: "Criar nova versão?",
     confirmNewVersion: "Confirmar nova versão",

@@ -19,6 +19,33 @@ public record PraxisProperties(
         List<String> webhookAllowedHosts
 ) {
 
+    public PraxisProperties(
+            String publicBaseUrl,
+            String integrationToken,
+            int attemptLinkTtlHours,
+            int attemptSessionTtlHours,
+            int recommendInterviewThreshold,
+            double competencyWeightTolerance,
+            int gupyRateLimitRequestsPerMinute,
+            int authoringRateLimitRequestsPerMinute,
+            int authLoginRateLimitRequestsPerMinute,
+            List<String> webhookAllowedHosts
+    ) {
+        this(
+                publicBaseUrl,
+                publicBaseUrl,
+                integrationToken,
+                attemptLinkTtlHours,
+                attemptSessionTtlHours,
+                recommendInterviewThreshold,
+                competencyWeightTolerance,
+                gupyRateLimitRequestsPerMinute,
+                authoringRateLimitRequestsPerMinute,
+                authLoginRateLimitRequestsPerMinute,
+                webhookAllowedHosts
+        );
+    }
+
     public PraxisProperties {
         if (candidatePageBaseUrl == null || candidatePageBaseUrl.isBlank()) {
             candidatePageBaseUrl = publicBaseUrl;

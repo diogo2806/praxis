@@ -26,7 +26,7 @@ export const Route = createFileRoute("/nova/piloto")({
   }),
   head: () => ({
     meta: [
-      { title: "Piloto & Calibração - Praxis" },
+      { title: "Piloto e indicadores - Praxis" },
       { name: "description", content: "Indicadores reais de execução antes da publicação." },
     ],
   }),
@@ -54,7 +54,7 @@ function Page() {
       <ScreenStateStrip blockedReason="acompanhe tentativas reais antes de avançar" />
       <div className="mb-6">
         <div className="text-xs uppercase tracking-[0.2em] text-primary">Passo 4</div>
-        <h1 className="mt-1 font-display text-3xl">Piloto & Calibração</h1>
+        <h1 className="mt-1 font-display text-3xl">Piloto e indicadores</h1>
         <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
           Esta tela mostra os indicadores reais de quem já respondeu, calculados pelo sistema.
         </p>
@@ -85,7 +85,7 @@ function Page() {
           <NextStepContract
             primary="Usar os indicadores reais para decidir se a versão segue para mapa e governança."
             secondary="Voltar ao validador ou ao modelo base antes da publicação final continua permitido."
-            versionRule="Ajustes posteriores criam uma nova versão quando a versão atual já estiver publicada."
+            versionRule="Ajustes posteriores criam uma nova versão quando a versão atual já estiver no ar."
             lockedAfter="Tentativas existentes permanecem na versão em que foram criadas."
           />
           <div className="mt-5 grid gap-4 md:grid-cols-4">

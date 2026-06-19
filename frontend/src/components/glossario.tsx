@@ -24,12 +24,13 @@ export const glossario = {
     "Cada ponto da nota pode ser conferido: dá para ver de qual regra e de qual resposta ele veio.",
   blueprint: "Plano da avaliação: define o cargo, a situação e o que será medido.",
   validador:
-    "Etapa que confere se a avaliação realmente mede o que prometeu antes de ser publicada.",
-  calibracao: "Ajuste da avaliação com base em dados reais para que as notas fiquem justas.",
+    "Etapa que confere se a avaliação realmente mede o que prometeu antes de entrar no ar.",
+  calibracao:
+    "Análise dos dados reais do piloto para encontrar ajustes necessários. Não é uma etapa obrigatória para entender a tela.",
   "vazamento-prova":
     "Quando as respostas certas vazam e a avaliação perde o valor; aqui isso é monitorado.",
   maturidade:
-    "O quanto a avaliação já foi testada e está pronta para uso, de rascunho até validada.",
+    "Prontidão da avaliação: indica se ela ainda está em rascunho, em revisão ou pronta para uso.",
   backend: "A parte do sistema que roda nos servidores, nos bastidores, fora da tela.",
   "caixa-preta":
     "Sistema que decide sem explicar como chegou ao resultado. Aqui evitamos isso: tudo é explicado.",

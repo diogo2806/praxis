@@ -316,7 +316,7 @@ function ValidatorPage() {
                       : "Publicar versão imutável e seguir para piloto."
                 }
                 secondary="Salvar rascunho nunca publica; volta ao editor mantendo o diagnóstico clicável."
-                versionRule="Depois de publicar, editar cria nova versão e preserva a publicada."
+                versionRule="Depois de publicar, editar cria nova versão e preserva a versão no ar."
                 lockedAfter="Não existe ajuste manual para bloqueio crítico."
               />
             </div>

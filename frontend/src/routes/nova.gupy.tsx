@@ -44,7 +44,7 @@ export const Route = createFileRoute("/nova/gupy")({
 });
 
 const integrationChecks = [
-  "A Gupy consegue encontrar as avaliações publicadas.",
+  "A Gupy consegue encontrar as avaliações que estão no ar.",
   "O convite do candidato abre a avaliação correta.",
   "A pontuação e as competências são enviadas de volta após a conclusão.",
 ];
@@ -145,7 +145,7 @@ function GupyActivation() {
               <StateBanner tone="danger" title="Não foi possível ativar a integração">
                 {activateMutation.error instanceof Error
                   ? activateMutation.error.message
-                  : "Verifique se a versão está publicada e se a verificação prévia está aprovada."}
+                  : "Verifique se a versão está no ar e se a verificação prévia está aprovada."}
               </StateBanner>
             </div>
           )}
@@ -158,8 +158,8 @@ function GupyActivation() {
                   : "Registrar conferência e aguardar o vínculo dentro da Gupy."
               }
               secondary="Cliente vincula a simulação na vaga dentro da Gupy; o gestor não usa tela externa."
-              versionRule="A Gupy lista apenas testes publicados e versões imutáveis."
-              lockedAfter="Integração ativa não publica rascunho nem altera tentativa já iniciada."
+              versionRule="A Gupy lista apenas testes no ar e versões protegidas."
+              lockedAfter="Integração ativa não coloca rascunho no ar nem altera tentativa já iniciada."
             />
           </div>
 

@@ -3,8 +3,17 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { ArchiveRestore, Lock, RefreshCw } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
+import { ComplianceScope } from "@/components/compliance-scope";
 import { Termo } from "@/components/glossario";
 import { ScreenStateStrip, StateBanner, StatusBadge } from "@/components/praxis-ui";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { useLanguage } from "@/lib/language-context";
 import {
   cloneSimulationVersionToDraft,
@@ -65,10 +74,13 @@ function GovernanceHub() {
         <div className="text-xs uppercase text-primary">{t.common.compliance}</div>
         <h1 className="mt-1 text-3xl font-semibold">{t.governance.heading}</h1>
         <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
-          Trilha imutável de decisões, <Termo id="versionamento">versionamento</Termo> e
-          reprocessamento restrito a admin.
+          Consulte o histórico das versões, abra o registro de auditoria e crie um novo rascunho
+          quando uma versão no ar precisar mudar. Aprovação e publicação continuam no fluxo
+          guiado de governança.
         </p>
       </div>
+      <ComplianceScope current="governanca" />
+
       {hasGovernanceParams && auditQuery.isLoading && (
         <StateBanner tone="info" title={t.governance.auditRecordConnected}>
           Buscando eventos da simulação {search.simulationId} v{search.versionNumber}.
@@ -101,8 +113,13 @@ function GovernanceHub() {
       <div className="mt-5 space-y-5">
         <section className="rounded-md border border-border bg-card p-5">
           <h2 className="text-sm font-semibold">
-            Registro de auditoria imutável
+            {hasGovernanceParams ? "Registro de auditoria imutável" : "Versões disponíveis"}
           </h2>
+          {!hasGovernanceParams && (
+            <p className="mt-1 text-xs text-muted-foreground">
+              Selecione uma versão para ver a trilha de decisões ou criar um rascunho derivado.
+            </p>
+          )}
           {hasGovernanceParams ? (
             <AuditEventList events={auditQuery.data ?? []} loading={auditQuery.isLoading} />
           ) : (
@@ -115,7 +132,7 @@ function GovernanceHub() {
           )}
         </section>
         <aside className="space-y-3">
-          <StateBanner tone="warn" title="Edição de publicada cria nova versão">
+          <StateBanner tone="warn" title="Editar teste no ar cria nova versão">
             Candidatos em andamento continuam na versão atual.
           </StateBanner>
           <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
@@ -139,10 +156,14 @@ function GovernanceHub() {
               Restaurar arquivada
             </button>
             <Link
-              to="/nova/piloto"
+              to="/nova/governanca"
+              search={{
+                simulationId: search.simulationId,
+                versionNumber: search.versionNumber,
+              }}
               className="inline-flex min-h-10 items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground"
             >
-              Ver etapa do guia (wizard)
+              Abrir aprovação/publicação
             </Link>
             <Link
               to="/"
@@ -154,8 +175,9 @@ function GovernanceHub() {
           <div className="flex items-start gap-2 rounded-md border border-border bg-muted/40 p-3 text-xs text-muted-foreground">
             <Lock className="mt-0.5 h-3.5 w-3.5" />
             <span>
-              Publicar com <Termo id="blocker">bloqueio</Termo> é impedido na mudança de estado, não
-              apenas no registro.
+              Esta tela é consulta operacional. Publicar, aprovar ou reprovar uma versão é feito no
+              fluxo guiado, onde <Termo id="blocker">bloqueios</Termo> são validados antes da mudança
+              de estado.
             </span>
           </div>
         </aside>
@@ -221,22 +243,34 @@ function AuditEventList({ events, loading }: { events: AuditEventResponse[]; loa
   }
 
   return (
-    <ul className="mt-4 divide-y divide-border">
-      {events.map((event, index) => (
-        <li key={event.id} className="flex items-center gap-3 py-3 text-sm">
-          <span className="flex h-7 w-7 items-center justify-center rounded-md bg-muted text-xs">
-            {index + 1}
-          </span>
-          <span className="min-w-0 flex-1">
-            <span className="block truncate">{event.message}</span>
-            <span className="mt-1 block text-xs text-muted-foreground">
-              {formatEventType(event.eventType)} · {event.aggregateId}
-            </span>
-          </span>
-          <span className="text-xs text-muted-foreground">{formatDateTime(event.createdAt)}</span>
-        </li>
-      ))}
-    </ul>
+    <div className="mt-4 rounded-md border border-border bg-background">
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead className="w-16">#</TableHead>
+            <TableHead>Evento</TableHead>
+            <TableHead>Origem</TableHead>
+            <TableHead className="text-right">Data</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {events.map((event, index) => (
+            <TableRow key={event.id}>
+              <TableCell className="text-xs tabular-nums text-muted-foreground">
+                {index + 1}
+              </TableCell>
+              <TableCell className="min-w-[240px] font-medium">{event.message}</TableCell>
+              <TableCell className="min-w-[220px] text-xs text-muted-foreground">
+                {formatEventType(event.eventType)} - {event.aggregateId}
+              </TableCell>
+              <TableCell className="text-right text-xs tabular-nums text-muted-foreground">
+                {formatDateTime(event.createdAt)}
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    </div>
   );
 }
 
@@ -264,24 +298,47 @@ function SimulationLinks({
   }
 
   return (
-    <div className="mt-4 grid gap-3">
-      {simulations.map((simulation) => (
-        <Link
-          key={simulation.id}
-          to="/governanca"
-          search={{
-            simulationId: simulation.id,
-            versionNumber: simulation.versionNumber,
-          }}
-          className="grid gap-3 rounded-md border border-border bg-background p-3 text-sm hover:bg-accent md:grid-cols-[1fr_220px]"
-        >
-          <span>
-            <span className="block font-medium">{simulation.name}</span>
-            <span className="text-xs text-muted-foreground">v{simulation.versionNumber}</span>
-          </span>
-          <StatusBadge status={simulation.status} maturity={maturityForStatus(simulation.status)} />
-        </Link>
-      ))}
+    <div className="mt-4 rounded-md border border-border bg-background">
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Simulação</TableHead>
+            <TableHead>Status</TableHead>
+            <TableHead className="text-right">Versão</TableHead>
+            <TableHead className="text-right">Tentativas</TableHead>
+            <TableHead className="text-right">Ação</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {simulations.map((simulation) => (
+            <TableRow key={simulation.id}>
+              <TableCell className="min-w-[220px] font-medium">{simulation.name}</TableCell>
+              <TableCell>
+                <StatusBadge
+                  status={simulation.status}
+                  maturity={maturityForStatus(simulation.status)}
+                />
+              </TableCell>
+              <TableCell className="text-right tabular-nums">v{simulation.versionNumber}</TableCell>
+              <TableCell className="text-right tabular-nums">
+                {simulation.attemptsCreated.toLocaleString("pt-BR")}
+              </TableCell>
+              <TableCell className="text-right">
+                <Link
+                  to="/governanca"
+                  search={{
+                    simulationId: simulation.id,
+                    versionNumber: simulation.versionNumber,
+                  }}
+                  className="inline-flex items-center justify-center rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
+                >
+                  Ver auditoria
+                </Link>
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
     </div>
   );
 }

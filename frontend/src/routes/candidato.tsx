@@ -33,6 +33,7 @@ import {
   type MediaType,
   type SimulationSummaryResponse,
 } from "@/lib/api/praxis";
+import { getApiBaseUrl } from "@/lib/runtime-config";
 import { cn } from "@/lib/utils";
 import { useViewMode } from "@/lib/view-mode";
 
@@ -153,12 +154,13 @@ function CandidateLinksPage() {
   }
 
   async function handleShare(row: CandidateLinkResponse) {
-    const text = `Olá ${row.candidateName}, você foi convidado(a) para uma avaliação. Acesse: ${row.candidateUrl}`;
+    const candidateUrl = normalizeCandidatePageUrl(row.candidateUrl);
+    const text = `Olá ${row.candidateName}, você foi convidado(a) para uma avaliação. Acesse: ${candidateUrl}`;
     if (navigator.share) {
       await navigator.share({
         title: row.simulationName,
         text,
-        url: row.candidateUrl,
+        url: candidateUrl,
       });
       return;
     }
@@ -169,7 +171,7 @@ function CandidateLinksPage() {
 
   return (
     <AppShell>
-      <ScreenStateStrip blockedReason="sem avaliações publicadas para gerar link" />
+      <ScreenStateStrip blockedReason="sem avaliações no ar para gerar link" />
 
       <div className="mb-6">
         <div className="text-xs uppercase text-primary">Candidatos</div>
@@ -282,12 +284,12 @@ function CandidateLinksPage() {
                   <TableCell>{row.candidateEmail}</TableCell>
                   <TableCell className="max-w-[420px]">
                     <a
-                      href={row.candidateUrl}
+                      href={normalizeCandidatePageUrl(row.candidateUrl)}
                       target="_blank"
                       rel="noreferrer"
                       className="inline-flex max-w-full items-center gap-2 text-primary hover:underline"
                     >
-                      <span className="truncate">{row.candidateUrl}</span>
+                      <span className="truncate">{normalizeCandidatePageUrl(row.candidateUrl)}</span>
                       <ExternalLink className="h-4 w-4 shrink-0" />
                     </a>
                   </TableCell>
@@ -309,6 +311,29 @@ function CandidateLinksPage() {
       </section>
     </AppShell>
   );
+}
+
+function normalizeCandidatePageUrl(candidateUrl: string) {
+  if (typeof window === "undefined") {
+    return candidateUrl;
+  }
+
+  try {
+    const url = new URL(candidateUrl);
+    const apiBaseUrl = getApiBaseUrl();
+    const apiOrigin = apiBaseUrl ? new URL(apiBaseUrl, window.location.origin).origin : null;
+    const apiPrefixedCurrentHost = `api-${window.location.hostname}`;
+    const pointsToConfiguredApi = apiOrigin !== null && url.origin === apiOrigin;
+    const pointsToApiSibling = url.hostname === apiPrefixedCurrentHost;
+
+    if ((pointsToConfiguredApi || pointsToApiSibling) && url.pathname.startsWith("/candidato/")) {
+      return `${window.location.origin}${url.pathname}${url.search}${url.hash}`;
+    }
+  } catch {
+    return candidateUrl;
+  }
+
+  return candidateUrl;
 }
 
 function CandidateMedia({

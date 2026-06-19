@@ -3,8 +3,15 @@ import { useQuery } from "@tanstack/react-query";
 import type { CSSProperties } from "react";
 import { AlertTriangle, BarChart3, CheckCircle2, Clock, RefreshCw, Send } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
-import { Termo } from "@/components/glossario";
 import { EmptyState, ScreenStateStrip, StateBanner, StatusBadge } from "@/components/praxis-ui";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import {
   getSimulationMonitoring,
   listSimulations,
@@ -28,7 +35,10 @@ export const Route = createFileRoute("/monitoramento")({
   head: () => ({
     meta: [
       { title: "Monitoramento - Praxis" },
-      { name: "description", content: "Acompanhamento pós-publicação e sinais de calibração." },
+      {
+        name: "description",
+        content: "Acompanhamento de uso, entregas e alertas após a publicação.",
+      },
     ],
   }),
   component: MonitoringPage,
@@ -107,15 +117,13 @@ function MonitoringPage() {
 
   return (
     <AppShell>
-      <ScreenStateStrip blockedReason="sem dados suficientes para calibração" />
+      <ScreenStateStrip blockedReason="sem dados suficientes para análise" />
       <div className="mb-5 flex flex-wrap items-end justify-between gap-4">
         <div>
           <div className="text-xs uppercase text-primary">Monitoramento</div>
-          <h1 className="mt-1 text-3xl font-semibold">Pós-publicação</h1>
+          <h1 className="mt-1 text-3xl font-semibold">Acompanhamento</h1>
           <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
-            Acompanhe <Termo id="calibracao">calibração</Termo>,{" "}
-            <Termo id="vazamento-prova">vazamento de prova</Termo>,{" "}
-            <Termo id="maturidade">maturidade</Termo> e envio de resultados.
+            Veja tentativas, conclusões, falhas de envio e sinais que precisam de revisão.
           </p>
         </div>
         <Link
@@ -142,7 +150,7 @@ function MonitoringPage() {
       {!hasMonitoringParams ? (
         <EmptyState
           title="Selecione uma simulação para monitorar"
-          description="Você verá os indicadores (tentativas, conclusões, erros e entregas) depois que uma avaliação for publicada na Gupy. Escolha uma simulação abaixo ou crie uma nova."
+          description="Você verá os indicadores (tentativas, conclusões, erros e entregas) depois que uma avaliação estiver no ar na Gupy. Escolha uma simulação abaixo ou crie uma nova."
           actions={
             <SimulationLinks
               loading={simulationsQuery.isLoading}
@@ -214,7 +222,7 @@ function MonitoringPage() {
             </section>
 
             <aside className="space-y-3">
-              <StateBanner tone="ok" title="Calibração ativa">
+              <StateBanner tone="ok" title="Acompanhamento ativo">
                 Referências internas continuam separadas dos candidatos reais.
               </StateBanner>
               <StateBanner tone={failedDeliveries > 0 ? "danger" : "warn"} title="Regra de alerta">
@@ -229,9 +237,7 @@ function MonitoringPage() {
                   </li>
                   <li className="flex gap-2">
                     <CheckCircle2 className="mt-0.5 h-4 w-4 text-success" />
-                    <span>
-                      Registro de auditoria imutável
-                    </span>
+                    <span>Registro de auditoria imutável</span>
                   </li>
                   <li className="flex gap-2">
                     <AlertTriangle className="mt-0.5 h-4 w-4 text-warning-foreground" />
@@ -281,44 +287,58 @@ function DeliveryList({
   }
 
   return (
-    <div className="space-y-3">
-      {deliveries.slice(0, 6).map((delivery) => {
-        const meta = deliveryMeta[delivery.status];
-        return (
-          <div
-            key={delivery.id}
-            className="grid gap-3 rounded-md border border-border bg-background p-3 md:grid-cols-[minmax(0,1fr)_120px_140px]"
-          >
-            <div className="min-w-0">
-              <div className="truncate font-medium">{delivery.resultId}</div>
-              <div className="truncate text-xs text-muted-foreground">{delivery.attemptId}</div>
-              {delivery.lastError && (
-                <div className="mt-1 truncate text-xs text-danger">{delivery.lastError}</div>
-              )}
-            </div>
-            <span
-              className={cn(
-                "inline-flex h-7 items-center justify-center rounded-md border px-2 text-xs font-medium",
-                meta.className,
-              )}
-            >
-              {meta.label}
-            </span>
-            <div className="flex items-center gap-2 text-xs text-muted-foreground">
-              {delivery.status === "sent" ? (
-                <Send className="h-3.5 w-3.5" />
-              ) : delivery.status === "retrying" ? (
-                <RefreshCw className="h-3.5 w-3.5" />
-              ) : (
-                <Clock className="h-3.5 w-3.5" />
-              )}
-              {delivery.status === "sent"
-                ? formatDateTime(delivery.sentAt)
-                : formatDateTime(delivery.nextAttemptAt ?? delivery.createdAt)}
-            </div>
-          </div>
-        );
-      })}
+    <div className="rounded-md border border-border bg-background">
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Resultado</TableHead>
+            <TableHead>Tentativa</TableHead>
+            <TableHead>Status</TableHead>
+            <TableHead className="text-right">Envio</TableHead>
+            <TableHead>Erro</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {deliveries.slice(0, 6).map((delivery) => {
+            const meta = deliveryMeta[delivery.status];
+            return (
+              <TableRow key={delivery.id}>
+                <TableCell className="min-w-[180px] font-medium">{delivery.resultId}</TableCell>
+                <TableCell className="min-w-[180px] text-xs text-muted-foreground">
+                  {delivery.attemptId}
+                </TableCell>
+                <TableCell>
+                  <span
+                    className={cn(
+                      "inline-flex h-7 items-center justify-center rounded-md border px-2 text-xs font-medium",
+                      meta.className,
+                    )}
+                  >
+                    {meta.label}
+                  </span>
+                </TableCell>
+                <TableCell className="min-w-[140px] text-right text-xs tabular-nums text-muted-foreground">
+                  <span className="inline-flex items-center justify-end gap-2">
+                    {delivery.status === "sent" ? (
+                      <Send className="h-3.5 w-3.5" />
+                    ) : delivery.status === "retrying" ? (
+                      <RefreshCw className="h-3.5 w-3.5" />
+                    ) : (
+                      <Clock className="h-3.5 w-3.5" />
+                    )}
+                    {delivery.status === "sent"
+                      ? formatDateTime(delivery.sentAt)
+                      : formatDateTime(delivery.nextAttemptAt ?? delivery.createdAt)}
+                  </span>
+                </TableCell>
+                <TableCell className="min-w-[220px] max-w-[360px] text-xs text-danger">
+                  <span className="line-clamp-2">{delivery.lastError ?? "-"}</span>
+                </TableCell>
+              </TableRow>
+            );
+          })}
+        </TableBody>
+      </Table>
     </div>
   );
 }
