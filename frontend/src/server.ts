@@ -59,6 +59,7 @@ function getProxyHeaders(request: Request): Headers {
   headers.delete("connection");
   headers.delete("content-length");
   headers.delete("accept-encoding");
+  headers.delete("expect");
   return headers;
 }
 
@@ -73,6 +74,14 @@ async function proxyToBackend(request: Request): Promise<Response> {
     body: hasBody ? await request.arrayBuffer() : undefined,
     redirect: "manual",
   });
+  if (response.ok) {
+    console.info(`[proxy] ${request.method} ${sourceUrl.pathname} -> ${response.status}`);
+  } else {
+    const errorBody = await response.clone().text();
+    console.warn(
+      `[proxy] ${request.method} ${sourceUrl.pathname} -> ${response.status}: ${errorBody.slice(0, 500)}`,
+    );
+  }
 
   return new Response(response.body, {
     status: response.status,
