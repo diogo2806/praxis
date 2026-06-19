@@ -239,7 +239,7 @@ class OutboxProcessorTest {
             anyList(), any(Instant.class)
         )).thenReturn(List.of(event));
         when(outboundUrlValidator.validate("https://example.com/webhook"))
-            .thenThrow(new IllegalArgumentException("Host externo nao permitido."));
+            .thenThrow(new IllegalArgumentException("URL externa invalida."));
 
         outboxProcessor.processReadyEvents();
 

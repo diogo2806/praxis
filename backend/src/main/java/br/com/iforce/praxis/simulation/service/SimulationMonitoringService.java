@@ -1,7 +1,5 @@
 package br.com.iforce.praxis.simulation.service;
 
-import br.com.iforce.praxis.gupy.delivery.model.ResultDeliveryStatus;
-import br.com.iforce.praxis.gupy.delivery.persistence.repository.ResultDeliveryRepository;
 import br.com.iforce.praxis.gupy.model.AttemptStatus;
 import br.com.iforce.praxis.auth.service.CurrentTenantService;
 import br.com.iforce.praxis.gupy.persistence.repository.CandidateAttemptRepository;
@@ -18,18 +16,15 @@ public class SimulationMonitoringService {
 
     private final SimulationVersionRepository simulationVersionRepository;
     private final CandidateAttemptRepository candidateAttemptRepository;
-    private final ResultDeliveryRepository resultDeliveryRepository;
     private final CurrentTenantService currentTenantService;
 
     public SimulationMonitoringService(
             SimulationVersionRepository simulationVersionRepository,
             CandidateAttemptRepository candidateAttemptRepository,
-            ResultDeliveryRepository resultDeliveryRepository,
             CurrentTenantService currentTenantService
     ) {
         this.simulationVersionRepository = simulationVersionRepository;
         this.candidateAttemptRepository = candidateAttemptRepository;
-        this.resultDeliveryRepository = resultDeliveryRepository;
         this.currentTenantService = currentTenantService;
     }
 
@@ -58,21 +53,12 @@ public class SimulationMonitoringService {
                 attemptsExpired,
                 countAttempts(simulationVersionId, AttemptStatus.FAILED),
                 percent(attemptsCompleted, attemptsCreated),
-                percent(attemptsAbandoned + attemptsExpired, attemptsCreated),
-                countDeliveries(simulationVersionId, ResultDeliveryStatus.PENDING),
-                countDeliveries(simulationVersionId, ResultDeliveryStatus.RETRYING),
-                countDeliveries(simulationVersionId, ResultDeliveryStatus.SENT),
-                countDeliveries(simulationVersionId, ResultDeliveryStatus.DLQ)
+                percent(attemptsAbandoned + attemptsExpired, attemptsCreated)
         );
     }
 
     private long countAttempts(Long simulationVersionId, AttemptStatus status) {
         return candidateAttemptRepository.countByTenantIdAndSimulationVersionIdAndStatus(
-                currentTenantService.requiredTenantId(), simulationVersionId, status);
-    }
-
-    private long countDeliveries(Long simulationVersionId, ResultDeliveryStatus status) {
-        return resultDeliveryRepository.countByTenantIdAndCandidateAttemptSimulationVersionIdAndStatus(
                 currentTenantService.requiredTenantId(), simulationVersionId, status);
     }
 

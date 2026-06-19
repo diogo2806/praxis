@@ -18,7 +18,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 /**
  * Garante que dados de um tenant nunca vazam para outro pelos endpoints Gupy. O tenant-1
- * (empresa-123, token legado) e o tenant-2 (empresa-456, token "tenant2-token") possuem
+ * (empresa-123, token "tenant1-token") e o tenant-2 (empresa-456, token "tenant2-token") possuem
  * simulações publicadas distintas; nenhum dos dois enxerga a simulação ou o resultado do outro.
  */
 @SpringBootTest
@@ -26,7 +26,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @Sql(scripts = {"/seed-simulation-fixture.sql", "/tenant-isolation-fixtures.sql"})
 class TenantIsolationTest {
 
-    private static final String TENANT1_AUTH = "Bearer dev-company-token";
+    private static final String TENANT1_AUTH = "Bearer tenant1-token";
     private static final String TENANT2_AUTH = "Bearer tenant2-token";
 
     @Autowired

@@ -4,11 +4,6 @@
 DELETE FROM audit_events
 WHERE aggregate_id IN ('sim-tenant2', 'sim-tenant2:v1');
 
-DELETE FROM result_deliveries
-WHERE candidate_attempt_id IN (
-    SELECT id FROM candidate_attempts WHERE simulation_id = 'sim-tenant2'
-);
-
 DELETE FROM outbox_events
 WHERE aggregate_type = 'CandidateAttempt'
   AND aggregate_id IN (

@@ -10,7 +10,6 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.repository.query.Param;
 
-import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 
@@ -47,12 +46,4 @@ public interface CandidateAttemptRepository extends JpaRepository<CandidateAttem
 
     List<CandidateAttemptEntity> findByTenantIdOrderByCreatedAtDesc(String tenantId, Pageable pageable);
 
-    @EntityGraph(attributePaths = {"answers", "resultItems"})
-    @Query("SELECT c FROM CandidateAttemptEntity c WHERE c.tenantId = :tenantId AND c.anonymizedAt IS NULL AND c.status IN :statuses AND c.finishedAt < :finishedBefore ORDER BY c.createdAt ASC")
-    List<CandidateAttemptEntity> findByTenantIdAndAnonymizedAtIsNullAndStatusInAndFinishedAtBefore(
-            @Param("tenantId") String tenantId,
-            @Param("statuses") List<AttemptStatus> statuses,
-            @Param("finishedBefore") Instant finishedBefore,
-            Pageable pageable
-    );
 }

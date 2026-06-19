@@ -1,11 +1,6 @@
 DELETE FROM audit_events
 WHERE aggregate_id IN ('sim-atendimento-caos', 'sim-atendimento-caos:v1', 'sim-timeout-fallback', 'sim-timeout-fallback:v1');
 
-DELETE FROM result_deliveries
-WHERE candidate_attempt_id IN (
-    SELECT id FROM candidate_attempts WHERE simulation_id IN ('sim-atendimento-caos', 'sim-timeout-fallback')
-);
-
 DELETE FROM outbox_events
 WHERE aggregate_type = 'CandidateAttempt'
   AND aggregate_id IN (
@@ -18,11 +13,15 @@ WHERE simulation_id IN ('sim-atendimento-caos', 'sim-timeout-fallback');
 DELETE FROM simulations
 WHERE id IN ('sim-atendimento-caos', 'sim-timeout-fallback');
 
-INSERT INTO tenants (id, name, company_id)
-SELECT 'tenant-1', 'Acme S.A.', 'empresa-123'
+INSERT INTO tenants (id, name, company_id, integration_token_hash)
+SELECT 'tenant-1', 'Acme S.A.', 'empresa-123', 'mIpDNk36Ser0rI9x2CntfUygEZ8TN-9xe3Ux_VOl6xE'
 WHERE NOT EXISTS (
     SELECT 1 FROM tenants WHERE id = 'tenant-1'
 );
+
+UPDATE tenants
+SET integration_token_hash = 'mIpDNk36Ser0rI9x2CntfUygEZ8TN-9xe3Ux_VOl6xE'
+WHERE id = 'tenant-1';
 
 INSERT INTO simulations (id, tenant_id, name, description, created_at)
 VALUES (

@@ -15,7 +15,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @SpringBootTest(properties = {
         "praxis.security.enabled=true",
-        "praxis.integration-token=test-gupy-token-32-characters-minimum",
         "praxis.jwt-secret=test-jwt-secret-32-characters-minimum-value"
 })
 @AutoConfigureMockMvc
@@ -31,7 +30,7 @@ class SecurityConfigTest {
     @Test
     void gupyTokenCannotAccessAdminEndpoints() throws Exception {
         mockMvc.perform(get("/api/v1/simulations")
-                        .header("Authorization", "Bearer test-gupy-token-32-characters-minimum"))
+                        .header("Authorization", "Bearer tenant1-token"))
                 .andExpect(status().isUnauthorized());
     }
 
@@ -47,7 +46,7 @@ class SecurityConfigTest {
     @Test
     void gupyTokenCanAccessOnlyGupyEndpoints() throws Exception {
         mockMvc.perform(get("/test")
-                        .header("Authorization", "Bearer test-gupy-token-32-characters-minimum"))
+                        .header("Authorization", "Bearer tenant1-token"))
                 .andExpect(status().isOk());
     }
 }

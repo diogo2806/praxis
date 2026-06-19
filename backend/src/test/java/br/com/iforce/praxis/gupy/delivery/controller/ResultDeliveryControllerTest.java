@@ -33,7 +33,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @Sql(scripts = "/seed-simulation-fixture.sql")
 class ResultDeliveryControllerTest {
 
-    private static final String AUTHORIZATION = "Bearer dev-company-token";
+    private static final String AUTHORIZATION = "Bearer tenant1-token";
 
     @Autowired
     private MockMvc mockMvc;

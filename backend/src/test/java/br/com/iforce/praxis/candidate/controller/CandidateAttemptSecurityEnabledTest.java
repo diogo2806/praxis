@@ -19,14 +19,13 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @SpringBootTest(properties = {
         "praxis.security.enabled=true",
         "praxis.jwt-secret=test-only-strong-jwt-secret-2026-with-more-than-32-chars",
-        "praxis.integration-token=test-only-strong-gupy-token-2026",
         "praxis.candidate-page-base-url=https://praxis.iforce.com.br"
 })
 @AutoConfigureMockMvc
 @Sql(scripts = "/seed-simulation-fixture.sql")
 class CandidateAttemptSecurityEnabledTest {
 
-    private static final String AUTHORIZATION = "Bearer test-only-strong-gupy-token-2026";
+    private static final String AUTHORIZATION = "Bearer tenant1-token";
 
     @Autowired
     private MockMvc mockMvc;

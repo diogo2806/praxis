@@ -1,6 +1,5 @@
 package br.com.iforce.praxis.auth.config;
 
-import br.com.iforce.praxis.auth.filter.GupyApiKeyFilter;
 import br.com.iforce.praxis.auth.filter.JwtAuthenticationFilter;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
@@ -19,16 +18,13 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtFilter;
-    private final GupyApiKeyFilter gupyFilter;
     private final boolean securityEnabled;
 
     public SecurityConfig(
             JwtAuthenticationFilter jwtFilter,
-            GupyApiKeyFilter gupyFilter,
             @Value("${praxis.security.enabled:true}") boolean securityEnabled
     ) {
         this.jwtFilter = jwtFilter;
-        this.gupyFilter = gupyFilter;
         this.securityEnabled = securityEnabled;
     }
 
@@ -50,9 +46,10 @@ public class SecurityConfig {
                                 "/docs/**",
                                 "/v3/api-docs/**",
                                 "/swagger-ui/**",
-                                "/actuator/health"
+                                "/actuator/health",
+                                "/test",
+                                "/test/**"
                         ).permitAll()
-                        .requestMatchers("/test/**").hasRole("GUPY")
                         .requestMatchers("/api/v1/simulations/**").hasRole("EMPRESA")
                         .requestMatchers("/api/v1/media/**").hasRole("EMPRESA")
                         .requestMatchers("/api/v1/tenant-config/**").hasRole("EMPRESA")
@@ -62,8 +59,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/v1/candidate-links", "/api/v1/candidate-links/**").hasRole("EMPRESA")
                         .anyRequest().authenticated()
                 )
-                .addFilterBefore(gupyFilter, UsernamePasswordAuthenticationFilter.class)
-                .addFilterAfter(jwtFilter, GupyApiKeyFilter.class);
+                .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }
@@ -76,13 +72,6 @@ public class SecurityConfig {
     @Bean
     public InMemoryUserDetailsManager userDetailsService() {
         return new InMemoryUserDetailsManager();
-    }
-
-    @Bean
-    public FilterRegistrationBean<GupyApiKeyFilter> gupyApiKeyFilterRegistration(GupyApiKeyFilter filter) {
-        FilterRegistrationBean<GupyApiKeyFilter> registration = new FilterRegistrationBean<>(filter);
-        registration.setEnabled(false);
-        return registration;
     }
 
     @Bean

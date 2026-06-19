@@ -278,9 +278,9 @@ class SimulationAdminControllerTest {
     }
 
     @Test
-    void monitorSeededVersionReturnsAttemptAndDeliveryIndicators() throws Exception {
+    void monitorSeededVersionReturnsAttemptIndicators() throws Exception {
         mockMvc.perform(post("/test/candidate")
-                        .header("Authorization", "Bearer dev-company-token")
+                        .header("Authorization", "Bearer tenant1-token")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(validCandidateRequest("monitoring-document-1")))
                 .andExpect(status().isCreated());
@@ -293,10 +293,10 @@ class SimulationAdminControllerTest {
                 .andExpect(jsonPath("$.attemptsNotStarted").value(greaterThanOrEqualTo(1)))
                 .andExpect(jsonPath("$.completionRatePercent").exists())
                 .andExpect(jsonPath("$.dropOffRatePercent").exists())
-                .andExpect(jsonPath("$.deliveriesPending").exists())
-                .andExpect(jsonPath("$.deliveriesRetrying").exists())
-                .andExpect(jsonPath("$.deliveriesSent").exists())
-                .andExpect(jsonPath("$.deliveriesDeadLetter").exists());
+                .andExpect(jsonPath("$.deliveriesPending").doesNotExist())
+                .andExpect(jsonPath("$.deliveriesRetrying").doesNotExist())
+                .andExpect(jsonPath("$.deliveriesSent").doesNotExist())
+                .andExpect(jsonPath("$.deliveriesDeadLetter").doesNotExist());
     }
 
     @Test

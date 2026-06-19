@@ -147,11 +147,6 @@ function RootShell({ children }: { children: ReactNode }) {
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
 
-  useEffect(() => {
-    if (!("serviceWorker" in navigator)) return;
-    navigator.serviceWorker.register("/praxis-sw.js").catch(() => undefined);
-  }, []);
-
   return (
     <LanguageProvider>
       <QueryClientProvider client={queryClient}>

@@ -1,7 +1,5 @@
 package br.com.iforce.praxis.gupy.service;
 
-import br.com.iforce.praxis.candidate.dto.CandidateNodeResponse;
-import br.com.iforce.praxis.candidate.dto.CandidateOptionResponse;
 import br.com.iforce.praxis.candidate.dto.EtapaAtualResponse;
 import br.com.iforce.praxis.candidate.dto.RespostaResponse;
 import br.com.iforce.praxis.gupy.dto.CreateCandidateRequest;
@@ -174,36 +172,6 @@ public class CandidateAttemptMapper {
                 candidateAttemptEntity.getCreatedAt(),
                 candidateAttemptEntity.getStartedAt(),
                 candidateAttemptEntity.getFinishedAt()
-        );
-    }
-
-    public CandidateNodeResponse toCandidateNodeResponse(ScenarioNode node) {
-        if (node == null) {
-            return null;
-        }
-
-        List<CandidateOptionResponse> options = node.options().stream()
-                .map(option -> new CandidateOptionResponse(
-                        option.id(),
-                        option.text(),
-                        option.plainTextDescription(),
-                        option.audioDescriptionUrl(),
-                        option.mediaUrl(),
-                        option.mediaType()
-                ))
-                .toList();
-
-        return new CandidateNodeResponse(
-                node.id(),
-                node.turnIndex(),
-                node.speaker(),
-                node.message(),
-                node.plainTextDescription(),
-                node.timeLimitSeconds(),
-                node.audioDescriptionUrl(),
-                node.mediaUrl(),
-                node.mediaType(),
-                options
         );
     }
 

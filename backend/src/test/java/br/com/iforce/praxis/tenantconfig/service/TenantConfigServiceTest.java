@@ -85,8 +85,8 @@ class TenantConfigServiceTest {
         when(repository.saveAll(any())).thenAnswer(invocation -> invocation.getArgument(0));
 
         UpdateTenantConfigRequest request = new UpdateTenantConfigRequest(List.of(
-                new UpdateTenantConfigRequest.OptionInput("Empatia", null, false, false, null),
-                new UpdateTenantConfigRequest.OptionInput("Foco no Cliente", "Foco no Cliente", false, true, null)
+                new UpdateTenantConfigRequest.OptionInput("Empatia", null, false, false),
+                new UpdateTenantConfigRequest.OptionInput("Foco no Cliente", "Foco no Cliente", false, true)
         ));
 
         List<ConfigOptionDto> result = service.updateConfig(TenantConfigType.COMPETENCY, request);

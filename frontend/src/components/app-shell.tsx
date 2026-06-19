@@ -9,7 +9,6 @@ import {
   Home,
   Link2,
   Menu,
-  MessageSquare,
   Scale,
   Settings,
   ShieldCheck,
@@ -57,12 +56,6 @@ const getNav = (t: TranslationMap) =>
       desc: "Comparar candidatos",
     },
     { to: "/enviar-link", label: t.common.sendLink, icon: Link2, desc: t.descriptions.sendLink },
-    {
-      to: "/candidato",
-      label: t.common.candidateView,
-      icon: MessageSquare,
-      desc: t.descriptions.candidateView,
-    },
   ] as const;
 
 const getSecondary = (t: TranslationMap) =>

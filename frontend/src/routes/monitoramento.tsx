@@ -70,9 +70,9 @@ function buildLiveCohorts(monitoring?: SimulationMonitoringResponse) {
       pct: ((monitoring.attemptsInProgress + monitoring.attemptsPaused) / total) * 100,
     },
     {
-      label: "Falha de envio",
-      value: monitoring.deliveriesDeadLetter,
-      pct: (monitoring.deliveriesDeadLetter / total) * 100,
+      label: "Nao iniciadas",
+      value: monitoring.attemptsNotStarted,
+      pct: (monitoring.attemptsNotStarted / total) * 100,
     },
     {
       label: "Abandonadas",
@@ -112,8 +112,9 @@ function MonitoringPage() {
   const riskyDeliveries = deliveries.filter(
     (delivery) => delivery.status === "retrying" || delivery.status === "dlq",
   );
-  const sentDeliveries = monitoring?.deliveriesSent ?? 0;
-  const failedDeliveries = monitoring?.deliveriesDeadLetter ?? 0;
+  const retryingDeliveries = deliveries.filter((delivery) => delivery.status === "retrying").length;
+  const sentDeliveries = deliveries.filter((delivery) => delivery.status === "sent").length;
+  const failedDeliveries = deliveries.filter((delivery) => delivery.status === "dlq").length;
 
   return (
     <AppShell>
@@ -183,7 +184,7 @@ function MonitoringPage() {
                   : "Fila de resultados saudável"
             }
           >
-            {`${sentDeliveries} resultados enviados, ${monitoring?.deliveriesRetrying ?? 0} sendo reenviados e ${failedDeliveries} com falha.`}
+            {`${sentDeliveries} resultados enviados, ${retryingDeliveries} sendo reenviados e ${failedDeliveries} com falha.`}
           </StateBanner>
 
           <div className="grid gap-3 md:grid-cols-4">

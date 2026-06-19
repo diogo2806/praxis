@@ -1,6 +1,5 @@
 package br.com.iforce.praxis.gupy.delivery.service;
 
-import br.com.iforce.praxis.config.PraxisProperties;
 import br.com.iforce.praxis.gupy.dto.TestResultResponse;
 import br.com.iforce.praxis.gupy.model.ReliabilityLevel;
 import org.junit.jupiter.api.Test;
@@ -9,27 +8,23 @@ import org.springframework.web.client.RestClient;
 import java.util.List;
 import java.util.Map;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class RestClientResultWebhookClientTest {
 
     @Test
-    void rejectsWebhookHostOutsideAllowList() {
-        RestClientResultWebhookClient client = new RestClientResultWebhookClient(
-                RestClient.builder(),
-                validator(List.of("cliente.gupy.io"))
-        );
+    void allowsPublicWebhookHostWithoutStaticAllowList() {
+        GupyOutboundUrlValidator validator = validator();
 
-        assertThatThrownBy(() -> client.postResult("https://evil.example/result", response()))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("Host externo nao permitido.");
+        assertThat(validator.validate("https://8.8.8.8/result").getHost()).isEqualTo("8.8.8.8");
     }
 
     @Test
-    void rejectsLocalNetworkWebhookEvenWhenHostIsAllowed() {
+    void rejectsLocalNetworkWebhook() {
         RestClientResultWebhookClient client = new RestClientResultWebhookClient(
                 RestClient.builder(),
-                validator(List.of("127.0.0.1"))
+                validator()
         );
 
         assertThatThrownBy(() -> client.postResult("http://127.0.0.1/result", response()))
@@ -37,21 +32,8 @@ class RestClientResultWebhookClientTest {
                 .hasMessage("URL externa nao pode apontar para rede local ou reservada.");
     }
 
-    private GupyOutboundUrlValidator validator(List<String> webhookAllowedHosts) {
-        PraxisProperties properties = new PraxisProperties(
-                "http://localhost:8080",
-                "token",
-                168,
-                24,
-                70,
-                15,
-                0.001,
-                100,
-                30,
-                10,
-                webhookAllowedHosts
-        );
-        return new GupyOutboundUrlValidator(properties, false);
+    private GupyOutboundUrlValidator validator() {
+        return new GupyOutboundUrlValidator(false);
     }
 
     private TestResultResponse response() {

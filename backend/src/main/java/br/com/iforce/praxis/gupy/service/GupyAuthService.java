@@ -1,9 +1,6 @@
 package br.com.iforce.praxis.gupy.service;
 
-import br.com.iforce.praxis.auth.persistence.entity.TenantEntity;
 import br.com.iforce.praxis.auth.persistence.repository.TenantRepository;
-import br.com.iforce.praxis.config.PraxisProperties;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
@@ -18,30 +15,12 @@ public class GupyAuthService {
 
     private static final String BEARER_PREFIX = "Bearer ";
 
-    private final PraxisProperties properties;
     private final TenantRepository tenantRepository;
-    private final String defaultTenantId;
 
-    public GupyAuthService(
-            PraxisProperties properties,
-            TenantRepository tenantRepository,
-            @Value("${praxis.security.enabled:true}") boolean securityEnabled,
-            @Value("${praxis.default-tenant-id:tenant-1}") String defaultTenantId
-    ) {
-        if (securityEnabled && (properties.integrationToken() == null
-                || properties.integrationToken().isBlank()
-                || "dev-company-token".equals(properties.integrationToken()))) {
-            throw new IllegalStateException("praxis.integration-token deve ser configurado fora do valor de desenvolvimento.");
-        }
-        this.properties = properties;
+    public GupyAuthService(TenantRepository tenantRepository) {
         this.tenantRepository = tenantRepository;
-        this.defaultTenantId = defaultTenantId;
     }
 
-    /**
-     * Resolve o tenant a partir do header Authorization. Primeiro tenta casar o hash do token com um
-     * tenant configurado; se não houver, cai para o token global legado (associado ao tenant padrão).
-     */
     public GupyTenantContext validateBearerToken(String authorizationHeader) {
         if (authorizationHeader == null || !authorizationHeader.startsWith(BEARER_PREFIX)) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Token Bearer obrigatorio.");
@@ -52,17 +31,7 @@ public class GupyAuthService {
 
         return tenantRepository.findFirstByIntegrationTokenHash(tokenHash)
                 .map(tenant -> new GupyTenantContext(tenant.getId(), tenant.getCompanyId()))
-                .orElseGet(() -> validateLegacyToken(token));
-    }
-
-    private GupyTenantContext validateLegacyToken(String token) {
-        if (properties.integrationToken() == null || !properties.integrationToken().equals(token)) {
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Token Bearer invalido.");
-        }
-
-        TenantEntity tenant = tenantRepository.findById(defaultTenantId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Tenant padrao nao configurado."));
-        return new GupyTenantContext(tenant.getId(), tenant.getCompanyId());
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Token Bearer invalido."));
     }
 
     private String sha256(String value) {

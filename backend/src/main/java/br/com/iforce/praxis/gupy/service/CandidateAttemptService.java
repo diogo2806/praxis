@@ -264,8 +264,7 @@ public class CandidateAttemptService {
                 savedAttempt.status() == AttemptStatus.COMPLETED,
                 suggestedFrontendAction(savedAttempt.status()),
                 progressFor(savedAttempt, simulation, currentNode),
-                candidateAttemptMapper.toEtapaAtualResponse(currentNode, savedAttempt.accommodationTimeMultiplier()),
-                offlineEtapas(simulation, savedAttempt)
+                candidateAttemptMapper.toEtapaAtualResponse(currentNode, savedAttempt.accommodationTimeMultiplier())
         );
     }
 
@@ -438,13 +437,6 @@ public class CandidateAttemptService {
         int timeoutDepth = maxRemainingDepth(simulation, node.timeoutNextNodeId(), new HashSet<>(visitedNodeIds));
 
         return 1 + Math.max(maxChildDepth, timeoutDepth);
-    }
-
-    private List<EtapaAtualResponse> offlineEtapas(PublishedSimulation simulation, CandidateAttempt attempt) {
-        return simulation.nodes().stream()
-                .sorted((left, right) -> Integer.compare(left.turnIndex(), right.turnIndex()))
-                .map(node -> candidateAttemptMapper.toEtapaAtualResponse(node, attempt.accommodationTimeMultiplier()))
-                .toList();
     }
 
     private Optional<ScenarioNode> resolveRequestNode(

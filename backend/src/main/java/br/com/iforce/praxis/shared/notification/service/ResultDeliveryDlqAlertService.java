@@ -28,20 +28,17 @@ public class ResultDeliveryDlqAlertService {
     private final UserRepository userRepository;
     private final CandidateAttemptRepository candidateAttemptRepository;
     private final InAppNotificationRepository inAppNotificationRepository;
-    private final EmailAlertSender emailAlertSender;
     private final ObjectMapper objectMapper;
 
     public ResultDeliveryDlqAlertService(
             UserRepository userRepository,
             CandidateAttemptRepository candidateAttemptRepository,
             InAppNotificationRepository inAppNotificationRepository,
-            EmailAlertSender emailAlertSender,
             ObjectMapper objectMapper
     ) {
         this.userRepository = userRepository;
         this.candidateAttemptRepository = candidateAttemptRepository;
         this.inAppNotificationRepository = inAppNotificationRepository;
-        this.emailAlertSender = emailAlertSender;
         this.objectMapper = objectMapper;
     }
 
@@ -65,17 +62,6 @@ public class ResultDeliveryDlqAlertService {
                 continue;
             }
             createInAppNotification(event, impact, admin);
-            try {
-                sendEmail(event, impact, admin);
-            } catch (RuntimeException exception) {
-                log.error(
-                        "Falha ao enviar e-mail de alerta DLQ para tenant={} usuario={} evento={}",
-                        event.getTenantId(),
-                        admin.getId(),
-                        event.getId(),
-                        exception
-                );
-            }
         }
     }
 
@@ -102,30 +88,6 @@ public class ResultDeliveryDlqAlertService {
         notification.setCreatedAt(Instant.now());
 
         inAppNotificationRepository.save(notification);
-    }
-
-    private void sendEmail(OutboxEventEntity event, CandidateImpact impact, UserEntity admin) {
-        emailAlertSender.send(new EmailAlertMessage(
-                event.getTenantId(),
-                admin.getEmail(),
-                "Acao necessaria: resultado retido na integracao Gupy",
-                """
-                Um resultado de candidato falhou nas tentativas automaticas de envio para a Gupy e foi retido para suporte.
-
-                Candidato: %s <%s>
-                Attempt ID: %s
-                Result ID: %s
-                Evento outbox: %s
-                Ultimo erro: %s
-                """.formatted(
-                        impact.candidateName(),
-                        impact.candidateEmail(),
-                        impact.attemptId(),
-                        impact.resultId(),
-                        event.getId(),
-                        event.getLastError()
-                )
-        ));
     }
 
     private String messageFor(CandidateImpact impact) {

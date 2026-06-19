@@ -2,7 +2,6 @@ package br.com.iforce.praxis.tenantconfig.controller;
 
 import br.com.iforce.praxis.tenantconfig.dto.ConfigOptionDto;
 import br.com.iforce.praxis.tenantconfig.dto.TenantConfigResponse;
-import br.com.iforce.praxis.tenantconfig.dto.UpdateConfigOptionRequest;
 import br.com.iforce.praxis.tenantconfig.dto.UpdateTenantConfigRequest;
 import br.com.iforce.praxis.tenantconfig.model.TenantConfigType;
 import br.com.iforce.praxis.tenantconfig.service.TenantConfigService;
@@ -11,7 +10,6 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -52,27 +50,4 @@ public class TenantConfigController {
         return ResponseEntity.ok(tenantConfigService.updateConfig(configType, request));
     }
 
-    @GetMapping("/{configType}/all")
-    @Operation(
-            summary = "Carrega todas as opcoes de um catalogo",
-            description = "Retorna todas as opcoes (ativas e inativas) de um tipo de configuracao para o tenant autenticado. Usado pela tela de gerenciamento."
-    )
-    public ResponseEntity<List<ConfigOptionDto>> getAllConfigOptions(
-            @PathVariable TenantConfigType configType
-    ) {
-        return ResponseEntity.ok(tenantConfigService.getAllConfigOptions(configType));
-    }
-
-    @PatchMapping("/{configType}/{optionValue}")
-    @Operation(
-            summary = "Atualiza uma opcao de configuracao",
-            description = "Permite editar ou desativar uma opcao especifica."
-    )
-    public ResponseEntity<ConfigOptionDto> updateConfigOption(
-            @PathVariable TenantConfigType configType,
-            @PathVariable String optionValue,
-            @Valid @RequestBody UpdateConfigOptionRequest request
-    ) {
-        return ResponseEntity.ok(tenantConfigService.updateConfigOption(configType, optionValue, request));
-    }
 }

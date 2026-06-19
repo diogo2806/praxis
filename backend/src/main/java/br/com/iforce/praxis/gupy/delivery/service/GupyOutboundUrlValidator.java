@@ -1,6 +1,5 @@
 package br.com.iforce.praxis.gupy.delivery.service;
 
-import br.com.iforce.praxis.config.PraxisProperties;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -13,14 +12,11 @@ import java.util.Locale;
 @Component
 public class GupyOutboundUrlValidator {
 
-    private final PraxisProperties praxisProperties;
     private final boolean securityEnabled;
 
     public GupyOutboundUrlValidator(
-            PraxisProperties praxisProperties,
             @Value("${praxis.security.enabled:true}") boolean securityEnabled
     ) {
-        this.praxisProperties = praxisProperties;
         this.securityEnabled = securityEnabled;
     }
 
@@ -38,18 +34,8 @@ public class GupyOutboundUrlValidator {
         if (host.isBlank() || uri.getUserInfo() != null) {
             throw new IllegalArgumentException("URL externa invalida.");
         }
-        if (!isAllowedHost(host)) {
-            throw new IllegalArgumentException("Host externo nao permitido.");
-        }
         assertPublicAddress(host);
         return uri;
-    }
-
-    private boolean isAllowedHost(String host) {
-        return praxisProperties.webhookAllowedHosts().stream()
-                .map(allowedHost -> allowedHost == null ? "" : allowedHost.trim().toLowerCase(Locale.ROOT))
-                .filter(allowedHost -> !allowedHost.isBlank())
-                .anyMatch(allowedHost -> host.equals(allowedHost) || host.endsWith("." + allowedHost));
     }
 
     private void assertPublicAddress(String host) {

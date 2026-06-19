@@ -14,9 +14,6 @@ public record ConfigOptionDto(
         boolean locked,
 
         @Schema(example = "false", description = "Quando true a opcao ja vem marcada por padrao.")
-        boolean selectedByDefault,
-
-        @Schema(example = "true", description = "Quando false a opcao esta desativada e nao aparece em fluxos normais.")
-        boolean active
+        boolean selectedByDefault
 ) {
 }

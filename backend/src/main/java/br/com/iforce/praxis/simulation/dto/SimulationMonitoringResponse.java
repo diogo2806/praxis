@@ -12,10 +12,6 @@ public record SimulationMonitoringResponse(
         long attemptsExpired,
         long attemptsFailed,
         double completionRatePercent,
-        double dropOffRatePercent,
-        long deliveriesPending,
-        long deliveriesRetrying,
-        long deliveriesSent,
-        long deliveriesDeadLetter
+        double dropOffRatePercent
 ) {
 }

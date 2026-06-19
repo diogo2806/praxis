@@ -1,5 +1,6 @@
 package br.com.iforce.praxis.simulation.service;
 
+import br.com.iforce.praxis.auth.persistence.repository.TenantRepository;
 import br.com.iforce.praxis.config.PraxisProperties;
 import br.com.iforce.praxis.auth.service.CurrentTenantService;
 import br.com.iforce.praxis.simulation.dto.GupyPreflightCheckResponse;
@@ -26,17 +27,20 @@ public class GupyPreflightService {
     private final SimulationValidationService simulationValidationService;
     private final PraxisProperties praxisProperties;
     private final CurrentTenantService currentTenantService;
+    private final TenantRepository tenantRepository;
 
     public GupyPreflightService(
             SimulationVersionRepository simulationVersionRepository,
             SimulationValidationService simulationValidationService,
             PraxisProperties praxisProperties,
-            CurrentTenantService currentTenantService
+            CurrentTenantService currentTenantService,
+            TenantRepository tenantRepository
     ) {
         this.simulationVersionRepository = simulationVersionRepository;
         this.simulationValidationService = simulationValidationService;
         this.praxisProperties = praxisProperties;
         this.currentTenantService = currentTenantService;
+        this.tenantRepository = tenantRepository;
     }
 
     @Transactional(readOnly = true)
@@ -93,11 +97,11 @@ public class GupyPreflightService {
     }
 
     private GupyPreflightCheckResponse validateIntegrationToken() {
-        if (isBlank(praxisProperties.integrationToken())) {
-            return blocker(GupyPreflightCheckCode.INTEGRATION_TOKEN, "Token de integracao Gupy nao configurado.");
-        }
-
-        return ok(GupyPreflightCheckCode.INTEGRATION_TOKEN, "Token de integracao configurado.");
+        String tenantId = currentTenantService.requiredTenantId();
+        return tenantRepository.findById(tenantId)
+                .filter(tenant -> !isBlank(tenant.getIntegrationTokenHash()))
+                .map(tenant -> ok(GupyPreflightCheckCode.INTEGRATION_TOKEN, "Token de integracao configurado no tenant."))
+                .orElseGet(() -> blocker(GupyPreflightCheckCode.INTEGRATION_TOKEN, "Token de integracao Gupy nao configurado no tenant."));
     }
 
     private GupyPreflightCheckResponse validateSimulation(SimulationVersionEntity simulationVersionEntity) {
