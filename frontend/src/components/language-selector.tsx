@@ -2,13 +2,7 @@ import { Globe } from "lucide-react";
 import { useLanguage } from "@/lib/language-context";
 import { languages, type Language } from "@/lib/translations";
 import { cn } from "@/lib/utils";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Select, SelectContent, SelectItem, SelectTrigger } from "@/components/ui/select";
 
 type LanguageSelectorProps = {
   className?: string;
@@ -22,12 +16,12 @@ export function LanguageSelector({ className }: LanguageSelectorProps) {
       <SelectTrigger
         aria-label="Selecionar idioma"
         className={cn(
-          "w-11 shrink-0 gap-2 border-border bg-card text-xs text-muted-foreground hover:bg-accent sm:w-44",
+          "w-auto min-w-0 shrink-0 gap-1.5 border-border bg-card px-2.5 text-xs text-foreground hover:bg-accent [&>svg:last-child]:hidden",
           className,
         )}
       >
         <Globe className="h-3.5 w-3.5" />
-        <SelectValue className="hidden sm:inline" />
+        <span>{languages.find((lang) => lang.code === language)?.label ?? language}</span>
       </SelectTrigger>
       <SelectContent>
         {languages.map((lang) => (

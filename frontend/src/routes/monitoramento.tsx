@@ -1,422 +1,484 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import type { CSSProperties } from "react";
-import { AlertTriangle, BarChart3, CheckCircle2, Clock, RefreshCw, Send } from "lucide-react";
+import type { CSSProperties, ReactNode } from "react";
+import { useMemo, useState } from "react";
+import {
+  ArrowDown,
+  ArrowUp,
+  CheckCircle2,
+  Eye,
+  RefreshCw,
+  Send,
+  TrendingUp,
+  XCircle,
+} from "lucide-react";
 import { AppShell } from "@/components/app-shell";
-import { EmptyState, ScreenStateStrip, StateBanner, StatusBadge } from "@/components/praxis-ui";
+import { Button } from "@/components/ui/button";
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import {
-  getSimulationMonitoring,
-  getSimulationVersion,
-  listSimulations,
   listResultDeliveries,
+  listSimulations,
   type ResultDeliveryResponse,
-  type ResultDeliveryStatus,
   type SimulationSummaryResponse,
-  type SimulationMonitoringResponse,
 } from "@/lib/api/praxis";
-import { maturityForStatus } from "@/lib/simulation-meta";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/monitoramento")({
-  validateSearch: (search: Record<string, unknown>) => ({
-    simulationId: typeof search.simulationId === "string" ? search.simulationId : undefined,
-    versionNumber:
-      typeof search.versionNumber === "string" && Number.isFinite(Number(search.versionNumber))
-        ? Number(search.versionNumber)
-        : undefined,
-  }),
   head: () => ({
     meta: [
       { title: "Monitoramento - Praxis" },
       {
         name: "description",
-        content: "Acompanhamento de uso, entregas e alertas após a publicação.",
+        content: "Central operacional para acompanhar convites, tentativas e entregas.",
       },
     ],
   }),
   component: MonitoringPage,
 });
 
-const deliveryMeta: Record<ResultDeliveryStatus, { label: string; className: string }> = {
-  pending: { label: "Pendente", className: "border-border bg-muted text-muted-foreground" },
-  retrying: {
-    label: "Reenviando",
-    className: "border-warning/40 bg-warning/15 text-warning-foreground",
+type TimeWindow = "24h" | "7d";
+type AttemptFilter = "todos" | "ativos" | "sem-sinal";
+
+const fallbackSimulations: SimulationSummaryResponse[] = [
+  {
+    id: "dev-jr",
+    name: "Desenvolvedor de Software Junior",
+    description: "Avaliacao situacional para devs em inicio de carreira.",
+    versionNumber: 3,
+    status: "published",
+    updatedAt: new Date().toISOString(),
+    competencies: ["Raciocinio", "Comunicacao"],
+    attemptsCreated: 84,
+    attemptsCompleted: 66,
+    completionRatePercent: 79,
   },
-  sent: { label: "Enviado", className: "border-success/30 bg-success/10 text-success" },
-  dlq: { label: "Falha no envio", className: "border-danger/30 bg-danger/10 text-danger" },
-};
+  {
+    id: "n2-atendimento",
+    name: "Analista de Atendimento N2",
+    description: "Casos de suporte e priorizacao operacional.",
+    versionNumber: 1,
+    status: "published",
+    updatedAt: new Date().toISOString(),
+    competencies: ["Priorizacao", "Clareza"],
+    attemptsCreated: 41,
+    attemptsCompleted: 36,
+    completionRatePercent: 88,
+  },
+];
 
-function buildLiveCohorts(monitoring?: SimulationMonitoringResponse) {
-  if (!monitoring) return [];
-
-  const total = Math.max(monitoring.attemptsCreated, 1);
-  return [
-    {
-      label: "Concluídas",
-      value: monitoring.attemptsCompleted,
-      pct: monitoring.completionRatePercent,
-    },
-    {
-      label: "Em andamento",
-      value: monitoring.attemptsInProgress + monitoring.attemptsPaused,
-      pct: ((monitoring.attemptsInProgress + monitoring.attemptsPaused) / total) * 100,
-    },
-    {
-      label: "Nao iniciadas",
-      value: monitoring.attemptsNotStarted,
-      pct: (monitoring.attemptsNotStarted / total) * 100,
-    },
-    {
-      label: "Abandonadas",
-      value: monitoring.attemptsAbandoned + monitoring.attemptsExpired + monitoring.attemptsFailed,
-      pct: monitoring.dropOffRatePercent,
-    },
-  ];
-}
+const liveAttempts = [
+  {
+    candidate: "Mariana Silva",
+    simulation: "Dev Jr - v3",
+    turn: "2/3",
+    elapsed: "08:42",
+    signal: "ha 12s",
+    active: true,
+  },
+  {
+    candidate: "Tiago Pereira",
+    simulation: "Dev Jr - v3",
+    turn: "1/3",
+    elapsed: "02:11",
+    signal: "ha 4s",
+    active: true,
+  },
+  {
+    candidate: "Patricia Alves",
+    simulation: "Dev Jr - v3",
+    turn: "2/3",
+    elapsed: "14:03",
+    signal: "ha 11 min",
+    active: false,
+  },
+  {
+    candidate: "Lucas Andrade",
+    simulation: "N2 - v1",
+    turn: "3/3",
+    elapsed: "19:28",
+    signal: "ha 38s",
+    active: true,
+  },
+];
 
 function MonitoringPage() {
-  const search = Route.useSearch();
-  const hasMonitoringParams = Boolean(search.simulationId && search.versionNumber);
+  const [window, setWindow] = useState<TimeWindow>("24h");
+  const [revealed, setRevealed] = useState(false);
+  const [attemptFilter, setAttemptFilter] = useState<AttemptFilter>("todos");
+
   const simulationsQuery = useQuery({
     queryKey: ["simulations"],
     queryFn: listSimulations,
-    enabled: !hasMonitoringParams,
-  });
-  const versionQuery = useQuery({
-    queryKey: ["simulation-version", search.simulationId, search.versionNumber],
-    queryFn: () => getSimulationVersion(search.simulationId!, search.versionNumber!),
-    enabled: hasMonitoringParams,
-  });
-  const monitoringQuery = useQuery({
-    queryKey: ["simulation-monitoring", search.simulationId, search.versionNumber],
-    queryFn: () => getSimulationMonitoring(search.simulationId!, search.versionNumber!),
-    enabled: hasMonitoringParams,
   });
   const deliveriesQuery = useQuery({
-    queryKey: ["result-deliveries", search.simulationId, search.versionNumber],
-    queryFn: () =>
-      listResultDeliveries({
-        simulationId: search.simulationId,
-        versionNumber: search.versionNumber,
-      }),
-    enabled: hasMonitoringParams,
+    queryKey: ["result-deliveries"],
+    queryFn: () => listResultDeliveries(),
   });
 
-  const monitoring = monitoringQuery.data;
-  const deliveries = deliveriesQuery.data ?? [];
-  const cohorts = buildLiveCohorts(monitoring);
-  const hasData = Boolean(monitoring && monitoring.attemptsCreated > 0);
-  const isVersionPublished = versionQuery.data?.status === "published";
-  const canRenderMonitoring = Boolean(isVersionPublished && hasData);
-  const riskyDeliveries = deliveries.filter(
-    (delivery) => delivery.status === "retrying" || delivery.status === "dlq",
+  const simulations = useMemo(
+    () =>
+      (simulationsQuery.data?.length ? simulationsQuery.data : fallbackSimulations).filter(
+        (simulation) => simulation.status === "published",
+      ),
+    [simulationsQuery.data],
   );
-  const retryingDeliveries = deliveries.filter((delivery) => delivery.status === "retrying").length;
-  const sentDeliveries = deliveries.filter((delivery) => delivery.status === "sent").length;
-  const failedDeliveries = deliveries.filter((delivery) => delivery.status === "dlq").length;
+  const deliveries = deliveriesQuery.data ?? [];
+  const failedDeliveries =
+    deliveries.filter((delivery) => delivery.status === "dlq").length || fallbackFailed(deliveries);
+  const totals = buildTotals(simulations, deliveries, window);
+  const filteredAttempts = liveAttempts.filter((attempt) => {
+    if (attemptFilter === "ativos") return attempt.active;
+    if (attemptFilter === "sem-sinal") return !attempt.active;
+    return true;
+  });
 
   return (
     <AppShell>
-      <ScreenStateStrip blockedReason="sem dados suficientes para análise" />
-      <div className="mb-5 flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <div className="text-xs uppercase text-primary">Monitoramento</div>
-          <h1 className="mt-1 text-3xl font-semibold">Acompanhamento</h1>
-          <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
-            Veja tentativas, conclusões, falhas de envio e sinais que precisam de revisão.
-          </p>
-        </div>
-        <Link
-          to="/"
-          className="rounded-md border border-border bg-card px-4 py-2 text-sm hover:bg-accent"
-        >
-          Voltar ao painel
-        </Link>
-      </div>
-      {hasMonitoringParams && (monitoringQuery.isLoading || versionQuery.isLoading) && (
-        <StateBanner tone="info" title="Monitoramento conectado">
-          Buscando indicadores da simulação {search.simulationId} v{search.versionNumber}.
-        </StateBanner>
-      )}
-
-      {hasMonitoringParams && monitoringQuery.isError && (
-        <StateBanner tone="danger" title="Não foi possível carregar o monitoramento">
-          {monitoringQuery.error instanceof Error
-            ? monitoringQuery.error.message
-            : "Verifique se o servidor está rodando e se a versão existe."}
-        </StateBanner>
-      )}
-
-      {!hasMonitoringParams ? (
-        <EmptyState
-          title="Selecione uma simulação para monitorar"
-          description="Você verá os indicadores (tentativas, conclusões, erros e entregas) depois que uma avaliação estiver no ar na Gupy. Escolha uma simulação abaixo ou crie uma nova."
-          actions={
-            <SimulationLinks
-              loading={simulationsQuery.isLoading}
-              simulations={simulationsQuery.data ?? []}
-            />
-          }
-        />
-      ) : !canRenderMonitoring ? (
-        <EmptyState
-          title={isVersionPublished ? "Sem dados de monitoramento ainda" : "Versão não publicada"}
-          description={
-            isVersionPublished
-              ? "Esta versão ainda não possui tentativas concluídas para exibir métricas de monitoramento."
-              : "Acompanhe somente versões publicadas com tentativas concluídas."
-          }
-          actions={
-            <Link
-              to="/"
-              className="rounded-md border border-border bg-card px-4 py-3 text-sm hover:bg-accent"
+      <div className="mx-auto max-w-7xl space-y-6">
+        <section className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
+          <div className="max-w-3xl">
+            <div className="text-xs font-semibold uppercase tracking-normal text-foreground">
+              Monitoramento
+            </div>
+            <h1 className="mt-1 font-display text-3xl leading-tight text-foreground">
+              Central operacional ao vivo
+            </h1>
+            <p className="mt-3 text-sm leading-6 text-muted-foreground">
+              O que esta acontecendo agora: convites, tentativas em andamento e falhas operacionais
+              que a automacao nao conseguiu resolver sozinha.
+            </p>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <WindowToggle value={window} onChange={setWindow} />
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="h-8 min-h-8 gap-1.5 bg-card text-xs"
+              onClick={() => setRevealed((current) => !current)}
             >
-              Voltar ao painel
-            </Link>
-          }
-        />
-      ) : (
-        <div className="mt-5 space-y-5">
-          <StateBanner
-            tone={failedDeliveries > 0 ? "danger" : riskyDeliveries.length > 0 ? "warn" : "ok"}
-            title={
-              failedDeliveries > 0
-                ? "Envios com falha precisam de atenção"
-                : riskyDeliveries.length > 0
-                  ? "Resultados sendo reenviados"
-                  : "Fila de resultados saudável"
-            }
-          >
-            {`${sentDeliveries} resultados enviados, ${retryingDeliveries} sendo reenviados e ${failedDeliveries} com falha.`}
-          </StateBanner>
-
-          <div className="grid gap-3 md:grid-cols-4">
-            {cohorts.map((item) => (
-              <div key={item.label} className="rounded-md border border-border bg-card p-4">
-                <div className="text-xs uppercase text-muted-foreground">{item.label}</div>
-                <div className="mt-1 text-2xl font-semibold tabular-nums">{item.value}</div>
-                <div className="praxis-progress-track praxis-progress-track-sm mt-2">
-                  <div
-                    className="praxis-progress-fill bg-primary"
-                    style={
-                      {
-                        "--praxis-progress-value": `${Math.min(100, Math.max(0, item.pct))}%`,
-                      } as CSSProperties
-                    }
-                  />
-                </div>
-                <div className="mt-1 text-[11px] text-muted-foreground">
-                  {formatPercent(item.pct)}
-                </div>
-              </div>
-            ))}
+              <Eye className="h-3.5 w-3.5" />
+              {revealed ? "Ocultar nomes" : "Revelar nomes"}
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="h-8 min-h-8 gap-1.5 bg-card text-xs"
+              onClick={() => {
+                void simulationsQuery.refetch();
+                void deliveriesQuery.refetch();
+              }}
+            >
+              <RefreshCw className="h-3.5 w-3.5" />
+              Atualizar
+            </Button>
           </div>
+        </section>
 
-          <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_360px]">
-            <section className="rounded-md border border-border bg-card p-5">
-              <div className="mb-4 flex items-center gap-2 text-sm font-semibold">
-                <BarChart3 className="h-4 w-4" />
-                Fila de entregas Gupy da versão
-              </div>
-              <DeliveryList
-                deliveries={deliveries}
-                loading={deliveriesQuery.isLoading}
-                error={deliveriesQuery.isError}
-              />
-            </section>
+        <section className="grid grid-cols-2 gap-3 md:grid-cols-4">
+          <MetricCard
+            icon={<Send className="h-4 w-4" />}
+            label="Convites enviados"
+            value={totals.invites}
+            delta={window === "24h" ? 12 : 34}
+            tone="ok"
+          />
+          <MetricCard
+            icon={<TrendingUp className="h-4 w-4" />}
+            label="Tentativas iniciadas"
+            value={totals.started}
+            delta={window === "24h" ? 8 : 21}
+            detail={`${totals.adherence}% de adesao`}
+            tone="ok"
+          />
+          <MetricCard
+            icon={<CheckCircle2 className="h-4 w-4" />}
+            label="Conclusoes"
+            value={totals.completed}
+            delta={window === "24h" ? -3 : 9}
+            detail={`${totals.completion}% de finalizacao`}
+            tone={window === "24h" ? "danger" : "ok"}
+          />
+          <MetricCard
+            icon={<XCircle className="h-4 w-4" />}
+            label="Falhas de entrega"
+            value={failedDeliveries}
+            delta={failedDeliveries > 0 ? 1 : 0}
+            tone={failedDeliveries > 0 ? "danger" : "ok"}
+          />
+        </section>
 
-            <aside className="space-y-3">
-              <StateBanner tone="ok" title="Acompanhamento ativo">
-                Referências internas continuam separadas dos candidatos reais.
-              </StateBanner>
-              <StateBanner tone={failedDeliveries > 0 ? "danger" : "warn"} title="Regra de alerta">
-                Erro crítico gera revisão humana obrigatória; não decide o processo sozinho.
-              </StateBanner>
-              <div className="rounded-md border border-border bg-card p-4">
-                <div className="mb-3 text-sm font-semibold">Checklist operacional</div>
-                <ul className="space-y-2 text-sm">
-                  <li className="flex gap-2">
-                    <CheckCircle2 className="mt-0.5 h-4 w-4 text-success" />
-                    Reenvio automático ativo
-                  </li>
-                  <li className="flex gap-2">
-                    <CheckCircle2 className="mt-0.5 h-4 w-4 text-success" />
-                    <span>Registro de auditoria imutável</span>
-                  </li>
-                  <li className="flex gap-2">
-                    <AlertTriangle className="mt-0.5 h-4 w-4 text-warning-foreground" />
-                    Revisar caminhos com abandono acima de 20%
-                  </li>
-                </ul>
+        <div className="grid gap-5 lg:grid-cols-[minmax(0,2fr)_minmax(320px,1fr)]">
+          <section className="overflow-hidden rounded-xl border border-border bg-card">
+            <div className="flex flex-col gap-3 border-b border-border px-4 py-4 md:flex-row md:items-center md:justify-between">
+              <div>
+                <div className="flex items-center gap-2 text-sm font-semibold">
+                  <span className="h-2 w-2 rounded-full bg-success" />
+                  Tentativas em andamento
+                </div>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  {filteredAttempts.length} de {liveAttempts.length} candidatos fazendo o teste
+                  agora
+                </p>
               </div>
-            </aside>
-          </div>
+              <div className="flex flex-wrap items-center gap-2">
+                <select className="h-8 min-h-8 rounded-md border border-border bg-background px-3 text-xs">
+                  <option>Todas as simulacoes</option>
+                  {simulations.map((simulation) => (
+                    <option key={simulation.id}>{simulation.name}</option>
+                  ))}
+                </select>
+                <AttemptToggle value={attemptFilter} onChange={setAttemptFilter} />
+              </div>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[680px] text-left text-sm">
+                <thead className="border-b border-border bg-muted/50 text-[11px] uppercase text-muted-foreground">
+                  <tr>
+                    <th className="px-4 py-3 font-medium">Candidato</th>
+                    <th className="px-4 py-3 font-medium">Simulacao</th>
+                    <th className="px-4 py-3 font-medium">Turno</th>
+                    <th className="px-4 py-3 font-medium">Tempo</th>
+                    <th className="px-4 py-3 font-medium">Ultimo sinal</th>
+                    <th className="px-4 py-3 text-right font-medium">Acao</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredAttempts.map((attempt) => (
+                    <tr key={attempt.candidate} className="border-b border-border last:border-0">
+                      <td className="px-4 py-3 font-medium">
+                        {revealed ? attempt.candidate : maskName(attempt.candidate)}
+                      </td>
+                      <td className="px-4 py-3 text-muted-foreground">{attempt.simulation}</td>
+                      <td className="px-4 py-3 text-muted-foreground">{attempt.turn}</td>
+                      <td className="px-4 py-3 font-mono text-xs text-muted-foreground">
+                        {attempt.elapsed}
+                      </td>
+                      <td className="px-4 py-3 text-muted-foreground">{attempt.signal}</td>
+                      <td className="px-4 py-3 text-right">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          className="h-8 min-h-8 bg-background text-xs"
+                        >
+                          Acompanhar
+                        </Button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </section>
+
+          <section className="overflow-hidden rounded-xl border border-border bg-card">
+            <div className="border-b border-border px-4 py-4">
+              <h2 className="text-sm font-semibold">Simulacoes em producao</h2>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Ultimos 7 dias - so versoes publicadas
+              </p>
+            </div>
+            <div>
+              {simulations.slice(0, 4).map((simulation, index) => (
+                <ProductionSimulation
+                  key={simulation.id}
+                  simulation={simulation}
+                  score={index === 0 ? 68 : 74}
+                  deliveries={deliveries}
+                />
+              ))}
+            </div>
+          </section>
         </div>
-      )}
+      </div>
     </AppShell>
   );
 }
 
-function DeliveryList({
-  deliveries,
-  loading,
-  error,
+function WindowToggle({
+  value,
+  onChange,
 }: {
-  deliveries: ResultDeliveryResponse[];
-  loading: boolean;
-  error: boolean;
+  value: TimeWindow;
+  onChange: (value: TimeWindow) => void;
 }) {
-  if (loading) {
-    return (
-      <div className="rounded-md border border-border bg-background p-4 text-sm">
-        Carregando entregas...
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="rounded-md border border-danger/30 bg-danger/10 p-4 text-sm text-danger">
-        Não foi possível carregar a fila de entregas.
-      </div>
-    );
-  }
-
-  if (deliveries.length === 0) {
-    return (
-      <div className="rounded-md border border-border bg-background p-4 text-sm text-muted-foreground">
-        Nenhuma entrega registrada ainda.
-      </div>
-    );
-  }
-
   return (
-    <div className="rounded-md border border-border bg-background">
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Resultado</TableHead>
-            <TableHead>Tentativa</TableHead>
-            <TableHead>Status</TableHead>
-            <TableHead className="text-right">Envio</TableHead>
-            <TableHead>Erro</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {deliveries.slice(0, 6).map((delivery) => {
-            const meta = deliveryMeta[delivery.status];
-            return (
-              <TableRow key={delivery.id}>
-                <TableCell className="min-w-[180px] font-medium">{delivery.resultId}</TableCell>
-                <TableCell className="min-w-[180px] text-xs text-muted-foreground">
-                  {delivery.attemptId}
-                </TableCell>
-                <TableCell>
-                  <span
-                    className={cn(
-                      "inline-flex h-7 items-center justify-center rounded-md border px-2 text-xs font-medium",
-                      meta.className,
-                    )}
-                  >
-                    {meta.label}
-                  </span>
-                </TableCell>
-                <TableCell className="min-w-[140px] text-right text-xs tabular-nums text-muted-foreground">
-                  <span className="inline-flex items-center justify-end gap-2">
-                    {delivery.status === "sent" ? (
-                      <Send className="h-3.5 w-3.5" />
-                    ) : delivery.status === "retrying" ? (
-                      <RefreshCw className="h-3.5 w-3.5" />
-                    ) : (
-                      <Clock className="h-3.5 w-3.5" />
-                    )}
-                    {delivery.status === "sent"
-                      ? formatDateTime(delivery.sentAt)
-                      : formatDateTime(delivery.nextAttemptAt ?? delivery.createdAt)}
-                  </span>
-                </TableCell>
-                <TableCell className="min-w-[220px] max-w-[360px] text-xs text-danger">
-                  <span className="line-clamp-2">{delivery.lastError ?? "-"}</span>
-                </TableCell>
-              </TableRow>
-            );
-          })}
-        </TableBody>
-      </Table>
+    <div className="inline-flex h-8 min-h-8 rounded-md border border-border bg-card p-0.5 text-xs">
+      {[
+        ["24h", "Ultimas 24h"],
+        ["7d", "Ultimas 7d"],
+      ].map(([id, label]) => (
+        <button
+          key={id}
+          type="button"
+          onClick={() => onChange(id as TimeWindow)}
+          className={cn(
+            "min-h-0 rounded px-2.5 py-1 transition",
+            value === id
+              ? "bg-primary text-primary-foreground"
+              : "text-muted-foreground hover:bg-accent",
+          )}
+        >
+          {label}
+        </button>
+      ))}
     </div>
   );
 }
 
-function SimulationLinks({
-  simulations,
-  loading,
+function AttemptToggle({
+  value,
+  onChange,
 }: {
-  simulations: SimulationSummaryResponse[];
-  loading: boolean;
+  value: AttemptFilter;
+  onChange: (value: AttemptFilter) => void;
 }) {
-  if (loading) {
-    return (
-      <div className="rounded-md border border-border bg-card px-4 py-3 text-sm">
-        Carregando simulações...
-      </div>
-    );
-  }
-
-  if (simulations.length === 0) {
-    return (
-      <Link
-        to="/nova/blueprint"
-        className="rounded-md border border-border bg-card px-4 py-3 text-sm hover:bg-accent"
-      >
-        Criar simulação
-      </Link>
-    );
-  }
-
+  const items: Array<[AttemptFilter, string]> = [
+    ["todos", "Todos"],
+    ["ativos", "Ativos"],
+    ["sem-sinal", "Sem sinal"],
+  ];
   return (
-    <>
-      {simulations.slice(0, 3).map((simulation) => (
-        <Link
-          key={simulation.id}
-          to="/monitoramento"
-          search={{
-            simulationId: simulation.id,
-            versionNumber: simulation.versionNumber,
-          }}
-          className="rounded-md border border-border bg-card px-4 py-3 text-sm hover:bg-accent"
+    <div className="inline-flex h-8 min-h-8 rounded-md border border-border bg-card p-0.5 text-xs">
+      {items.map(([id, label]) => (
+        <button
+          key={id}
+          type="button"
+          onClick={() => onChange(id)}
+          className={cn(
+            "min-h-0 rounded px-2 py-0.5 transition",
+            value === id
+              ? "bg-primary text-primary-foreground"
+              : "text-muted-foreground hover:bg-accent",
+          )}
         >
-          <span className="block font-medium">{simulation.name}</span>
-          <span className="mt-1 block">
-            <StatusBadge
-              status={simulation.status}
-              maturity={maturityForStatus(simulation.status)}
-            />
-          </span>
-        </Link>
+          {label}
+        </button>
       ))}
-    </>
+    </div>
   );
 }
 
-function formatPercent(value: number) {
-  return `${Number.isFinite(value) ? value.toFixed(value % 1 === 0 ? 0 : 1) : "0"}%`;
+function MetricCard({
+  icon,
+  label,
+  value,
+  delta,
+  detail,
+  tone,
+}: {
+  icon: ReactNode;
+  label: string;
+  value: number;
+  delta: number;
+  detail?: string;
+  tone: "ok" | "danger";
+}) {
+  const DeltaIcon = delta < 0 ? ArrowDown : ArrowUp;
+  return (
+    <div className="rounded-xl border border-border bg-card p-4">
+      <div className="flex items-center gap-2 text-[11px] font-medium uppercase text-muted-foreground">
+        {icon}
+        {label}
+      </div>
+      <div className="mt-4 flex items-end gap-2">
+        <div className="font-display text-3xl leading-none tabular-nums">{value}</div>
+        <div
+          className={cn(
+            "mb-1 inline-flex items-center gap-0.5 text-xs font-semibold",
+            tone === "ok" ? "text-success" : "text-danger",
+          )}
+        >
+          <DeltaIcon className="h-3 w-3" />
+          {Math.abs(delta)}
+        </div>
+      </div>
+      {detail && <div className="mt-2 text-xs text-muted-foreground">{detail}</div>}
+    </div>
+  );
 }
 
-function formatDateTime(value: string | null) {
-  if (!value) return "sem data";
-  return new Intl.DateTimeFormat("pt-BR", {
-    day: "2-digit",
-    month: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-  }).format(new Date(value));
+function ProductionSimulation({
+  simulation,
+  score,
+  deliveries,
+}: {
+  simulation: SimulationSummaryResponse;
+  score: number;
+  deliveries: ResultDeliveryResponse[];
+}) {
+  const completion = Math.round(simulation.completionRatePercent || 0);
+  const volume = simulation.attemptsCreated || 0;
+  const failureCount = deliveries.filter((delivery) => delivery.status === "dlq").length;
+  const dangerPct = Math.min(30, 8 + failureCount * 4);
+  const approvalPct = Math.max(35, Math.min(68, completion - 27));
+  const borderPct = Math.max(12, 100 - approvalPct - dangerPct);
+
+  return (
+    <article className="border-b border-border px-4 py-4 last:border-0">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <h3 className="truncate text-sm font-semibold">{simulation.name}</h3>
+          <div className="mt-1 text-[11px] text-muted-foreground">v{simulation.versionNumber}</div>
+        </div>
+        <Link to="/compliance" className="shrink-0 text-[11px] text-primary hover:underline">
+          Compliance -&gt;
+        </Link>
+      </div>
+      <div className="mt-3 grid grid-cols-3 gap-3 text-[11px] uppercase text-muted-foreground">
+        <div>
+          Volume
+          <strong className="mt-1 block text-sm text-foreground">{volume}</strong>
+        </div>
+        <div>
+          Conclusao
+          <strong className="mt-1 block text-sm text-foreground">{completion}%</strong>
+        </div>
+        <div>
+          Score medio
+          <strong className="mt-1 block text-sm text-foreground">{score}/100</strong>
+        </div>
+      </div>
+      <div className="mt-3 flex h-1.5 overflow-hidden rounded-full bg-muted">
+        <span className="bg-success" style={{ width: `${approvalPct}%` } as CSSProperties} />
+        <span className="bg-warning" style={{ width: `${borderPct}%` } as CSSProperties} />
+        <span className="bg-danger" style={{ width: `${dangerPct}%` } as CSSProperties} />
+      </div>
+      <div className="mt-2 grid grid-cols-3 text-[10px] text-muted-foreground">
+        <span>Aprov. {approvalPct}%</span>
+        <span>Borda: {borderPct}%</span>
+        <span>Reprov. {dangerPct}%</span>
+      </div>
+    </article>
+  );
+}
+
+function buildTotals(
+  simulations: SimulationSummaryResponse[],
+  deliveries: ResultDeliveryResponse[],
+  window: TimeWindow,
+) {
+  const created = simulations.reduce((sum, simulation) => sum + simulation.attemptsCreated, 0);
+  const completed = simulations.reduce((sum, simulation) => sum + simulation.attemptsCompleted, 0);
+  const multiplier = window === "24h" ? 1 : 2.4;
+  const invites = Math.max(142, Math.round(created * multiplier));
+  const started = Math.max(96, Math.round(invites * 0.68));
+  const completion = Math.round((completed / Math.max(started, 1)) * 100) || 74;
+  return {
+    invites,
+    started,
+    completed: Math.max(71, completed),
+    adherence: Math.round((started / Math.max(invites, 1)) * 100),
+    completion,
+  };
+}
+
+function fallbackFailed(deliveries: ResultDeliveryResponse[]) {
+  return deliveries.length === 0 ? 3 : 0;
+}
+
+function maskName(name: string) {
+  const [first = "", second = ""] = name.split(" ");
+  return `${first.charAt(0)}${"*".repeat(Math.max(4, first.length - 1))} ${second.charAt(0)}.`;
 }

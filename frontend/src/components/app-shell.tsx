@@ -103,19 +103,19 @@ function SidebarContent({
 }) {
   return (
     <>
-      <div className="border-b border-sidebar-border px-6 py-5">
-        <div className="flex items-center gap-2 text-xs uppercase text-sidebar-foreground/80">
+      <div className="border-b border-border px-5 py-5">
+        <div className="flex items-center gap-2 text-xs uppercase text-muted-foreground">
           <span className="inline-block h-1.5 w-1.5 rounded-full bg-primary" />
           {t.common.testCreator}
         </div>
         <div className="mt-2 font-display text-2xl leading-tight">
           {t.common.situationalAssessment.split("\n")[0]}
           <br />
-          <span className="text-sidebar-foreground/85">
+          <span className="text-foreground/85">
             {t.common.situationalAssessment.split("\n")[1] || "Situacional"}
           </span>
         </div>
-        <div className="mt-3 text-[11px] uppercase text-sidebar-foreground/80">
+        <div className="mt-3 text-[11px] uppercase text-muted-foreground">
           {t.common.integrationGupy}
         </div>
       </div>
@@ -125,23 +125,23 @@ function SidebarContent({
           <Link
             to="/comecar"
             className={cn(
-              "mb-3 flex items-start gap-3 rounded-md border px-3 py-2.5 text-sm transition",
+              "mb-3 flex items-start gap-3 rounded-lg border px-3 py-2.5 text-sm transition",
               pathname === "/comecar"
-                ? "border-primary/40 bg-primary/15 text-sidebar-foreground"
-                : "border-sidebar-border/60 bg-sidebar-accent/30 text-sidebar-foreground/85 hover:bg-sidebar-accent/60 hover:text-sidebar-foreground",
+                ? "border-primary/40 bg-primary/10 text-foreground"
+                : "border-border bg-card text-foreground/85 hover:bg-accent hover:text-foreground",
             )}
           >
             <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
             <span className="min-w-0 flex-1">
               <span className="block font-medium">{t.common.startHere}</span>
-              <span className="mt-0.5 block text-[11px] leading-snug text-sidebar-foreground/65">
+              <span className="mt-0.5 block text-[11px] leading-snug text-muted-foreground">
                 {t.common.whatIsPraxis}
               </span>
             </span>
           </Link>
         </ShellLink>
 
-        <div className="px-3 pb-2 text-[10px] font-semibold uppercase text-sidebar-foreground/75">
+        <div className="px-3 pb-2 text-[10px] font-semibold uppercase text-muted-foreground">
           {t.common.operation}
         </div>
         {nav.map((item) => {
@@ -154,20 +154,17 @@ function SidebarContent({
               <Link
                 to={item.to}
                 className={cn(
-                  "mb-1.5 flex items-start gap-3 rounded-md px-3 py-2.5 text-sm transition",
+                  "mb-1.5 flex items-center gap-3 rounded-md px-3 py-2 text-sm transition",
                   active
-                    ? "bg-sidebar-accent text-sidebar-accent-foreground"
-                    : "text-sidebar-foreground/85 hover:bg-sidebar-accent/60 hover:text-sidebar-foreground",
+                    ? "bg-accent text-accent-foreground"
+                    : "text-foreground/85 hover:bg-accent hover:text-foreground",
                 )}
               >
-                <item.icon className="mt-0.5 h-4 w-4 shrink-0 text-sidebar-foreground/80" />
+                <item.icon className="h-4 w-4 shrink-0 text-muted-foreground" />
                 <span className="min-w-0 flex-1">
                   <span className="flex items-center gap-2">
                     {item.label}
                     {active && <span className="h-1.5 w-1.5 rounded-full bg-primary" />}
-                  </span>
-                  <span className="mt-0.5 block text-[11px] leading-snug text-sidebar-foreground/65">
-                    {item.desc}
                   </span>
                 </span>
               </Link>
@@ -175,7 +172,7 @@ function SidebarContent({
           );
         })}
 
-        <div className="mt-6 px-3 pb-2 text-[10px] font-semibold uppercase text-sidebar-foreground/75">
+        <div className="mt-6 px-3 pb-2 text-[10px] font-semibold uppercase text-muted-foreground">
           {t.common.compliance}
         </div>
         {secondary.map((item) => {
@@ -185,18 +182,15 @@ function SidebarContent({
               <Link
                 to={item.to}
                 className={cn(
-                  "mb-1.5 flex items-start gap-3 rounded-md px-3 py-2.5 text-sm transition",
+                  "mb-1.5 flex items-center gap-3 rounded-md px-3 py-2 text-sm transition",
                   active
-                    ? "bg-sidebar-accent text-sidebar-accent-foreground"
-                    : "text-sidebar-foreground/85 hover:bg-sidebar-accent/60 hover:text-sidebar-foreground",
+                    ? "bg-accent text-accent-foreground"
+                    : "text-foreground/85 hover:bg-accent hover:text-foreground",
                 )}
               >
-                <item.icon className="mt-0.5 h-4 w-4 shrink-0 text-sidebar-foreground/80" />
+                <item.icon className="h-4 w-4 shrink-0 text-muted-foreground" />
                 <span className="min-w-0 flex-1">
                   <span className="block">{item.label}</span>
-                  <span className="mt-0.5 block text-[11px] leading-snug text-sidebar-foreground/65">
-                    {item.desc}
-                  </span>
                 </span>
               </Link>
             </ShellLink>
@@ -204,26 +198,38 @@ function SidebarContent({
         })}
       </nav>
 
-      <div className="border-t border-sidebar-border p-4">
+      <div className="border-t border-border p-4">
         <div
-          className="rounded-md border border-sidebar-border/60 bg-sidebar-accent/40 p-3 text-xs text-sidebar-foreground/80"
+          className="rounded-md border border-border bg-accent/40 p-3 text-xs text-muted-foreground"
           title="A nota do candidato é calculada por regras declaradas (critérios de pontuação, peso e cálculo). Nenhum modelo de IA decide ou julga o resultado."
         >
-          <div className="font-medium text-sidebar-foreground">{t.common.rulesBasedScoring}</div>
-          <p className="mt-1 text-sidebar-foreground/80">{t.common.noSubjectiveAnswers}</p>
+          <div className="font-medium text-foreground">{t.common.rulesBasedScoring}</div>
+          <p className="mt-1 text-muted-foreground">{t.common.noSubjectiveAnswers}</p>
         </div>
         <div className="mt-3 flex items-center gap-3 px-1">
           <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-xs font-semibold text-primary-foreground">
             {session.userName.trim().charAt(0).toUpperCase() || "?"}
           </div>
           <div className="text-xs">
-            <div className="font-medium text-sidebar-foreground">{session.userName}</div>
-            <div className="text-sidebar-foreground/80">{session.userRole}</div>
+            <div className="font-medium text-foreground">{session.userName}</div>
+            <div className="text-muted-foreground">{session.userRole}</div>
           </div>
         </div>
       </div>
     </>
   );
+}
+
+function pageLabel(pathname: string, t: TranslationMap) {
+  if (pathname === "/monitoramento") return t.common.monitoring;
+  if (pathname === "/app") return t.common.dashboard;
+  if (pathname.startsWith("/nova")) return t.common.createTest;
+  if (pathname === "/talent-match") return "Talent Match";
+  if (pathname === "/enviar-link") return t.common.sendLink;
+  if (pathname === "/governanca") return t.common.governance;
+  if (pathname === "/compliance") return "Compliance";
+  if (pathname === "/comecar") return t.common.startHere;
+  return "Workspace";
 }
 
 export function AppShell({ children }: { children: ReactNode }) {
@@ -254,7 +260,7 @@ export function AppShell({ children }: { children: ReactNode }) {
 
   return (
     <div className="flex min-h-screen bg-background text-foreground">
-      <aside className="hidden w-72 shrink-0 flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground lg:flex">
+      <aside className="hidden w-64 shrink-0 flex-col border-r border-border bg-background text-foreground lg:flex">
         <SidebarContent
           pathname={pathname}
           t={t}
@@ -265,7 +271,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       </aside>
 
       <main className="flex min-w-0 flex-1 flex-col">
-        <header className="sticky top-0 z-10 flex min-h-14 items-center gap-3 border-b border-border bg-background/85 px-4 py-2 backdrop-blur sm:px-6">
+        <header className="sticky top-0 z-10 flex min-h-14 items-center gap-3 border-b border-border bg-card px-4 py-2 sm:px-6">
           <Sheet>
             <SheetTrigger asChild>
               <button
@@ -278,7 +284,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             </SheetTrigger>
             <SheetContent
               side="left"
-              className="flex w-[18rem] max-w-[85vw] flex-col overflow-hidden bg-sidebar p-0 text-sidebar-foreground sm:max-w-sm"
+              className="flex w-[18rem] max-w-[85vw] flex-col overflow-hidden bg-background p-0 text-foreground sm:max-w-sm"
             >
               <SheetHeader className="sr-only">
                 <SheetTitle>Menu</SheetTitle>
@@ -294,8 +300,8 @@ export function AppShell({ children }: { children: ReactNode }) {
               />
             </SheetContent>
           </Sheet>
-          <div className="min-w-0 truncate text-xs text-muted-foreground">
-            {t.common.workspace} <span className="text-foreground">/ {session.workspaceName}</span>
+          <div className="min-w-0 truncate text-sm text-muted-foreground">
+            Workspace <span className="text-foreground">/ {pageLabel(pathname, t)}</span>
           </div>
           <div className="ml-auto flex shrink-0 items-center justify-end gap-2 text-xs">
             <LanguageSelector />
@@ -314,9 +320,6 @@ export function AppShell({ children }: { children: ReactNode }) {
                 {t.common.viewCommercialMode}
               </a>
             )}
-            <button className="hidden rounded-md border border-border bg-card px-3 py-1.5 text-foreground hover:bg-accent sm:inline-flex">
-              {t.common.search}
-            </button>
           </div>
         </header>
         <div className="min-h-[calc(100vh-3.5rem)] px-6 py-8 lg:px-10">
@@ -344,7 +347,3 @@ export function AppShell({ children }: { children: ReactNode }) {
     </div>
   );
 }
-
-
-
-
