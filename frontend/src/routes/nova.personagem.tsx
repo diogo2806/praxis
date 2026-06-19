@@ -101,7 +101,7 @@ function Page() {
         queryKey: ["simulation-version", search.simulationId, search.versionNumber],
       });
       void navigate({
-        to: "/nova/dialogo",
+        to: "/nova/validador",
         search: { simulationId: search.simulationId, versionNumber: search.versionNumber },
       });
     },
@@ -289,7 +289,7 @@ function Page() {
               disabled={!isEditable || !canGoNext || saveCharacterMutation.isPending}
               className="rounded-md bg-primary px-5 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50"
             >
-              {saveCharacterMutation.isPending ? "Salvando..." : "Montar diálogo →"}
+              {saveCharacterMutation.isPending ? "Salvando..." : "Ir para revisão →"}
             </button>
           </div>
         </>

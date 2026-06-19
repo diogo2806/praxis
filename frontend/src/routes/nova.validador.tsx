@@ -308,12 +308,12 @@ function ValidatorPage() {
               <NextStepContract
                 primary={
                   blockers > 0
-                    ? "Voltar ao editor. Piloto e publicação ficam travados."
+                    ? "Editar o diálogo. Piloto e publicação ficam travados."
                     : warnings > 0
                       ? "Confirmar publicação com alertas gravados no registro de auditoria."
                       : "Publicar versão protegida e seguir para piloto."
                 }
-                secondary="Salvar rascunho nunca publica; volta ao editor mantendo o diagnóstico clicável."
+                secondary="Salvar rascunho nunca publica; mantém o diagnóstico clicável para edição."
                 versionRule="Depois de publicar, editar cria nova versão e preserva a versão no ar."
                 lockedAfter="Não existe ajuste manual para bloqueio crítico."
               />
@@ -439,7 +439,7 @@ function ValidatorPage() {
                   disabled={!isEditable && !canCloneForEdit}
                   className="rounded-md border border-border bg-card px-4 py-2 text-sm hover:bg-accent"
                 >
-                  {canCloneForEdit ? "Criar rascunho e editar" : "Voltar ao editor"}
+                  {canCloneForEdit ? "Criar rascunho e editar" : "Editar diálogo"}
                 </button>
                 <div className="flex flex-wrap justify-end gap-2">
                   <button
@@ -479,7 +479,7 @@ function ValidatorPage() {
                       disabled={!isEditable && !canCloneForEdit}
                       className="rounded-md border border-border bg-card px-4 py-2 text-sm hover:bg-accent disabled:cursor-not-allowed disabled:opacity-50"
                     >
-                      {canCloneForEdit ? "Criar rascunho e corrigir" : "Salvar rascunho"}
+                      {canCloneForEdit ? "Criar rascunho e corrigir" : "Editar diálogo"}
                     </button>
                   ) : (
                     <Link

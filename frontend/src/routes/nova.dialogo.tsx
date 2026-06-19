@@ -37,8 +37,8 @@ export const Route = createFileRoute("/nova/dialogo")({
   }),
   head: () => ({
     meta: [
-      { title: "Editor de Simulação - Práxis" },
-      { name: "description", content: "Editor conectado ao fluxo da conversa salvo no sistema." },
+      { title: "Editor de Diálogo - Práxis" },
+      { name: "description", content: "Edição do diálogo usada na revisão da simulação." },
     ],
   }),
   component: DialogEditor,
@@ -253,14 +253,14 @@ function DialogEditor() {
 
   return (
     <AppShell>
-      <WizardStepper current="cenario" unlockedThrough={canReview ? "revisao" : "cenario"} />
+      <WizardStepper current="revisao" unlockedThrough={canReview ? "revisao" : "cenario"} />
       <ScreenStateStrip blockedReason="o fluxo da conversa precisa existir no sistema e passar pelo validador" />
       <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
         <div>
-          <div className="text-xs uppercase text-primary">Passo 2</div>
-          <h1 className="mt-1 text-3xl font-semibold">Diálogo do cenário</h1>
+          <div className="text-xs uppercase text-primary">Passo 3</div>
+          <h1 className="mt-1 text-3xl font-semibold">Editar diálogo do cenário</h1>
           <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
-            Etapas e alternativas são lidas e gravadas pelo sistema.
+            Ajuste as etapas e alternativas que serão avaliadas pelo validador.
           </p>
         </div>
         {versionQuery.data && <StatusBadge status={versionQuery.data.status} />}
@@ -666,11 +666,11 @@ function DialogEditor() {
           </fieldset>
           <div className="mt-8 flex justify-between">
             <Link
-              to="/nova/personagem"
+              to="/nova/validador"
               search={{ simulationId: search.simulationId, versionNumber: search.versionNumber }}
               className="rounded-md border border-border bg-card px-4 py-2 text-sm hover:bg-accent"
             >
-              Voltar
+              Voltar ao validador
             </Link>
             {canReview ? (
               <Link
@@ -678,7 +678,7 @@ function DialogEditor() {
                 search={{ simulationId: search.simulationId, versionNumber: search.versionNumber }}
                 className="rounded-md bg-primary px-5 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
               >
-                Seguir para revisão
+                Concluir edição
               </Link>
             ) : (
               <button
@@ -687,7 +687,7 @@ function DialogEditor() {
                 title="Cada etapa precisa ter de 2 a 4 alternativas com critérios de pontuação antes da revisão"
                 className="cursor-not-allowed rounded-md bg-primary px-5 py-2 text-sm font-medium text-primary-foreground opacity-50"
               >
-                Seguir para revisão
+                Concluir edição
               </button>
             )}
           </div>
