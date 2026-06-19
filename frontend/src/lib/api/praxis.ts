@@ -175,6 +175,7 @@ export interface SimulationVersionNodeResponse {
   speaker: string;
   clientMessage: string;
   timeLimitSeconds: number | null;
+  timeoutNextNodeId: string | null;
   plainTextDescription?: string | null;
   audioDescriptionUrl?: string | null;
   mediaUrl: string | null;
@@ -201,6 +202,7 @@ export interface CreateNodeRequest {
   clientMessage: string;
   timeLimitSeconds?: number | null;
   timeJustification?: string | null;
+  timeoutNextNodeId?: string | null;
   plainTextDescription?: string | null;
   audioDescriptionUrl?: string | null;
   mediaUrl?: string | null;
@@ -211,6 +213,7 @@ export interface UpdateNodeRequest {
   clientMessage?: string;
   timeLimitSeconds?: number | null;
   timeJustification?: string | null;
+  timeoutNextNodeId?: string | null;
   plainTextDescription?: string | null;
   audioDescriptionUrl?: string | null;
   mediaUrl?: string | null;
@@ -446,6 +449,7 @@ function isAdminPath(path: string) {
     path.startsWith("/api/v1/simulations") ||
     path.startsWith("/api/v1/tenant-config") ||
     path.startsWith("/api/v1/gupy/result-deliveries") ||
+    path.startsWith("/api/v1/notifications") ||
     path.startsWith("/api/v1/audit") ||
     path.startsWith("/api/v1/candidate-links")
   );
@@ -677,6 +681,22 @@ export interface CandidateLinkResponse {
   createdAt: string;
 }
 
+export interface CandidateAttemptMonitoringResponse {
+  attemptId: string;
+  candidateName: string;
+  candidateEmail: string;
+  simulationId: string;
+  simulationName: string;
+  versionNumber: number;
+  status: AttemptStatus;
+  currentTurn: number;
+  estimatedTurns: number;
+  progressPercent: number;
+  elapsedSeconds: number;
+  lastSignalAt: string;
+  active: boolean;
+}
+
 export interface CompetencyBenchmarkDto {
   competencyName: string;
   targetScore: number;
@@ -703,6 +723,10 @@ export interface TalentMatchResponse {
 
 export function listCandidateLinks() {
   return request<CandidateLinkResponse[]>("/api/v1/candidate-links");
+}
+
+export function listLiveAttempts() {
+  return request<CandidateAttemptMonitoringResponse[]>("/api/v1/candidate-links/live-attempts");
 }
 
 export function createCandidateLink(body: CreateCandidateLinkRequest) {

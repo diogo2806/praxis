@@ -1,5 +1,6 @@
 package br.com.iforce.praxis.candidate.controller;
 
+import br.com.iforce.praxis.candidate.dto.CandidateAttemptMonitoringResponse;
 import br.com.iforce.praxis.candidate.dto.CandidateLinkResponse;
 import br.com.iforce.praxis.candidate.dto.CreateCandidateLinkRequest;
 import br.com.iforce.praxis.candidate.dto.CreateCandidateLinkResponse;
@@ -35,6 +36,15 @@ public class CompanyCandidateLinkController {
     )
     public ResponseEntity<List<CandidateLinkResponse>> listCandidateLinks() {
         return ResponseEntity.ok(candidateAttemptService.listCompanyLinks());
+    }
+
+    @GetMapping("/live-attempts")
+    @Operation(
+            summary = "Lista tentativas em andamento",
+            description = "Retorna tentativas ativas ou pausadas com progresso operacional para a tela de monitoramento."
+    )
+    public ResponseEntity<List<CandidateAttemptMonitoringResponse>> listLiveAttempts() {
+        return ResponseEntity.ok(candidateAttemptService.listLiveAttempts());
     }
 
     @PostMapping

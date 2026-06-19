@@ -2,6 +2,7 @@ package br.com.iforce.praxis.gupy.service;
 
 import br.com.iforce.praxis.audit.model.AuditEventType;
 import br.com.iforce.praxis.audit.service.AuditEventService;
+import br.com.iforce.praxis.candidate.dto.CandidateAttemptMonitoringResponse;
 import br.com.iforce.praxis.candidate.dto.CandidateLinkResponse;
 import br.com.iforce.praxis.candidate.dto.CreateCandidateLinkRequest;
 import br.com.iforce.praxis.candidate.dto.CreateCandidateLinkResponse;
@@ -38,7 +39,9 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.Duration;
 import java.time.Instant;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -188,6 +191,20 @@ public class CandidateAttemptService {
                 .toList();
     }
 
+    @Transactional(readOnly = true)
+    public List<CandidateAttemptMonitoringResponse> listLiveAttempts() {
+        String tenantId = TenantSecurity.requiredTenant();
+        Instant now = Instant.now();
+        return candidateAttemptRepository.findByTenantIdAndStatusInOrderByCreatedAtDesc(
+                        tenantId,
+                        List.of(AttemptStatus.IN_PROGRESS, AttemptStatus.PAUSED),
+                        PageRequest.of(0, 100)
+                )
+                .stream()
+                .map(entity -> toMonitoringResponse(entity, now))
+                .toList();
+    }
+
     private CandidateLinkResponse toCandidateLinkResponse(CandidateAttemptEntity entity) {
         PublishedSimulation simulation = findSimulation(entity);
         return new CandidateLinkResponse(
@@ -200,6 +217,40 @@ public class CandidateAttemptService {
                 entity.getStatus(),
                 entity.getCreatedAt()
         );
+    }
+
+    private CandidateAttemptMonitoringResponse toMonitoringResponse(CandidateAttemptEntity entity, Instant now) {
+        PublishedSimulation simulation = findSimulation(entity);
+        CandidateAttempt attempt = candidateAttemptMapper.toDomain(entity);
+        ScenarioNode currentNode = findCurrentNode(attempt, simulation).orElse(null);
+        ProgressoResponse progress = progressFor(attempt, simulation, currentNode);
+        Instant lastSignalAt = lastSignalAt(entity);
+        Instant startedAt = entity.getStartedAt() == null ? entity.getCreatedAt() : entity.getStartedAt();
+
+        return new CandidateAttemptMonitoringResponse(
+                entity.getId(),
+                entity.getCandidateName(),
+                entity.getCandidateEmail(),
+                entity.getSimulationId(),
+                simulation.name(),
+                simulation.versionNumber(),
+                entity.getStatus(),
+                progress.passoAtual(),
+                progress.passosEstimados(),
+                progress.percentual(),
+                Duration.between(startedAt, now).toSeconds(),
+                lastSignalAt,
+                entity.getStatus() == AttemptStatus.IN_PROGRESS
+                        && !lastSignalAt.isBefore(now.minus(Duration.ofMinutes(5)))
+        );
+    }
+
+    private Instant lastSignalAt(CandidateAttemptEntity entity) {
+        Instant base = entity.getStartedAt() == null ? entity.getCreatedAt() : entity.getStartedAt();
+        return entity.getAnswers().stream()
+                .map(answer -> answer.getAnsweredAt() == null ? base : answer.getAnsweredAt())
+                .max(Comparator.naturalOrder())
+                .orElse(base);
     }
 
     private CandidateAttemptEntity createAndAuditAttemptSafely(

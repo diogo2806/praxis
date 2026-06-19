@@ -1,23 +1,21 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import type { CSSProperties, ReactNode } from "react";
+import type { ReactNode } from "react";
 import { useMemo, useState } from "react";
 import {
-  ArrowDown,
-  ArrowUp,
+  Activity,
   CheckCircle2,
   Eye,
   RefreshCw,
   Send,
-  TrendingUp,
   XCircle,
 } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
 import { Button } from "@/components/ui/button";
 import {
+  listLiveAttempts,
   listResultDeliveries,
   listSimulations,
-  type ResultDeliveryResponse,
   type SimulationSummaryResponse,
 } from "@/lib/api/praxis";
 import { cn } from "@/lib/utils";
@@ -35,73 +33,9 @@ export const Route = createFileRoute("/monitoramento")({
   component: MonitoringPage,
 });
 
-type TimeWindow = "24h" | "7d";
 type AttemptFilter = "todos" | "ativos" | "sem-sinal";
 
-const fallbackSimulations: SimulationSummaryResponse[] = [
-  {
-    id: "dev-jr",
-    name: "Desenvolvedor de Software Junior",
-    description: "Avaliacao situacional para devs em inicio de carreira.",
-    versionNumber: 3,
-    status: "published",
-    updatedAt: new Date().toISOString(),
-    competencies: ["Raciocinio", "Comunicacao"],
-    attemptsCreated: 84,
-    attemptsCompleted: 66,
-    completionRatePercent: 79,
-  },
-  {
-    id: "n2-atendimento",
-    name: "Analista de Atendimento N2",
-    description: "Casos de suporte e priorizacao operacional.",
-    versionNumber: 1,
-    status: "published",
-    updatedAt: new Date().toISOString(),
-    competencies: ["Priorizacao", "Clareza"],
-    attemptsCreated: 41,
-    attemptsCompleted: 36,
-    completionRatePercent: 88,
-  },
-];
-
-const liveAttempts = [
-  {
-    candidate: "Mariana Silva",
-    simulation: "Dev Jr - v3",
-    turn: "2/3",
-    elapsed: "08:42",
-    signal: "ha 12s",
-    active: true,
-  },
-  {
-    candidate: "Tiago Pereira",
-    simulation: "Dev Jr - v3",
-    turn: "1/3",
-    elapsed: "02:11",
-    signal: "ha 4s",
-    active: true,
-  },
-  {
-    candidate: "Patricia Alves",
-    simulation: "Dev Jr - v3",
-    turn: "2/3",
-    elapsed: "14:03",
-    signal: "ha 11 min",
-    active: false,
-  },
-  {
-    candidate: "Lucas Andrade",
-    simulation: "N2 - v1",
-    turn: "3/3",
-    elapsed: "19:28",
-    signal: "ha 38s",
-    active: true,
-  },
-];
-
 function MonitoringPage() {
-  const [window, setWindow] = useState<TimeWindow>("24h");
   const [revealed, setRevealed] = useState(false);
   const [attemptFilter, setAttemptFilter] = useState<AttemptFilter>("todos");
 
@@ -113,18 +47,20 @@ function MonitoringPage() {
     queryKey: ["result-deliveries"],
     queryFn: () => listResultDeliveries(),
   });
+  const liveAttemptsQuery = useQuery({
+    queryKey: ["live-attempts"],
+    queryFn: listLiveAttempts,
+  });
 
   const simulations = useMemo(
     () =>
-      (simulationsQuery.data?.length ? simulationsQuery.data : fallbackSimulations).filter(
-        (simulation) => simulation.status === "published",
-      ),
+      (simulationsQuery.data ?? []).filter((simulation) => simulation.status === "published"),
     [simulationsQuery.data],
   );
   const deliveries = deliveriesQuery.data ?? [];
-  const failedDeliveries =
-    deliveries.filter((delivery) => delivery.status === "dlq").length || fallbackFailed(deliveries);
-  const totals = buildTotals(simulations, deliveries, window);
+  const liveAttempts = liveAttemptsQuery.data ?? [];
+  const failedDeliveries = deliveries.filter((delivery) => delivery.status === "dlq").length;
+  const totals = buildTotals(simulations);
   const filteredAttempts = liveAttempts.filter((attempt) => {
     if (attemptFilter === "ativos") return attempt.active;
     if (attemptFilter === "sem-sinal") return !attempt.active;
@@ -148,7 +84,6 @@ function MonitoringPage() {
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
-            <WindowToggle value={window} onChange={setWindow} />
             <Button
               type="button"
               variant="outline"
@@ -167,6 +102,7 @@ function MonitoringPage() {
               onClick={() => {
                 void simulationsQuery.refetch();
                 void deliveriesQuery.refetch();
+                void liveAttemptsQuery.refetch();
               }}
             >
               <RefreshCw className="h-3.5 w-3.5" />
@@ -180,14 +116,13 @@ function MonitoringPage() {
             icon={<Send className="h-4 w-4" />}
             label="Convites enviados"
             value={totals.invites}
-            delta={window === "24h" ? 12 : 34}
+            detail="Total historico"
             tone="ok"
           />
           <MetricCard
-            icon={<TrendingUp className="h-4 w-4" />}
+            icon={<Activity className="h-4 w-4" />}
             label="Tentativas iniciadas"
             value={totals.started}
-            delta={window === "24h" ? 8 : 21}
             detail={`${totals.adherence}% de adesao`}
             tone="ok"
           />
@@ -195,15 +130,14 @@ function MonitoringPage() {
             icon={<CheckCircle2 className="h-4 w-4" />}
             label="Conclusoes"
             value={totals.completed}
-            delta={window === "24h" ? -3 : 9}
             detail={`${totals.completion}% de finalizacao`}
-            tone={window === "24h" ? "danger" : "ok"}
+            tone="ok"
           />
           <MetricCard
             icon={<XCircle className="h-4 w-4" />}
             label="Falhas de entrega"
             value={failedDeliveries}
-            delta={failedDeliveries > 0 ? 1 : 0}
+            detail="DLQ pendente"
             tone={failedDeliveries > 0 ? "danger" : "ok"}
           />
         </section>
@@ -218,7 +152,7 @@ function MonitoringPage() {
                 </div>
                 <p className="mt-1 text-xs text-muted-foreground">
                   {filteredAttempts.length} de {liveAttempts.length} candidatos fazendo o teste
-                  agora
+                  agora ou pausados
                 </p>
               </div>
               <div className="flex flex-wrap items-center gap-2">
@@ -245,16 +179,22 @@ function MonitoringPage() {
                 </thead>
                 <tbody>
                   {filteredAttempts.map((attempt) => (
-                    <tr key={attempt.candidate} className="border-b border-border last:border-0">
+                    <tr key={attempt.attemptId} className="border-b border-border last:border-0">
                       <td className="px-4 py-3 font-medium">
-                        {revealed ? attempt.candidate : maskName(attempt.candidate)}
+                        {revealed ? attempt.candidateName : maskName(attempt.candidateName)}
                       </td>
-                      <td className="px-4 py-3 text-muted-foreground">{attempt.simulation}</td>
-                      <td className="px-4 py-3 text-muted-foreground">{attempt.turn}</td>
+                      <td className="px-4 py-3 text-muted-foreground">
+                        {attempt.simulationName} - v{attempt.versionNumber}
+                      </td>
+                      <td className="px-4 py-3 text-muted-foreground">
+                        {attempt.currentTurn}/{attempt.estimatedTurns}
+                      </td>
                       <td className="px-4 py-3 font-mono text-xs text-muted-foreground">
-                        {attempt.elapsed}
+                        {formatElapsed(attempt.elapsedSeconds)}
                       </td>
-                      <td className="px-4 py-3 text-muted-foreground">{attempt.signal}</td>
+                      <td className="px-4 py-3 text-muted-foreground">
+                        {formatRelativeTime(attempt.lastSignalAt)}
+                      </td>
                       <td className="px-4 py-3 text-right">
                         <Button
                           type="button"
@@ -267,6 +207,13 @@ function MonitoringPage() {
                       </td>
                     </tr>
                   ))}
+                  {filteredAttempts.length === 0 && (
+                    <tr>
+                      <td colSpan={6} className="px-4 py-8 text-center text-sm text-muted-foreground">
+                        Nenhuma tentativa em andamento no momento.
+                      </td>
+                    </tr>
+                  )}
                 </tbody>
               </table>
             </div>
@@ -276,54 +223,26 @@ function MonitoringPage() {
             <div className="border-b border-border px-4 py-4">
               <h2 className="text-sm font-semibold">Simulacoes em producao</h2>
               <p className="mt-1 text-xs text-muted-foreground">
-                Ultimos 7 dias - so versoes publicadas
+                Versoes publicadas com dados de tentativas
               </p>
             </div>
             <div>
-              {simulations.slice(0, 4).map((simulation, index) => (
+              {simulations.slice(0, 4).map((simulation) => (
                 <ProductionSimulation
                   key={simulation.id}
                   simulation={simulation}
-                  score={index === 0 ? 68 : 74}
-                  deliveries={deliveries}
                 />
               ))}
+              {simulations.length === 0 && (
+                <div className="px-4 py-8 text-sm text-muted-foreground">
+                  Nenhuma simulacao publicada encontrada.
+                </div>
+              )}
             </div>
           </section>
         </div>
       </div>
     </AppShell>
-  );
-}
-
-function WindowToggle({
-  value,
-  onChange,
-}: {
-  value: TimeWindow;
-  onChange: (value: TimeWindow) => void;
-}) {
-  return (
-    <div className="inline-flex h-8 min-h-8 rounded-md border border-border bg-card p-0.5 text-xs">
-      {[
-        ["24h", "Ultimas 24h"],
-        ["7d", "Ultimas 7d"],
-      ].map(([id, label]) => (
-        <button
-          key={id}
-          type="button"
-          onClick={() => onChange(id as TimeWindow)}
-          className={cn(
-            "min-h-0 rounded px-2.5 py-1 transition",
-            value === id
-              ? "bg-primary text-primary-foreground"
-              : "text-muted-foreground hover:bg-accent",
-          )}
-        >
-          {label}
-        </button>
-      ))}
-    </div>
   );
 }
 
@@ -364,18 +283,15 @@ function MetricCard({
   icon,
   label,
   value,
-  delta,
   detail,
   tone,
 }: {
   icon: ReactNode;
   label: string;
   value: number;
-  delta: number;
   detail?: string;
   tone: "ok" | "danger";
 }) {
-  const DeltaIcon = delta < 0 ? ArrowDown : ArrowUp;
   return (
     <div className="rounded-xl border border-border bg-card p-4">
       <div className="flex items-center gap-2 text-[11px] font-medium uppercase text-muted-foreground">
@@ -384,36 +300,24 @@ function MetricCard({
       </div>
       <div className="mt-4 flex items-end gap-2">
         <div className="font-display text-3xl leading-none tabular-nums">{value}</div>
-        <div
-          className={cn(
-            "mb-1 inline-flex items-center gap-0.5 text-xs font-semibold",
-            tone === "ok" ? "text-success" : "text-danger",
-          )}
-        >
-          <DeltaIcon className="h-3 w-3" />
-          {Math.abs(delta)}
-        </div>
       </div>
-      {detail && <div className="mt-2 text-xs text-muted-foreground">{detail}</div>}
+      {detail && (
+        <div className={cn("mt-2 text-xs", tone === "danger" ? "text-danger" : "text-muted-foreground")}>
+          {detail}
+        </div>
+      )}
     </div>
   );
 }
 
 function ProductionSimulation({
   simulation,
-  score,
-  deliveries,
 }: {
   simulation: SimulationSummaryResponse;
-  score: number;
-  deliveries: ResultDeliveryResponse[];
 }) {
   const completion = Math.round(simulation.completionRatePercent || 0);
   const volume = simulation.attemptsCreated || 0;
-  const failureCount = deliveries.filter((delivery) => delivery.status === "dlq").length;
-  const dangerPct = Math.min(30, 8 + failureCount * 4);
-  const approvalPct = Math.max(35, Math.min(68, completion - 27));
-  const borderPct = Math.max(12, 100 - approvalPct - dangerPct);
+  const pending = Math.max(0, 100 - completion);
 
   return (
     <article className="border-b border-border px-4 py-4 last:border-0">
@@ -436,49 +340,69 @@ function ProductionSimulation({
           <strong className="mt-1 block text-sm text-foreground">{completion}%</strong>
         </div>
         <div>
-          Score medio
-          <strong className="mt-1 block text-sm text-foreground">{score}/100</strong>
+          Concluidas
+          <strong className="mt-1 block text-sm text-foreground">
+            {simulation.attemptsCompleted}
+          </strong>
         </div>
       </div>
       <div className="mt-3 flex h-1.5 overflow-hidden rounded-full bg-muted">
-        <span className="bg-success" style={{ width: `${approvalPct}%` } as CSSProperties} />
-        <span className="bg-warning" style={{ width: `${borderPct}%` } as CSSProperties} />
-        <span className="bg-danger" style={{ width: `${dangerPct}%` } as CSSProperties} />
+        <span className="bg-success" style={{ width: `${completion}%` }} />
+        <span className="bg-muted-foreground/20" style={{ width: `${pending}%` }} />
       </div>
-      <div className="mt-2 grid grid-cols-3 text-[10px] text-muted-foreground">
-        <span>Aprov. {approvalPct}%</span>
-        <span>Borda: {borderPct}%</span>
-        <span>Reprov. {dangerPct}%</span>
+      <div className="mt-2 grid grid-cols-2 text-[10px] text-muted-foreground">
+        <span>Finalizacao {completion}%</span>
+        <span className="text-right">Em aberto {pending}%</span>
       </div>
     </article>
   );
 }
 
-function buildTotals(
-  simulations: SimulationSummaryResponse[],
-  deliveries: ResultDeliveryResponse[],
-  window: TimeWindow,
-) {
+function buildTotals(simulations: SimulationSummaryResponse[]) {
   const created = simulations.reduce((sum, simulation) => sum + simulation.attemptsCreated, 0);
   const completed = simulations.reduce((sum, simulation) => sum + simulation.attemptsCompleted, 0);
-  const multiplier = window === "24h" ? 1 : 2.4;
-  const invites = Math.max(142, Math.round(created * multiplier));
-  const started = Math.max(96, Math.round(invites * 0.68));
-  const completion = Math.round((completed / Math.max(started, 1)) * 100) || 74;
+  const invites = created;
+  const started = created;
+  const completion = Math.round((completed / Math.max(started, 1)) * 100);
   return {
     invites,
     started,
-    completed: Math.max(71, completed),
+    completed,
     adherence: Math.round((started / Math.max(invites, 1)) * 100),
     completion,
   };
 }
 
-function fallbackFailed(deliveries: ResultDeliveryResponse[]) {
-  return deliveries.length === 0 ? 3 : 0;
-}
-
 function maskName(name: string) {
   const [first = "", second = ""] = name.split(" ");
   return `${first.charAt(0)}${"*".repeat(Math.max(4, first.length - 1))} ${second.charAt(0)}.`;
+}
+
+function formatElapsed(totalSeconds: number) {
+  const safeSeconds = Math.max(0, totalSeconds);
+  const minutes = Math.floor(safeSeconds / 60);
+  const seconds = safeSeconds % 60;
+  const hours = Math.floor(minutes / 60);
+  const remainingMinutes = minutes % 60;
+  if (hours > 0) {
+    return `${String(hours).padStart(2, "0")}:${String(remainingMinutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
+  }
+  return `${String(remainingMinutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
+}
+
+function formatRelativeTime(value: string) {
+  const timestamp = new Date(value).getTime();
+  if (Number.isNaN(timestamp)) {
+    return "-";
+  }
+  const seconds = Math.max(0, Math.round((Date.now() - timestamp) / 1000));
+  if (seconds < 60) {
+    return `ha ${seconds}s`;
+  }
+  const minutes = Math.round(seconds / 60);
+  if (minutes < 60) {
+    return `ha ${minutes} min`;
+  }
+  const hours = Math.round(minutes / 60);
+  return `ha ${hours} h`;
 }

@@ -46,4 +46,11 @@ public interface CandidateAttemptRepository extends JpaRepository<CandidateAttem
 
     List<CandidateAttemptEntity> findByTenantIdOrderByCreatedAtDesc(String tenantId, Pageable pageable);
 
+    @EntityGraph(attributePaths = {"answers", "resultItems"})
+    List<CandidateAttemptEntity> findByTenantIdAndStatusInOrderByCreatedAtDesc(
+            String tenantId,
+            List<AttemptStatus> statuses,
+            Pageable pageable
+    );
+
 }

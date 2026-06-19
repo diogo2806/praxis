@@ -5,13 +5,20 @@ import {
   Pencil,
   AlertTriangle,
   CheckCircle2,
+  Clock,
   Download,
+  Edit3,
   Flag,
   GitBranch,
   History,
   MousePointerClick,
+  Plus,
   RefreshCw,
+  Save,
+  Target,
+  Trash2,
   Workflow,
+  X,
   XCircle,
   ZoomIn,
   ZoomOut,
@@ -27,15 +34,22 @@ import {
 import { WizardStepper } from "@/components/wizard-stepper";
 import {
   cloneSimulationVersionToDraft,
+  createSimulationNode,
+  createSimulationOption,
+  deleteSimulationNode,
+  deleteSimulationOption,
   getSimulationVersion,
   getSimulationValidation,
   listSimulations,
+  type CreateOptionRequest,
   type SimulationSummaryResponse,
   type SimulationVersionDetailResponse,
   type SimulationVersionNodeResponse,
   type SimulationVersionOptionResponse,
   type SimulationValidationResponse,
+  type UpdateOptionRequest,
   updateSimulationNode,
+  updateSimulationOption,
 } from "@/lib/api/praxis";
 import { canEditSimulationVersion, maturityForStatus, statusMeta } from "@/lib/simulation-meta";
 import { cn } from "@/lib/utils";
@@ -85,9 +99,10 @@ function ValidatorPage() {
   const queryClient = useQueryClient();
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const [activeEditNodeId, setActiveEditNodeId] = useState<string | null>(null);
-  const [editDraft, setEditDraft] = useState<{ simulationId: string; versionNumber: number } | null>(
-    null,
-  );
+  const [editDraft, setEditDraft] = useState<{
+    simulationId: string;
+    versionNumber: number;
+  } | null>(null);
   const [editingMessage, setEditingMessage] = useState("");
   const [editingTimeLimit, setEditingTimeLimit] = useState("");
   const selectNode = useCallback((nodeId: string | null) => {
@@ -127,7 +142,7 @@ function ValidatorPage() {
   const editVersion = editDraft ? editDraftQuery.data : versionQuery.data;
   const editingNode =
     activeEditNodeId && editVersion
-      ? editVersion.nodes.find((node) => node.id === activeEditNodeId) ?? null
+      ? (editVersion.nodes.find((node) => node.id === activeEditNodeId) ?? null)
       : null;
   const editingContext = editDraft
     ? { simulationId: editDraft.simulationId, versionNumber: editDraft.versionNumber }
@@ -200,6 +215,138 @@ function ValidatorPage() {
       setActiveEditNodeId(nodeId ?? null);
     },
   });
+  const refetchVersionData = async () => {
+    await versionQuery.refetch();
+    await validationQuery.refetch();
+    if (editDraft?.simulationId) {
+      await editDraftQuery.refetch();
+    }
+  };
+  const getEditableContext = async () => {
+    if (editDraft?.simulationId && editDraft.versionNumber) {
+      return editDraft;
+    }
+
+    if (isEditable && search.simulationId && search.versionNumber) {
+      return { simulationId: search.simulationId, versionNumber: search.versionNumber };
+    }
+
+    if (canCloneForEdit && search.simulationId && search.versionNumber) {
+      const { draft } = await cloneDraftMutation.mutateAsync();
+      return { simulationId: draft.simulationId, versionNumber: draft.newVersionNumber };
+    }
+
+    return null;
+  };
+  const addOptionMutation = useMutation({
+    mutationFn: async (nodeId: string) => {
+      const context = await getEditableContext();
+      if (!context) return;
+
+      const body: CreateOptionRequest = {
+        text: "Nova alternativa...",
+        competencyLevels: {},
+        isBest: false,
+        isCritical: false,
+        nextNodeId: null,
+        resultingTone: "",
+      };
+      await createSimulationOption(context.simulationId, context.versionNumber, nodeId, body);
+    },
+    onSuccess: refetchVersionData,
+  });
+  const updateOptionMutation = useMutation({
+    mutationFn: async ({
+      nodeId,
+      optionId,
+      body,
+    }: {
+      nodeId: string;
+      optionId: string;
+      body: UpdateOptionRequest;
+    }) => {
+      const context = await getEditableContext();
+      if (!context) return;
+
+      await updateSimulationOption(
+        context.simulationId,
+        context.versionNumber,
+        nodeId,
+        optionId,
+        body,
+      );
+    },
+    onSuccess: refetchVersionData,
+  });
+  const deleteOptionMutation = useMutation({
+    mutationFn: async ({ nodeId, optionId }: { nodeId: string; optionId: string }) => {
+      const context = await getEditableContext();
+      if (!context) return;
+
+      await deleteSimulationOption(context.simulationId, context.versionNumber, nodeId, optionId);
+    },
+    onSuccess: refetchVersionData,
+  });
+  const addSubflowMutation = useMutation({
+    mutationFn: async (parentNodeId: string) => {
+      const context = await getEditableContext();
+      if (!context) return;
+
+      const currentVersion =
+        editDraftQuery.data?.simulationId === context.simulationId
+          ? editDraftQuery.data
+          : versionQuery.data;
+      const parentNode = currentVersion?.nodes.find((node) => node.id === parentNodeId);
+      const newNodeId = await createSimulationNode(context.simulationId, context.versionNumber, {
+        clientMessage: "Nova etapa do subfluxo...",
+        timeLimitSeconds: parentNode?.timeLimitSeconds ?? 60,
+      });
+      await createSimulationOption(context.simulationId, context.versionNumber, parentNodeId, {
+        text: "Seguir para novo subfluxo",
+        competencyLevels: {},
+        isBest: false,
+        isCritical: false,
+        nextNodeId: newNodeId,
+        resultingTone: "",
+      });
+      return newNodeId;
+    },
+    onSuccess: async (newNodeId) => {
+      await refetchVersionData();
+      if (newNodeId) {
+        selectNode(newNodeId);
+      }
+    },
+  });
+  const deleteNodeMutation = useMutation({
+    mutationFn: async (nodeId: string) => {
+      const context = await getEditableContext();
+      if (!context) return;
+
+      await deleteSimulationNode(context.simulationId, context.versionNumber, nodeId);
+    },
+    onSuccess: async () => {
+      await refetchVersionData();
+      setSelectedNodeId(null);
+    },
+  });
+  const configureTimeoutMutation = useMutation({
+    mutationFn: async ({
+      nodeId,
+      targetNodeId,
+    }: {
+      nodeId: string;
+      targetNodeId: string | null;
+    }) => {
+      const context = await getEditableContext();
+      if (!context) return;
+
+      await updateSimulationNode(context.simulationId, context.versionNumber, nodeId, {
+        timeoutNextNodeId: targetNodeId,
+      });
+    },
+    onSuccess: refetchVersionData,
+  });
   const openEditor = (nodeId?: string) => {
     if (!search.simulationId || !search.versionNumber) return;
 
@@ -212,6 +359,24 @@ function ValidatorPage() {
     if (canCloneForEdit) {
       cloneDraftMutation.mutate(nodeId);
     }
+  };
+  const configureTimeout = (nodeId: string) => {
+    const activeVersion = editDraftQuery.data ?? versionQuery.data;
+    const nodeOptions =
+      activeVersion?.nodes
+        .filter((node) => node.id !== nodeId)
+        .map((node) => node.id)
+        .join(", ") ?? "";
+    const targetNodeId = window.prompt(
+      `Informe o ID de destino do timeout. Deixe vazio para remover.\nNós disponíveis: ${nodeOptions}`,
+      activeVersion?.nodes.find((node) => node.id === nodeId)?.timeoutNextNodeId ?? "",
+    );
+
+    if (targetNodeId === null) return;
+    configureTimeoutMutation.mutate({
+      nodeId,
+      targetNodeId: targetNodeId.trim().length > 0 ? targetNodeId.trim() : null,
+    });
   };
   const exportDiagnostics = () => {
     if (!validation) return;
@@ -234,6 +399,9 @@ function ValidatorPage() {
     anchor.click();
     URL.revokeObjectURL(url);
   };
+  const previewVersion = editDraftQuery.data ?? versionQuery.data;
+  const previewSimulationId = editDraft?.simulationId ?? search.simulationId;
+  const previewVersionNumber = editDraft?.versionNumber ?? search.versionNumber;
 
   return (
     <AppShell>
@@ -252,12 +420,25 @@ function ValidatorPage() {
       {hasValidationParams && (
         <ScoringModelPreview
           error={versionQuery.error}
-          loading={versionQuery.isLoading}
+          loading={versionQuery.isLoading || editDraftQuery.isLoading}
+          canCloneForEdit={canCloneForEdit}
+          isEditable={Boolean(
+            previewVersion?.status && canEditSimulationVersion(previewVersion.status),
+          )}
+          onAddOption={(nodeId) => addOptionMutation.mutate(nodeId)}
+          onAddSubflow={(nodeId) => addSubflowMutation.mutate(nodeId)}
+          onConfigureTimeout={configureTimeout}
+          onDeleteOption={(nodeId, optionId) => deleteOptionMutation.mutate({ nodeId, optionId })}
+          onDeleteStep={(nodeId) => deleteNodeMutation.mutate(nodeId)}
+          onEditOption={(nodeId, optionId, body) =>
+            updateOptionMutation.mutate({ nodeId, optionId, body })
+          }
+          onOpenEditor={openEditor}
           onSelectNode={selectNode}
           selectedNodeId={selectedNodeId}
-          simulationId={search.simulationId}
-          version={versionQuery.data}
-          versionNumber={search.versionNumber}
+          simulationId={previewSimulationId}
+          version={previewVersion}
+          versionNumber={previewVersionNumber}
         />
       )}
 
@@ -669,16 +850,34 @@ function ValidatorPage() {
 }
 
 function ScoringModelPreview({
+  canCloneForEdit,
   error,
+  isEditable,
   loading,
+  onAddOption,
+  onAddSubflow,
+  onConfigureTimeout,
+  onDeleteOption,
+  onDeleteStep,
+  onEditOption,
+  onOpenEditor,
   onSelectNode,
   selectedNodeId,
   simulationId,
   version,
   versionNumber,
 }: {
+  canCloneForEdit: boolean;
   error: Error | null;
+  isEditable: boolean;
   loading: boolean;
+  onAddOption: (nodeId: string) => void;
+  onAddSubflow: (nodeId: string) => void;
+  onConfigureTimeout: (nodeId: string) => void;
+  onDeleteOption: (nodeId: string, optionId: string) => void;
+  onDeleteStep: (nodeId: string) => void;
+  onEditOption: (nodeId: string, optionId: string, body: UpdateOptionRequest) => void;
+  onOpenEditor: (nodeId?: string) => void;
   onSelectNode: (nodeId: string | null) => void;
   selectedNodeId: string | null;
   simulationId?: string;
@@ -690,15 +889,24 @@ function ScoringModelPreview({
   return (
     <section className="mb-5">
       <div className="mb-5">
-        <h2 className="text-2xl font-semibold tracking-tight">Mapa e pontuação normalizada</h2>
+        <h2 className="text-2xl font-semibold tracking-tight">Mapa e pontuacao normalizada</h2>
         <p className="mt-1 text-sm text-muted-foreground">
-          Dois candidatos têm o mesmo teto possível, independentemente do caminho.
+          Dois candidatos tem o mesmo teto possivel, independentemente do caminho.
         </p>
       </div>
 
       <div className="grid gap-5">
         <div className="rounded-md border border-border bg-card p-5">
           <NormalizedScoreMap
+            canCloneForEdit={canCloneForEdit}
+            isEditable={isEditable}
+            onAddOption={onAddOption}
+            onAddSubflow={onAddSubflow}
+            onConfigureTimeout={onConfigureTimeout}
+            onDeleteOption={onDeleteOption}
+            onDeleteStep={onDeleteStep}
+            onEditOption={onEditOption}
+            onOpenEditor={onOpenEditor}
             onSelectNode={onSelectNode}
             selectedNodeId={selectedNodeId}
             simulationId={simulationId}
@@ -710,154 +918,50 @@ function ScoringModelPreview({
             <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
               <div>
                 <div className="text-xs font-semibold uppercase text-muted-foreground">
-                  Fluxo de pontuação
+                  Fluxo de pontuacao
                 </div>
                 <h2 className="mt-1 text-lg font-semibold">
-                  {version?.name ?? simulationId ?? "Simulação"}{" "}
+                  {version?.name ?? simulationId ?? "Simulacao"}{" "}
                   {versionNumber ? `v${versionNumber}` : ""}
                 </h2>
               </div>
               <span className="rounded-md border border-border bg-background px-2 py-1 text-[11px] text-muted-foreground">
-                blocos da versão
+                blocos da versao
               </span>
             </div>
 
             {loading ? (
               <div className="rounded-md border border-border bg-background px-4 py-6 text-sm text-muted-foreground">
-                Carregando etapas, tempos configurados e competências...
+                Carregando etapas, tempos configurados e competencias...
               </div>
             ) : error ? (
-              <StateBanner tone="danger" title="Não foi possível carregar o fluxo">
+              <StateBanner tone="danger" title="Nao foi possivel carregar o fluxo">
                 {error.message}
               </StateBanner>
             ) : steps.length > 0 ? (
               <div className="grid gap-3">
                 {steps.map((step) => (
-                  <article
+                  <InteractiveStepCard
                     key={step.node.id}
-                    className={cn(
-                      "flex min-h-[310px] flex-col rounded-md border bg-background p-4 text-left transition",
-                      selectedNodeId === step.node.id
-                        ? "border-primary ring-2 ring-primary/20"
-                        : "border-border",
-                    )}
-                  >
-                    <div className="flex flex-wrap items-start justify-between gap-2">
-                      <div>
-                        <div className="font-mono text-[11px] uppercase text-primary">
-                          {step.node.id}
-                        </div>
-                        <div className="mt-1 text-sm font-semibold">
-                          Turno {step.node.turnIndex}
-                        </div>
-                      </div>
-                      {step.hasCriticalOption && (
-                        <span className="rounded-md border border-danger/30 bg-danger/10 px-2 py-1 text-[11px] font-medium text-danger">
-                          crítica
-                        </span>
-                      )}
-                      <div className="ml-auto flex flex-wrap gap-2">
-                        <button
-                          type="button"
-                          onClick={() =>
-                            onSelectNode(selectedNodeId === step.node.id ? null : step.node.id)
-                          }
-                          className="rounded-md border border-border bg-card px-3 py-1.5 text-xs font-medium hover:bg-accent"
-                        >
-                          {selectedNodeId === step.node.id ? "Selecionado" : "Selecionar"}
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => onSelectNode(step.node.id)}
-                          className="inline-flex items-center gap-1 rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary/90"
-                        >
-                          <ZoomIn className="h-3 w-3" />
-                          Detalhes
-                        </button>
-                      </div>
-                    </div>
-
-                    <div className="mt-3">
-                      <div className="text-[11px] font-medium uppercase text-muted-foreground">
-                        Texto cadastrado
-                      </div>
-                      <p className="mt-1 line-clamp-4 text-sm leading-6 text-foreground/85">
-                        {step.node.clientMessage || "Sem texto cadastrado."}
-                      </p>
-                    </div>
-
-                    <dl className="mt-4 grid grid-cols-3 gap-2 text-xs">
-                      <MetricTile
-                        label="Tempo"
-                        value={formatTimeLimit(step.node.timeLimitSeconds)}
-                      />
-                      <MetricTile label="Atual" value={formatScore(step.currentScore)} />
-                      <MetricTile label="Acumulada" value={formatScore(step.accumulatedScore)} />
-                    </dl>
-
-                    <div className="mt-4">
-                      <div className="text-[11px] font-medium uppercase text-muted-foreground">
-                        Competências
-                      </div>
-                      <div className="mt-2 flex flex-wrap gap-1.5">
-                        {step.competencies.length > 0 ? (
-                          step.competencies.map((competency) => (
-                            <span
-                              key={competency.name}
-                              className="rounded-md border border-border bg-card px-2 py-1 text-[11px]"
-                            >
-                              {competency.name}:{" "}
-                              <span className="font-semibold tabular-nums">
-                                {formatScore(competency.value)}
-                              </span>
-                            </span>
-                          ))
-                        ) : (
-                          <span className="text-xs text-muted-foreground">
-                            Nenhuma competência configurada.
-                          </span>
-                        )}
-                      </div>
-                    </div>
-
-                    <div className="mt-4 border-t border-border pt-3">
-                      <div className="text-[11px] font-medium uppercase text-muted-foreground">
-                        Alternativas
-                      </div>
-                      <div className="mt-2 space-y-2">
-                        {step.node.options.map((option) => (
-                          <div
-                            key={option.id}
-                            className="rounded-md border border-border bg-card px-3 py-2"
-                          >
-                            <div className="flex flex-wrap items-center justify-between gap-2">
-                              <span className="font-mono text-[11px] text-muted-foreground">
-                                {option.id}
-                              </span>
-                              <span className="rounded bg-muted px-1.5 py-0.5 text-[11px] font-medium tabular-nums text-foreground">
-                                +{formatScore(scoreOption(option, version!))} pts
-                              </span>
-                            </div>
-                            <p className="mt-1 line-clamp-2 text-xs leading-5 text-foreground/80">
-                              {option.text}
-                            </p>
-                            <div className="mt-1 text-[11px] text-muted-foreground">
-                              Vai para {option.nextNodeId ?? "fim"}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-
-                    <div className="mt-auto pt-4 text-[11px] text-muted-foreground">
-                      {step.node.options.length} opções - próximo: {step.nextTargets.join(", ")}
-                    </div>
-                  </article>
+                    canCloneForEdit={canCloneForEdit}
+                    isEditable={isEditable}
+                    onAddOption={onAddOption}
+                    onAddSubflow={onAddSubflow}
+                    onConfigureTimeout={onConfigureTimeout}
+                    onDeleteOption={onDeleteOption}
+                    onDeleteStep={onDeleteStep}
+                    onEditOption={onEditOption}
+                    onOpenEditor={onOpenEditor}
+                    onSelectNode={onSelectNode}
+                    selectedNodeId={selectedNodeId}
+                    step={step}
+                    version={version!}
+                  />
                 ))}
               </div>
             ) : (
               <div className="rounded-md border border-border bg-background px-4 py-6 text-sm text-muted-foreground">
-                Nenhuma etapa cadastrada para esta versão.
+                Nenhuma etapa cadastrada para esta versao.
               </div>
             )}
 
@@ -866,6 +970,418 @@ function ScoringModelPreview({
         </div>
       </div>
     </section>
+  );
+}
+
+interface OptionDraft {
+  auditNote: string;
+  competencyLevels: Record<string, number>;
+  isCritical: boolean;
+  nextNodeId: string | null;
+  text: string;
+}
+
+function InteractiveStepCard({
+  canCloneForEdit,
+  isEditable,
+  onAddOption,
+  onAddSubflow,
+  onConfigureTimeout,
+  onDeleteOption,
+  onDeleteStep,
+  onEditOption,
+  onOpenEditor,
+  onSelectNode,
+  selectedNodeId,
+  step,
+  version,
+}: {
+  canCloneForEdit: boolean;
+  isEditable: boolean;
+  onAddOption: (nodeId: string) => void;
+  onAddSubflow: (nodeId: string) => void;
+  onConfigureTimeout: (nodeId: string) => void;
+  onDeleteOption: (nodeId: string, optionId: string) => void;
+  onDeleteStep: (nodeId: string) => void;
+  onEditOption: (nodeId: string, optionId: string, body: UpdateOptionRequest) => void;
+  onOpenEditor: (nodeId?: string) => void;
+  onSelectNode: (nodeId: string | null) => void;
+  selectedNodeId: string | null;
+  step: StepScoreSummary;
+  version: SimulationVersionDetailResponse;
+}) {
+  const [editingOptionId, setEditingOptionId] = useState<string | null>(null);
+  const [optionDraft, setOptionDraft] = useState<OptionDraft | null>(null);
+  const canEdit = isEditable || canCloneForEdit;
+  const isRootNode = step.node.id === version.blueprint.rootNodeId;
+  const timeoutTrace = step.node.timeoutNextNodeId
+    ? collectBestTraceFromNode(version, step.node.timeoutNextNodeId, step.accumulatedScore)
+    : null;
+
+  const editOption = (option: SimulationVersionOptionResponse) => {
+    setEditingOptionId(option.id);
+    setOptionDraft({
+      auditNote: option.auditNote ?? "",
+      competencyLevels: { ...option.competencyLevels },
+      isCritical: option.isCritical,
+      nextNodeId: option.nextNodeId,
+      text: option.text,
+    });
+  };
+  const updateCompetency = (name: string, rawValue: string) => {
+    const value = Math.max(0, Math.min(100, Number(rawValue) || 0));
+    setOptionDraft((current) =>
+      current
+        ? {
+            ...current,
+            competencyLevels: { ...current.competencyLevels, [name]: value },
+          }
+        : current,
+    );
+  };
+  const saveOption = () => {
+    if (!editingOptionId || !optionDraft) return;
+
+    onEditOption(step.node.id, editingOptionId, {
+      competencyLevels: optionDraft.competencyLevels,
+      isCritical: optionDraft.isCritical,
+      nextNodeId: optionDraft.nextNodeId,
+      resultingTone: optionDraft.auditNote,
+      text: optionDraft.text,
+    });
+    setEditingOptionId(null);
+    setOptionDraft(null);
+  };
+
+  return (
+    <article
+      className={cn(
+        "flex min-h-[310px] flex-col rounded-md border bg-background p-4 text-left transition",
+        selectedNodeId === step.node.id ? "border-primary ring-2 ring-primary/20" : "border-border",
+      )}
+    >
+      <div className="mb-3 flex flex-wrap items-start justify-between gap-2 border-b border-border pb-3">
+        <div>
+          <div className="flex flex-wrap items-center gap-2 font-mono text-[11px] uppercase text-primary">
+            {step.node.id}
+            {step.node.timeoutNextNodeId && (
+              <span className="inline-flex items-center gap-1 rounded bg-warning/15 px-1.5 py-0.5 font-sans text-[10px] normal-case text-warning-foreground">
+                <Clock className="h-3 w-3" />
+                timeout: {step.node.timeoutNextNodeId}
+              </span>
+            )}
+          </div>
+          <div className="mt-1 text-sm font-semibold">Turno {step.node.turnIndex}</div>
+        </div>
+
+        {step.hasCriticalOption && (
+          <span className="rounded-md border border-danger/30 bg-danger/10 px-2 py-1 text-[11px] font-medium text-danger">
+            critica
+          </span>
+        )}
+
+        <div className="ml-auto flex flex-wrap items-center gap-1.5">
+          <button
+            type="button"
+            onClick={() => onSelectNode(selectedNodeId === step.node.id ? null : step.node.id)}
+            className="rounded-md border border-border bg-card px-2.5 py-1 text-[11px] font-medium hover:bg-accent"
+          >
+            {selectedNodeId === step.node.id ? "Selecionado" : "Selecionar"}
+          </button>
+          <button
+            type="button"
+            onClick={() => onOpenEditor(step.node.id)}
+            disabled={!canEdit}
+            className="inline-flex items-center gap-1 rounded-md border border-border bg-card px-2.5 py-1 text-[11px] font-medium hover:bg-accent disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            <Edit3 className="h-3 w-3" />
+            Etapa
+          </button>
+          {canEdit && (
+            <>
+              <button
+                type="button"
+                onClick={() => onAddOption(step.node.id)}
+                className="inline-flex items-center gap-1 rounded-md bg-primary/10 px-2.5 py-1 text-[11px] font-medium text-primary hover:bg-primary/20"
+              >
+                <Plus className="h-3 w-3" />
+                Pergunta
+              </button>
+              <button
+                type="button"
+                onClick={() => onAddSubflow(step.node.id)}
+                className="inline-flex items-center gap-1 rounded-md bg-success/10 px-2.5 py-1 text-[11px] font-medium text-success hover:bg-success/20"
+              >
+                <GitBranch className="h-3 w-3" />
+                Subfluxo
+              </button>
+              <button
+                type="button"
+                onClick={() => onConfigureTimeout(step.node.id)}
+                className="inline-flex items-center gap-1 rounded-md bg-warning/15 px-2.5 py-1 text-[11px] font-medium text-warning-foreground hover:bg-warning/25"
+              >
+                <Clock className="h-3 w-3" />
+                Timeout
+              </button>
+              {!isRootNode && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (window.confirm(`Remover etapa ${step.node.id}?`)) {
+                      onDeleteStep(step.node.id);
+                    }
+                  }}
+                  className="inline-flex items-center gap-1 rounded-md border border-danger/40 bg-danger/5 px-2 py-1 text-[11px] text-danger hover:bg-danger/10"
+                >
+                  <Trash2 className="h-3 w-3" />
+                </button>
+              )}
+            </>
+          )}
+        </div>
+      </div>
+
+      <div>
+        <div className="text-[11px] font-medium uppercase text-muted-foreground">
+          Texto cadastrado
+        </div>
+        <p className="mt-1 line-clamp-3 text-sm leading-6 text-foreground/85">
+          {step.node.clientMessage || "Sem texto cadastrado."}
+        </p>
+      </div>
+
+      <dl className="mt-4 grid grid-cols-3 gap-2 text-xs">
+        <MetricTile label="Tempo" value={formatTimeLimit(step.node.timeLimitSeconds)} />
+        <MetricTile label="Atual" value={formatScore(step.currentScore)} />
+        <MetricTile label="Acumulada" value={formatScore(step.accumulatedScore)} />
+      </dl>
+
+      {step.node.timeoutNextNodeId && (
+        <div className="mt-3 rounded-md border border-warning/30 bg-warning/10 p-3 text-xs">
+          <div className="flex items-center gap-2 font-medium text-warning-foreground">
+            <Clock className="h-3.5 w-3.5" />
+            Fluxo se tempo esgotar
+          </div>
+          <div className="mt-1 text-muted-foreground">
+            Destino <span className="font-mono text-foreground">{step.node.timeoutNextNodeId}</span>
+            {timeoutTrace
+              ? ` - melhor caminho previsto: ${formatScore(timeoutTrace.accumulatedScore)} pts`
+              : " - sem final calculavel nesse caminho"}
+          </div>
+        </div>
+      )}
+
+      <div className="mt-4">
+        <div className="flex items-center gap-1.5 text-[11px] font-medium uppercase text-muted-foreground">
+          <Target className="h-3 w-3" />
+          Competencias
+        </div>
+        <div className="mt-2 flex flex-wrap gap-1.5">
+          {step.competencies.length > 0 ? (
+            step.competencies.map((competency) => (
+              <span
+                key={competency.name}
+                className="rounded-md border border-border bg-card px-2 py-1 text-[11px]"
+              >
+                {competency.name}:{" "}
+                <span className="font-semibold tabular-nums">{formatScore(competency.value)}</span>
+              </span>
+            ))
+          ) : (
+            <span className="text-xs text-muted-foreground">Nenhuma competencia configurada.</span>
+          )}
+        </div>
+      </div>
+
+      <div className="mt-4 border-t border-border pt-3">
+        <div className="mb-2 flex items-center justify-between gap-2">
+          <div className="text-[11px] font-medium uppercase text-muted-foreground">
+            Alternativas
+          </div>
+          <span className="text-[10px] text-muted-foreground">
+            {step.node.options.length} opcoes
+          </span>
+        </div>
+
+        <div className="space-y-2">
+          {step.node.options.map((option) => {
+            const isEditing = editingOptionId === option.id;
+            return (
+              <div
+                key={option.id}
+                className={cn(
+                  "rounded-md border p-3 text-xs transition",
+                  isEditing ? "border-primary bg-primary/5" : "border-border bg-card",
+                )}
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="font-mono text-[11px] text-muted-foreground">
+                        {option.id}
+                      </span>
+                      {option.isCritical && (
+                        <span className="rounded bg-danger/10 px-1.5 py-0.5 text-[10px] text-danger">
+                          CRITICA
+                        </span>
+                      )}
+                      <span className="rounded bg-muted px-1.5 py-0.5 font-medium tabular-nums text-foreground">
+                        +{formatScore(scoreOption(option, version))} pts
+                      </span>
+                    </div>
+                    <p className="mt-1 line-clamp-2 leading-5 text-foreground/80">{option.text}</p>
+                    <div className="mt-1 text-[10px] text-muted-foreground">
+                      Vai para {option.nextNodeId ?? "fim"}
+                      {option.auditNote ? ` | ${option.auditNote.slice(0, 80)}` : ""}
+                    </div>
+                  </div>
+
+                  {canEdit && (
+                    <div className="flex shrink-0 gap-1">
+                      <button
+                        type="button"
+                        onClick={() => editOption(option)}
+                        className="rounded border border-border p-1 hover:bg-accent"
+                        title="Editar alternativa"
+                      >
+                        <Edit3 className="h-3.5 w-3.5" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (window.confirm(`Remover alternativa ${option.id}?`)) {
+                            onDeleteOption(step.node.id, option.id);
+                          }
+                        }}
+                        className="rounded border border-danger/40 p-1 text-danger hover:bg-danger/10"
+                        title="Remover alternativa"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                  )}
+                </div>
+
+                <div className="mt-2 flex flex-wrap gap-1">
+                  {Object.entries(option.competencyLevels).length > 0 ? (
+                    Object.entries(option.competencyLevels).map(([name, value]) => (
+                      <span
+                        key={name}
+                        className="rounded bg-muted px-1.5 py-0.5 text-[10px] tabular-nums"
+                      >
+                        {name}: {value}
+                      </span>
+                    ))
+                  ) : (
+                    <span className="text-[10px] italic text-muted-foreground">
+                      Sem competencias atribuidas
+                    </span>
+                  )}
+                </div>
+
+                {isEditing && optionDraft && (
+                  <div className="mt-3 border-t border-border pt-3">
+                    <div className="mb-2 text-[10px] font-semibold uppercase text-primary">
+                      Editar alternativa
+                    </div>
+                    <label className="mb-1 block text-[10px] text-muted-foreground">
+                      Texto da alternativa
+                    </label>
+                    <input
+                      type="text"
+                      value={optionDraft.text}
+                      onChange={(event) =>
+                        setOptionDraft((current) =>
+                          current ? { ...current, text: event.target.value } : current,
+                        )
+                      }
+                      className="mb-2 w-full rounded border border-border bg-background px-2 py-1 text-xs"
+                    />
+
+                    <div className="grid gap-2 sm:grid-cols-2">
+                      {version.blueprint.competencies.map((competency) => (
+                        <label key={competency.name} className="flex items-center gap-2 text-xs">
+                          <span className="w-28 truncate text-muted-foreground">
+                            {competency.name}
+                          </span>
+                          <input
+                            type="number"
+                            min={0}
+                            max={100}
+                            value={optionDraft.competencyLevels[competency.name] ?? 0}
+                            onChange={(event) =>
+                              updateCompetency(competency.name, event.target.value)
+                            }
+                            className="w-20 rounded border border-border bg-background px-2 py-1 text-xs tabular-nums"
+                          />
+                        </label>
+                      ))}
+                    </div>
+
+                    <div className="mt-3 grid gap-2 md:grid-cols-[160px_minmax(0,1fr)]">
+                      <label className="flex items-center gap-2 text-xs">
+                        <input
+                          type="checkbox"
+                          checked={optionDraft.isCritical}
+                          onChange={(event) =>
+                            setOptionDraft((current) =>
+                              current ? { ...current, isCritical: event.target.checked } : current,
+                            )
+                          }
+                        />
+                        Critica
+                      </label>
+                      <label className="text-xs">
+                        <span className="block text-[10px] text-muted-foreground">
+                          Nota de auditoria / relatorio
+                        </span>
+                        <input
+                          type="text"
+                          value={optionDraft.auditNote}
+                          onChange={(event) =>
+                            setOptionDraft((current) =>
+                              current ? { ...current, auditNote: event.target.value } : current,
+                            )
+                          }
+                          className="mt-1 w-full rounded border border-border bg-background px-2 py-1 text-xs"
+                        />
+                      </label>
+                    </div>
+
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      <button
+                        type="button"
+                        onClick={saveOption}
+                        className="inline-flex items-center gap-1 rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary/90"
+                      >
+                        <Save className="h-3 w-3" />
+                        Salvar
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setEditingOptionId(null);
+                          setOptionDraft(null);
+                        }}
+                        className="inline-flex items-center gap-1 rounded-md border border-border bg-background px-3 py-1.5 text-xs font-medium hover:bg-accent"
+                      >
+                        <X className="h-3 w-3" />
+                        Cancelar
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      <div className="mt-auto border-t border-border pt-3 text-[11px] text-muted-foreground">
+        {step.node.options.length} opcoes - proximos: {step.nextTargets.join(", ")}
+        {step.node.timeoutNextNodeId ? ` - timeout: ${step.node.timeoutNextNodeId}` : ""}
+      </div>
+    </article>
   );
 }
 
@@ -879,12 +1395,30 @@ function MetricTile({ label, value }: { label: string; value: string }) {
 }
 
 function NormalizedScoreMap({
+  canCloneForEdit,
+  isEditable,
+  onAddOption,
+  onAddSubflow,
+  onConfigureTimeout,
+  onDeleteOption,
+  onDeleteStep,
+  onEditOption,
+  onOpenEditor,
   onSelectNode,
   selectedNodeId,
   simulationId,
   version,
   versionNumber,
 }: {
+  canCloneForEdit: boolean;
+  isEditable: boolean;
+  onAddOption: (nodeId: string) => void;
+  onAddSubflow: (nodeId: string) => void;
+  onConfigureTimeout: (nodeId: string) => void;
+  onDeleteOption: (nodeId: string, optionId: string) => void;
+  onDeleteStep: (nodeId: string) => void;
+  onEditOption: (nodeId: string, optionId: string, body: UpdateOptionRequest) => void;
+  onOpenEditor: (nodeId?: string) => void;
   onSelectNode: (nodeId: string | null) => void;
   selectedNodeId: string | null;
   simulationId?: string;
@@ -892,8 +1426,11 @@ function NormalizedScoreMap({
   versionNumber?: number;
 }) {
   const [zoom, setZoom] = useState(1);
+  const [editingOptionId, setEditingOptionId] = useState<string | null>(null);
+  const [optionDraft, setOptionDraft] = useState<OptionDraft | null>(null);
   const title = version?.name ?? simulationId ?? "Simulação";
   const flow = version ? buildInteractiveScoreFlow(version) : null;
+  const canEdit = isEditable || canCloneForEdit;
   const selectedFlowNode =
     selectedNodeId && flow ? flow.nodes.find((node) => node.id === selectedNodeId) : null;
   const selectedStep =
@@ -903,6 +1440,48 @@ function NormalizedScoreMap({
   const selectedOutgoing = flow
     ? flow.edges.filter((edge) => edge.from === selectedNodeId && edge.option)
     : [];
+  const rootNodeId = version?.blueprint.rootNodeId;
+  const addTargetNodeId = selectedStep?.node.id ?? rootNodeId;
+
+  useEffect(() => {
+    setEditingOptionId(null);
+    setOptionDraft(null);
+  }, [selectedNodeId]);
+
+  const editOption = (option: SimulationVersionOptionResponse) => {
+    setEditingOptionId(option.id);
+    setOptionDraft({
+      auditNote: option.auditNote ?? "",
+      competencyLevels: { ...option.competencyLevels },
+      isCritical: option.isCritical,
+      nextNodeId: option.nextNodeId,
+      text: option.text,
+    });
+  };
+  const updateCompetency = (name: string, rawValue: string) => {
+    const value = Math.max(0, Math.min(100, Number(rawValue) || 0));
+    setOptionDraft((current) =>
+      current
+        ? {
+            ...current,
+            competencyLevels: { ...current.competencyLevels, [name]: value },
+          }
+        : current,
+    );
+  };
+  const saveOption = (nodeId: string) => {
+    if (!editingOptionId || !optionDraft) return;
+
+    onEditOption(nodeId, editingOptionId, {
+      competencyLevels: optionDraft.competencyLevels,
+      isCritical: optionDraft.isCritical,
+      nextNodeId: optionDraft.nextNodeId,
+      resultingTone: optionDraft.auditNote,
+      text: optionDraft.text,
+    });
+    setEditingOptionId(null);
+    setOptionDraft(null);
+  };
 
   return (
     <div>
@@ -915,45 +1494,83 @@ function NormalizedScoreMap({
             Clique em blocos e alternativas para filtrar o diagnóstico e ver a função da etapa.
           </p>
         </div>
-        <div className="flex items-center gap-1 rounded-md border border-border bg-background p-1">
-          <button
-            type="button"
-            onClick={() => setZoom((current) => Math.max(0.75, Number((current - 0.1).toFixed(2))))}
-            className="rounded p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground"
-            title="Reduzir zoom"
-          >
-            <ZoomOut className="h-4 w-4" />
-          </button>
-          <button
-            type="button"
-            onClick={() => setZoom(1)}
-            className="rounded px-2 py-1 text-xs font-medium tabular-nums hover:bg-muted"
-            title="Voltar para 100%"
-          >
-            {Math.round(zoom * 100)}%
-          </button>
-          <button
-            type="button"
-            onClick={() => setZoom((current) => Math.min(1.25, Number((current + 0.1).toFixed(2))))}
-            className="rounded p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground"
-            title="Aumentar zoom"
-          >
-            <ZoomIn className="h-4 w-4" />
-          </button>
-          {selectedNodeId && (
+        <div className="flex flex-wrap items-center justify-end gap-2">
+          <div className="flex items-center gap-1 rounded-md border border-border bg-background p-1">
             <button
               type="button"
-              onClick={() => onSelectNode(null)}
-              className="ml-1 rounded px-2 py-1 text-xs font-medium text-muted-foreground hover:bg-muted hover:text-foreground"
+              onClick={() =>
+                setZoom((current) => Math.max(0.75, Number((current - 0.1).toFixed(2))))
+              }
+              className="rounded p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground"
+              title="Reduzir zoom"
             >
-              limpar
+              <ZoomOut className="h-4 w-4" />
             </button>
-          )}
+            <button
+              type="button"
+              onClick={() => setZoom(1)}
+              className="rounded px-2 py-1 text-xs font-medium tabular-nums hover:bg-muted"
+              title="Voltar para 100%"
+            >
+              {Math.round(zoom * 100)}%
+            </button>
+            <button
+              type="button"
+              onClick={() =>
+                setZoom((current) => Math.min(1.25, Number((current + 0.1).toFixed(2))))
+              }
+              className="rounded p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground"
+              title="Aumentar zoom"
+            >
+              <ZoomIn className="h-4 w-4" />
+            </button>
+            {selectedNodeId && (
+              <button
+                type="button"
+                onClick={() => onSelectNode(null)}
+                className="ml-1 rounded px-2 py-1 text-xs font-medium text-muted-foreground hover:bg-muted hover:text-foreground"
+              >
+                limpar
+              </button>
+            )}
+          </div>
+
+          <div className="flex items-center gap-1 rounded-md border border-border bg-background p-1">
+            <button
+              type="button"
+              onClick={() => addTargetNodeId && onAddSubflow(addTargetNodeId)}
+              disabled={!canEdit || !addTargetNodeId}
+              className="inline-flex items-center gap-1 rounded px-2 py-1 text-xs font-medium text-success hover:bg-success/10 disabled:opacity-50"
+              title="Adicionar caixa conectada"
+            >
+              <Plus className="h-3.5 w-3.5" />
+              Caixa
+            </button>
+            <button
+              type="button"
+              onClick={() => selectedStep && onAddOption(selectedStep.node.id)}
+              disabled={!canEdit || !selectedStep}
+              className="inline-flex items-center gap-1 rounded px-2 py-1 text-xs font-medium text-primary hover:bg-primary/10 disabled:opacity-50"
+              title="Adicionar alternativa na caixa selecionada"
+            >
+              <GitBranch className="h-3.5 w-3.5" />
+              Saida
+            </button>
+            <button
+              type="button"
+              onClick={() => selectedStep && onConfigureTimeout(selectedStep.node.id)}
+              disabled={!canEdit || !selectedStep}
+              className="rounded p-1.5 text-warning-foreground hover:bg-warning/15 disabled:opacity-50"
+              title="Configurar timeout da caixa"
+            >
+              <Clock className="h-4 w-4" />
+            </button>
+          </div>
         </div>
       </div>
 
       {flow ? (
-        <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_280px]">
+        <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_360px]">
           <div className="overflow-auto rounded-md border border-border bg-muted/20">
             <div
               className="relative origin-top-left"
@@ -1029,45 +1646,105 @@ function NormalizedScoreMap({
                   ) : null,
                 )}
 
-                {flow.nodes.map((flowNode) => (
-                  <button
-                    key={flowNode.id}
-                    type="button"
-                    onClick={() =>
-                      flowNode.kind === "step"
-                        ? onSelectNode(selectedNodeId === flowNode.id ? null : flowNode.id)
-                        : onSelectNode(flowNode.sourceNodeId ?? null)
-                    }
-                    className={cn(
-                      "absolute z-20 flex h-[104px] w-[176px] flex-col rounded-md border bg-card p-3 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-primary hover:shadow-md",
-                      flowNode.kind === "end" && "bg-muted",
-                      selectedNodeId === flowNode.id || selectedNodeId === flowNode.sourceNodeId
-                        ? "border-primary ring-2 ring-primary/20"
-                        : "border-border",
-                    )}
-                    style={{ left: flowNode.x, top: flowNode.y }}
-                  >
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="font-mono text-[11px] font-semibold text-primary">
-                        {flowNode.label}
-                      </span>
-                      {flowNode.kind === "step" ? (
-                        <Workflow className="h-3.5 w-3.5 text-muted-foreground" />
-                      ) : (
-                        <Flag className="h-3.5 w-3.5 text-muted-foreground" />
+                {flow.nodes.map((flowNode) => {
+                  const isStep = flowNode.kind === "step";
+                  const isRoot = flowNode.id === rootNodeId;
+                  const isSelected =
+                    selectedNodeId === flowNode.id || selectedNodeId === flowNode.sourceNodeId;
+
+                  return (
+                    <div
+                      key={flowNode.id}
+                      className={cn(
+                        "absolute z-20 h-[118px] w-[196px] rounded-md border bg-card text-left shadow-sm transition hover:-translate-y-0.5 hover:border-primary hover:shadow-md",
+                        flowNode.kind === "end" && "bg-muted",
+                        isSelected ? "border-primary ring-2 ring-primary/20" : "border-border",
+                      )}
+                      style={{ left: flowNode.x, top: flowNode.y }}
+                    >
+                      <button
+                        type="button"
+                        onClick={() =>
+                          isStep
+                            ? onSelectNode(selectedNodeId === flowNode.id ? null : flowNode.id)
+                            : onSelectNode(flowNode.sourceNodeId ?? null)
+                        }
+                        className="absolute inset-0 rounded-md text-left"
+                        aria-label={`Selecionar ${flowNode.label}`}
+                      />
+                      <div className="pointer-events-none relative flex h-full flex-col p-3">
+                        <div className="flex items-center justify-between gap-2 pr-14">
+                          <span className="truncate font-mono text-[11px] font-semibold text-primary">
+                            {flowNode.label}
+                          </span>
+                          {isStep ? (
+                            <Workflow className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                          ) : (
+                            <Flag className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                          )}
+                        </div>
+                        <div className="mt-2 line-clamp-2 text-xs font-medium leading-5">
+                          {flowNode.title}
+                        </div>
+                        <div className="mt-auto flex items-center justify-between gap-2 text-[11px] text-muted-foreground">
+                          <span>{flowNode.meta}</span>
+                          <span className="font-semibold tabular-nums text-foreground">
+                            {flowNode.scoreLabel}
+                          </span>
+                        </div>
+                      </div>
+
+                      {isStep && (
+                        <div className="absolute right-2 top-2 z-30 flex items-center gap-1">
+                          <button
+                            type="button"
+                            onClick={() => onOpenEditor(flowNode.id)}
+                            disabled={!canEdit}
+                            className="rounded border border-border bg-background p-1 text-muted-foreground hover:bg-accent hover:text-foreground disabled:opacity-50"
+                            title="Editar funcao da caixa"
+                          >
+                            <Edit3 className="h-3.5 w-3.5" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => onAddOption(flowNode.id)}
+                            disabled={!canEdit}
+                            className="rounded border border-border bg-background p-1 text-primary hover:bg-primary/10 disabled:opacity-50"
+                            title="Adicionar saida"
+                          >
+                            <GitBranch className="h-3.5 w-3.5" />
+                          </button>
+                        </div>
+                      )}
+
+                      {isStep && canEdit && (
+                        <button
+                          type="button"
+                          onClick={() => onAddSubflow(flowNode.id)}
+                          className="absolute -right-3 top-1/2 z-30 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-full border border-success/40 bg-card text-success shadow-sm hover:bg-success/10"
+                          title="Adicionar caixa conectada"
+                        >
+                          <Plus className="h-4 w-4" />
+                        </button>
+                      )}
+
+                      {isStep && canEdit && !isRoot && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (window.confirm(`Remover etapa ${flowNode.id}?`)) {
+                              onDeleteStep(flowNode.id);
+                            }
+                          }}
+                          className="absolute bottom-2 right-2 z-30 rounded border border-danger/40 bg-card p-1 text-danger hover:bg-danger/10"
+                          title="Remover caixa"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </button>
                       )}
                     </div>
-                    <div className="mt-2 line-clamp-2 text-xs font-medium leading-5">
-                      {flowNode.title}
-                    </div>
-                    <div className="mt-auto flex items-center justify-between gap-2 text-[11px] text-muted-foreground">
-                      <span>{flowNode.meta}</span>
-                      <span className="font-semibold tabular-nums text-foreground">
-                        {flowNode.scoreLabel}
-                      </span>
-                    </div>
-                  </button>
-                ))}
+                  );
+                })}
               </div>
             </div>
           </div>
@@ -1080,19 +1757,67 @@ function NormalizedScoreMap({
 
             {selectedStep ? (
               <div className="mt-3 space-y-4">
-                <div>
-                  <div className="font-mono text-xs text-primary">{selectedStep.node.id}</div>
-                  <p className="mt-1 line-clamp-5 text-sm leading-6">
-                    {selectedStep.node.clientMessage || "Sem texto cadastrado."}
-                  </p>
-                  <button
-                    type="button"
-                    onClick={() => onSelectNode(selectedStep.node.id)}
-                    className="mt-3 inline-flex items-center gap-1 rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary/90"
-                  >
-                    <ZoomIn className="h-3 w-3" />
-                    Detalhes
-                  </button>
+                <div className="rounded-md border border-border bg-card p-3">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <div className="font-mono text-xs text-primary">{selectedStep.node.id}</div>
+                      <p className="mt-1 line-clamp-5 text-sm leading-6">
+                        {selectedStep.node.clientMessage || "Sem texto cadastrado."}
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => onOpenEditor(selectedStep.node.id)}
+                      disabled={!canEdit}
+                      className="shrink-0 rounded-md border border-border bg-background p-2 text-muted-foreground hover:bg-accent hover:text-foreground disabled:opacity-50"
+                      title="Editar texto e tempo"
+                    >
+                      <Edit3 className="h-4 w-4" />
+                    </button>
+                  </div>
+
+                  <div className="mt-3 grid grid-cols-4 gap-1.5">
+                    <button
+                      type="button"
+                      onClick={() => onAddOption(selectedStep.node.id)}
+                      disabled={!canEdit}
+                      className="inline-flex items-center justify-center rounded-md border border-border bg-background p-2 text-primary hover:bg-primary/10 disabled:opacity-50"
+                      title="Adicionar saida"
+                    >
+                      <GitBranch className="h-4 w-4" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => onAddSubflow(selectedStep.node.id)}
+                      disabled={!canEdit}
+                      className="inline-flex items-center justify-center rounded-md border border-border bg-background p-2 text-success hover:bg-success/10 disabled:opacity-50"
+                      title="Adicionar caixa conectada"
+                    >
+                      <Plus className="h-4 w-4" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => onConfigureTimeout(selectedStep.node.id)}
+                      disabled={!canEdit}
+                      className="inline-flex items-center justify-center rounded-md border border-border bg-background p-2 text-warning-foreground hover:bg-warning/15 disabled:opacity-50"
+                      title="Configurar timeout"
+                    >
+                      <Clock className="h-4 w-4" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (window.confirm(`Remover etapa ${selectedStep.node.id}?`)) {
+                          onDeleteStep(selectedStep.node.id);
+                        }
+                      }}
+                      disabled={!canEdit || selectedStep.node.id === rootNodeId}
+                      className="inline-flex items-center justify-center rounded-md border border-danger/40 bg-background p-2 text-danger hover:bg-danger/10 disabled:opacity-50"
+                      title="Remover caixa"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  </div>
                 </div>
                 <dl className="grid grid-cols-2 gap-2 text-xs">
                   <MetricTile
@@ -1135,31 +1860,210 @@ function NormalizedScoreMap({
                     Alternativas
                   </div>
                   <div className="space-y-2">
-                    {selectedOutgoing.map((edge) => (
-                      <button
-                        key={edge.id}
-                        type="button"
-                        onClick={() => onSelectNode(edge.toKind === "end" ? edge.from : edge.to)}
-                        className="w-full rounded-md border border-border bg-card p-2 text-left text-xs hover:border-primary hover:bg-accent"
-                      >
-                        <div className="flex items-center justify-between gap-2">
-                          <span className="font-mono">{edge.option?.id}</span>
-                          <span className="font-semibold tabular-nums">
-                            +{formatScore(edge.score)} pts
-                          </span>
-                        </div>
-                        <p className="mt-1 line-clamp-2 text-muted-foreground">
-                          {edge.option?.text}
-                        </p>
-                      </button>
-                    ))}
+                    {selectedOutgoing.map((edge) => {
+                      const option = edge.option;
+                      if (!option) return null;
+
+                      const isEditing = editingOptionId === option.id;
+
+                      return (
+                        <article
+                          key={edge.id}
+                          className={cn(
+                            "rounded-md border bg-card p-3 text-xs",
+                            isEditing ? "border-primary bg-primary/5" : "border-border",
+                          )}
+                        >
+                          <div className="flex items-start justify-between gap-2">
+                            <button
+                              type="button"
+                              onClick={() =>
+                                onSelectNode(edge.toKind === "end" ? edge.from : edge.to)
+                              }
+                              className="min-w-0 flex-1 text-left"
+                            >
+                              <div className="flex flex-wrap items-center gap-2">
+                                <span className="font-mono">{option.id}</span>
+                                <span className="rounded bg-muted px-1.5 py-0.5 font-medium tabular-nums text-foreground">
+                                  +{formatScore(edge.score)} pts
+                                </span>
+                                {option.isCritical && (
+                                  <span className="rounded bg-danger/10 px-1.5 py-0.5 text-danger">
+                                    critica
+                                  </span>
+                                )}
+                              </div>
+                              <p className="mt-1 line-clamp-2 text-muted-foreground">
+                                {option.text}
+                              </p>
+                              <div className="mt-1 text-[10px] text-muted-foreground">
+                                destino: {option.nextNodeId ?? "fim"}
+                              </div>
+                            </button>
+
+                            {canEdit && (
+                              <div className="flex shrink-0 gap-1">
+                                <button
+                                  type="button"
+                                  onClick={() => editOption(option)}
+                                  className="rounded border border-border p-1 text-muted-foreground hover:bg-accent hover:text-foreground"
+                                  title="Editar saida"
+                                >
+                                  <Edit3 className="h-3.5 w-3.5" />
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    if (window.confirm(`Remover alternativa ${option.id}?`)) {
+                                      onDeleteOption(selectedStep.node.id, option.id);
+                                    }
+                                  }}
+                                  className="rounded border border-danger/40 p-1 text-danger hover:bg-danger/10"
+                                  title="Remover saida"
+                                >
+                                  <Trash2 className="h-3.5 w-3.5" />
+                                </button>
+                              </div>
+                            )}
+                          </div>
+
+                          {isEditing && optionDraft && (
+                            <div className="mt-3 border-t border-border pt-3">
+                              <label className="block text-[10px] text-muted-foreground">
+                                Texto da saida
+                                <textarea
+                                  value={optionDraft.text}
+                                  onChange={(event) =>
+                                    setOptionDraft((current) =>
+                                      current ? { ...current, text: event.target.value } : current,
+                                    )
+                                  }
+                                  rows={3}
+                                  className="mt-1 w-full rounded border border-border bg-background px-2 py-1 text-xs"
+                                />
+                              </label>
+
+                              <div className="mt-2 grid gap-2 sm:grid-cols-2">
+                                <label className="text-[10px] text-muted-foreground">
+                                  Destino
+                                  <select
+                                    value={optionDraft.nextNodeId ?? ""}
+                                    onChange={(event) =>
+                                      setOptionDraft((current) =>
+                                        current
+                                          ? {
+                                              ...current,
+                                              nextNodeId: event.target.value || null,
+                                            }
+                                          : current,
+                                      )
+                                    }
+                                    className="mt-1 w-full rounded border border-border bg-background px-2 py-1 text-xs"
+                                  >
+                                    <option value="">fim</option>
+                                    {version?.nodes
+                                      .filter((node) => node.id !== selectedStep.node.id)
+                                      .map((node) => (
+                                        <option key={node.id} value={node.id}>
+                                          {node.id}
+                                        </option>
+                                      ))}
+                                  </select>
+                                </label>
+                                <label className="flex items-end gap-2 pb-1 text-xs">
+                                  <input
+                                    type="checkbox"
+                                    checked={optionDraft.isCritical}
+                                    onChange={(event) =>
+                                      setOptionDraft((current) =>
+                                        current
+                                          ? { ...current, isCritical: event.target.checked }
+                                          : current,
+                                      )
+                                    }
+                                  />
+                                  Critica
+                                </label>
+                              </div>
+
+                              <label className="mt-2 block text-[10px] text-muted-foreground">
+                                Nota de relatorio
+                                <input
+                                  type="text"
+                                  value={optionDraft.auditNote}
+                                  onChange={(event) =>
+                                    setOptionDraft((current) =>
+                                      current
+                                        ? { ...current, auditNote: event.target.value }
+                                        : current,
+                                    )
+                                  }
+                                  className="mt-1 w-full rounded border border-border bg-background px-2 py-1 text-xs"
+                                />
+                              </label>
+
+                              <div className="mt-3 grid gap-2">
+                                {version?.blueprint.competencies.map((competency) => (
+                                  <label
+                                    key={competency.name}
+                                    className="grid grid-cols-[minmax(0,1fr)_72px] items-center gap-2 text-xs"
+                                  >
+                                    <span className="truncate text-muted-foreground">
+                                      {competency.name}
+                                    </span>
+                                    <input
+                                      type="number"
+                                      min={0}
+                                      max={100}
+                                      value={optionDraft.competencyLevels[competency.name] ?? 0}
+                                      onChange={(event) =>
+                                        updateCompetency(competency.name, event.target.value)
+                                      }
+                                      className="rounded border border-border bg-background px-2 py-1 text-xs tabular-nums"
+                                    />
+                                  </label>
+                                ))}
+                              </div>
+
+                              <div className="mt-3 flex flex-wrap gap-2">
+                                <button
+                                  type="button"
+                                  onClick={() => saveOption(selectedStep.node.id)}
+                                  disabled={optionDraft.text.trim().length === 0}
+                                  className="inline-flex items-center gap-1 rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+                                >
+                                  <Save className="h-3 w-3" />
+                                  Salvar
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setEditingOptionId(null);
+                                    setOptionDraft(null);
+                                  }}
+                                  className="inline-flex items-center gap-1 rounded-md border border-border bg-background px-3 py-1.5 text-xs font-medium hover:bg-accent"
+                                >
+                                  <X className="h-3 w-3" />
+                                  Cancelar
+                                </button>
+                              </div>
+                            </div>
+                          )}
+                        </article>
+                      );
+                    })}
+                    {selectedOutgoing.length === 0 && (
+                      <div className="rounded-md border border-dashed border-border p-3 text-xs text-muted-foreground">
+                        Esta caixa ainda nao tem saidas.
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
             ) : (
               <div className="mt-4 rounded-md border border-dashed border-border p-4 text-sm text-muted-foreground">
-                Selecione uma etapa para ver texto, tempo, pontuação, competências e saídas sem sair da
-                tela.
+                Selecione uma etapa para ver texto, tempo, pontuação, competências e saídas sem sair
+                da tela.
               </div>
             )}
           </aside>
@@ -1220,11 +2124,11 @@ interface InteractiveScoreFlow {
 }
 
 function buildInteractiveScoreFlow(version: SimulationVersionDetailResponse): InteractiveScoreFlow {
-  const nodeWidth = 176;
-  const nodeHeight = 104;
+  const nodeWidth = 196;
+  const nodeHeight = 118;
   const optionLabelWidth = 132;
-  const columnGap = 420;
-  const rowGap = 154;
+  const columnGap = 460;
+  const rowGap = 174;
   const startX = 36;
   const startY = 36;
   const nodesById = new Map(version.nodes.map((node) => [node.id, node]));
