@@ -115,6 +115,9 @@ function ValidatorPage() {
   });
 
   const validation = validationQuery.data;
+  const validationIssues = validation?.issues ?? [];
+  const validationBlockers = validationIssues.filter((issue) => issue.severity === "blocker");
+  const validationWarnings = validationIssues.filter((issue) => issue.severity === "warning");
   const versionStatus = versionQuery.data?.status;
   const isEditable = versionStatus ? canEditSimulationVersion(versionStatus) : true;
   const canCloneForEdit = versionStatus === "published";
@@ -234,7 +237,7 @@ function ValidatorPage() {
       )}
 
       {hasValidationParams && cloneDraftMutation.isError && (
-        <StateBanner tone="danger" title="Nao foi possivel criar o rascunho para edicao">
+        <StateBanner tone="danger" title="Não foi possível criar o rascunho para edição">
           {cloneDraftMutation.error instanceof Error
             ? cloneDraftMutation.error.message
             : "Tente novamente."}
@@ -244,9 +247,9 @@ function ValidatorPage() {
       {hasValidationParams && versionStatus && !isEditable && !canCloneForEdit && (
         <StateBanner
           tone="warn"
-          title={`Versao ${statusMeta[versionStatus].label.toLowerCase()} nao pode ser editada`}
+          title={`Versão ${statusMeta[versionStatus].label.toLowerCase()} não pode ser editada`}
         >
-          Para alterar esta versao, mova o fluxo para rascunho/reprovada ou publique uma versao para
+          Para alterar esta versão, mova o fluxo para rascunho/reprovada ou publique uma versão para
           clonar como novo rascunho.
         </StateBanner>
       )}
@@ -264,6 +267,54 @@ function ValidatorPage() {
         />
       ) : (
         <>
+          <section className="rounded-md border border-border bg-card p-5">
+            <div className="text-sm font-semibold text-foreground">Checklist de publicação</div>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Itens de bloqueio e alerta identificados para esta versão.
+            </p>
+            {validationBlockers.length === 0 && validationWarnings.length === 0 ? (
+              <div className="mt-3 rounded-md border border-success/30 bg-success/10 p-3 text-sm text-success">
+                Nenhuma pendência ativa. A versão está pronta para transitar para publicação.
+              </div>
+            ) : (
+              <ul className="mt-3 space-y-2">
+                {validationIssues.map((issue) => (
+                  <li
+                    key={`${issue.severity}-${issue.nodeId ?? "global"}-${issue.message}`}
+                    className="rounded-md border border-border bg-background p-3"
+                  >
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <div className="min-w-0">
+                        <span
+                          className={cn(
+                            "inline-flex rounded-md border px-2 py-1 text-[11px] font-medium",
+                            issue.severity === "blocker"
+                              ? "border-danger/40 bg-danger/10 text-danger"
+                              : "border-warning/40 bg-warning/10 text-warning-foreground",
+                          )}
+                        >
+                          {issue.severity === "blocker" ? "bloqueador" : "alerta"}
+                        </span>
+                        <p className="mt-2 text-sm">{issue.message}</p>
+                      </div>
+                      {issue.nodeId && (
+                        <button
+                          type="button"
+                          onClick={() => openEditor(issue.nodeId!)}
+                          disabled={!isEditable && !canCloneForEdit}
+                          className="inline-flex items-center gap-1 rounded-md border border-border bg-card px-3 py-1.5 text-xs font-medium hover:bg-accent disabled:cursor-not-allowed disabled:opacity-50"
+                        >
+                          <ExternalLink className="h-3 w-3" />
+                          {cloneDraftMutation.isPending ? "Criando rascunho..." : "Abrir etapa"}
+                        </button>
+                      )}
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
+
           {blockers > 0 ? (
             <StateBanner
               tone="danger"

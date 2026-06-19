@@ -40,7 +40,7 @@ export const Route = createFileRoute("/talent-match")({
       { title: "Talent Match - Praxis" },
       {
         name: "description",
-        content: "Comparativo visual de candidatos contra a regua alvo da vaga.",
+        content: "Comparativo visual de candidatos contra a régua alvo da vaga.",
       },
     ],
   }),
@@ -83,6 +83,8 @@ function TalentMatchPage() {
   }, [candidateLinksQuery.data, search.simulationId]);
 
   const completedCandidates = candidates.filter((candidate) => candidate.status === "completed");
+  const selectedVersion = versionQuery.data;
+  const isVersionPublished = selectedVersion?.status === "published";
 
   useEffect(() => {
     setSelectedAttemptIds([]);
@@ -101,13 +103,13 @@ function TalentMatchPage() {
 
   return (
     <AppShell>
-      <ScreenStateStrip blockedReason="sem candidatos concluidos para comparar" />
+      <ScreenStateStrip blockedReason="sem candidatos concluídos para comparar" />
       <div className="mb-5 flex flex-wrap items-end justify-between gap-4">
         <div>
           <div className="text-xs uppercase text-primary">Talent Match</div>
           <h1 className="mt-1 text-3xl font-semibold">Comparativo de candidatos</h1>
           <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
-            Sobreponha ate 5 perfis no radar e compare cada competencia contra a regua alvo da
+            Sobreponha até 5 perfis no radar e compare cada competência contra a régua alvo da
             vaga.
           </p>
         </div>
@@ -121,8 +123,8 @@ function TalentMatchPage() {
 
       {!hasContext ? (
         <EmptyState
-          title="Selecione uma simulacao para comparar talentos"
-          description="O painel usa candidatos concluidos da simulacao e a regua alvo configurada no blueprint da vaga."
+          title="Selecione uma simulação para comparar talentos"
+          description="O painel usa candidatos concluídos da simulação e a régua alvo configurada no blueprint da vaga."
           actions={
             <SimulationLinks
               loading={simulationsQuery.isLoading}
@@ -132,13 +134,24 @@ function TalentMatchPage() {
         />
       ) : (
         <div className="space-y-5">
+          {!isVersionPublished && (
+            <StateBanner tone="warn" title="Versão não disponível para comparação">
+              Esta versão ainda não está publicada. Selecione uma versão publicada para comparar
+              talentos.
+            </StateBanner>
+          )}
+          {isVersionPublished && completedCandidates.length === 0 && (
+            <StateBanner tone="info" title="Ainda não há candidatos concluídos">
+              Selecione ou aguarde tentativas concluídas para essa versão antes de comparar no radar.
+            </StateBanner>
+          )}
           {selectedLimitReached && (
-            <StateBanner tone="warn" title="Limite visual atingido">
-              O radar aceita no maximo 5 candidatos por comparacao para manter leitura clara.
+          <StateBanner tone="warn" title="Limite visual atingido">
+              O radar aceita no máximo 5 candidatos por comparação para manter leitura clara.
             </StateBanner>
           )}
           {talentMatchQuery.isError && (
-            <StateBanner tone="danger" title="Nao foi possivel carregar o comparativo">
+            <StateBanner tone="danger" title="Não foi possível carregar o comparativo">
               {talentMatchQuery.error instanceof Error
                 ? talentMatchQuery.error.message
                 : "Revise os candidatos selecionados e tente novamente."}
@@ -146,7 +159,7 @@ function TalentMatchPage() {
           )}
 
           <div className="grid gap-5 xl:grid-cols-[minmax(300px,380px)_minmax(0,1fr)]">
-            <section className="rounded-md border border-border bg-card p-5">
+          <section className="rounded-md border border-border bg-card p-5">
               <div className="mb-4 flex items-center justify-between gap-3">
                 <div>
                   <div className="flex items-center gap-2 text-sm font-semibold">
@@ -204,7 +217,13 @@ function TalentMatchPage() {
             </section>
           </div>
 
-          <CandidateLegend candidates={selectedCandidateRows} />
+          {isVersionPublished && completedCandidates.length > 0 ? (
+            <CandidateLegend candidates={selectedCandidateRows} />
+          ) : (
+                <StateBanner tone="info" title="Comparativo pendente">
+          A comparação aparece quando houver candidatos concluídos selecionados.
+        </StateBanner>
+      )}
         </div>
       )}
     </AppShell>
@@ -226,10 +245,10 @@ function CandidateSelector({
     return <div className="rounded-md border border-border bg-background p-4 text-sm">Carregando...</div>;
   }
 
-  if (candidates.length === 0) {
+      if (candidates.length === 0) {
     return (
       <div className="rounded-md border border-border bg-background p-4 text-sm text-muted-foreground">
-        Nenhum candidato concluido encontrado para esta simulacao.
+          Nenhum candidato concluído encontrado para esta simulação.
       </div>
     );
   }
@@ -298,7 +317,7 @@ function RadarComparisonChart({
   if (benchmark.length === 0) {
     return (
       <div className="flex min-h-[420px] items-center justify-center rounded-md border border-border bg-background text-sm text-muted-foreground">
-        Benchmark indisponivel para esta versao.
+        Benchmark indisponível para esta versão.
       </div>
     );
   }
@@ -311,9 +330,9 @@ function RadarComparisonChart({
           <PolarGrid stroke="hsl(var(--border))" />
           <PolarAngleAxis dataKey="competency" tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} />
           <PolarRadiusAxis angle={90} domain={[0, 100]} tick={{ fontSize: 10 }} />
-          <RechartsTooltip content={<RadarTooltip candidates={data?.candidates ?? []} />} />
+            <RechartsTooltip content={<RadarTooltip candidates={data?.candidates ?? []} />} />
           <Radar
-            name="Regua alvo"
+              name="Régua alvo"
             dataKey="benchmark"
             stroke="#52525b"
             strokeDasharray="5 4"
@@ -353,7 +372,7 @@ function RadarTooltip({
   const candidateNames = new Map(candidates.map((candidate) => [candidate.attemptId, candidate.candidateName]));
   const rows = payload
     .map((item) => ({
-      name: item.dataKey === "benchmark" ? "Regua alvo" : candidateNames.get(String(item.dataKey)) ?? item.name,
+      name: item.dataKey === "benchmark" ? "Régua alvo" : candidateNames.get(String(item.dataKey)) ?? item.name,
       value: Number(item.value ?? 0),
       benchmark: item.dataKey === "benchmark",
     }))
@@ -392,8 +411,8 @@ function BenchmarkSummary({ benchmark }: { benchmark: CompetencyBenchmarkDto[] }
 function CandidateLegend({ candidates }: { candidates: CandidateRadarDto[] }) {
   if (candidates.length === 0) {
     return (
-      <StateBanner tone="info" title="Benchmark visivel">
-        Selecione candidatos concluidos para sobrepor os perfis individuais ao radar da vaga.
+        <StateBanner tone="info" title="Benchmark visível">
+        Selecione candidatos concluídos para sobrepor os perfis individuais ao radar da vaga.
       </StateBanner>
     );
   }
@@ -437,36 +456,54 @@ function SimulationLinks({
     return <div className="rounded-md border border-border bg-card px-4 py-3 text-sm">Carregando...</div>;
   }
 
-  if (simulations.length === 0) {
+      if (simulations.length === 0) {
     return (
       <div className="inline-flex items-center gap-2 rounded-md border border-border bg-card px-4 py-3 text-sm text-muted-foreground">
         <CircleAlert className="h-4 w-4" />
-        Nenhuma simulacao cadastrada.
+        Nenhuma simulação cadastrada.
       </div>
     );
   }
 
   return (
     <>
-      {simulations.slice(0, 4).map((simulation) => (
-        <Link
-          key={simulation.id}
-          to="/talent-match"
-          search={{
-            simulationId: simulation.id,
-            versionNumber: simulation.versionNumber,
-          }}
-          className="rounded-md border border-border bg-card px-4 py-3 text-sm hover:bg-accent"
-        >
-          <span className="block font-medium">{simulation.name}</span>
-          <span className="mt-1 block">
-            <StatusBadge
-              status={simulation.status}
-              maturity={maturityForStatus(simulation.status)}
-            />
-          </span>
-        </Link>
-      ))}
+      {simulations.slice(0, 4).map((simulation) => {
+        const canSelect = simulation.status === "published" && simulation.attemptsCreated > 0;
+        return canSelect ? (
+          <Link
+            key={simulation.id}
+            to="/talent-match"
+            search={{
+              simulationId: simulation.id,
+              versionNumber: simulation.versionNumber,
+            }}
+            className="rounded-md border border-border bg-card px-4 py-3 text-sm hover:bg-accent"
+          >
+            <span className="block font-medium">{simulation.name}</span>
+            <span className="mt-1 block">
+              <StatusBadge
+                status={simulation.status}
+                maturity={maturityForStatus(simulation.status)}
+              />
+            </span>
+          </Link>
+        ) : (
+          <button
+            type="button"
+            key={simulation.id}
+            disabled
+            title={
+              simulation.status !== "published"
+                ? "A versão precisa estar publicada para comparar talentos."
+                : "Esta versão ainda não possui candidatos concluídos."
+            }
+            className="rounded-md border border-border bg-card px-4 py-3 text-sm opacity-70"
+          >
+            <span className="block font-medium text-left">{simulation.name}</span>
+            <span className="mt-1 block text-xs text-muted-foreground">Sem dados suficientes</span>
+          </button>
+        );
+      })}
     </>
   );
 }

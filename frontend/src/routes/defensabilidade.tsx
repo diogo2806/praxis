@@ -166,7 +166,7 @@ function DefensibilityPage() {
                   label="Alternativas"
                   value={version.nodes.reduce((total, node) => total + node.options.length, 0)}
                 />
-                <Metric label="Competencias" value={version.blueprint.competencies.length} />
+                <Metric label="Competências" value={version.blueprint.competencies.length} />
               </div>
               <div className="mt-4 flex flex-wrap gap-2">
                 {version.blueprint.competencies.map((competency) => (

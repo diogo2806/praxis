@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Edit2, Plus, Trash2 } from "lucide-react";
 
 import { AppShell } from "@/components/app-shell";
@@ -44,6 +44,8 @@ function CompetenciasManagement() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [newCompetencia, setNewCompetencia] = useState("");
   const [editingOption, setEditingOption] = useState<EditingOption | null>(null);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [pendingDeleteOption, setPendingDeleteOption] = useState<EditingOption | null>(null);
 
   const tenantConfigQuery = useQuery({
     queryKey: ["tenant-config"],
@@ -61,6 +63,13 @@ function CompetenciasManagement() {
       setIsDialogOpen(false);
     },
   });
+
+  const visibleCompetencias = useMemo(() => {
+    const normalizedSearch = searchTerm.trim().toLowerCase();
+    return [...competencias]
+      .filter((competencia) => competencia.label.toLowerCase().includes(normalizedSearch))
+      .sort((a, b) => a.label.localeCompare(b.label, "pt-BR", { sensitivity: "base" }));
+  }, [competencias, searchTerm]);
 
   const handleOpenCreateDialog = () => {
     setEditingOption(null);
@@ -112,6 +121,16 @@ function CompetenciasManagement() {
     saveCatalogMutation.mutate(competencias.filter((competencia) => competencia.value !== value));
   };
 
+  const requestDelete = (option: TenantConfigOption) => {
+    setPendingDeleteOption({ ...option, originalValue: option.value });
+  };
+
+  const confirmDelete = () => {
+    if (!pendingDeleteOption) return;
+    handleRemove(pendingDeleteOption.value);
+    setPendingDeleteOption(null);
+  };
+
   if (tenantConfigQuery.isLoading) {
     return (
       <AppShell>
@@ -129,7 +148,7 @@ function CompetenciasManagement() {
     return (
       <AppShell>
         <div className="mb-6">
-          <h1 className="text-3xl font-semibold">Gerenciar Competencias</h1>
+          <h1 className="text-3xl font-semibold">Gerenciar Competências</h1>
         </div>
         <StateBanner tone="danger" title="Erro ao carregar competências">
           {tenantConfigQuery.error instanceof Error
@@ -190,6 +209,24 @@ function CompetenciasManagement() {
             />
           </div>
 
+          <div className="rounded-md border border-border bg-card p-4">
+            <div className="mb-3">
+              <Label htmlFor="filter-competencias" className="mb-1.5 block text-xs text-muted-foreground">
+                Buscar por nome
+              </Label>
+              <Input
+                id="filter-competencias"
+                placeholder="Digite parte do nome da competência"
+                value={searchTerm}
+                onChange={(event) => setSearchTerm(event.target.value)}
+                disabled={saveCatalogMutation.isPending}
+              />
+            </div>
+            <div className="text-xs text-muted-foreground">
+              {visibleCompetencias.length} de {competencias.length} encontradas
+            </div>
+          </div>
+
           <div className="rounded-md border border-border bg-card">
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
@@ -200,7 +237,14 @@ function CompetenciasManagement() {
                   </tr>
                 </thead>
                 <tbody>
-                  {competencias.map((competencia) => (
+                  {visibleCompetencias.length === 0 ? (
+                    <tr>
+                      <td colSpan={2} className="px-4 py-5 text-center text-muted-foreground">
+                        Nenhuma competência encontrada com o filtro atual.
+                      </td>
+                    </tr>
+                  ) : (
+                    visibleCompetencias.map((competencia) => (
                     <tr
                       key={competencia.value}
                       className="border-b border-border last:border-0 transition"
@@ -220,7 +264,7 @@ function CompetenciasManagement() {
                             <Edit2 className="h-3.5 w-3.5" />
                           </button>
                           <button
-                            onClick={() => handleRemove(competencia.value)}
+                            onClick={() => requestDelete(competencia)}
                             disabled={saveCatalogMutation.isPending}
                             className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-border bg-background text-muted-foreground hover:bg-danger/10 hover:text-danger disabled:cursor-not-allowed disabled:opacity-50"
                             title="Remover"
@@ -230,7 +274,8 @@ function CompetenciasManagement() {
                         </div>
                       </td>
                     </tr>
-                  ))}
+                    ))
+                  )}
                 </tbody>
               </table>
             </div>
@@ -308,6 +353,44 @@ function CompetenciasManagement() {
                   <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
                 )}
                 {editingOption ? "Salvar" : "Adicionar"}
+              </button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={Boolean(pendingDeleteOption)} onOpenChange={(open) => !open && setPendingDeleteOption(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Remover competência</DialogTitle>
+            <DialogDescription>
+              Confirme para remover esta competência do catálogo. Essa alteração afeta novos planos de
+              avaliação criados a partir de agora.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              Essa competência:
+              <span className="ml-1 font-medium">{pendingDeleteOption?.label}</span> será removida.
+            </p>
+            <div className="flex gap-3 pt-2">
+              <button
+                onClick={() => setPendingDeleteOption(null)}
+                className="flex-1 rounded-md border border-border bg-background px-4 py-2 text-sm font-medium text-foreground hover:bg-accent disabled:cursor-not-allowed disabled:opacity-50"
+                disabled={saveCatalogMutation.isPending}
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={confirmDelete}
+                disabled={saveCatalogMutation.isPending}
+                className="flex-1 rounded-md bg-danger px-4 py-2 text-sm font-medium text-danger-foreground hover:bg-danger/90 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {saveCatalogMutation.isPending ? (
+                  <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                ) : (
+                  "Confirmar remoção"
+                )}
               </button>
             </div>
           </div>

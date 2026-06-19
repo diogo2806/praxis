@@ -202,7 +202,7 @@ function Dashboard() {
             <Stat
               label="Rascunhos"
               value={totals.rascunhos}
-              hint="Em construcao"
+              hint="Em construção"
               onClick={() => setFilter("draft")}
             />
             <Stat
@@ -272,16 +272,14 @@ function Dashboard() {
           ) : (
             <div className="overflow-x-auto">
               <TooltipProvider delayDuration={150}>
-                <table className="w-full min-w-[1180px] text-sm">
+                <table className="w-full text-sm">
                   <thead className="border-b border-border bg-muted/45 text-xs uppercase text-muted-foreground">
                     <tr>
                       <th className="px-4 py-3 text-left font-medium">Simulação</th>
                       <th className="px-4 py-3 text-left font-medium">Competências</th>
-                      <th className="px-4 py-3 text-left font-medium">Status da versão</th>
+                      <th className="px-4 py-3 text-left font-medium">Status</th>
                       <th className="px-4 py-3 text-left font-medium">Prontidão</th>
                       <th className="px-4 py-3 text-left font-medium">Conclusão</th>
-                      <th className="px-4 py-3 text-left font-medium">Versão</th>
-                      <th className="px-4 py-3 text-left font-medium">Tentativas</th>
                       <th className="px-4 py-3 text-right font-medium">Ações</th>
                     </tr>
                   </thead>
@@ -358,9 +356,6 @@ function Dashboard() {
                               {formatPercent(simulation.completionRatePercent)}
                             </span>
                           </div>
-                        </td>
-                        <td className="px-4 py-3 text-xs tabular-nums text-muted-foreground">
-                          v{simulation.versionNumber}
                         </td>
                         <td className="px-4 py-3 text-xs tabular-nums">
                           {simulation.attemptsCreated.toLocaleString("pt-BR")}

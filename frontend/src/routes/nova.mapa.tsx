@@ -61,7 +61,7 @@ export const Route = createFileRoute("/nova/mapa")({
       { title: "Construtor Visual - Praxis" },
       {
         name: "description",
-        content: "Canvas drag and drop para montar e validar o grafo da simulacao.",
+        content: "Canvas drag and drop para montar e validar o grafo da simulação.",
       },
     ],
   }),
@@ -117,7 +117,7 @@ function Page() {
   const addNodeMutation = useMutation({
     mutationFn: () => {
       if (!tenantConfig.config) {
-        throw new Error("A configuracao da empresa ainda nao foi carregada.");
+        throw new Error("A configuração da empresa ainda não foi carregada.");
       }
       return createSimulationNode(search.simulationId!, search.versionNumber!, {
         clientMessage: newNodeText.trim(),
@@ -130,7 +130,7 @@ function Page() {
       setFeedback({
         tone: "info",
         title: "Turno criado",
-        body: "O novo no entrou no canvas. Arraste-o para posicionar e conecte uma alternativa.",
+        body: "O novo nó entrou no canvas. Arraste-o para posicionar e conecte uma alternativa.",
       });
       await refetchVersion();
     },
@@ -149,7 +149,7 @@ function Page() {
       setFeedback({
         tone: "info",
         title: "Alternativa criada",
-        body: "Arraste a porta da alternativa para outro turno ou deixe em FIM para concluir.",
+        body: "Arraste a seta da alternativa para outro turno ou deixe em FIM para concluir.",
       });
       await refetchVersion();
     },
@@ -176,7 +176,7 @@ function Page() {
     onSuccess: async () => {
       setFeedback({
         tone: "info",
-        title: "Conexao salva",
+        title: "Conexão salva",
         body: "A seta foi gravada na alternativa e o validador visual foi atualizado.",
       });
       await refetchVersion();
@@ -188,22 +188,22 @@ function Page() {
   return (
     <AppShell>
       <WizardStepper current="revisao" unlockedThrough="publicacao" />
-      <ScreenStateStrip blockedReason="fluxo da conversa invalido ou com caminho sem saida precisa voltar ao editor" />
+      <ScreenStateStrip blockedReason="Fluxo da conversa inválido ou com caminho sem saída precisa voltar ao editor." />
       <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
         <div>
           <div className="text-xs uppercase text-primary">Passo 3</div>
           <h1 className="mt-1 font-display text-3xl">Construtor visual</h1>
           <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
-            Monte o grafo da simulacao arrastando turnos e ligando alternativas com setas.
+            Monte o grafo da simulação arrastando turnos e ligando alternativas com setas.
           </p>
         </div>
         {version && <StatusBadge status={version.status} />}
       </div>
 
       {!hasContext ? (
-        <EmptyState
-          title="Selecione uma versao para ver o mapa"
-          description="Escolha uma versao abaixo para abrir o construtor visual do fluxo."
+          <EmptyState
+            title="Selecione uma versão para ver o mapa"
+            description="Escolha uma versão abaixo para abrir o construtor visual do fluxo."
           actions={
             <SimulationLinks
               loading={simulationsQuery.isLoading}
@@ -213,20 +213,20 @@ function Page() {
         />
       ) : versionQuery.isLoading || tenantConfig.isLoading ? (
         <StateBanner tone="info" title="Carregando mapa">
-          Buscando o fluxo da conversa da simulacao {search.simulationId} v{search.versionNumber}.
+            Buscando o fluxo da conversa da simulação {search.simulationId} v{search.versionNumber}.
         </StateBanner>
       ) : versionQuery.isError || tenantConfig.isError ? (
-        <StateBanner tone="danger" title="Nao foi possivel carregar o mapa">
+        <StateBanner tone="danger" title="Não foi possível carregar o mapa">
           {(versionQuery.error ?? tenantConfig.error) instanceof Error
             ? (versionQuery.error ?? tenantConfig.error)?.message
-            : "Verifique sua conexao e tente novamente."}
+            : "Verifique sua conexão e tente novamente."}
         </StateBanner>
       ) : version ? (
         <>
           {!isEditable && (
             <div className="mb-4">
-              <StateBanner tone="warn" title="Versao protegida contra edicao">
-                Esta versao nao pode ser alterada. Crie um rascunho na tela de dialogo antes de
+                <StateBanner tone="warn" title="Versão protegida contra edição">
+                Esta versão não pode ser alterada. Crie um rascunho na tela de diálogo antes de
                 mudar conexoes ou adicionar turnos.
               </StateBanner>
             </div>
@@ -240,7 +240,7 @@ function Page() {
           )}
           {mutationError && (
             <div className="mb-4">
-              <StateBanner tone="danger" title="Nao foi possivel salvar">
+        <StateBanner tone="danger" title="Não foi possível salvar">
                 {mutationError instanceof Error ? mutationError.message : "Tente novamente."}
               </StateBanner>
             </div>
@@ -257,7 +257,7 @@ function Page() {
                 connectMutation.mutate({ nodeId: sourceNode.id, option, targetNodeId });
               }}
               onConnectionRejected={(message) =>
-                setFeedback({ tone: "danger", title: "Conexao rejeitada", body: message })
+                setFeedback({ tone: "danger", title: "Conexão rejeitada", body: message })
               }
             />
 
@@ -267,7 +267,7 @@ function Page() {
                 Propriedades
               </div>
               <p className="mt-1 text-xs text-muted-foreground">
-                Crie turnos, adicione alternativas e selecione um no para revisar suas saidas.
+                Crie turnos, adicione alternativas e selecione um nó para revisar suas saídas.
               </p>
 
               <fieldset disabled={!isEditable} className="mt-4 space-y-4">
@@ -352,7 +352,7 @@ function Page() {
                   Validador visual
                 </div>
                 <p>Borda amarela: turno orfao, sem entrada a partir do inicio.</p>
-                <p>Borda vermelha: nao ha caminho desse turno ate uma conclusao.</p>
+                <p>Borda vermelha: não há caminho desse turno até uma conclusão.</p>
               </div>
             </aside>
           </div>
@@ -376,7 +376,7 @@ function Page() {
               }}
               className="rounded-md bg-primary px-5 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
             >
-              Governanca
+              Governança
             </Link>
           </div>
         </>
@@ -495,13 +495,13 @@ function SimulationGraphCanvas({
     setConnecting(null);
     if (!sourceNode || !option) return;
 
-    if (targetNodeId === sourceNode.id) {
-      onConnectionRejected("Um turno nao pode apontar para ele mesmo.");
+      if (targetNodeId === sourceNode.id) {
+      onConnectionRejected("Um turno não pode apontar para ele mesmo.");
       return;
     }
 
     if (targetNodeId && createsCycle(version.nodes, sourceNode.id, targetNodeId)) {
-      onConnectionRejected("Loops nao sao permitidos em simulacoes.");
+      onConnectionRejected("Loops não são permitidos em simulações.");
       return;
     }
 
@@ -521,12 +521,12 @@ function SimulationGraphCanvas({
             {version.name} - v{version.versionNumber}
           </h2>
           <p className="text-xs text-muted-foreground">
-            Arraste o canvas para navegar. Arraste a porta de uma alternativa ate outro turno.
+            Arraste o canvas para navegar. Arraste a seta de uma alternativa até outro turno.
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <GraphMetric label="Turnos" value={version.nodes.length} />
-          <GraphMetric label="Orfaos" value={validation.orphans.size} tone="warn" />
+          <GraphMetric label="Órfãos" value={validation.orphans.size} tone="warn" />
           <GraphMetric label="Sem fim" value={validation.noPathToEnd.size} tone="danger" />
           <IconButton
             label="Menos zoom"
@@ -718,7 +718,7 @@ function SimulationGraphCanvas({
                       <button
                         type="button"
                         disabled={disabled}
-                        title="Arrastar conexao"
+                        title="Arrastar conexão"
                         className="inline-flex h-8 min-h-0 w-8 items-center justify-center rounded-md border border-border bg-card text-primary hover:bg-accent disabled:opacity-50"
                         onPointerDown={(event) => {
                           if (disabled) return;

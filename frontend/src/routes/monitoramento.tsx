@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/table";
 import {
   getSimulationMonitoring,
+  getSimulationVersion,
   listSimulations,
   listResultDeliveries,
   type ResultDeliveryResponse,
@@ -90,6 +91,11 @@ function MonitoringPage() {
     queryFn: listSimulations,
     enabled: !hasMonitoringParams,
   });
+  const versionQuery = useQuery({
+    queryKey: ["simulation-version", search.simulationId, search.versionNumber],
+    queryFn: () => getSimulationVersion(search.simulationId!, search.versionNumber!),
+    enabled: hasMonitoringParams,
+  });
   const monitoringQuery = useQuery({
     queryKey: ["simulation-monitoring", search.simulationId, search.versionNumber],
     queryFn: () => getSimulationMonitoring(search.simulationId!, search.versionNumber!),
@@ -108,7 +114,9 @@ function MonitoringPage() {
   const monitoring = monitoringQuery.data;
   const deliveries = deliveriesQuery.data ?? [];
   const cohorts = buildLiveCohorts(monitoring);
-  const hasData = monitoringQuery.isLoading || Boolean(monitoring);
+  const hasData = Boolean(monitoring && monitoring.attemptsCreated > 0);
+  const isVersionPublished = versionQuery.data?.status === "published";
+  const canRenderMonitoring = Boolean(isVersionPublished && hasData);
   const riskyDeliveries = deliveries.filter(
     (delivery) => delivery.status === "retrying" || delivery.status === "dlq",
   );
@@ -134,7 +142,7 @@ function MonitoringPage() {
           Voltar ao painel
         </Link>
       </div>
-      {hasMonitoringParams && monitoringQuery.isLoading && (
+      {hasMonitoringParams && (monitoringQuery.isLoading || versionQuery.isLoading) && (
         <StateBanner tone="info" title="Monitoramento conectado">
           Buscando indicadores da simulação {search.simulationId} v{search.versionNumber}.
         </StateBanner>
@@ -159,10 +167,14 @@ function MonitoringPage() {
             />
           }
         />
-      ) : !hasData ? (
+      ) : !canRenderMonitoring ? (
         <EmptyState
-          title="Não foi possível exibir monitoramento"
-          description="A versão solicitada não retornou indicadores. Verifique o erro acima ou escolha outra simulação."
+          title={isVersionPublished ? "Sem dados de monitoramento ainda" : "Versão não publicada"}
+          description={
+            isVersionPublished
+              ? "Esta versão ainda não possui tentativas concluídas para exibir métricas de monitoramento."
+              : "Acompanhe somente versões publicadas com tentativas concluídas."
+          }
           actions={
             <Link
               to="/"

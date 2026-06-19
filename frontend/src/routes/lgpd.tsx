@@ -38,7 +38,7 @@ export const Route = createFileRoute("/lgpd")({
   }),
   head: () => ({
     meta: [
-      { title: "LGPD & Transparencia do resultado - Praxis" },
+      { title: "LGPD & Transparência do resultado - Praxis" },
       { name: "description", content: "Explicação da pontuação e revisão humana." },
     ],
   }),
@@ -83,10 +83,10 @@ function LgpdPage() {
       <div className="mb-5 space-y-4">
         <div>
           <div className="text-xs uppercase text-primary">Conformidade</div>
-          <h1 className="mt-1 text-3xl font-semibold">LGPD e transparencia do resultado</h1>
+          <h1 className="mt-1 text-3xl font-semibold">LGPD e transparência do resultado</h1>
           <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
             Esta tela responde o que o candidato tem direito de saber: dados tratados, prazo de
-            retencao, canal de revisao humana e explicacao do resultado. A explicação usa{" "}
+            retenção, canal de revisão humana e explicação do resultado. A explicação usa{" "}
             <Termo id="criterios-pontuacao">critérios de pontuação</Termo>, escolha e caminho, sem{" "}
             <Termo id="caixa-preta">caixa-preta</Termo>.
           </p>
@@ -106,7 +106,7 @@ function LgpdPage() {
             <ShieldCheck className="h-5 w-5 text-success" />
             <div className="mt-3 text-sm font-semibold">{item.title}</div>
             <p className="mt-1 text-sm text-muted-foreground">
-              Evidencia rastreavel por versao, tentativa, turno e alternativa escolhida.
+              Evidência rastreável por versão, tentativa, turno e alternativa escolhida.
             </p>
           </div>
         ))}
@@ -116,7 +116,7 @@ function LgpdPage() {
         <section className="rounded-md border border-border bg-card p-5">
           <div className="mb-3 flex items-center gap-2 text-sm font-semibold">
             <FileSearch className="h-4 w-4" />
-            Explicacao baseada em contrato real
+            Explicação baseada em contrato real
           </div>
           {!hasContext ? (
             <>
@@ -145,7 +145,7 @@ function LgpdPage() {
               </section>
             </>
           ) : versionQuery.isLoading || auditQuery.isLoading ? (
-            <StateBanner tone="info" title="Carregando transparencia do resultado">
+            <StateBanner tone="info" title="Carregando transparência do resultado">
               Buscando versao {search.simulationId} v{search.versionNumber}.
             </StateBanner>
           ) : versionQuery.isError || auditQuery.isError ? (
@@ -200,16 +200,16 @@ function LgpdPage() {
             </StateBanner>
           ) : privacy ? (
             <div className="rounded-md border border-border bg-card p-5">
-              <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                Politica operacional
+                <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                Política operacional
               </div>
               <div className="mt-3 space-y-3 text-sm">
                 <div className="rounded-md border border-border bg-background p-3">
-                  <div className="font-medium">Retencao: {privacy.retentionDays} dias</div>
+                  <div className="font-medium">Retenção: {privacy.retentionDays} dias</div>
                   <p className="mt-1 text-xs text-muted-foreground">{privacy.retentionPolicy}</p>
                 </div>
                 <div className="rounded-md border border-border bg-background p-3">
-                  <div className="font-medium">Revisao humana</div>
+                  <div className="font-medium">Revisão humana</div>
                   <p className="mt-1 text-xs text-muted-foreground">
                     {privacy.reviewChannel} - SLA {privacy.reviewSla}
                   </p>
@@ -223,7 +223,7 @@ function LgpdPage() {
           {hasContext && (
             <div className="rounded-md border border-border bg-card p-5">
               <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                Evidencias auditaveis
+                Evidências auditáveis
               </div>
               <div className="mt-3 space-y-3">
                 {auditEvents.slice(0, 4).map((event) => (

@@ -48,6 +48,7 @@ function Page() {
   const [name, setName] = useState("");
   const [emotion, setEmotion] = useState("");
   const [context, setContext] = useState("");
+  const [submitAttempted, setSubmitAttempted] = useState(false);
   const simulationsQuery = useQuery({
     queryKey: ["simulations"],
     queryFn: listSimulations,
@@ -67,7 +68,8 @@ function Page() {
   const existingMessage = rootNode?.clientMessage;
   const versionStatus = versionQuery.data?.status;
   const isEditable = versionStatus ? canEditSimulationVersion(versionStatus) : true;
-  const canGoNext = context.trim().length > 0;
+  const contextMaxLength = 1200;
+  const canGoNext = context.trim().length > 0 && emotion.trim().length > 0;
   const clientMessage = useMemo(() => {
     const parts = [
       emotion.trim(),
@@ -79,7 +81,7 @@ function Page() {
   const saveCharacterMutation = useMutation({
     mutationFn: async () => {
       if (!isEditable) {
-        throw new Error("Esta versao nao pode ser editada. Crie um rascunho antes de alterar.");
+        throw new Error("Esta versão não pode ser editada. Crie um rascunho antes de alterar.");
       }
       if (rootNode) {
         await updateSimulationNode(search.simulationId!, search.versionNumber!, rootNode.id, {
@@ -134,10 +136,10 @@ function Page() {
   return (
     <AppShell>
       <WizardStepper current="cenario" />
-      <ScreenStateStrip blockedReason="contexto do cliente precisa ser preenchido" />
+    <ScreenStateStrip blockedReason="contexto do cliente precisa ser preenchido" />
       <div className="mb-6">
         <div className="text-xs uppercase tracking-[0.2em] text-primary">Passo 2</div>
-        <h1 className="mt-1 font-display text-3xl">Personagem do cliente fictício</h1>
+            <h1 className="mt-1 font-display text-3xl">Personagem do cliente fictício</h1>
         <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
           O contexto informado aqui é salvo na primeira etapa da versão selecionada.
         </p>
@@ -183,7 +185,7 @@ function Page() {
             <div className="mb-5">
               <StateBanner
                 tone="warn"
-                title={`Versao ${statusMeta[versionStatus].label.toLowerCase()} nao pode ser editada`}
+                title={`Versão ${statusMeta[versionStatus].label.toLowerCase()} não pode ser editada`}
                 action={
                   versionStatus === "published" ? (
                     <button
@@ -199,13 +201,13 @@ function Page() {
               >
                 {versionStatus === "published"
                   ? "A versão no ar fica protegida. Crie um rascunho para editar sem afetar candidatos em andamento."
-                  : "Atualize a etapa atual da versao antes de alterar o personagem."}
+                    : "Atualize a etapa atual da versão antes de alterar o personagem."}
               </StateBanner>
             </div>
           )}
           {cloneDraftMutation.isError && (
             <div className="mb-5">
-              <StateBanner tone="danger" title="Nao foi possivel criar o rascunho">
+              <StateBanner tone="danger" title="Não foi possível criar o rascunho">
                 {cloneDraftMutation.error instanceof Error
                   ? cloneDraftMutation.error.message
                   : "Tente novamente."}
@@ -231,6 +233,9 @@ function Page() {
               <label className="block">
                 <span className="mb-1.5 block text-xs font-medium text-muted-foreground">
                   Nome ou identificador
+                  <span className="ml-2 inline-flex h-4 items-center rounded-full border border-muted px-2 py-0.5 text-[10px] text-muted-foreground">
+                    Opcional
+                  </span>
                 </span>
                 <input
                   className="input"
@@ -242,10 +247,14 @@ function Page() {
               <label className="block">
                 <span className="mb-1.5 block text-xs font-medium text-muted-foreground">
                   Estado emocional inicial
+                  <span className="ml-2 inline-flex h-4 items-center rounded-full border border-danger/40 bg-danger/10 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-danger">
+                    Obrigatório
+                  </span>
                 </span>
                 <input
-                  className="input"
+                  className={`input ${submitAttempted && emotion.trim().length === 0 ? "border-danger" : ""}`}
                   value={emotion}
+                  required
                   disabled={!isEditable}
                   onChange={(event) => setEmotion(event.target.value)}
                 />
@@ -254,13 +263,23 @@ function Page() {
             <label className="mt-4 block">
               <span className="mb-1.5 block text-xs font-medium text-muted-foreground">
                 Contexto do cliente
+                <span className="ml-2 inline-flex h-4 items-center rounded-full border border-danger/40 bg-danger/10 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-danger">
+                  Obrigatório
+                </span>
               </span>
               <textarea
-                className="input min-h-24"
+                className={`input min-h-24 ${submitAttempted && context.trim().length === 0 ? "border-danger" : ""}`}
+                maxLength={contextMaxLength}
+                required
                 value={context}
                 disabled={!isEditable}
                 onChange={(event) => setContext(event.target.value)}
               />
+              <div className="mt-1 flex justify-end text-xs text-muted-foreground">
+                <span className={submitAttempted && context.trim().length === 0 ? "text-danger" : ""}>
+                  {context.length}/{contextMaxLength}
+                </span>
+              </div>
             </label>
             <div className="mt-6 rounded-md border border-warning/30 bg-warning/10 p-4 text-sm">
               <div className="text-sm font-semibold text-warning-foreground">
@@ -285,7 +304,11 @@ function Page() {
             </Link>
             <button
               type="button"
-              onClick={() => saveCharacterMutation.mutate()}
+              onClick={() => {
+                setSubmitAttempted(true);
+                if (!canGoNext) return;
+                saveCharacterMutation.mutate();
+              }}
               disabled={!isEditable || !canGoNext || saveCharacterMutation.isPending}
               className="rounded-md bg-primary px-5 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50"
             >

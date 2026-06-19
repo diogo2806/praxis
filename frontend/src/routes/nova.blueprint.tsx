@@ -1,6 +1,6 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+﻿import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { AppShell } from "@/components/app-shell";
 import { Termo } from "@/components/glossario";
 import { ScreenStateStrip, StateBanner } from "@/components/praxis-ui";
@@ -84,6 +84,13 @@ function Page() {
   const [hydratedVersionKey, setHydratedVersionKey] = useState<string | null>(null);
   const roleMaxLength = 180;
   const criticalSituationMaxLength = 1200;
+  const [competencySearch, setCompetencySearch] = useState("");
+  const visibleCompetencies = useMemo(() => {
+    const normalizedSearch = competencySearch.trim().toLowerCase();
+    return [...competencies]
+      .filter((competency) => competency.label.toLowerCase().includes(normalizedSearch))
+      .sort((a, b) => a.label.localeCompare(b.label, "pt-BR", { sensitivity: "base" }));
+  }, [competencies, competencySearch]);
   const missingFields = [
     role.trim().length === 0 && copy.missingRole,
     criticalSituation.trim().length === 0 && copy.missingCriticalSituation,
@@ -345,10 +352,28 @@ function Page() {
           </Card>
 
           <Card title={copy.competenciesCard} required requiredLabel={copy.required}>
+            <div className="mb-3">
+              <input
+                className="input"
+                placeholder="Buscar competÃªncia"
+                value={competencySearch}
+                onChange={(event) => setCompetencySearch(event.target.value)}
+                disabled={tenantConfigLoading || saveCatalogMutation.isPending}
+              />
+              <div className="mt-1 text-xs text-muted-foreground">
+                {visibleCompetencies.length} de {competencies.length} disponÃ­veis
+              </div>
+            </div>
             <div className="flex flex-wrap gap-2">
-              {competencies.map((competency) => (
+              {visibleCompetencies.length === 0 ? (
+                <p className="text-sm text-muted-foreground">
+                  Nenhuma competÃªncia encontrada para esse filtro.
+                </p>
+              ) : (
+                visibleCompetencies.map((competency) => (
                 <label
                   key={competency.value}
+                  title={competencyHint(competency.label)}
                   className={`cursor-pointer rounded-full border px-3 py-1.5 text-sm ${
                     selectedCompetencies.includes(competency.value)
                       ? "border-primary bg-primary/10 text-foreground"
@@ -363,7 +388,8 @@ function Page() {
                   />
                   {competency.label}
                 </label>
-              ))}
+                ))
+              )}
             </div>
             <div className="mt-4 grid gap-2 md:grid-cols-[1fr_auto]">
               <input
@@ -596,7 +622,7 @@ function Card({
   children,
   tone,
   required,
-  requiredLabel = "Obrigatório",
+  requiredLabel = "ObrigatÃ³rio",
 }: {
   title: string;
   children: React.ReactNode;
@@ -645,6 +671,10 @@ function FieldMeta({ error, count, max }: { error?: string; count: number; max: 
       </span>
     </div>
   );
+}
+
+function competencyHint(label: string) {
+  return `Competência "${label}": esta competência descreve o que será cobrado durante a simulação.`;
 }
 
 function Help({ children }: { children: React.ReactNode }) {

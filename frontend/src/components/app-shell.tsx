@@ -312,7 +312,7 @@ export function AppShell({ children }: { children: ReactNode }) {
               className="inline-flex items-center gap-1.5 rounded-md border border-border bg-card px-2.5 py-1 text-muted-foreground hover:bg-accent"
             >
               <HelpCircle className="h-3.5 w-3.5" />
-              <span className="hidden sm:inline">{t.common.help}</span>
+              <span className="hidden sm:inline">Ajuda</span>
             </Link>
             {mode === "technical" && (
               <a

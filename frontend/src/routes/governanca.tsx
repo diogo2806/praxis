@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { ArchiveRestore, Lock, RefreshCw } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
 import { ComplianceScope } from "@/components/compliance-scope";
@@ -46,6 +46,10 @@ function GovernanceHub() {
   const search = Route.useSearch();
   const queryClient = useQueryClient();
   const [versionDialogOpen, setVersionDialogOpen] = useState(false);
+  const [simulationSearch, setSimulationSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState<"all" | "draft" | "published" | "archived">(
+    "all",
+  );
   const hasGovernanceParams = Boolean(search.simulationId && search.versionNumber);
   const simulationsQuery = useQuery({
     queryKey: ["simulations"],
@@ -103,7 +107,7 @@ function GovernanceHub() {
       )}
 
       {cloneMutation.isError && (
-        <StateBanner tone="danger" title="Could not create version">
+        <StateBanner tone="danger" title="Não foi possível criar a versão">
           {cloneMutation.error instanceof Error
             ? cloneMutation.error.message
             : "A mudança não foi permitida pelo sistema."}
@@ -127,7 +131,32 @@ function GovernanceHub() {
               <SimulationLinks
                 loading={simulationsQuery.isLoading}
                 simulations={simulationsQuery.data ?? []}
+                simulationSearch={simulationSearch}
+                statusFilter={statusFilter}
               />
+              <div className="mt-4 grid gap-3 rounded-md border border-border bg-card p-3 md:grid-cols-[1fr_220px]">
+                <input
+                  type="search"
+                  autoComplete="off"
+                  name="governance-version-search"
+                  value={simulationSearch}
+                  onChange={(event) => setSimulationSearch(event.target.value)}
+                  placeholder="Buscar simulação"
+                  className="input"
+                />
+                <select
+                  value={statusFilter}
+                  onChange={(event) =>
+                    setStatusFilter(event.target.value as "all" | "draft" | "published" | "archived")
+                  }
+                  className="rounded-md border border-border bg-background px-3 py-2 text-sm"
+                >
+                  <option value="all">Todos os status</option>
+                  <option value="draft">Rascunho</option>
+                  <option value="published">No ar</option>
+                  <option value="archived">Arquivada</option>
+                </select>
+              </div>
             </>
           )}
         </section>
@@ -277,10 +306,24 @@ function AuditEventList({ events, loading }: { events: AuditEventResponse[]; loa
 function SimulationLinks({
   simulations,
   loading,
+  simulationSearch,
+  statusFilter,
 }: {
   simulations: SimulationSummaryResponse[];
   loading: boolean;
+  simulationSearch: string;
+  statusFilter: "all" | "draft" | "published" | "archived";
 }) {
+  const normalizedSearch = simulationSearch.trim().toLowerCase();
+  const filteredSimulations = useMemo(() => {
+    return simulations.filter((simulation) => {
+      if (statusFilter !== "all" && simulation.status !== statusFilter) return false;
+      return (
+        !normalizedSearch || simulation.name.toLowerCase().includes(normalizedSearch)
+      );
+    });
+  }, [normalizedSearch, simulations, statusFilter]);
+
   if (loading) {
     return (
       <div className="mt-4 rounded-md border border-border bg-background p-4 text-sm">
@@ -293,6 +336,14 @@ function SimulationLinks({
     return (
       <div className="mt-4 rounded-md border border-border bg-background p-4 text-sm text-muted-foreground">
         Nenhuma simulação ativa encontrada.
+      </div>
+    );
+  }
+
+  if (filteredSimulations.length === 0) {
+    return (
+      <div className="mt-4 rounded-md border border-border bg-background p-4 text-sm text-muted-foreground">
+        Nenhuma simulação encontrada com os filtros atuais.
       </div>
     );
   }
@@ -310,33 +361,52 @@ function SimulationLinks({
           </TableRow>
         </TableHeader>
         <TableBody>
-          {simulations.map((simulation) => (
-            <TableRow key={simulation.id}>
-              <TableCell className="min-w-[220px] font-medium">{simulation.name}</TableCell>
-              <TableCell>
-                <StatusBadge
-                  status={simulation.status}
-                  maturity={maturityForStatus(simulation.status)}
-                />
-              </TableCell>
-              <TableCell className="text-right tabular-nums">v{simulation.versionNumber}</TableCell>
-              <TableCell className="text-right tabular-nums">
-                {simulation.attemptsCreated.toLocaleString("pt-BR")}
-              </TableCell>
-              <TableCell className="text-right">
-                <Link
-                  to="/governanca"
-                  search={{
-                    simulationId: simulation.id,
-                    versionNumber: simulation.versionNumber,
-                  }}
-                  className="inline-flex items-center justify-center rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
-                >
-                  Ver auditoria
-                </Link>
-              </TableCell>
-            </TableRow>
-          ))}
+          {filteredSimulations.map((simulation) => {
+            const canOpenAudit =
+              simulation.status === "published" && simulation.attemptsCreated > 0;
+            return (
+              <TableRow key={simulation.id}>
+                <TableCell className="min-w-[220px] font-medium">{simulation.name}</TableCell>
+                <TableCell>
+                  <StatusBadge
+                    status={simulation.status}
+                    maturity={maturityForStatus(simulation.status)}
+                  />
+                </TableCell>
+                <TableCell className="text-right tabular-nums">v{simulation.versionNumber}</TableCell>
+                <TableCell className="text-right tabular-nums">
+                  {simulation.attemptsCreated.toLocaleString("pt-BR")}
+                </TableCell>
+                <TableCell className="text-right">
+                  {canOpenAudit ? (
+                    <Link
+                      to="/governanca"
+                      search={{
+                        simulationId: simulation.id,
+                        versionNumber: simulation.versionNumber,
+                      }}
+                      className="inline-flex items-center justify-center rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
+                    >
+                      Ver auditoria
+                    </Link>
+                  ) : (
+                    <button
+                      type="button"
+                      disabled
+                      title={
+                        simulation.status !== "published"
+                          ? "A versão precisa estar publicada para abrir a auditoria."
+                          : "Não há auditoria disponível sem tentativas concluídas."
+                      }
+                      className="inline-flex cursor-not-allowed items-center justify-center rounded-md bg-primary/50 px-3 py-2 text-sm font-medium text-primary-foreground"
+                    >
+                      Ver auditoria
+                    </button>
+                  )}
+                </TableCell>
+              </TableRow>
+            );
+          })}
         </TableBody>
       </Table>
     </div>
