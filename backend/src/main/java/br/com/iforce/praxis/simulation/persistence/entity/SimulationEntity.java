@@ -44,15 +44,6 @@ public class SimulationEntity implements TenantAwareEntity {
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
 
-    @Column(name = "deleted_at")
-    private Instant deletedAt;
-
-    @Column(name = "deleted_by", length = 160)
-    private String deletedBy;
-
-    @Column(name = "archived", nullable = false)
-    private boolean archived;
-
     @OneToMany(mappedBy = "simulation", cascade = CascadeType.ALL, orphanRemoval = true)
     private Set<SimulationVersionEntity> versions = new LinkedHashSet<>();
 }

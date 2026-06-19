@@ -106,18 +106,17 @@ public class AttemptStateMachine {
     }
 
     /**
-     * Aplica uma resposta (ou um timeout, quando {@code selectedOption} é nulo e
-     * {@code forceComplete} é verdadeiro) e, se a tentativa concluiu, dispara o scoring
-     * determinístico e deriva a decisão.
+     * Aplica uma resposta e, quando o fluxo chegou ao fim, dispara o scoring
+     * deterministico e deriva a decisao.
      */
     public CandidateAttempt applyAnswer(
             CandidateAttempt attempt,
             PublishedSimulation simulation,
             Map<String, AttemptAnswer> answersByNodeId,
             ScenarioOption selectedOption,
-            boolean forceComplete
+            boolean reachedEnd
     ) {
-        boolean completed = forceComplete || (selectedOption != null && selectedOption.nextNodeId() == null);
+        boolean completed = reachedEnd || (selectedOption != null && selectedOption.nextNodeId() == null);
 
         if (!completed) {
             return copy(
@@ -152,16 +151,21 @@ public class AttemptStateMachine {
     }
 
     private String buildCompanyResultString(PublishedSimulation simulation, ScoreCalculationResult scoreResult) {
+        String decision = switch (scoreResult.decision()) {
+            case RECOMMEND_INTERVIEW -> "Pronto para entrevista";
+            case REVIEW_REQUIRED -> "Requer revisao";
+            case IN_PROGRESS -> "Aguardando conclusao";
+        };
         String reviewLine = scoreResult.humanReviewRequired()
-                ? "Revisão humana obrigatória: alternativa crítica selecionada."
-                : "Sem blocker crítico na trilha respondida.";
+                ? "Revisao humana obrigatoria antes de qualquer decisao final."
+                : "Sem bloqueio critico identificado nas respostas.";
 
-        return "# Práxis - Resultado\n\n"
-                + "Simulação: " + simulation.name() + "\n\n"
-                + "Score geral: " + scoreResult.score() + "/100\n\n"
+        return "Resumo do candidato\n\n"
+                + "Avaliacao: " + simulation.name() + "\n\n"
+                + "Decisao sugerida: " + decision + "\n\n"
+                + "Pontuacao geral: " + scoreResult.score() + "/100\n\n"
                 + reviewLine + "\n\n"
-                + "Confiabilidade comportamental: " + scoreResult.reliabilityLevel() + ".\n\n"
-                + "Trilha auditável: " + scoreResult.auditTrail();
+                + "Confiabilidade: " + scoreResult.reliabilityLevel().name() + ".";
     }
 
     private CandidateAttempt blocked(CandidateAttempt attempt, AttemptStatus status, Instant finishedAt) {

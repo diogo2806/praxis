@@ -23,7 +23,7 @@ class ResultScoringServiceTest {
     private static final Instant T0 = Instant.parse("2026-01-01T10:00:00Z");
 
     private final ResultScoringService resultScoringService = new ResultScoringService(
-            new PraxisProperties("http://localhost:8080", "token", 168, 24, 70, 0.001, 100, 30, 10, List.of())
+            new PraxisProperties("http://localhost:8080", "token", 168, 24, 70, 15, 0.001, 100, 30, 10, List.of())
     );
 
     @Test

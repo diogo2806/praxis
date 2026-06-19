@@ -200,6 +200,39 @@ class OutboxProcessorTest {
     }
 
     @Test
+    void shouldPostAttemptEngagementEventPayload() {
+        OutboxEventEntity event = new OutboxEventEntity();
+        event.setTenantId("tenant-1");
+        event.setEventType("ATTEMPT_STARTED");
+        event.setAggregateType("CandidateAttempt");
+        event.setAggregateId("att_123");
+        event.setPayload("""
+                {
+                  "webhookUrl": "https://example.com/webhook",
+                  "eventPayload": {
+                    "event_type": "ATTEMPT_STARTED",
+                    "attempt_id": "att_123",
+                    "status": "inProgress"
+                  }
+                }
+                """);
+        event.setStatus(OutboxEventEntity.OutboxEventStatus.PENDING);
+        event.setAttempts(0);
+        event.setNextAttemptAt(Instant.now());
+
+        when(outboxEventRepository.findByStatusInAndNextAttemptAtLessThanEqualOrderByCreatedAtAsc(
+            anyList(), any(Instant.class)
+        )).thenReturn(List.of(event));
+
+        outboxProcessor.processReadyEvents();
+
+        ArgumentCaptor<Object> payloadCaptor = ArgumentCaptor.forClass(Object.class);
+        verify(resultWebhookClient).postPayload(eq("https://example.com/webhook"), payloadCaptor.capture());
+        assertThat(payloadCaptor.getValue().toString()).contains("ATTEMPT_STARTED");
+        assertThat(event.getStatus()).isEqualTo(OutboxEventEntity.OutboxEventStatus.SENT);
+    }
+
+    @Test
     void shouldNotPostWhenWebhookUrlFailsOutboundValidation() {
         OutboxEventEntity event = createPendingEvent();
         when(outboxEventRepository.findByStatusInAndNextAttemptAtLessThanEqualOrderByCreatedAtAsc(

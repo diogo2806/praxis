@@ -3,11 +3,13 @@ package br.com.iforce.praxis.gupy.service;
 import br.com.iforce.praxis.config.PraxisProperties;
 import br.com.iforce.praxis.gupy.dto.TestResultItemResponse;
 import br.com.iforce.praxis.gupy.dto.TestResultResponse;
+import br.com.iforce.praxis.gupy.model.AttemptAnswer;
 import br.com.iforce.praxis.gupy.model.AttemptStatus;
 import br.com.iforce.praxis.gupy.model.CandidateAttempt;
 import br.com.iforce.praxis.gupy.model.PublishedSimulation;
 import br.com.iforce.praxis.gupy.model.ReliabilityLevel;
 import br.com.iforce.praxis.gupy.model.ResultItem;
+import br.com.iforce.praxis.gupy.persistence.entity.AttemptAnswerEntity;
 import br.com.iforce.praxis.gupy.persistence.entity.CandidateAttemptEntity;
 import br.com.iforce.praxis.gupy.persistence.entity.ResultItemEntity;
 import org.springframework.stereotype.Component;
@@ -42,6 +44,7 @@ public class GupyTestResultMapper {
                 resultPageUrl(attempt.resultId(), attempt.companyId()),
                 candidatePageUrl(attempt.id()),
                 attempt.reliabilityLevel() == null ? ReliabilityLevel.NORMAL : attempt.reliabilityLevel(),
+                otherInformations(timeoutCount(attempt)),
                 attempt.results().stream()
                         .sorted(Comparator.comparing(ResultItem::name))
                         .map(resultItem -> toItemResponse(
@@ -66,6 +69,7 @@ public class GupyTestResultMapper {
                 resultPageUrl(attempt.getResultId(), attempt.getCompanyId()),
                 candidatePageUrl(attempt.getId()),
                 attempt.getReliabilityLevel() == null ? ReliabilityLevel.NORMAL : attempt.getReliabilityLevel(),
+                otherInformations(timeoutCount(attempt)),
                 attempt.getResultItems().stream()
                         .sorted(Comparator.comparing(ResultItemEntity::getName))
                         .map(resultItem -> toItemResponse(
@@ -75,6 +79,25 @@ public class GupyTestResultMapper {
                                 attempt.getFinishedAt()
                         ))
                         .toList()
+        );
+    }
+
+    private long timeoutCount(CandidateAttempt attempt) {
+        return attempt.answersByNodeId().values().stream()
+                .filter(AttemptAnswer::timedOut)
+                .count();
+    }
+
+    private long timeoutCount(CandidateAttemptEntity attempt) {
+        return attempt.getAnswers().stream()
+                .filter(AttemptAnswerEntity::isTimedOut)
+                .count();
+    }
+
+    private Map<String, Object> otherInformations(long timeoutCount) {
+        return Map.of(
+                "timeout_count", timeoutCount,
+                "situational_omission_count", timeoutCount
         );
     }
 

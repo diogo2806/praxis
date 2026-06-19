@@ -8,11 +8,11 @@
 - Edicao de fluxo, validacao, governanca, monitoramento, LGPD, envio de link e candidato consomem endpoints reais do backend.
 - Nao ha fallback local de catalogo, sessao demo ou server function de exemplo no frontend.
 
-## Integracao ATS
+## Integracao Gupy
 
-- A plataforma registrada em producao e a Gupy.
-- `ATSAdapter` permite extensao futura, mas somente adapters com integracao real devem ser registrados.
-- Adapters que apenas simulavam suporte a outras plataformas foram removidos para nao anunciar integracao inexistente.
+- A integracao operacional em producao e explicitamente Gupy.
+- Nao ha camada generica `ATSAdapter` nem registry de adapters.
+- Os fluxos de catalogo, tentativa, resultado e entrega usam os servicos concretos de Gupy.
 
 ## Verificacao
 

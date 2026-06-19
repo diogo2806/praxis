@@ -56,6 +56,9 @@ public class SimulationNodeEntity {
     @Column(name = "time_limit_seconds")
     private Integer timeLimitSeconds;
 
+    @Column(name = "timeout_next_node_id", length = 120)
+    private String timeoutNextNodeId;
+
     @Column(name = "plain_text_description", length = 1500)
     private String plainTextDescription;
 

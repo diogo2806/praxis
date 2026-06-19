@@ -258,7 +258,6 @@ class SimulationAdminControllerTest {
                 .andExpect(jsonPath("$.simulationId").value("sim-atendimento-caos"))
                 .andExpect(jsonPath("$.versionNumber").value(1))
                 .andExpect(jsonPath("$.ok").value(true))
-                .andExpect(jsonPath("$.integrationActive").value(false))
                 .andExpect(jsonPath("$.checks[*].code").value(hasItem("publicBaseUrl")))
                 .andExpect(jsonPath("$.checks[*].code").value(hasItem("integrationToken")))
                 .andExpect(jsonPath("$.checks[*].code").value(hasItem("simulationValidation")))
@@ -266,28 +265,14 @@ class SimulationAdminControllerTest {
     }
 
     @Test
-    void activateGupyIntegrationPersistsStateAndAuditEvent() throws Exception {
+    void gupyActivationEndpointIsRemoved() throws Exception {
         mockMvc.perform(post("/api/v1/simulations/sim-atendimento-caos/versions/1/gupy-activation"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.simulationId").value("sim-atendimento-caos"))
-                .andExpect(jsonPath("$.versionNumber").value(1))
-                .andExpect(jsonPath("$.ok").value(true))
-                .andExpect(jsonPath("$.integrationActive").value(true))
-                .andExpect(jsonPath("$.integrationActivatedAt").exists());
-
-        mockMvc.perform(get("/api/v1/simulations/sim-atendimento-caos/versions/1/gupy-preflight"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.integrationActive").value(true))
-                .andExpect(jsonPath("$.integrationActivatedAt").exists());
-
-        mockMvc.perform(get("/api/v1/audit/simulations/sim-atendimento-caos/versions/1"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$[*].eventType").value(hasItem("simulationGupyIntegrationActivated")));
+                .andExpect(status().isNotFound());
     }
 
     @Test
     @Sql(scripts = "/tenant-isolation-fixtures.sql")
-    void archiveSimulationDoesNotCrossTenantBoundary() throws Exception {
+    void deleteSimulationDoesNotCrossTenantBoundary() throws Exception {
         mockMvc.perform(delete("/api/v1/simulations/sim-tenant2"))
                 .andExpect(status().isNotFound());
     }

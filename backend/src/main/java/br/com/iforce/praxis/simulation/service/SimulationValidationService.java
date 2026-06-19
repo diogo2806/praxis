@@ -115,6 +115,46 @@ public class SimulationValidationService {
         for (SimulationOptionEntity option : node.getOptions()) {
             validateOption(node, option, nodesById, issues);
         }
+
+        validateTimeoutTransition(node, nodesById, issues);
+    }
+
+    private void validateTimeoutTransition(
+            SimulationNodeEntity node,
+            Map<String, SimulationNodeEntity> nodesById,
+            List<ValidationIssueResponse> issues
+    ) {
+        String timeoutNextNodeId = node.getTimeoutNextNodeId();
+        if (timeoutNextNodeId == null) {
+            boolean hasNonTerminalOption = node.getOptions().stream()
+                    .anyMatch(option -> option.getNextNodeId() != null);
+            if (hasNonTerminalOption) {
+                issues.add(new ValidationIssueResponse(
+                        ValidationIssueSeverity.BLOCKER,
+                        node.getNodeId(),
+                        "Turno com continuidade precisa definir proximo no para timeout."
+                ));
+            }
+            return;
+        }
+
+        SimulationNodeEntity nextNode = nodesById.get(timeoutNextNodeId);
+        if (nextNode == null) {
+            issues.add(new ValidationIssueResponse(
+                    ValidationIssueSeverity.BLOCKER,
+                    node.getNodeId(),
+                    "Timeout aponta para um no inexistente."
+            ));
+            return;
+        }
+
+        if (nextNode.getTurnIndex() <= node.getTurnIndex()) {
+            issues.add(new ValidationIssueResponse(
+                    ValidationIssueSeverity.BLOCKER,
+                    node.getNodeId(),
+                    "Timeout so pode apontar para turnos posteriores."
+            ));
+        }
     }
 
     private void validateOption(
@@ -287,11 +327,7 @@ public class SimulationValidationService {
         }
 
         currentPath.add(node);
-        List<String> nextNodeIds = node.getOptions().stream()
-                .map(SimulationOptionEntity::getNextNodeId)
-                .filter(nextNodeId -> nextNodeId != null && nodesById.containsKey(nextNodeId))
-                .distinct()
-                .toList();
+        List<String> nextNodeIds = nextNodeIds(node, nodesById);
         if (nextNodeIds.isEmpty()) {
             paths.add(new ArrayList<>(currentPath));
         } else {
@@ -357,10 +393,8 @@ public class SimulationValidationService {
         }
 
         int longestChild = 0;
-        for (SimulationOptionEntity option : node.getOptions()) {
-            if (option.getNextNodeId() != null && nodesById.containsKey(option.getNextNodeId())) {
-                longestChild = Math.max(longestChild, longestPathLength(option.getNextNodeId(), nodesById, memo, visiting));
-            }
+        for (String nextNodeId : nextNodeIds(node, nodesById)) {
+            longestChild = Math.max(longestChild, longestPathLength(nextNodeId, nodesById, memo, visiting));
         }
 
         int longest = 1 + longestChild;
@@ -404,10 +438,8 @@ public class SimulationValidationService {
         }
 
         visiting.add(nodeId);
-        for (SimulationOptionEntity option : node.getOptions()) {
-            if (option.getNextNodeId() != null) {
-                visitForCycles(option.getNextNodeId(), nodesById, visiting, visited, issues);
-            }
+        for (String nextNodeId : nextNodeIds(node, nodesById)) {
+            visitForCycles(nextNodeId, nodesById, visiting, visited, issues);
         }
         visiting.remove(nodeId);
         visited.add(nodeId);
@@ -442,10 +474,21 @@ public class SimulationValidationService {
             return;
         }
 
-        for (SimulationOptionEntity option : node.getOptions()) {
-            if (option.getNextNodeId() != null) {
-                collectReachable(option.getNextNodeId(), nodesById, reachable);
-            }
+        for (String nextNodeId : nextNodeIds(node, nodesById)) {
+            collectReachable(nextNodeId, nodesById, reachable);
         }
+    }
+
+    private List<String> nextNodeIds(SimulationNodeEntity node, Map<String, SimulationNodeEntity> nodesById) {
+        List<String> nextNodeIds = new ArrayList<>(node.getOptions().stream()
+                .map(SimulationOptionEntity::getNextNodeId)
+                .filter(nextNodeId -> nextNodeId != null && nodesById.containsKey(nextNodeId))
+                .distinct()
+                .toList());
+        if (node.getTimeoutNextNodeId() != null && nodesById.containsKey(node.getTimeoutNextNodeId())
+                && !nextNodeIds.contains(node.getTimeoutNextNodeId())) {
+            nextNodeIds.add(node.getTimeoutNextNodeId());
+        }
+        return nextNodeIds;
     }
 }

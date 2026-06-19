@@ -14,6 +14,10 @@ public record UpdateNodeRequest(
         @Size(max = 1000)
         String timeJustification,
 
+        @Size(max = 120)
+        @Schema(description = "Proximo no usado quando o tempo do turno esgota. Envie string vazia para remover.", nullable = true)
+        String timeoutNextNodeId,
+
         @Size(max = 1500)
         @Schema(description = "Texto simplificado para leitores de tela. Envie string vazia para remover.", nullable = true)
         String plainTextDescription,

@@ -35,9 +35,11 @@ export interface CandidateOptionResponse {
   audioDescricaoUrl?: string | null;
   mediaUrl?: string | null;
   tipoMidia?: MediaType | null;
+  proximaEtapaId?: string | null;
 }
 
 export interface CandidateNodeResponse {
+  id: string;
   numero: number;
   pessoa: string;
   descricao: string;
@@ -47,6 +49,7 @@ export interface CandidateNodeResponse {
   audioDescricaoUrl?: string | null;
   midiaUrl?: string | null;
   tipoMidia?: MediaType | null;
+  proximaEtapaTempoEsgotadoId?: string | null;
   alternativas: CandidateOptionResponse[];
 }
 
@@ -64,11 +67,14 @@ export interface CandidateAttemptResponse {
   acaoSugeridaFrontend?: "INICIAR" | "CONTINUAR_TESTE" | "VER_RESULTADOS";
   progresso: CandidateProgressResponse;
   etapaAtual: CandidateNodeResponse | null;
+  etapasOffline?: CandidateNodeResponse[];
 }
 
 export interface SubmitAnswerRequest {
   etapaId?: string | null;
+  etapaNumero?: number | null;
   respostaId?: string | null;
+  respondidaEm?: string | null;
   tempoEsgotado: boolean;
 }
 
@@ -305,13 +311,6 @@ export interface PublishSimulationResponse {
   publishedAt: string | null;
 }
 
-export interface ArchiveSimulationResponse {
-  simulationId: string;
-  archived: boolean;
-  deletedAt: string;
-  deletedBy: string | null;
-}
-
 export type GupyPreflightCheckCode = "publicBaseUrl" | "integrationToken" | "simulationValidation";
 
 export type GupyPreflightCheckStatus = "ok" | "warning" | "blocker";
@@ -326,8 +325,6 @@ export interface GupyPreflightResponse {
   simulationId: string;
   versionNumber: number;
   ok: boolean;
-  integrationActive: boolean;
-  integrationActivatedAt: string | null;
   checks: GupyPreflightCheckResponse[];
 }
 
@@ -504,8 +501,8 @@ export function listSimulations() {
   return request<SimulationSummaryResponse[]>("/api/v1/simulations");
 }
 
-export function archiveSimulation(simulationId: string) {
-  return request<ArchiveSimulationResponse>(
+export function deleteSimulation(simulationId: string) {
+  return request<void>(
     `/api/v1/simulations/${encodeURIComponent(simulationId)}`,
     { method: "DELETE" },
   );
@@ -670,13 +667,6 @@ export function publishSimulationVersion(simulationId: string, versionNumber: nu
 export function getGupyPreflight(simulationId: string, versionNumber: number) {
   return request<GupyPreflightResponse>(
     `/api/v1/simulations/${encodeURIComponent(simulationId)}/versions/${versionNumber}/gupy-preflight`,
-  );
-}
-
-export function activateGupyIntegration(simulationId: string, versionNumber: number) {
-  return request<GupyPreflightResponse>(
-    `/api/v1/simulations/${encodeURIComponent(simulationId)}/versions/${versionNumber}/gupy-activation`,
-    { method: "POST" },
   );
 }
 

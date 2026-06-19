@@ -2,6 +2,8 @@ package br.com.iforce.praxis.candidate.dto;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 
+import java.util.List;
+
 @Schema(description = "Estado publico da participacao do candidato na avaliacao.")
 public record ParticipacaoResponse(
         @Schema(example = "att_123")
@@ -21,7 +23,10 @@ public record ParticipacaoResponse(
 
         ProgressoResponse progresso,
 
-        EtapaAtualResponse etapaAtual
+        EtapaAtualResponse etapaAtual,
+
+        @Schema(description = "Snapshot publico para continuidade offline, sem gabarito, pesos ou criterios de score.")
+        List<EtapaAtualResponse> etapasOffline
 ) {
     @Schema(description = "Resumo narrativo do progresso do candidato, sem expor gabarito ou proximas escolhas.")
     public record ProgressoResponse(

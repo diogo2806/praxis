@@ -159,9 +159,11 @@ public class ResultScoringService {
             }
 
             if (answer.timedOut() || answer.optionId() == null) {
-                // Timeout do turno: nível 0 naquele nó e o caminho termina ali.
+                // Timeout do turno: nivel 0 naquele no e continuidade pela rota configurada.
                 path.add(new PathStep(currentNode, null, answer, currentTurnReceivedAt));
-                break;
+                currentTurnReceivedAt = answer.answeredAt();
+                currentNodeId = currentNode.timeoutNextNodeId();
+                continue;
             }
 
             ScenarioOption pickedOption = findOption(currentNode, answer.optionId());

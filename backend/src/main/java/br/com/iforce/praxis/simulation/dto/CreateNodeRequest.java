@@ -19,6 +19,10 @@ public record CreateNodeRequest(
         @Schema(example = "Turno inicial com pressao alta.")
         String timeJustification,
 
+        @Size(max = 120)
+        @Schema(description = "Proximo no usado quando o tempo do turno esgota. Nulo encerra a trilha.", nullable = true)
+        String timeoutNextNodeId,
+
         @Size(max = 1500)
         @Schema(description = "Texto simplificado para leitores de tela.", nullable = true)
         String plainTextDescription,

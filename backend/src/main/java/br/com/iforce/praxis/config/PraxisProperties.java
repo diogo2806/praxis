@@ -13,6 +13,7 @@ public record PraxisProperties(
         int attemptLinkTtlHours,
         int attemptSessionTtlHours,
         int recommendInterviewThreshold,
+        int answerGracePeriodSeconds,
         double competencyWeightTolerance,
         int gupyRateLimitRequestsPerMinute,
         int authoringRateLimitRequestsPerMinute,
@@ -26,6 +27,7 @@ public record PraxisProperties(
             int attemptLinkTtlHours,
             int attemptSessionTtlHours,
             int recommendInterviewThreshold,
+            int answerGracePeriodSeconds,
             double competencyWeightTolerance,
             int gupyRateLimitRequestsPerMinute,
             int authoringRateLimitRequestsPerMinute,
@@ -39,6 +41,7 @@ public record PraxisProperties(
                 attemptLinkTtlHours,
                 attemptSessionTtlHours,
                 recommendInterviewThreshold,
+                answerGracePeriodSeconds,
                 competencyWeightTolerance,
                 gupyRateLimitRequestsPerMinute,
                 authoringRateLimitRequestsPerMinute,
@@ -57,6 +60,9 @@ public record PraxisProperties(
         }
         if (recommendInterviewThreshold == 0) {
             recommendInterviewThreshold = 70;
+        }
+        if (answerGracePeriodSeconds == 0) {
+            answerGracePeriodSeconds = 15;
         }
         if (competencyWeightTolerance == 0) {
             competencyWeightTolerance = 0.001;

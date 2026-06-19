@@ -161,7 +161,7 @@ const faq = [
   },
   {
     q: "Funciona com outros sistemas além da Gupy?",
-    a: "O foco hoje é a Gupy. Por baixo, a Práxis é um motor independente de ATS. Conectar outro sistema é criar um adaptador novo, não um produto novo.",
+    a: "O foco operacional hoje é a Gupy. Outras integrações só entram quando houver contrato, cliente real e validação fim a fim.",
   },
   {
     q: "O candidato vê pesos, gabarito ou marcadores críticos?",
@@ -483,8 +483,8 @@ function LandingPage() {
                   </p>
                   <p className="mt-4 inline-flex items-center gap-2 rounded-md border border-white/15 bg-white/5 px-3 py-2 text-xs text-sidebar-foreground/75">
                     <Plug className="h-3.5 w-3.5" aria-hidden />
-                    Motor independente de ATS, preparado para integrar a outros sistemas de
-                    recrutamento.
+                    Integração Gupy explícita, sem camada genérica criada antes de existir
+                    demanda real.
                   </p>
                 </div>
                 <ol className="space-y-2">

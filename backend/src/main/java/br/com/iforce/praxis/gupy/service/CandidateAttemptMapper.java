@@ -219,11 +219,13 @@ public class CandidateAttemptMapper {
                         option.plainTextDescription(),
                         option.audioDescriptionUrl(),
                         option.mediaUrl(),
-                        option.mediaType()
+                        option.mediaType(),
+                        option.nextNodeId()
                 ))
                 .toList();
 
         return new EtapaAtualResponse(
+                node.id(),
                 node.turnIndex(),
                 node.speaker(),
                 node.message(),
@@ -233,6 +235,7 @@ public class CandidateAttemptMapper {
                 node.audioDescriptionUrl(),
                 node.mediaUrl(),
                 node.mediaType(),
+                node.timeoutNextNodeId(),
                 alternativas
         );
     }

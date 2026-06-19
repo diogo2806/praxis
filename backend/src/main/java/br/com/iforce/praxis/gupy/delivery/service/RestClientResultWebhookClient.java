@@ -19,10 +19,15 @@ public class RestClientResultWebhookClient implements ResultWebhookClient {
 
     @Override
     public void postResult(String webhookUrl, TestResultResponse testResultResponse) {
+        postPayload(webhookUrl, testResultResponse);
+    }
+
+    @Override
+    public void postPayload(String webhookUrl, Object payload) {
         URI uri = outboundUrlValidator.validate(webhookUrl);
         restClient.post()
                 .uri(uri)
-                .body(testResultResponse)
+                .body(payload)
                 .retrieve()
                 .toBodilessEntity();
     }

@@ -9,9 +9,9 @@
 ## 📊 Estado Atual
 
 - ✅ Backend possui outbox transacional para entrega assíncrona de eventos
-- ✅ Integração ATS registrada em runtime é Gupy, via `GupyAdapter`
-- ✅ Nenhum adapter sem integração real é registrado como bean Spring
-- ✅ Novas plataformas ATS entram apenas com chamada real, contrato de autenticação, tratamento de erro e teste de integração
+- ✅ A integração operacional é Gupy, sem registry ou interface genérica de ATS
+- ✅ Nenhum adapter futuro/hipotético é registrado como bean Spring
+- ✅ Novas plataformas entram apenas com chamada real, contrato de autenticação, tratamento de erro e teste de integração
 
 ---
 
@@ -27,7 +27,7 @@
 3. Processador assíncrono lê eventos pendentes
    └─ job rodando a cada 5-30 segundos
    
-4. Entrega chama cliente real (GupyAdapter)
+4. Entrega chama os serviços concretos da Gupy
    └─ HTTP POST para callback_url + result_webhook_url
    
 5. Resultado persistido em OutboxEvent.processedAt
@@ -64,14 +64,10 @@ public class OutboxEvent {
 }
 ```
 
-### GupyAdapter (Interface → Implementação)
+### Entrega Gupy Concreta
 ```java
-public interface ATSAdapter {
-  void deliverResult(CandidateAttempt attempt, TestResult result);
-}
-
 @Component
-public class GupyAdapter implements ATSAdapter {
+public class OutboxProcessor {
   public void deliverResult(CandidateAttempt attempt, TestResult result) {
     // 1. Valida URLs externas (allow-list)
     // 2. Assina payload com HMAC-SHA256
@@ -91,8 +87,7 @@ public class OutboxEventProcessor {
     
     pending.forEach(event -> {
       try {
-        ATSAdapter adapter = adapterFactory.getAdapter(event.aggregateType);
-        adapter.deliverResult(event.payload);
+        gupyResultDeliveryService.deliver(event.payload);
         event.setProcessedAt(now());
       } catch (Exception e) {
         event.incrementRetryCount();
@@ -108,9 +103,9 @@ public class OutboxEventProcessor {
 
 ---
 
-## 📋 Regra Para Novos ATS (Adding New Adapter)
+## 📋 Regra Para Novas Integracoes
 
-Antes de integrar novo provedor, implemente `ATSAdapter` apenas após definir:
+Antes de integrar novo provedor, crie um fluxo concreto apenas após definir:
 
 | Pré-requisito | Exemplo (Gupy) |
 |---|---|
@@ -121,13 +116,13 @@ Antes de integrar novo provedor, implemente `ATSAdapter` apenas após definir:
 | **Testes** | Integração contra cliente real ou mock HTTP controlado (WireMock) |
 
 ✅ **Implementação:**
-1. Criar classe `NovoATSAdapter implements ATSAdapter`
-2. Adicionar em `AdapterFactory` com guard: `if (NOVO_ATS_ENABLED)`
+1. Criar serviços concretos para o novo provedor
+2. Expor a ativação com guard/flag até a validação fim a fim
 3. Testes cobrindo sucesso + falha + timeout
-4. Deploy com flag desativada até testar com Gupy
+4. Deploy com flag desativada até validar em ambiente real
 
 ❌ **Evitar:**
-- Mock adapters registrados como bean (anunciam integração inexistente)
+- Adapters ou registries criados antes de existir uma integração real
 - Testes apenas com unit-tests (validar contra cliente real)
 - Integração hardcoded sem configuração por tenant
 
@@ -138,7 +133,7 @@ Antes de integrar novo provedor, implemente `ATSAdapter` apenas após definir:
 | Aspecto | Implementação |
 |---|---|
 | **Autenticação** | Bearer token para API externa (armazenado em secrets) |
-| **Autorização** | Cada adapter validado por tenant (não mescla dados) |
+| **Autorização** | Entrega Gupy validada por tenant (não mescla dados) |
 | **Assinatura** | HMAC-SHA256 no header `X-Praxis-Signature` (webhook) |
 | **Validação de URL** | Allow-list de domínios; bloqueio de localhost/10.0.0.0/192.168 |
 | **Timeout** | 30s por requisição HTTP |
@@ -173,7 +168,7 @@ Alvo: > 99.5%
 ## 🚀 Implementação Futura
 
 1. **Backpressure:** Se fila > 1000 eventos, desacelerar ingestão
-2. **Múltiplos ATS:** Suporte a Mindsight, LinkedIn Talent Solutions, etc.
+2. **Novas integrações concretas:** Suporte a outros provedores apenas quando houver contrato e cliente real
 3. **Replay:** API para reenviar eventos de DLQ
 4. **Webhooks internos:** Notificar aplicação quando entrega completar
 

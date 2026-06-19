@@ -7,6 +7,9 @@ import java.util.List;
 
 @Schema(description = "Situacao atual da avaliacao vista pelo candidato.")
 public record EtapaAtualResponse(
+        @Schema(example = "turno-1")
+        String id,
+
         @Schema(example = "1")
         int numero,
 
@@ -33,6 +36,9 @@ public record EtapaAtualResponse(
 
         @Schema(description = "Tipo da midia (IMAGE ou AUDIO).", nullable = true)
         MediaType tipoMidia,
+
+        @Schema(description = "Proxima etapa quando o tempo esgota, sem expor pontuacao.", nullable = true)
+        String proximaEtapaTempoEsgotadoId,
 
         List<RespostaResponse> alternativas
 ) {

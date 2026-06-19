@@ -20,7 +20,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 class SimulationValidationServiceTest {
 
     private final SimulationValidationService service = new SimulationValidationService(
-            new PraxisProperties("http://localhost:8080", "token", 168, 24, 70, 0.001, 100, 30, 10, List.of())
+            new PraxisProperties("http://localhost:8080", "token", 168, 24, 70, 15, 0.001, 100, 30, 10, List.of())
     );
 
     @Test
@@ -99,6 +99,7 @@ class SimulationValidationServiceTest {
         for (int turn = 1; turn <= turns; turn++) {
             String nextNodeId = turn < turns ? "turno-" + (turn + 1) : null;
             SimulationNodeEntity node = node(version, "turno-" + turn, turn);
+            node.setTimeoutNextNodeId(nextNodeId);
             node.getOptions().add(option(node, "opcao-a-" + turn, nextNodeId, List.of("Empatia", "Resolução")));
             node.getOptions().add(option(node, "opcao-b-" + turn, nextNodeId, List.of("Empatia", "Resolução")));
             version.getNodes().add(node);
@@ -112,6 +113,7 @@ class SimulationValidationServiceTest {
         version.getCompetencies().add(competency(version, "Resolucao", 0.5));
 
         SimulationNodeEntity root = node(version, "turno-1", 1);
+        root.setTimeoutNextNodeId("turno-2a");
         root.getOptions().add(option(root, "opcao-a", "turno-2a", List.of("Empatia", "Resolucao")));
         root.getOptions().add(option(root, "opcao-b", "turno-2b", List.of("Empatia", "Resolucao")));
 

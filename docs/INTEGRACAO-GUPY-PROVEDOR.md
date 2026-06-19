@@ -270,8 +270,8 @@ GET /api/v1/gupy/result-deliveries?simulationId={id}&versionNumber={n}
    - Criar dashboard de monitoramento de entregas
 
 3. **Longo prazo:**
-   - Estender para novos provedores de ATS (além de Gupy)
-   - Adicionar suporte a autenticação OAuth 2.0
+   - Avaliar novas integrações somente quando houver contrato e cliente real
+   - Adicionar suporte a autenticação OAuth 2.0 se o contrato Gupy exigir
    - Implementar rate limiting por tenant
 
 ---

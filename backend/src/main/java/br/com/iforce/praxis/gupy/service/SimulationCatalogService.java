@@ -37,7 +37,7 @@ public class SimulationCatalogService {
         Map<String, PublishedSimulation> latestBySimulationId = new LinkedHashMap<>();
 
         simulationVersionRepository
-                .findBySimulationTenantIdAndStatusAndSimulationArchivedFalseAndSimulationDeletedAtIsNullOrderByPublishedAtDesc(
+                .findBySimulationTenantIdAndStatusOrderByPublishedAtDesc(
                         tenantId,
                         SimulationVersionStatus.PUBLISHED
                 )
@@ -67,7 +67,7 @@ public class SimulationCatalogService {
     @Transactional(readOnly = true)
     public Optional<PublishedSimulation> findPublishedById(String tenantId, String simulationId) {
         return simulationVersionRepository
-                .findBySimulationTenantIdAndSimulationIdAndStatusAndSimulationArchivedFalseAndSimulationDeletedAtIsNullOrderByPublishedAtDesc(
+                .findBySimulationTenantIdAndSimulationIdAndStatusOrderByPublishedAtDesc(
                         tenantId,
                         simulationId,
                         SimulationVersionStatus.PUBLISHED

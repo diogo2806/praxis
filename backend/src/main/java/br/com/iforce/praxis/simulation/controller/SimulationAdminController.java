@@ -1,6 +1,5 @@
 package br.com.iforce.praxis.simulation.controller;
 
-import br.com.iforce.praxis.simulation.dto.ArchiveSimulationResponse;
 import br.com.iforce.praxis.simulation.dto.CloneSimulationVersionResponse;
 import br.com.iforce.praxis.simulation.dto.CreateNodeRequest;
 import br.com.iforce.praxis.simulation.dto.CreateOptionRequest;
@@ -27,7 +26,6 @@ import io.swagger.v3.oas.annotations.media.ExampleObject;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.http.ResponseEntity;
@@ -297,24 +295,6 @@ public class SimulationAdminController {
         return ResponseEntity.ok(gupyPreflightService.getPreflight(simulationId, versionNumber));
     }
 
-    @PostMapping("/{simulationId}/versions/{versionNumber}/gupy-activation")
-    @Operation(
-            summary = "Ativa integracao Gupy",
-            description = "Persiste a ativacao da integracao Gupy para uma versao publicada apos preflight aprovado."
-    )
-    @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Integracao ativada."),
-            @ApiResponse(responseCode = "400", description = "Parametro invalido.", content = @Content(examples = @ExampleObject(value = ERROR_EXAMPLE))),
-            @ApiResponse(responseCode = "403", description = "Acesso negado.", content = @Content(examples = @ExampleObject(value = ERROR_EXAMPLE))),
-            @ApiResponse(responseCode = "409", description = "Ativacao bloqueada.", content = @Content(examples = @ExampleObject(value = ERROR_EXAMPLE)))
-    })
-    public ResponseEntity<GupyPreflightResponse> activateGupyIntegration(
-            @PathVariable String simulationId,
-            @PathVariable int versionNumber
-    ) {
-        return ResponseEntity.ok(gupyPreflightService.activateIntegration(simulationId, versionNumber));
-    }
-
     @GetMapping("/{simulationId}/versions/{versionNumber}/monitoring")
     @Operation(
             summary = "Monitora versao publicada",
@@ -354,20 +334,16 @@ public class SimulationAdminController {
 
     @DeleteMapping("/{simulationId}")
     @Operation(
-            summary = "Arquiva simulacao",
-            description = "Executa soft delete da simulacao, preenchendo deletedAt, deletedBy e archived sem apagar dados fisicos."
+            summary = "Remove simulacao",
+            description = "Exclui definitivamente a simulacao e suas versoes."
     )
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Simulacao arquivada."),
-            @ApiResponse(responseCode = "400", description = "Header ou parametro invalido.", content = @Content(examples = @ExampleObject(value = ERROR_EXAMPLE))),
+            @ApiResponse(responseCode = "204", description = "Simulacao removida."),
             @ApiResponse(responseCode = "403", description = "Acesso negado.", content = @Content(examples = @ExampleObject(value = ERROR_EXAMPLE))),
-            @ApiResponse(responseCode = "409", description = "Simulacao ja arquivada.", content = @Content(examples = @ExampleObject(value = ERROR_EXAMPLE)))
+            @ApiResponse(responseCode = "404", description = "Simulacao nao encontrada.", content = @Content(examples = @ExampleObject(value = ERROR_EXAMPLE)))
     })
-    public ResponseEntity<ArchiveSimulationResponse> archiveSimulation(
-            @PathVariable String simulationId,
-            Authentication authentication
-    ) {
-        String deletedBy = authentication == null ? null : authentication.getName();
-        return ResponseEntity.ok(simulationAdminService.archiveSimulation(simulationId, deletedBy));
+    public ResponseEntity<Void> deleteSimulation(@PathVariable String simulationId) {
+        simulationAdminService.deleteSimulation(simulationId);
+        return ResponseEntity.noContent().build();
     }
 }

@@ -10,6 +10,7 @@ public record ScenarioNode(
         String speaker,
         String message,
         Integer timeLimitSeconds,
+        String timeoutNextNodeId,
         String plainTextDescription,
         String audioDescriptionUrl,
         String mediaUrl,
@@ -28,6 +29,6 @@ public record ScenarioNode(
             Integer timeLimitSeconds,
             List<ScenarioOption> options
     ) {
-        this(id, turnIndex, speaker, message, timeLimitSeconds, null, null, null, null, options);
+        this(id, turnIndex, speaker, message, timeLimitSeconds, null, null, null, null, null, options);
     }
 }

@@ -5,6 +5,7 @@ import br.com.iforce.praxis.audit.service.AuditEventService;
 import br.com.iforce.praxis.candidate.dto.CandidateLinkResponse;
 import br.com.iforce.praxis.candidate.dto.CreateCandidateLinkRequest;
 import br.com.iforce.praxis.candidate.dto.CreateCandidateLinkResponse;
+import br.com.iforce.praxis.candidate.dto.EtapaAtualResponse;
 import br.com.iforce.praxis.candidate.dto.ParticipacaoResponse;
 import br.com.iforce.praxis.candidate.dto.ParticipacaoResponse.ProgressoResponse;
 import br.com.iforce.praxis.candidate.dto.RegistrarRespostaRequest;
@@ -36,6 +37,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.Instant;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -53,6 +55,12 @@ import java.util.UUID;
  */
 @Service
 public class CandidateAttemptService {
+
+    private static final String RESULT_READY_EVENT = "RESULT_READY";
+    private static final String ATTEMPT_STARTED_EVENT = "ATTEMPT_STARTED";
+    private static final String ATTEMPT_ABANDONED_EVENT = "ATTEMPT_ABANDONED";
+    private static final String CANDIDATE_ATTEMPT_AGGREGATE = "CandidateAttempt";
+    private static final long CLIENT_CLOCK_FUTURE_SKEW_SECONDS = 5;
 
     private final CandidateAttemptRepository candidateAttemptRepository;
     private final AuditEventService auditEventService;
@@ -234,11 +242,15 @@ public class CandidateAttemptService {
     @Transactional
     public ParticipacaoResponse findCandidateAttempt(String attemptToken) {
         CandidateAttemptEntity candidateAttemptEntity = findAttemptEntityByToken(attemptToken);
-        CandidateAttempt attempt = attemptStateMachine.expireIfNeeded(candidateAttemptMapper.toDomain(candidateAttemptEntity));
+        CandidateAttempt originalAttempt = candidateAttemptMapper.toDomain(candidateAttemptEntity);
+        AttemptStatus originalStatus = originalAttempt.status();
+        CandidateAttempt attempt = attemptStateMachine.expireIfNeeded(originalAttempt);
+        AttemptStatus statusAfterExpiration = attempt.status();
         if (!attemptStateMachine.isTerminalBlocked(attempt.status())) {
             attempt = attemptStateMachine.startIfNeeded(attempt);
         }
         CandidateAttempt savedAttempt = persist(attempt, candidateAttemptEntity);
+        publishEngagementTransitionIfNeeded(originalStatus, statusAfterExpiration, savedAttempt);
 
         PublishedSimulation simulation = findSimulation(savedAttempt);
         ScenarioNode currentNode = attemptStateMachine.isTerminalBlocked(savedAttempt.status())
@@ -252,24 +264,36 @@ public class CandidateAttemptService {
                 savedAttempt.status() == AttemptStatus.COMPLETED,
                 suggestedFrontendAction(savedAttempt.status()),
                 progressFor(savedAttempt, simulation, currentNode),
-                candidateAttemptMapper.toEtapaAtualResponse(currentNode, savedAttempt.accommodationTimeMultiplier())
+                candidateAttemptMapper.toEtapaAtualResponse(currentNode, savedAttempt.accommodationTimeMultiplier()),
+                offlineEtapas(simulation, savedAttempt)
         );
     }
 
     @Transactional(noRollbackFor = ResponseStatusException.class)
     public RegistrarRespostaResponse submitAnswer(String attemptToken, RegistrarRespostaRequest request) {
+        Instant receivedAt = Instant.now();
         String tenantId = TenantSecurity.requiredTenant();
         String attemptId = resolveAttemptId(attemptToken);
         CandidateAttemptEntity candidateAttemptEntity = candidateAttemptRepository
                 .findByTenantIdAndIdForUpdate(tenantId, attemptId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Tentativa nao encontrada."));
-        CandidateAttempt attempt = attemptStateMachine.expireIfNeeded(candidateAttemptMapper.toDomain(candidateAttemptEntity));
+        CandidateAttempt originalAttempt = candidateAttemptMapper.toDomain(candidateAttemptEntity);
+        AttemptStatus originalStatus = originalAttempt.status();
+        CandidateAttempt attempt = attemptStateMachine.expireIfNeeded(originalAttempt);
+        AttemptStatus statusAfterExpiration = attempt.status();
         if (attemptStateMachine.isTerminalBlocked(attempt.status())) {
-            persist(attempt, candidateAttemptEntity);
+            CandidateAttempt savedAttempt = persist(attempt, candidateAttemptEntity);
+            publishEngagementTransitionIfNeeded(originalStatus, statusAfterExpiration, savedAttempt);
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Tentativa expirada ou abandonada.");
         }
         attempt = attemptStateMachine.startIfNeeded(attempt);
         PublishedSimulation simulation = findSimulation(attempt);
+
+        Optional<RegistrarRespostaResponse> reconciledResponse = reconcileLateTimedOutAnswer(
+                attempt, simulation, request, candidateAttemptEntity, originalStatus, statusAfterExpiration, receivedAt);
+        if (reconciledResponse.isPresent()) {
+            return reconciledResponse.get();
+        }
 
         Optional<RegistrarRespostaResponse> duplicateResponse = handleDuplicate(attempt, simulation, request);
         if (duplicateResponse.isPresent()) {
@@ -283,15 +307,17 @@ public class CandidateAttemptService {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "A etapa informada nao e a etapa atual da participacao.");
         }
 
-        AttemptAnswer answer = buildAnswer(currentNode, request);
+        AttemptAnswer answer = buildAnswer(attempt, simulation, currentNode, request, receivedAt);
         Map<String, AttemptAnswer> answersByNodeId = new LinkedHashMap<>(attempt.answersByNodeId());
         answersByNodeId.put(currentNode.id(), answer);
 
         ScenarioOption selectedOption = answer.timedOut() ? null : findOption(currentNode, answer.optionId());
+        boolean reachedEnd = answer.timedOut() && currentNode.timeoutNextNodeId() == null;
         CandidateAttempt updatedAttempt = attemptStateMachine.applyAnswer(
-                attempt, simulation, answersByNodeId, selectedOption, answer.timedOut());
+                attempt, simulation, answersByNodeId, selectedOption, reachedEnd);
 
         CandidateAttempt savedAttempt = persist(updatedAttempt, candidateAttemptEntity);
+        publishEngagementTransitionIfNeeded(originalStatus, statusAfterExpiration, savedAttempt);
         auditAnswerSubmission(candidateAttemptEntity.getTenantId(), candidateAttemptEntity.getId(), answer, savedAttempt);
         if (savedAttempt.status() == AttemptStatus.COMPLETED) {
             publishResultReadyEvent(candidateAttemptEntity);
@@ -348,7 +374,7 @@ public class CandidateAttemptService {
             PublishedSimulation simulation,
             RegistrarRespostaRequest request
     ) {
-        ScenarioNode requestNode = resolveRequestNode(attempt, simulation, request.etapaId()).orElse(null);
+        ScenarioNode requestNode = resolveRequestNode(attempt, simulation, request).orElse(null);
         if (requestNode == null) {
             return Optional.empty();
         }
@@ -405,11 +431,20 @@ public class CandidateAttemptService {
 
         int maxChildDepth = node.options().stream()
                 .map(ScenarioOption::nextNodeId)
+                .filter(nextNodeId -> nextNodeId != null)
                 .mapToInt(nextNodeId -> maxRemainingDepth(simulation, nextNodeId, new HashSet<>(visitedNodeIds)))
                 .max()
                 .orElse(0);
+        int timeoutDepth = maxRemainingDepth(simulation, node.timeoutNextNodeId(), new HashSet<>(visitedNodeIds));
 
-        return 1 + maxChildDepth;
+        return 1 + Math.max(maxChildDepth, timeoutDepth);
+    }
+
+    private List<EtapaAtualResponse> offlineEtapas(PublishedSimulation simulation, CandidateAttempt attempt) {
+        return simulation.nodes().stream()
+                .sorted((left, right) -> Integer.compare(left.turnIndex(), right.turnIndex()))
+                .map(node -> candidateAttemptMapper.toEtapaAtualResponse(node, attempt.accommodationTimeMultiplier()))
+                .toList();
     }
 
     private Optional<ScenarioNode> resolveRequestNode(
@@ -423,16 +458,187 @@ public class CandidateAttemptService {
         return findCurrentNode(attempt, simulation);
     }
 
-    private AttemptAnswer buildAnswer(ScenarioNode currentNode, RegistrarRespostaRequest request) {
+    private Optional<ScenarioNode> resolveRequestNode(
+            CandidateAttempt attempt,
+            PublishedSimulation simulation,
+            RegistrarRespostaRequest request
+    ) {
+        if (request.etapaId() != null && !request.etapaId().isBlank()) {
+            return simulationCatalogService.findNode(simulation, request.etapaId());
+        }
+        if (request.etapaNumero() != null) {
+            return simulation.nodes().stream()
+                    .filter(node -> node.turnIndex() == request.etapaNumero())
+                    .findFirst();
+        }
+        return findCurrentNode(attempt, simulation);
+    }
+
+    private Optional<RegistrarRespostaResponse> reconcileLateTimedOutAnswer(
+            CandidateAttempt attempt,
+            PublishedSimulation simulation,
+            RegistrarRespostaRequest request,
+            CandidateAttemptEntity candidateAttemptEntity,
+            AttemptStatus originalStatus,
+            AttemptStatus statusAfterExpiration,
+            Instant receivedAt
+    ) {
         if (request.tempoEsgotado()) {
-            return AttemptAnswer.timedOut(currentNode.id(), Instant.now());
+            return Optional.empty();
+        }
+
+        ScenarioNode requestNode = resolveRequestNode(attempt, simulation, request).orElse(null);
+        if (requestNode == null) {
+            return Optional.empty();
+        }
+
+        AttemptAnswer existingAnswer = attempt.answersByNodeId().get(requestNode.id());
+        if (existingAnswer == null || !existingAnswer.timedOut()) {
+            return Optional.empty();
+        }
+        if (!isLastRecordedAnswer(attempt, existingAnswer)) {
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "Esta etapa ja direcionou etapas seguintes e nao pode mais ser conciliada."
+            );
+        }
+
+        AttemptAnswer answer = buildAnswer(attempt, simulation, requestNode, request, receivedAt);
+        Map<String, AttemptAnswer> answersByNodeId = new LinkedHashMap<>(attempt.answersByNodeId());
+        answersByNodeId.put(requestNode.id(), answer);
+
+        ScenarioOption selectedOption = findOption(requestNode, answer.optionId());
+        CandidateAttempt updatedAttempt = attemptStateMachine.applyAnswer(
+                attempt, simulation, answersByNodeId, selectedOption, false);
+
+        CandidateAttempt savedAttempt = persist(updatedAttempt, candidateAttemptEntity);
+        publishEngagementTransitionIfNeeded(originalStatus, statusAfterExpiration, savedAttempt);
+        auditAnswerSubmission(candidateAttemptEntity.getTenantId(), candidateAttemptEntity.getId(), answer, savedAttempt);
+        if (savedAttempt.status() == AttemptStatus.COMPLETED) {
+            publishResultReadyEvent(candidateAttemptEntity);
+        }
+
+        ScenarioNode nextNode = savedAttempt.status() == AttemptStatus.COMPLETED
+                ? null
+                : findCurrentNode(savedAttempt, simulation).orElse(null);
+
+        return Optional.of(new RegistrarRespostaResponse(
+                savedAttempt.id(),
+                publicStatus(savedAttempt.status()),
+                false,
+                savedAttempt.status() == AttemptStatus.COMPLETED,
+                progressFor(savedAttempt, simulation, nextNode),
+                candidateAttemptMapper.toEtapaAtualResponse(nextNode, savedAttempt.accommodationTimeMultiplier())
+        ));
+    }
+
+    private boolean isLastRecordedAnswer(CandidateAttempt attempt, AttemptAnswer answer) {
+        return attempt.answersByNodeId().values().stream()
+                .filter(candidateAnswer -> candidateAnswer.answeredAt() != null)
+                .noneMatch(candidateAnswer -> candidateAnswer.answeredAt().isAfter(answer.answeredAt()));
+    }
+
+    private AttemptAnswer buildAnswer(
+            CandidateAttempt attempt,
+            PublishedSimulation simulation,
+            ScenarioNode currentNode,
+            RegistrarRespostaRequest request,
+            Instant receivedAt
+    ) {
+        Instant answeredAt = trustedAnsweredAt(attempt, simulation, currentNode, request, receivedAt);
+        if (request.tempoEsgotado()) {
+            return AttemptAnswer.timedOut(currentNode.id(), answeredAt);
         }
         if (request.respostaId() == null || request.respostaId().isBlank()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Escolha uma resposta antes de continuar.");
         }
         String internalOptionId = candidateAttemptMapper.resolveInternalOptionId(currentNode, request.respostaId());
         findOption(currentNode, internalOptionId);
-        return AttemptAnswer.answered(currentNode.id(), internalOptionId, Instant.now());
+        return AttemptAnswer.answered(currentNode.id(), internalOptionId, answeredAt);
+    }
+
+    private Instant trustedAnsweredAt(
+            CandidateAttempt attempt,
+            PublishedSimulation simulation,
+            ScenarioNode currentNode,
+            RegistrarRespostaRequest request,
+            Instant receivedAt
+    ) {
+        Instant nodeStartedAt = resolveNodeStartedAt(attempt, simulation, currentNode);
+        Instant clientAnsweredAt = request.respondidaEm();
+        Instant answeredAt = clientAnsweredAt == null ? receivedAt : clientAnsweredAt;
+
+        if (answeredAt.isBefore(nodeStartedAt)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Timestamp da resposta anterior ao inicio da etapa.");
+        }
+        if (clientAnsweredAt != null && clientAnsweredAt.isAfter(receivedAt.plusSeconds(CLIENT_CLOCK_FUTURE_SKEW_SECONDS))) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Timestamp da resposta esta no futuro.");
+        }
+
+        Integer timeLimitSeconds = accommodatedTimeLimitSeconds(currentNode, attempt);
+        if (timeLimitSeconds == null) {
+            return answeredAt;
+        }
+
+        Instant frontendDeadline = nodeStartedAt.plusSeconds(timeLimitSeconds);
+        Instant serverArrivalDeadline = frontendDeadline.plusSeconds(praxisProperties.answerGracePeriodSeconds());
+        if (clientAnsweredAt != null && clientAnsweredAt.isAfter(frontendDeadline)) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Tempo da etapa esgotado.");
+        }
+        if (receivedAt.isAfter(serverArrivalDeadline)) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Resposta chegou apos a janela de tolerancia da etapa.");
+        }
+        if (clientAnsweredAt == null && answeredAt.isAfter(serverArrivalDeadline)) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Tempo da etapa esgotado.");
+        }
+
+        return answeredAt;
+    }
+
+    private Instant resolveNodeStartedAt(
+            CandidateAttempt attempt,
+            PublishedSimulation simulation,
+            ScenarioNode targetNode
+    ) {
+        Instant currentStartedAt = attempt.startedAt() == null ? attempt.createdAt() : attempt.startedAt();
+        String currentNodeId = simulation.rootNodeId();
+        Set<String> visitedNodeIds = new HashSet<>();
+
+        while (currentNodeId != null && visitedNodeIds.add(currentNodeId)) {
+            ScenarioNode node = simulationCatalogService.findNode(simulation, currentNodeId)
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Grafo da simulacao invalido."));
+            if (node.id().equals(targetNode.id())) {
+                return currentStartedAt;
+            }
+
+            AttemptAnswer answer = attempt.answersByNodeId().get(node.id());
+            if (answer == null) {
+                return currentStartedAt;
+            }
+            currentStartedAt = answer.answeredAt() == null ? currentStartedAt : answer.answeredAt();
+            if (answer.timedOut() || answer.optionId() == null) {
+                currentNodeId = node.timeoutNextNodeId();
+                continue;
+            }
+
+            ScenarioOption option = node.options().stream()
+                    .filter(candidateOption -> candidateOption.id().equals(answer.optionId()))
+                    .findFirst()
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Resposta salva aponta para alternativa invalida."));
+            currentNodeId = option.nextNodeId();
+        }
+
+        return currentStartedAt;
+    }
+
+    private Integer accommodatedTimeLimitSeconds(ScenarioNode node, CandidateAttempt attempt) {
+        if (node.timeLimitSeconds() == null) {
+            return null;
+        }
+        return attempt.accommodationTimeMultiplier()
+                .multiply(BigDecimal.valueOf(node.timeLimitSeconds()))
+                .setScale(0, RoundingMode.CEILING)
+                .intValue();
     }
 
     private ScenarioOption findOption(ScenarioNode node, String optionId) {
@@ -484,11 +690,67 @@ public class CandidateAttemptService {
 
         outboxService.publish(
             candidateAttemptEntity.getTenantId(),
-            "RESULT_READY",
-            "CandidateAttempt",
+            RESULT_READY_EVENT,
+            CANDIDATE_ATTEMPT_AGGREGATE,
             candidateAttemptEntity.getId(),
             payload
         );
+    }
+
+    private void publishEngagementTransitionIfNeeded(
+            AttemptStatus originalStatus,
+            AttemptStatus statusAfterExpiration,
+            CandidateAttempt savedAttempt
+    ) {
+        if (statusAfterExpiration == AttemptStatus.NOT_STARTED && savedAttempt.status() != AttemptStatus.NOT_STARTED) {
+            publishAttemptEngagementEvent(savedAttempt, ATTEMPT_STARTED_EVENT, savedAttempt.startedAt());
+        }
+        if ((originalStatus == AttemptStatus.IN_PROGRESS || originalStatus == AttemptStatus.PAUSED)
+                && savedAttempt.status() == AttemptStatus.ABANDONED) {
+            publishAttemptEngagementEvent(savedAttempt, ATTEMPT_ABANDONED_EVENT, savedAttempt.finishedAt());
+        }
+    }
+
+    private void publishAttemptEngagementEvent(CandidateAttempt attempt, String eventType, Instant occurredAt) {
+        CandidateAttemptEntity candidateAttemptEntity = candidateAttemptRepository
+                .findByTenantIdAndId(attempt.tenantId(), attempt.id())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Tentativa nao encontrada."));
+        if (candidateAttemptEntity.getResultWebhookUrl() == null || candidateAttemptEntity.getResultWebhookUrl().isBlank()) {
+            return;
+        }
+
+        Map<String, Object> payload = new LinkedHashMap<>();
+        payload.put("webhookUrl", candidateAttemptEntity.getResultWebhookUrl());
+        payload.put("eventPayload", engagementPayload(attempt, eventType, occurredAt));
+
+        outboxService.publish(
+                attempt.tenantId(),
+                eventType,
+                CANDIDATE_ATTEMPT_AGGREGATE,
+                attempt.id(),
+                payload
+        );
+    }
+
+    private Map<String, Object> engagementPayload(CandidateAttempt attempt, String eventType, Instant occurredAt) {
+        Map<String, Object> candidate = new LinkedHashMap<>();
+        candidate.put("name", attempt.candidateName());
+        candidate.put("email", attempt.candidateEmail());
+
+        Map<String, Object> payload = new LinkedHashMap<>();
+        payload.put("event_type", eventType);
+        payload.put("attempt_id", attempt.id());
+        payload.put("result_id", attempt.resultId());
+        payload.put("company_id", attempt.companyId());
+        payload.put("test_id", attempt.simulationId());
+        payload.put("simulation_version_id", attempt.simulationVersionId());
+        payload.put("simulation_version_number", attempt.simulationVersionNumber());
+        payload.put("status", attempt.status().getDescricao());
+        payload.put("occurred_at", occurredAt);
+        payload.put("started_at", attempt.startedAt());
+        payload.put("finished_at", attempt.finishedAt());
+        payload.put("candidate", candidate);
+        return payload;
     }
 
     private PublishedSimulation findSimulation(CandidateAttempt attempt) {
@@ -539,8 +801,8 @@ public class CandidateAttemptService {
                 return Optional.of(node);
             }
             if (answer.timedOut() || answer.optionId() == null) {
-                // Timeout encerra a trilha: não há próximo turno.
-                return Optional.empty();
+                currentNodeId = node.timeoutNextNodeId();
+                continue;
             }
 
             ScenarioOption option = node.options().stream()

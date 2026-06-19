@@ -13,13 +13,13 @@ public interface SimulationRepository extends JpaRepository<SimulationEntity, St
             "versions",
             "versions.competencies"
     })
-    List<SimulationEntity> findByArchivedFalseAndDeletedAtIsNullOrderByCreatedAtDesc();
+    List<SimulationEntity> findAllByOrderByCreatedAtDesc();
 
     @EntityGraph(attributePaths = {
             "versions",
             "versions.competencies"
     })
-    List<SimulationEntity> findByTenantIdAndArchivedFalseAndDeletedAtIsNullOrderByCreatedAtDesc(String tenantId);
+    List<SimulationEntity> findByTenantIdOrderByCreatedAtDesc(String tenantId);
 
     Optional<SimulationEntity> findByTenantIdAndId(String tenantId, String id);
 }

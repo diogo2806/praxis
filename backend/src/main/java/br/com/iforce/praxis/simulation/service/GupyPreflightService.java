@@ -1,8 +1,6 @@
 package br.com.iforce.praxis.simulation.service;
 
 import br.com.iforce.praxis.config.PraxisProperties;
-import br.com.iforce.praxis.audit.model.AuditEventType;
-import br.com.iforce.praxis.audit.service.AuditEventService;
 import br.com.iforce.praxis.auth.service.CurrentTenantService;
 import br.com.iforce.praxis.simulation.dto.GupyPreflightCheckResponse;
 import br.com.iforce.praxis.simulation.dto.GupyPreflightResponse;
@@ -18,7 +16,6 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.net.URI;
-import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -27,20 +24,17 @@ public class GupyPreflightService {
 
     private final SimulationVersionRepository simulationVersionRepository;
     private final SimulationValidationService simulationValidationService;
-    private final AuditEventService auditEventService;
     private final PraxisProperties praxisProperties;
     private final CurrentTenantService currentTenantService;
 
     public GupyPreflightService(
             SimulationVersionRepository simulationVersionRepository,
             SimulationValidationService simulationValidationService,
-            AuditEventService auditEventService,
             PraxisProperties praxisProperties,
             CurrentTenantService currentTenantService
     ) {
         this.simulationVersionRepository = simulationVersionRepository;
         this.simulationValidationService = simulationValidationService;
-        this.auditEventService = auditEventService;
         this.praxisProperties = praxisProperties;
         this.currentTenantService = currentTenantService;
     }
@@ -48,35 +42,8 @@ public class GupyPreflightService {
     @Transactional(readOnly = true)
     public GupyPreflightResponse getPreflight(String simulationId, int versionNumber) {
         SimulationVersionEntity simulationVersionEntity = findVersion(simulationId, versionNumber);
-
-        return evaluate(simulationVersionEntity);
-    }
-
-    @Transactional
-    public GupyPreflightResponse activateIntegration(String simulationId, int versionNumber) {
-        SimulationVersionEntity simulationVersionEntity = findVersion(simulationId, versionNumber);
-
         if (simulationVersionEntity.getStatus() != SimulationVersionStatus.PUBLISHED) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "Somente versoes publicadas podem ativar a integracao Gupy.");
-        }
-
-        GupyPreflightResponse preflightResponse = evaluate(simulationVersionEntity);
-        if (!preflightResponse.ok()) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "Preflight Gupy bloqueou a ativacao.");
-        }
-
-        if (simulationVersionEntity.getGupyIntegrationActivatedAt() == null) {
-            simulationVersionEntity.setGupyIntegrationActivatedAt(Instant.now());
-            simulationVersionEntity.setGupyIntegrationActivatedBy("system");
-            simulationVersionRepository.save(simulationVersionEntity);
-            auditEventService.appendSimulationVersionEvent(
-                    simulationVersionEntity.getSimulation().getTenantId(),
-                    simulationId,
-                    versionNumber,
-                    AuditEventType.SIMULATION_GUPY_INTEGRATION_ACTIVATED,
-                    "Integracao Gupy ativada para a versao.",
-                    "{\"activatedAt\":\"" + simulationVersionEntity.getGupyIntegrationActivatedAt() + "\"}"
-            );
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Somente versoes publicadas podem passar no preflight Gupy.");
         }
 
         return evaluate(simulationVersionEntity);
@@ -102,8 +69,6 @@ public class GupyPreflightService {
                 simulationVersionEntity.getSimulation().getId(),
                 simulationVersionEntity.getVersionNumber(),
                 ok,
-                simulationVersionEntity.getGupyIntegrationActivatedAt() != null,
-                simulationVersionEntity.getGupyIntegrationActivatedAt(),
                 checks
         );
     }

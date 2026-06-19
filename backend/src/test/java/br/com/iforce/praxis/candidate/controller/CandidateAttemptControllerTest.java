@@ -4,6 +4,8 @@ import br.com.iforce.praxis.auth.service.JwtService;
 import br.com.iforce.praxis.gupy.persistence.entity.CandidateAttemptEntity;
 import br.com.iforce.praxis.gupy.persistence.repository.CandidateAttemptRepository;
 import br.com.iforce.praxis.gupy.model.AttemptStatus;
+import br.com.iforce.praxis.shared.outbox.persistence.entity.OutboxEventEntity;
+import br.com.iforce.praxis.shared.outbox.persistence.repository.OutboxEventRepository;
 import com.jayway.jsonpath.JsonPath;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,6 +18,7 @@ import org.springframework.test.web.servlet.MvcResult;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.startsWith;
@@ -36,6 +39,9 @@ class CandidateAttemptControllerTest {
 
     @Autowired
     private CandidateAttemptRepository candidateAttemptRepository;
+
+    @Autowired
+    private OutboxEventRepository outboxEventRepository;
 
     @Autowired
     private JwtService jwtService;
@@ -66,6 +72,14 @@ class CandidateAttemptControllerTest {
 
         assertThat(candidateAttemptEntity.getStartedAt()).isNotNull();
         assertThat(candidateAttemptEntity.getFinishedAt()).isNull();
+
+        List<OutboxEventEntity> startedEvents = outboxEventRepository
+                .findByTenantIdAndEventTypeOrderByCreatedAtDesc("tenant-1", "ATTEMPT_STARTED");
+        assertThat(startedEvents).hasSize(1);
+        assertThat(startedEvents.getFirst().getAggregateId()).isEqualTo(attemptId);
+        assertThat(startedEvents.getFirst().getStatus()).isEqualTo(OutboxEventEntity.OutboxEventStatus.PENDING);
+        assertThat(startedEvents.getFirst().getPayload()).contains("\"event_type\":\"ATTEMPT_STARTED\"");
+        assertThat(startedEvents.getFirst().getPayload()).contains("\"webhookUrl\":\"https://cliente.gupy.io/result-webhook\"");
     }
 
     @Test
@@ -197,6 +211,146 @@ class CandidateAttemptControllerTest {
                 .andExpect(jsonPath("$[0].eventType").value("attemptCreated"))
                 .andExpect(jsonPath("$[1].eventType").value("attemptStarted"))
                 .andExpect(jsonPath("$[2]").doesNotExist());
+    }
+
+    @Test
+    void timeoutAnswerWithFallbackAdvancesToNextNodeWithoutCompletingAttempt() throws Exception {
+        MvcResult createResult = createAttemptResult("candidate-timeout-fallback", "sim-timeout-fallback");
+        String responseBody = createResult.getResponse().getContentAsString();
+        String attemptId = attemptIdFromResponse(responseBody);
+        String resultId = JsonPath.read(responseBody, "$.test_result_id");
+
+        mockMvc.perform(post("/candidate/attempts/" + attemptId + "/answers")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "nodeId": "turno-1",
+                                  "timedOut": true
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("em_andamento"))
+                .andExpect(jsonPath("$.finalizado").value(false))
+                .andExpect(jsonPath("$.progresso.passoAtual").value(2))
+                .andExpect(jsonPath("$.progresso.passosEstimados").value(2))
+                .andExpect(jsonPath("$.progresso.percentual").value(100))
+                .andExpect(jsonPath("$.etapaAtual.descricao").value("Segundo turno terminal."))
+                .andExpect(jsonPath("$.etapaAtual.alternativas[0].id").value("A"));
+
+        CandidateAttemptEntity inProgressAttempt = candidateAttemptRepository.findById(attemptId)
+                .orElseThrow();
+        assertThat(inProgressAttempt.getStatus()).isEqualTo(AttemptStatus.IN_PROGRESS);
+        assertThat(inProgressAttempt.getFinishedAt()).isNull();
+
+        mockMvc.perform(post("/candidate/attempts/" + attemptId + "/answers")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "nodeId": "turno-2",
+                                  "optionId": "n2-melhor"
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("concluida"))
+                .andExpect(jsonPath("$.finalizado").value(true))
+                .andExpect(jsonPath("$.etapaAtual").doesNotExist());
+
+        mockMvc.perform(get("/test/result/" + resultId)
+                        .header("Authorization", AUTHORIZATION)
+                        .param("company_id", "empresa-123"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("done"))
+                .andExpect(jsonPath("$.other_informations.timeout_count").value(1))
+                .andExpect(jsonPath("$.other_informations.situational_omission_count").value(1))
+                .andExpect(jsonPath("$.results[?(@.title=='Empatia')].score").value(org.hamcrest.Matchers.hasItem(50)));
+    }
+
+    @Test
+    void delayedAnswerInsideGracePeriodUsesClientTimestampAndCompletesAttempt() throws Exception {
+        String attemptId = createStartedAttempt("candidate-delayed-inside-grace");
+        Instant startedAt = Instant.now().minusSeconds(50);
+        updateStartedAt(attemptId, startedAt);
+
+        mockMvc.perform(post("/candidate/attempts/" + attemptId + "/answers")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "nodeId": "turno-1",
+                                  "nodeNumber": 1,
+                                  "optionId": "opcao-equilibrada",
+                                  "answeredAt": "%s"
+                                }
+                                """.formatted(startedAt.plusSeconds(40))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("concluida"))
+                .andExpect(jsonPath("$.finalizado").value(true));
+
+        CandidateAttemptEntity candidateAttemptEntity = candidateAttemptRepository.findById(attemptId)
+                .orElseThrow();
+        assertThat(candidateAttemptEntity.getAnswers()).hasSize(1);
+        assertThat(candidateAttemptEntity.getAnswers().iterator().next().getAnsweredAt())
+                .isEqualTo(startedAt.plusSeconds(40));
+    }
+
+    @Test
+    void answerGeneratedAfterFrontendLimitIsRejectedEvenInsideGracePeriod() throws Exception {
+        String attemptId = createStartedAttempt("candidate-late-after-frontend-limit");
+        Instant startedAt = Instant.now().minusSeconds(50);
+        updateStartedAt(attemptId, startedAt);
+
+        mockMvc.perform(post("/candidate/attempts/" + attemptId + "/answers")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "nodeId": "turno-1",
+                                  "nodeNumber": 1,
+                                  "optionId": "opcao-equilibrada",
+                                  "answeredAt": "%s"
+                                }
+                                """.formatted(startedAt.plusSeconds(46))))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.mensagem").value("Tempo da etapa esgotado."));
+    }
+
+    @Test
+    void lateRealAnswerReconcilesPreviousAutomaticTimeoutForSameStep() throws Exception {
+        String attemptId = createStartedAttempt("candidate-reconciles-timeout");
+        String resultId = candidateAttemptRepository.findById(attemptId).orElseThrow().getResultId();
+        Instant startedAt = Instant.now().minusSeconds(40);
+        updateStartedAt(attemptId, startedAt);
+
+        mockMvc.perform(post("/candidate/attempts/" + attemptId + "/answers")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "nodeId": "turno-1",
+                                  "nodeNumber": 1,
+                                  "timedOut": true,
+                                  "answeredAt": "%s"
+                                }
+                                """.formatted(startedAt.plusSeconds(40))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("concluida"));
+
+        mockMvc.perform(post("/candidate/attempts/" + attemptId + "/answers")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "nodeNumber": 1,
+                                  "optionId": "opcao-equilibrada",
+                                  "answeredAt": "%s"
+                                }
+                                """.formatted(startedAt.plusSeconds(39))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("concluida"))
+                .andExpect(jsonPath("$.finalizado").value(true));
+
+        mockMvc.perform(get("/test/result/" + resultId)
+                        .header("Authorization", AUTHORIZATION)
+                        .param("company_id", "empresa-123"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.results[?(@.title=='Empatia')].score").value(org.hamcrest.Matchers.hasItem(100)))
+                .andExpect(jsonPath("$.company_result_string").value(org.hamcrest.Matchers.containsString("Score geral: 100/100")));
     }
 
     @Test
@@ -343,6 +497,13 @@ class CandidateAttemptControllerTest {
                 .orElseThrow();
         assertThat(abandonedAttemptEntity.getStatus()).isEqualTo(AttemptStatus.ABANDONED);
         assertThat(abandonedAttemptEntity.getFinishedAt()).isNotNull();
+
+        List<OutboxEventEntity> abandonedEvents = outboxEventRepository
+                .findByTenantIdAndEventTypeOrderByCreatedAtDesc("tenant-1", "ATTEMPT_ABANDONED");
+        assertThat(abandonedEvents).hasSize(1);
+        assertThat(abandonedEvents.getFirst().getAggregateId()).isEqualTo(attemptId);
+        assertThat(abandonedEvents.getFirst().getStatus()).isEqualTo(OutboxEventEntity.OutboxEventStatus.PENDING);
+        assertThat(abandonedEvents.getFirst().getPayload()).contains("\"event_type\":\"ATTEMPT_ABANDONED\"");
     }
 
     private String createAttempt(String documentId) throws Exception {
@@ -351,7 +512,26 @@ class CandidateAttemptControllerTest {
         return attemptIdFromResponse(responseBody);
     }
 
+    private String createStartedAttempt(String documentId) throws Exception {
+        String attemptId = createAttempt(documentId);
+        mockMvc.perform(get("/candidate/attempts/" + attemptId))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("em_andamento"));
+        return attemptId;
+    }
+
+    private void updateStartedAt(String attemptId, Instant startedAt) {
+        CandidateAttemptEntity candidateAttemptEntity = candidateAttemptRepository.findById(attemptId)
+                .orElseThrow();
+        candidateAttemptEntity.setStartedAt(startedAt);
+        candidateAttemptRepository.save(candidateAttemptEntity);
+    }
+
     private MvcResult createAttemptResult(String documentId) throws Exception {
+        return createAttemptResult(documentId, "sim-atendimento-caos");
+    }
+
+    private MvcResult createAttemptResult(String documentId, String simulationId) throws Exception {
         return mockMvc.perform(post("/test/candidate")
                         .header("Authorization", AUTHORIZATION)
                         .contentType(MediaType.APPLICATION_JSON)
@@ -359,14 +539,14 @@ class CandidateAttemptControllerTest {
                                 {
                                   "company_id": "empresa-123",
                                   "document_id": "%s",
-                                  "test_id": "sim-atendimento-caos",
+                                  "test_id": "%s",
                                   "name": "Thiago Souza",
                                   "email": "thiago@example.com",
                                   "result_webhook_url": "https://cliente.gupy.io/result-webhook",
                                   "candidate_type": "external",
                                   "previous_result": "none"
                                 }
-                                """.formatted(documentId)))
+                                """.formatted(documentId, simulationId)))
                 .andExpect(status().isCreated())
                 .andReturn();
     }

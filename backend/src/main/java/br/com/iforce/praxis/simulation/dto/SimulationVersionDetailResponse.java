@@ -29,6 +29,7 @@ public record SimulationVersionDetailResponse(
             String speaker,
             String clientMessage,
             Integer timeLimitSeconds,
+            String timeoutNextNodeId,
             String plainTextDescription,
             String audioDescriptionUrl,
             String mediaUrl,

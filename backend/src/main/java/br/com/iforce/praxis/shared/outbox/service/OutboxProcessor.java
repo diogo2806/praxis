@@ -32,6 +32,8 @@ public class OutboxProcessor {
 
     private static final int MAX_ATTEMPT_COUNT = 5;
     private static final String RESULT_READY_EVENT = "RESULT_READY";
+    private static final String ATTEMPT_STARTED_EVENT = "ATTEMPT_STARTED";
+    private static final String ATTEMPT_ABANDONED_EVENT = "ATTEMPT_ABANDONED";
 
     private final OutboxEventRepository outboxEventRepository;
     private final ResultWebhookClient resultWebhookClient;
@@ -120,6 +122,9 @@ public class OutboxProcessor {
             event.setAttempts(event.getAttempts() + 1);
             if (RESULT_READY_EVENT.equals(event.getEventType())) {
                 processResultReadyEvent(event);
+            } else if (ATTEMPT_STARTED_EVENT.equals(event.getEventType())
+                    || ATTEMPT_ABANDONED_EVENT.equals(event.getEventType())) {
+                processAttemptEngagementEvent(event);
             }
 
             event.setStatus(OutboxEventEntity.OutboxEventStatus.SENT);
@@ -150,6 +155,20 @@ public class OutboxProcessor {
         outboundUrlValidator.validate(webhookUrl);
         log.debug("Enviando resultado para webhook: {}", webhookUrl);
         resultWebhookClient.postResult(webhookUrl, testResult);
+    }
+
+    private void processAttemptEngagementEvent(OutboxEventEntity event) {
+        JsonNode payload = parsePayload(event.getPayload());
+
+        String webhookUrl = payload.get("webhookUrl").asText();
+        JsonNode eventPayload = payload.get("eventPayload");
+        if (eventPayload == null || eventPayload.isNull()) {
+            throw new IllegalArgumentException("Payload de engajamento sem eventPayload.");
+        }
+
+        outboundUrlValidator.validate(webhookUrl);
+        log.debug("Enviando evento {} para webhook: {}", event.getEventType(), webhookUrl);
+        resultWebhookClient.postPayload(webhookUrl, eventPayload);
     }
 
     private TestResultResponse fetchTestResult(String attemptId, String tenantId) {

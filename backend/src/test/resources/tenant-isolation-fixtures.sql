@@ -27,16 +27,13 @@ WHERE id = 'tenant-2';
 INSERT INTO tenants (id, name, company_id, integration_token_hash)
 VALUES ('tenant-2', 'Globex S.A.', 'empresa-456', 'gEsbpGwny-8MuW5S2dQT-oBgWd_PPiIrttUcKopCFQQ');
 
-INSERT INTO simulations (id, tenant_id, name, description, created_at, archived, deleted_at, deleted_by)
+INSERT INTO simulations (id, tenant_id, name, description, created_at)
 VALUES (
     'sim-tenant2',
     'tenant-2',
     'Cenario Tenant 2',
     'Simulacao publicada pertencente exclusivamente ao tenant-2.',
-    CURRENT_TIMESTAMP,
-    FALSE,
-    NULL,
-    NULL
+    CURRENT_TIMESTAMP
 );
 
 INSERT INTO simulation_versions (

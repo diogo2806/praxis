@@ -2,7 +2,6 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState, type CSSProperties } from "react";
 import {
-  Archive,
   BarChart3,
   CircleHelp,
   ExternalLink,
@@ -12,6 +11,7 @@ import {
   Search,
   Table2,
   Target,
+  Trash2,
 } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
 import { Termo } from "@/components/glossario";
@@ -24,7 +24,7 @@ import {
 } from "@/components/praxis-ui";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import {
-  archiveSimulation,
+  deleteSimulation,
   listSimulations,
   type SimulationSummaryResponse,
   type SimulationVersionStatus,
@@ -72,8 +72,8 @@ function Dashboard() {
     retry: false,
   });
   const simulations = useMemo(() => simulationsQuery.data ?? [], [simulationsQuery.data]);
-  const archiveMutation = useMutation({
-    mutationFn: archiveSimulation,
+  const deleteMutation = useMutation({
+    mutationFn: deleteSimulation,
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ["simulations"] });
     },
@@ -179,10 +179,10 @@ function Dashboard() {
         />
       ) : (
         <div className="space-y-6">
-          {archiveMutation.isError && (
-            <StateBanner tone="danger" title="Não foi possível arquivar a simulação">
-              {archiveMutation.error instanceof Error
-                ? archiveMutation.error.message
+          {deleteMutation.isError && (
+            <StateBanner tone="danger" title="Não foi possível excluir a simulação">
+              {deleteMutation.error instanceof Error
+                ? deleteMutation.error.message
                 : "Tente novamente."}
             </StateBanner>
           )}
@@ -374,23 +374,23 @@ function Dashboard() {
                               <TooltipTrigger asChild>
                                 <button
                                   type="button"
-                                  aria-label={`Arquivar ${simulation.name}`}
+                                  aria-label={`Excluir ${simulation.name}`}
                                   onClick={() => {
                                     if (
                                       window.confirm(
-                                        `Arquivar "${simulation.name}"? Ela sairá do painel ativo.`,
+                                        `Excluir "${simulation.name}" definitivamente?`,
                                       )
                                     ) {
-                                      archiveMutation.mutate(simulation.id);
+                                      deleteMutation.mutate(simulation.id);
                                     }
                                   }}
-                                  disabled={archiveMutation.isPending}
+                                  disabled={deleteMutation.isPending}
                                   className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-border bg-background text-danger hover:bg-danger/10 disabled:cursor-not-allowed disabled:opacity-50"
                                 >
-                                  <Archive className="h-3.5 w-3.5" />
+                                  <Trash2 className="h-3.5 w-3.5" />
                                 </button>
                               </TooltipTrigger>
-                              <TooltipContent>Arquivar</TooltipContent>
+                              <TooltipContent>Excluir</TooltipContent>
                             </Tooltip>
                             <Tooltip>
                               <TooltipTrigger asChild>

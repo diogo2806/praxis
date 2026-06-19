@@ -3,7 +3,6 @@ package br.com.iforce.praxis.simulation.service;
 import br.com.iforce.praxis.audit.model.AuditEventType;
 import br.com.iforce.praxis.audit.service.AuditEventService;
 import br.com.iforce.praxis.auth.service.CurrentTenantService;
-import br.com.iforce.praxis.simulation.dto.ArchiveSimulationResponse;
 import br.com.iforce.praxis.simulation.dto.CloneSimulationVersionResponse;
 import br.com.iforce.praxis.simulation.dto.CompetencyWeightDto;
 import br.com.iforce.praxis.simulation.dto.CreateNodeRequest;
@@ -85,7 +84,7 @@ public class SimulationAdminService {
 
     @Transactional(readOnly = true)
     public List<SimulationSummaryResponse> listActiveSimulations() {
-        return simulationRepository.findByTenantIdAndArchivedFalseAndDeletedAtIsNullOrderByCreatedAtDesc(
+        return simulationRepository.findByTenantIdOrderByCreatedAtDesc(
                         currentTenantService.requiredTenantId())
                 .stream()
                 .map(this::toLatestVersionSummary)
@@ -106,7 +105,6 @@ public class SimulationAdminService {
         simulationEntity.setCriticalSituation(trimToNull(request.criticalSituation()));
         simulationEntity.setResultUse(trimToNull(request.objective()));
         simulationEntity.setCreatedAt(createdAt);
-        simulationEntity.setArchived(false);
 
         SimulationVersionEntity versionEntity = new SimulationVersionEntity();
         versionEntity.setSimulation(simulationEntity);
@@ -156,7 +154,6 @@ public class SimulationAdminService {
         simulationEntity.setCriticalSituation(trimToNull(request.criticalSituation()));
         simulationEntity.setResultUse(trimToNull(request.resultUse()));
         simulationEntity.setCreatedAt(createdAt);
-        simulationEntity.setArchived(false);
 
         SimulationVersionEntity versionEntity = new SimulationVersionEntity();
         versionEntity.setSimulation(simulationEntity);
@@ -237,6 +234,8 @@ public class SimulationAdminService {
         nodeEntity.setSpeaker("Cliente");
         nodeEntity.setMessage(request.clientMessage().trim());
         nodeEntity.setTimeLimitSeconds(request.timeLimitSeconds());
+        assertNodeExistsWhenProvided(versionEntity, request.timeoutNextNodeId());
+        nodeEntity.setTimeoutNextNodeId(trimToNull(request.timeoutNextNodeId()));
         nodeEntity.setPlainTextDescription(trimToNull(request.plainTextDescription()));
         nodeEntity.setAudioDescriptionUrl(trimToNull(request.audioDescriptionUrl()));
         applyMedia(request.mediaUrl(), request.mediaType(), nodeEntity::setMediaUrl, nodeEntity::setMediaType);
@@ -265,6 +264,10 @@ public class SimulationAdminService {
         }
         if (request.timeLimitSeconds() != null) {
             nodeEntity.setTimeLimitSeconds(request.timeLimitSeconds());
+        }
+        if (request.timeoutNextNodeId() != null) {
+            assertNodeExistsWhenProvided(versionEntity, request.timeoutNextNodeId());
+            nodeEntity.setTimeoutNextNodeId(trimToNull(request.timeoutNextNodeId()));
         }
         if (request.plainTextDescription() != null) {
             nodeEntity.setPlainTextDescription(trimToNull(request.plainTextDescription()));
@@ -411,39 +414,12 @@ public class SimulationAdminService {
     }
 
     @Transactional
-    public ArchiveSimulationResponse archiveSimulation(String simulationId, String deletedBy) {
-        if (deletedBy == null || deletedBy.isBlank()) {
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Usuario autenticado obrigatorio.");
-        }
-
+    public void deleteSimulation(String simulationId) {
         String tenantId = currentTenantService.requiredTenantId();
         SimulationEntity simulationEntity = simulationRepository.findByTenantIdAndId(tenantId, simulationId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Simulacao nao encontrada."));
 
-        if (simulationEntity.isArchived() || simulationEntity.getDeletedAt() != null) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "Simulacao ja arquivada.");
-        }
-
-        Instant deletedAt = Instant.now();
-        simulationEntity.setArchived(true);
-        simulationEntity.setDeletedAt(deletedAt);
-        simulationEntity.setDeletedBy(deletedBy);
-        SimulationEntity savedSimulationEntity = simulationRepository.save(simulationEntity);
-        auditEventService.appendSimulationEvent(
-                savedSimulationEntity.getTenantId(),
-                savedSimulationEntity.getId(),
-                AuditEventType.SIMULATION_ARCHIVED,
-                "Simulacao arquivada por soft delete.",
-                "{\"archived\":true,\"deletedAt\":\"" + savedSimulationEntity.getDeletedAt()
-                        + "\",\"deletedBy\":\"" + escapeJson(deletedBy) + "\"}"
-        );
-
-        return new ArchiveSimulationResponse(
-                savedSimulationEntity.getId(),
-                savedSimulationEntity.isArchived(),
-                savedSimulationEntity.getDeletedAt(),
-                savedSimulationEntity.getDeletedBy()
-        );
+        simulationRepository.delete(simulationEntity);
     }
 
     @Transactional
@@ -768,7 +744,7 @@ public class SimulationAdminService {
         String simulationId = targetVersion.getSimulation().getId();
 
         simulationVersionRepository
-                .findBySimulationTenantIdAndSimulationIdAndStatusAndSimulationArchivedFalseAndSimulationDeletedAtIsNullOrderByPublishedAtDesc(
+                .findBySimulationTenantIdAndSimulationIdAndStatusOrderByPublishedAtDesc(
                         tenantId,
                         simulationId,
                         SimulationVersionStatus.PUBLISHED
@@ -902,6 +878,7 @@ public class SimulationAdminService {
         clonedNodeEntity.setSpeaker(sourceNodeEntity.getSpeaker());
         clonedNodeEntity.setMessage(sourceNodeEntity.getMessage());
         clonedNodeEntity.setTimeLimitSeconds(sourceNodeEntity.getTimeLimitSeconds());
+        clonedNodeEntity.setTimeoutNextNodeId(sourceNodeEntity.getTimeoutNextNodeId());
         clonedNodeEntity.setPlainTextDescription(sourceNodeEntity.getPlainTextDescription());
         clonedNodeEntity.setAudioDescriptionUrl(sourceNodeEntity.getAudioDescriptionUrl());
         clonedNodeEntity.setMediaUrl(sourceNodeEntity.getMediaUrl());

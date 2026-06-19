@@ -7,6 +7,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.web.client.RestClient;
 
 import java.util.List;
+import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
@@ -43,6 +44,7 @@ class RestClientResultWebhookClientTest {
                 168,
                 24,
                 70,
+                15,
                 0.001,
                 100,
                 30,
@@ -64,6 +66,7 @@ class RestClientResultWebhookClientTest {
                 "http://localhost:8080/test/result/res_1?company_id=empresa-123",
                 "http://localhost:8080/candidate/attempts/att_1",
                 ReliabilityLevel.NORMAL,
+                Map.of(),
                 List.of()
         );
     }

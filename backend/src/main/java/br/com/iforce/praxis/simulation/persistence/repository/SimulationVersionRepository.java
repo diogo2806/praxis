@@ -17,7 +17,7 @@ public interface SimulationVersionRepository extends JpaRepository<SimulationVer
             "nodes.options",
             "nodes.options.competencyScores"
     })
-    List<SimulationVersionEntity> findByStatusAndSimulationArchivedFalseAndSimulationDeletedAtIsNullOrderByPublishedAtDesc(
+    List<SimulationVersionEntity> findByStatusOrderByPublishedAtDesc(
             SimulationVersionStatus status
     );
 
@@ -46,7 +46,7 @@ public interface SimulationVersionRepository extends JpaRepository<SimulationVer
             "nodes.options",
             "nodes.options.competencyScores"
     })
-    List<SimulationVersionEntity> findBySimulationIdAndStatusAndSimulationArchivedFalseAndSimulationDeletedAtIsNullOrderByPublishedAtDesc(
+    List<SimulationVersionEntity> findBySimulationIdAndStatusOrderByPublishedAtDesc(
             String simulationId,
             SimulationVersionStatus status
     );
@@ -73,7 +73,7 @@ public interface SimulationVersionRepository extends JpaRepository<SimulationVer
             "nodes.options",
             "nodes.options.competencyScores"
     })
-    List<SimulationVersionEntity> findBySimulationTenantIdAndStatusAndSimulationArchivedFalseAndSimulationDeletedAtIsNullOrderByPublishedAtDesc(
+    List<SimulationVersionEntity> findBySimulationTenantIdAndStatusOrderByPublishedAtDesc(
             String tenantId,
             SimulationVersionStatus status
     );
@@ -85,7 +85,7 @@ public interface SimulationVersionRepository extends JpaRepository<SimulationVer
             "nodes.options",
             "nodes.options.competencyScores"
     })
-    List<SimulationVersionEntity> findBySimulationTenantIdAndSimulationIdAndStatusAndSimulationArchivedFalseAndSimulationDeletedAtIsNullOrderByPublishedAtDesc(
+    List<SimulationVersionEntity> findBySimulationTenantIdAndSimulationIdAndStatusOrderByPublishedAtDesc(
             String tenantId,
             String simulationId,
             SimulationVersionStatus status

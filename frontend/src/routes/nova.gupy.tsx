@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { CheckCircle2, Link2, RefreshCw, Send, XCircle } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
 import {
@@ -11,7 +11,6 @@ import {
 } from "@/components/praxis-ui";
 import { WizardStepper } from "@/components/wizard-stepper";
 import {
-  activateGupyIntegration,
   getGupyPreflight,
   listResultDeliveries,
   listSimulations,
@@ -33,10 +32,10 @@ export const Route = createFileRoute("/nova/gupy")({
   }),
   head: () => ({
     meta: [
-      { title: "Gupy - Ativação & Conferência - Praxis" },
+      { title: "Gupy - Preflight & Conferência - Praxis" },
       {
         name: "description",
-        content: "Diagnóstico técnico da integração do Praxis com testes externos da Gupy.",
+        content: "Diagnóstico técnico em tempo real da integração do Praxis com testes externos da Gupy.",
       },
     ],
   }),
@@ -51,7 +50,6 @@ const integrationChecks = [
 
 function GupyActivation() {
   const search = Route.useSearch();
-  const queryClient = useQueryClient();
   const hasParams = Boolean(search.simulationId && search.versionNumber);
   const simulationsQuery = useQuery({
     queryKey: ["simulations"],
@@ -73,26 +71,15 @@ function GupyActivation() {
     enabled: hasParams,
   });
   const hasFailure = preflightQuery.data?.checks.some((item) => item.status === "blocker") ?? false;
-  const activateMutation = useMutation({
-    mutationFn: () => activateGupyIntegration(search.simulationId!, search.versionNumber!),
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({
-        queryKey: ["gupy-preflight", search.simulationId, search.versionNumber],
-      });
-      await queryClient.invalidateQueries({
-        queryKey: ["simulation-audit", search.simulationId, search.versionNumber],
-      });
-    },
-  });
 
   return (
     <AppShell>
       <WizardStepper current="publicacao" />
-      <ScreenStateStrip blockedReason="lista de verificação incompleta bloqueia a integração ativa" />
+      <ScreenStateStrip blockedReason="lista de verificação incompleta bloqueia a integração Gupy" />
       <div className="mb-5 flex flex-wrap items-start justify-between gap-4">
         <div>
           <div className="text-xs uppercase text-primary">Passo 4</div>
-          <h1 className="mt-1 text-3xl font-semibold">Gupy - Ativação e conferência</h1>
+          <h1 className="mt-1 text-3xl font-semibold">Gupy - Preflight e conferência</h1>
           <p className="mt-1 max-w-3xl text-sm text-muted-foreground">
             Confira se esta avaliação está pronta para aparecer na Gupy e se os resultados serão
             enviados corretamente depois que o candidato terminar.
@@ -103,7 +90,7 @@ function GupyActivation() {
       {!hasParams ? (
         <EmptyState
           title="Selecione uma versão para executar a verificação prévia"
-          description="A ativação Gupy agora depende do diagnóstico calculado pelo sistema."
+          description="A disponibilidade para a Gupy depende do diagnóstico em tempo real de versões publicadas."
           actions={
             <SimulationLinks
               loading={simulationsQuery.isLoading}
@@ -133,48 +120,23 @@ function GupyActivation() {
               title={hasFailure ? "Verificação bloqueada" : "Verificação aprovada"}
             >
               {hasFailure
-                ? "Corrija os bloqueios calculados pelo sistema antes de ativar a integração."
-                : preflightQuery.data.integrationActive
-                  ? `Integração ativa desde ${formatDateTime(preflightQuery.data.integrationActivatedAt)}.`
-                  : "A versão passou nas verificações exigidas para integração."}
+                ? "Corrija os bloqueios calculados pelo sistema antes de vincular a versão na Gupy."
+                : "A versão publicada passou nas verificações exigidas para integração."}
             </StateBanner>
-          )}
-
-          {activateMutation.isError && (
-            <div className="mt-3">
-              <StateBanner tone="danger" title="Não foi possível ativar a integração">
-                {activateMutation.error instanceof Error
-                  ? activateMutation.error.message
-                  : "Verifique se a versão está no ar e se a verificação prévia está aprovada."}
-              </StateBanner>
-            </div>
           )}
 
           <div className="mt-5">
             <NextStepContract
               primary={
                 hasFailure
-                  ? "Corrigir a lista de verificação antes de marcar a integração como ativa."
-                  : "Registrar conferência e aguardar o vínculo dentro da Gupy."
+                  ? "Corrigir a lista de verificação antes de vincular a simulação na Gupy."
+                  : "Vincular a versão publicada dentro da Gupy quando o diagnóstico estiver aprovado."
               }
               secondary="Cliente vincula a simulação na vaga dentro da Gupy; o gestor não usa tela externa."
               versionRule="A Gupy lista apenas testes no ar e versões protegidas."
-              lockedAfter="Integração ativa não coloca rascunho no ar nem altera tentativa já iniciada."
+              lockedAfter="O diagnóstico não coloca rascunho no ar nem altera tentativa já iniciada."
             />
           </div>
-
-          {preflightQuery.data && !preflightQuery.data.integrationActive && (
-            <div className="mt-4">
-              <button
-                type="button"
-                onClick={() => activateMutation.mutate()}
-                disabled={!preflightQuery.data.ok || activateMutation.isPending}
-                className="rounded-md bg-primary px-5 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                {activateMutation.isPending ? "Ativando..." : "Marcar integração como ativa"}
-              </button>
-            </div>
-          )}
 
           <div className="mt-5 grid gap-5 lg:grid-cols-[minmax(0,1fr)_360px]">
             <main className="space-y-5">
@@ -197,7 +159,7 @@ function GupyActivation() {
               </section>
 
               <section className="rounded-md border border-border bg-card p-5">
-                <h2 className="text-sm font-semibold">Lista de verificação para ativar</h2>
+                <h2 className="text-sm font-semibold">Lista de verificação da integração</h2>
                 <div className="mt-4 space-y-3">
                   {(preflightQuery.data?.checks ?? []).map((item) => (
                     <PreflightCheck key={item.code} item={item} />

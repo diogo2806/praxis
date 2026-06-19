@@ -3,11 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState, type CSSProperties } from "react";
 import {
   ExternalLink,
-  Pause,
-  Play,
-  RotateCcw,
   Share2,
-  ShieldCheck,
   Wifi,
   WifiOff,
 } from "lucide-react";
@@ -26,16 +22,22 @@ import {
   getCandidateAttempt,
   listCandidateLinks,
   listSimulations,
-  submitCandidateAnswer,
   type CandidateAttemptResponse,
   type CandidateLinkResponse,
   type CandidateNodeResponse,
   type MediaType,
   type SimulationSummaryResponse,
 } from "@/lib/api/praxis";
+import {
+  buildOptimisticAttempt,
+  enqueueCandidateAnswer,
+  flushCandidateAnswers,
+  getPendingCandidateAnswerCount,
+  loadCandidateOfflineState,
+  saveCandidateAttemptSnapshot,
+} from "@/lib/candidate-offline";
 import { getApiBaseUrl } from "@/lib/runtime-config";
 import { cn } from "@/lib/utils";
-import { useViewMode } from "@/lib/view-mode";
 
 export const Route = createFileRoute("/candidato")({
   head: () => ({
@@ -107,6 +109,7 @@ function CandidateLinksPage() {
   const [candidateName, setCandidateName] = useState("");
   const [candidateEmail, setCandidateEmail] = useState("");
   const [selectedSimulationId, setSelectedSimulationId] = useState("");
+  const [timeMultiplier, setTimeMultiplier] = useState("1");
 
   const simulationsQuery = useQuery({
     queryKey: ["simulations"],
@@ -150,6 +153,7 @@ function CandidateLinksPage() {
       simulationId: selectedSimulation.id,
       candidateName: candidateName.trim(),
       candidateEmail: candidateEmail.trim(),
+      accommodationTimeMultiplier: Number(timeMultiplier) || 1,
     });
   }
 
@@ -206,7 +210,7 @@ function CandidateLinksPage() {
       )}
 
       <section className="mb-6 rounded-md border border-border bg-card p-5">
-        <div className="grid gap-3 lg:grid-cols-[minmax(180px,1fr)_minmax(180px,1fr)_minmax(220px,1fr)_auto]">
+        <div className="grid gap-3 lg:grid-cols-[minmax(180px,1fr)_minmax(180px,1fr)_minmax(220px,1fr)_140px_auto]">
           <label className="space-y-1 text-sm">
             <span className="font-medium">Nome</span>
             <input
@@ -239,6 +243,18 @@ function CandidateLinksPage() {
                   {simulation.name}
                 </option>
               ))}
+            </select>
+          </label>
+          <label className="space-y-1 text-sm">
+            <span className="font-medium">Tempo</span>
+            <select
+              className="input"
+              value={timeMultiplier}
+              onChange={(event) => setTimeMultiplier(event.target.value)}
+            >
+              <option value="1">Padrao</option>
+              <option value="1.5">1,5x</option>
+              <option value="2">2x</option>
             </select>
           </label>
           <div className="flex items-end">
@@ -371,6 +387,10 @@ function FocusedCandidateExperience({ token }: { token: string }) {
   const [highContrast, setHighContrast] = useState(false);
   const [largeText, setLargeText] = useState(false);
   const [dyslexiaFont, setDyslexiaFont] = useState(false);
+  const [pendingAnswers, setPendingAnswers] = useState(0);
+  const [syncing, setSyncing] = useState(false);
+  const [submittingAnswer, setSubmittingAnswer] = useState(false);
+  const [online, setOnline] = useState(() => (typeof navigator === "undefined" ? true : navigator.onLine));
 
   const attemptQuery = useQuery({
     queryKey: ["candidate-attempt", token],
@@ -378,34 +398,51 @@ function FocusedCandidateExperience({ token }: { token: string }) {
   });
 
   useEffect(() => {
+    const cached = loadCandidateOfflineState(token);
+    if (cached.attempt) {
+      setLiveAttempt(cached.attempt);
+    }
+    setPendingAnswers(cached.pendingAnswers.length);
+  }, [token]);
+
+  useEffect(() => {
     if (attemptQuery.data) {
       setLiveAttempt(attemptQuery.data);
+      saveCandidateAttemptSnapshot(token, attemptQuery.data);
     }
-  }, [attemptQuery.data]);
+  }, [attemptQuery.data, token]);
 
-  const answerMutation = useMutation({
-    mutationFn: ({
-      node,
-      optionId,
-      timedOut,
-    }: {
-      node: CandidateNodeResponse;
-      optionId?: string | null;
-      timedOut: boolean;
-    }) => submitCandidateAnswer(token, { respostaId: optionId, tempoEsgotado: timedOut }),
-    onSuccess: (response) => {
-      setLiveAttempt({
-        participacaoId: response.participacaoId,
-        avaliacaoNome: liveAttempt?.avaliacaoNome ?? attemptQuery.data?.avaliacaoNome ?? "Praxis",
-        status: response.status,
-        finalizado: response.finalizado,
-        acaoSugeridaFrontend: liveAttempt?.acaoSugeridaFrontend,
-        progresso: response.progresso,
-        etapaAtual: response.etapaAtual,
-      });
-      setSelected(null);
-    },
-  });
+  useEffect(() => {
+    function handleOnline() {
+      setOnline(true);
+      void syncPendingAnswers();
+    }
+
+    function handleOffline() {
+      setOnline(false);
+    }
+
+    window.addEventListener("online", handleOnline);
+    window.addEventListener("offline", handleOffline);
+    navigator.serviceWorker?.addEventListener("message", handleServiceWorkerMessage);
+    return () => {
+      window.removeEventListener("online", handleOnline);
+      window.removeEventListener("offline", handleOffline);
+      navigator.serviceWorker?.removeEventListener("message", handleServiceWorkerMessage);
+    };
+
+    function handleServiceWorkerMessage(event: MessageEvent) {
+      if (event.data?.type === "PRAXIS_SYNC_CANDIDATE_ANSWERS") {
+        void syncPendingAnswers();
+      }
+    }
+  }, [token]);
+
+  useEffect(() => {
+    if (online && pendingAnswers > 0) {
+      void syncPendingAnswers();
+    }
+  }, [online, pendingAnswers, token]);
 
   const attempt = liveAttempt ?? attemptQuery.data;
   const currentNode = attempt?.etapaAtual ?? null;
@@ -422,19 +459,58 @@ function FocusedCandidateExperience({ token }: { token: string }) {
   }, [currentNode?.numero, timeLimit]);
 
   useEffect(() => {
-    if (finished || answerMutation.isPending || !currentNode) return;
+    if (finished || submittingAnswer || !currentNode) return;
     const id = window.setInterval(() => {
       setRemaining((value) => Math.max(0, value - 1));
     }, 1000);
     return () => window.clearInterval(id);
-  }, [answerMutation.isPending, currentNode, finished]);
+  }, [submittingAnswer, currentNode, finished]);
 
   useEffect(() => {
-    if (remaining === 0 && !finished && currentNode && !selected && !answerMutation.isPending) {
+    if (remaining === 0 && !finished && currentNode && !selected && !submittingAnswer) {
       setSelected("Sem resposta nesta etapa");
-      answerMutation.mutate({ node: currentNode, timedOut: true });
+      void submitAnswer(currentNode, null, true);
     }
-  }, [answerMutation, currentNode, finished, remaining, selected]);
+  }, [currentNode, finished, remaining, selected, submittingAnswer]);
+
+  async function syncPendingAnswers() {
+    if (syncing) return;
+    setSyncing(true);
+    try {
+      const result = await flushCandidateAnswers(token);
+      if (result.attempt) {
+        setLiveAttempt(result.attempt);
+      }
+      setPendingAnswers(result.pending);
+    } catch {
+      setPendingAnswers(getPendingCandidateAnswerCount(token));
+    } finally {
+      setSyncing(false);
+    }
+  }
+
+  async function submitAnswer(node: CandidateNodeResponse, optionId: string | null, timedOut: boolean) {
+    if (!attempt) return;
+    setSubmittingAnswer(true);
+    enqueueCandidateAnswer(token, {
+      etapaId: node.id,
+      etapaNumero: node.numero,
+      respostaId: optionId,
+      respondidaEm: new Date().toISOString(),
+      tempoEsgotado: timedOut,
+    });
+    setPendingAnswers(getPendingCandidateAnswerCount(token));
+
+    const optimisticAttempt = buildOptimisticAttempt(attempt, node, optionId, timedOut);
+    setLiveAttempt(optimisticAttempt);
+    saveCandidateAttemptSnapshot(token, optimisticAttempt);
+    setSelected(null);
+
+    if (online) {
+      await syncPendingAnswers();
+    }
+    setSubmittingAnswer(false);
+  }
 
   const pageClass = cn(
     "min-h-screen px-4 py-5 transition-colors sm:px-6",
@@ -480,7 +556,18 @@ function FocusedCandidateExperience({ token }: { token: string }) {
         </div>
 
         {currentNode && !finished && (
-          <div className="mb-8" aria-hidden="true">
+          <div className="mb-8 space-y-3">
+            <div className="flex items-center justify-between gap-3 text-sm" aria-live="polite">
+              <span className={cn("inline-flex items-center gap-2 font-medium", online ? "text-emerald-700" : "text-amber-700")}>
+                {online ? <Wifi className="h-4 w-4" /> : <WifiOff className="h-4 w-4" />}
+                {online ? "Online" : "Modo offline"}
+              </span>
+              {pendingAnswers > 0 && (
+                <span className="font-medium text-amber-700">
+                  {syncing ? "Sincronizando..." : `${pendingAnswers} resposta(s) pendente(s)`}
+                </span>
+              )}
+            </div>
             <div className={cn("h-2 w-full overflow-hidden rounded-full", highContrast ? "bg-zinc-800" : "bg-slate-200")}>
               <div
                 className={cn(
@@ -498,7 +585,7 @@ function FocusedCandidateExperience({ token }: { token: string }) {
             <div className="text-sm font-medium uppercase tracking-wide opacity-70">Carregando</div>
             <h1 className="mt-3 text-3xl font-semibold">Preparando sua avaliação.</h1>
           </div>
-        ) : attemptQuery.isError ? (
+        ) : attemptQuery.isError && !attempt ? (
           <div className="flex flex-1 flex-col justify-center">
             <div className="text-sm font-medium uppercase tracking-wide text-red-600">Acesso indisponível</div>
             <h1 className="mt-3 text-3xl font-semibold">Não foi possível carregar a avaliação.</h1>
@@ -547,13 +634,9 @@ function FocusedCandidateExperience({ token }: { token: string }) {
                       type="button"
                       onClick={() => {
                         setSelected(option.texto);
-                        answerMutation.mutate({
-                          node: currentNode,
-                          optionId: option.id,
-                          timedOut: false,
-                        });
+                        void submitAnswer(currentNode, option.id, false);
                       }}
-                      disabled={answerMutation.isPending || selected !== null}
+                      disabled={submittingAnswer || selected !== null}
                       className={optionClass}
                       aria-label={option.descricaoAcessivel || option.texto}
                     >
@@ -576,7 +659,7 @@ function FocusedCandidateExperience({ token }: { token: string }) {
 
               {selected && (
                 <div className="mt-5 text-center text-sm font-medium opacity-75" aria-live="polite">
-                  {answerMutation.isPending ? "Registrando resposta..." : "Resposta registrada."}
+                  {submittingAnswer ? "Registrando resposta..." : "Resposta registrada."}
                 </div>
               )}
             </div>
@@ -599,322 +682,4 @@ function FocusedCandidateExperience({ token }: { token: string }) {
 
 export function CandidateExperience({ token }: { token: string }) {
   return <FocusedCandidateExperience token={token} />;
-  /*
-  const [liveAttempt, setLiveAttempt] = useState<CandidateAttemptResponse | null>(null);
-  const [remaining, setRemaining] = useState(30);
-  const [paused, setPaused] = useState(false);
-  const [offline, setOffline] = useState(false);
-  const [selected, setSelected] = useState<string | null>(null);
-  const technical = useViewMode() === "technical";
-
-  const attemptQuery = useQuery({
-    queryKey: ["candidate-attempt", token],
-    queryFn: () => getCandidateAttempt(token),
-  });
-
-  useEffect(() => {
-    if (attemptQuery.data) {
-      setLiveAttempt(attemptQuery.data);
-    }
-  }, [attemptQuery.data]);
-
-  const answerMutation = useMutation({
-    mutationFn: ({
-      node,
-      optionId,
-      timedOut,
-    }: {
-      node: CandidateNodeResponse;
-      optionId?: string | null;
-      timedOut: boolean;
-    }) => submitCandidateAnswer(token, { respostaId: optionId, tempoEsgotado: timedOut }),
-    onSuccess: (response) => {
-      setLiveAttempt({
-        participacaoId: response.participacaoId,
-        avaliacaoNome:
-          liveAttempt?.avaliacaoNome ?? attemptQuery.data?.avaliacaoNome ?? "Praxis",
-        status: response.status,
-        finalizado: response.finalizado,
-        progresso: response.progresso,
-        etapaAtual: response.etapaAtual,
-      });
-      setSelected(null);
-      setPaused(false);
-    },
-  });
-
-  const attempt = liveAttempt ?? attemptQuery.data;
-  const currentNode = attempt?.etapaAtual ?? null;
-  const progress = attempt?.progresso ?? null;
-  const finished = Boolean(attempt && (attempt.finalizado || !currentNode));
-  const showTurn = Boolean(currentNode && !finished);
-  const timeLimit = currentNode?.tempoLimiteSegundos ?? 30;
-
-  useEffect(() => {
-    setRemaining(timeLimit);
-    setSelected(null);
-  }, [currentNode?.numero, timeLimit]);
-
-  useEffect(() => {
-    if (paused || finished || answerMutation.isPending) return;
-    const id = window.setInterval(() => {
-      setRemaining((value) => Math.max(0, value - 1));
-    }, 1000);
-    return () => window.clearInterval(id);
-  }, [answerMutation.isPending, paused, finished]);
-
-  useEffect(() => {
-    if (remaining === 0 && !finished && currentNode && !selected) {
-      setSelected("Sem resposta nesta etapa");
-      answerMutation.mutate({ node: currentNode, timedOut: true });
-    }
-  }, [answerMutation, currentNode, finished, remaining, selected]);
-
-  const pct = remaining / timeLimit;
-  const timerTone = pct <= 0.1 ? "bg-danger" : pct <= 0.3 ? "bg-warning" : "bg-primary";
-
-  return (
-    <AppShell>
-      <ScreenStateStrip blockedReason="link expirado ou participação abandonada fora da janela" />
-      <div className="mb-5">
-        <div className="text-xs uppercase text-primary">Avaliação do candidato</div>
-        <h1 className="mt-1 text-3xl font-semibold">
-          {attempt?.avaliacaoNome ?? "Avaliação"}
-        </h1>
-        <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
-          Uma situação por vez, timer claro, respostas objetivas e retomada após queda.
-        </p>
-      </div>
-
-      {attemptQuery.isLoading && (
-        <StateBanner tone="info" title="Carregando participação">
-          Buscando a avaliação e a etapa atual.
-        </StateBanner>
-      )}
-
-      {attemptQuery.isError && (
-        <StateBanner tone="danger" title="Não foi possível carregar a participação">
-          {attemptQuery.error instanceof Error
-            ? attemptQuery.error.message
-            : "Verifique se o servidor está rodando e se o código de acesso é válido."}
-        </StateBanner>
-      )}
-
-      {technical && (
-        <StateBanner tone="info" title="Código de acesso carregado">
-          Código visualizado apenas no modo técnico: <code>{token}</code>.
-        </StateBanner>
-      )}
-
-      {offline && (
-        <StateBanner tone="warn" title="Conexão perdida - reconectando">
-          A resposta salva na última etapa será retomada automaticamente quando a conexão voltar.
-        </StateBanner>
-      )}
-
-      {answerMutation.isError && (
-        <StateBanner tone="danger" title="Resposta não enviada">
-          {answerMutation.error instanceof Error
-            ? answerMutation.error.message
-            : "Tente enviar a resposta novamente."}
-        </StateBanner>
-      )}
-
-      <div className="mt-5 grid gap-5 lg:grid-cols-[360px_minmax(0,1fr)]">
-        <section className="rounded-md border border-border bg-card p-5">
-          <div className="mx-auto max-w-[320px] rounded-[30px] border border-border bg-foreground p-2">
-            <div className="min-h-[620px] rounded-[24px] bg-background p-4">
-              {showTurn ? (
-                <>
-                  {progress && (
-                    <div className="mb-4 rounded-md border border-border bg-card p-3">
-                      <div className="mb-2 flex items-center justify-between gap-3 text-xs">
-                        <span className="font-medium text-foreground" aria-live="polite">
-                          Passo {progress.passoAtual} de aproximadamente{" "}
-                          {progress.passosEstimados}
-                        </span>
-                        <span className="text-muted-foreground">{progress.percentual}%</span>
-                      </div>
-                      <div
-                        className="praxis-progress-track praxis-progress-track-sm"
-                        aria-label={`Passo ${progress.passoAtual} de aproximadamente ${progress.passosEstimados}`}
-                        aria-valuemin={0}
-                        aria-valuemax={100}
-                        aria-valuenow={progress.percentual}
-                        role="progressbar"
-                      >
-                        <div
-                          className="praxis-progress-fill bg-success transition-all duration-700 ease-out"
-                          style={
-                            {
-                              "--praxis-progress-value": `${progress.percentual}%`,
-                            } as CSSProperties
-                          }
-                        />
-                      </div>
-                    </div>
-                  )}
-                  <div className="mb-4">
-                    <div className="mb-1 flex items-center justify-between text-xs">
-                      <span aria-live="polite">{remaining}s restantes</span>
-                      <span>{paused ? "pausado" : `etapa ${currentNode?.numero ?? 1}`}</span>
-                    </div>
-                    <div
-                      className="praxis-progress-track praxis-progress-track-md"
-                      aria-label={`${remaining} segundos restantes`}
-                      role="timer"
-                    >
-                      <div
-                        className={cn("praxis-progress-fill transition-all", timerTone)}
-                        style={
-                          {
-                            "--praxis-progress-value": `${pct * 100}%`,
-                          } as CSSProperties
-                        }
-                      />
-                    </div>
-                  </div>
-                  <div className="space-y-3" aria-live="polite">
-                    <div className="mr-8 space-y-2 rounded-md bg-muted px-3 py-2 text-sm">
-                      <div>{currentNode?.descricao}</div>
-                      {currentNode?.midiaUrl && (
-                        <CandidateMedia
-                          mediaUrl={currentNode.midiaUrl}
-                          mediaType={currentNode.tipoMidia ?? null}
-                        />
-                      )}
-                    </div>
-                    {selected && (
-                      <div className="ml-8 rounded-md bg-primary px-3 py-2 text-sm text-primary-foreground">
-                        {selected}
-                      </div>
-                    )}
-                    {selected && (
-                      <div className="mr-16 rounded-md bg-muted px-3 py-2 text-sm text-muted-foreground">
-                        {answerMutation.isPending ? "enviando..." : "registrado"}
-                      </div>
-                    )}
-                  </div>
-                  {!selected && (
-                    <div className="mt-5 space-y-2">
-                      {(currentNode?.alternativas ?? []).map((option) => (
-                        <div
-                          key={option.id}
-                          className="space-y-2 rounded-md border border-border bg-card p-2 hover:border-primary"
-                        >
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setSelected(option.texto);
-                              if (currentNode) {
-                                answerMutation.mutate({
-                                  node: currentNode,
-                                  optionId: option.id,
-                                  timedOut: false,
-                                });
-                              }
-                            }}
-                            disabled={answerMutation.isPending}
-                            className="w-full rounded-md p-1 text-left text-sm hover:bg-primary/5 disabled:cursor-not-allowed disabled:opacity-60"
-                          >
-                            {option.texto}
-                          </button>
-                          {option.midiaUrl && (
-                            <CandidateMedia
-                              mediaUrl={option.midiaUrl}
-                              mediaType={option.tipoMidia ?? null}
-                            />
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </>
-              ) : attemptQuery.isLoading ? (
-                <div className="flex min-h-[560px] flex-col justify-center">
-                  <div className="text-xs uppercase text-primary">Carregando</div>
-                  <h2 className="mt-2 text-2xl font-semibold">Preparando sua avaliação.</h2>
-                  <p className="mt-2 text-sm text-muted-foreground">
-                    Buscando a etapa atual e as respostas disponíveis.
-                  </p>
-                </div>
-              ) : (
-                <div className="flex min-h-[560px] flex-col justify-center">
-                  <div className="text-xs uppercase text-success">Participação finalizada</div>
-                  <h2 className="mt-2 text-2xl font-semibold">Obrigado por participar.</h2>
-                  <p className="mt-2 text-sm text-muted-foreground">
-                    O resultado será processado e entregue para a equipe responsável.
-                  </p>
-                </div>
-              )}
-            </div>
-          </div>
-        </section>
-
-        <aside className="space-y-4">
-          <div className="rounded-md border border-border bg-card p-5">
-            <div className="mb-3 flex items-center gap-2 text-sm font-semibold">
-              <ShieldCheck className="h-4 w-4 text-primary" />
-              Recursos de acessibilidade
-            </div>
-            <ul className="space-y-2 text-sm text-muted-foreground">
-              <li>Compatível com leitor de tela</li>
-              <li>Alto contraste</li>
-              <li>Tempo estendido quando configurado</li>
-              <li>Navegação por teclado</li>
-            </ul>
-          </div>
-
-          {technical && (
-            <div className="rounded-md border border-border bg-card p-5">
-              <h2 className="text-sm font-semibold">Controles de estado</h2>
-              <div className="mt-4 flex flex-wrap gap-2">
-                <button
-                  type="button"
-                  onClick={() => setPaused((value) => !value)}
-                  className="inline-flex items-center gap-2 rounded-md border border-border bg-card px-3 py-2 text-sm hover:bg-accent"
-                >
-                  {paused ? <Play className="h-4 w-4" /> : <Pause className="h-4 w-4" />}
-                  {paused ? "Retomar" : "Pausar"}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setOffline((value) => !value)}
-                  className="inline-flex items-center gap-2 rounded-md border border-border bg-card px-3 py-2 text-sm hover:bg-accent"
-                >
-                  {offline ? <Wifi className="h-4 w-4" /> : <WifiOff className="h-4 w-4" />}
-                  {offline ? "Reconectar" : "Simular queda"}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setRemaining(timeLimit);
-                    setSelected(null);
-                    setPaused(false);
-                  }}
-                  className="inline-flex items-center gap-2 rounded-md border border-border bg-card px-3 py-2 text-sm hover:bg-accent"
-                >
-                  <RotateCcw className="h-4 w-4" />
-                  Reiniciar etapa
-                </button>
-              </div>
-            </div>
-          )}
-
-          <StateBanner tone="info" title="Tempo esgotado encerra a etapa">
-            Quando chega a zero, registra sem resposta e segue o fluxo configurado.
-          </StateBanner>
-        </aside>
-      </div>
-      <div className="mt-6">
-        <Link
-          to="/"
-          className="inline-flex rounded-md border border-border bg-card px-4 py-2 text-sm hover:bg-accent"
-        >
-          Voltar ao painel
-        </Link>
-      </div>
-    </AppShell>
-  );
-  */
 }
