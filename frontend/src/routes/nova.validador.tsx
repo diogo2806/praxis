@@ -28,7 +28,6 @@ import FlowCanvas, { type NodeUpdateBody } from "@/components/flow-canvas";
 import {
   EmptyState,
   NextStepContract,
-  ScreenStateStrip,
   StateBanner,
   StatusBadge,
 } from "@/components/praxis-ui";
@@ -471,16 +470,6 @@ function ValidatorPage() {
   return (
     <AppShell>
       <WizardStepper current="revisao" unlockedThrough={canPublish ? "publicacao" : "revisao"} />
-      <ScreenStateStrip blockedReason="qualquer bloqueio remove a ação de publicar" />
-      <div className="mb-5 flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <div className="text-xs uppercase text-primary">Passo 3</div>
-          <h1 className="mt-1 text-3xl font-semibold">Validador de Qualidade</h1>
-          <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
-            Regras fixas, histórico completo de alterações e bloqueios sem ajuste manual.
-          </p>
-        </div>
-      </div>
 
       {hasValidationParams && (
         <ScoringModelPreview
@@ -961,93 +950,50 @@ function ScoringModelPreview({
   version?: SimulationVersionDetailResponse;
   versionNumber?: number;
 }) {
-  const steps = version ? buildStepScoreSummaries(version) : [];
+  if (loading && !version) {
+    return (
+      <section className="mb-5">
+        <div className="rounded-md border border-border bg-background px-4 py-6 text-sm text-muted-foreground">
+          Carregando mapa interativo do fluxo...
+        </div>
+      </section>
+    );
+  }
+
+  if (error && !version) {
+    return (
+      <section className="mb-5">
+        <StateBanner tone="danger" title="Não foi possível carregar o fluxo">
+          {error.message}
+        </StateBanner>
+      </section>
+    );
+  }
+
+  if (!version) {
+    return (
+      <section className="mb-5">
+        <div className="rounded-md border border-border bg-background px-4 py-6 text-sm text-muted-foreground">
+          Nenhuma etapa cadastrada para esta versão.
+        </div>
+      </section>
+    );
+  }
 
   return (
     <section className="mb-5">
-      <div className="mb-5">
-        <h2 className="text-2xl font-semibold tracking-tight">Mapa e pontuacao normalizada</h2>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Dois candidatos tem o mesmo teto possivel, independentemente do caminho.
-        </p>
-      </div>
-
-      <div className="grid gap-5">
-        <div className="rounded-md border border-border bg-card p-5">
-          {version ? (
-            <FlowCanvas
-              canEdit={isEditable || canCloneForEdit}
-              onAddOption={onAddOption}
-              onCreateChild={onCreateChild}
-              onDeleteOption={onDeleteOption}
-              onDeleteStep={onDeleteStep}
-              onEditOption={onEditOption}
-              onSelectNode={onSelectNode}
-              onUpdateNode={onUpdateNode}
-              selectedNodeId={selectedNodeId}
-              version={version}
-            />
-          ) : (
-            <div className="rounded-md border border-border bg-background px-4 py-6 text-sm text-muted-foreground">
-              Carregando mapa interativo do fluxo...
-            </div>
-          )}
-
-          <div className="mt-6 border-t border-border pt-5">
-            <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
-              <div>
-                <div className="text-xs font-semibold uppercase text-muted-foreground">
-                  Fluxo de pontuacao
-                </div>
-                <h2 className="mt-1 text-lg font-semibold">
-                  {version?.name ?? simulationId ?? "Teste"}{" "}
-                  {versionNumber ? `v${versionNumber}` : ""}
-                </h2>
-              </div>
-              <span className="rounded-md border border-border bg-background px-2 py-1 text-[11px] text-muted-foreground">
-                blocos da versao
-              </span>
-            </div>
-
-            {loading ? (
-              <div className="rounded-md border border-border bg-background px-4 py-6 text-sm text-muted-foreground">
-                Carregando etapas, tempos configurados e competencias...
-              </div>
-            ) : error ? (
-              <StateBanner tone="danger" title="Nao foi possivel carregar o fluxo">
-                {error.message}
-              </StateBanner>
-            ) : steps.length > 0 ? (
-              <div className="grid gap-3">
-                {steps.map((step) => (
-                  <InteractiveStepCard
-                    key={step.node.id}
-                    canCloneForEdit={canCloneForEdit}
-                    isEditable={isEditable}
-                    onAddOption={onAddOption}
-                    onAddSubflow={onAddSubflow}
-                    onConfigureTimeout={onConfigureTimeout}
-                    onDeleteOption={onDeleteOption}
-                    onDeleteStep={onDeleteStep}
-                    onEditOption={onEditOption}
-                    onOpenEditor={onOpenEditor}
-                    onSelectNode={onSelectNode}
-                    selectedNodeId={selectedNodeId}
-                    step={step}
-                    version={version!}
-                  />
-                ))}
-              </div>
-            ) : (
-              <div className="rounded-md border border-border bg-background px-4 py-6 text-sm text-muted-foreground">
-                Nenhuma etapa cadastrada para esta versao.
-              </div>
-            )}
-
-            {version && steps.length > 0 && <FlowOutcomeSummary version={version} />}
-          </div>
-        </div>
-      </div>
+      <FlowCanvas
+        canEdit={isEditable || canCloneForEdit}
+        onAddOption={onAddOption}
+        onCreateChild={onCreateChild}
+        onDeleteOption={onDeleteOption}
+        onDeleteStep={onDeleteStep}
+        onEditOption={onEditOption}
+        onSelectNode={onSelectNode}
+        onUpdateNode={onUpdateNode}
+        selectedNodeId={selectedNodeId}
+        version={version}
+      />
     </section>
   );
 }
