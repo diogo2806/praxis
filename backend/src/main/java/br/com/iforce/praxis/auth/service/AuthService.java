@@ -25,7 +25,7 @@ public class AuthService {
     public LoginResponse login(LoginRequest request) {
         UserEntity user = loadUser(request);
         if (!passwordEncoder.matches(request.password(), user.getPasswordHash())) {
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Credenciais invalidas.");
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Credenciais inválidas.");
         }
 
         String token = jwtService.generateToken(user.getId().toString(), user.getTenantId(), user.getRoles());
@@ -34,10 +34,10 @@ public class AuthService {
 
     private UserEntity loadUser(LoginRequest request) {
         if (request.tenantId() == null || request.tenantId().isBlank()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "tenantId e obrigatorio.");
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Informe a empresa.");
         }
 
         return userRepository.findFirstByEmailAndTenantId(request.email(), request.tenantId())
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Credenciais invalidas."));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Credenciais inválidas."));
     }
 }

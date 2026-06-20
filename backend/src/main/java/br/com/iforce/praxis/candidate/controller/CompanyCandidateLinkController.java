@@ -32,7 +32,7 @@ public class CompanyCandidateLinkController {
     @GetMapping
     @Operation(
             summary = "Lista links de candidatos",
-            description = "Retorna as tentativas do tenant com URL publica para compartilhamento."
+            description = "Retorna as tentativas da empresa com URL publica para compartilhamento."
     )
     public ResponseEntity<List<CandidateLinkResponse>> listCandidateLinks() {
         return ResponseEntity.ok(candidateAttemptService.listCompanyLinks());

@@ -11,7 +11,7 @@ public record ValidationIssueResponse(
         @Schema(example = "turno-1")
         String nodeId,
 
-        @Schema(example = "A opção aponta para um nó inexistente.")
+        @Schema(example = "Uma resposta aponta para uma etapa que não existe.")
         String message
 ) {
 }

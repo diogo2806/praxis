@@ -47,16 +47,16 @@ public class TalentMatchService {
         List<String> normalizedAttemptIds = normalizeAttemptIds(attemptIds);
         SimulationVersionEntity simulationVersionEntity = simulationVersionRepository
                 .findBySimulationTenantIdAndSimulationIdAndVersionNumber(tenantId, simulationId, versionNumber)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Versao de simulacao nao encontrada."));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Versão de simulação não encontrada."));
 
         List<CandidateAttemptEntity> attempts = candidateAttemptRepository.findAllByIdInWithResultItems(normalizedAttemptIds);
         if (attempts.size() != normalizedAttemptIds.size()) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Uma ou mais tentativas nao foram encontradas.");
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Uma ou mais tentativas não foram encontradas.");
         }
 
         boolean crossTenant = attempts.stream().anyMatch(attempt -> !Objects.equals(attempt.getTenantId(), tenantId));
         if (crossTenant) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Tentativa nao pertence ao tenant autenticado.");
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Você não tem acesso a uma ou mais tentativas selecionadas.");
         }
 
         boolean versionMismatch = attempts.stream().anyMatch(attempt ->
@@ -65,7 +65,7 @@ public class TalentMatchService {
                         || !Objects.equals(attempt.getSimulationVersionId(), simulationVersionEntity.getId())
         );
         if (versionMismatch) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Todas as tentativas devem pertencer a mesma versao da simulacao.");
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Todas as tentativas devem pertencer à mesma versão da simulação.");
         }
 
         List<SimulationCompetencyEntity> competencies = simulationVersionEntity.getCompetencies().stream()
@@ -102,7 +102,7 @@ public class TalentMatchService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Selecione ao menos uma tentativa.");
         }
         if (normalized.size() > MAX_SELECTED_CANDIDATES) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Selecione no maximo 5 candidatos.");
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Selecione no máximo 5 candidatos.");
         }
 
         return normalized;

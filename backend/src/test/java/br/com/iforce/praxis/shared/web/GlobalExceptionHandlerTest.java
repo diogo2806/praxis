@@ -23,7 +23,7 @@ class GlobalExceptionHandlerTest {
         assertThat(response.getBody()).isNotNull();
         assertThat(response.getBody().status()).isEqualTo(404);
         assertThat(response.getBody().error()).isEqualTo("Not Found");
-        assertThat(response.getBody().message()).isEqualTo("Recurso nao encontrado.");
+        assertThat(response.getBody().message()).isEqualTo("Recurso não encontrado.");
         assertThat(response.getBody().path()).isEqualTo("/.git/config");
     }
 }

@@ -5,7 +5,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
-@Schema(description = "Payload para criar um turno no grafo da simulacao.")
+@Schema(description = "Dados para criar uma etapa do teste.")
 public record CreateNodeRequest(
         @NotBlank
         @Size(max = 1200)
@@ -16,11 +16,11 @@ public record CreateNodeRequest(
         Integer timeLimitSeconds,
 
         @Size(max = 1000)
-        @Schema(example = "Turno inicial com pressao alta.")
+        @Schema(example = "Etapa inicial com pressao alta.")
         String timeJustification,
 
         @Size(max = 120)
-        @Schema(description = "Proximo no usado quando o tempo do turno esgota. Nulo encerra a trilha.", nullable = true)
+        @Schema(description = "Próxima etapa usada quando o tempo da etapa esgota. Nulo encerra a trilha.", nullable = true)
         String timeoutNextNodeId,
 
         @Size(max = 1500)
@@ -28,11 +28,11 @@ public record CreateNodeRequest(
         String plainTextDescription,
 
         @Size(max = 1000)
-        @Schema(description = "URL publica de audio descritivo do turno.", nullable = true)
+        @Schema(description = "URL publica de audio descritivo da etapa.", nullable = true)
         String audioDescriptionUrl,
 
         @Size(max = 1000)
-        @Schema(description = "URL pública da imagem ou áudio anexado ao turno.", nullable = true)
+        @Schema(description = "URL pública da imagem ou áudio anexado à etapa.", nullable = true)
         String mediaUrl,
 
         @Schema(description = "Tipo da mídia anexada (IMAGE ou AUDIO).", nullable = true)

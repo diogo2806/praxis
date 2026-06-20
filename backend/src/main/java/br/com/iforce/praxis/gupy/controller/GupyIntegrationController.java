@@ -96,7 +96,7 @@ public class GupyIntegrationController {
     @Operation(summary = "Registra candidato", description = "Cria ou reutiliza tentativa por company_id, document_id e test_id.")
     @ApiResponses({
             @ApiResponse(responseCode = "201", description = "Tentativa criada ou reutilizada."),
-            @ApiResponse(responseCode = "400", description = "Payload invalido.", content = @Content(examples = @ExampleObject(value = ERROR_EXAMPLE))),
+            @ApiResponse(responseCode = "400", description = "Dados invalidos.", content = @Content(examples = @ExampleObject(value = ERROR_EXAMPLE))),
             @ApiResponse(responseCode = "403", description = "Acesso negado.", content = @Content(examples = @ExampleObject(value = ERROR_EXAMPLE))),
             @ApiResponse(responseCode = "409", description = "Conflito de idempotencia ou estado.", content = @Content(examples = @ExampleObject(value = ERROR_EXAMPLE)))
     })
@@ -109,7 +109,7 @@ public class GupyIntegrationController {
     }
 
     @GetMapping("/test/result/{resultId}")
-    @Operation(summary = "Consulta resultado", description = "Retorna o TestResult para a Gupy, incluindo score e competências.")
+    @Operation(summary = "Consulta resultado", description = "Retorna o resultado do teste para a Gupy, incluindo pontuação e competências.")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Resultado retornado."),
             @ApiResponse(responseCode = "400", description = "Parametro invalido.", content = @Content(examples = @ExampleObject(value = ERROR_EXAMPLE))),

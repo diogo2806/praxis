@@ -159,7 +159,7 @@ public class ResultScoringService {
             }
 
             if (answer.timedOut() || answer.optionId() == null) {
-                // Timeout do turno: nivel 0 naquele no e continuidade pela rota configurada.
+                // Timeout do turno: nível 0 naquele nó e continuidade pela rota configurada.
                 path.add(new PathStep(currentNode, null, answer, currentTurnReceivedAt));
                 currentTurnReceivedAt = answer.answeredAt();
                 currentNodeId = currentNode.timeoutNextNodeId();
@@ -179,14 +179,14 @@ public class ResultScoringService {
         return simulation.nodes().stream()
                 .filter(node -> node.id().equals(nodeId))
                 .findFirst()
-                .orElseThrow(() -> new IllegalStateException("Grafo da simulacao invalido."));
+                .orElseThrow(() -> new IllegalStateException("Estado interno inválido."));
     }
 
     private ScenarioOption findOption(ScenarioNode node, String optionId) {
         return node.options().stream()
                 .filter(option -> option.id().equals(optionId))
                 .findFirst()
-                .orElseThrow(() -> new IllegalStateException("Resposta salva aponta para alternativa invalida."));
+                .orElseThrow(() -> new IllegalStateException("Estado interno inválido."));
     }
 
     private ResultTier tierFor(String competencyName) {

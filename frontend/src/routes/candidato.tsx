@@ -1,10 +1,11 @@
 import { createFileRoute, Link, Outlet, useChildMatches } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { useEffect, useState, type CSSProperties } from "react";
+import { useCallback, useEffect, useState, type CSSProperties } from "react";
 import { AppShell } from "@/components/app-shell";
 import { EmptyState } from "@/components/praxis-ui";
 import {
   getCandidateAttempt,
+  PraxisApiError,
   submitCandidateAnswer,
   type CandidateAttemptResponse,
   type CandidateNodeResponse,
@@ -15,7 +16,7 @@ import { cn } from "@/lib/utils";
 export const Route = createFileRoute("/candidato")({
   head: () => ({
     meta: [
-      { title: "Avaliação do Candidato - Praxis" },
+      { title: "Teste do candidato - Praxis" },
       {
         name: "description",
         content: "Experiência mobile-first com timer, respostas claras, retomada e acessibilidade.",
@@ -24,6 +25,28 @@ export const Route = createFileRoute("/candidato")({
   }),
   component: CandidateRouteLayout,
 });
+
+const SUBMIT_ERROR_MESSAGES: Record<number, string> = {
+  400: "Não consegui registrar agora. Toque na resposta de novo, por favor.",
+  409: "O tempo desta etapa terminou. Sua resposta foi registrada e seguimos para a próxima.",
+};
+
+const LOAD_ERROR_MESSAGES: Record<number, string> = {
+  400: "Não consegui abrir este teste. Verifique o link recebido e tente novamente.",
+  404: "Não encontrei este teste. Verifique o link recebido e tente novamente.",
+  409: "Este teste não está mais disponível.",
+};
+
+function friendlyApiErrorMessage(
+  error: unknown,
+  messagesByStatus: Record<number, string>,
+  fallback: string,
+) {
+  if (error instanceof PraxisApiError) {
+    return messagesByStatus[error.status] ?? fallback;
+  }
+  return fallback;
+}
 
 // `candidato.tsx` is the parent route of `candidato.$token.tsx`, so it must
 // render an <Outlet /> for the token experience to show. Without it, opening
@@ -46,7 +69,7 @@ function CandidateEntryPage() {
     <AppShell>
       <EmptyState
         title="Código de acesso obrigatório"
-        description="Para abrir a avaliação, use o código de acesso enviado pelo convite. Cole aqui ou abra o link do e-mail."
+        description="Para abrir o teste, use o código de acesso enviado pelo convite. Cole aqui ou abra o link do e-mail."
         actions={
           <div className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_auto_auto]">
             <input
@@ -62,7 +85,7 @@ function CandidateEntryPage() {
                 !normalizedToken ? "pointer-events-none opacity-50" : ""
               }`}
             >
-              Abrir avaliação
+              Abrir teste
             </Link>
             <Link
               to="/"
@@ -108,7 +131,7 @@ function CandidateMedia({
 function FocusedCandidateExperience({ token }: { token: string }) {
   const [liveAttempt, setLiveAttempt] = useState<CandidateAttemptResponse | null>(null);
   const [remaining, setRemaining] = useState(30);
-  const [selected, setSelected] = useState<string | null>(null);
+  const [selectedOptionId, setSelectedOptionId] = useState<string | null>(null);
   const [highContrast, setHighContrast] = useState(false);
   const [largeText, setLargeText] = useState(false);
   const [dyslexiaFont, setDyslexiaFont] = useState(false);
@@ -134,10 +157,56 @@ function FocusedCandidateExperience({ token }: { token: string }) {
     currentNode?.tempoLimiteSegundosAcomodado ?? currentNode?.tempoLimiteSegundos ?? 30,
   );
   const timePercentage = finished ? 0 : Math.max(0, Math.min(100, (remaining / timeLimit) * 100));
+  const currentStep = attempt?.progresso?.passoAtual ?? currentNode?.numero ?? 1;
+  const totalSteps = Math.max(currentStep, attempt?.progresso?.passosEstimados ?? currentStep);
+  const selectedOption = currentNode?.alternativas.find((option) => option.id === selectedOptionId);
+
+  const submitAnswer = useCallback(
+    async (node: CandidateNodeResponse, optionId: string | null, timedOut: boolean) => {
+      if (!attempt) return;
+      setSubmittingAnswer(true);
+      setSubmitError(null);
+
+      try {
+        const response = await submitCandidateAnswer(token, {
+          etapaId: node.id,
+          etapaNumero: node.numero,
+          respostaId: optionId,
+          respondidaEm: new Date().toISOString(),
+          tempoEsgotado: timedOut,
+        });
+        setLiveAttempt({
+          participacaoId: response.participacaoId,
+          avaliacaoNome: attempt.avaliacaoNome,
+          status: response.status,
+          finalizado: response.finalizado,
+          acaoSugeridaFrontend: response.finalizado
+            ? "VER_RESULTADOS"
+            : attempt.acaoSugeridaFrontend,
+          progresso: response.progresso,
+          etapaAtual: response.etapaAtual,
+        });
+        setSelectedOptionId(null);
+        void attemptQuery.refetch();
+      } catch (error) {
+        setSubmitError(
+          friendlyApiErrorMessage(
+            error,
+            SUBMIT_ERROR_MESSAGES,
+            "Tivemos um problema ao salvar. Tente novamente.",
+          ),
+        );
+        setSelectedOptionId(null);
+      } finally {
+        setSubmittingAnswer(false);
+      }
+    },
+    [attempt, attemptQuery, token],
+  );
 
   useEffect(() => {
     setRemaining(timeLimit);
-    setSelected(null);
+    setSelectedOptionId(null);
   }, [currentNode?.numero, timeLimit]);
 
   useEffect(() => {
@@ -149,49 +218,10 @@ function FocusedCandidateExperience({ token }: { token: string }) {
   }, [submittingAnswer, currentNode, finished]);
 
   useEffect(() => {
-    if (remaining === 0 && !finished && currentNode && !selected && !submittingAnswer) {
-      setSelected("Sem resposta nesta etapa");
+    if (remaining === 0 && !finished && currentNode && !selectedOptionId && !submittingAnswer) {
       void submitAnswer(currentNode, null, true);
     }
-  }, [currentNode, finished, remaining, selected, submittingAnswer]);
-
-  async function submitAnswer(
-    node: CandidateNodeResponse,
-    optionId: string | null,
-    timedOut: boolean,
-  ) {
-    if (!attempt) return;
-    setSubmittingAnswer(true);
-    setSubmitError(null);
-
-    try {
-      const response = await submitCandidateAnswer(token, {
-        etapaId: node.id,
-        etapaNumero: node.numero,
-        respostaId: optionId,
-        respondidaEm: new Date().toISOString(),
-        tempoEsgotado: timedOut,
-      });
-      setLiveAttempt({
-        participacaoId: response.participacaoId,
-        avaliacaoNome: attempt.avaliacaoNome,
-        status: response.status,
-        finalizado: response.finalizado,
-        acaoSugeridaFrontend: response.finalizado ? "VER_RESULTADOS" : attempt.acaoSugeridaFrontend,
-        progresso: response.progresso,
-        etapaAtual: response.etapaAtual,
-      });
-      setSelected(null);
-      void attemptQuery.refetch();
-    } catch (error) {
-      setSubmitError(
-        error instanceof Error ? error.message : "Nao foi possivel registrar a resposta.",
-      );
-      setSelected(null);
-    } finally {
-      setSubmittingAnswer(false);
-    }
-  }
+  }, [currentNode, finished, remaining, selectedOptionId, submitAnswer, submittingAnswer]);
 
   const pageClass = cn(
     "min-h-screen px-4 py-5 transition-colors sm:px-6",
@@ -220,36 +250,62 @@ function FocusedCandidateExperience({ token }: { token: string }) {
       ? "border-white bg-black text-white hover:bg-white hover:text-black"
       : "border-slate-200 bg-white text-slate-950 hover:border-blue-600 hover:bg-blue-50",
   );
+  const selectedOptionClass = highContrast
+    ? "border-yellow-300 bg-white text-black"
+    : "border-blue-700 bg-blue-50 ring-2 ring-blue-700/20";
+  const primaryButtonClass = cn(
+    "inline-flex w-full items-center justify-center rounded-md px-5 py-3 text-sm font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto",
+    highContrast
+      ? "border border-white bg-white text-black hover:bg-zinc-200"
+      : "bg-blue-700 text-white hover:bg-blue-800",
+  );
 
   return (
     <main className={pageClass} style={fontStyle}>
       <section className={panelClass}>
-        <div className="mb-5 flex flex-wrap items-center justify-end gap-2">
-          <button
-            type="button"
-            className={controlClass}
-            onClick={() => setHighContrast((value) => !value)}
-          >
-            Contraste
-          </button>
-          <button
-            type="button"
-            className={controlClass}
-            onClick={() => setLargeText((value) => !value)}
-          >
-            A{largeText ? "-" : "+"}
-          </button>
-          <button
-            type="button"
-            className={controlClass}
-            onClick={() => setDyslexiaFont((value) => !value)}
-          >
-            Leitura
-          </button>
+        <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
+          <div className="text-sm font-semibold uppercase tracking-wide opacity-70">
+            Acessibilidade
+          </div>
+          <div className="flex flex-wrap justify-end gap-2">
+            <button
+              type="button"
+              className={controlClass}
+              onClick={() => setHighContrast((value) => !value)}
+              aria-pressed={highContrast}
+              title="Alterna para alto contraste"
+            >
+              Alto contraste
+            </button>
+            <button
+              type="button"
+              className={controlClass}
+              onClick={() => setLargeText((value) => !value)}
+              aria-pressed={largeText}
+              title="Aumenta o tamanho do texto"
+            >
+              Texto {largeText ? "normal" : "maior"}
+            </button>
+            <button
+              type="button"
+              className={controlClass}
+              onClick={() => setDyslexiaFont((value) => !value)}
+              aria-pressed={dyslexiaFont}
+              title="Troca para uma fonte mais fácil de ler"
+            >
+              Fonte para dislexia
+            </button>
+          </div>
         </div>
 
         {currentNode && !finished && (
           <div className="mb-8 space-y-3">
+            <div className="flex flex-wrap items-center justify-between gap-2 text-sm font-medium">
+              <span>
+                Etapa {currentStep} de {totalSteps}
+              </span>
+              <span className="tabular-nums">{remaining}s restantes</span>
+            </div>
             <div
               className={cn(
                 "h-2 w-full overflow-hidden rounded-full",
@@ -270,18 +326,20 @@ function FocusedCandidateExperience({ token }: { token: string }) {
         {attemptQuery.isLoading ? (
           <div className="flex flex-1 flex-col justify-center">
             <div className="text-sm font-medium uppercase tracking-wide opacity-70">Carregando</div>
-            <h1 className="mt-3 text-3xl font-semibold">Preparando sua avaliação.</h1>
+            <h1 className="mt-3 text-3xl font-semibold">Preparando seu teste.</h1>
           </div>
         ) : attemptQuery.isError && !attempt ? (
           <div className="flex flex-1 flex-col justify-center">
             <div className="text-sm font-medium uppercase tracking-wide text-red-600">
               Acesso indisponível
             </div>
-            <h1 className="mt-3 text-3xl font-semibold">Não foi possível carregar a avaliação.</h1>
+            <h1 className="mt-3 text-3xl font-semibold">Não foi possível carregar o teste.</h1>
             <p className="mt-3 max-w-xl opacity-80">
-              {attemptQuery.error instanceof Error
-                ? attemptQuery.error.message
-                : "Verifique o link recebido e tente novamente."}
+              {friendlyApiErrorMessage(
+                attemptQuery.error,
+                LOAD_ERROR_MESSAGES,
+                "Verifique o link recebido e tente novamente.",
+              )}
             </p>
           </div>
         ) : currentNode && !finished ? (
@@ -289,9 +347,13 @@ function FocusedCandidateExperience({ token }: { token: string }) {
             <div className="mx-auto w-full max-w-2xl">
               <div className="mb-6 text-center">
                 <div className="text-sm font-medium uppercase tracking-wide opacity-70">
-                  {attempt?.avaliacaoNome ?? "Avaliação"}
+                  {attempt?.avaliacaoNome ?? "Teste"}
                 </div>
                 <h1 className="mt-3 text-2xl font-semibold sm:text-3xl">{currentNode.pessoa}</h1>
+                <p className="mt-3 text-sm font-medium opacity-75">
+                  Escolha uma alternativa. Você pode trocar antes de confirmar; depois de confirmar,
+                  a resposta é final.
+                </p>
               </div>
 
               <div className="space-y-4 text-center">
@@ -326,12 +388,16 @@ function FocusedCandidateExperience({ token }: { token: string }) {
                     <button
                       type="button"
                       onClick={() => {
-                        setSelected(option.texto);
-                        void submitAnswer(currentNode, option.id, false);
+                        setSubmitError(null);
+                        setSelectedOptionId(option.id);
                       }}
-                      disabled={submittingAnswer || selected !== null}
-                      className={optionClass}
+                      disabled={submittingAnswer}
+                      className={cn(
+                        optionClass,
+                        selectedOptionId === option.id && selectedOptionClass,
+                      )}
                       aria-label={option.descricaoAcessivel || option.texto}
+                      aria-pressed={selectedOptionId === option.id}
                     >
                       {option.texto}
                     </button>
@@ -350,9 +416,19 @@ function FocusedCandidateExperience({ token }: { token: string }) {
                 ))}
               </div>
 
-              {selected && (
-                <div className="mt-5 text-center text-sm font-medium opacity-75" aria-live="polite">
-                  {submittingAnswer ? "Registrando resposta..." : "Resposta registrada."}
+              {selectedOption && (
+                <div className="mt-5 space-y-3 text-center" aria-live="polite">
+                  <div className="text-sm font-medium opacity-75">
+                    Alternativa selecionada. Confirme para enviar sua resposta final.
+                  </div>
+                  <button
+                    type="button"
+                    className={primaryButtonClass}
+                    onClick={() => submitAnswer(currentNode, selectedOption.id, false)}
+                    disabled={submittingAnswer}
+                  >
+                    {submittingAnswer ? "Registrando resposta..." : "Confirmar resposta final"}
+                  </button>
                 </div>
               )}
               {submitError && (

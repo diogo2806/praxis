@@ -67,7 +67,7 @@ public class JwtService {
     public CandidateAttemptToken parseCandidateAttemptToken(String token) {
         Claims claims = parse(token);
         if (!CANDIDATE_ATTEMPT_TOKEN_TYPE.equals(claims.get("typ", String.class))) {
-            throw new IllegalArgumentException("Token publico de candidato invalido.");
+            throw new IllegalArgumentException("Token público de candidato inválido.");
         }
         String tenantId = claims.get("tenant_id", String.class);
         String attemptId = claims.get("attempt_id", String.class);

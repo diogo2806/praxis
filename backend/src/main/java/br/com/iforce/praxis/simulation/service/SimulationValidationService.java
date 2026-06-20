@@ -43,7 +43,7 @@ public class SimulationValidationService {
             issues.add(new ValidationIssueResponse(
                     ValidationIssueSeverity.BLOCKER,
                     simulationVersionEntity.getRootNodeId(),
-                    "Nó raiz não encontrado na versão."
+                    "A primeira etapa do teste não foi encontrada. Escolha uma etapa inicial válida."
             ));
         }
 
@@ -92,7 +92,7 @@ public class SimulationValidationService {
                 issues.add(new ValidationIssueResponse(
                         ValidationIssueSeverity.BLOCKER,
                         node.getNodeId(),
-                        "Há nós duplicados com o mesmo identificador."
+                        "Há etapas duplicadas com o mesmo identificador. Revise as etapas repetidas."
                 ));
             }
         }
@@ -108,7 +108,7 @@ public class SimulationValidationService {
             issues.add(new ValidationIssueResponse(
                     ValidationIssueSeverity.BLOCKER,
                     node.getNodeId(),
-                    "Cada turno precisa ter de 2 a 4 alternativas."
+                    "Cada etapa precisa ter de 2 a 4 respostas."
             ));
         }
 
@@ -132,7 +132,7 @@ public class SimulationValidationService {
                 issues.add(new ValidationIssueResponse(
                         ValidationIssueSeverity.BLOCKER,
                         node.getNodeId(),
-                        "Turno com continuidade precisa definir proximo no para timeout."
+                        "Esta etapa continua o teste, então escolha para qual etapa ir caso o tempo se esgote."
                 ));
             }
             return;
@@ -143,7 +143,7 @@ public class SimulationValidationService {
             issues.add(new ValidationIssueResponse(
                     ValidationIssueSeverity.BLOCKER,
                     node.getNodeId(),
-                    "Timeout aponta para um no inexistente."
+                    "O caminho usado quando o tempo se esgota aponta para uma etapa que não existe."
             ));
             return;
         }
@@ -152,7 +152,7 @@ public class SimulationValidationService {
             issues.add(new ValidationIssueResponse(
                     ValidationIssueSeverity.BLOCKER,
                     node.getNodeId(),
-                    "Timeout so pode apontar para turnos posteriores."
+                    "Quando o tempo se esgota, o teste só pode seguir para uma etapa posterior."
             ));
         }
     }
@@ -167,7 +167,7 @@ public class SimulationValidationService {
             issues.add(new ValidationIssueResponse(
                     ValidationIssueSeverity.BLOCKER,
                     node.getNodeId(),
-                    "Alternativa sem score de competência."
+                    "Uma resposta está sem pontuação de competência."
             ));
         }
 
@@ -176,7 +176,7 @@ public class SimulationValidationService {
                 issues.add(new ValidationIssueResponse(
                         ValidationIssueSeverity.BLOCKER,
                         node.getNodeId(),
-                        "Score de competência fora do intervalo 0-100."
+                        "A pontuação de competência deve ficar entre 0 e 100."
                 ));
             }
         }
@@ -185,7 +185,7 @@ public class SimulationValidationService {
             issues.add(new ValidationIssueResponse(
                     ValidationIssueSeverity.BLOCKER,
                     node.getNodeId(),
-                    "A alternativa aponta para um nó inexistente."
+                    "Uma resposta aponta para uma etapa que não existe."
             ));
         }
 
@@ -195,7 +195,7 @@ public class SimulationValidationService {
                 issues.add(new ValidationIssueResponse(
                         ValidationIssueSeverity.BLOCKER,
                         node.getNodeId(),
-                        "Ramificações só podem apontar para turnos posteriores."
+                        "As respostas só podem levar o candidato para etapas posteriores."
                 ));
             }
         }
@@ -210,7 +210,7 @@ public class SimulationValidationService {
             issues.add(new ValidationIssueResponse(
                     ValidationIssueSeverity.BLOCKER,
                     simulationVersionEntity.getRootNodeId(),
-                    "Versão sem competências configuradas."
+                    "O teste precisa ter pelo menos uma competência configurada."
             ));
             return;
         }
@@ -221,7 +221,7 @@ public class SimulationValidationService {
                 issues.add(new ValidationIssueResponse(
                         ValidationIssueSeverity.BLOCKER,
                         competency.getName(),
-                        "Peso de competência não pode ser negativo."
+                        "O peso de uma competência não pode ser negativo."
                 ));
             }
             weightSum += competency.getWeight();
@@ -231,7 +231,7 @@ public class SimulationValidationService {
             issues.add(new ValidationIssueResponse(
                     ValidationIssueSeverity.BLOCKER,
                     simulationVersionEntity.getRootNodeId(),
-                    "A soma dos pesos das competências deve ser 1.0 (atual: " + weightSum + ")."
+                    "Os pesos das competências precisam somar 100%. Soma atual: " + (weightSum * 100) + "%."
             ));
         }
     }
@@ -254,14 +254,14 @@ public class SimulationValidationService {
 
     private void validateWeightValues(List<Double> weights) {
         if (weights == null || weights.isEmpty()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Ao menos uma competencia e obrigatoria.");
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Ao menos uma competência é obrigatória.");
         }
 
         double sum = weights.stream().mapToDouble(weight -> weight == null ? 0.0 : weight).sum();
         if (Math.abs(sum - 1.0) > praxisProperties.competencyWeightTolerance()) {
             throw new ResponseStatusException(
                     HttpStatus.BAD_REQUEST,
-                    "Soma dos pesos deve ser 1.0 (tolerancia " + praxisProperties.competencyWeightTolerance() + ")."
+                    "Os pesos precisam somar 100%."
             );
         }
     }
@@ -274,7 +274,7 @@ public class SimulationValidationService {
             issues.add(new ValidationIssueResponse(
                     ValidationIssueSeverity.WARNING,
                     simulationVersionEntity.getRootNodeId(),
-                    "Grafo grande detectado — validação pode demorar."
+                    "Este teste tem muitas etapas. A validação pode demorar um pouco mais."
             ));
         }
     }
@@ -304,11 +304,13 @@ public class SimulationValidationService {
                 issues.add(new ValidationIssueResponse(
                         ValidationIssueSeverity.BLOCKER,
                         terminalNode.getNodeId(),
-                        "Caminho " + (i + 1) + " permite score maximo diferente ("
+                        "Um caminho do teste permite pontuação máxima diferente (caminho "
+                                + (i + 1)
+                                + ": "
                                 + String.format("%.2f", pathScore)
-                                + " vs "
+                                + ", referência: "
                                 + String.format("%.2f", referenceScore)
-                                + ")."
+                                + "). Revise a pontuação das respostas neste caminho."
                 ));
             }
         }
@@ -369,7 +371,7 @@ public class SimulationValidationService {
             issues.add(new ValidationIssueResponse(
                     ValidationIssueSeverity.BLOCKER,
                     rootNodeId,
-                    "A simulação excede a profundidade máxima de " + MAX_DEPTH_TURNS + " turnos (atual: " + longestPath + ")."
+                    "O teste passa do limite de " + MAX_DEPTH_TURNS + " etapas em um único caminho. Total atual: " + longestPath + "."
             ));
         }
     }
@@ -427,7 +429,7 @@ public class SimulationValidationService {
             issues.add(new ValidationIssueResponse(
                     ValidationIssueSeverity.BLOCKER,
                     nodeId,
-                    "Ciclo detectado no grafo da simulação."
+                    "Uma resposta leva de volta a uma etapa anterior e cria um caminho sem fim. Confira para onde cada resposta aponta."
             ));
             return;
         }
@@ -458,7 +460,7 @@ public class SimulationValidationService {
                 issues.add(new ValidationIssueResponse(
                         ValidationIssueSeverity.WARNING,
                         nodeId,
-                        "Nó não alcançável a partir do início da simulação."
+                        "Existe uma etapa que nenhum candidato chega a ver, porque nenhuma resposta leva até ela."
                 ));
             }
         }

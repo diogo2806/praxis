@@ -79,15 +79,15 @@ function GovernanceHub() {
         <h1 className="mt-1 text-3xl font-semibold">{t.governance.heading}</h1>
         <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
           Consulte o histórico das versões, abra o registro de auditoria e crie um novo rascunho
-          quando uma versão no ar precisar mudar. Aprovação e publicação continuam no fluxo
-          guiado de governança.
+          quando uma versão no ar precisar mudar. Aprovação e publicação continuam no fluxo guiado
+          de governança.
         </p>
       </div>
       <ComplianceScope current="governanca" />
 
       {hasGovernanceParams && auditQuery.isLoading && (
         <StateBanner tone="info" title={t.governance.auditRecordConnected}>
-          Buscando eventos da simulação {search.simulationId} v{search.versionNumber}.
+          Buscando eventos do teste {search.simulationId} v{search.versionNumber}.
         </StateBanner>
       )}
 
@@ -141,13 +141,15 @@ function GovernanceHub() {
                   name="governance-version-search"
                   value={simulationSearch}
                   onChange={(event) => setSimulationSearch(event.target.value)}
-                  placeholder="Buscar simulação"
+                  placeholder="Buscar teste"
                   className="input"
                 />
                 <select
                   value={statusFilter}
                   onChange={(event) =>
-                    setStatusFilter(event.target.value as "all" | "draft" | "published" | "archived")
+                    setStatusFilter(
+                      event.target.value as "all" | "draft" | "published" | "archived",
+                    )
                   }
                   className="rounded-md border border-border bg-background px-3 py-2 text-sm"
                 >
@@ -205,8 +207,8 @@ function GovernanceHub() {
             <Lock className="mt-0.5 h-3.5 w-3.5" />
             <span>
               Esta tela é consulta operacional. Publicar, aprovar ou reprovar uma versão é feito no
-              fluxo guiado, onde <Termo id="blocker">bloqueios</Termo> são validados antes da mudança
-              de estado.
+              fluxo guiado, onde <Termo id="blocker">bloqueios</Termo> são validados antes da
+              mudança de estado.
             </span>
           </div>
         </aside>
@@ -218,7 +220,7 @@ function GovernanceHub() {
             <p className="mt-2 text-sm text-muted-foreground">
               {hasGovernanceParams
                 ? `Isto cria um rascunho a partir da versão ${search.versionNumber}. Candidatos em andamento continuam na versão atual.`
-                : "Escolha uma simulação real antes de criar nova versão."}
+                : "Escolha um teste real antes de criar nova versão."}
             </p>
             <div className="mt-4 rounded-md border border-border bg-muted/45 p-3 text-xs text-muted-foreground">
               Um erro de digitação conta como mudança menor. Mudanças em pontuação, peso ou no fluxo
@@ -318,16 +320,14 @@ function SimulationLinks({
   const filteredSimulations = useMemo(() => {
     return simulations.filter((simulation) => {
       if (statusFilter !== "all" && simulation.status !== statusFilter) return false;
-      return (
-        !normalizedSearch || simulation.name.toLowerCase().includes(normalizedSearch)
-      );
+      return !normalizedSearch || simulation.name.toLowerCase().includes(normalizedSearch);
     });
   }, [normalizedSearch, simulations, statusFilter]);
 
   if (loading) {
     return (
       <div className="mt-4 rounded-md border border-border bg-background p-4 text-sm">
-        Carregando simulações...
+        Carregando testes...
       </div>
     );
   }
@@ -335,7 +335,7 @@ function SimulationLinks({
   if (simulations.length === 0) {
     return (
       <div className="mt-4 rounded-md border border-border bg-background p-4 text-sm text-muted-foreground">
-        Nenhuma simulação ativa encontrada.
+        Nenhum teste ativo encontrado.
       </div>
     );
   }
@@ -343,7 +343,7 @@ function SimulationLinks({
   if (filteredSimulations.length === 0) {
     return (
       <div className="mt-4 rounded-md border border-border bg-background p-4 text-sm text-muted-foreground">
-        Nenhuma simulação encontrada com os filtros atuais.
+        Nenhum teste encontrado com os filtros atuais.
       </div>
     );
   }
@@ -353,7 +353,7 @@ function SimulationLinks({
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>Simulação</TableHead>
+            <TableHead>Teste</TableHead>
             <TableHead>Status</TableHead>
             <TableHead className="text-right">Versão</TableHead>
             <TableHead className="text-right">Tentativas</TableHead>
@@ -373,7 +373,9 @@ function SimulationLinks({
                     maturity={maturityForStatus(simulation.status)}
                   />
                 </TableCell>
-                <TableCell className="text-right tabular-nums">v{simulation.versionNumber}</TableCell>
+                <TableCell className="text-right tabular-nums">
+                  v{simulation.versionNumber}
+                </TableCell>
                 <TableCell className="text-right tabular-nums">
                   {simulation.attemptsCreated.toLocaleString("pt-BR")}
                 </TableCell>

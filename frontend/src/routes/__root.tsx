@@ -28,9 +28,7 @@ function NotFoundComponent() {
       <div className="max-w-md text-center">
         <h1 className="text-7xl font-bold text-foreground">404</h1>
         <h2 className="mt-4 text-xl font-semibold text-foreground">{t.common.notFound}</h2>
-        <p className="mt-2 text-sm text-muted-foreground">
-          {t.common.pageNotFoundDesc}
-        </p>
+        <p className="mt-2 text-sm text-muted-foreground">{t.common.pageNotFoundDesc}</p>
         <div className="mt-6">
           <Link
             to="/app"
@@ -58,9 +56,7 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
         <h1 className="text-xl font-semibold tracking-tight text-foreground">
           {t.common.pageDidNotLoad}
         </h1>
-        <p className="mt-2 text-sm text-muted-foreground">
-          {t.common.somethingWentWrong}
-        </p>
+        <p className="mt-2 text-sm text-muted-foreground">{t.common.somethingWentWrong}</p>
         <div className="mt-6 flex flex-wrap justify-center gap-2">
           <button
             onClick={() => {
@@ -89,13 +85,13 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Práxis — Avaliação de candidatos de forma justa e clara" },
+      { title: "Práxis — Teste de candidatos de forma justa e clara" },
       {
         name: "description",
         content:
           "Práxis é uma plataforma para avaliar candidatos com situações reais do trabalho. Resultados justos e transparentes, sem inteligência artificial decidindo. Veja como funciona.",
       },
-      { property: "og:title", content: "Práxis — Avaliação de candidatos" },
+      { property: "og:title", content: "Práxis — Teste de candidatos" },
       {
         property: "og:description",
         content:

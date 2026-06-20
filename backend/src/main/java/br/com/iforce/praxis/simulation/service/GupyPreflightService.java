@@ -47,7 +47,7 @@ public class GupyPreflightService {
     public GupyPreflightResponse getPreflight(String simulationId, int versionNumber) {
         SimulationVersionEntity simulationVersionEntity = findVersion(simulationId, versionNumber);
         if (simulationVersionEntity.getStatus() != SimulationVersionStatus.PUBLISHED) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "Somente versoes publicadas podem passar no preflight Gupy.");
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Somente versões publicadas podem passar no preflight Gupy.");
         }
 
         return evaluate(simulationVersionEntity);
@@ -57,7 +57,7 @@ public class GupyPreflightService {
         String tenantId = currentTenantService.requiredTenantId();
         return simulationVersionRepository
                 .findBySimulationTenantIdAndSimulationIdAndVersionNumber(tenantId, simulationId, versionNumber)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Versao de simulacao nao encontrada."));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Versão de simulação não encontrada."));
     }
 
     public GupyPreflightResponse evaluate(SimulationVersionEntity simulationVersionEntity) {
@@ -80,45 +80,45 @@ public class GupyPreflightService {
     private GupyPreflightCheckResponse validatePublicBaseUrl() {
         String publicBaseUrl = praxisProperties.publicBaseUrl();
         if (isBlank(publicBaseUrl)) {
-            return blocker(GupyPreflightCheckCode.PUBLIC_BASE_URL, "URL publica do backend nao configurada.");
+            return blocker(GupyPreflightCheckCode.PUBLIC_BASE_URL, "URL pública do backend não configurada.");
         }
 
         try {
             URI uri = URI.create(publicBaseUrl);
             boolean hasHttpScheme = "http".equalsIgnoreCase(uri.getScheme()) || "https".equalsIgnoreCase(uri.getScheme());
             if (!hasHttpScheme || isBlank(uri.getHost())) {
-                return blocker(GupyPreflightCheckCode.PUBLIC_BASE_URL, "URL publica deve usar http ou https e conter host.");
+                return blocker(GupyPreflightCheckCode.PUBLIC_BASE_URL, "URL pública deve usar http ou https e conter host.");
             }
         } catch (IllegalArgumentException exception) {
-            return blocker(GupyPreflightCheckCode.PUBLIC_BASE_URL, "URL publica invalida.");
+            return blocker(GupyPreflightCheckCode.PUBLIC_BASE_URL, "URL pública inválida.");
         }
 
-        return ok(GupyPreflightCheckCode.PUBLIC_BASE_URL, "URL publica configurada.");
+        return ok(GupyPreflightCheckCode.PUBLIC_BASE_URL, "URL pública configurada.");
     }
 
     private GupyPreflightCheckResponse validateIntegrationToken() {
         String tenantId = currentTenantService.requiredTenantId();
         return tenantRepository.findById(tenantId)
                 .filter(tenant -> !isBlank(tenant.getIntegrationTokenHash()))
-                .map(tenant -> ok(GupyPreflightCheckCode.INTEGRATION_TOKEN, "Token de integracao configurado no tenant."))
-                .orElseGet(() -> blocker(GupyPreflightCheckCode.INTEGRATION_TOKEN, "Token de integracao Gupy nao configurado no tenant."));
+                .map(tenant -> ok(GupyPreflightCheckCode.INTEGRATION_TOKEN, "Token de integração configurado no tenant."))
+                .orElseGet(() -> blocker(GupyPreflightCheckCode.INTEGRATION_TOKEN, "Token de integração Gupy não configurado no tenant."));
     }
 
     private GupyPreflightCheckResponse validateSimulation(SimulationVersionEntity simulationVersionEntity) {
         SimulationValidationResponse validationResponse = simulationValidationService.validate(simulationVersionEntity);
         if (!validationResponse.publishable()) {
-            return blocker(GupyPreflightCheckCode.SIMULATION_VALIDATION, "Versao possui blockers no validador.");
+            return blocker(GupyPreflightCheckCode.SIMULATION_VALIDATION, "Versão possui blockers no validador.");
         }
 
         if (!validationResponse.issues().isEmpty()) {
             return new GupyPreflightCheckResponse(
                     GupyPreflightCheckCode.SIMULATION_VALIDATION,
                     GupyPreflightCheckStatus.WARNING,
-                    "Versao publicavel com avisos do validador."
+                    "Versão publicável com avisos do validador."
             );
         }
 
-        return ok(GupyPreflightCheckCode.SIMULATION_VALIDATION, "Versao publicavel sem avisos.");
+        return ok(GupyPreflightCheckCode.SIMULATION_VALIDATION, "Versão publicável sem avisos.");
     }
 
     private GupyPreflightCheckResponse ok(GupyPreflightCheckCode code, String message) {

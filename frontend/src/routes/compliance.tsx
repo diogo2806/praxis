@@ -67,7 +67,13 @@ const STATUS_BADGE_CLASS: Record<SimulationSummaryResponse["status"], string> = 
 };
 
 const mapSearchStatusToQuery = (status: string): SimulationSummaryResponse["status"] | null =>
-  status === "Publicado" ? "published" : status === "Bloqueado" ? "archived" : status === "Em validação" ? "draft" : null;
+  status === "Publicado"
+    ? "published"
+    : status === "Bloqueado"
+      ? "archived"
+      : status === "Em validação"
+        ? "draft"
+        : null;
 
 export const Route = createFileRoute("/compliance")({
   validateSearch: (search: Record<string, unknown>) => ({
@@ -80,7 +86,7 @@ export const Route = createFileRoute("/compliance")({
           : undefined,
   }),
   head: () => ({
-    meta: [{ title: "Compliance das simulações - Praxis" }],
+    meta: [{ title: "Compliance dos testes - Praxis" }],
   }),
   component: CompliancePage,
 });
@@ -158,11 +164,13 @@ function CompliancePage() {
     <AppShell>
       <div className="mx-auto max-w-6xl px-2 py-8 sm:px-6">
         <div className="mb-6">
-          <div className="text-[11px] font-semibold uppercase tracking-wider text-primary">Compliance</div>
-          <h1 className="mt-1 font-serif text-3xl leading-tight">Compliance das simulações</h1>
+          <div className="text-[11px] font-semibold uppercase tracking-wider text-primary">
+            Compliance
+          </div>
+          <h1 className="mt-1 font-serif text-3xl leading-tight">Compliance dos testes</h1>
           <p className="mt-2 max-w-3xl text-sm text-muted-foreground">
-            Cada linha é uma versão de simulação: status de governança, confiabilidade do resultado e bloqueios em
-            aberto, em um único lugar.
+            Cada linha é uma versão de teste: status de governança, confiabilidade do resultado e
+            bloqueios em aberto, em um único lugar.
           </p>
         </div>
 
@@ -173,7 +181,7 @@ function CompliancePage() {
               <input
                 value={query}
                 onChange={(event) => setQuery(event.target.value)}
-                placeholder="Buscar simulação, autor..."
+                placeholder="Buscar teste, autor..."
                 className="rounded-md border border-border bg-background px-2.5 py-1.5 text-xs outline-none focus:ring-1 focus:ring-ring"
               />
               <select
@@ -192,7 +200,7 @@ function CompliancePage() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Simulação</TableHead>
+                  <TableHead>Teste</TableHead>
                   <TableHead>Versão</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Confiabilidade</TableHead>
@@ -223,20 +231,29 @@ function CompliancePage() {
                 ) : rows.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={9} className="p-4 text-sm text-muted-foreground">
-                      Nenhuma simulação encontrada.
+                      Nenhum teste encontrado.
                     </TableCell>
                   </TableRow>
                 ) : (
                   rows.map((row) => {
                     const reliabilityTone: "published" | "draft" | "archived" =
-                      row.reliability >= CORTA ? "published" : row.reliability >= 55 ? "draft" : "archived";
+                      row.reliability >= CORTA
+                        ? "published"
+                        : row.reliability >= 55
+                          ? "draft"
+                          : "archived";
 
                     return (
-                      <TableRow key={`${row.id}-${row.versionNumber}`} className="border-t border-border hover:bg-muted/30">
+                      <TableRow
+                        key={`${row.id}-${row.versionNumber}`}
+                        className="border-t border-border hover:bg-muted/30"
+                      >
                         <TableCell className="px-4 py-2.5">
                           <div className="font-medium">{row.name}</div>
                         </TableCell>
-                        <TableCell className="px-4 py-2.5 font-mono text-xs">v{row.versionNumber}</TableCell>
+                        <TableCell className="px-4 py-2.5 font-mono text-xs">
+                          v{row.versionNumber}
+                        </TableCell>
                         <TableCell className="px-4 py-2.5">
                           <span
                             className={`inline-flex items-center rounded-md px-2 py-0.5 text-xs border ${STATUS_BADGE_CLASS[row.status]}`}
@@ -257,10 +274,14 @@ function CompliancePage() {
                             {row.reliability}/100
                           </span>
                         </TableCell>
-                        <TableCell className="px-4 py-2.5 text-sm text-muted-foreground">—</TableCell>
+                        <TableCell className="px-4 py-2.5 text-sm text-muted-foreground">
+                          —
+                        </TableCell>
                         <TableCell className="px-4 py-2.5">{row.resultUse ?? "—"}</TableCell>
                         <TableCell className="px-4 py-2.5">{row.attemptsCreated}</TableCell>
-                        <TableCell className="px-4 py-2.5 text-muted-foreground">{formatDate(row.updatedAt)}</TableCell>
+                        <TableCell className="px-4 py-2.5 text-muted-foreground">
+                          {formatDate(row.updatedAt)}
+                        </TableCell>
                         <TableCell className="px-4 py-2.5">
                           <Link
                             to="/compliance"
@@ -345,7 +366,9 @@ function ComplianceSheet({
 
         <div className="flex items-start justify-between border-b border-border px-5 py-4">
           <div>
-            <div className="text-[11px] uppercase tracking-wider text-muted-foreground">{versionTitle}</div>
+            <div className="text-[11px] uppercase tracking-wider text-muted-foreground">
+              {versionTitle}
+            </div>
             <div className="font-serif text-xl">Detalhes da versão</div>
           </div>
           <SheetClose asChild>
@@ -357,17 +380,25 @@ function ComplianceSheet({
 
         <div className="space-y-8 p-5">
           <section className="rounded-lg border border-border bg-background p-3 text-sm">
-            <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Aprovação / publicação</div>
+            <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              Aprovação / publicação
+            </div>
             <div className="mt-1.5">
-              <div className="font-medium">{validation?.publishable ? "Aprovador registrado" : "Sem aprovação final"}</div>
+              <div className="font-medium">
+                {validation?.publishable ? "Aprovador registrado" : "Sem aprovação final"}
+              </div>
               <div className="text-xs text-muted-foreground">
-                {validation ? `Status interno: ${validation.issues.length} validações processadas` : "Carregando validação..."}
+                {validation
+                  ? `Status interno: ${validation.issues.length} validações processadas`
+                  : "Carregando validação..."}
               </div>
             </div>
           </section>
 
           <section className="space-y-2">
-            <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Confiabilidade do resultado</div>
+            <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              Confiabilidade do resultado
+            </div>
             {loading || !version ? (
               <div className="rounded-md border border-border bg-card p-4 text-sm text-muted-foreground">
                 Carregando análise da versão...
@@ -382,15 +413,24 @@ function ComplianceSheet({
           </section>
 
           <section>
-            <div className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Trilha de auditoria</div>
+            <div className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              Trilha de auditoria
+            </div>
             <AuditoriaPanel events={auditEvents} />
           </section>
 
           {validation ? (
             <section className="rounded-lg border border-border bg-background p-3 text-sm">
-              <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Resumo técnico</div>
-              <div className="mt-1.5 text-muted-foreground">Bloqueios em aberto: {validation.blockerCount}</div>
-              <Link to="/governanca" className="mt-2 inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground">
+              <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                Resumo técnico
+              </div>
+              <div className="mt-1.5 text-muted-foreground">
+                Bloqueios em aberto: {validation.blockerCount}
+              </div>
+              <Link
+                to="/governanca"
+                className="mt-2 inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
+              >
                 <Link2 className="h-3.5 w-3.5" /> Abrir trilha técnica
               </Link>
             </section>
@@ -401,7 +441,13 @@ function ComplianceSheet({
   );
 }
 
-export function DossiePanel({ version, cutoff }: { version: SimulationVersionDetailResponse; cutoff: number }) {
+export function DossiePanel({
+  version,
+  cutoff,
+}: {
+  version: SimulationVersionDetailResponse;
+  cutoff: number;
+}) {
   const matrix = useMemo(() => buildMatrix(version), [version]);
   const paths = useMemo(() => buildPaths(version, matrix), [version, matrix]);
   const totalWeight = matrix.reduce((sum, item) => sum + item.peso, 0);
@@ -409,7 +455,9 @@ export function DossiePanel({ version, cutoff }: { version: SimulationVersionDet
   return (
     <div className="space-y-5 text-sm">
       <div className="rounded-lg border border-border bg-background">
-        <div className="px-3 py-2 text-xs font-semibold uppercase text-muted-foreground">Como esta versão é avaliada</div>
+        <div className="px-3 py-2 text-xs font-semibold uppercase text-muted-foreground">
+          Como esta versão é avaliada
+        </div>
         <Table>
           <TableHeader>
             <TableRow>
@@ -424,9 +472,14 @@ export function DossiePanel({ version, cutoff }: { version: SimulationVersionDet
               return (
                 <TableRow key={item.criterio}>
                   <TableCell className="font-medium">{item.criterio}</TableCell>
-                  <TableCell title={`peso ${item.peso} de ${totalWeight}`}>{percentual}% do score</TableCell>
-                  <TableCell className="text-muted-foreground" title="Quantos turnos da simulação cobram este critério">
-                    cobrado em {item.cobertura} turnos
+                  <TableCell title={`peso ${item.peso} de ${totalWeight}`}>
+                    {percentual}% do score
+                  </TableCell>
+                  <TableCell
+                    className="text-muted-foreground"
+                    title="Quantas etapas do teste cobram este critério"
+                  >
+                    cobrado em {item.cobertura} etapas
                   </TableCell>
                 </TableRow>
               );
@@ -437,7 +490,9 @@ export function DossiePanel({ version, cutoff }: { version: SimulationVersionDet
 
       <div>
         <div className="mb-2 flex items-center justify-between">
-          <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Caminhos possíveis</div>
+          <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+            Caminhos possíveis
+          </div>
           <div className="text-xs text-muted-foreground">
             Faixa de corte: <span className="font-semibold text-foreground">≥ {cutoff}/100</span>
           </div>
@@ -445,12 +500,17 @@ export function DossiePanel({ version, cutoff }: { version: SimulationVersionDet
 
         <div className="space-y-2">
           {paths.length === 0 ? (
-            <div className="rounded-md border border-border bg-card p-3 text-sm text-muted-foreground">Sem caminhos mapeados.</div>
+            <div className="rounded-md border border-border bg-card p-3 text-sm text-muted-foreground">
+              Sem caminhos mapeados.
+            </div>
           ) : (
             paths.map((path, index) => {
               const isPass = path.total >= cutoff;
               return (
-                <div key={path.sequence} className="rounded-md border border-border bg-background px-3 py-2">
+                <div
+                  key={path.sequence}
+                  className="rounded-md border border-border bg-background px-3 py-2"
+                >
                   <div className="flex items-center justify-between gap-3">
                     <span className="font-mono text-xs">{path.sequence}</span>
                     <span
@@ -522,8 +582,12 @@ export function AuditoriaPanel({ events }: { events: AuditEventResponse[] }) {
             ) : (
               visible.map((event) => (
                 <TableRow key={event.id}>
-                  <TableCell className="whitespace-nowrap px-3 py-2 text-xs text-muted-foreground">{formatDate(event.createdAt)}</TableCell>
-                  <TableCell className="whitespace-nowrap px-3 py-2 text-xs">{parseWho(event.metadata)}</TableCell>
+                  <TableCell className="whitespace-nowrap px-3 py-2 text-xs text-muted-foreground">
+                    {formatDate(event.createdAt)}
+                  </TableCell>
+                  <TableCell className="whitespace-nowrap px-3 py-2 text-xs">
+                    {parseWho(event.metadata)}
+                  </TableCell>
                   <TableCell className="px-3 py-2">{event.message}</TableCell>
                 </TableRow>
               ))
@@ -533,9 +597,7 @@ export function AuditoriaPanel({ events }: { events: AuditEventResponse[] }) {
       </div>
 
       <div className="flex items-center justify-between border-t border-border px-3 py-2 text-xs text-muted-foreground">
-        <span>
-          {events.length === 0 ? "0-0 de 0" : `${from + 1}-${to} de ${events.length}`}
-        </span>
+        <span>{events.length === 0 ? "0-0 de 0" : `${from + 1}-${to} de ${events.length}`}</span>
         <div className="flex gap-1">
           <button
             type="button"
@@ -582,7 +644,9 @@ function buildMatrix(version: SimulationVersionDetailResponse): MatrixItem[] {
 }
 
 function buildPaths(version: SimulationVersionDetailResponse, matrix: MatrixItem[]) {
-  const byId = new Map<string, (typeof version.nodes)[number]>(version.nodes.map((node) => [node.id, node]));
+  const byId = new Map<string, (typeof version.nodes)[number]>(
+    version.nodes.map((node) => [node.id, node]),
+  );
   const paths: PathCandidate[] = [];
   if (version.nodes.length === 0) return paths;
 

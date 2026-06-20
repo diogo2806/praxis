@@ -136,10 +136,10 @@ function Page() {
   return (
     <AppShell>
       <WizardStepper current="cenario" />
-    <ScreenStateStrip blockedReason="contexto do cliente precisa ser preenchido" />
+      <ScreenStateStrip blockedReason="contexto do cliente precisa ser preenchido" />
       <div className="mb-6">
         <div className="text-xs uppercase tracking-[0.2em] text-primary">Passo 2</div>
-            <h1 className="mt-1 font-display text-3xl">Personagem do cliente fictício</h1>
+        <h1 className="mt-1 font-display text-3xl">Personagem do cliente fictício</h1>
         <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
           O contexto informado aqui é salvo na primeira etapa da versão selecionada.
         </p>
@@ -147,7 +147,7 @@ function Page() {
 
       {!hasDraftContext ? (
         <EmptyState
-          title="Escolha uma simulação real"
+          title="Escolha um teste real"
           description="Esta etapa não usa personagem de exemplo."
           actions={
             <SimulationLinks
@@ -158,7 +158,7 @@ function Page() {
         />
       ) : tenantConfigLoading || versionQuery.isLoading ? (
         <StateBanner tone="info" title="Carregando fluxo da conversa">
-          Buscando a primeira etapa da simulação {search.simulationId} v{search.versionNumber}.
+          Buscando a primeira etapa do teste {search.simulationId} v{search.versionNumber}.
         </StateBanner>
       ) : tenantConfigError ? (
         <StateBanner tone="danger" title="Não foi possível carregar a configuração">
@@ -201,7 +201,7 @@ function Page() {
               >
                 {versionStatus === "published"
                   ? "A versão no ar fica protegida. Crie um rascunho para editar sem afetar candidatos em andamento."
-                    : "Atualize a etapa atual da versão antes de alterar o personagem."}
+                  : "Atualize a etapa atual da versão antes de alterar o personagem."}
               </StateBanner>
             </div>
           )}
@@ -276,7 +276,9 @@ function Page() {
                 onChange={(event) => setContext(event.target.value)}
               />
               <div className="mt-1 flex justify-end text-xs text-muted-foreground">
-                <span className={submitAttempted && context.trim().length === 0 ? "text-danger" : ""}>
+                <span
+                  className={submitAttempted && context.trim().length === 0 ? "text-danger" : ""}
+                >
                   {context.length}/{contextMaxLength}
                 </span>
               </div>

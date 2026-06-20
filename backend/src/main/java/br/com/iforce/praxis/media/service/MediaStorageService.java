@@ -3,6 +3,7 @@ package br.com.iforce.praxis.media.service;
 import br.com.iforce.praxis.config.ObjectStorageProperties;
 import br.com.iforce.praxis.media.dto.MediaUploadResponse;
 import br.com.iforce.praxis.shared.model.MediaType;
+import org.apache.tika.Tika;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -31,6 +32,7 @@ import java.util.UUID;
 public class MediaStorageService {
 
     private static final long MAX_FILE_SIZE_BYTES = 10L * 1024 * 1024;
+    private static final Tika TIKA = new Tika();
 
     private static final Map<String, String> IMAGE_EXTENSIONS = Map.of(
             "image/png", ".png",
@@ -40,15 +42,17 @@ public class MediaStorageService {
             "image/gif", ".gif"
     );
 
-    private static final Map<String, String> AUDIO_EXTENSIONS = Map.of(
-            "audio/mpeg", ".mp3",
-            "audio/mp3", ".mp3",
-            "audio/wav", ".wav",
-            "audio/x-wav", ".wav",
-            "audio/ogg", ".ogg",
-            "audio/webm", ".webm",
-            "audio/mp4", ".m4a",
-            "audio/aac", ".aac"
+    private static final Map<String, String> AUDIO_EXTENSIONS = Map.ofEntries(
+            Map.entry("audio/mpeg", ".mp3"),
+            Map.entry("audio/mp3", ".mp3"),
+            Map.entry("audio/wav", ".wav"),
+            Map.entry("audio/x-wav", ".wav"),
+            Map.entry("audio/vnd.wave", ".wav"),
+            Map.entry("audio/ogg", ".ogg"),
+            Map.entry("audio/webm", ".webm"),
+            Map.entry("audio/mp4", ".m4a"),
+            Map.entry("audio/x-m4a", ".m4a"),
+            Map.entry("audio/aac", ".aac")
     );
 
     private final ObjectStorageProperties properties;
@@ -73,11 +77,10 @@ public class MediaStorageService {
             throw new ResponseStatusException(HttpStatus.PAYLOAD_TOO_LARGE, "Mídia excede o tamanho máximo de 10MB.");
         }
 
-        String contentType = file.getContentType() == null
-                ? ""
-                : file.getContentType().toLowerCase(Locale.ROOT).trim();
-        MediaType mediaType = resolveMediaType(contentType);
-        String extension = extensionFor(mediaType, contentType);
+        byte[] bytes = readBytes(file);
+        String detectedContentType = normalizeContentType(TIKA.detect(bytes));
+        MediaType mediaType = resolveMediaType(detectedContentType);
+        String extension = extensionFor(mediaType, detectedContentType);
         String key = "media/" + UUID.randomUUID() + extension;
 
         ensureBucket();
@@ -86,12 +89,10 @@ public class MediaStorageService {
                     PutObjectRequest.builder()
                             .bucket(properties.bucket())
                             .key(key)
-                            .contentType(contentType)
+                            .contentType(detectedContentType)
                             .build(),
-                    RequestBody.fromInputStream(file.getInputStream(), file.getSize())
+                    RequestBody.fromBytes(bytes)
             );
-        } catch (IOException exception) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Não foi possível ler o arquivo enviado.", exception);
         } catch (RuntimeException exception) {
             throw new ResponseStatusException(
                     HttpStatus.BAD_GATEWAY,
@@ -100,7 +101,15 @@ public class MediaStorageService {
             );
         }
 
-        return new MediaUploadResponse(publicUrl(key), mediaType, contentType, file.getSize());
+        return new MediaUploadResponse(publicUrl(key), mediaType, detectedContentType, bytes.length);
+    }
+
+    private byte[] readBytes(MultipartFile file) {
+        try {
+            return file.getBytes();
+        } catch (IOException exception) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Não foi possível ler o arquivo enviado.", exception);
+        }
     }
 
     private MediaType resolveMediaType(String contentType) {
@@ -118,7 +127,16 @@ public class MediaStorageService {
 
     private String extensionFor(MediaType mediaType, String contentType) {
         Map<String, String> extensions = mediaType == MediaType.IMAGE ? IMAGE_EXTENSIONS : AUDIO_EXTENSIONS;
-        return extensions.getOrDefault(contentType, mediaType == MediaType.IMAGE ? ".img" : ".bin");
+        return extensions.get(contentType);
+    }
+
+    private String normalizeContentType(String contentType) {
+        if (contentType == null) {
+            return "";
+        }
+        int parametersStart = contentType.indexOf(';');
+        String value = parametersStart >= 0 ? contentType.substring(0, parametersStart) : contentType;
+        return value.toLowerCase(Locale.ROOT).trim();
     }
 
     private String publicUrl(String key) {

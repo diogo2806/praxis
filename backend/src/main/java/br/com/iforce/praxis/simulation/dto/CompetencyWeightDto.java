@@ -9,7 +9,7 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
-@Schema(description = "Competencia avaliada e seu peso normalizado no score final.")
+@Schema(description = "Competencia avaliada e seu peso na pontuação final. Na interface, os pesos devem somar 100%.")
 public record CompetencyWeightDto(
         @NotBlank
         @Size(max = 140)
@@ -19,7 +19,7 @@ public record CompetencyWeightDto(
         @NotNull
         @DecimalMin("0.0")
         @DecimalMax("1.0")
-        @Schema(example = "0.4")
+        @Schema(example = "0.4", description = "Peso normalizado para API. Equivale a 40% na interface.")
         Double weight,
 
         @Min(0)

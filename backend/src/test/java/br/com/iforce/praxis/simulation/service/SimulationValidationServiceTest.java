@@ -32,7 +32,7 @@ class SimulationValidationServiceTest {
         assertThat(response.publishable()).isFalse();
         assertThat(response.issues())
                 .anyMatch(issue -> issue.severity() == ValidationIssueSeverity.BLOCKER
-                        && issue.message().contains("soma dos pesos"));
+                        && issue.message().contains("pesos das competências precisam somar 100%"));
     }
 
     @Test
@@ -55,7 +55,7 @@ class SimulationValidationServiceTest {
         assertThat(response.publishable()).isFalse();
         assertThat(response.issues())
                 .anyMatch(issue -> issue.severity() == ValidationIssueSeverity.BLOCKER
-                        && issue.message().contains("profundidade máxima"));
+                        && issue.message().contains("limite de 10 etapas"));
     }
 
     @Test
@@ -65,7 +65,7 @@ class SimulationValidationServiceTest {
         SimulationValidationResponse response = service.validate(version);
 
         assertThat(response.issues()).extracting(ValidationIssueResponse::message)
-                .noneMatch(message -> message.contains("profundidade máxima"));
+                .noneMatch(message -> message.contains("limite de 10 etapas"));
     }
 
     @Test
@@ -77,7 +77,7 @@ class SimulationValidationServiceTest {
         assertThat(response.publishable()).isFalse();
         assertThat(response.issues())
                 .anyMatch(issue -> issue.severity() == ValidationIssueSeverity.BLOCKER
-                        && issue.message().contains("score maximo diferente"));
+                        && issue.message().contains("pontuação máxima diferente"));
     }
 
     private SimulationVersionEntity singleNodeVersion(Map<String, Double> weights) {

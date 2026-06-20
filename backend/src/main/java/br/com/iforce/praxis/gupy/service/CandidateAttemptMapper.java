@@ -61,7 +61,7 @@ public class CandidateAttemptMapper {
                 false,
                 ReliabilityLevel.NORMAL,
                 normalizeAccommodationMultiplier(request.accommodationTimeMultiplier()),
-                "Resultado ainda nao finalizado. A trilha auditavel sera preenchida apos a conclusao da simulacao.",
+                "Resultado ainda não finalizado. A trilha auditável será preenchida após a conclusão da simulação.",
                 Instant.now(),
                 null,
                 null

@@ -38,7 +38,7 @@ export const Route = createFileRoute("/nova/dialogo")({
   head: () => ({
     meta: [
       { title: "Editor de Diálogo - Práxis" },
-      { name: "description", content: "Edição do diálogo usada na revisão da simulação." },
+      { name: "description", content: "Edição do diálogo usada na revisão do teste." },
     ],
   }),
   component: DialogEditor,
@@ -279,7 +279,7 @@ function DialogEditor() {
         />
       ) : tenantConfigLoading || versionQuery.isLoading ? (
         <StateBanner tone="info" title="Carregando fluxo da conversa">
-          Buscando simulação {search.simulationId} v{search.versionNumber}.
+          Buscando teste {search.simulationId} v{search.versionNumber}.
         </StateBanner>
       ) : tenantConfigError ? (
         <StateBanner tone="danger" title="Não foi possível carregar a configuração">
@@ -389,7 +389,7 @@ function DialogEditor() {
                 <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
                   <div>
                     <div className="text-xs uppercase text-muted-foreground">{selected.id}</div>
-                    <h2 className="text-xl font-semibold">Turno {selected.turnIndex}</h2>
+                    <h2 className="text-xl font-semibold">Etapa {selected.turnIndex}</h2>
                   </div>
                   <button
                     type="button"
@@ -438,7 +438,7 @@ function DialogEditor() {
                     className="inline-flex items-center gap-2 rounded-md border border-border bg-card px-3 py-2 text-xs hover:bg-accent disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     <Save className="h-4 w-4" />
-                    {saveNodeMutation.isPending ? "Salvando..." : "Salvar turno"}
+                    {saveNodeMutation.isPending ? "Salvando..." : "Salvar etapa"}
                   </button>
                 </div>
                 <label className="mt-3 block max-w-40">
@@ -466,7 +466,7 @@ function DialogEditor() {
                 </label>
                 <div className="mt-3">
                   <span className="mb-1.5 block text-xs font-medium text-muted-foreground">
-                    Mídia do turno (opcional)
+                    Mídia da etapa (opcional)
                   </span>
                   <MediaAttachment
                     mediaUrl={selected.mediaUrl}
@@ -490,7 +490,7 @@ function DialogEditor() {
                 </div>
                 {selected.options.length < 2 && (
                   <p className="mt-2 rounded-md border border-warning/30 bg-warning/10 px-3 py-2 text-xs text-warning-foreground">
-                    Este turno precisa de pelo menos 2 alternativas antes da revisão.
+                    Esta etapa precisa de pelo menos 2 alternativas antes da revisão.
                   </p>
                 )}
                 <div className="mt-3 space-y-3">

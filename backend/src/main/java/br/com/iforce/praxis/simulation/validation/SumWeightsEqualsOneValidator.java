@@ -28,7 +28,7 @@ public class SumWeightsEqualsOneValidator implements ConstraintValidator<SumWeig
         if (!valid) {
             context.disableDefaultConstraintViolation();
             context.buildConstraintViolationWithTemplate(
-                            "A soma dos pesos das competencias deve ser 1.0 (atual: " + sum + ")."
+                            "Os pesos das competencias precisam somar 100% (atual: " + (sum * 100) + "%)."
                     )
                     .addPropertyNode("competencies")
                     .addConstraintViolation();

@@ -32,7 +32,7 @@ export const Route = createFileRoute("/enviar-link")({
       { title: "Enviar Link ao Candidato - Praxis" },
       {
         name: "description",
-        content: "Gere um link de simulação para enviar ao candidato por e-mail ou WhatsApp.",
+        content: "Gere um link de teste para enviar ao candidato por e-mail ou WhatsApp.",
       },
     ],
   }),
@@ -94,16 +94,16 @@ function EnviarLinkPage() {
   }
 
   function handleShareEmail() {
-    const subject = encodeURIComponent(`Simulação: ${simulationName}`);
+    const subject = encodeURIComponent(`Teste: ${simulationName}`);
     const body = encodeURIComponent(
-      `Olá ${candidateName},\n\nVocê foi convidado(a) para participar de uma simulação situacional.\n\nAcesse o link abaixo para iniciar:\n${generatedLink}\n\nBoa sorte!`,
+      `Olá ${candidateName},\n\nVocê foi convidado(a) para participar de um teste situacional.\n\nAcesse o link abaixo para iniciar:\n${generatedLink}\n\nBoa sorte!`,
     );
     window.open(`mailto:${candidateEmail}?subject=${subject}&body=${body}`);
   }
 
   function handleShareWhatsApp() {
     const text = encodeURIComponent(
-      `Olá ${candidateName}! Você foi convidado(a) para uma simulação situacional. Acesse: ${generatedLink}`,
+      `Olá ${candidateName}! Você foi convidado(a) para um teste situacional. Acesse: ${generatedLink}`,
     );
     window.open(`https://wa.me/?text=${text}`, "_blank");
   }
@@ -121,21 +121,21 @@ function EnviarLinkPage() {
 
   return (
     <AppShell>
-      <ScreenStateStrip blockedReason="sem simulações no ar para gerar link" />
+      <ScreenStateStrip blockedReason="sem testes no ar para gerar link" />
 
       <div className="mb-6">
         <div className="text-xs uppercase text-primary">Envio direto</div>
         <h1 className="mt-1 text-3xl font-semibold">Enviar link ao candidato</h1>
         <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
-          Selecione uma simulação no ar, preencha os dados do candidato e compartilhe o link por
-          e-mail ou WhatsApp.
+          Selecione um teste no ar, preencha os dados do candidato e compartilhe o link por e-mail
+          ou WhatsApp.
         </p>
       </div>
 
       <div className="mb-6 flex gap-4">
         <StepIndicator
           number={1}
-          label="Simulação"
+          label="Teste"
           active={step === "select"}
           done={step === "form" || step === "share"}
         />
@@ -152,7 +152,7 @@ function EnviarLinkPage() {
         <StateBanner tone="danger" title="Não foi possível gerar o link">
           {linkMutation.error instanceof Error
             ? linkMutation.error.message
-            : "Verifique se o sistema está disponível e se a simulação está no ar."}
+            : "Verifique se o sistema está disponível e se o teste está no ar."}
         </StateBanner>
       )}
 
@@ -255,7 +255,7 @@ function SelectSimulationStep({
 
   if (error) {
     return (
-      <StateBanner tone="danger" title="Não foi possível carregar as simulações">
+      <StateBanner tone="danger" title="Não foi possível carregar os testes">
         {errorMessage ?? "Verifique se o sistema está disponível e tente novamente."}
       </StateBanner>
     );
@@ -264,14 +264,14 @@ function SelectSimulationStep({
   if (simulations.length === 0) {
     return (
       <EmptyState
-        title="Nenhuma simulação no ar"
-        description="Coloque uma simulação no ar antes de gerar links para candidatos. Só simulações no ar podem ser enviadas."
+        title="Nenhum teste no ar"
+        description="Coloque um teste no ar antes de gerar links para candidatos. Só testes no ar podem ser enviados."
         actions={
           <Link
             to="/nova/blueprint"
             className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-3 text-sm font-medium text-primary-foreground hover:bg-primary/90"
           >
-            Criar simulação
+            Criar teste
           </Link>
         }
       />
@@ -280,12 +280,12 @@ function SelectSimulationStep({
 
   return (
     <div className="space-y-4">
-      <h2 className="text-lg font-semibold">Selecione a simulação no ar</h2>
+      <h2 className="text-lg font-semibold">Selecione o teste no ar</h2>
       <section className="rounded-md border border-border bg-card">
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Simulação</TableHead>
+              <TableHead>Teste</TableHead>
               <TableHead>Descrição</TableHead>
               <TableHead>Status</TableHead>
               <TableHead className="text-right">Versão</TableHead>
@@ -428,7 +428,7 @@ function CandidateFormStep({
       </div>
 
       <aside className="rounded-md border border-border bg-card p-5">
-        <h3 className="text-sm font-semibold">Simulação selecionada</h3>
+        <h3 className="text-sm font-semibold">Teste selecionado</h3>
         <div className="mt-3 space-y-2">
           <div className="font-medium text-foreground">{simulation.name}</div>
           <div className="text-xs text-muted-foreground">{simulation.description}</div>
@@ -477,7 +477,7 @@ function ShareStep({
   return (
     <div className="space-y-6">
       <StateBanner tone="ok" title="Link gerado com sucesso">
-        O link de acesso à simulação "{simulationName}" foi criado para {candidateName} (
+        O link de acesso ao teste "{simulationName}" foi criado para {candidateName} (
         {candidateEmail}).
       </StateBanner>
 
@@ -547,15 +547,15 @@ function ShareStep({
                 <dd className="mt-0.5 text-sm">{candidateEmail}</dd>
               </div>
               <div>
-                <dt className="text-xs uppercase text-muted-foreground">Simulação</dt>
+                <dt className="text-xs uppercase text-muted-foreground">Teste</dt>
                 <dd className="mt-0.5 text-sm">{simulationName}</dd>
               </div>
             </dl>
           </div>
 
           <StateBanner tone="info" title="Um link por candidato">
-            Se você gerar o link de novo com o mesmo e-mail e a mesma simulação, o link será sempre
-            o mesmo. Pode reenviar sem medo de duplicar.
+            Se você gerar o link de novo com o mesmo e-mail e o mesmo teste, o link será sempre o
+            mesmo. Pode reenviar sem medo de duplicar.
           </StateBanner>
         </aside>
       </div>

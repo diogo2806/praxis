@@ -55,7 +55,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             filterChain.doFilter(request, response);
         } catch (JwtException | IllegalArgumentException exception) {
             SecurityContextHolder.clearContext();
-            response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Token JWT invalido.");
+            response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Token JWT inválido.");
         }
     }
 

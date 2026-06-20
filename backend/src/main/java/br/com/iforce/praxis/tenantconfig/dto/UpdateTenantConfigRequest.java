@@ -7,7 +7,7 @@ import jakarta.validation.constraints.NotNull;
 
 import java.util.List;
 
-@Schema(description = "Substitui o catalogo de um tipo de configuracao para o tenant autenticado.")
+@Schema(description = "Substitui o catalogo de um tipo de configuracao para a empresa.")
 public record UpdateTenantConfigRequest(
         @NotNull
         @Valid

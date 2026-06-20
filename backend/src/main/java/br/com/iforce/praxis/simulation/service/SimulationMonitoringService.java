@@ -33,7 +33,7 @@ public class SimulationMonitoringService {
         String tenantId = currentTenantService.requiredTenantId();
         SimulationVersionEntity simulationVersionEntity = simulationVersionRepository
                 .findBySimulationTenantIdAndSimulationIdAndVersionNumber(tenantId, simulationId, versionNumber)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Versao de simulacao nao encontrada."));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Versão de simulação não encontrada."));
 
         Long simulationVersionId = simulationVersionEntity.getId();
         long attemptsCreated = candidateAttemptRepository.countByTenantIdAndSimulationVersionId(tenantId, simulationVersionId);

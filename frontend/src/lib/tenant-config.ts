@@ -22,7 +22,7 @@ export function useTenantConfig() {
 }
 
 /**
- * Limite de tempo (em segundos) marcado como padrao para novos turnos. Retorna null
+ * Limite de tempo (em segundos) marcado como padrao para novos etapas. Retorna null
  * quando o padrao configurado e "sem limite".
  */
 export function defaultAnswerTimeLimitSeconds(config: TenantConfig): number | null {

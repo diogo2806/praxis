@@ -444,7 +444,7 @@ function ValidatorPage() {
 
       {hasValidationParams && validationQuery.isLoading && (
         <StateBanner tone="info" title="Validador conectado">
-          Buscando o diagnóstico da simulação {search.simulationId} v{search.versionNumber}.
+          Buscando o diagnóstico do teste {search.simulationId} v{search.versionNumber}.
         </StateBanner>
       )}
 
@@ -921,7 +921,7 @@ function ScoringModelPreview({
                   Fluxo de pontuacao
                 </div>
                 <h2 className="mt-1 text-lg font-semibold">
-                  {version?.name ?? simulationId ?? "Simulacao"}{" "}
+                  {version?.name ?? simulationId ?? "Teste"}{" "}
                   {versionNumber ? `v${versionNumber}` : ""}
                 </h2>
               </div>
@@ -1071,7 +1071,7 @@ function InteractiveStepCard({
               </span>
             )}
           </div>
-          <div className="mt-1 text-sm font-semibold">Turno {step.node.turnIndex}</div>
+          <div className="mt-1 text-sm font-semibold">Etapa {step.node.turnIndex}</div>
         </div>
 
         {step.hasCriticalOption && (
@@ -1428,7 +1428,7 @@ function NormalizedScoreMap({
   const [zoom, setZoom] = useState(1);
   const [editingOptionId, setEditingOptionId] = useState<string | null>(null);
   const [optionDraft, setOptionDraft] = useState<OptionDraft | null>(null);
-  const title = version?.name ?? simulationId ?? "Simulação";
+  const title = version?.name ?? simulationId ?? "Teste";
   const flow = version ? buildInteractiveScoreFlow(version) : null;
   const canEdit = isEditable || canCloneForEdit;
   const selectedFlowNode =
@@ -2158,7 +2158,7 @@ function buildInteractiveScoreFlow(version: SimulationVersionDetailResponse): In
       id: node.id,
       kind: "step",
       label: node.id,
-      meta: `Turno ${node.turnIndex}`,
+      meta: `Etapa ${node.turnIndex}`,
       node,
       scoreLabel: `${formatScore(summary?.accumulatedScore ?? 0)} pts`,
       title: node.clientMessage || "Sem texto cadastrado.",
@@ -2539,7 +2539,7 @@ function mapValidationIssues(validation: SimulationValidationResponse): Validati
         nodeId: null,
         tone: "ok",
         text: "Nenhum bloqueio ou alerta encontrado nesta versão",
-        target: `Simulação ${validation.simulationId} v${validation.versionNumber}`,
+        target: `Teste ${validation.simulationId} v${validation.versionNumber}`,
       },
     ];
   }
@@ -2549,7 +2549,7 @@ function mapValidationIssues(validation: SimulationValidationResponse): Validati
     nodeId: issue.nodeId,
     tone: issue.severity === "blocker" ? "danger" : "warn",
     text: issue.message,
-    target: issue.nodeId ? `Editor: ${issue.nodeId}` : "Simulação",
+    target: issue.nodeId ? `Editor: ${issue.nodeId}` : "Teste",
   }));
 }
 
@@ -2563,7 +2563,7 @@ function SimulationLinks({
   if (loading) {
     return (
       <div className="rounded-md border border-border bg-card px-4 py-3 text-sm">
-        Carregando simulações...
+        Carregando testes...
       </div>
     );
   }
@@ -2574,7 +2574,7 @@ function SimulationLinks({
         to="/nova/blueprint"
         className="rounded-md border border-border bg-card px-4 py-3 text-sm hover:bg-accent"
       >
-        Criar simulação
+        Criar teste
       </Link>
     );
   }

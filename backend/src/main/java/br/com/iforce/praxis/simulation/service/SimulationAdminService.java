@@ -131,7 +131,7 @@ public class SimulationAdminService {
                 savedSimulationEntity.getId(),
                 versionEntity.getVersionNumber(),
                 AuditEventType.SIMULATION_VERSION_DRAFT_CREATED,
-                "Simulacao criada com versao inicial em rascunho.",
+                "Simulação criada com versão inicial em rascunho.",
                 "{\"status\":\"draft\"}"
         );
 
@@ -171,7 +171,7 @@ public class SimulationAdminService {
                 savedSimulationEntity.getId(),
                 versionEntity.getVersionNumber(),
                 AuditEventType.SIMULATION_VERSION_DRAFT_CREATED,
-                "Versao inicial criada a partir do plano da avaliacao.",
+                "Versão inicial criada a partir do plano da avaliação.",
                 "{\"status\":\"draft\"}"
         );
 
@@ -214,7 +214,7 @@ public class SimulationAdminService {
                 simulationId,
                 versionNumber,
                 AuditEventType.SIMULATION_VERSION_BLUEPRINT_UPDATED,
-                "Plano da avaliacao atualizado.",
+                "Plano da avaliação atualizado.",
                 "{\"rootNodeId\":\"" + escapeJson(savedVersionEntity.getRootNodeId())
                         + "\",\"competencyCount\":" + savedVersionEntity.getCompetencies().size() + "}"
         );
@@ -247,7 +247,7 @@ public class SimulationAdminService {
                 simulationId,
                 versionNumber,
                 AuditEventType.SIMULATION_NODE_ADDED,
-                "No de simulacao adicionado.",
+                "Nó de simulação adicionado.",
                 "{\"nodeId\":\"" + escapeJson(nodeId) + "\"}"
         );
 
@@ -285,7 +285,7 @@ public class SimulationAdminService {
                 simulationId,
                 versionNumber,
                 AuditEventType.SIMULATION_NODE_UPDATED,
-                "No de simulacao atualizado.",
+                "Nó de simulação atualizado.",
                 "{\"nodeId\":\"" + escapeJson(nodeId) + "\"}"
         );
     }
@@ -294,7 +294,7 @@ public class SimulationAdminService {
     public void deleteNode(String simulationId, int versionNumber, String nodeId) {
         SimulationVersionEntity versionEntity = findAndAssertDraft(simulationId, versionNumber);
         if (Objects.equals(versionEntity.getRootNodeId(), nodeId)) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "No raiz nao pode ser removido.");
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "A primeira etapa do teste não pode ser removida.");
         }
 
         SimulationNodeEntity nodeEntity = findNode(versionEntity, nodeId);
@@ -305,7 +305,7 @@ public class SimulationAdminService {
                 simulationId,
                 versionNumber,
                 AuditEventType.SIMULATION_NODE_DELETED,
-                "No de simulacao removido.",
+                "Nó de simulação removido.",
                 "{\"nodeId\":\"" + escapeJson(nodeId) + "\"}"
         );
     }
@@ -338,7 +338,7 @@ public class SimulationAdminService {
                 simulationId,
                 versionNumber,
                 AuditEventType.SIMULATION_OPTION_ADDED,
-                "Alternativa de simulacao adicionada.",
+                "Alternativa de simulação adicionada.",
                 "{\"nodeId\":\"" + escapeJson(nodeId) + "\",\"optionId\":\"" + escapeJson(optionId) + "\"}"
         );
 
@@ -390,7 +390,7 @@ public class SimulationAdminService {
                 simulationId,
                 versionNumber,
                 AuditEventType.SIMULATION_OPTION_UPDATED,
-                "Alternativa de simulacao atualizada.",
+                "Alternativa de simulação atualizada.",
                 "{\"nodeId\":\"" + escapeJson(nodeId) + "\",\"optionId\":\"" + escapeJson(optionId) + "\"}"
         );
     }
@@ -408,7 +408,7 @@ public class SimulationAdminService {
                 simulationId,
                 versionNumber,
                 AuditEventType.SIMULATION_OPTION_DELETED,
-                "Alternativa de simulacao removida.",
+                "Alternativa de simulação removida.",
                 "{\"nodeId\":\"" + escapeJson(nodeId) + "\",\"optionId\":\"" + escapeJson(optionId) + "\"}"
         );
     }
@@ -417,7 +417,7 @@ public class SimulationAdminService {
     public void deleteSimulation(String simulationId) {
         String tenantId = currentTenantService.requiredTenantId();
         SimulationEntity simulationEntity = simulationRepository.findByTenantIdAndId(tenantId, simulationId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Simulacao nao encontrada."));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Simulação não encontrada."));
 
         simulationRepository.delete(simulationEntity);
     }
@@ -439,7 +439,7 @@ public class SimulationAdminService {
                 savedClonedVersionEntity.getSimulation().getId(),
                 savedClonedVersionEntity.getVersionNumber(),
                 AuditEventType.SIMULATION_VERSION_CLONED,
-                "Versao publicada clonada para novo rascunho.",
+                "Versão publicada clonada para novo rascunho.",
                 "{\"status\":\"" + savedClonedVersionEntity.getStatus().getDescricao()
                         + "\",\"sourceVersionNumber\":" + sourceVersionEntity.getVersionNumber() + "}"
         );
@@ -459,17 +459,17 @@ public class SimulationAdminService {
         SimulationValidationResponse validationResponse = simulationValidationService.validate(simulationVersionEntity);
 
         if (!validationResponse.publishable()) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "Publicacao bloqueada por itens criticos do validador.");
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Publicação bloqueada por itens críticos do validador.");
         }
 
         if (simulationVersionEntity.getStatus() != SimulationVersionStatus.DRAFT
                 && simulationVersionEntity.getStatus() != SimulationVersionStatus.PUBLISHED) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "Somente versoes em rascunho podem ser publicadas.");
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Somente versões em rascunho podem ser publicadas.");
         }
 
         GupyPreflightResponse gupyPreflightResponse = gupyPreflightService.evaluate(simulationVersionEntity);
         if (!gupyPreflightResponse.ok()) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "Preflight Gupy bloqueou a publicacao.");
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Preflight Gupy bloqueou a publicação.");
         }
 
         archiveOtherPublishedVersions(simulationVersionEntity);
@@ -483,7 +483,7 @@ public class SimulationAdminService {
                 savedSimulationVersionEntity.getSimulation().getId(),
                 savedSimulationVersionEntity.getVersionNumber(),
                 AuditEventType.SIMULATION_VERSION_PUBLISHED,
-                "Versao de simulacao publicada.",
+                "Versão de simulação publicada.",
                 "{\"status\":\"" + savedSimulationVersionEntity.getStatus().getDescricao()
                         + "\",\"publishedAt\":\"" + savedSimulationVersionEntity.getPublishedAt()
                         + "\",\"warningCount\":" + validationResponse.warningCount() + "}"
@@ -506,7 +506,7 @@ public class SimulationAdminService {
             description += " - Objetivo: " + request.objective().trim();
         }
         if (request.criticalError() != null && !request.criticalError().isBlank()) {
-            description += " - Erro critico: " + request.criticalError().trim();
+            description += " - Erro crítico: " + request.criticalError().trim();
         }
 
         return description.length() > 1000 ? description.substring(0, 1000) : description;
@@ -624,7 +624,7 @@ public class SimulationAdminService {
             Map<String, Integer> competencyLevels
     ) {
         if (competencyLevels == null || competencyLevels.isEmpty()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Ao menos um score de competencia e obrigatorio.");
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Informe a pontuação de pelo menos uma competência.");
         }
 
         Set<String> existingCompetencies = versionEntity.getCompetencies()
@@ -636,10 +636,10 @@ public class SimulationAdminService {
             String competencyName = entry.getKey() == null ? "" : entry.getKey().trim().toLowerCase(Locale.ROOT);
             Integer score = entry.getValue();
             if (!existingCompetencies.contains(competencyName)) {
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Competencia informada nao existe na versao.");
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Competência informada não existe na versão.");
             }
             if (score == null || score < 0 || score > 100) {
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Score de competencia deve estar entre 0 e 100.");
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "A pontuação de competência deve ficar entre 0 e 100.");
             }
         }
     }
@@ -660,7 +660,7 @@ public class SimulationAdminService {
                 .stream()
                 .filter(node -> Objects.equals(node.getNodeId(), nodeId))
                 .findFirst()
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "No da simulacao nao encontrado."));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Etapa do teste não encontrada."));
     }
 
     private SimulationOptionEntity findOption(SimulationNodeEntity nodeEntity, String optionId) {
@@ -668,12 +668,12 @@ public class SimulationAdminService {
                 .stream()
                 .filter(option -> Objects.equals(option.getOptionId(), optionId))
                 .findFirst()
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Alternativa nao encontrada."));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Alternativa não encontrada."));
     }
 
     private void assertCanAddOption(SimulationNodeEntity nodeEntity) {
         if (nodeEntity.getOptions().size() >= MAX_OPTIONS_PER_NODE) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "Cada turno pode ter no maximo 4 alternativas.");
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Cada etapa pode ter no máximo 4 respostas.");
         }
     }
 
@@ -736,7 +736,7 @@ public class SimulationAdminService {
         String tenantId = currentTenantService.requiredTenantId();
         return simulationVersionRepository
                 .findBySimulationTenantIdAndSimulationIdAndVersionNumber(tenantId, simulationId, versionNumber)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Versao de simulacao nao encontrada."));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Versão de simulação não encontrada."));
     }
 
     private void archiveOtherPublishedVersions(SimulationVersionEntity targetVersion) {
@@ -811,12 +811,12 @@ public class SimulationAdminService {
                 continue;
             }
             if (!normalizedNames.add(normalizedName)) {
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Competencias duplicadas nao sao permitidas.");
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Competências duplicadas não são permitidas.");
             }
         }
 
         if (normalizedNames.isEmpty()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Ao menos uma competencia e obrigatoria.");
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Ao menos uma competência é obrigatória.");
         }
     }
 

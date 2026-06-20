@@ -248,7 +248,7 @@ class SimulationAdminControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(validOptionRequest("Quinta alternativa.", 80, 73)))
                 .andExpect(status().isConflict())
-                .andExpect(jsonPath("$.message").value("Cada turno pode ter no maximo 4 alternativas."));
+                .andExpect(jsonPath("$.message").value("Cada etapa pode ter no máximo 4 respostas."));
     }
 
     @Test

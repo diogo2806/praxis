@@ -10,7 +10,7 @@ import jakarta.validation.constraints.Size;
 import java.util.List;
 
 @SumWeightsEqualsOne
-@Schema(description = "Payload para criar uma simulacao e sua versao inicial em rascunho.")
+@Schema(description = "Dados para criar uma simulacao e sua versao inicial em rascunho.")
 public record CreateSimulationRequest(
         @NotBlank
         @Size(max = 180)

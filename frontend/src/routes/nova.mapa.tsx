@@ -61,7 +61,7 @@ export const Route = createFileRoute("/nova/mapa")({
       { title: "Construtor Visual - Praxis" },
       {
         name: "description",
-        content: "Canvas drag and drop para montar e validar o grafo da simulação.",
+        content: "Canvas drag and drop para montar e validar o fluxo do teste.",
       },
     ],
   }),
@@ -129,8 +129,8 @@ function Page() {
       setSelectedId(nodeId);
       setFeedback({
         tone: "info",
-        title: "Turno criado",
-        body: "O novo nó entrou no canvas. Arraste-o para posicionar e conecte uma alternativa.",
+        title: "Etapa criada",
+        body: "A nova etapa entrou no canvas. Arraste para posicionar e conecte uma alternativa.",
       });
       await refetchVersion();
     },
@@ -149,7 +149,7 @@ function Page() {
       setFeedback({
         tone: "info",
         title: "Alternativa criada",
-        body: "Arraste a seta da alternativa para outro turno ou deixe em FIM para concluir.",
+        body: "Arraste a seta da alternativa para outra etapa ou deixe em FIM para concluir.",
       });
       await refetchVersion();
     },
@@ -194,16 +194,16 @@ function Page() {
           <div className="text-xs uppercase text-primary">Passo 3</div>
           <h1 className="mt-1 font-display text-3xl">Construtor visual</h1>
           <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
-            Monte o grafo da simulação arrastando turnos e ligando alternativas com setas.
+            Monte o fluxo do teste arrastando etapas e ligando alternativas com setas.
           </p>
         </div>
         {version && <StatusBadge status={version.status} />}
       </div>
 
       {!hasContext ? (
-          <EmptyState
-            title="Selecione uma versão para ver o mapa"
-            description="Escolha uma versão abaixo para abrir o construtor visual do fluxo."
+        <EmptyState
+          title="Selecione uma versão para ver o mapa"
+          description="Escolha uma versão abaixo para abrir o construtor visual do fluxo."
           actions={
             <SimulationLinks
               loading={simulationsQuery.isLoading}
@@ -213,7 +213,7 @@ function Page() {
         />
       ) : versionQuery.isLoading || tenantConfig.isLoading ? (
         <StateBanner tone="info" title="Carregando mapa">
-            Buscando o fluxo da conversa da simulação {search.simulationId} v{search.versionNumber}.
+          Buscando o fluxo da conversa do teste {search.simulationId} v{search.versionNumber}.
         </StateBanner>
       ) : versionQuery.isError || tenantConfig.isError ? (
         <StateBanner tone="danger" title="Não foi possível carregar o mapa">
@@ -225,9 +225,9 @@ function Page() {
         <>
           {!isEditable && (
             <div className="mb-4">
-                <StateBanner tone="warn" title="Versão protegida contra edição">
+              <StateBanner tone="warn" title="Versão protegida contra edição">
                 Esta versão não pode ser alterada. Crie um rascunho na tela de diálogo antes de
-                mudar conexoes ou adicionar turnos.
+                mudar conexoes ou adicionar etapas.
               </StateBanner>
             </div>
           )}
@@ -240,7 +240,7 @@ function Page() {
           )}
           {mutationError && (
             <div className="mb-4">
-        <StateBanner tone="danger" title="Não foi possível salvar">
+              <StateBanner tone="danger" title="Não foi possível salvar">
                 {mutationError instanceof Error ? mutationError.message : "Tente novamente."}
               </StateBanner>
             </div>
@@ -267,13 +267,13 @@ function Page() {
                 Propriedades
               </div>
               <p className="mt-1 text-xs text-muted-foreground">
-                Crie turnos, adicione alternativas e selecione um nó para revisar suas saídas.
+                Crie etapas, adicione alternativas e selecione uma etapa para revisar suas saídas.
               </p>
 
               <fieldset disabled={!isEditable} className="mt-4 space-y-4">
                 <label className="block">
                   <span className="mb-1.5 block text-xs font-medium text-muted-foreground">
-                    Novo turno
+                    Nova etapa
                   </span>
                   <textarea
                     className="input min-h-24"
@@ -292,7 +292,7 @@ function Page() {
                   className="inline-flex w-full items-center justify-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
                 >
                   <Plus className="h-4 w-4" />
-                  {addNodeMutation.isPending ? "Criando..." : "Criar turno no canvas"}
+                  {addNodeMutation.isPending ? "Criando..." : "Criar etapa no canvas"}
                 </button>
 
                 {selectedNode ? (
@@ -302,7 +302,7 @@ function Page() {
                         <div className="text-xs uppercase text-muted-foreground">
                           {selectedNode.id}
                         </div>
-                        <div className="text-sm font-semibold">Turno {selectedNode.turnIndex}</div>
+                        <div className="text-sm font-semibold">Etapa {selectedNode.turnIndex}</div>
                       </div>
                       <span className="rounded border border-border px-2 py-1 text-[11px] text-muted-foreground">
                         {selectedNode.options.length} alternativas
@@ -341,7 +341,7 @@ function Page() {
                   </div>
                 ) : (
                   <div className="rounded-md border border-border bg-background p-3 text-sm text-muted-foreground">
-                    Crie ou selecione um turno para editar alternativas.
+                    Crie ou selecione uma etapa para editar alternativas.
                   </div>
                 )}
               </fieldset>
@@ -351,8 +351,8 @@ function Page() {
                   <AlertTriangle className="h-3.5 w-3.5 text-warning" />
                   Validador visual
                 </div>
-                <p>Borda amarela: turno orfao, sem entrada a partir do inicio.</p>
-                <p>Borda vermelha: não há caminho desse turno até uma conclusão.</p>
+                <p>Borda amarela: etapa órfã, sem entrada a partir do inicio.</p>
+                <p>Borda vermelha: não há caminho dessa etapa até uma conclusão.</p>
               </div>
             </aside>
           </div>
@@ -495,13 +495,13 @@ function SimulationGraphCanvas({
     setConnecting(null);
     if (!sourceNode || !option) return;
 
-      if (targetNodeId === sourceNode.id) {
-      onConnectionRejected("Um turno não pode apontar para ele mesmo.");
+    if (targetNodeId === sourceNode.id) {
+      onConnectionRejected("Uma etapa não pode apontar para ela mesma.");
       return;
     }
 
     if (targetNodeId && createsCycle(version.nodes, sourceNode.id, targetNodeId)) {
-      onConnectionRejected("Loops não são permitidos em simulações.");
+      onConnectionRejected("Loops não são permitidos em testes.");
       return;
     }
 
@@ -521,11 +521,11 @@ function SimulationGraphCanvas({
             {version.name} - v{version.versionNumber}
           </h2>
           <p className="text-xs text-muted-foreground">
-            Arraste o canvas para navegar. Arraste a seta de uma alternativa até outro turno.
+            Arraste o canvas para navegar. Arraste a seta de uma alternativa até outra etapa.
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <GraphMetric label="Turnos" value={version.nodes.length} />
+          <GraphMetric label="Etapas" value={version.nodes.length} />
           <GraphMetric label="Órfãos" value={validation.orphans.size} tone="warn" />
           <GraphMetric label="Sem fim" value={validation.noPathToEnd.size} tone="danger" />
           <IconButton
@@ -683,7 +683,7 @@ function SimulationGraphCanvas({
                   <Grip className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2 text-xs font-semibold uppercase text-muted-foreground">
-                      {isRoot ? "Inicio" : `Turno ${node.turnIndex}`}
+                      {isRoot ? "Inicio" : `Etapa ${node.turnIndex}`}
                       {isOrphan && <AlertTriangle className="h-3.5 w-3.5 text-warning" />}
                       {noPathToEnd && <AlertTriangle className="h-3.5 w-3.5 text-danger" />}
                       {!isOrphan && !noPathToEnd && (

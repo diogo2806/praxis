@@ -4,11 +4,7 @@ import { useMemo, useState } from "react";
 import { Edit2, Plus, Trash2 } from "lucide-react";
 
 import { AppShell } from "@/components/app-shell";
-import {
-  EmptyState,
-  SkeletonRows,
-  StateBanner,
-} from "@/components/praxis-ui";
+import { EmptyState, SkeletonRows, StateBanner } from "@/components/praxis-ui";
 import {
   Dialog,
   DialogContent,
@@ -18,11 +14,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  getTenantConfig,
-  updateTenantConfig,
-  type TenantConfigOption,
-} from "@/lib/api/praxis";
+import { getTenantConfig, updateTenantConfig, type TenantConfigOption } from "@/lib/api/praxis";
 
 export const Route = createFileRoute("/nova/competencias")({
   head: () => ({
@@ -30,7 +22,7 @@ export const Route = createFileRoute("/nova/competencias")({
       { title: "Gerenciar Competências - Práxis" },
       {
         name: "description",
-        content: "Crie e edite as competências utilizadas nas suas simulações.",
+        content: "Crie e edite as competências utilizadas nas suos testes.",
       },
     ],
   }),
@@ -165,7 +157,7 @@ function CompetenciasManagement() {
         <div>
           <h1 className="text-3xl font-semibold">Gerenciar Competências</h1>
           <p className="mt-2 text-sm text-muted-foreground">
-            Cadastre e edite as competências que aparecem nas suas simulações.
+            Cadastre e edite as competências que aparecem nas suos testes.
           </p>
         </div>
         <button
@@ -188,7 +180,7 @@ function CompetenciasManagement() {
       {competencias.length === 0 ? (
         <EmptyState
           title="Nenhuma competência cadastrada"
-          description="Crie sua primeira competência para começar a usar nas simulações."
+          description="Crie sua primeira competência para começar a usar nos testes."
           actions={
             <button
               onClick={handleOpenCreateDialog}
@@ -202,16 +194,15 @@ function CompetenciasManagement() {
       ) : (
         <div className="space-y-6">
           <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
-            <Stat
-              label="Competências"
-              value={competencias.length}
-              hint="Persistidas no catálogo"
-            />
+            <Stat label="Competências" value={competencias.length} hint="Persistidas no catálogo" />
           </div>
 
           <div className="rounded-md border border-border bg-card p-4">
             <div className="mb-3">
-              <Label htmlFor="filter-competencias" className="mb-1.5 block text-xs text-muted-foreground">
+              <Label
+                htmlFor="filter-competencias"
+                className="mb-1.5 block text-xs text-muted-foreground"
+              >
                 Buscar por nome
               </Label>
               <Input
@@ -245,35 +236,37 @@ function CompetenciasManagement() {
                     </tr>
                   ) : (
                     visibleCompetencias.map((competencia) => (
-                    <tr
-                      key={competencia.value}
-                      className="border-b border-border last:border-0 transition"
-                    >
-                      <td className="px-4 py-3">
-                        <div className="font-medium text-foreground">{competencia.label}</div>
-                        <div className="mt-0.5 text-xs text-muted-foreground">{competencia.value}</div>
-                      </td>
-                      <td className="px-4 py-3 text-right">
-                        <div className="flex justify-end gap-2">
-                          <button
-                            onClick={() => handleOpenEditDialog(competencia)}
-                            disabled={saveCatalogMutation.isPending}
-                            className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-border bg-background text-foreground hover:bg-accent disabled:cursor-not-allowed disabled:opacity-50"
-                            title="Editar"
-                          >
-                            <Edit2 className="h-3.5 w-3.5" />
-                          </button>
-                          <button
-                            onClick={() => requestDelete(competencia)}
-                            disabled={saveCatalogMutation.isPending}
-                            className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-border bg-background text-muted-foreground hover:bg-danger/10 hover:text-danger disabled:cursor-not-allowed disabled:opacity-50"
-                            title="Remover"
-                          >
-                            <Trash2 className="h-3.5 w-3.5" />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
+                      <tr
+                        key={competencia.value}
+                        className="border-b border-border last:border-0 transition"
+                      >
+                        <td className="px-4 py-3">
+                          <div className="font-medium text-foreground">{competencia.label}</div>
+                          <div className="mt-0.5 text-xs text-muted-foreground">
+                            {competencia.value}
+                          </div>
+                        </td>
+                        <td className="px-4 py-3 text-right">
+                          <div className="flex justify-end gap-2">
+                            <button
+                              onClick={() => handleOpenEditDialog(competencia)}
+                              disabled={saveCatalogMutation.isPending}
+                              className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-border bg-background text-foreground hover:bg-accent disabled:cursor-not-allowed disabled:opacity-50"
+                              title="Editar"
+                            >
+                              <Edit2 className="h-3.5 w-3.5" />
+                            </button>
+                            <button
+                              onClick={() => requestDelete(competencia)}
+                              disabled={saveCatalogMutation.isPending}
+                              className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-border bg-background text-muted-foreground hover:bg-danger/10 hover:text-danger disabled:cursor-not-allowed disabled:opacity-50"
+                              title="Remover"
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
                     ))
                   )}
                 </tbody>
@@ -286,9 +279,7 @@ function CompetenciasManagement() {
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>
-              {editingOption ? "Editar Competência" : "Nova Competência"}
-            </DialogTitle>
+            <DialogTitle>{editingOption ? "Editar Competência" : "Nova Competência"}</DialogTitle>
             <DialogDescription>
               {editingOption
                 ? "Edite o nome da competência."
@@ -359,13 +350,16 @@ function CompetenciasManagement() {
         </DialogContent>
       </Dialog>
 
-      <Dialog open={Boolean(pendingDeleteOption)} onOpenChange={(open) => !open && setPendingDeleteOption(null)}>
+      <Dialog
+        open={Boolean(pendingDeleteOption)}
+        onOpenChange={(open) => !open && setPendingDeleteOption(null)}
+      >
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Remover competência</DialogTitle>
             <DialogDescription>
-              Confirme para remover esta competência do catálogo. Essa alteração afeta novos planos de
-              avaliação criados a partir de agora.
+              Confirme para remover esta competência do catálogo. Essa alteração afeta novos planos
+              de teste criados a partir de agora.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
@@ -400,21 +394,11 @@ function CompetenciasManagement() {
   );
 }
 
-function Stat({
-  label,
-  value,
-  hint,
-}: {
-  label: string;
-  value: number;
-  hint: string;
-}) {
+function Stat({ label, value, hint }: { label: string; value: number; hint: string }) {
   return (
     <div className="rounded-md border border-border bg-card p-4">
       <div className="text-xs uppercase text-muted-foreground">{label}</div>
-      <div className="mt-1 text-3xl font-semibold tabular-nums text-foreground">
-        {value}
-      </div>
+      <div className="mt-1 text-3xl font-semibold tabular-nums text-foreground">{value}</div>
       <div className="mt-1 text-[11px] text-muted-foreground">{hint}</div>
     </div>
   );

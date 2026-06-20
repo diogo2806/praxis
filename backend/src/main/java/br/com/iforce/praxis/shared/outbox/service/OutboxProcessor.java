@@ -107,7 +107,7 @@ public class OutboxProcessor {
     @Transactional
     public void reprocessEvent(Long eventId, String tenantId) {
         OutboxEventEntity event = outboxEventRepository.findByIdAndTenantId(eventId, tenantId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Evento de entrega nao encontrado."));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Evento de entrega não encontrado."));
         if (event.getStatus() == OutboxEventEntity.OutboxEventStatus.SENT) {
             return;
         }
@@ -163,7 +163,7 @@ public class OutboxProcessor {
         String webhookUrl = payload.get("webhookUrl").asText();
         JsonNode eventPayload = payload.get("eventPayload");
         if (eventPayload == null || eventPayload.isNull()) {
-            throw new IllegalArgumentException("Payload de engajamento sem eventPayload.");
+            throw new IllegalArgumentException("Erro interno ao processar a entrega.");
         }
 
         outboundUrlValidator.validate(webhookUrl);
@@ -174,7 +174,7 @@ public class OutboxProcessor {
     private TestResultResponse fetchTestResult(String attemptId, String tenantId) {
         Optional<CandidateAttemptEntity> attempt = candidateAttemptRepository.findByTenantIdAndId(tenantId, attemptId);
         if (attempt.isEmpty()) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "CandidateAttempt nao encontrado: " + attemptId);
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Item não encontrado.");
         }
 
         CandidateAttemptEntity candidateAttemptEntity = attempt.get();
@@ -188,25 +188,25 @@ public class OutboxProcessor {
                     .without(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
                     .readValue(testResultNode);
         } catch (Exception exception) {
-            throw new RuntimeException("Falha ao deserializar TestResultResponse do outbox event", exception);
+            throw new RuntimeException("Erro interno ao processar a entrega.", exception);
         }
     }
 
     private PublishedSimulation getSimulation(CandidateAttemptEntity candidateAttemptEntity) {
         if (candidateAttemptEntity.getSimulationVersionId() != null) {
             return simulationCatalogService.findByVersionId(candidateAttemptEntity.getSimulationVersionId())
-                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Versao da simulacao nao encontrada."));
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Versão da simulação não encontrada."));
         }
 
         return simulationCatalogService.findPublishedById(candidateAttemptEntity.getTenantId(), candidateAttemptEntity.getSimulationId())
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Simulacao publicada nao encontrada."));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Simulação publicada não encontrada."));
     }
 
     private JsonNode parsePayload(String payload) {
         try {
             return objectMapper.readTree(payload);
         } catch (Exception e) {
-            throw new RuntimeException("Falha ao deserializar payload do outbox event", e);
+            throw new RuntimeException("Erro interno ao processar a entrega.", e);
         }
     }
 

@@ -29,7 +29,7 @@ class RestClientResultWebhookClientTest {
 
         assertThatThrownBy(() -> client.postResult("http://127.0.0.1/result", response()))
                 .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("URL externa nao pode apontar para rede local ou reservada.");
+                .hasMessage("URL externa não pode apontar para rede local ou reservada.");
     }
 
     private GupyOutboundUrlValidator validator() {

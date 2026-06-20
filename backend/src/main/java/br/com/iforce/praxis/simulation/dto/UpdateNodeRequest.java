@@ -4,7 +4,7 @@ import br.com.iforce.praxis.shared.model.MediaType;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.Size;
 
-@Schema(description = "Payload para atualizar parcialmente um turno no grafo da simulacao.")
+@Schema(description = "Dados para atualizar parcialmente uma etapa do teste.")
 public record UpdateNodeRequest(
         @Size(max = 1200)
         String clientMessage,
@@ -15,7 +15,7 @@ public record UpdateNodeRequest(
         String timeJustification,
 
         @Size(max = 120)
-        @Schema(description = "Proximo no usado quando o tempo do turno esgota. Envie string vazia para remover.", nullable = true)
+        @Schema(description = "Próxima etapa usada quando o tempo da etapa esgota. Envie string vazia para remover.", nullable = true)
         String timeoutNextNodeId,
 
         @Size(max = 1500)
@@ -23,7 +23,7 @@ public record UpdateNodeRequest(
         String plainTextDescription,
 
         @Size(max = 1000)
-        @Schema(description = "URL publica de audio descritivo do turno. Envie string vazia para remover.", nullable = true)
+        @Schema(description = "URL publica de audio descritivo da etapa. Envie string vazia para remover.", nullable = true)
         String audioDescriptionUrl,
 
         @Size(max = 1000)

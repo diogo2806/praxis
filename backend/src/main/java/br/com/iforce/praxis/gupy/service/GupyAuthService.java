@@ -23,7 +23,7 @@ public class GupyAuthService {
 
     public GupyTenantContext validateBearerToken(String authorizationHeader) {
         if (authorizationHeader == null || !authorizationHeader.startsWith(BEARER_PREFIX)) {
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Token Bearer obrigatorio.");
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Token Bearer obrigatório.");
         }
 
         String token = authorizationHeader.substring(BEARER_PREFIX.length());
@@ -31,7 +31,7 @@ public class GupyAuthService {
 
         return tenantRepository.findFirstByIntegrationTokenHash(tokenHash)
                 .map(tenant -> new GupyTenantContext(tenant.getId(), tenant.getCompanyId()))
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Token Bearer invalido."));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Token Bearer inválido."));
     }
 
     private String sha256(String value) {
@@ -40,7 +40,7 @@ public class GupyAuthService {
             byte[] hash = digest.digest(value.getBytes(StandardCharsets.UTF_8));
             return Base64.getUrlEncoder().withoutPadding().encodeToString(hash);
         } catch (NoSuchAlgorithmException exception) {
-            throw new IllegalStateException("SHA-256 indisponivel.", exception);
+            throw new IllegalStateException("SHA-256 indisponível.", exception);
         }
     }
 

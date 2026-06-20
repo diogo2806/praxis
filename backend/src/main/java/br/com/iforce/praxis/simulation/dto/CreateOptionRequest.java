@@ -10,7 +10,7 @@ import jakarta.validation.constraints.Size;
 
 import java.util.Map;
 
-@Schema(description = "Payload para criar uma alternativa de resposta em um turno.")
+@Schema(description = "Dados para criar uma resposta em uma etapa.")
 public record CreateOptionRequest(
         @NotBlank
         @Size(max = 800)

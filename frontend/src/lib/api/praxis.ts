@@ -123,7 +123,7 @@ export interface SimulationSummaryResponse {
   id: string;
   name: string;
   description: string;
-  criticalSituation?: string | null;
+  criticalSituatioetapa: string | null;
   resultUse?: string | null;
   versionNumber: number;
   status: SimulationVersionStatus;
@@ -139,7 +139,7 @@ export interface CreateSimulationDraftRequest {
   description: string;
   rootNodeId: string;
   competencies: string[];
-  criticalSituation?: string;
+  criticalSituatioetapa: string;
   resultUse?: string;
 }
 
@@ -152,7 +152,7 @@ export interface UpdateBlueprintCompetencyRequest {
 export interface UpdateBlueprintRequest {
   rootNodeId: string;
   competencies: UpdateBlueprintCompetencyRequest[];
-  criticalSituation?: string | null;
+  criticalSituatioetapa: string | null;
   resultUse?: string | null;
 }
 
@@ -163,7 +163,7 @@ export interface SimulationVersionOptionResponse {
   isCritical: boolean;
   nextNodeId: string | null;
   auditNote: string;
-  plainTextDescription?: string | null;
+  plainTextDescriptioetapa: string | null;
   audioDescriptionUrl?: string | null;
   mediaUrl: string | null;
   mediaType: MediaType | null;
@@ -176,7 +176,7 @@ export interface SimulationVersionNodeResponse {
   clientMessage: string;
   timeLimitSeconds: number | null;
   timeoutNextNodeId: string | null;
-  plainTextDescription?: string | null;
+  plainTextDescriptioetapa: string | null;
   audioDescriptionUrl?: string | null;
   mediaUrl: string | null;
   mediaType: MediaType | null;
@@ -187,7 +187,7 @@ export interface SimulationVersionDetailResponse {
   simulationId: string;
   name: string;
   description: string;
-  criticalSituation?: string | null;
+  criticalSituatioetapa: string | null;
   resultUse?: string | null;
   versionNumber: number;
   status: SimulationVersionStatus;
@@ -201,9 +201,9 @@ export interface SimulationVersionDetailResponse {
 export interface CreateNodeRequest {
   clientMessage: string;
   timeLimitSeconds?: number | null;
-  timeJustification?: string | null;
+  timeJustificatioetapa: string | null;
   timeoutNextNodeId?: string | null;
-  plainTextDescription?: string | null;
+  plainTextDescriptioetapa: string | null;
   audioDescriptionUrl?: string | null;
   mediaUrl?: string | null;
   mediaType?: MediaType | null;
@@ -212,9 +212,9 @@ export interface CreateNodeRequest {
 export interface UpdateNodeRequest {
   clientMessage?: string;
   timeLimitSeconds?: number | null;
-  timeJustification?: string | null;
+  timeJustificatioetapa: string | null;
   timeoutNextNodeId?: string | null;
-  plainTextDescription?: string | null;
+  plainTextDescriptioetapa: string | null;
   audioDescriptionUrl?: string | null;
   mediaUrl?: string | null;
   mediaType?: MediaType | null;
@@ -227,7 +227,7 @@ export interface CreateOptionRequest {
   isCritical: boolean;
   nextNodeId?: string | null;
   resultingTone?: string | null;
-  plainTextDescription?: string | null;
+  plainTextDescriptioetapa: string | null;
   audioDescriptionUrl?: string | null;
   mediaUrl?: string | null;
   mediaType?: MediaType | null;
@@ -240,7 +240,7 @@ export interface UpdateOptionRequest {
   isCritical?: boolean;
   nextNodeId?: string | null;
   resultingTone?: string | null;
-  plainTextDescription?: string | null;
+  plainTextDescriptioetapa: string | null;
   audioDescriptionUrl?: string | null;
   mediaUrl?: string | null;
   mediaType?: MediaType | null;

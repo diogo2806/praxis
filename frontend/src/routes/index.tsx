@@ -30,11 +30,11 @@ type HeroOption = {
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Práxis - Avaliação situacional para Gupy" },
+      { title: "Práxis - Teste situacional para Gupy" },
       {
         name: "description",
         content:
-          "Landing pública da Práxis: avaliação situacional determinística, integrada à Gupy, com governança, acessibilidade e trilha auditável.",
+          "Landing pública da Práxis: teste situacional determinística, integrada à Gupy, com governança, acessibilidade e trilha auditável.",
       },
     ],
   }),
@@ -48,7 +48,7 @@ const heroOptions: HeroOption[] = [
     tone: "warn",
     react:
       '"Tá, mas e se não resolver de novo?" Você prometeu prazo sem validar com o time. Isso liga um alerta de aderência.',
-    scores: { Empatia: 72, "Resolução": 48, "Aderência à política": 30 },
+    scores: { Empatia: 72, Resolução: 48, "Aderência à política": 30 },
   },
   {
     k: "B",
@@ -56,7 +56,7 @@ const heroOptions: HeroOption[] = [
     tone: "good",
     react:
       '"Obrigado por pelo menos me dar um prazo de verdade." Você acolheu, confirmou o caso e alinhou expectativa.',
-    scores: { Empatia: 90, "Resolução": 86, "Aderência à política": 80 },
+    scores: { Empatia: 90, Resolução: 86, "Aderência à política": 80 },
   },
   {
     k: "C",
@@ -64,7 +64,7 @@ const heroOptions: HeroOption[] = [
     tone: "warn",
     react:
       '"Política? Eu só quero meu problema resolvido!" Correto no processo, mas frio para o momento do cliente.',
-    scores: { Empatia: 28, "Resolução": 60, "Aderência à política": 82 },
+    scores: { Empatia: 28, Resolução: 60, "Aderência à política": 82 },
   },
   {
     k: "D",
@@ -72,7 +72,7 @@ const heroOptions: HeroOption[] = [
     tone: "bad",
     react:
       '"De novo sou empurrado para outra pessoa?" Você pulou a tentativa de resolução e a leitura do caso.',
-    scores: { Empatia: 40, "Resolução": 32, "Aderência à política": 45 },
+    scores: { Empatia: 40, Resolução: 32, "Aderência à política": 45 },
   },
 ];
 
@@ -90,7 +90,7 @@ const features = [
   {
     icon: ScrollText,
     title: "Trilha auditável",
-    body: "Cada ponto tem origem: qual turno, qual escolha, qual rubrica. Pronto para o gestor e para o jurídico.",
+    body: "Cada ponto tem origem: qual etapa, qual escolha, qual rubrica. Pronto para o gestor e para o jurídico.",
   },
   {
     icon: UserCheck,
@@ -136,7 +136,7 @@ const accessibility = [
   {
     icon: Keyboard,
     title: "Operável por teclado",
-    body: "A simulação é navegável com Tab, Shift+Tab e Enter, sem armadilha de foco.",
+    body: "O teste é navegável com Tab, Shift+Tab e Enter, sem armadilha de foco.",
   },
   {
     icon: Accessibility,
@@ -146,18 +146,18 @@ const accessibility = [
   {
     icon: Timer,
     title: "Tempo ajustável",
-    body: "Limite por turno pode ser estendido conforme a LBI, sem afetar o cálculo da pontuação.",
+    body: "Limite por etapa pode ser estendido conforme a LBI, sem afetar o cálculo da pontuação.",
   },
 ];
 
 const faq = [
   {
     q: "O Práxis usa IA generativa para avaliar o candidato?",
-    a: "Não. A avaliação é determinística: a pontuação sai de critérios e pesos versionados definidos pela sua equipe.",
+    a: "Não. O teste é determinística: a pontuação sai de critérios e pesos versionados definidos pela sua equipe.",
   },
   {
     q: "Como funciona a integração com a Gupy?",
-    a: "Sim. A Práxis se conecta à Gupy para listar avaliações, abrir convites de candidatos e devolver resultados automaticamente com retentativas quando há falha temporária.",
+    a: "Sim. A Práxis se conecta à Gupy para listar testes, abrir convites de candidatos e devolver resultados automaticamente com retentativas quando há falha temporária.",
   },
   {
     q: "Funciona com outros sistemas além da Gupy?",
@@ -168,7 +168,7 @@ const faq = [
     a: "Nunca. A visão do candidato é limpa. Pesos, critérios e marcadores ficam restritos ao painel admin e à trilha de auditoria.",
   },
   {
-    q: "A simulação é acessível?",
+    q: "O teste é acessível?",
     a: "Sim. Há navegação por teclado, foco visível, contraste AA, marcação semântica e suporte a leitor de tela.",
   },
   {
@@ -232,14 +232,15 @@ function LandingPage() {
             <div>
               <span className="inline-flex w-fit items-center gap-2 rounded-full bg-accent px-3 py-1.5 text-xs font-semibold text-primary">
                 <span className="h-2 w-2 rounded-full bg-success" />
-                Avaliação situacional, sem IA julgando candidato
+                Teste situacional, sem IA julgando candidato
               </span>
               <h1 className="mt-5 max-w-3xl font-display text-4xl font-extrabold leading-[1.05] tracking-tight text-foreground md:text-6xl">
                 Veja como o candidato decide no cenário real do trabalho.
               </h1>
               <p className="mt-5 max-w-xl text-base leading-relaxed text-muted-foreground md:text-lg">
                 Antes de gastar a agenda do gestor com entrevista, a Práxis mostra a decisão da
-                pessoa numa situação real do cargo, com pontuação por competência e trilha auditável.
+                pessoa numa situação real do cargo, com pontuação por competência e trilha
+                auditável.
               </p>
               <div className="mt-7 flex flex-wrap gap-3">
                 <a
@@ -272,7 +273,7 @@ function LandingPage() {
                     <div className="leading-tight">
                       <div className="text-sm font-semibold">Carlos M.</div>
                       <div className="text-[10px] uppercase tracking-wider opacity-70">
-                        Turno 1/3 · Abertura
+                        Etapa 1/3 · Abertura
                       </div>
                     </div>
                   </div>
@@ -436,7 +437,7 @@ function LandingPage() {
                 {
                   n: "02",
                   t: "O candidato decide",
-                  b: "Na Gupy, ele entra na simulação, conversa com um cliente fictício e escolhe como agir.",
+                  b: "Na Gupy, ele entra no teste, conversa com um cliente fictício e escolhe como agir.",
                 },
                 {
                   n: "03",
@@ -478,19 +479,19 @@ function LandingPage() {
                     Arquitetura aderente ao contrato de provedores externos da Gupy: rotas{" "}
                     <code className="font-mono text-xs">/test</code>,{" "}
                     <code className="font-mono text-xs">/test/candidate</code>,{" "}
-                    <code className="font-mono text-xs">/test/result/{"{id}"}</code>, auth Bearer
-                    e envio automático com retentativas.
+                    <code className="font-mono text-xs">/test/result/{"{id}"}</code>, auth Bearer e
+                    envio automático com retentativas.
                   </p>
                   <p className="mt-4 inline-flex items-center gap-2 rounded-md border border-white/15 bg-white/5 px-3 py-2 text-xs text-sidebar-foreground/75">
                     <Plug className="h-3.5 w-3.5" aria-hidden />
-                    Integração Gupy explícita, sem camada genérica criada antes de existir
-                    demanda real.
+                    Integração Gupy explícita, sem camada genérica criada antes de existir demanda
+                    real.
                   </p>
                 </div>
                 <ol className="space-y-2">
                   {[
                     'Candidato clica em "Iniciar teste" na Gupy',
-                    "Faz a simulação na Práxis",
+                    "Faz o teste na Práxis",
                     "Score e competências voltam à Gupy",
                     "Gestor decide sem sair da plataforma",
                   ].map((item, index) => (
@@ -521,8 +522,8 @@ function LandingPage() {
         <IconGrid
           id="acessibilidade"
           eyebrow="Acessibilidade"
-          title="Avaliação justa também é avaliação acessível."
-          body="O Práxis nasce alinhado às WCAG 2.1 AA e à LBI: o candidato com deficiência percorre a mesma simulação, com os mesmos critérios."
+          title="Teste justa também é teste acessível."
+          body="O Práxis nasce alinhado às WCAG 2.1 AA e à LBI: o candidato com deficiência percorre o mesmo teste, com os mesmos critérios."
           items={accessibility}
           shaded
           columns="four"

@@ -93,7 +93,7 @@ public class SimulationAdminController {
     )
     @ApiResponses({
             @ApiResponse(responseCode = "201", description = "Simulacao criada."),
-            @ApiResponse(responseCode = "400", description = "Payload invalido.", content = @Content(examples = @ExampleObject(value = ERROR_EXAMPLE))),
+            @ApiResponse(responseCode = "400", description = "Dados invalidos.", content = @Content(examples = @ExampleObject(value = ERROR_EXAMPLE))),
             @ApiResponse(responseCode = "403", description = "Acesso negado.", content = @Content(examples = @ExampleObject(value = ERROR_EXAMPLE)))
     })
     public ResponseEntity<SimulationVersionDetailResponse> createSimulation(
@@ -109,7 +109,7 @@ public class SimulationAdminController {
     )
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Rascunho criado."),
-            @ApiResponse(responseCode = "400", description = "Payload invalido.", content = @Content(examples = @ExampleObject(value = ERROR_EXAMPLE))),
+            @ApiResponse(responseCode = "400", description = "Dados invalidos.", content = @Content(examples = @ExampleObject(value = ERROR_EXAMPLE))),
             @ApiResponse(responseCode = "403", description = "Acesso negado.", content = @Content(examples = @ExampleObject(value = ERROR_EXAMPLE)))
     })
     public ResponseEntity<SimulationSummaryResponse> createDraftSimulation(
@@ -121,7 +121,7 @@ public class SimulationAdminController {
     @GetMapping("/{simulationId}/versions/{versionNumber}")
     @Operation(
             summary = "Detalha versao de simulacao",
-            description = "Retorna plano da avaliacao, competencias, turnos e alternativas da versao para telas de autoria."
+            description = "Retorna plano da avaliacao, competencias, etapas e respostas da versao para telas de autoria."
     )
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Versao retornada."),
@@ -141,7 +141,7 @@ public class SimulationAdminController {
     )
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Plano da avaliacao atualizado."),
-            @ApiResponse(responseCode = "400", description = "Payload invalido.", content = @Content(examples = @ExampleObject(value = ERROR_EXAMPLE))),
+            @ApiResponse(responseCode = "400", description = "Dados invalidos.", content = @Content(examples = @ExampleObject(value = ERROR_EXAMPLE))),
             @ApiResponse(responseCode = "403", description = "Acesso negado.", content = @Content(examples = @ExampleObject(value = ERROR_EXAMPLE))),
             @ApiResponse(responseCode = "409", description = "Versao nao pode ser editada neste estado.", content = @Content(examples = @ExampleObject(value = ERROR_EXAMPLE)))
     })
@@ -154,7 +154,7 @@ public class SimulationAdminController {
     }
 
     @PostMapping("/{simulationId}/versions/{versionNumber}/nodes")
-    @Operation(summary = "Adiciona no ao rascunho")
+    @Operation(summary = "Adiciona etapa ao rascunho")
     public ResponseEntity<String> addNode(
             @PathVariable String simulationId,
             @PathVariable int versionNumber,
@@ -164,7 +164,7 @@ public class SimulationAdminController {
     }
 
     @PutMapping("/{simulationId}/versions/{versionNumber}/nodes/{nodeId}")
-    @Operation(summary = "Atualiza no do rascunho")
+    @Operation(summary = "Atualiza etapa do rascunho")
     public ResponseEntity<Void> updateNode(
             @PathVariable String simulationId,
             @PathVariable int versionNumber,
@@ -176,7 +176,7 @@ public class SimulationAdminController {
     }
 
     @DeleteMapping("/{simulationId}/versions/{versionNumber}/nodes/{nodeId}")
-    @Operation(summary = "Remove no do rascunho")
+    @Operation(summary = "Remove etapa do rascunho")
     public ResponseEntity<Void> deleteNode(
             @PathVariable String simulationId,
             @PathVariable int versionNumber,
@@ -187,7 +187,7 @@ public class SimulationAdminController {
     }
 
     @PostMapping("/{simulationId}/versions/{versionNumber}/nodes/{nodeId}/options")
-    @Operation(summary = "Adiciona alternativa ao no do rascunho")
+    @Operation(summary = "Adiciona resposta à etapa do rascunho")
     public ResponseEntity<String> addOption(
             @PathVariable String simulationId,
             @PathVariable int versionNumber,
@@ -225,7 +225,7 @@ public class SimulationAdminController {
     @GetMapping("/{simulationId}/versions/{versionNumber}/validation")
     @Operation(
             summary = "Valida versão de simulação",
-            description = "Executa validação determinística do grafo antes da publicação."
+            description = "Executa validação estrutural do teste antes da publicação."
     )
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Validacao executada."),
@@ -280,7 +280,7 @@ public class SimulationAdminController {
     @GetMapping("/{simulationId}/versions/{versionNumber}/gupy-preflight")
     @Operation(
             summary = "Executa preflight Gupy",
-            description = "Valida configuracao publica, token de integracao e grafo antes da publicacao."
+            description = "Valida configuracao publica, token de integracao e estrutura do teste antes da publicacao."
     )
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Preflight executado."),
@@ -321,7 +321,7 @@ public class SimulationAdminController {
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Comparativo retornado."),
             @ApiResponse(responseCode = "400", description = "Parametros invalidos.", content = @Content(examples = @ExampleObject(value = ERROR_EXAMPLE))),
-            @ApiResponse(responseCode = "403", description = "Tentativa fora do tenant autenticado.", content = @Content(examples = @ExampleObject(value = ERROR_EXAMPLE))),
+            @ApiResponse(responseCode = "403", description = "Acesso negado a uma tentativa selecionada.", content = @Content(examples = @ExampleObject(value = ERROR_EXAMPLE))),
             @ApiResponse(responseCode = "404", description = "Versao ou tentativa nao encontrada.", content = @Content(examples = @ExampleObject(value = ERROR_EXAMPLE)))
     })
     public ResponseEntity<TalentMatchResponse> getTalentMatch(

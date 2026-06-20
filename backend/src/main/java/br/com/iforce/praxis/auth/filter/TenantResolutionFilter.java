@@ -78,7 +78,7 @@ public class TenantResolutionFilter extends OncePerRequestFilter {
         } catch (IllegalArgumentException | JwtException exception) {
             throw new ResponseStatusException(
                     HttpStatus.UNAUTHORIZED,
-                    "Token de tentativa do candidato invalido."
+                    "Token de tentativa do candidato inválido."
             );
         }
     }

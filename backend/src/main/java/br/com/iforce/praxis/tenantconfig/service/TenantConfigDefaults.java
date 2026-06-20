@@ -7,7 +7,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Valores padrao usados quando um tenant ainda nao customizou um catalogo.
+ * Valores padrão usados quando um tenant ainda não customizou um catálogo.
  * Espelham as listas que antes ficavam fixas no frontend, garantindo que tenants
  * existentes mantenham exatamente o comportamento anterior sem precisar de seed.
  */
@@ -34,7 +34,7 @@ public final class TenantConfigDefaults {
             ),
             TenantConfigType.LANGUAGE_CHECKLIST, List.of(
                     plain("Evita regionalismo desnecessario"),
-                    plain("Nao usa estereotipo de classe"),
+                    plain("Não usa estereótipo de classe"),
                     plain("Sem marcador de genero sem necessidade"),
                     plain("Sem referencia a idade, sotaque, origem ou crenca"),
                     plain("Linguagem compativel com o cargo avaliado")

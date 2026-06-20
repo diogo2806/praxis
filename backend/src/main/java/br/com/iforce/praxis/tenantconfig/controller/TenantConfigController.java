@@ -41,7 +41,7 @@ public class TenantConfigController {
     @PutMapping("/{configType}")
     @Operation(
             summary = "Customiza um catalogo do tenant",
-            description = "Substitui integralmente a lista de opcoes de um tipo de configuracao para o tenant autenticado."
+            description = "Substitui integralmente a lista de opcoes de um tipo de configuracao para a empresa."
     )
     public ResponseEntity<List<ConfigOptionDto>> updateConfig(
             @PathVariable TenantConfigType configType,

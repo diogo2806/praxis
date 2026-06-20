@@ -2,14 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import type { ReactNode } from "react";
 import { useMemo, useState } from "react";
-import {
-  Activity,
-  CheckCircle2,
-  Eye,
-  RefreshCw,
-  Send,
-  XCircle,
-} from "lucide-react";
+import { Activity, CheckCircle2, Eye, RefreshCw, Send, XCircle } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
 import { Button } from "@/components/ui/button";
 import {
@@ -53,8 +46,7 @@ function MonitoringPage() {
   });
 
   const simulations = useMemo(
-    () =>
-      (simulationsQuery.data ?? []).filter((simulation) => simulation.status === "published"),
+    () => (simulationsQuery.data ?? []).filter((simulation) => simulation.status === "published"),
     [simulationsQuery.data],
   );
   const deliveries = deliveriesQuery.data ?? [];
@@ -157,7 +149,7 @@ function MonitoringPage() {
               </div>
               <div className="flex flex-wrap items-center gap-2">
                 <select className="h-8 min-h-8 rounded-md border border-border bg-background px-3 text-xs">
-                  <option>Todas as simulacoes</option>
+                  <option>Todos os testes</option>
                   {simulations.map((simulation) => (
                     <option key={simulation.id}>{simulation.name}</option>
                   ))}
@@ -170,8 +162,8 @@ function MonitoringPage() {
                 <thead className="border-b border-border bg-muted/50 text-[11px] uppercase text-muted-foreground">
                   <tr>
                     <th className="px-4 py-3 font-medium">Candidato</th>
-                    <th className="px-4 py-3 font-medium">Simulacao</th>
-                    <th className="px-4 py-3 font-medium">Turno</th>
+                    <th className="px-4 py-3 font-medium">Teste</th>
+                    <th className="px-4 py-3 font-medium">Etapa</th>
                     <th className="px-4 py-3 font-medium">Tempo</th>
                     <th className="px-4 py-3 font-medium">Ultimo sinal</th>
                     <th className="px-4 py-3 text-right font-medium">Acao</th>
@@ -209,7 +201,10 @@ function MonitoringPage() {
                   ))}
                   {filteredAttempts.length === 0 && (
                     <tr>
-                      <td colSpan={6} className="px-4 py-8 text-center text-sm text-muted-foreground">
+                      <td
+                        colSpan={6}
+                        className="px-4 py-8 text-center text-sm text-muted-foreground"
+                      >
                         Nenhuma tentativa em andamento no momento.
                       </td>
                     </tr>
@@ -221,21 +216,18 @@ function MonitoringPage() {
 
           <section className="overflow-hidden rounded-xl border border-border bg-card">
             <div className="border-b border-border px-4 py-4">
-              <h2 className="text-sm font-semibold">Simulacoes em producao</h2>
+              <h2 className="text-sm font-semibold">Testes em producao</h2>
               <p className="mt-1 text-xs text-muted-foreground">
                 Versoes publicadas com dados de tentativas
               </p>
             </div>
             <div>
               {simulations.slice(0, 4).map((simulation) => (
-                <ProductionSimulation
-                  key={simulation.id}
-                  simulation={simulation}
-                />
+                <ProductionSimulation key={simulation.id} simulation={simulation} />
               ))}
               {simulations.length === 0 && (
                 <div className="px-4 py-8 text-sm text-muted-foreground">
-                  Nenhuma simulacao publicada encontrada.
+                  Nenhum teste publicado encontrado.
                 </div>
               )}
             </div>
@@ -302,7 +294,12 @@ function MetricCard({
         <div className="font-display text-3xl leading-none tabular-nums">{value}</div>
       </div>
       {detail && (
-        <div className={cn("mt-2 text-xs", tone === "danger" ? "text-danger" : "text-muted-foreground")}>
+        <div
+          className={cn(
+            "mt-2 text-xs",
+            tone === "danger" ? "text-danger" : "text-muted-foreground",
+          )}
+        >
           {detail}
         </div>
       )}
@@ -310,11 +307,7 @@ function MetricCard({
   );
 }
 
-function ProductionSimulation({
-  simulation,
-}: {
-  simulation: SimulationSummaryResponse;
-}) {
+function ProductionSimulation({ simulation }: { simulation: SimulationSummaryResponse }) {
   const completion = Math.round(simulation.completionRatePercent || 0);
   const volume = simulation.attemptsCreated || 0;
   const pending = Math.max(0, 100 - completion);

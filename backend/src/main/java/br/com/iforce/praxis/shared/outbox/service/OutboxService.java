@@ -44,7 +44,7 @@ public class OutboxService {
         try {
             return objectMapper.writeValueAsString(payload);
         } catch (Exception e) {
-            throw new RuntimeException("Falha ao serializar payload do outbox event", e);
+            throw new RuntimeException("Erro interno ao preparar entrega.", e);
         }
     }
 }

@@ -131,7 +131,9 @@ function Page() {
     const parsedBlueprint = parseBlueprintDescription(versionQuery.data.description);
     setRole(parsedBlueprint.role || versionQuery.data.name);
     setCriticalSituation(versionQuery.data.criticalSituation ?? parsedBlueprint.criticalSituation);
-    setSelectedResultUse((versionQuery.data.resultUse ?? parsedBlueprint.resultUse) || defaultResultUse);
+    setSelectedResultUse(
+      (versionQuery.data.resultUse ?? parsedBlueprint.resultUse) || defaultResultUse,
+    );
     setSelectedCompetencies(
       versionQuery.data.blueprint.competencies.map((competency) => competency.name),
     );
@@ -154,7 +156,7 @@ function Page() {
             resultUse: copy.descriptionResultUseLabel,
           },
         }),
-        rootNodeId: "turno-1",
+        rootNodeId: "etapa-1",
         competencies: selectedCompetencies,
         criticalSituation: criticalSituation.trim(),
         resultUse: selectedResultUse,
@@ -173,8 +175,11 @@ function Page() {
   const updateExistingMutation = useMutation({
     mutationFn: () =>
       updateSimulationBlueprint(search.simulationId!, search.versionNumber!, {
-        rootNodeId: versionQuery.data?.blueprint.rootNodeId ?? "turno-1",
-        competencies: buildCompetencyWeights(selectedCompetencies, versionQuery.data?.blueprint.competencies),
+        rootNodeId: versionQuery.data?.blueprint.rootNodeId ?? "etapa-1",
+        competencies: buildCompetencyWeights(
+          selectedCompetencies,
+          versionQuery.data?.blueprint.competencies,
+        ),
         criticalSituation: criticalSituation.trim(),
         resultUse: selectedResultUse,
       }),
@@ -278,222 +283,212 @@ function Page() {
       )}
 
       {config && !versionQuery.isLoading && !versionQuery.isError && (
-      <div className="space-y-6">
-        <div className="rounded-xl border border-border bg-card p-5">
-          <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-            {copy.whyTitle}
-          </div>
-          <p className="mt-2 text-sm text-foreground/80">
-            {copy.whyBodyStart} <Termo id="blueprint">{copy.whyTerm}</Termo>{" "}
-            {copy.whyBodyEnd.split("{validator}")[0]}
-            <Termo id="validador">{copy.validatorTerm}</Termo>
-            {copy.whyBodyEnd.split("{validator}")[1]}
-          </p>
-        </div>
-        <div className="rounded-xl border border-warning/30 bg-warning/10 p-5">
-          <div className="text-xs font-semibold uppercase tracking-wider text-warning-foreground">
-            {copy.scoringTitle}
-          </div>
-          <p className="mt-2 text-sm text-foreground/80">
-            {copy.scoringBodyStart} <Termo id="blueprint">{copy.whyTerm}</Termo>{" "}
-            {copy.scoringBodyEnd}
-          </p>
-        </div>
         <div className="space-y-6">
-          <Header
-            kicker={copy.kicker}
-            title={copy.heading}
-            lede={copy.lede}
-          />
+          <div className="rounded-xl border border-border bg-card p-5">
+            <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              {copy.whyTitle}
+            </div>
+            <p className="mt-2 text-sm text-foreground/80">
+              {copy.whyBodyStart} <Termo id="blueprint">{copy.whyTerm}</Termo>{" "}
+              {copy.whyBodyEnd.split("{validator}")[0]}
+              <Termo id="validador">{copy.validatorTerm}</Termo>
+              {copy.whyBodyEnd.split("{validator}")[1]}
+            </p>
+          </div>
+          <div className="rounded-xl border border-warning/30 bg-warning/10 p-5">
+            <div className="text-xs font-semibold uppercase tracking-wider text-warning-foreground">
+              {copy.scoringTitle}
+            </div>
+            <p className="mt-2 text-sm text-foreground/80">
+              {copy.scoringBodyStart} <Termo id="blueprint">{copy.whyTerm}</Termo>{" "}
+              {copy.scoringBodyEnd}
+            </p>
+          </div>
+          <div className="space-y-6">
+            <Header kicker={copy.kicker} title={copy.heading} lede={copy.lede} />
 
-          <Card title={copy.roleCard} required requiredLabel={copy.required}>
-            <Field label={copy.roleLabel}>
-              <input
-                className={`input ${submitAttempted && role.trim().length === 0 ? "border-danger" : ""}`}
-                placeholder={copy.rolePlaceholder}
-                maxLength={roleMaxLength}
+            <Card title={copy.roleCard} required requiredLabel={copy.required}>
+              <Field label={copy.roleLabel}>
+                <input
+                  className={`input ${submitAttempted && role.trim().length === 0 ? "border-danger" : ""}`}
+                  placeholder={copy.rolePlaceholder}
+                  maxLength={roleMaxLength}
+                  required
+                  aria-required="true"
+                  value={role}
+                  onChange={(event) => setRole(event.target.value)}
+                />
+                <FieldMeta
+                  error={
+                    submitAttempted && role.trim().length === 0 ? copy.roleRequiredError : undefined
+                  }
+                  count={role.length}
+                  max={roleMaxLength}
+                />
+              </Field>
+            </Card>
+
+            <Card title={copy.criticalSituationCard} required requiredLabel={copy.required}>
+              <textarea
+                aria-label={copy.criticalSituationAria}
+                className={`input min-h-24 ${submitAttempted && criticalSituation.trim().length === 0 ? "border-danger" : ""}`}
+                maxLength={criticalSituationMaxLength}
                 required
                 aria-required="true"
-                value={role}
-                onChange={(event) => setRole(event.target.value)}
+                value={criticalSituation}
+                onChange={(event) => setCriticalSituation(event.target.value)}
               />
               <FieldMeta
                 error={
-                  submitAttempted && role.trim().length === 0
-                    ? copy.roleRequiredError
+                  submitAttempted && criticalSituation.trim().length === 0
+                    ? copy.criticalSituationRequiredError
                     : undefined
                 }
-                count={role.length}
-                max={roleMaxLength}
+                count={criticalSituation.length}
+                max={criticalSituationMaxLength}
               />
-            </Field>
-          </Card>
+              <Help>{copy.criticalSituationHelp}</Help>
+            </Card>
 
-          <Card title={copy.criticalSituationCard} required requiredLabel={copy.required}>
-            <textarea
-              aria-label={copy.criticalSituationAria}
-              className={`input min-h-24 ${submitAttempted && criticalSituation.trim().length === 0 ? "border-danger" : ""}`}
-              maxLength={criticalSituationMaxLength}
-              required
-              aria-required="true"
-              value={criticalSituation}
-              onChange={(event) => setCriticalSituation(event.target.value)}
-            />
-            <FieldMeta
-              error={
-                submitAttempted && criticalSituation.trim().length === 0
-                  ? copy.criticalSituationRequiredError
-                  : undefined
-              }
-              count={criticalSituation.length}
-              max={criticalSituationMaxLength}
-            />
-            <Help>{copy.criticalSituationHelp}</Help>
-          </Card>
-
-          <Card title={copy.competenciesCard} required requiredLabel={copy.required}>
-            <div className="mb-3">
-              <input
-                className="input"
-                placeholder="Buscar competÃªncia"
-                value={competencySearch}
-                onChange={(event) => setCompetencySearch(event.target.value)}
-                disabled={tenantConfigLoading || addCompetencyMutation.isPending}
-              />
-              <div className="mt-1 text-xs text-muted-foreground">
-                {visibleCompetencies.length} de {competencies.length} disponÃ­veis
+            <Card title={copy.competenciesCard} required requiredLabel={copy.required}>
+              <div className="mb-3">
+                <input
+                  className="input"
+                  placeholder="Buscar competÃªncia"
+                  value={competencySearch}
+                  onChange={(event) => setCompetencySearch(event.target.value)}
+                  disabled={tenantConfigLoading || addCompetencyMutation.isPending}
+                />
+                <div className="mt-1 text-xs text-muted-foreground">
+                  {visibleCompetencies.length} de {competencies.length} disponÃ­veis
+                </div>
               </div>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              {visibleCompetencies.length === 0 ? (
-                <p className="text-sm text-muted-foreground">
-                  Nenhuma competÃªncia encontrada para esse filtro.
-                </p>
-              ) : (
-                visibleCompetencies.map((competency) => (
-                <label
-                  key={competency.value}
-                  title={competencyHint(competency.label)}
-                  className={`cursor-pointer rounded-full border px-3 py-1.5 text-sm ${
-                    selectedCompetencies.includes(competency.value)
-                      ? "border-primary bg-primary/10 text-foreground"
-                      : "border-border bg-card text-foreground/75 hover:bg-accent"
-                  }`}
+              <div className="flex flex-wrap gap-2">
+                {visibleCompetencies.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">
+                    Nenhuma competÃªncia encontrada para esse filtro.
+                  </p>
+                ) : (
+                  visibleCompetencies.map((competency) => (
+                    <label
+                      key={competency.value}
+                      title={competencyHint(competency.label)}
+                      className={`cursor-pointer rounded-full border px-3 py-1.5 text-sm ${
+                        selectedCompetencies.includes(competency.value)
+                          ? "border-primary bg-primary/10 text-foreground"
+                          : "border-border bg-card text-foreground/75 hover:bg-accent"
+                      }`}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={selectedCompetencies.includes(competency.value)}
+                        onChange={() => toggleCompetency(competency.value)}
+                        className="sr-only"
+                      />
+                      {competency.label}
+                    </label>
+                  ))
+                )}
+              </div>
+              <div className="mt-4 grid gap-2 md:grid-cols-[1fr_auto]">
+                <input
+                  className="input"
+                  placeholder={copy.addCompetencyPlaceholder}
+                  value={newCompetency}
+                  onChange={(event) => setNewCompetency(event.target.value)}
+                />
+                <button
+                  type="button"
+                  onClick={() => addCompetencyMutation.mutate(newCompetency.trim())}
+                  disabled={!canAddCompetency || addCompetencyMutation.isPending}
+                  className="rounded-md border border-border bg-card px-4 py-2 text-sm hover:bg-accent disabled:cursor-not-allowed disabled:opacity-50"
                 >
-                  <input
-                    type="checkbox"
-                    checked={selectedCompetencies.includes(competency.value)}
-                    onChange={() => toggleCompetency(competency.value)}
-                    className="sr-only"
-                  />
-                  {competency.label}
-                </label>
-                ))
-              )}
-            </div>
-            <div className="mt-4 grid gap-2 md:grid-cols-[1fr_auto]">
-              <input
-                className="input"
-                placeholder={copy.addCompetencyPlaceholder}
-                value={newCompetency}
-                onChange={(event) => setNewCompetency(event.target.value)}
-              />
-              <button
-                type="button"
-                onClick={() => addCompetencyMutation.mutate(newCompetency.trim())}
-                disabled={!canAddCompetency || addCompetencyMutation.isPending}
-                className="rounded-md border border-border bg-card px-4 py-2 text-sm hover:bg-accent disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                {addCompetencyMutation.isPending ? copy.saving : copy.addAndSave}
-              </button>
-            </div>
-            <Help>{copy.addedCompetencyHelp}</Help>
-            {addCompetencyMutation.isError && (
-              <p className="mt-2 text-xs text-danger">
-                {addCompetencyMutation.error instanceof Error
-                  ? addCompetencyMutation.error.message
-                  : copy.competencySaveError}
-              </p>
-            )}
-            <Help>{copy.customCompetencyHelp}</Help>
-          </Card>
-
-          <Card title={copy.resultUseCard}>
-            <div className="grid gap-2 md:grid-cols-4">
-              {resultUses.map((use) => (
-                <label
-                  key={use.value}
-                  className={`flex cursor-pointer items-center gap-2 rounded-md border px-3 py-2 text-sm ${
-                    selectedResultUse === use.value
-                      ? "border-primary bg-primary/5 text-foreground"
-                      : use.locked
-                        ? "border-dashed border-border bg-muted/40 text-muted-foreground"
-                        : "border-border bg-card hover:bg-accent"
-                  }`}
-                >
-                  <input
-                    type="radio"
-                    name="uso"
-                    checked={selectedResultUse === use.value}
-                    onChange={() => setSelectedResultUse(use.value)}
-                    disabled={use.locked}
-                    className="sr-only"
-                  />
-                  {use.label}
-                </label>
-              ))}
-            </div>
-            <Help>{copy.resultUseHelp}</Help>
-          </Card>
-
-          <div className="sticky bottom-0 -mx-6 mt-2 flex flex-col gap-3 border-t border-border bg-background/90 px-6 py-4 backdrop-blur sm:flex-row sm:items-center sm:justify-between lg:-mx-10 lg:px-10">
-            <Link
-              to="/"
-              className="rounded-md border border-border bg-card px-4 py-2 text-sm hover:bg-accent"
-            >
-              {copy.cancel}
-            </Link>
-            <div className="flex flex-col items-start gap-2 sm:items-end">
-              {!canGoNext && (
-                <p
-                  className={`text-xs ${submitAttempted ? "text-danger" : "text-muted-foreground"}`}
-                  aria-live="polite"
-                >
-                  {copy.missingFieldsPrefix} {missingFields.join(", ")}.
+                  {addCompetencyMutation.isPending ? copy.saving : copy.addAndSave}
+                </button>
+              </div>
+              <Help>{copy.addedCompetencyHelp}</Help>
+              {addCompetencyMutation.isError && (
+                <p className="mt-2 text-xs text-danger">
+                  {addCompetencyMutation.error instanceof Error
+                    ? addCompetencyMutation.error.message
+                    : copy.competencySaveError}
                 </p>
               )}
-              <button
-                type="button"
-                disabled={createDraftMutation.isPending || updateExistingMutation.isPending}
-                title={
-                  canGoNext
-                    ? copy.createDraftTitle
-                    : copy.disabledNextTitle
-                }
-                onClick={() => {
-                  if (!canGoNext) {
-                    setSubmitAttempted(true);
-                    return;
-                  }
-                  if (hasVersionContext) {
-                    updateExistingMutation.mutate();
-                    return;
-                  }
-                  createDraftMutation.mutate();
-                }}
-                aria-disabled={!canGoNext}
-                className={`rounded-md bg-primary px-5 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 ${
-                  !canGoNext || createDraftMutation.isPending || updateExistingMutation.isPending
-                    ? "cursor-not-allowed opacity-50"
-                    : ""
-                }`}
+              <Help>{copy.customCompetencyHelp}</Help>
+            </Card>
+
+            <Card title={copy.resultUseCard}>
+              <div className="grid gap-2 md:grid-cols-4">
+                {resultUses.map((use) => (
+                  <label
+                    key={use.value}
+                    className={`flex cursor-pointer items-center gap-2 rounded-md border px-3 py-2 text-sm ${
+                      selectedResultUse === use.value
+                        ? "border-primary bg-primary/5 text-foreground"
+                        : use.locked
+                          ? "border-dashed border-border bg-muted/40 text-muted-foreground"
+                          : "border-border bg-card hover:bg-accent"
+                    }`}
+                  >
+                    <input
+                      type="radio"
+                      name="uso"
+                      checked={selectedResultUse === use.value}
+                      onChange={() => setSelectedResultUse(use.value)}
+                      disabled={use.locked}
+                      className="sr-only"
+                    />
+                    {use.label}
+                  </label>
+                ))}
+              </div>
+              <Help>{copy.resultUseHelp}</Help>
+            </Card>
+
+            <div className="sticky bottom-0 -mx-6 mt-2 flex flex-col gap-3 border-t border-border bg-background/90 px-6 py-4 backdrop-blur sm:flex-row sm:items-center sm:justify-between lg:-mx-10 lg:px-10">
+              <Link
+                to="/"
+                className="rounded-md border border-border bg-card px-4 py-2 text-sm hover:bg-accent"
               >
-                {createDraftMutation.isPending ? copy.creatingDraft : copy.next}
-              </button>
+                {copy.cancel}
+              </Link>
+              <div className="flex flex-col items-start gap-2 sm:items-end">
+                {!canGoNext && (
+                  <p
+                    className={`text-xs ${submitAttempted ? "text-danger" : "text-muted-foreground"}`}
+                    aria-live="polite"
+                  >
+                    {copy.missingFieldsPrefix} {missingFields.join(", ")}.
+                  </p>
+                )}
+                <button
+                  type="button"
+                  disabled={createDraftMutation.isPending || updateExistingMutation.isPending}
+                  title={canGoNext ? copy.createDraftTitle : copy.disabledNextTitle}
+                  onClick={() => {
+                    if (!canGoNext) {
+                      setSubmitAttempted(true);
+                      return;
+                    }
+                    if (hasVersionContext) {
+                      updateExistingMutation.mutate();
+                      return;
+                    }
+                    createDraftMutation.mutate();
+                  }}
+                  aria-disabled={!canGoNext}
+                  className={`rounded-md bg-primary px-5 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 ${
+                    !canGoNext || createDraftMutation.isPending || updateExistingMutation.isPending
+                      ? "cursor-not-allowed opacity-50"
+                      : ""
+                  }`}
+                >
+                  {createDraftMutation.isPending ? copy.creatingDraft : copy.next}
+                </button>
+              </div>
             </div>
           </div>
         </div>
-      </div>
       )}
     </AppShell>
   );
@@ -540,9 +535,9 @@ function buildCompetencyWeights(
   competencies: string[],
   existingCompetencies?: { name: string; weight: number }[],
 ) {
-  const uniqueCompetencies = [...new Set(competencies.map((competency) => competency.trim()))].filter(
-    Boolean,
-  );
+  const uniqueCompetencies = [
+    ...new Set(competencies.map((competency) => competency.trim())),
+  ].filter(Boolean);
   const normalizedUniqueCompetencies = uniqueCompetencies.map(normalizeLabel).sort();
   const normalizedExistingCompetencies = (existingCompetencies ?? [])
     .map((competency) => normalizeLabel(competency.name))
@@ -674,7 +669,7 @@ function FieldMeta({ error, count, max }: { error?: string; count: number; max: 
 }
 
 function competencyHint(label: string) {
-  return `Competência "${label}": esta competência descreve o que será cobrado durante a simulação.`;
+  return `Competência "${label}": esta competência descreve o que será cobrado durante o teste.`;
 }
 
 function Help({ children }: { children: React.ReactNode }) {

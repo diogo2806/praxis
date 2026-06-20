@@ -10,7 +10,7 @@ public record AuditEventResponse(
         @Schema(example = "1")
         Long id,
 
-        @Schema(example = "CandidateAttempt")
+        @Schema(example = "Tentativa do candidato")
         String aggregateType,
 
         @Schema(example = "att_123")
@@ -19,7 +19,7 @@ public record AuditEventResponse(
         @Schema(example = "answerSubmitted")
         AuditEventType eventType,
 
-        @Schema(example = "Resposta salva para o turno turno-1.")
+        @Schema(example = "Resposta salva para a etapa turno-1.")
         String message,
 
         @Schema(example = "{\"nodeId\":\"turno-1\"}")

@@ -15,7 +15,7 @@ export const statusMeta: Record<
 };
 
 export const wizardSteps = [
-  { slug: "avaliacao", label: "Avaliação", n: 1, path: "/nova/blueprint" },
+  { slug: "avaliacao", label: "Teste", n: 1, path: "/nova/blueprint" },
   { slug: "cenario", label: "Cenário", n: 2, path: "/nova/personagem" },
   { slug: "revisao", label: "Revisão", n: 3, path: "/nova/validador" },
   { slug: "publicacao", label: "Publicação", n: 4, path: "/nova/piloto" },

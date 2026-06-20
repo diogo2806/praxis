@@ -29,10 +29,10 @@ public class GupyOutboundUrlValidator {
             throw new IllegalArgumentException("URL externa deve usar HTTP ou HTTPS.");
         }
         if (securityEnabled && !scheme.equals("https")) {
-            throw new IllegalArgumentException("URL externa deve usar HTTPS em producao.");
+            throw new IllegalArgumentException("URL externa deve usar HTTPS em produção.");
         }
         if (host.isBlank() || uri.getUserInfo() != null) {
-            throw new IllegalArgumentException("URL externa invalida.");
+            throw new IllegalArgumentException("URL externa inválida.");
         }
         assertPublicAddress(host);
         return uri;
@@ -42,11 +42,11 @@ public class GupyOutboundUrlValidator {
         try {
             for (InetAddress address : InetAddress.getAllByName(host)) {
                 if (isForbiddenAddress(address)) {
-                    throw new IllegalArgumentException("URL externa nao pode apontar para rede local ou reservada.");
+                    throw new IllegalArgumentException("URL externa não pode apontar para rede local ou reservada.");
                 }
             }
         } catch (UnknownHostException exception) {
-            throw new IllegalArgumentException("Host externo nao resolvido.", exception);
+            throw new IllegalArgumentException("Host externo não resolvido.", exception);
         }
     }
 

@@ -5,6 +5,8 @@ import org.junit.jupiter.api.Test;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.nio.charset.StandardCharsets;
+
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class MediaStorageServiceTest {
@@ -26,6 +28,30 @@ class MediaStorageServiceTest {
                 "payload.svg",
                 "image/svg+xml",
                 "<svg><script>alert(1)</script></svg>".getBytes()
+        );
+
+        assertThatThrownBy(() -> service.upload(file))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasMessageContaining("415 UNSUPPORTED_MEDIA_TYPE");
+    }
+
+    @Test
+    void rejectsSpoofedContentTypeBeforeStorageWrite() {
+        MediaStorageService service = new MediaStorageService(new ObjectStorageProperties(
+                "http://localhost:9000",
+                "http://localhost:9000",
+                "us-east-1",
+                "access",
+                "secret",
+                "praxis-media",
+                true
+        ));
+
+        MockMultipartFile file = new MockMultipartFile(
+                "file",
+                "payload.png",
+                "image/png",
+                "this is not a png".getBytes(StandardCharsets.UTF_8)
         );
 
         assertThatThrownBy(() -> service.upload(file))

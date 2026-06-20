@@ -312,6 +312,33 @@ class CandidateAttemptControllerTest {
     }
 
     @Test
+    void delayedAnswerAfterServerGraceUsesTrustedClientTimestampAndCompletesAttempt() throws Exception {
+        String attemptId = createStartedAttempt("candidate-delayed-after-server-grace");
+        Instant startedAt = Instant.now().minusSeconds(70);
+        updateStartedAt(attemptId, startedAt);
+
+        mockMvc.perform(post("/candidate/attempts/" + attemptId + "/answers")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "nodeId": "turno-1",
+                                  "nodeNumber": 1,
+                                  "optionId": "opcao-equilibrada",
+                                  "answeredAt": "%s"
+                                }
+                                """.formatted(startedAt.plusSeconds(40))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("concluida"))
+                .andExpect(jsonPath("$.finalizado").value(true));
+
+        CandidateAttemptEntity candidateAttemptEntity = candidateAttemptRepository.findById(attemptId)
+                .orElseThrow();
+        assertThat(candidateAttemptEntity.getAnswers()).hasSize(1);
+        assertThat(candidateAttemptEntity.getAnswers().iterator().next().getAnsweredAt())
+                .isEqualTo(startedAt.plusSeconds(40));
+    }
+
+    @Test
     void answerGeneratedAfterFrontendLimitIsRejectedEvenInsideGracePeriod() throws Exception {
         String attemptId = createStartedAttempt("candidate-late-after-frontend-limit");
         Instant startedAt = Instant.now().minusSeconds(50);

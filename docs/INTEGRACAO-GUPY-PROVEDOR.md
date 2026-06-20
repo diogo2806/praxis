@@ -1,281 +1,226 @@
-# Integração Praxis como Provedor de Testes da Gupy
+# Integracao Praxis como Provedor de Testes da Gupy
 
-> **Propósito:** Documentar contrato, endpoints e fluxo de integração com Gupy como provedor de testes comportamentais.
-> **Público:** Times técnico e operacional da Gupy, gestor de integração da Praxis.
-> **Status:** ✅ v0.1.0 — Pronta para homologação.
+> **Proposito:** documentar o contrato real implementado para a Gupy consumir o Praxis como provedor externo de testes.
+> **Status:** alinhado ao backend em 20/06/2026.
 
----
+## Visao geral
 
-## 📋 Visão Geral
+O Praxis expoe tres endpoints publicos para a Gupy:
 
-O Praxis atua como **provedor de testes externos da Gupy**, expondo endpoints públicos autenticados por Bearer token para listagem de simulações, criação de tentativas de candidatos e consulta de resultados finais.
+- listar simulacoes publicadas;
+- criar ou reutilizar uma tentativa de candidato;
+- consultar o resultado final.
 
-**Características:**
-- ✅ Testes determinísticos (sem IA)
-- ✅ Integração por token Bearer
-- ✅ Webhooks com retry + DLQ (Dead Letter Queue)
-- ✅ Idempotência de tentativas
-- ✅ Isolamento por tenant
+Quando a tentativa tem `result_webhook_url`, o resultado tambem e entregue de forma assincrona pelo outbox.
 
----
+## Autenticacao
 
-## 🔌 Endpoints Implementados
+Todas as rotas `/test/**` exigem:
 
-| Endpoint | Método | Status | Descrição |
-|---|---|---|---|
-| `GET /test` | GET | ✅ Pronto | Lista simulações publicadas com paginação e busca |
-| `POST /test/candidate` | POST | ✅ Pronto | Cria ou reutiliza tentativa (idempotente) |
-| `GET /test/result/{resultId}` | GET | ✅ Pronto | Consulta resultado (escopado por empresa) |
-| `POST result_webhook_url` | POST | ✅ Pronto | Recebe envio assíncrono do resultado |
-
-### Parâmetros Detalhados
-
-**GET /test**
-```
-Parâmetros:
-  - offset (opcional): deslocamento para paginação
-  - limit (opcional): quantidade de resultados por página
-  - searchString (opcional): busca por título ou código da simulação
-  
-Autenticação: Bearer token de integração Gupy
+```text
+Authorization: Bearer <token>
 ```
 
-**POST /test/candidate**
-```
-Body:
-{
-  "companyId": "empresa-123",
-  "documentId": "cpf-ou-documento-candidato",
-  "testId": "sim-atendimento",
-  "candidateName": "João Silva",
-  "candidateEmail": "joao@example.com",
-  "candidatePhone": "11999999999",
-  "callbackUrl": "https://gupy.com.br/callback",
-  "resultWebhookUrl": "https://gupy.com.br/webhook" (opcional)
-}
+O backend nao valida esse token diretamente por uma variavel `PRAXIS_INTEGRATION_TOKEN`. O fluxo atual e:
 
-Retorno:
-{
-  "testId": "sim-atendimento",
-  "testUrl": "https://praxis.com.br/candidato/att_xyz",
-  "estimatedDurationInSeconds": 1200
-}
-  
-Autenticação: Bearer token de integração Gupy
+1. `GupyAuthService` calcula SHA-256 do token recebido.
+2. O hash e codificado em Base64URL sem padding.
+3. O hash precisa existir em `tenants.integration_token_hash`.
+4. O tenant e o `company_id` sao resolvidos a partir desse registro.
+
+Para configurar localmente:
+
+```bash
+node -e "const crypto=require('crypto'); console.log(crypto.createHash('sha256').update('token-local').digest('base64url'))"
 ```
 
-**GET /test/result/{resultId}**
-```
-Parâmetros:
-  - company_id (obrigatório): empresa que criou a tentativa
-  - resultId: identificador único do resultado
-
-Autenticação: Bearer token de integração Gupy
+```sql
+UPDATE tenants
+SET integration_token_hash = '<hash-gerado>'
+WHERE id = 'tenant-1';
 ```
 
----
+## Endpoints
 
-## 🔄 Fluxo Completo (End-to-End)
+| Metodo | Endpoint | Descricao |
+| --- | --- | --- |
+| `GET` | `/test` | Lista simulacoes publicadas do tenant do token. |
+| `POST` | `/test/candidate` | Cria ou reutiliza tentativa idempotente. |
+| `GET` | `/test/result/{resultId}?company_id={companyId}` | Consulta resultado final escopado por empresa. |
 
-```mermaid
-1. Gupy lista simulações
-   GET /test
-   ↓
-2. Gupy cria tentativa para candidato
-   POST /test/candidate → Praxis gera testUrl e callbackUrl
-   ↓
-3. Candidato acessa link público
-   GET /candidato/:attemptId
-   ↓
-4. Candidato completa a simulação
-   POST /candidato/:attemptId/answers
-   ↓
-5. Praxis calcula score determinístico
-   [Sem IA, apenas regras de negócio]
-   ↓
-6. Backend enfileira entrega
-   EventProcessor lê Outbox
-   ↓
-7. Backend chama callback + webhook
-   POST callbackUrl (síncrono)
-   POST resultWebhookUrl (assíncrono com retry)
-   ↓
-8. Gupy consulta resultado (opcional)
-   GET /test/result/{resultId}?company_id=empresa-123
-```
+## `GET /test`
 
-### Descrição por Etapa
+Query params:
 
-| Etapa | Responsável | Ação | Notas |
-|---|---|---|---|
-| 1 | Gupy | Lista testes publicados | Busca por `searchString` se necessário |
-| 2 | Gupy → Praxis | Cria tentativa + salva URLs | Chave idempotente: `companyId\|documentId\|testId` |
-| 3–4 | Candidato | Responde no link público | Sem autenticação JWT, apenas token de tentativa |
-| 5 | Praxis | Calcula score (regras fixas) | Determinístico e auditável |
-| 6 | Praxis (async) | Lê Outbox e despacha | EventProcessor em background |
-| 7 | Backend → Gupy | Entrega resultado com retry | Webhook tem timeout, assinatura HMAC e idempotency key |
-| 8 | Gupy (opcional) | Consulta resultado | Para sincronizar ou validar; exige `company_id` correto |
+- `searchString` opcional.
+- `offset` opcional; padrao `0`.
+- `limit` opcional; padrao `50`, normalizado entre `1` e `400`.
 
----
-
-## 📊 Contrato de Resultado (JSON)
+Resposta real:
 
 ```json
 {
-  "title": "Cenário: Atendimento em Caos",
-  "testCode": "sim-atendimento-caos",
-  "description": "Avaliação situacional determinística.",
-  "providerName": "Praxis",
-  "company_result_string": "**Score geral: 100/100**\n\n- Empatia: 95%\n- Comunicação: 100%\n- Decisão: 100%",
-  "providerLink": "https://praxis.com.br",
-  "status": "done",
-  "result_page_url": "https://praxis.com.br/test/result/res_123?company_id=empresa-123",
-  "result_candidate_page_url": "https://praxis.com.br/candidato/att_123",
-  "results": [
+  "limit": 50,
+  "offset": 0,
+  "total_tests": 1,
+  "payload": [
     {
-      "score": 95,
-      "result_string": "95%",
-      "type_result": "percentage",
-      "tier": "major",
-      "title": "Empatia",
-      "description": "Pontuação da competência Empatia em decisões.",
-      "date": "2026-06-16T15:00:00Z",
-      "other_informations": {
-        "turns_completed": 8,
-        "critical_decisions": 2,
-        "evidence_count": 12
-      }
+      "id": "sim-atendimento",
+      "name": "Atendimento em situacao critica",
+      "category": "Situational Judgment",
+      "description": "Avaliacao comportamental deterministica.",
+      "level": "advanced"
     }
   ]
 }
 ```
 
-### Regras de Resultado
+## `POST /test/candidate`
 
-| Campo | Regra |
-|---|---|
-| `status` | Apenas: `notStarted`, `paused`, `done` |
-| `score` | Percentual de 0 a 100 |
-| `tier` | `major` (visível para candidato e empresa) ou `minor` (apenas empresa) |
-| `company_result_string` | Markdown/texto formatado para leitura executiva |
-| `date` | ISO 8601 UTC (`YYYY-MM-DDTHH:mm:ssZ`) |
-| Isolamento | `company_id` deve corresponder exatamente ao da tentativa |
+Body real em snake_case:
 
----
-
-## 🔐 Segurança e Autenticação
-
-### Filtro de API Key Gupy
-```java
-GupyApiKeyFilter
-├── Endpoints: /test/**
-├── Extrai token Bearer do header
-├── Valida contra PRAXIS_GUPY_API_KEY
-└── Atribui role GUPY se válido
-```
-
-### Validação de URLs Externas
-```
-GupyOutboundUrlValidator
-├── Permitidas: HTTPS, domínios públicos (whitelist PRAXIS_WEBHOOK_ALLOWED_HOSTS)
-├── Bloqueadas: localhost, 127.0.0.1, 192.168.*, 10.0.0.*, links internos
-├── Timeout: 30s para webhook
-└── Assinatura: HMAC-SHA256 no header X-Praxis-Signature
-```
-
-### Isolamento por Tenant
-- Cada tentativa é vinculada a `companyId`
-- Consulta de resultado exige `company_id` coincidente
-- Evita acesso cruzado entre clientes
-
-### Papéis (Roles)
-| Role | Endpoints | Descrição |
-|---|---|---|
-| `GUPY` | `/test/**` | Integração técnica da Gupy |
-| `EMPRESA` | `/api/v1/**` | Usuário da empresa contratante (operacional) |
-| `ADMIN` | (futuro) | Administrador global (ainda não implementado) |
-
----
-
-## 📋 Regras Importantes
-
-1. **Idempotência**: Mesma chave `companyId|documentId|testId` retorna tentativa existente
-2. **Callback síncrono**: Executado no contexto de conclusão da tentativa
-3. **Webhook assíncrono**: Fila com retry exponencial (1s, 2s, 4s, 8s, 16s)
-4. **DLQ (Dead Letter Queue)**: Falhas após 5 retries vão para DLQ
-5. **Whitelist obrigatória**: Webhooks só para domínios pré-aprovados
-6. **Atualização de tentativa**: Não permitida após `COMPLETED`
-7. **Retenção de dados**: Conforme LGPD e configuração do tenant
-
----
-
-## 📈 Monitoramento
-
-**Acompanhar entregas via:**
-```
-GET /api/v1/gupy/result-deliveries?simulationId={id}&versionNumber={n}
-```
-
-**Filtros disponíveis:**
-- `status`: `pending`, `delivered`, `failed`, `dlq`
-- `simulationId`: ID da simulação
-- `versionNumber`: Versão da simulação
-- `dateFrom` / `dateTo`: Período
-
-**Exemplo de resposta:**
 ```json
 {
-  "resultDeliveries": [
-    {
-      "id": "delivery_123",
-      "resultId": "res_456",
-      "companyId": "empresa-789",
-      "status": "delivered",
-      "deliveredAt": "2026-06-16T15:00:00Z",
-      "retryCount": 2,
-      "errorMessage": null
-    }
-  ],
-  "total": 42,
-  "page": 1
+  "company_id": "empresa-123",
+  "document_id": "candidate-document-456",
+  "test_id": "sim-atendimento",
+  "name": "Candidato Teste",
+  "email": "candidato@example.com",
+  "result_webhook_url": "https://integracao.gupy.example/webhook",
+  "accommodation_time_multiplier": 1.5,
+  "candidate_type": "external",
+  "previous_result": "none"
 }
 ```
 
----
+Campos:
 
-## ✅ Checklist Pré-Homologação
+| Campo | Obrigatorio | Observacao |
+| --- | --- | --- |
+| `company_id` | Sim | Deve bater com a empresa associada ao token. |
+| `document_id` | Sim | Usado na chave idempotente. |
+| `test_id` | Sim | ID da simulacao publicada. |
+| `name` | Sim | Nome do candidato. |
+| `email` | Sim | Email valido do candidato. |
+| `result_webhook_url` | Nao | Se informado, recebe resultado/eventos por outbox. |
+| `accommodation_time_multiplier` | Nao | Multiplicador de tempo para acessibilidade. |
+| `candidate_type` | Nao | Exemplo: `internal` ou `external`. |
+| `previous_result` | Nao | Exemplo: `pass`, `fail` ou `none`. |
 
-- [ ] URL base e token compartilhados com time de integrações Gupy
-- [ ] Teste com vaga real não-listada + candidato fictício
-- [ ] Validar callback e webhook recebem resultados completos
-- [ ] Testar retry de webhook em caso de falha simulada (5xx)
-- [ ] Verificar idempotência (mesma tentativa retorna mesmo resultado)
-- [ ] Validar isolamento de tenant (empresa A não vê dados de empresa B)
-- [ ] Ativar scheduler de entrega (`@Scheduled`)
-- [ ] Documentar porta, IP whitelist e zona de DNS com Gupy
-- [ ] Configurar alertas para DLQ
+Nao existem no DTO atual:
 
----
+- `candidatePhone`;
+- campo de callback de retorno;
+- campos em camelCase para empresa, documento, candidato ou webhook.
 
-## 📞 Próximos Passos
+Resposta real:
 
-1. **Curto prazo (semana 1–2):**
-   - Enviar credenciais (URL base + token) para time Gupy
-   - Ativar agendador de entrega em produção
-   - Fazer primeiro teste end-to-end
+```json
+{
+  "test_url": "http://localhost:8080/candidate/attempts/<token-publico-da-tentativa>",
+  "test_result_id": "res_123"
+}
+```
 
-2. **Médio prazo (semana 3–4):**
-   - Implementar retry com backoff exponencial no webhook
-   - Adicionar observabilidade (logs estruturados + métricas Prometheus)
-   - Criar dashboard de monitoramento de entregas
+Observacao operacional: no backend atual, `test_url` e montada com `PRAXIS_PUBLIC_BASE_URL + /candidate/attempts/{token}`. Esse endpoint retorna JSON da tentativa. Se a Gupy precisar abrir uma experiencia de browser para o candidato, o produto deve ajustar o backend/configuracao para devolver URL de frontend em `/candidato/{token}` ou usar `PRAXIS_CANDIDATE_PAGE_BASE_URL` em outro ponto do fluxo.
 
-3. **Longo prazo:**
-   - Avaliar novas integrações somente quando houver contrato e cliente real
-   - Adicionar suporte a autenticação OAuth 2.0 se o contrato Gupy exigir
-   - Implementar rate limiting por tenant
+## `GET /test/result/{resultId}`
 
----
+Exemplo:
 
-**Última atualização:** 18/06/2026  
-**Dono:** @time-integracao  
-**Próximo:** Consultar [Arquitetura Outbox](ARQUITETURA_OUTBOX_PATTERN.md) | [Garantias de Produção](../README.md)
+```text
+GET /test/result/res_123?company_id=empresa-123
+Authorization: Bearer <token>
+```
+
+O backend valida:
+
+- Bearer token;
+- tenant associado ao hash do token;
+- `company_id` compativel com o tenant;
+- existencia do resultado.
+
+## Fluxo atual
+
+```mermaid
+sequenceDiagram
+  participant Gupy
+  participant Praxis
+  participant Candidato
+  participant Outbox
+
+  Gupy->>Praxis: GET /test
+  Praxis-->>Gupy: payload de simulacoes publicadas
+  Gupy->>Praxis: POST /test/candidate
+  Praxis-->>Gupy: test_url + test_result_id
+  Candidato->>Praxis: GET test_url
+  Candidato->>Praxis: POST /candidate/attempts/{token}/answers
+  Praxis->>Praxis: calcula score deterministico
+  Praxis->>Outbox: grava RESULT_READY se houver result_webhook_url
+  Outbox->>Gupy: POST result_webhook_url
+  Gupy->>Praxis: GET /test/result/{resultId}
+```
+
+## Entrega assincrona por outbox
+
+Status:
+
+- `pending`
+- `retrying`
+- `sent`
+- `dlq`
+
+Backoff:
+
+| Tentativa | Proximo retry |
+| --- | --- |
+| 1 | 1 segundo |
+| 2 | 4 segundos |
+| 3 | 16 segundos |
+| 4 | 64 segundos |
+| 5+ | DLQ |
+
+Nuance de erro:
+
+- Erros HTTP 4xx vindos do destino sao tratados como erro de contrato e vao para DLQ.
+- Erros de rede, DNS, URL invalida, parsing ou falha inesperada podem entrar em retry ate o limite.
+
+## Monitoramento interno
+
+```text
+GET  /api/v1/gupy/result-deliveries
+GET  /api/v1/gupy/result-deliveries/ready
+POST /api/v1/gupy/result-deliveries/process-ready
+POST /api/v1/gupy/result-deliveries/{deliveryId}/reprocess
+```
+
+Filtros de listagem:
+
+- `status=pending|retrying|sent|dlq`
+- `simulationId`
+- `versionNumber`
+
+## Fora do contrato atual
+
+Nao documentar como implementado:
+
+- redirect final de volta para a Gupy;
+- chamada de callback de retorno ao finalizar teste;
+- payload camelCase;
+- variavel antiga de API key da Gupy;
+- endpoint separado de ativacao Gupy;
+- preflight contra sandbox/vaga real da Gupy.
+
+## Checklist de homologacao
+
+- [ ] Definir URL publica real do backend.
+- [ ] Configurar hash do token em `tenants.integration_token_hash`.
+- [ ] Validar `GET /test` com `total_tests` e `payload`.
+- [ ] Validar `POST /test/candidate` com body snake_case.
+- [ ] Verificar se `test_url` atende a expectativa da Gupy para browser/API.
+- [ ] Completar uma tentativa.
+- [ ] Validar `GET /test/result/{resultId}?company_id=...`.
+- [ ] Testar `result_webhook_url` com sucesso.
+- [ ] Testar retry e DLQ.
+
+Ultima revisao: 20/06/2026.

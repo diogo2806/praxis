@@ -17,6 +17,7 @@ import org.springframework.web.servlet.resource.NoResourceFoundException;
 import java.time.Instant;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.UUID;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
@@ -33,7 +34,7 @@ public class GlobalExceptionHandler {
             fields.put(fieldError.getField(), fieldError.getDefaultMessage());
         }
 
-        return buildResponse(HttpStatus.BAD_REQUEST, "Dados invalidos.", request.getRequestURI(), fields);
+        return buildResponse(HttpStatus.BAD_REQUEST, "Dados inválidos.", request.getRequestURI(), fields);
     }
 
     @ExceptionHandler(ResponseStatusException.class)
@@ -42,6 +43,15 @@ public class GlobalExceptionHandler {
             HttpServletRequest request
     ) {
         HttpStatus status = HttpStatus.valueOf(exception.getStatusCode().value());
+        if (status.is5xxServerError()) {
+            log.error("Erro interno ao processar {} {}", request.getMethod(), request.getRequestURI(), exception);
+            return buildResponse(
+                    status,
+                    "Ocorreu um erro interno. Tente novamente mais tarde.",
+                    request.getRequestURI(),
+                    Map.of()
+            );
+        }
         String message = exception.getReason() == null ? status.getReasonPhrase() : exception.getReason();
         return buildResponse(status, message, request.getRequestURI(), Map.of());
     }
@@ -67,7 +77,7 @@ public class GlobalExceptionHandler {
             HttpMessageNotReadableException exception,
             HttpServletRequest request
     ) {
-        return buildResponse(HttpStatus.BAD_REQUEST, "Corpo da requisicao invalido.", request.getRequestURI(), Map.of());
+        return buildResponse(HttpStatus.BAD_REQUEST, "Corpo da requisição inválido.", request.getRequestURI(), Map.of());
     }
 
     @ExceptionHandler(NoResourceFoundException.class)
@@ -75,15 +85,16 @@ public class GlobalExceptionHandler {
             NoResourceFoundException exception,
             HttpServletRequest request
     ) {
-        return buildResponse(HttpStatus.NOT_FOUND, "Recurso nao encontrado.", request.getRequestURI(), Map.of());
+        return buildResponse(HttpStatus.NOT_FOUND, "Recurso não encontrado.", request.getRequestURI(), Map.of());
     }
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiErrorResponse> handleUnexpected(Exception exception, HttpServletRequest request) {
-        log.error("Erro inesperado ao processar {} {}", request.getMethod(), request.getRequestURI(), exception);
+        String traceId = UUID.randomUUID().toString();
+        log.error("traceId={} Erro inesperado ao processar {} {}", traceId, request.getMethod(), request.getRequestURI(), exception);
         return buildResponse(
                 HttpStatus.INTERNAL_SERVER_ERROR,
-                "Erro inesperado ao processar a requisicao.",
+                "Erro inesperado ao processar a requisicao. Codigo de referencia: " + traceId,
                 request.getRequestURI(),
                 Map.of()
         );

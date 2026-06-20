@@ -123,12 +123,21 @@ public class AuditEventService {
     private AuditEventResponse toResponse(AuditEventEntity auditEventEntity) {
         return new AuditEventResponse(
                 auditEventEntity.getId(),
-                auditEventEntity.getAggregateType(),
+                displayAggregateType(auditEventEntity.getAggregateType()),
                 auditEventEntity.getAggregateId(),
                 auditEventEntity.getEventType(),
                 auditEventEntity.getMessage(),
                 auditEventEntity.getMetadata(),
                 auditEventEntity.getCreatedAt()
         );
+    }
+
+    private String displayAggregateType(String aggregateType) {
+        return switch (aggregateType) {
+            case CANDIDATE_ATTEMPT_AGGREGATE -> "Tentativa do candidato";
+            case SIMULATION_AGGREGATE -> "Simulação";
+            case SIMULATION_VERSION_AGGREGATE -> "Versão da simulação";
+            default -> "Item";
+        };
     }
 }

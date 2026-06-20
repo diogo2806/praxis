@@ -21,7 +21,6 @@ public final class DescribedEnums {
             }
         }
 
-        throw new IllegalArgumentException(
-                "Valor invalido para " + type.getSimpleName() + ": '" + value + "'");
+        throw new IllegalArgumentException("Valor inválido: '" + value + "'.");
     }
 }

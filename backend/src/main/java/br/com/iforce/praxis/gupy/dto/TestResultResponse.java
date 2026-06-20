@@ -6,7 +6,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import java.util.List;
 import java.util.Map;
 
-@Schema(description = "Payload EXATO esperado pela Gupy no /test/result/{resultId}")
+@Schema(description = "Corpo exato esperado pela Gupy no /test/result/{resultId}")
 public record TestResultResponse(
         String title,
         String testCode,

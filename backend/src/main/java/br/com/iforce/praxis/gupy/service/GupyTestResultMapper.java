@@ -108,7 +108,7 @@ public class GupyTestResultMapper {
                 TYPE_RESULT,
                 tier,
                 title,
-                "Pontuacao da competencia " + title + ".",
+                "Pontuação da competência " + title + ".",
                 finishedAt == null ? null : finishedAt.toString(),
                 Map.of()
         );

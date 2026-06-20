@@ -219,7 +219,7 @@ export function GlobalProductStateBar({
       label: "Publicação parada",
       Icon: Send,
       tone: "muted",
-      hint: "Nenhuma publicação em andamento para esta simulação.",
+      hint: "Nenhuma publicação em andamento para este teste.",
     },
     running: {
       label: "Publicação em andamento",
@@ -276,7 +276,7 @@ const globalErrorItems = [
     tone: "danger",
   },
   {
-    title: "Carregamento da simulação",
+    title: "Carregamento do teste",
     description: "Fallback único: skeleton, recarregar e manter rascunho local visível.",
     action: "Recarregar",
     Icon: Loader2,

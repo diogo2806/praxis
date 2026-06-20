@@ -44,7 +44,7 @@ public class CurrentTenantService {
             return defaultTenantId;
         }
 
-        throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Tenant autenticado obrigatorio.");
+        throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Sessão inválida ou expirada.");
     }
 
     public record AuthenticatedTenant(String tenantId) {

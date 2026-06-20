@@ -20,14 +20,14 @@ public final class TenantSecurity {
     public static void validateTenantAccess(String resourceTenantId) {
         String currentTenant = requiredTenant();
         if (!currentTenant.equals(resourceTenantId)) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Acesso negado: recurso pertence a outro tenant");
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Você não tem acesso a este item.");
         }
     }
 
     public static void validateTenantAccess(String resourceTenantId, String resourceId) {
         String currentTenant = requiredTenant();
         if (!currentTenant.equals(resourceTenantId)) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Recurso não encontrado");
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Item não encontrado.");
         }
     }
 }

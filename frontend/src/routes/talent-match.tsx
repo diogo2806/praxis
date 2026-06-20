@@ -109,8 +109,7 @@ function TalentMatchPage() {
           <div className="text-xs uppercase text-primary">Talent Match</div>
           <h1 className="mt-1 text-3xl font-semibold">Comparativo de candidatos</h1>
           <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
-            Sobreponha até 5 perfis no radar e compare cada competência contra a régua alvo da
-            vaga.
+            Sobreponha até 5 perfis no radar e compare cada competência contra a régua alvo da vaga.
           </p>
         </div>
         <Link
@@ -123,8 +122,8 @@ function TalentMatchPage() {
 
       {!hasContext ? (
         <EmptyState
-          title="Selecione uma simulação para comparar talentos"
-          description="O painel usa candidatos concluídos da simulação e a régua alvo configurada no blueprint da vaga."
+          title="Selecione um teste para comparar talentos"
+          description="O painel usa candidatos concluídos do teste e a régua alvo configurada no blueprint da vaga."
           actions={
             <SimulationLinks
               loading={simulationsQuery.isLoading}
@@ -142,11 +141,12 @@ function TalentMatchPage() {
           )}
           {isVersionPublished && completedCandidates.length === 0 && (
             <StateBanner tone="info" title="Ainda não há candidatos concluídos">
-              Selecione ou aguarde tentativas concluídas para essa versão antes de comparar no radar.
+              Selecione ou aguarde tentativas concluídas para essa versão antes de comparar no
+              radar.
             </StateBanner>
           )}
           {selectedLimitReached && (
-          <StateBanner tone="warn" title="Limite visual atingido">
+            <StateBanner tone="warn" title="Limite visual atingido">
               O radar aceita no máximo 5 candidatos por comparação para manter leitura clara.
             </StateBanner>
           )}
@@ -159,7 +159,7 @@ function TalentMatchPage() {
           )}
 
           <div className="grid gap-5 xl:grid-cols-[minmax(300px,380px)_minmax(0,1fr)]">
-          <section className="rounded-md border border-border bg-card p-5">
+            <section className="rounded-md border border-border bg-card p-5">
               <div className="mb-4 flex items-center justify-between gap-3">
                 <div>
                   <div className="flex items-center gap-2 text-sm font-semibold">
@@ -220,10 +220,10 @@ function TalentMatchPage() {
           {isVersionPublished && completedCandidates.length > 0 ? (
             <CandidateLegend candidates={selectedCandidateRows} />
           ) : (
-                <StateBanner tone="info" title="Comparativo pendente">
-          A comparação aparece quando houver candidatos concluídos selecionados.
-        </StateBanner>
-      )}
+            <StateBanner tone="info" title="Comparativo pendente">
+              A comparação aparece quando houver candidatos concluídos selecionados.
+            </StateBanner>
+          )}
         </div>
       )}
     </AppShell>
@@ -242,13 +242,15 @@ function CandidateSelector({
   onToggle: (attemptId: string) => void;
 }) {
   if (loading) {
-    return <div className="rounded-md border border-border bg-background p-4 text-sm">Carregando...</div>;
+    return (
+      <div className="rounded-md border border-border bg-background p-4 text-sm">Carregando...</div>
+    );
   }
 
-      if (candidates.length === 0) {
+  if (candidates.length === 0) {
     return (
       <div className="rounded-md border border-border bg-background p-4 text-sm text-muted-foreground">
-          Nenhum candidato concluído encontrado para esta simulação.
+        Nenhum candidato concluído encontrado para este teste.
       </div>
     );
   }
@@ -328,11 +330,14 @@ function RadarComparisonChart({
       <ResponsiveContainer width="100%" height={420}>
         <RadarChart data={chartData} outerRadius="72%">
           <PolarGrid stroke="hsl(var(--border))" />
-          <PolarAngleAxis dataKey="competency" tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} />
+          <PolarAngleAxis
+            dataKey="competency"
+            tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }}
+          />
           <PolarRadiusAxis angle={90} domain={[0, 100]} tick={{ fontSize: 10 }} />
-            <RechartsTooltip content={<RadarTooltip candidates={data?.candidates ?? []} />} />
+          <RechartsTooltip content={<RadarTooltip candidates={data?.candidates ?? []} />} />
           <Radar
-              name="Régua alvo"
+            name="Régua alvo"
             dataKey="benchmark"
             stroke="#52525b"
             strokeDasharray="5 4"
@@ -369,10 +374,15 @@ function RadarTooltip({
 }) {
   if (!active || !payload?.length) return null;
 
-  const candidateNames = new Map(candidates.map((candidate) => [candidate.attemptId, candidate.candidateName]));
+  const candidateNames = new Map(
+    candidates.map((candidate) => [candidate.attemptId, candidate.candidateName]),
+  );
   const rows = payload
     .map((item) => ({
-      name: item.dataKey === "benchmark" ? "Régua alvo" : candidateNames.get(String(item.dataKey)) ?? item.name,
+      name:
+        item.dataKey === "benchmark"
+          ? "Régua alvo"
+          : (candidateNames.get(String(item.dataKey)) ?? item.name),
       value: Number(item.value ?? 0),
       benchmark: item.dataKey === "benchmark",
     }))
@@ -384,7 +394,9 @@ function RadarTooltip({
       <div className="space-y-1">
         {rows.map((row) => (
           <div key={row.name} className="flex min-w-44 items-center justify-between gap-4">
-            <span className={row.benchmark ? "text-muted-foreground" : "text-foreground"}>{row.name}</span>
+            <span className={row.benchmark ? "text-muted-foreground" : "text-foreground"}>
+              {row.name}
+            </span>
             <span className="font-medium tabular-nums">{row.value}</span>
           </div>
         ))}
@@ -411,7 +423,7 @@ function BenchmarkSummary({ benchmark }: { benchmark: CompetencyBenchmarkDto[] }
 function CandidateLegend({ candidates }: { candidates: CandidateRadarDto[] }) {
   if (candidates.length === 0) {
     return (
-        <StateBanner tone="info" title="Benchmark visível">
+      <StateBanner tone="info" title="Benchmark visível">
         Selecione candidatos concluídos para sobrepor os perfis individuais ao radar da vaga.
       </StateBanner>
     );
@@ -453,14 +465,16 @@ function SimulationLinks({
   loading: boolean;
 }) {
   if (loading) {
-    return <div className="rounded-md border border-border bg-card px-4 py-3 text-sm">Carregando...</div>;
+    return (
+      <div className="rounded-md border border-border bg-card px-4 py-3 text-sm">Carregando...</div>
+    );
   }
 
-      if (simulations.length === 0) {
+  if (simulations.length === 0) {
     return (
       <div className="inline-flex items-center gap-2 rounded-md border border-border bg-card px-4 py-3 text-sm text-muted-foreground">
         <CircleAlert className="h-4 w-4" />
-        Nenhuma simulação cadastrada.
+        Nenhum teste cadastrado.
       </div>
     );
   }

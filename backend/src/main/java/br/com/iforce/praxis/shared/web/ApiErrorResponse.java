@@ -17,7 +17,7 @@ public record ApiErrorResponse(
         @Schema(example = "Bad Request")
         String error,
 
-        @Schema(example = "Dados invalidos.")
+        @Schema(example = "Dados inválidos.")
         String message,
 
         @Schema(example = "/test/candidate")

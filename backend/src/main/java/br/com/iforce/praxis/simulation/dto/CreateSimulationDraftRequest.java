@@ -7,7 +7,7 @@ import jakarta.validation.constraints.Size;
 
 import java.util.List;
 
-@Schema(description = "Payload para criar uma simulacao em rascunho a partir do plano da avaliacao inicial.")
+@Schema(description = "Dados para criar uma simulacao em rascunho a partir do plano da avaliacao inicial.")
 public record CreateSimulationDraftRequest(
         @NotBlank
         @Size(max = 180)

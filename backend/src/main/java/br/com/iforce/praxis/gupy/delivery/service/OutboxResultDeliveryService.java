@@ -93,7 +93,7 @@ public class OutboxResultDeliveryService {
         String tenantId = currentTenantService.requiredTenantId();
         outboxProcessor.reprocessEvent(deliveryId, tenantId);
         OutboxEventEntity event = outboxEventRepository.findByIdAndTenantId(deliveryId, tenantId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Entrega de resultado nao encontrada."));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Entrega de resultado não encontrada."));
         return new ReprocessDeliveryResponse(toResponse(event));
     }
 
@@ -102,7 +102,7 @@ public class OutboxResultDeliveryService {
             return true;
         }
         CandidateAttemptEntity attempt = candidateAttemptRepository.findById(response.attemptId())
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Tentativa nao encontrada."));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Tentativa não encontrada."));
         boolean matchesSimulation = simulationId == null || simulationId.isBlank() || simulationId.equals(attempt.getSimulationId());
         boolean matchesVersion = versionNumber == null || versionNumber.equals(attempt.getSimulationVersionNumber());
         return matchesSimulation && matchesVersion;
@@ -110,7 +110,7 @@ public class OutboxResultDeliveryService {
 
     private ResultDeliveryResponse toResponse(OutboxEventEntity event) {
         CandidateAttemptEntity attempt = candidateAttemptRepository.findByTenantIdAndId(event.getTenantId(), event.getAggregateId())
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Tentativa nao encontrada."));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Tentativa não encontrada."));
         return new ResultDeliveryResponse(
                 event.getId(),
                 attempt.getId(),
@@ -132,7 +132,7 @@ public class OutboxResultDeliveryService {
             JsonNode webhookUrl = payload.get("webhookUrl");
             return webhookUrl == null ? null : webhookUrl.asText();
         } catch (Exception exception) {
-            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Payload do outbox invalido.", exception);
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Ocorreu um erro interno.", exception);
         }
     }
 

@@ -79,7 +79,7 @@ public class ResultDeliveryDlqAlertService {
         notification.setTenantId(event.getTenantId());
         notification.setRecipientUserId(admin.getId());
         notification.setType(InAppNotificationType.RESULT_DELIVERY_DLQ);
-        notification.setTitle("Resultado retido na integracao com a Gupy");
+        notification.setTitle("Resultado retido na integração com a Gupy");
         notification.setMessage(messageFor(impact));
         notification.setCandidateAttemptId(impact.attemptId());
         notification.setCandidateName(impact.candidateName());
@@ -99,7 +99,7 @@ public class ResultDeliveryDlqAlertService {
     private CandidateImpact resolveCandidateImpact(String tenantId, String attemptId) {
         Optional<CandidateAttemptEntity> attempt = candidateAttemptRepository.findByTenantIdAndId(tenantId, attemptId);
         if (attempt.isEmpty()) {
-            return new CandidateImpact(attemptId, "Candidato nao localizado", "email-nao-localizado@praxis.local", "resultado-nao-localizado");
+            return new CandidateImpact(attemptId, "Candidato não localizado", "email-nao-localizado@praxis.local", "resultado-nao-localizado");
         }
 
         CandidateAttemptEntity entity = attempt.get();
@@ -123,7 +123,7 @@ public class ResultDeliveryDlqAlertService {
                 return attemptId.asText();
             }
         } catch (Exception exception) {
-            log.warn("Nao foi possivel extrair attemptId do evento outbox {}", event.getId(), exception);
+            log.warn("Não foi possível extrair attemptId do evento outbox {}", event.getId(), exception);
         }
 
         return "attempt-nao-localizado";

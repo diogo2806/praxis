@@ -2,6 +2,7 @@ package br.com.iforce.praxis.gupy.service;
 
 import br.com.iforce.praxis.audit.model.AuditEventType;
 import br.com.iforce.praxis.audit.service.AuditEventService;
+import br.com.iforce.praxis.audit.service.AuditMetadata;
 import br.com.iforce.praxis.config.PraxisProperties;
 import br.com.iforce.praxis.gupy.model.AttemptAnswer;
 import br.com.iforce.praxis.gupy.model.AttemptStatus;
@@ -29,15 +30,18 @@ public class AttemptStateMachine {
 
     private final PraxisProperties praxisProperties;
     private final AuditEventService auditEventService;
+    private final AuditMetadata auditMetadata;
     private final ResultScoringService resultScoringService;
 
     public AttemptStateMachine(
             PraxisProperties praxisProperties,
             AuditEventService auditEventService,
+            AuditMetadata auditMetadata,
             ResultScoringService resultScoringService
     ) {
         this.praxisProperties = praxisProperties;
         this.auditEventService = auditEventService;
+        this.auditMetadata = auditMetadata;
         this.resultScoringService = resultScoringService;
     }
 
@@ -54,8 +58,8 @@ public class AttemptStateMachine {
                     attempt.tenantId(),
                     attempt.id(),
                     AuditEventType.ATTEMPT_EXPIRED,
-                    "Link da tentativa expirou antes do inicio.",
-                    "{\"expiredAt\":\"" + now + "\"}"
+                    "Link da tentativa expirou antes do início.",
+                    auditMetadata.of("expiredAt", now)
             );
             return blocked(attempt, AttemptStatus.EXPIRED, now);
         }
@@ -67,8 +71,8 @@ public class AttemptStateMachine {
                     attempt.tenantId(),
                     attempt.id(),
                     AuditEventType.ATTEMPT_ABANDONED,
-                    "Sessao da tentativa expirou sem conclusao.",
-                    "{\"abandonedAt\":\"" + now + "\"}"
+                    "Sessão da tentativa expirou sem conclusão.",
+                    auditMetadata.of("abandonedAt", now)
             );
             return blocked(attempt, AttemptStatus.ABANDONED, now);
         }
@@ -87,7 +91,7 @@ public class AttemptStateMachine {
                 attempt.id(),
                 AuditEventType.ATTEMPT_STARTED,
                 "Tentativa iniciada pelo candidato.",
-                "{\"startedAt\":\"" + startedAt + "\"}"
+                auditMetadata.of("startedAt", startedAt)
         );
 
         return copy(
@@ -107,7 +111,7 @@ public class AttemptStateMachine {
 
     /**
      * Aplica uma resposta e, quando o fluxo chegou ao fim, dispara o scoring
-     * deterministico e deriva a decisao.
+     * determinístico e deriva a decisão.
      */
     public CandidateAttempt applyAnswer(
             CandidateAttempt attempt,
@@ -153,19 +157,27 @@ public class AttemptStateMachine {
     private String buildCompanyResultString(PublishedSimulation simulation, ScoreCalculationResult scoreResult) {
         String decision = switch (scoreResult.decision()) {
             case RECOMMEND_INTERVIEW -> "Pronto para entrevista";
-            case REVIEW_REQUIRED -> "Requer revisao";
-            case IN_PROGRESS -> "Aguardando conclusao";
+            case REVIEW_REQUIRED -> "Requer revisão";
+            case IN_PROGRESS -> "Aguardando conclusão";
         };
         String reviewLine = scoreResult.humanReviewRequired()
-                ? "Revisao humana obrigatoria antes de qualquer decisao final."
-                : "Sem bloqueio critico identificado nas respostas.";
+                ? "Revisão humana obrigatória antes de qualquer decisão final."
+                : "Sem bloqueio crítico identificado nas respostas.";
+        String reliability = reliabilityLabel(scoreResult.reliabilityLevel());
 
         return "Resumo do candidato\n\n"
-                + "Avaliacao: " + simulation.name() + "\n\n"
-                + "Decisao sugerida: " + decision + "\n\n"
-                + "Pontuacao geral: " + scoreResult.score() + "/100\n\n"
+                + "Avaliação: " + simulation.name() + "\n\n"
+                + "Decisão sugerida: " + decision + "\n\n"
+                + "Pontuação geral: " + scoreResult.score() + "/100\n\n"
                 + reviewLine + "\n\n"
-                + "Confiabilidade: " + scoreResult.reliabilityLevel().name() + ".";
+                + "Confiabilidade da resposta: " + reliability + ".";
+    }
+
+    private String reliabilityLabel(ReliabilityLevel reliabilityLevel) {
+        return switch (reliabilityLevel) {
+            case LOW_RELIABILITY -> "baixa";
+            case NORMAL -> "adequada";
+        };
     }
 
     private CandidateAttempt blocked(CandidateAttempt attempt, AttemptStatus status, Instant finishedAt) {

@@ -23,7 +23,7 @@ public record RegistrarRespostaRequest(
 
         @JsonAlias({"answeredAt", "clientAnsweredAt", "respondedAt"})
         @Schema(example = "2026-06-19T12:30:45Z", nullable = true,
-                description = "Timestamp do momento em que o front-end gerou a resposta.")
+                description = "Horário em que o front-end gerou a resposta.")
         Instant respondidaEm,
 
         @JsonAlias("timedOut")

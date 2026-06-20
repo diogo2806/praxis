@@ -15,7 +15,7 @@ import jakarta.validation.constraints.Size;
 import java.util.List;
 
 @SumWeightsEqualsOne
-@Schema(description = "Payload para atualizar o plano estrutural de uma versao de simulacao.")
+@Schema(description = "Dados para atualizar o plano estrutural de uma versao de simulacao.")
 public record UpdateBlueprintRequest(
         @NotBlank
         @Size(max = 120)
@@ -24,7 +24,7 @@ public record UpdateBlueprintRequest(
 
         @Valid
         @NotEmpty
-        @Schema(description = "Competencias avaliadas e pesos normalizados.")
+        @Schema(description = "Competencias avaliadas. Na interface, os pesos devem somar 100%.")
         List<CompetencyRequest> competencies,
 
         @Size(max = 1200)
@@ -45,7 +45,7 @@ public record UpdateBlueprintRequest(
             @NotNull
             @DecimalMin("0.0")
             @DecimalMax("1.0")
-            @Schema(example = "0.35")
+            @Schema(example = "0.35", description = "Peso normalizado para API. Equivale a 35% na interface.")
             Double weight,
 
             @Min(0)

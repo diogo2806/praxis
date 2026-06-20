@@ -39,7 +39,7 @@ export const Route = createFileRoute("/app")({
       { title: "Painel - Praxis" },
       {
         name: "description",
-        content: "Painel: simulações ativas, qualidade, prontidão e vínculo com vagas Gupy.",
+        content: "Painel: testes ativos, qualidade, prontidão e vínculo com vagas Gupy.",
       },
     ],
   }),
@@ -106,7 +106,7 @@ function Dashboard() {
           <div className="text-xs uppercase text-muted-foreground">Painel</div>
           <h1 className="mt-1 text-3xl font-semibold text-foreground">Boa tarde, {firstName}.</h1>
           <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
-            Avaliação situacional estruturada para recrutamento, com{" "}
+            Teste situacional estruturado para recrutamento, com{" "}
             <Termo id="pontuacao-criterios">pontuação por critérios definidos</Termo>,{" "}
             <Termo id="decisao-contexto">escolha baseada na situação</Termo> e{" "}
             <Termo id="trilha-auditavel">histórico completo de alterações</Termo>.
@@ -139,7 +139,7 @@ function Dashboard() {
             className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
           >
             <FilePlus2 className="h-4 w-4" />
-            Nova simulação
+            Novo teste
           </Link>
         </div>
       </div>
@@ -149,22 +149,22 @@ function Dashboard() {
           <SkeletonRows rows={5} />
         </section>
       ) : simulationsQuery.isError ? (
-        <StateBanner tone="danger" title="Não foi possível carregar as simulações">
+        <StateBanner tone="danger" title="Não foi possível carregar os testes">
           {simulationsQuery.error instanceof Error
             ? simulationsQuery.error.message
             : "Verifique se o sistema está disponível e tente novamente."}
         </StateBanner>
       ) : simulations.length === 0 ? (
         <EmptyState
-          title="Nenhuma simulação cadastrada"
-          description="Crie ou importe uma simulação para que ela apareça aqui."
+          title="Nenhum teste cadastrado"
+          description="Crie ou importe um teste para que ele apareça aqui."
           actions={
             <>
               <Link
                 to="/nova/blueprint"
                 className="inline-flex items-center justify-between rounded-md border border-primary bg-primary px-4 py-3 text-sm font-medium text-primary-foreground hover:bg-primary/90"
               >
-                Criar primeira simulação
+                Criar primeiro teste
                 <FilePlus2 className="h-4 w-4" />
               </Link>
               <Link
@@ -180,7 +180,7 @@ function Dashboard() {
       ) : (
         <div className="space-y-6">
           {deleteMutation.isError && (
-            <StateBanner tone="danger" title="Não foi possível excluir a simulação">
+            <StateBanner tone="danger" title="Não foi possível excluir o teste">
               {deleteMutation.error instanceof Error
                 ? deleteMutation.error.message
                 : "Tente novamente."}
@@ -215,7 +215,7 @@ function Dashboard() {
 
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
-              <h2 className="text-xl font-semibold">Simulações</h2>
+              <h2 className="text-xl font-semibold">Testes</h2>
               <p className="text-xs text-muted-foreground">
                 Status, prontidão, competências e tentativas organizados por coluna.
               </p>
@@ -230,7 +230,7 @@ function Dashboard() {
                   value={query}
                   onChange={(event) => setQuery(event.target.value)}
                   className="input w-64 pl-8"
-                  placeholder="Buscar simulação"
+                  placeholder="Buscar teste"
                 />
               </label>
               <div className="inline-flex flex-wrap gap-1 rounded-md border border-border bg-card p-1">
@@ -254,7 +254,7 @@ function Dashboard() {
 
           {filtered.length === 0 ? (
             <EmptyState
-              title="Nenhuma simulação neste filtro"
+              title="Nenhum teste neste filtro"
               description="Ajuste busca, limpe o filtro ou crie um novo rascunho."
               actions={
                 <button
@@ -275,7 +275,7 @@ function Dashboard() {
                 <table className="w-full text-sm">
                   <thead className="border-b border-border bg-muted/45 text-xs uppercase text-muted-foreground">
                     <tr>
-                      <th className="px-4 py-3 text-left font-medium">Simulação</th>
+                      <th className="px-4 py-3 text-left font-medium">Teste</th>
                       <th className="px-4 py-3 text-left font-medium">Competências</th>
                       <th className="px-4 py-3 text-left font-medium">Status</th>
                       <th className="px-4 py-3 text-left font-medium">Prontidão</th>

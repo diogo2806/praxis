@@ -13,7 +13,7 @@ import java.lang.annotation.Target;
 @Constraint(validatedBy = SumWeightsEqualsOneValidator.class)
 public @interface SumWeightsEqualsOne {
 
-    String message() default "A soma dos pesos das competencias deve ser 1.0.";
+    String message() default "Os pesos das competencias precisam somar 100%.";
 
     Class<?>[] groups() default {};
 

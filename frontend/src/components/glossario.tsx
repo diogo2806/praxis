@@ -19,18 +19,17 @@ export const glossario = {
   "decisao-contexto":
     "Escolha baseada na situação: avaliar a pessoa pela decisão que toma diante de um cenário real, e não por uma prova teórica.",
   "trilha-auditavel":
-    "Histórico completo de alterações: registro de todos os passos da avaliação, que pode ser conferido depois por outra pessoa.",
+    "Histórico completo de alterações: registro de todos os passos do teste, que pode ser conferido depois por outra pessoa.",
   "score-auditavel":
     "Cada ponto da nota pode ser conferido: dá para ver de qual regra e de qual resposta ele veio.",
-  blueprint: "Plano da avaliação: define o cargo, a situação e o que será medido.",
-  validador:
-    "Etapa que confere se a avaliação realmente mede o que prometeu antes de entrar no ar.",
+  blueprint: "Plano do teste: define o cargo, a situação e o que será medido.",
+  validador: "Etapa que confere se o teste realmente mede o que prometeu antes de entrar no ar.",
   calibracao:
     "Análise dos dados reais do piloto para encontrar ajustes necessários. Não é uma etapa obrigatória para entender a tela.",
   "vazamento-prova":
-    "Quando as respostas certas vazam e a avaliação perde o valor; aqui isso é monitorado.",
+    "Quando as respostas certas vazam e o teste perde o valor; aqui isso é monitorado.",
   maturidade:
-    "Prontidão da avaliação: indica se ela ainda está em rascunho, em revisão ou pronta para uso.",
+    "Prontidão do teste: indica se ele ainda está em rascunho, em revisão ou pronto para uso.",
   backend: "A parte do sistema que roda nos servidores, nos bastidores, fora da tela.",
   "caixa-preta":
     "Sistema que decide sem explicar como chegou ao resultado. Aqui evitamos isso: tudo é explicado.",
@@ -49,15 +48,18 @@ export const glossario = {
     "Registro de auditoria: lista, em ordem, tudo o que aconteceu, e não pode ser alterada.",
   wizard: "Guia passo a passo que conduz você por cada etapa.",
   blocker: "Bloqueio: um problema que impede de avançar até ser resolvido.",
-  "sjt": "Teste de Julgamento Situacional (SJT) — avaliação que mostra como alguém decide diante de situações reais do trabalho.",
-  "determinisitco": "Nota calculada por regras fixas, sempre igual: as mesmas respostas geram sempre a mesma pontuação.",
-  tenant: "Sua empresa ou cliente — espaço isolado onde você cria e gerencia avaliações.",
+  sjt: "Teste de Julgamento Situacional (SJT) — teste que mostra como alguém decide diante de situações reais do trabalho.",
+  determinisitco:
+    "Nota calculada por regras fixas, sempre igual: as mesmas respostas geram sempre a mesma pontuação.",
+  tenant: "Sua empresa ou cliente — espaço isolado onde você cria e gerencia testes.",
   taxonomia: "Catálogo de competências da sua empresa — lista de habilidades que você mede.",
-  workspace: "Área de trabalho: seu espaço pessoal para criar e gerenciar simulações.",
-  score: "Nota ou pontuação — resultado numérico da avaliação.",
-  defensabilidade: "Confiabilidade e segurança técnica: por que o resultado dessa avaliação se sustenta (inclusive se contestado na justiça).",
+  workspace: "Área de trabalho: seu espaço pessoal para criar e gerenciar testes.",
+  score: "Nota ou pontuação — resultado numérico do teste.",
+  defensabilidade:
+    "Confiabilidade e segurança técnica: por que o resultado desse teste se sustenta (inclusive se contestado na justiça).",
   override: "Ajuste manual ou exceção — quando alguém altera um resultado fora das regras normais.",
-  "explicabilidade": "Transparência do resultado: capacidade de explicar de forma clara por que o candidato recebeu aquela nota.",
+  explicabilidade:
+    "Transparência do resultado: capacidade de explicar de forma clara por que o candidato recebeu aquela nota.",
 } as const;
 
 export type TermoId = keyof typeof glossario;

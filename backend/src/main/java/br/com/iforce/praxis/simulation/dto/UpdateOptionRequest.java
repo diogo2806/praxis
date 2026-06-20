@@ -9,7 +9,7 @@ import jakarta.validation.constraints.Size;
 
 import java.util.Map;
 
-@Schema(description = "Payload para atualizar parcialmente uma alternativa de resposta.")
+@Schema(description = "Dados para atualizar parcialmente uma resposta.")
 public record UpdateOptionRequest(
         @Size(max = 800)
         String text,

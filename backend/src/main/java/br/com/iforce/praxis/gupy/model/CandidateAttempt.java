@@ -1,10 +1,13 @@
 package br.com.iforce.praxis.gupy.model;
 
+import lombok.Builder;
+
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 
+@Builder(toBuilder = true)
 public record CandidateAttempt(
         String id,
         String resultId,
