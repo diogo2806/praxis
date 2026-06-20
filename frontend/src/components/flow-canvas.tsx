@@ -520,7 +520,7 @@ export default function FlowCanvas({
             </span>
             <select className="vx-cardsel" disabled={!canEdit} value={targetValue(option.nextNodeId)} onChange={(event) => setOptionTarget(node, option, event.target.value)} title="Destino desta resposta">
               <option value="" disabled>
-                — defina —
+                -- defina --
               </option>
               <option value={FIM}>Fim (encerra)</option>
               {forward.map((target) => (
@@ -528,7 +528,7 @@ export default function FlowCanvas({
                   → {target.id}
                 </option>
               ))}
-              <option value={NEW}>＋ nova etapa</option>
+              <option value={NEW}>+ nova etapa</option>
             </select>
             {option.nextNodeId ? (
               <button className="vx-mini-del" disabled={!canEdit} onClick={() => unlinkOption(node, option)} title="Remover esta ligação" type="button">
@@ -548,7 +548,7 @@ export default function FlowCanvas({
           <span className="vx-timeout-l">Tempo acaba</span>
           <select className="vx-cardsel vx-cardsel-to" disabled={!canEdit} value={targetValue(node.timeoutNextNodeId)} onChange={(event) => setTimeoutTarget(node, event.target.value)} title="Para onde vai quem deixa o tempo acabar">
             <option value="" disabled>
-              — defina —
+              -- defina --
             </option>
             <option value={FIM}>Fim (encerra)</option>
             {forward.map((target) => (
@@ -556,7 +556,7 @@ export default function FlowCanvas({
                 → {target.id}
               </option>
             ))}
-            <option value={NEW}>＋ nova etapa</option>
+            <option value={NEW}>+ nova etapa</option>
           </select>
           {node.timeoutNextNodeId ? (
             <button className="vx-mini-del" disabled={!canEdit} onClick={() => unlinkTimeout(node)} title="Remover esta ligação" type="button">
@@ -709,7 +709,7 @@ export default function FlowCanvas({
           <span>Quando o tempo acaba, vai para *</span>
           <select disabled={!canEdit} value={targetValue(node.timeoutNextNodeId)} onChange={(event) => setTimeoutTarget(node, event.target.value)}>
             <option value="" disabled>
-              — defina —
+              -- defina --
             </option>
             <option value={FIM}>Fim (cria encerramento)</option>
             {forwardSteps(node).map((target) => (
@@ -717,7 +717,7 @@ export default function FlowCanvas({
                 → {target.id}
               </option>
             ))}
-            <option value={NEW}>＋ criar nova etapa</option>
+            <option value={NEW}>+ nova etapa</option>
           </select>
           {!node.timeoutNextNodeId && <em className="vx-hint-warn">Obrigatório: etapa adiante ou Fim.</em>}
         </label>
@@ -728,7 +728,7 @@ export default function FlowCanvas({
             <div className="vx-opt-meta">
               <select disabled={!canEdit} value={targetValue(option.nextNodeId)} onChange={(event) => setOptionTarget(node, option, event.target.value)}>
                 <option value="" disabled>
-                  — defina —
+                  -- defina --
                 </option>
                 <option value={FIM}>Fim (cria encerramento)</option>
                 {forwardSteps(node).map((target) => (
@@ -736,7 +736,7 @@ export default function FlowCanvas({
                     → {target.id}
                   </option>
                 ))}
-                <option value={NEW}>＋ nova etapa</option>
+                <option value={NEW}>+ nova etapa</option>
               </select>
               <button className="vx-opt-del" disabled={!canEdit} onClick={() => onDeleteOption(node.id, option.id)} title="Remover esta saída" type="button">
                 <Trash2 size={13} />
@@ -797,7 +797,7 @@ export default function FlowCanvas({
                 </span>
                 <select className="vx-out-sel" disabled={!canEdit} value={targetValue(option.nextNodeId)} onClick={(event) => event.stopPropagation()} onChange={(event) => setOptionTarget(node, option, event.target.value)}>
                   <option value="" disabled>
-                    —
+                    --
                   </option>
                   <option value={FIM}>Fim</option>
                   {forward.map((target) => (
@@ -805,31 +805,23 @@ export default function FlowCanvas({
                       {target.id}
                     </option>
                   ))}
-                  <option value={NEW}>＋ nova</option>
+                  <option value={NEW}>+ nova</option>
                 </select>
               </div>
             ))
           )}
         </td>
         <td className="vx-td-mid">
-          <select
-            className={`vx-cell vx-cell-to ${!node.timeoutNextNodeId ? "vx-cell-warn" : ""}`}
+          <input
+            className="vx-cell vx-cell-n"
             disabled={!canEdit}
-            value={targetValue(node.timeoutNextNodeId)}
+            min={1}
+            type="number"
+            value={nodeDrafts[node.id]?.timeLimitSeconds ?? String(node.timeLimitSeconds ?? "")}
+            onBlur={() => commitTimeLimit(node)}
             onClick={(event) => event.stopPropagation()}
-            onChange={(event) => setTimeoutTarget(node, event.target.value)}
-          >
-            <option value="" disabled>
-              — defina —
-            </option>
-            <option value={FIM}>Fim</option>
-            {forward.map((target) => (
-              <option key={target.id} value={target.id}>
-                {target.id}
-              </option>
-            ))}
-            <option value={NEW}>＋ nova</option>
-          </select>
+            onChange={(event) => updateTimeLimitDraft(node, event.target.value)}
+          />
         </td>
       </tr>
     );

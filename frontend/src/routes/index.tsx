@@ -177,6 +177,15 @@ const faq = [
   },
 ];
 
+const demoEmailUser = "contato";
+const demoEmailDomain = "iforce.com.br";
+const demoEmailSubject = "Quero uma demonstração Práxis";
+
+function openDemoEmail() {
+  const params = new URLSearchParams({ subject: demoEmailSubject });
+  window.location.href = `mailto:${demoEmailUser}@${demoEmailDomain}?${params.toString()}`;
+}
+
 function Brand() {
   return (
     <a href="#topo" className="flex min-h-0 items-center gap-2.5">
@@ -265,7 +274,7 @@ function LandingPage() {
 
             <section id="demo" aria-label="Demonstração interativa">
               <div className="overflow-hidden rounded-lg border border-border bg-card shadow-2xl shadow-sidebar/15">
-                <div className="flex items-center justify-between bg-sidebar px-4 py-3 text-sidebar-foreground">
+                <div className="flex items-center justify-between bg-foreground px-4 py-3 text-background">
                   <div className="flex items-center gap-3">
                     <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-warning text-xs font-bold text-warning-foreground">
                       CM
@@ -466,23 +475,23 @@ function LandingPage() {
 
         <section id="gupy" className="py-20">
           <div className="mx-auto max-w-6xl px-5">
-            <div className="overflow-hidden rounded-lg bg-sidebar p-8 text-sidebar-foreground md:p-12">
+            <div className="overflow-hidden rounded-lg bg-foreground p-8 text-background md:p-12">
               <div className="grid items-center gap-10 lg:grid-cols-[1.1fr_1fr]">
                 <div>
-                  <div className="text-[11px] font-bold uppercase tracking-[0.12em] text-sidebar-foreground/70">
+                  <div className="text-[11px] font-bold uppercase tracking-[0.12em] text-background/70">
                     Compatível com a API de testes da Gupy
                   </div>
                   <h2 className="mt-3 font-display text-3xl font-extrabold leading-tight md:text-4xl">
                     A Gupy organiza o funil. A Práxis adiciona a evidência.
                   </h2>
-                  <p className="mt-4 max-w-xl text-base leading-relaxed text-sidebar-foreground/80">
+                  <p className="mt-4 max-w-xl text-base leading-relaxed text-background/80">
                     Arquitetura aderente ao contrato de provedores externos da Gupy: rotas{" "}
                     <code className="font-mono text-xs">/test</code>,{" "}
                     <code className="font-mono text-xs">/test/candidate</code>,{" "}
                     <code className="font-mono text-xs">/test/result/{"{id}"}</code>, auth Bearer e
                     envio automático com retentativas.
                   </p>
-                  <p className="mt-4 inline-flex items-center gap-2 rounded-md border border-white/15 bg-white/5 px-3 py-2 text-xs text-sidebar-foreground/75">
+                  <p className="mt-4 inline-flex items-center gap-2 rounded-md border border-white/15 bg-white/5 px-3 py-2 text-xs text-background/75">
                     <Plug className="h-3.5 w-3.5" aria-hidden />
                     Integração Gupy explícita, sem camada genérica criada antes de existir demanda
                     real.
@@ -557,21 +566,22 @@ function LandingPage() {
 
         <section id="cta" className="py-20">
           <div className="mx-auto max-w-6xl px-5">
-            <div className="rounded-lg bg-sidebar p-10 text-center text-sidebar-foreground md:p-16">
+            <div className="rounded-lg bg-foreground p-10 text-center text-background md:p-16">
               <h2 className="mx-auto max-w-[22ch] font-display text-3xl font-extrabold leading-tight md:text-5xl">
                 Menos entrevista por currículo. Mais decisão por evidência.
               </h2>
-              <p className="mx-auto mt-5 max-w-[46ch] text-base text-sidebar-foreground/80">
+              <p className="mx-auto mt-5 max-w-[46ch] text-base text-background/80">
                 Mostre como seus candidatos decidem antes de chamar para a conversa. Agende uma
                 demonstração da Práxis.
               </p>
-              <a
-                href="mailto:contato@iforce.com.br?subject=Quero%20uma%20demonstra%C3%A7%C3%A3o%20Pr%C3%A1xis"
-                className="mt-8 inline-flex items-center gap-2 rounded-md bg-white px-7 py-3.5 text-sm font-bold text-sidebar shadow-lg hover:shadow-white/30"
+              <button
+                type="button"
+                onClick={openDemoEmail}
+                className="mt-8 inline-flex items-center gap-2 rounded-md bg-background px-7 py-3.5 text-sm font-bold text-foreground shadow-lg hover:shadow-white/30"
               >
                 Agendar demonstração
                 <ArrowRight className="h-4 w-4" aria-hidden />
-              </a>
+              </button>
             </div>
           </div>
         </section>
