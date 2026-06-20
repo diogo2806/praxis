@@ -852,7 +852,7 @@ turno-3 ▸ <span class="ok">C</span>  +2 Comunicação
           <div class="pname">Crescimento</div>
           <div class="pfor">Para quem recruta com volume recorrente.</div>
           <div class="price"><span class="cur">R$</span><span class="amt" data-monthly="4.990" data-annual="4.158">4.990</span><span class="per" id="cycMonthly">/ mês</span></div>
-          <div class="psub" id="cycSub">Inclui 200 candidatos/mês · +R$ 39,90 por adicional.</div>
+          <div class="psub" id="cycSub">R$ 24,95/candidato · 200 inclusos/mês · +R$ 39,90 por adicional</div>
           <a class="btn btn-primary" href="#cta">Agendar demo <span class="btn-arrow">→</span></a>
           <ul class="plist">
             <li class="head"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/></svg>Tudo do Avulso, e mais:</li>
@@ -1114,8 +1114,8 @@ function LandingPage() {
         amt.textContent = annual ? (amt.dataset.annual ?? "") : (amt.dataset.monthly ?? "");
         cyc.textContent = annual ? "/ m?s, no anual" : "/ m?s";
         sub.textContent = annual
-          ? "Faturado anual (R$ 49.900) ? inclui 200 candidatos/m?s."
-          : "Inclui 200 candidatos/m?s ? +R$ 39,90 por adicional.";
+          ? "R$ 20,79/candidato ? 200 inclusos/m?s ? faturado anual (R$ 49.900)"
+          : "R$ 24,95/candidato ? 200 inclusos/m?s ? +R$ 39,90 por adicional";
       };
       const monthly = () => setCycle(false);
       const annual = () => setCycle(true);
