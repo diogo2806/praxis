@@ -5,7 +5,7 @@ type ErrorReportOptions = {
 };
 
 type ErrorReporterEvents = {
-  captureExceptioetapa: (
+  captureException: (
     error: unknown,
     context?: Record<string, unknown>,
     options?: ErrorReportOptions,
@@ -17,7 +17,7 @@ export function reportAppError(error: unknown, context: Record<string, unknown> 
   const reporter = (window as unknown as Record<string, ErrorReporterEvents | undefined>)[
     "__" + "lov" + "ableEvents"
   ];
-  reporter?.captureExceptioetapa.(
+  reporter?.captureException?.(
     error,
     {
       source: "react_error_boundary",

@@ -371,7 +371,7 @@ public class CandidateAttemptService {
         answersByNodeId.put(currentNode.id(), answer);
 
         ScenarioOption selectedOption = answer.timedOut() ? null : findOption(currentNode, answer.optionId());
-        boolean reachedEnd = answer.timedOut() && currentNode.timeoutNextNodeId() == null;
+        boolean reachedEnd = reachedEnd(simulation, currentNode, selectedOption, answer.timedOut());
         CandidateAttempt updatedAttempt = attemptStateMachine.applyAnswer(
                 attempt, simulation, answersByNodeId, selectedOption, reachedEnd);
 
@@ -487,6 +487,9 @@ public class CandidateAttemptService {
 
         ScenarioNode node = simulationCatalogService.findNode(simulation, nodeId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Ocorreu um erro interno."));
+        if (node.isFinal()) {
+            return 0;
+        }
 
         int maxChildDepth = node.options().stream()
                 .map(ScenarioOption::nextNodeId)
@@ -560,8 +563,9 @@ public class CandidateAttemptService {
         answersByNodeId.put(requestNode.id(), answer);
 
         ScenarioOption selectedOption = findOption(requestNode, answer.optionId());
+        boolean reachedEnd = reachedEnd(simulation, requestNode, selectedOption, false);
         CandidateAttempt updatedAttempt = attemptStateMachine.applyAnswer(
-                attempt, simulation, answersByNodeId, selectedOption, false);
+                attempt, simulation, answersByNodeId, selectedOption, reachedEnd);
 
         CandidateAttempt savedAttempt = persist(updatedAttempt, candidateAttemptEntity);
         publishEngagementTransitionIfNeeded(originalStatus, statusAfterExpiration, savedAttempt);
@@ -866,6 +870,9 @@ public class CandidateAttemptService {
         while (currentNodeId != null) {
             ScenarioNode node = simulationCatalogService.findNode(simulation, currentNodeId)
                     .orElseThrow(() -> new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Ocorreu um erro interno."));
+            if (node.isFinal()) {
+                return Optional.empty();
+            }
 
             AttemptAnswer answer = attempt.answersByNodeId().get(node.id());
             if (answer == null) {
@@ -885,6 +892,24 @@ public class CandidateAttemptService {
         }
 
         return Optional.empty();
+    }
+
+    private boolean reachedEnd(
+            PublishedSimulation simulation,
+            ScenarioNode currentNode,
+            ScenarioOption selectedOption,
+            boolean timedOut
+    ) {
+        String nextNodeId = timedOut
+                ? currentNode.timeoutNextNodeId()
+                : selectedOption == null ? null : selectedOption.nextNodeId();
+        return nextNodeId == null || isFinalNode(simulation, nextNodeId);
+    }
+
+    private boolean isFinalNode(PublishedSimulation simulation, String nodeId) {
+        return simulationCatalogService.findNode(simulation, nodeId)
+                .map(ScenarioNode::isFinal)
+                .orElse(false);
     }
 
     private String candidateApiUrl(CandidateAttemptEntity candidateAttemptEntity) {

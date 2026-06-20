@@ -18,6 +18,19 @@ public record UpdateNodeRequest(
         @Schema(description = "Próxima etapa usada quando o tempo da etapa esgota. Envie string vazia para remover.", nullable = true)
         String timeoutNextNodeId,
 
+        @Schema(description = "Marca ou desmarca a etapa como encerramento.", nullable = true)
+        Boolean isFinal,
+
+        @Size(max = 2000)
+        @Schema(description = "Texto do relatorio. Envie string vazia para remover.", nullable = true)
+        String reportText,
+
+        @Schema(description = "Posicao X do card no canvas.", nullable = true)
+        Double positionX,
+
+        @Schema(description = "Posicao Y do card no canvas.", nullable = true)
+        Double positionY,
+
         @Size(max = 1500)
         @Schema(description = "Texto simplificado para leitores de tela. Envie string vazia para remover.", nullable = true)
         String plainTextDescription,

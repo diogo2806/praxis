@@ -59,6 +59,18 @@ public class SimulationNodeEntity {
     @Column(name = "timeout_next_node_id", length = 120)
     private String timeoutNextNodeId;
 
+    @Column(name = "position_x")
+    private Double positionX;
+
+    @Column(name = "position_y")
+    private Double positionY;
+
+    @Column(name = "is_final", nullable = false)
+    private boolean isFinal;
+
+    @Column(name = "report_text", length = 2000)
+    private String reportText;
+
     @Column(name = "plain_text_description", length = 1500)
     private String plainTextDescription;
 

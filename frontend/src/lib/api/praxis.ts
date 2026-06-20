@@ -176,6 +176,10 @@ export interface SimulationVersionNodeResponse {
   clientMessage: string;
   timeLimitSeconds: number | null;
   timeoutNextNodeId: string | null;
+  isFinal: boolean;
+  reportText: string | null;
+  positionX: number | null;
+  positionY: number | null;
   plainTextDescriptioetapa: string | null;
   audioDescriptionUrl?: string | null;
   mediaUrl: string | null;
@@ -199,11 +203,15 @@ export interface SimulationVersionDetailResponse {
 }
 
 export interface CreateNodeRequest {
-  clientMessage: string;
+  clientMessage?: string | null;
   timeLimitSeconds?: number | null;
-  timeJustificatioetapa: string | null;
+  timeJustificatioetapa?: string | null;
   timeoutNextNodeId?: string | null;
-  plainTextDescriptioetapa: string | null;
+  isFinal?: boolean;
+  reportText?: string | null;
+  positionX?: number | null;
+  positionY?: number | null;
+  plainTextDescriptioetapa?: string | null;
   audioDescriptionUrl?: string | null;
   mediaUrl?: string | null;
   mediaType?: MediaType | null;
@@ -212,9 +220,13 @@ export interface CreateNodeRequest {
 export interface UpdateNodeRequest {
   clientMessage?: string;
   timeLimitSeconds?: number | null;
-  timeJustificatioetapa: string | null;
+  timeJustificatioetapa?: string | null;
   timeoutNextNodeId?: string | null;
-  plainTextDescriptioetapa: string | null;
+  isFinal?: boolean;
+  reportText?: string | null;
+  positionX?: number | null;
+  positionY?: number | null;
+  plainTextDescriptioetapa?: string | null;
   audioDescriptionUrl?: string | null;
   mediaUrl?: string | null;
   mediaType?: MediaType | null;
@@ -227,7 +239,7 @@ export interface CreateOptionRequest {
   isCritical: boolean;
   nextNodeId?: string | null;
   resultingTone?: string | null;
-  plainTextDescriptioetapa: string | null;
+  plainTextDescriptioetapa?: string | null;
   audioDescriptionUrl?: string | null;
   mediaUrl?: string | null;
   mediaType?: MediaType | null;
@@ -240,7 +252,7 @@ export interface UpdateOptionRequest {
   isCritical?: boolean;
   nextNodeId?: string | null;
   resultingTone?: string | null;
-  plainTextDescriptioetapa: string | null;
+  plainTextDescriptioetapa?: string | null;
   audioDescriptionUrl?: string | null;
   mediaUrl?: string | null;
   mediaType?: MediaType | null;

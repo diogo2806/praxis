@@ -11,6 +11,7 @@ import br.com.iforce.praxis.gupy.model.PublishedSimulation;
 import br.com.iforce.praxis.gupy.model.ReliabilityLevel;
 import br.com.iforce.praxis.gupy.model.ResultDecision;
 import br.com.iforce.praxis.gupy.model.ResultItem;
+import br.com.iforce.praxis.gupy.model.ScenarioNode;
 import br.com.iforce.praxis.gupy.model.ScenarioOption;
 import br.com.iforce.praxis.gupy.model.ScoreCalculationResult;
 import org.springframework.stereotype.Service;
@@ -148,13 +149,17 @@ public class AttemptStateMachine {
                 scoreResult.decision(),
                 scoreResult.humanReviewRequired(),
                 scoreResult.reliabilityLevel(),
-                buildCompanyResultString(simulation, scoreResult),
+                buildCompanyResultString(simulation, scoreResult, answersByNodeId),
                 attempt.startedAt(),
                 Instant.now()
         );
     }
 
-    private String buildCompanyResultString(PublishedSimulation simulation, ScoreCalculationResult scoreResult) {
+    private String buildCompanyResultString(
+            PublishedSimulation simulation,
+            ScoreCalculationResult scoreResult,
+            Map<String, AttemptAnswer> answersByNodeId
+    ) {
         String decision = switch (scoreResult.decision()) {
             case RECOMMEND_INTERVIEW -> "Pronto para entrevista";
             case REVIEW_REQUIRED -> "Requer revisão";
@@ -164,13 +169,51 @@ public class AttemptStateMachine {
                 ? "Revisão humana obrigatória antes de qualquer decisão final."
                 : "Sem bloqueio crítico identificado nas respostas.";
         String reliability = reliabilityLabel(scoreResult.reliabilityLevel());
+        String terminalReport = terminalReport(simulation, answersByNodeId);
 
-        return "Resumo do candidato\n\n"
+        String result = "Resumo do candidato\n\n"
                 + "Avaliação: " + simulation.name() + "\n\n"
                 + "Decisão sugerida: " + decision + "\n\n"
                 + "Pontuação geral: " + scoreResult.score() + "/100\n\n"
                 + reviewLine + "\n\n"
                 + "Confiabilidade da resposta: " + reliability + ".";
+        if (terminalReport == null || terminalReport.isBlank()) {
+            return result;
+        }
+        return result + "\n\nRelatorio do caminho:\n" + terminalReport;
+    }
+
+    private String terminalReport(PublishedSimulation simulation, Map<String, AttemptAnswer> answersByNodeId) {
+        String currentNodeId = simulation.rootNodeId();
+        while (currentNodeId != null) {
+            ScenarioNode currentNode = findNode(simulation, currentNodeId);
+            if (currentNode.isFinal()) {
+                return currentNode.reportText();
+            }
+
+            AttemptAnswer answer = answersByNodeId.get(currentNodeId);
+            if (answer == null) {
+                return null;
+            }
+            if (answer.timedOut() || answer.optionId() == null) {
+                currentNodeId = currentNode.timeoutNextNodeId();
+                continue;
+            }
+
+            ScenarioOption pickedOption = currentNode.options().stream()
+                    .filter(option -> option.id().equals(answer.optionId()))
+                    .findFirst()
+                    .orElse(null);
+            currentNodeId = pickedOption == null ? null : pickedOption.nextNodeId();
+        }
+        return null;
+    }
+
+    private ScenarioNode findNode(PublishedSimulation simulation, String nodeId) {
+        return simulation.nodes().stream()
+                .filter(node -> node.id().equals(nodeId))
+                .findFirst()
+                .orElseThrow();
     }
 
     private String reliabilityLabel(ReliabilityLevel reliabilityLevel) {

@@ -104,6 +104,19 @@ public class SimulationValidationService {
             Map<String, SimulationNodeEntity> nodesById,
             List<ValidationIssueResponse> issues
     ) {
+        if (node.isFinal()) {
+            validateFinalNode(node, issues);
+            return;
+        }
+
+        if (node.getMessage() == null || node.getMessage().isBlank()) {
+            issues.add(new ValidationIssueResponse(
+                    ValidationIssueSeverity.BLOCKER,
+                    node.getNodeId(),
+                    "Cada etapa precisa ter uma fala para o candidato."
+            ));
+        }
+
         if (node.getOptions().size() < 2 || node.getOptions().size() > 4) {
             issues.add(new ValidationIssueResponse(
                     ValidationIssueSeverity.BLOCKER,
@@ -117,6 +130,33 @@ public class SimulationValidationService {
         }
 
         validateTimeoutTransition(node, nodesById, issues);
+    }
+
+    private void validateFinalNode(
+            SimulationNodeEntity node,
+            List<ValidationIssueResponse> issues
+    ) {
+        if (!node.getOptions().isEmpty()) {
+            issues.add(new ValidationIssueResponse(
+                    ValidationIssueSeverity.BLOCKER,
+                    node.getNodeId(),
+                    "Etapas de encerramento nao podem ter respostas."
+            ));
+        }
+        if (node.getTimeoutNextNodeId() != null) {
+            issues.add(new ValidationIssueResponse(
+                    ValidationIssueSeverity.BLOCKER,
+                    node.getNodeId(),
+                    "Etapas de encerramento nao podem ter destino de tempo."
+            ));
+        }
+        if (node.getReportText() == null || node.getReportText().isBlank()) {
+            issues.add(new ValidationIssueResponse(
+                    ValidationIssueSeverity.BLOCKER,
+                    node.getNodeId(),
+                    "Etapas de encerramento precisam ter texto de relatorio."
+            ));
+        }
     }
 
     private void validateTimeoutTransition(
@@ -482,6 +522,9 @@ public class SimulationValidationService {
     }
 
     private List<String> nextNodeIds(SimulationNodeEntity node, Map<String, SimulationNodeEntity> nodesById) {
+        if (node.isFinal()) {
+            return List.of();
+        }
         List<String> nextNodeIds = new ArrayList<>(node.getOptions().stream()
                 .map(SimulationOptionEntity::getNextNodeId)
                 .filter(nextNodeId -> nextNodeId != null && nodesById.containsKey(nextNodeId))

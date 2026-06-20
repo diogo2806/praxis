@@ -153,6 +153,9 @@ public class ResultScoringService {
 
         while (currentNodeId != null) {
             ScenarioNode currentNode = findNode(simulation, currentNodeId);
+            if (currentNode.isFinal()) {
+                break;
+            }
             AttemptAnswer answer = answersByNodeId.get(currentNodeId);
             if (answer == null) {
                 break;

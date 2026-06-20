@@ -2,12 +2,10 @@ package br.com.iforce.praxis.simulation.dto;
 
 import br.com.iforce.praxis.shared.model.MediaType;
 import io.swagger.v3.oas.annotations.media.Schema;
-import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
 @Schema(description = "Dados para criar uma etapa do teste.")
 public record CreateNodeRequest(
-        @NotBlank
         @Size(max = 1200)
         @Schema(example = "Chegou quebrado. Quero meu dinheiro de volta agora.")
         String clientMessage,
@@ -22,6 +20,19 @@ public record CreateNodeRequest(
         @Size(max = 120)
         @Schema(description = "Próxima etapa usada quando o tempo da etapa esgota. Nulo encerra a trilha.", nullable = true)
         String timeoutNextNodeId,
+
+        @Schema(description = "Marca a etapa como encerramento do fluxo.")
+        boolean isFinal,
+
+        @Size(max = 2000)
+        @Schema(description = "Texto do relatorio enviado ao recrutador ao fim deste caminho.", nullable = true)
+        String reportText,
+
+        @Schema(description = "Posicao X do card no canvas.", nullable = true)
+        Double positionX,
+
+        @Schema(description = "Posicao Y do card no canvas.", nullable = true)
+        Double positionY,
 
         @Size(max = 1500)
         @Schema(description = "Texto simplificado para leitores de tela.", nullable = true)

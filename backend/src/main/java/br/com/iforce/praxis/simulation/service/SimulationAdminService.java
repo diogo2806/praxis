@@ -232,10 +232,22 @@ public class SimulationAdminService {
         nodeEntity.setNodeId(nodeId);
         nodeEntity.setTurnIndex(nextTurnIndex(versionEntity));
         nodeEntity.setSpeaker("Cliente");
-        nodeEntity.setMessage(request.clientMessage().trim());
+        boolean isFinal = request.isFinal();
+        String message = trimToNull(request.clientMessage());
+        if (!isFinal && message == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "A fala da etapa e obrigatoria.");
+        }
+        if (isFinal && trimToNull(request.timeoutNextNodeId()) != null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Etapas de encerramento nao podem ter destino de tempo.");
+        }
+        nodeEntity.setMessage(message == null ? "" : message);
         nodeEntity.setTimeLimitSeconds(request.timeLimitSeconds());
         assertNodeExistsWhenProvided(versionEntity, request.timeoutNextNodeId());
-        nodeEntity.setTimeoutNextNodeId(trimToNull(request.timeoutNextNodeId()));
+        nodeEntity.setTimeoutNextNodeId(isFinal ? null : trimToNull(request.timeoutNextNodeId()));
+        nodeEntity.setFinal(isFinal);
+        nodeEntity.setReportText(trimToNull(request.reportText()));
+        nodeEntity.setPositionX(request.positionX());
+        nodeEntity.setPositionY(request.positionY());
         nodeEntity.setPlainTextDescription(trimToNull(request.plainTextDescription()));
         nodeEntity.setAudioDescriptionUrl(trimToNull(request.audioDescriptionUrl()));
         applyMedia(request.mediaUrl(), request.mediaType(), nodeEntity::setMediaUrl, nodeEntity::setMediaType);
@@ -259,15 +271,38 @@ public class SimulationAdminService {
         SimulationVersionEntity versionEntity = findAndAssertDraft(simulationId, versionNumber);
         SimulationNodeEntity nodeEntity = findNode(versionEntity, nodeId);
 
+        if (request.isFinal() != null) {
+            nodeEntity.setFinal(request.isFinal());
+            if (request.isFinal()) {
+                nodeEntity.setTimeoutNextNodeId(null);
+                nodeEntity.getOptions().clear();
+            }
+        }
         if (request.clientMessage() != null) {
-            nodeEntity.setMessage(request.clientMessage().trim());
+            String message = trimToNull(request.clientMessage());
+            if (!nodeEntity.isFinal() && message == null) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "A fala da etapa e obrigatoria.");
+            }
+            nodeEntity.setMessage(message == null ? "" : message);
         }
         if (request.timeLimitSeconds() != null) {
             nodeEntity.setTimeLimitSeconds(request.timeLimitSeconds());
         }
+        if (request.reportText() != null) {
+            nodeEntity.setReportText(trimToNull(request.reportText()));
+        }
+        if (request.positionX() != null) {
+            nodeEntity.setPositionX(request.positionX());
+        }
+        if (request.positionY() != null) {
+            nodeEntity.setPositionY(request.positionY());
+        }
         if (request.timeoutNextNodeId() != null) {
+            if (nodeEntity.isFinal() && trimToNull(request.timeoutNextNodeId()) != null) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Etapas de encerramento nao podem ter destino de tempo.");
+            }
             assertNodeExistsWhenProvided(versionEntity, request.timeoutNextNodeId());
-            nodeEntity.setTimeoutNextNodeId(trimToNull(request.timeoutNextNodeId()));
+            nodeEntity.setTimeoutNextNodeId(nodeEntity.isFinal() ? null : trimToNull(request.timeoutNextNodeId()));
         }
         if (request.plainTextDescription() != null) {
             nodeEntity.setPlainTextDescription(trimToNull(request.plainTextDescription()));
@@ -277,6 +312,9 @@ public class SimulationAdminService {
         }
         if (request.mediaUrl() != null) {
             applyMedia(request.mediaUrl(), request.mediaType(), nodeEntity::setMediaUrl, nodeEntity::setMediaType);
+        }
+        if (!nodeEntity.isFinal() && trimToNull(nodeEntity.getMessage()) == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "A fala da etapa e obrigatoria.");
         }
 
         simulationVersionRepository.save(versionEntity);
@@ -314,6 +352,9 @@ public class SimulationAdminService {
     public String addOption(String simulationId, int versionNumber, String nodeId, CreateOptionRequest request) {
         SimulationVersionEntity versionEntity = findAndAssertDraft(simulationId, versionNumber);
         SimulationNodeEntity nodeEntity = findNode(versionEntity, nodeId);
+        if (nodeEntity.isFinal()) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Etapas de encerramento nao aceitam respostas.");
+        }
         assertCanAddOption(nodeEntity);
         assertCompetencyScores(versionEntity, request.competencyLevels());
         assertNodeExistsWhenProvided(versionEntity, request.nextNodeId());
@@ -879,6 +920,10 @@ public class SimulationAdminService {
         clonedNodeEntity.setMessage(sourceNodeEntity.getMessage());
         clonedNodeEntity.setTimeLimitSeconds(sourceNodeEntity.getTimeLimitSeconds());
         clonedNodeEntity.setTimeoutNextNodeId(sourceNodeEntity.getTimeoutNextNodeId());
+        clonedNodeEntity.setFinal(sourceNodeEntity.isFinal());
+        clonedNodeEntity.setReportText(sourceNodeEntity.getReportText());
+        clonedNodeEntity.setPositionX(sourceNodeEntity.getPositionX());
+        clonedNodeEntity.setPositionY(sourceNodeEntity.getPositionY());
         clonedNodeEntity.setPlainTextDescription(sourceNodeEntity.getPlainTextDescription());
         clonedNodeEntity.setAudioDescriptionUrl(sourceNodeEntity.getAudioDescriptionUrl());
         clonedNodeEntity.setMediaUrl(sourceNodeEntity.getMediaUrl());

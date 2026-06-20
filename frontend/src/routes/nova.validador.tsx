@@ -24,6 +24,7 @@ import {
   ZoomOut,
 } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
+import FlowCanvas, { type NodeUpdateBody } from "@/components/flow-canvas";
 import {
   EmptyState,
   NextStepContract,
@@ -238,6 +239,15 @@ function ValidatorPage() {
 
     return null;
   };
+  const activeVersionForContext = (simulationId?: string) =>
+    editDraftQuery.data?.simulationId === simulationId ? editDraftQuery.data : versionQuery.data;
+  const defaultCompetencyLevels = (simulationId?: string) =>
+    Object.fromEntries(
+      (activeVersionForContext(simulationId)?.blueprint.competencies ?? []).map((competency) => [
+        competency.name,
+        0,
+      ]),
+    );
   const addOptionMutation = useMutation({
     mutationFn: async (nodeId: string) => {
       const context = await getEditableContext();
@@ -245,13 +255,22 @@ function ValidatorPage() {
 
       const body: CreateOptionRequest = {
         text: "Nova alternativa...",
-        competencyLevels: {},
+        competencyLevels: defaultCompetencyLevels(context.simulationId),
         isBest: false,
         isCritical: false,
         nextNodeId: null,
         resultingTone: "",
       };
       await createSimulationOption(context.simulationId, context.versionNumber, nodeId, body);
+    },
+    onSuccess: refetchVersionData,
+  });
+  const updateNodeMutation = useMutation({
+    mutationFn: async ({ nodeId, body }: { nodeId: string; body: NodeUpdateBody }) => {
+      const context = await getEditableContext();
+      if (!context) return;
+
+      await updateSimulationNode(context.simulationId, context.versionNumber, nodeId, body);
     },
     onSuccess: refetchVersionData,
   });
@@ -303,12 +322,58 @@ function ValidatorPage() {
       });
       await createSimulationOption(context.simulationId, context.versionNumber, parentNodeId, {
         text: "Seguir para novo subfluxo",
-        competencyLevels: {},
+        competencyLevels: defaultCompetencyLevels(context.simulationId),
         isBest: false,
         isCritical: false,
         nextNodeId: newNodeId,
         resultingTone: "",
       });
+      return newNodeId;
+    },
+    onSuccess: async (newNodeId) => {
+      await refetchVersionData();
+      if (newNodeId) {
+        selectNode(newNodeId);
+      }
+    },
+  });
+  const createChildMutation = useMutation({
+    mutationFn: async ({
+      parentNodeId,
+      link,
+      asEnd,
+    }: {
+      parentNodeId: string;
+      link: { via: "option"; optionId: string } | { via: "timeout" };
+      asEnd: boolean;
+    }) => {
+      const context = await getEditableContext();
+      if (!context) return null;
+
+      const currentVersion = activeVersionForContext(context.simulationId);
+      const parentNode = currentVersion?.nodes.find((node) => node.id === parentNodeId);
+      const newNodeId = await createSimulationNode(context.simulationId, context.versionNumber, {
+        clientMessage: asEnd ? "" : "Nova etapa do subfluxo...",
+        timeLimitSeconds: asEnd ? null : (parentNode?.timeLimitSeconds ?? 60),
+        isFinal: asEnd,
+        reportText: asEnd ? "" : undefined,
+        positionX: parentNode?.positionX != null ? parentNode.positionX + 390 : undefined,
+        positionY: parentNode?.positionY ?? undefined,
+      });
+
+      if (link.via === "option") {
+        await updateSimulationOption(
+          context.simulationId,
+          context.versionNumber,
+          parentNodeId,
+          link.optionId,
+          { nextNodeId: newNodeId },
+        );
+      } else {
+        await updateSimulationNode(context.simulationId, context.versionNumber, parentNodeId, {
+          timeoutNextNodeId: newNodeId,
+        });
+      }
       return newNodeId;
     },
     onSuccess: async (newNodeId) => {
@@ -428,6 +493,9 @@ function ValidatorPage() {
           onAddOption={(nodeId) => addOptionMutation.mutate(nodeId)}
           onAddSubflow={(nodeId) => addSubflowMutation.mutate(nodeId)}
           onConfigureTimeout={configureTimeout}
+          onCreateChild={(parentNodeId, link, asEnd) =>
+            createChildMutation.mutate({ parentNodeId, link, asEnd })
+          }
           onDeleteOption={(nodeId, optionId) => deleteOptionMutation.mutate({ nodeId, optionId })}
           onDeleteStep={(nodeId) => deleteNodeMutation.mutate(nodeId)}
           onEditOption={(nodeId, optionId, body) =>
@@ -435,6 +503,7 @@ function ValidatorPage() {
           }
           onOpenEditor={openEditor}
           onSelectNode={selectNode}
+          onUpdateNode={(nodeId, body) => updateNodeMutation.mutate({ nodeId, body })}
           selectedNodeId={selectedNodeId}
           simulationId={previewSimulationId}
           version={previewVersion}
@@ -857,11 +926,13 @@ function ScoringModelPreview({
   onAddOption,
   onAddSubflow,
   onConfigureTimeout,
+  onCreateChild,
   onDeleteOption,
   onDeleteStep,
   onEditOption,
   onOpenEditor,
   onSelectNode,
+  onUpdateNode,
   selectedNodeId,
   simulationId,
   version,
@@ -874,11 +945,17 @@ function ScoringModelPreview({
   onAddOption: (nodeId: string) => void;
   onAddSubflow: (nodeId: string) => void;
   onConfigureTimeout: (nodeId: string) => void;
+  onCreateChild: (
+    parentNodeId: string,
+    link: { via: "option"; optionId: string } | { via: "timeout" },
+    asEnd: boolean,
+  ) => void;
   onDeleteOption: (nodeId: string, optionId: string) => void;
   onDeleteStep: (nodeId: string) => void;
   onEditOption: (nodeId: string, optionId: string, body: UpdateOptionRequest) => void;
   onOpenEditor: (nodeId?: string) => void;
   onSelectNode: (nodeId: string | null) => void;
+  onUpdateNode: (nodeId: string, body: NodeUpdateBody) => void;
   selectedNodeId: string | null;
   simulationId?: string;
   version?: SimulationVersionDetailResponse;
@@ -897,22 +974,24 @@ function ScoringModelPreview({
 
       <div className="grid gap-5">
         <div className="rounded-md border border-border bg-card p-5">
-          <NormalizedScoreMap
-            canCloneForEdit={canCloneForEdit}
-            isEditable={isEditable}
-            onAddOption={onAddOption}
-            onAddSubflow={onAddSubflow}
-            onConfigureTimeout={onConfigureTimeout}
-            onDeleteOption={onDeleteOption}
-            onDeleteStep={onDeleteStep}
-            onEditOption={onEditOption}
-            onOpenEditor={onOpenEditor}
-            onSelectNode={onSelectNode}
-            selectedNodeId={selectedNodeId}
-            simulationId={simulationId}
-            version={version}
-            versionNumber={versionNumber}
-          />
+          {version ? (
+            <FlowCanvas
+              canEdit={isEditable || canCloneForEdit}
+              onAddOption={onAddOption}
+              onCreateChild={onCreateChild}
+              onDeleteOption={onDeleteOption}
+              onDeleteStep={onDeleteStep}
+              onEditOption={onEditOption}
+              onSelectNode={onSelectNode}
+              onUpdateNode={onUpdateNode}
+              selectedNodeId={selectedNodeId}
+              version={version}
+            />
+          ) : (
+            <div className="rounded-md border border-border bg-background px-4 py-6 text-sm text-muted-foreground">
+              Carregando mapa interativo do fluxo...
+            </div>
+          )}
 
           <div className="mt-6 border-t border-border pt-5">
             <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
