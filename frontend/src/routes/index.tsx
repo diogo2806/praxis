@@ -833,7 +833,7 @@ turno-3 ▸ <span class="ok">C</span>  +2 Comunicação
         <div class="plan">
           <div class="pname">Avulso</div>
           <div class="pfor">Para pilotos e vagas pontuais, sem mensalidade.</div>
-          <div class="price"><span class="cur">R$</span><span class="amt">19</span><span class="per">/ candidato avaliado</span></div>
+          <div class="price"><span class="cur">R$</span><span class="amt">29</span><span class="per">/ candidato avaliado</span></div>
           <div class="psub">Pague só por quem você avaliar.</div>
           <a class="btn btn-ghost" href="#cta">Começar</a>
           <ul class="plist">
@@ -851,8 +851,8 @@ turno-3 ▸ <span class="ok">C</span>  +2 Comunicação
           <span class="ptag">Mais escolhido</span>
           <div class="pname">Crescimento</div>
           <div class="pfor">Para quem recruta com volume recorrente.</div>
-          <div class="price"><span class="cur">R$</span><span class="amt" data-monthly="1.490" data-annual="1.242">1.490</span><span class="per" id="cycMonthly">/ mês</span></div>
-          <div class="psub" id="cycSub">Inclui 200 candidatos/mês · +R$ 7 por adicional.</div>
+          <div class="price"><span class="cur">R$</span><span class="amt" data-monthly="1.990" data-annual="1.658">1.990</span><span class="per" id="cycMonthly">/ mês</span></div>
+          <div class="psub" id="cycSub">Inclui 200 candidatos/mês · +R$ 9 por adicional.</div>
           <a class="btn btn-primary" href="#cta">Agendar demo <span class="btn-arrow">→</span></a>
           <ul class="plist">
             <li class="head"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/></svg>Tudo do Avulso, e mais:</li>
@@ -1114,8 +1114,8 @@ function LandingPage() {
         amt.textContent = annual ? (amt.dataset.annual ?? "") : (amt.dataset.monthly ?? "");
         cyc.textContent = annual ? "/ m?s, no anual" : "/ m?s";
         sub.textContent = annual
-          ? "Faturado anual (R$ 14.900) ? inclui 200 candidatos/m?s."
-          : "Inclui 200 candidatos/m?s ? +R$ 7 por adicional.";
+          ? "Faturado anual (R$ 19.900) ? inclui 200 candidatos/m?s."
+          : "Inclui 200 candidatos/m?s ? +R$ 9 por adicional.";
       };
       const monthly = () => setCycle(false);
       const annual = () => setCycle(true);
