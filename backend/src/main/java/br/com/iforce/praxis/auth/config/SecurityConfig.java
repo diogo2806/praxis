@@ -39,28 +39,28 @@ public class SecurityConfig {
 
         if (!securityEnabled) {
             http.authorizeHttpRequests(auth -> auth.anyRequest().permitAll());
-            return http.build();
+        } else {
+            http.authorizeHttpRequests(auth -> auth
+                            .requestMatchers(
+                                    "/api/v1/auth/login",
+                                    "/candidate/**",
+                                    "/docs/**",
+                                    "/v3/api-docs/**",
+                                    "/swagger-ui/**",
+                                    "/actuator/health"
+                            ).permitAll()
+                            .requestMatchers("/test/**").hasRole("GUPY")
+                            .requestMatchers("/api/v1/simulations/**").hasRole("EMPRESA")
+                            .requestMatchers("/api/v1/media/**").hasRole("EMPRESA")
+                            .requestMatchers("/api/v1/tenant-config/**").hasRole("EMPRESA")
+                            .requestMatchers("/api/v1/gupy/result-deliveries/**").hasRole("EMPRESA")
+                            .requestMatchers("/api/v1/audit/**").hasRole("EMPRESA")
+                            .requestMatchers("/api/v1/candidate-links", "/api/v1/candidate-links/**").hasRole("EMPRESA")
+                            .anyRequest().authenticated()
+                    );
         }
 
-        http.authorizeHttpRequests(auth -> auth
-                        .requestMatchers(
-                                "/api/v1/auth/login",
-                                "/candidate/**",
-                                "/docs/**",
-                                "/v3/api-docs/**",
-                                "/swagger-ui/**",
-                                "/actuator/health"
-                        ).permitAll()
-                        .requestMatchers("/test/**").hasRole("GUPY")
-                        .requestMatchers("/api/v1/simulations/**").hasRole("EMPRESA")
-                        .requestMatchers("/api/v1/media/**").hasRole("EMPRESA")
-                        .requestMatchers("/api/v1/tenant-config/**").hasRole("EMPRESA")
-                        .requestMatchers("/api/v1/gupy/result-deliveries/**").hasRole("EMPRESA")
-                        .requestMatchers("/api/v1/audit/**").hasRole("EMPRESA")
-                        .requestMatchers("/api/v1/candidate-links", "/api/v1/candidate-links/**").hasRole("EMPRESA")
-                        .anyRequest().authenticated()
-                )
-                .addFilterBefore(gupyFilter, UsernamePasswordAuthenticationFilter.class)
+        http.addFilterBefore(gupyFilter, UsernamePasswordAuthenticationFilter.class)
                 .addFilterAfter(jwtFilter, GupyApiKeyFilter.class);
 
         return http.build();

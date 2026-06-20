@@ -13,6 +13,7 @@ import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.hasItem;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -295,7 +296,8 @@ class SimulationAdminControllerTest {
     @Test
     @Sql(scripts = "/tenant-isolation-fixtures.sql")
     void archiveSimulationDoesNotCrossTenantBoundary() throws Exception {
-        mockMvc.perform(delete("/api/v1/simulations/sim-tenant2"))
+        mockMvc.perform(delete("/api/v1/simulations/sim-tenant2")
+                        .with(user("admin")))
                 .andExpect(status().isNotFound());
     }
 

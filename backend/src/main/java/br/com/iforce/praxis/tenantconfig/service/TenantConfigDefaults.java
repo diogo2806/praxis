@@ -46,10 +46,10 @@ public final class TenantConfigDefaults {
                     locked("Decisão final")
             ),
             TenantConfigType.ANSWER_TIME_LIMIT, List.of(
-                    new ConfigOptionDto("0", "Sem limite", false, false),
-                    new ConfigOptionDto("30", "30 s", false, false),
-                    new ConfigOptionDto("45", "45 s", false, true),
-                    new ConfigOptionDto("60", "60 s", false, false)
+                    new ConfigOptionDto("0", "Sem limite", false, false, true),
+                    new ConfigOptionDto("30", "30 s", false, false, true),
+                    new ConfigOptionDto("45", "45 s", false, true, true),
+                    new ConfigOptionDto("60", "60 s", false, false, true)
             )
     );
 
@@ -58,14 +58,14 @@ public final class TenantConfigDefaults {
     }
 
     private static ConfigOptionDto plain(String value) {
-        return new ConfigOptionDto(value, value, false, false);
+        return new ConfigOptionDto(value, value, false, false, true);
     }
 
     private static ConfigOptionDto selected(String value) {
-        return new ConfigOptionDto(value, value, false, true);
+        return new ConfigOptionDto(value, value, false, true, true);
     }
 
     private static ConfigOptionDto locked(String value) {
-        return new ConfigOptionDto(value, value, true, false);
+        return new ConfigOptionDto(value, value, true, false, true);
     }
 }

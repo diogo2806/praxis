@@ -8,15 +8,15 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
-import org.springframework.context.annotation.Import;
 import org.springframework.test.context.TestPropertySource;
+import org.springframework.test.context.jdbc.Sql;
 
 import java.time.Instant;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 @DataJpaTest
-@Import({CandidateAttemptRepository.class})
+@Sql(scripts = {"/seed-simulation-fixture.sql", "/tenant-isolation-fixtures.sql"})
 @TestPropertySource(properties = {
         "praxis.security.enabled=false",
         "praxis.default-tenant-id=tenant-1"
@@ -69,8 +69,8 @@ class MultiTenantIsolationTest {
 
     @Test
     void testCountByTenantIdRespectsIsolation() {
-        long tenant1Count = repository.countByTenantIdAndSimulationVersionId("tenant-1", 100L);
-        long tenant2Count = repository.countByTenantIdAndSimulationVersionId("tenant-2", 100L);
+        long tenant1Count = repository.countByTenantIdAndSimulationVersionId("tenant-1", 1L);
+        long tenant2Count = repository.countByTenantIdAndSimulationVersionId("tenant-2", 1L);
 
         assertEquals(1, tenant1Count);
         assertEquals(1, tenant2Count);
@@ -87,7 +87,7 @@ class MultiTenantIsolationTest {
         entity.setId(id);
         entity.setIdempotencyKey(idempotencyKey);
         entity.setResultId(resultId);
-        entity.setSimulationVersionId(100L);
+        entity.setSimulationVersionId(1L);
         entity.setCandidateName("Test Candidate");
         entity.setCandidateEmail("test@example.com");
         entity.setCompanyId("company-1");
