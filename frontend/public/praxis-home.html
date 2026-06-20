@@ -1,29 +1,14 @@
-import { useEffect } from "react";
-import { createFileRoute } from "@tanstack/react-router";
-
-export const Route = createFileRoute("/")({
-  head: () => ({
-    meta: [
-      { title: "Pr?xis ? Teste situacional para a Gupy" },
-      {
-        name: "description",
-        content:
-          "Avalie candidatos por como decidem em situa??es reais do trabalho. Pontua??o determin?stica, trilha audit?vel e integra??o nativa com a Gupy. Sem IA julgando candidato.",
-      },
-    ],
-    links: [
-      { rel: "preconnect", href: "https://fonts.googleapis.com" },
-      { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
-      {
-        rel: "stylesheet",
-        href: "https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,380;9..144,460;9..144,560;9..144,640&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;450;500;600;700&display=swap",
-      },
-    ],
-  }),
-  component: LandingPage,
-});
-
-const landingStyles = `
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Práxis — Teste situacional para a Gupy</title>
+<meta name="description" content="Avalie candidatos por como decidem em situações reais do trabalho. Pontuação determinística, trilha auditável e integração nativa com a Gupy. Sem IA julgando candidato." />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,380;9..144,460;9..144,560;9..144,640&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;450;500;600;700&display=swap" rel="stylesheet">
+<style>
   :root{
     --bg: oklch(0.985 0.006 85);
     --bg-alt: oklch(0.965 0.009 235);
@@ -439,8 +424,11 @@ const landingStyles = `
   .vxfoot .fadd svg{width:11px;height:11px;stroke:#1B6C8C}
   .vxport{position:absolute;width:11px;height:11px;border-radius:50%;background:#fff;border:2px solid #1B6C8C;z-index:12}
 
-`;
-const landingMarkup = `<header class="nav" id="nav">
+</style>
+</head>
+<body>
+
+<header class="nav" id="nav">
   <div class="wrap nav-inner">
     <a href="#topo" class="brand" aria-label="Práxis, por iForce">
       Práxis<span class="dot"></span><small>by iForce</small>
@@ -947,204 +935,100 @@ turno-3 ▸ <span class="ok">C</span>  +2 Comunicação
     <a href="#topo" class="brand">Práxis<span class="dot"></span><small>by iForce</small></a>
     <span class="fcopy">© 2026 iForce · praxis.iforce.com.br</span>
   </div>
-</footer>`;
+</footer>
 
-function LandingPage() {
-  useEffect(() => {
-    const nav = document.getElementById("nav");
-    const menuBtn = document.getElementById("menuBtn");
-    const note = document.getElementById("scNote");
-    const report = document.getElementById("scReport");
-    const rTag = document.getElementById("rTag");
-    const rPts = document.getElementById("rPts");
-    const rRead = document.getElementById("rRead");
-    const comp = document.getElementById("evComp");
-    const bM = document.getElementById("bMonthly");
-    const bA = document.getElementById("bAnnual");
-    const amt = document.querySelector<HTMLElement>(".amt[data-monthly]");
-    const cyc = document.getElementById("cycMonthly");
-    const sub = document.getElementById("cycSub");
+<script>
+  // sticky nav shadow
+  const nav = document.getElementById('nav');
+  const onScroll = () => nav.classList.toggle('scrolled', window.scrollY > 8);
+  onScroll(); addEventListener('scroll', onScroll, {passive:true});
 
-    const cleanups: Array<() => void> = [];
-
-    if (nav) {
-      const onScroll = () => nav.classList.toggle("scrolled", window.scrollY > 8);
-      onScroll();
-      window.addEventListener("scroll", onScroll, { passive: true });
-      cleanups.push(() => window.removeEventListener("scroll", onScroll));
-    }
-
-    if (nav && menuBtn) {
-      const onMenuClick = () => {
-        const open = nav.classList.toggle("mobile-open");
-        menuBtn.setAttribute("aria-expanded", String(open));
-      };
-      menuBtn.addEventListener("click", onMenuClick);
-      cleanups.push(() => menuBtn.removeEventListener("click", onMenuClick));
-
-      document.querySelectorAll<HTMLAnchorElement>(".nav-links a").forEach((anchor) => {
-        const closeMenu = () => {
-          nav.classList.remove("mobile-open");
-          menuBtn.setAttribute("aria-expanded", "false");
-        };
-        anchor.addEventListener("click", closeMenu);
-        cleanups.push(() => anchor.removeEventListener("click", closeMenu));
-      });
-    }
-
-    const reads: Record<
-      string,
-      { tag: string; cls: string; pts: Array<[string, number]>; read: string }
-    > = {
-      A: {
-        tag: "Decis?o registrada",
-        cls: "tag-ok",
-        pts: [
-          ["Comunica??o", 2],
-          ["Resolu??o de problemas", 0],
-          ["Ader?ncia ? pol?tica", 0],
-        ],
-        read:
-          "<b>Acolhe, mas promete sem garantir.</b> Cria uma expectativa que o time pode n?o conseguir cumprir.",
-      },
-      B: {
-        tag: "Decis?o registrada",
-        cls: "tag-ok",
-        pts: [
-          ["Comunica??o", 3],
-          ["Resolu??o de problemas", 2],
-          ["Ader?ncia ? pol?tica", 1],
-        ],
-        read:
-          "<b>Acolhe, assume responsabilidade e alinha com o time.</b> A resposta mais equilibrada do turno.",
-      },
-      C: {
-        tag: "Decis?o registrada",
-        cls: "tag-ok",
-        pts: [
-          ["Comunica??o", 1],
-          ["Resolu??o de problemas", 0],
-          ["Ader?ncia ? pol?tica", 2],
-        ],
-        read:
-          "<b>Tecnicamente correta, por?m fria.</b> Segue a pol?tica, mas ignora um cliente j? irritado.",
-      },
-      D: {
-        tag: "Aciona revis?o humana",
-        cls: "tag-rev",
-        pts: [
-          ["Comunica??o", 0],
-          ["Resolu??o de problemas", 0],
-          ["Ader?ncia ? pol?tica", 0],
-        ],
-        read:
-          "<b>Esquiva da situa??o.</b> Marcada como decis?o cr?tica ? encaminhada para a revis?o de uma pessoa.",
-      },
-    };
-
-    document.querySelectorAll<HTMLButtonElement>(".opt").forEach((button) => {
-      const onPick = () => {
-        document.querySelectorAll(".opt").forEach((option) => option.classList.remove("picked"));
-        button.classList.add("picked");
-        const key = button.querySelector(".key")?.textContent?.trim() ?? "";
-        const data = reads[key];
-        if (!data || !note || !report || !rTag || !rPts || !rRead) return;
-
-        note.style.display = "none";
-        rTag.textContent = data.tag;
-        rTag.className = "tag " + data.cls;
-        rPts.innerHTML = data.pts
-          .map(
-            ([name, value]) =>
-              '<div class="ptrow"><span class="pn">' +
-              name +
-              '</span><span class="pt-track"><span class="pt-fill"></span></span><span class="pv' +
-              (value === 0 ? " zero" : "") +
-              '">+' +
-              value +
-              "</span></div>",
-          )
-          .join("");
-        rRead.innerHTML = data.read;
-        report.classList.add("show");
-        requestAnimationFrame(() =>
-          requestAnimationFrame(() => {
-            rPts.querySelectorAll<HTMLElement>(".pt-fill").forEach((fill, index) => {
-              fill.style.width = (data.pts[index][1] / 3) * 100 + "%";
-            });
-          }),
-        );
-      };
-      button.addEventListener("click", onPick);
-      cleanups.push(() => button.removeEventListener("click", onPick));
-    });
-
-    if (comp) {
-      const fillBars = () => {
-        comp.querySelectorAll<HTMLElement>(".fill").forEach((fill) => {
-          fill.style.width = (fill.dataset.w ?? "0") + "%";
-        });
-      };
-
-      if ("IntersectionObserver" in window) {
-        const observer = new IntersectionObserver(
-          (entries) => {
-            entries.forEach((entry) => {
-              if (entry.isIntersecting) {
-                fillBars();
-                observer.disconnect();
-              }
-            });
-          },
-          { threshold: 0.4 },
-        );
-        observer.observe(comp);
-        cleanups.push(() => observer.disconnect());
-      } else {
-        fillBars();
-      }
-    }
-
-    if (bM && bA && amt && cyc && sub) {
-      const setCycle = (annual: boolean) => {
-        bM.classList.toggle("on", !annual);
-        bA.classList.toggle("on", annual);
-        bM.setAttribute("aria-pressed", String(!annual));
-        bA.setAttribute("aria-pressed", String(annual));
-        amt.textContent = annual ? (amt.dataset.annual ?? "") : (amt.dataset.monthly ?? "");
-        cyc.textContent = annual ? "/ m?s, no anual" : "/ m?s";
-        sub.textContent = annual
-          ? "Faturado anual (R$ 14.900) ? inclui 200 candidatos/m?s."
-          : "Inclui 200 candidatos/m?s ? +R$ 7 por adicional.";
-      };
-      const monthly = () => setCycle(false);
-      const annual = () => setCycle(true);
-      bM.addEventListener("click", monthly);
-      bA.addEventListener("click", annual);
-      cleanups.push(() => bM.removeEventListener("click", monthly));
-      cleanups.push(() => bA.removeEventListener("click", annual));
-    }
-
-    document.querySelectorAll<HTMLButtonElement>(".qa button").forEach((button) => {
-      const onToggle = () => {
-        const qa = button.parentElement;
-        const ans = qa?.querySelector<HTMLElement>(".ans");
-        if (!qa || !ans) return;
-        const open = qa.classList.toggle("open");
-        button.setAttribute("aria-expanded", String(open));
-        ans.style.maxHeight = open ? ans.scrollHeight + "px" : "0";
-      };
-      button.addEventListener("click", onToggle);
-      cleanups.push(() => button.removeEventListener("click", onToggle));
-    });
-
-    return () => cleanups.forEach((cleanup) => cleanup());
-  }, []);
-
-  return (
-    <>
-      <style>{landingStyles}</style>
-      <div dangerouslySetInnerHTML={{ __html: landingMarkup }} />
-    </>
+  // mobile menu
+  const menuBtn = document.getElementById('menuBtn');
+  menuBtn.addEventListener('click', () => {
+    const open = nav.classList.toggle('mobile-open');
+    menuBtn.setAttribute('aria-expanded', open);
+  });
+  document.querySelectorAll('.nav-links a').forEach(a =>
+    a.addEventListener('click', () => { nav.classList.remove('mobile-open'); menuBtn.setAttribute('aria-expanded','false'); })
   );
-}
+
+  // scenario interaction → mini report per choice
+  const note = document.getElementById('scNote');
+  const report = document.getElementById('scReport');
+  const rTag = document.getElementById('rTag'), rPts = document.getElementById('rPts'), rRead = document.getElementById('rRead');
+  const MAXP = 3;
+  const reads = {
+    A: {tag:'Decisão registrada', cls:'tag-ok',
+        pts:[['Comunicação',2],['Resolução de problemas',0],['Aderência à política',0]],
+        read:'<b>Acolhe, mas promete sem garantir.</b> Cria uma expectativa que o time pode não conseguir cumprir.'},
+    B: {tag:'Decisão registrada', cls:'tag-ok',
+        pts:[['Comunicação',3],['Resolução de problemas',2],['Aderência à política',1]],
+        read:'<b>Acolhe, assume responsabilidade e alinha com o time.</b> A resposta mais equilibrada do turno.'},
+    C: {tag:'Decisão registrada', cls:'tag-ok',
+        pts:[['Comunicação',1],['Resolução de problemas',0],['Aderência à política',2]],
+        read:'<b>Tecnicamente correta, porém fria.</b> Segue a política, mas ignora um cliente já irritado.'},
+    D: {tag:'Aciona revisão humana', cls:'tag-rev',
+        pts:[['Comunicação',0],['Resolução de problemas',0],['Aderência à política',0]],
+        read:'<b>Esquiva da situação.</b> Marcada como decisão crítica — encaminhada para a revisão de uma pessoa.'}
+  };
+  document.querySelectorAll('.opt').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.opt').forEach(o => o.classList.remove('picked'));
+      btn.classList.add('picked');
+      const k = btn.querySelector('.key').textContent.trim();
+      const d = reads[k]; if (!d) return;
+      note.style.display = 'none';
+      rTag.textContent = d.tag; rTag.className = 'tag ' + d.cls;
+      rPts.innerHTML = d.pts.map(([name, v]) =>
+        '<div class="ptrow"><span class="pn">' + name + '</span>' +
+        '<span class="pt-track"><span class="pt-fill"></span></span>' +
+        '<span class="pv' + (v === 0 ? ' zero' : '') + '">+' + v + '</span></div>'
+      ).join('');
+      rRead.innerHTML = d.read;
+      report.classList.add('show');
+      requestAnimationFrame(() => requestAnimationFrame(() => {
+        rPts.querySelectorAll('.pt-fill').forEach((f, i) => { f.style.width = (d.pts[i][1] / MAXP * 100) + '%'; });
+      }));
+    });
+  });
+
+  // animate competency bars when the evidence card enters view
+  const comp = document.getElementById('evComp');
+  const fillBars = () => comp.querySelectorAll('.fill').forEach(f => f.style.width = f.dataset.w + '%');
+  if ('IntersectionObserver' in window) {
+    const io = new IntersectionObserver((entries) => {
+      entries.forEach(e => { if (e.isIntersecting) { fillBars(); io.disconnect(); } });
+    }, {threshold:.4});
+    io.observe(comp);
+  } else { fillBars(); }
+
+  // pricing toggle
+  const bM = document.getElementById('bMonthly'), bA = document.getElementById('bAnnual');
+  const amt = document.querySelector('.amt[data-monthly]');
+  const cyc = document.getElementById('cycMonthly'), sub = document.getElementById('cycSub');
+  function setCycle(annual){
+    bM.classList.toggle('on', !annual); bA.classList.toggle('on', annual);
+    bM.setAttribute('aria-pressed', !annual); bA.setAttribute('aria-pressed', annual);
+    amt.textContent = annual ? amt.dataset.annual : amt.dataset.monthly;
+    cyc.textContent = annual ? '/ mês, no anual' : '/ mês';
+    sub.textContent = annual
+      ? 'Faturado anual (R$ 14.900) · inclui 200 candidatos/mês.'
+      : 'Inclui 200 candidatos/mês · +R$ 7 por adicional.';
+  }
+  bM.addEventListener('click', () => setCycle(false));
+  bA.addEventListener('click', () => setCycle(true));
+
+  // FAQ accordion
+  document.querySelectorAll('.qa button').forEach(b => {
+    b.addEventListener('click', () => {
+      const qa = b.parentElement;
+      const ans = qa.querySelector('.ans');
+      const open = qa.classList.toggle('open');
+      b.setAttribute('aria-expanded', open);
+      ans.style.maxHeight = open ? ans.scrollHeight + 'px' : 0;
+    });
+  });
+</script>
+</body>
+</html>
