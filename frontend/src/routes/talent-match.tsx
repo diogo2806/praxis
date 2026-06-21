@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
 import { BarChart3, Check, CircleAlert, Target, UsersRound } from "lucide-react";
 import {
@@ -18,9 +18,11 @@ import {
   getTalentMatch,
   listCandidateLinks,
   listSimulations,
+  registerCandidateDisposition,
   type CandidateLinkResponse,
   type CandidateRadarDto,
   type CompetencyBenchmarkDto,
+  type HumanDecision,
   type SimulationSummaryResponse,
   type TalentMatchResponse,
 } from "@/lib/api/praxis";
@@ -49,6 +51,13 @@ export const Route = createFileRoute("/talent-match")({
 
 const MAX_SELECTED = 5;
 const palette = ["#0f766e", "#b45309", "#2563eb", "#be123c", "#6d28d9"];
+
+const DECISION_OPTIONS: { value: HumanDecision; label: string }[] = [
+  { value: "advanced", label: "Avançar" },
+  { value: "rejected", label: "Não avançar" },
+  { value: "hired", label: "Contratar" },
+  { value: "onHold", label: "Em espera" },
+];
 
 function TalentMatchPage() {
   const search = Route.useSearch();
@@ -109,7 +118,8 @@ function TalentMatchPage() {
           <div className="text-xs uppercase text-primary">Talent Match</div>
           <h1 className="mt-1 text-3xl font-semibold">Comparativo de candidatos</h1>
           <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
-            Sobreponha até 5 perfis no radar e compare cada competência contra a régua alvo da vaga.
+            Evidência para análise: sobreponha até 5 perfis no radar e compare cada competência
+            contra a régua alvo da vaga. O score é apoio à decisão — quem decide é você.
           </p>
         </div>
         <Link
@@ -133,6 +143,11 @@ function TalentMatchPage() {
         />
       ) : (
         <div className="space-y-5">
+          <StateBanner tone="info" title="Evidência para análise — a decisão é sua">
+            Os números são recomendação de apoio, não um veredito automático. A Práxis não aprova
+            nem reprova candidatos: a decisão final é registrada por uma pessoa, e um erro crítico
+            sempre aciona revisão humana.
+          </StateBanner>
           {!isVersionPublished && (
             <StateBanner tone="warn" title="Versão não disponível para comparação">
               Esta versão ainda não está publicada. Selecione uma versão publicada para comparar
@@ -420,6 +435,69 @@ function BenchmarkSummary({ benchmark }: { benchmark: CompetencyBenchmarkDto[] }
   );
 }
 
+function CandidateDecisionControl({ attemptId }: { attemptId: string }) {
+  const [decision, setDecision] = useState<HumanDecision | "">("");
+  const [reason, setReason] = useState("");
+  const mutation = useMutation({
+    mutationFn: () =>
+      registerCandidateDisposition(attemptId, {
+        decision: decision as HumanDecision,
+        reason: reason.trim() || undefined,
+      }),
+  });
+
+  if (mutation.isSuccess) {
+    return (
+      <div className="mt-3 rounded-md border border-primary/40 bg-primary/5 p-2.5 text-[11px] text-muted-foreground">
+        Decisão registrada na trilha de auditoria. O score é apenas apoio — a decisão é sua.
+      </div>
+    );
+  }
+
+  return (
+    <div className="mt-3 border-t border-border pt-3">
+      <label className="block text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+        Registrar decisão
+      </label>
+      <select
+        value={decision}
+        onChange={(event) => setDecision(event.target.value as HumanDecision | "")}
+        className="mt-1.5 w-full rounded-md border border-border bg-background px-2 py-1.5 text-xs"
+      >
+        <option value="">Selecione a decisão…</option>
+        {DECISION_OPTIONS.map((option) => (
+          <option key={option.value} value={option.value}>
+            {option.label}
+          </option>
+        ))}
+      </select>
+      <textarea
+        value={reason}
+        onChange={(event) => setReason(event.target.value)}
+        rows={2}
+        maxLength={1000}
+        placeholder="Justificativa (opcional, recomendada)"
+        className="mt-2 w-full resize-none rounded-md border border-border bg-background px-2 py-1.5 text-xs"
+      />
+      <button
+        type="button"
+        disabled={!decision || mutation.isPending}
+        onClick={() => mutation.mutate()}
+        className="mt-2 w-full rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+      >
+        {mutation.isPending ? "Registrando…" : "Registrar decisão"}
+      </button>
+      {mutation.isError && (
+        <p className="mt-1.5 text-[11px] text-destructive">
+          {mutation.error instanceof Error
+            ? mutation.error.message
+            : "Não foi possível registrar a decisão."}
+        </p>
+      )}
+    </div>
+  );
+}
+
 function CandidateLegend({ candidates }: { candidates: CandidateRadarDto[] }) {
   if (candidates.length === 0) {
     return (
@@ -448,9 +526,10 @@ function CandidateLegend({ candidates }: { candidates: CandidateRadarDto[] }) {
             </div>
             <div className="text-right">
               <div className="text-xl font-semibold tabular-nums">{candidate.generalScore}</div>
-              <div className="text-[10px] uppercase text-muted-foreground">score</div>
+              <div className="text-[10px] uppercase text-muted-foreground">score · apoio</div>
             </div>
           </div>
+          <CandidateDecisionControl attemptId={candidate.attemptId} />
         </div>
       ))}
     </div>

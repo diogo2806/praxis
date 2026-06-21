@@ -748,6 +748,24 @@ export function createCandidateLink(body: CreateCandidateLinkRequest) {
   });
 }
 
+export type HumanDecision = "advanced" | "rejected" | "hired" | "onHold";
+
+export interface RegisterDispositionRequest {
+  decision: HumanDecision;
+  reason?: string;
+}
+
+/**
+ * Registra a decisão humana sobre o candidato (REQ-L1). O score é apenas apoio: a decisão
+ * final é sempre de uma pessoa, e este registro append-only guarda quem decidiu e por quê.
+ */
+export function registerCandidateDisposition(attemptId: string, body: RegisterDispositionRequest) {
+  return request<void>(`/api/v1/candidate-links/${encodeURIComponent(attemptId)}/disposition`, {
+    method: "POST",
+    body: JSON.stringify(body),
+  });
+}
+
 export function getTalentMatch(
   simulationId: string,
   versionNumber: number,

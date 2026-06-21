@@ -26,7 +26,8 @@ public enum AuditEventType implements DescribedEnum {
     SIMULATION_VERSION_CLONED("simulationVersionCloned"),
     SIMULATION_VERSION_PUBLISHED("simulationVersionPublished"),
     SIMULATION_GUPY_INTEGRATION_ACTIVATED("simulationGupyIntegrationActivated"),
-    SIMULATION_ARCHIVED("simulationArchived");
+    SIMULATION_ARCHIVED("simulationArchived"),
+    HUMAN_DECISION("humanDecision");
 
     private final String descricao;
 
