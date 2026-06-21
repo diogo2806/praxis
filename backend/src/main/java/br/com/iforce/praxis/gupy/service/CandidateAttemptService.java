@@ -5,6 +5,7 @@ import br.com.iforce.praxis.audit.service.AuditEventService;
 import br.com.iforce.praxis.audit.service.AuditMetadata;
 import br.com.iforce.praxis.candidate.dto.CandidateAttemptMonitoringResponse;
 import br.com.iforce.praxis.candidate.dto.CandidateLinkResponse;
+import br.com.iforce.praxis.candidate.service.BlindMasking;
 import br.com.iforce.praxis.candidate.dto.CreateCandidateLinkRequest;
 import br.com.iforce.praxis.candidate.dto.CreateCandidateLinkResponse;
 import br.com.iforce.praxis.candidate.dto.EtapaAtualResponse;
@@ -191,11 +192,11 @@ public class CandidateAttemptService {
     }
 
     @Transactional(readOnly = true)
-    public List<CandidateLinkResponse> listCompanyLinks() {
+    public List<CandidateLinkResponse> listCompanyLinks(boolean blind) {
         String tenantId = TenantSecurity.requiredTenant();
         return candidateAttemptRepository.findByTenantIdOrderByCreatedAtDesc(tenantId, PageRequest.of(0, 200))
                 .stream()
-                .map(this::toCandidateLinkResponse)
+                .map(entity -> toCandidateLinkResponse(entity, blind))
                 .toList();
     }
 
@@ -213,13 +214,16 @@ public class CandidateAttemptService {
                 .toList();
     }
 
-    private CandidateLinkResponse toCandidateLinkResponse(CandidateAttemptEntity entity) {
+    private CandidateLinkResponse toCandidateLinkResponse(CandidateAttemptEntity entity, boolean blind) {
         PublishedSimulation simulation = findSimulation(entity);
+        // Modo cego: o backend não envia nome/e-mail (defesa em profundidade — não basta mascarar no cliente).
+        String candidateName = blind ? BlindMasking.maskedName(entity.getId()) : entity.getCandidateName();
+        String candidateEmail = blind ? null : entity.getCandidateEmail();
         return new CandidateLinkResponse(
                 entity.getId(),
                 candidatePageUrl(entity),
-                entity.getCandidateName(),
-                entity.getCandidateEmail(),
+                candidateName,
+                candidateEmail,
                 entity.getSimulationId(),
                 simulation.name(),
                 entity.getStatus(),

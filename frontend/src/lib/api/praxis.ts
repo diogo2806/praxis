@@ -686,7 +686,8 @@ export interface CandidateLinkResponse {
   attemptId: string;
   candidateUrl: string;
   candidateName: string;
-  candidateEmail: string;
+  // Null no modo cego: o servidor não envia o e-mail enquanto o blind está ativo (REQ-L3).
+  candidateEmail: string | null;
   simulationId: string;
   simulationName: string;
   status: AttemptStatus;
@@ -733,8 +734,8 @@ export interface TalentMatchResponse {
   candidates: CandidateRadarDto[];
 }
 
-export function listCandidateLinks() {
-  return request<CandidateLinkResponse[]>("/api/v1/candidate-links");
+export function listCandidateLinks(blind = false) {
+  return request<CandidateLinkResponse[]>(`/api/v1/candidate-links${blind ? "?blind=true" : ""}`);
 }
 
 export function listLiveAttempts() {
@@ -839,9 +840,13 @@ export function getTalentMatch(
   simulationId: string,
   versionNumber: number,
   attemptIds: string[],
+  blind = false,
 ) {
   const searchParams = new URLSearchParams();
   searchParams.set("attemptIds", attemptIds.join(","));
+  if (blind) {
+    searchParams.set("blind", "true");
+  }
 
   return request<TalentMatchResponse>(
     `/api/v1/simulations/${encodeURIComponent(simulationId)}/versions/${versionNumber}/talent-match?${searchParams.toString()}`,

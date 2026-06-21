@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
-import { BarChart3, Check, CircleAlert, FileText, Target, UsersRound } from "lucide-react";
+import { BarChart3, Check, CircleAlert, EyeOff, FileText, Target, UsersRound } from "lucide-react";
 import {
   PolarAngleAxis,
   PolarGrid,
@@ -60,10 +60,22 @@ const DECISION_OPTIONS: { value: HumanDecision; label: string }[] = [
   { value: "onHold", label: "Em espera" },
 ];
 
+const BLIND_MODE_STORAGE_KEY = "praxis.talent-match.blindMode";
+
 function TalentMatchPage() {
   const search = Route.useSearch();
   const hasContext = Boolean(search.simulationId && search.versionNumber);
   const [selectedAttemptIds, setSelectedAttemptIds] = useState<string[]>([]);
+  const [blindMode, setBlindMode] = useState<boolean>(() => {
+    if (typeof window === "undefined") return false;
+    return window.localStorage.getItem(BLIND_MODE_STORAGE_KEY) === "true";
+  });
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      window.localStorage.setItem(BLIND_MODE_STORAGE_KEY, String(blindMode));
+    }
+  }, [blindMode]);
 
   const simulationsQuery = useQuery({
     queryKey: ["simulations"],
@@ -76,13 +88,20 @@ function TalentMatchPage() {
     enabled: hasContext,
   });
   const candidateLinksQuery = useQuery({
-    queryKey: ["candidate-links"],
-    queryFn: listCandidateLinks,
+    queryKey: ["candidate-links", { blind: blindMode }],
+    queryFn: () => listCandidateLinks(blindMode),
     enabled: hasContext,
   });
   const talentMatchQuery = useQuery({
-    queryKey: ["talent-match", search.simulationId, search.versionNumber, selectedAttemptIds],
-    queryFn: () => getTalentMatch(search.simulationId!, search.versionNumber!, selectedAttemptIds),
+    queryKey: [
+      "talent-match",
+      search.simulationId,
+      search.versionNumber,
+      selectedAttemptIds,
+      blindMode,
+    ],
+    queryFn: () =>
+      getTalentMatch(search.simulationId!, search.versionNumber!, selectedAttemptIds, blindMode),
     enabled: hasContext && selectedAttemptIds.length > 0,
   });
 
@@ -194,6 +213,24 @@ function TalentMatchPage() {
                   Limpar
                 </button>
               </div>
+              <label className="mb-3 flex cursor-pointer items-start gap-2.5 rounded-md border border-border bg-background p-3">
+                <input
+                  type="checkbox"
+                  checked={blindMode}
+                  onChange={(event) => setBlindMode(event.target.checked)}
+                  className="mt-0.5 h-4 w-4 shrink-0"
+                />
+                <span className="min-w-0">
+                  <span className="flex items-center gap-1.5 text-xs font-medium">
+                    <EyeOff className="h-3.5 w-3.5" />
+                    Modo cego
+                  </span>
+                  <span className="mt-0.5 block text-[11px] text-muted-foreground">
+                    Oculta nome e e-mail para reduzir viés na decisão. A identidade não é enviada
+                    pelo servidor enquanto ativo.
+                  </span>
+                </span>
+              </label>
               <CandidateSelector
                 candidates={completedCandidates}
                 loading={candidateLinksQuery.isLoading}
@@ -299,9 +336,11 @@ function CandidateSelector({
             </span>
             <span className="min-w-0 flex-1">
               <span className="block truncate font-medium">{candidate.candidateName}</span>
-              <span className="mt-0.5 block truncate text-xs text-muted-foreground">
-                {candidate.candidateEmail}
-              </span>
+              {candidate.candidateEmail && (
+                <span className="mt-0.5 block truncate text-xs text-muted-foreground">
+                  {candidate.candidateEmail}
+                </span>
+              )}
             </span>
           </button>
         );

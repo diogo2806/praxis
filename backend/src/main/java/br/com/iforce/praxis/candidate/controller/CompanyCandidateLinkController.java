@@ -19,6 +19,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
@@ -47,8 +48,10 @@ public class CompanyCandidateLinkController {
             summary = "Lista links de candidatos",
             description = "Retorna as tentativas da empresa com URL publica para compartilhamento."
     )
-    public ResponseEntity<List<CandidateLinkResponse>> listCandidateLinks() {
-        return ResponseEntity.ok(candidateAttemptService.listCompanyLinks());
+    public ResponseEntity<List<CandidateLinkResponse>> listCandidateLinks(
+            @RequestParam(name = "blind", defaultValue = "false") boolean blind
+    ) {
+        return ResponseEntity.ok(candidateAttemptService.listCompanyLinks(blind));
     }
 
     @GetMapping("/live-attempts")
