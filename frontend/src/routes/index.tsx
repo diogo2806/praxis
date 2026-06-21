@@ -4,11 +4,11 @@ import { createFileRoute } from "@tanstack/react-router";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Pr?xis ? Teste situacional para a Gupy" },
+      { title: "Práxis — Avaliação comportamental situacional" },
       {
         name: "description",
         content:
-          "Avalie candidatos por como decidem em situa??es reais do trabalho. Pontua??o determin?stica, trilha audit?vel e integra??o nativa com a Gupy. Sem IA julgando candidato.",
+          "Avalie pessoas por como decidem em situações reais. Pontuação determinística, trilha auditável e integrações com ATS, sistemas hospitalares e plataformas educacionais. Sem IA julgando ninguém.",
       },
     ],
     links: [
@@ -152,9 +152,9 @@ const landingStyles = `
   .hero-copy h1 .accent{font-style:italic;color:var(--primary)}
   .hero-copy .lead{margin-top:1.3rem;max-width:48ch}
   .hero-ctas{display:flex;gap:0.8rem;margin-top:2rem;flex-wrap:wrap}
-  .gupy-line{display:flex;align-items:center;gap:0.6rem;margin-top:2rem;font-size:0.9rem;color:var(--faint)}
-  .gupy-line .pip{width:0.5rem;height:0.5rem;border-radius:50%;background:var(--success);box-shadow:0 0 0 3px oklch(0.6 0.13 150 / 0.18)}
-  .gupy-line b{color:var(--muted);font-weight:600}
+  .integrations-line{display:flex;align-items:center;gap:0.6rem;margin-top:2rem;font-size:0.9rem;color:var(--faint)}
+  .integrations-line .pip{width:0.5rem;height:0.5rem;border-radius:50%;background:var(--success);box-shadow:0 0 0 3px oklch(0.6 0.13 150 / 0.18)}
+  .integrations-line b{color:var(--muted);font-weight:600}
 
   /* hero reveal animation */
   .reveal-up{opacity:0;transform:translateY(14px);animation:revealUp .7s cubic-bezier(.2,.7,.2,1) forwards}
@@ -255,9 +255,33 @@ const landingStyles = `
   .ev-trail code .ok{color:var(--primary);font-weight:500}
   .ev-trail code .gold{color:var(--gold-deep)}
 
-  /* gupy band */
-  .gupy-band{display:grid;grid-template-columns:1fr 0.85fr;gap:clamp(2rem,5vw,4rem);align-items:center}
-  @media (max-width:880px){ .gupy-band{grid-template-columns:1fr;gap:2.4rem} }
+  /* use-cases grid */
+  .use-cases{display:grid;grid-template-columns:repeat(3,1fr);gap:1.1rem;margin-top:2.8rem}
+  @media (max-width:880px){ .use-cases{grid-template-columns:1fr 1fr;gap:1rem} }
+  @media (max-width:560px){ .use-cases{grid-template-columns:1fr} }
+  .uc{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-lg);padding:1.5rem 1.4rem;transition:transform .15s, box-shadow .15s}
+  .uc:hover{transform:translateY(-2px);box-shadow:var(--shadow)}
+  .uc .uc-ico{width:2.4rem;height:2.4rem;border-radius:0.7rem;display:grid;place-items:center;margin-bottom:1rem}
+  .uc .uc-ico svg{width:1.3rem;height:1.3rem}
+  .uc h3{font-family:var(--font-sans);font-weight:700;font-size:1rem;letter-spacing:0;margin-bottom:0.4rem}
+  .uc p{font-size:0.9rem;color:var(--muted);line-height:1.5}
+  .uc .uc-examples{margin-top:0.7rem;font-size:0.82rem;color:var(--faint);font-style:italic}
+  .uc-recruit .uc-ico{background:oklch(0.5 0.1 233 / 0.1)}
+  .uc-recruit .uc-ico svg{stroke:var(--primary)}
+  .uc-health .uc-ico{background:oklch(0.6 0.13 150 / 0.12)}
+  .uc-health .uc-ico svg{stroke:var(--success)}
+  .uc-edu .uc-ico{background:oklch(0.76 0.13 80 / 0.15)}
+  .uc-edu .uc-ico svg{stroke:var(--gold-deep)}
+  .uc-corp .uc-ico{background:oklch(0.5 0.1 233 / 0.08)}
+  .uc-corp .uc-ico svg{stroke:var(--primary-deep)}
+  .uc-compliance .uc-ico{background:oklch(0.58 0.18 28 / 0.1)}
+  .uc-compliance .uc-ico svg{stroke:var(--danger)}
+  .uc-public .uc-ico{background:oklch(0.49 0.018 240 / 0.1)}
+  .uc-public .uc-ico svg{stroke:var(--muted)}
+
+  /* integrations band */
+  .integ-band{display:grid;grid-template-columns:1fr 0.85fr;gap:clamp(2rem,5vw,4rem);align-items:center}
+  @media (max-width:880px){ .integ-band{grid-template-columns:1fr;gap:2.4rem} }
   .flow{display:flex;flex-direction:column;gap:0.7rem}
   .flow .fstep{display:flex;align-items:center;gap:0.9rem;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:0.85rem 1rem;font-size:0.95rem}
   .flow .fstep .fn{flex:none;width:1.7rem;height:1.7rem;border-radius:50%;background:var(--ink);color:white;display:grid;place-items:center;font-family:var(--font-mono);font-size:0.78rem;font-weight:600}
@@ -266,7 +290,7 @@ const landingStyles = `
   .connect .cstep{display:flex;gap:0.9rem;align-items:flex-start}
   .connect .ci{flex:none;width:2.4rem;height:2.4rem;border-radius:0.7rem;display:grid;place-items:center;font-family:var(--font-display);font-weight:600;font-size:1.05rem}
   .connect .ci svg{width:1.2rem;height:1.2rem;stroke:#3a2a05}
-  .ci-gupy{background:oklch(0.6 0.13 150 / 0.14);color:var(--success)}
+  .ci-ats{background:oklch(0.6 0.13 150 / 0.14);color:var(--success)}
   .ci-prx{background:oklch(0.5 0.1 233 / 0.1);color:var(--primary)}
   .ci-ok{background:var(--gold)}
   .connect .cstep b{display:block;font-size:0.98rem;color:var(--ink)}
@@ -448,8 +472,8 @@ const landingMarkup = `<header class="nav" id="nav">
     <nav class="nav-links" aria-label="Seções">
       <a class="link" href="#problema">Por que</a>
       <a class="link" href="#como">Como funciona</a>
-      <a class="link" href="#gupy">Integração Gupy</a>
-      <a class="link" href="#governanca">Governança</a>
+      <a class="link" href="#aplicacoes">Onde se aplica</a>
+      <a class="link" href="#integracoes">Integrações</a>
       <a class="link" href="#precos">Preços</a>
     </nav>
     <div class="nav-cta">
@@ -468,16 +492,16 @@ const landingMarkup = `<header class="nav" id="nav">
   <section class="hero">
     <div class="wrap hero-grid">
       <div class="hero-copy">
-        <span class="eyebrow reveal-up d1">Teste situacional · sem IA julgando candidato</span>
-        <h1 class="reveal-up d2">Veja como o candidato <span class="accent">decide</span> no cenário real do trabalho.</h1>
-        <p class="lead reveal-up d3">Antes de gastar a agenda do gestor com entrevista, a Práxis mostra a decisão da pessoa numa situação real do cargo — com pontuação por competência e uma trilha que o seu jurídico pode auditar.</p>
+        <span class="eyebrow reveal-up d1">Avaliação situacional · sem IA julgando pessoas</span>
+        <h1 class="reveal-up d2">Veja como a pessoa <span class="accent">decide</span> no cenário real.</h1>
+        <p class="lead reveal-up d3">Antes de gastar tempo com entrevistas, a Práxis mostra como alguém age numa situação real — com pontuação por competência e uma trilha que qualquer auditor pode verificar. Para recrutamento, saúde, educação ou onde decisão importa.</p>
         <div class="hero-ctas reveal-up d4">
           <a class="btn btn-primary" href="#cta">Agendar demonstração <span class="btn-arrow">→</span></a>
-          <a class="btn btn-ghost" href="#precos">Ver preços</a>
+          <a class="btn btn-ghost" href="#aplicacoes">Ver onde se aplica</a>
         </div>
-        <div class="gupy-line reveal-up d5">
+        <div class="integrations-line reveal-up d5">
           <span class="pip"></span>
-          <span>Compatível com a <b>API de testes da Gupy</b> — o resultado volta para dentro da plataforma.</span>
+          <span>Integra com <b>Gupy</b>, <b>Recrutei</b> e outros sistemas — o resultado volta para a plataforma de origem.</span>
         </div>
       </div>
 
@@ -569,13 +593,13 @@ const landingMarkup = `<header class="nav" id="nav">
         <div class="step">
           <span class="rule"></span>
           <span class="num">PASSO 02</span>
-          <h3>O candidato decide</h3>
-          <p>Na Gupy, ele entra no teste, conversa com um cliente fictício e escolhe como agir, sob o tempo de cada etapa.</p>
+          <h3>A pessoa decide</h3>
+          <p>Pelo link ou direto no seu sistema, ela entra no cenário, enfrenta a situação e escolhe como agir — sob o tempo de cada etapa.</p>
         </div>
         <div class="step">
           <span class="num">PASSO 03</span>
-          <h3>O gestor recebe a evidência</h3>
-          <p>Score por competência e a trilha de decisão voltam para dentro da Gupy, prontos para análise.</p>
+          <h3>Você recebe a evidência</h3>
+          <p>Score por competência e a trilha de decisão voltam para o seu sistema, prontos para análise e tomada de decisão.</p>
         </div>
       </div>
 
@@ -680,8 +704,8 @@ const landingMarkup = `<header class="nav" id="nav">
     <div class="wrap">
       <div class="sec-head">
         <span class="eyebrow">Por dentro</span>
-        <h2>Feito para decisão de contratação defensável.</h2>
-        <p class="lead">Cada nota é decomponível. Você consegue mostrar, ponto a ponto, por que um candidato recebeu o que recebeu.</p>
+        <h2>Feito para decisão defensável.</h2>
+        <p class="lead">Cada nota é decomponível. Você consegue mostrar, ponto a ponto, por que uma pessoa recebeu o que recebeu.</p>
       </div>
 
       <div class="feat-grid">
@@ -707,8 +731,8 @@ const landingMarkup = `<header class="nav" id="nav">
             <p>Modelos prontos por área e senioridade. O RH edita, testa com um piloto e publica quando quiser.</p>
           </div>
           <div class="feat">
-            <h3><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12a8 8 0 0 1 16 0M8 12a4 4 0 0 1 8 0M12 12v8"/></svg></span>Dentro da Gupy</h3>
-            <p>O gestor não troca de ferramenta. Nota e competências chegam direto na candidatura.</p>
+            <h3><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12a8 8 0 0 1 16 0M8 12a4 4 0 0 1 8 0M12 12v8"/></svg></span>No seu sistema</h3>
+            <p>Ninguém troca de ferramenta. Nota e competências chegam direto na plataforma que você já usa.</p>
           </div>
         </div>
 
@@ -741,37 +765,86 @@ turno-3 ▸ <span class="ok">C</span>  +2 Comunicação
     </div>
   </section>
 
-  <!-- GUPY INTEGRATION -->
-  <section class="sec" id="gupy">
-    <div class="wrap">
-      <div class="sec-head">
-        <span class="eyebrow">Integração com a Gupy</span>
-        <h2>A Gupy organiza o funil. A Práxis adiciona a evidência.</h2>
-        <p class="lead">A Práxis entra como uma etapa de teste da sua vaga. O candidato nem percebe que mudou de sistema, e o resultado volta direto para a candidatura — sem o recrutador trocar de ferramenta.</p>
+  <!-- ONDE SE APLICA -->
+  <section class=”sec” id=”aplicacoes”>
+    <div class=”wrap”>
+      <div class=”sec-head”>
+        <span class=”eyebrow”>Onde se aplica</span>
+        <h2>Onde decisão importa, a Práxis entrega evidência.</h2>
+        <p class=”lead”>O mesmo motor — cenário situacional com score determinístico — se adapta a qualquer contexto onde você precisa avaliar como pessoas decidem.</p>
       </div>
-      <div class="gupy-band">
-        <div class="flow">
-          <div class="fstep gp"><span class="fn">1</span><span>Candidato clica em <b>“Iniciar teste”</b> na Gupy</span></div>
-          <div class="fstep"><span class="fn">2</span><span>Faz o teste situacional na Práxis</span></div>
-          <div class="fstep"><span class="fn">3</span><span>Score e competências voltam à Gupy (com retentativas)</span></div>
-          <div class="fstep gp"><span class="fn">4</span><span>Gestor decide sem sair da plataforma</span></div>
+      <div class=”use-cases”>
+        <div class=”uc uc-recruit”>
+          <span class=”uc-ico”><svg viewBox=”0 0 24 24” fill=”none” stroke-width=”2” stroke-linecap=”round” stroke-linejoin=”round”><path d=”M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2”/><circle cx=”9” cy=”7” r=”4”/><path d=”M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75”/></svg></span>
+          <h3>Recrutamento e seleção</h3>
+          <p>Avalie candidatos antes da entrevista. O gestor vê como a pessoa lida com a situação real do cargo.</p>
+          <div class=”uc-examples”>Processos seletivos, trainees, vagas de volume, headhunting</div>
         </div>
-        <div class="connect" aria-label="Como a integração funciona">
-          <div class="cstep">
-            <span class="ci ci-gupy">G</span>
-            <div><b>Vaga publicada na Gupy</b><span>O recrutador adiciona a Práxis como uma etapa de teste.</span></div>
+        <div class=”uc uc-health”>
+          <span class=”uc-ico”><svg viewBox=”0 0 24 24” fill=”none” stroke-width=”2” stroke-linecap=”round” stroke-linejoin=”round”><path d=”M22 12h-4l-3 9L9 3l-3 9H2”/></svg></span>
+          <h3>Saúde — profissionais</h3>
+          <p>Avalie tomada de decisão clínica: triagem, comunicação com paciente, dilemas éticos e conduta sob pressão.</p>
+          <div class=”uc-examples”>Seleção de residentes, enfermagem, equipes de emergência</div>
+        </div>
+        <div class=”uc uc-health”>
+          <span class=”uc-ico”><svg viewBox=”0 0 24 24” fill=”none” stroke-width=”2” stroke-linecap=”round” stroke-linejoin=”round”><path d=”M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z”/></svg></span>
+          <h3>Saúde — pacientes</h3>
+          <p>Avalie prontidão para autocuidado: como o paciente decide em cenários de adesão ao tratamento, manejo de crises e hábitos de saúde.</p>
+          <div class=”uc-examples”>Doenças crônicas, pré-cirúrgico, saúde mental, reabilitação</div>
+        </div>
+        <div class=”uc uc-edu”>
+          <span class=”uc-ico”><svg viewBox=”0 0 24 24” fill=”none” stroke-width=”2” stroke-linecap=”round” stroke-linejoin=”round”><path d=”M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z”/><path d=”M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z”/></svg></span>
+          <h3>Educação</h3>
+          <p>Meça competências socioemocionais de alunos ou avalie professores em cenários de gestão de sala e inclusão.</p>
+          <div class=”uc-examples”>Escolas, universidades, concursos docentes, formação continuada</div>
+        </div>
+        <div class=”uc uc-corp”>
+          <span class=”uc-ico”><svg viewBox=”0 0 24 24” fill=”none” stroke-width=”2” stroke-linecap=”round” stroke-linejoin=”round”><path d=”M12 20V10M18 20V4M6 20v-4”/></svg></span>
+          <h3>Desenvolvimento interno</h3>
+          <p>Diagnóstico de gaps de liderança, avaliação para promoção e programas de T&D com pré/pós mensuração.</p>
+          <div class=”uc-examples”>Sucessão, PDI, academias corporativas, onboarding de líderes</div>
+        </div>
+        <div class=”uc uc-compliance”>
+          <span class=”uc-ico”><svg viewBox=”0 0 24 24” fill=”none” stroke-width=”2” stroke-linecap=”round” stroke-linejoin=”round”><path d=”M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z”/></svg></span>
+          <h3>Compliance e segurança</h3>
+          <p>Teste como colaboradores reagem a cenários de fraude, conflito de interesse, segurança do trabalho ou LGPD.</p>
+          <div class=”uc-examples”>Bancos, indústria, mineração, farmacêutico, varejo</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- INTEGRAÇÕES -->
+  <section class=”sec sec-alt” id=”integracoes”>
+    <div class=”wrap”>
+      <div class=”sec-head”>
+        <span class=”eyebrow”>Integrações</span>
+        <h2>Seu sistema organiza o fluxo. A Práxis adiciona a evidência.</h2>
+        <p class=”lead”>A Práxis entra como uma etapa no processo que você já tem. A pessoa nem percebe que mudou de sistema, e o resultado volta sozinho — sem ninguém trocar de ferramenta.</p>
+      </div>
+      <div class=”integ-band”>
+        <div class=”flow”>
+          <div class=”fstep gp”><span class=”fn”>1</span><span>Participante recebe o convite pelo <b>seu sistema</b></span></div>
+          <div class=”fstep”><span class=”fn”>2</span><span>Faz a avaliação situacional na Práxis</span></div>
+          <div class=”fstep”><span class=”fn”>3</span><span>Score e competências voltam automaticamente (com retentativas)</span></div>
+          <div class=”fstep gp”><span class=”fn”>4</span><span>Você decide com base na evidência, sem sair da plataforma</span></div>
+        </div>
+        <div class=”connect” aria-label=”Como a integração funciona”>
+          <div class=”cstep”>
+            <span class=”ci ci-ats”>A</span>
+            <div><b>Processo criado no seu sistema</b><span>Você adiciona a Práxis como etapa de avaliação (Gupy, Recrutei, API, webhook).</span></div>
           </div>
-          <div class="cdown"></div>
-          <div class="cstep">
-            <span class="ci ci-prx">P</span>
-            <div><b>O candidato faz o teste</b><span>Dentro do fluxo da Gupy, sem cadastro novo.</span></div>
+          <div class=”cdown”></div>
+          <div class=”cstep”>
+            <span class=”ci ci-prx”>P</span>
+            <div><b>A pessoa faz a avaliação</b><span>Dentro do fluxo do seu sistema, sem cadastro novo.</span></div>
           </div>
-          <div class="cdown"></div>
-          <div class="cstep">
-            <span class="ci ci-ok"><svg viewBox="0 0 24 24" fill="none" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span>
-            <div><b>Resultado na candidatura</b><span>A nota volta sozinha — mesmo se a conexão cair no meio.</span></div>
+          <div class=”cdown”></div>
+          <div class=”cstep”>
+            <span class=”ci ci-ok”><svg viewBox=”0 0 24 24” fill=”none” stroke-width=”2.4” stroke-linecap=”round” stroke-linejoin=”round”><path d=”M20 6 9 17l-5-5”/></svg></span>
+            <div><b>Resultado entregue</b><span>A nota volta sozinha — mesmo se a conexão cair no meio.</span></div>
           </div>
-          <div class="cnote"><span class="pip"></span> Conexão automática. Nada de planilha, e-mail ou copiar-e-colar.</div>
+          <div class=”cnote”><span class=”pip”></span> Gupy · Recrutei · API aberta · Webhook — sem planilha ou copiar-e-colar.</div>
         </div>
       </div>
     </div>
@@ -815,11 +888,11 @@ turno-3 ▸ <span class="ok">C</span>  +2 Comunicação
     <div class="wrap">
       <div class="sec-head">
         <span class="eyebrow">Planos</span>
-        <h2>Comece por candidato. Cresça quando fizer sentido.</h2>
+        <h2>Comece por avaliação. Cresça quando fizer sentido.</h2>
         <p class="lead">Sem custo de IA, porque não há IA na pontuação. Você paga pela avaliação — não por inferência.</p>
         <div class="roi">
           <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
-          <span>Uma contratação equivocada custa à empresa <b>dezenas de milhares de reais</b>. A Práxis custa uma fração — e deixa o porquê de cada decisão registrado.</span>
+          <span>Uma decisão baseada em achismo custa caro — em qualquer área. A Práxis custa uma fração — e deixa o porquê de cada resultado registrado.</span>
         </div>
         <div class="toggle" role="group" aria-label="Ciclo de cobrança">
           <button id="bMonthly" class="on" aria-pressed="true">Mensal</button>
@@ -832,13 +905,13 @@ turno-3 ▸ <span class="ok">C</span>  +2 Comunicação
         <!-- Avulso -->
         <div class="plan">
           <div class="pname">Avulso</div>
-          <div class="pfor">Para pilotos e vagas pontuais, sem mensalidade.</div>
-          <div class="price"><span class="cur">R$</span><span class="amt">69,90</span><span class="per">/ candidato avaliado</span></div>
+          <div class="pfor">Para pilotos e demandas pontuais, sem mensalidade.</div>
+          <div class="price"><span class="cur">R$</span><span class="amt">69,90</span><span class="per">/ pessoa avaliada</span></div>
           <div class="psub">Pague só por quem você avaliar.</div>
           <a class="btn btn-ghost" href="#cta">Começar</a>
           <ul class="plist">
             <li class="head"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>O essencial para validar</li>
-            <li><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>Integração nativa com a Gupy</li>
+            <li><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>Integrações nativas (Gupy, Recrutei, API)</li>
             <li><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>1 simulação ativa</li>
             <li><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>Biblioteca de cenários (modelos)</li>
             <li><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>Score por competência</li>
@@ -850,15 +923,15 @@ turno-3 ▸ <span class="ok">C</span>  +2 Comunicação
         <div class="plan feature">
           <span class="ptag">Mais escolhido</span>
           <div class="pname">Crescimento</div>
-          <div class="pfor">Para quem recruta com volume recorrente.</div>
+          <div class="pfor">Para quem avalia com volume recorrente.</div>
           <div class="price"><span class="cur">R$</span><span class="amt" data-monthly="7.990" data-annual="6.658">7.990</span><span class="per" id="cycMonthly">/ mês</span></div>
-          <div class="psub" id="cycSub">R$ 39,90/candidato · 200 inclusos/mês · +R$ 49,90 por adicional</div>
+          <div class="psub" id="cycSub">R$ 39,90/avaliação · 200 inclusas/mês · +R$ 49,90 por adicional</div>
           <a class="btn btn-primary" href="#cta">Agendar demo <span class="btn-arrow">→</span></a>
           <ul class="plist">
             <li class="head"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/></svg>Tudo do Avulso, e mais:</li>
             <li><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>Simulações e vagas ilimitadas</li>
             <li><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>Edição completa da biblioteca</li>
-            <li><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>Painel comparativo: ranqueie e compare candidatos</li>
+            <li><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>Painel comparativo: ranqueie e compare participantes</li>
             <li><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>Modo piloto antes de publicar</li>
             <li><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>Governança e LGPD configuráveis</li>
             <li><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>Multiusuário e suporte prioritário</li>
@@ -875,7 +948,7 @@ turno-3 ▸ <span class="ok">C</span>  +2 Comunicação
           <ul class="plist">
             <li class="head"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/></svg>Tudo do Crescimento, e mais:</li>
             <li><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>Trilha imutável com retenção sob medida</li>
-            <li><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>Talent-match entre candidatos</li>
+            <li><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>Talent-match entre participantes</li>
             <li><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>Validação assistida: estudo nota × desempenho</li>
             <li><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>SSO / SAML e ambiente dedicado</li>
             <li><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>SLA e gerente de conta</li>
@@ -886,7 +959,7 @@ turno-3 ▸ <span class="ok">C</span>  +2 Comunicação
 
       <p class="pfoot">
         <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 12l2 2 4-4M12 3a9 9 0 1 0 9 9 9 9 0 0 0-9-9z"/></svg>
-        Todos os planos incluem integração com a Gupy e a trilha auditável. Preços em reais, impostos à parte.
+        Todos os planos incluem integrações nativas e a trilha auditável. Preços em reais, impostos à parte.
       </p>
     </div>
   </section>
@@ -900,12 +973,12 @@ turno-3 ▸ <span class="ok">C</span>  +2 Comunicação
       </div>
       <div class="faq">
         <div class="qa">
-          <button aria-expanded="false"><span class="q">A Práxis usa IA generativa para avaliar o candidato?</span><span class="ic"></span></button>
+          <button aria-expanded="false"><span class="q">A Práxis usa IA generativa para avaliar pessoas?</span><span class="ic"></span></button>
           <div class="ans"><p>Não. A pontuação sai de critérios e pesos versionados definidos pela sua equipe. É regra e cálculo — auditável e sem custo de inferência.</p></div>
         </div>
         <div class="qa">
-          <button aria-expanded="false"><span class="q">Como funciona a integração com a Gupy?</span><span class="ic"></span></button>
-          <div class="ans"><p>A Práxis se conecta à API de testes da Gupy para listar testes, abrir convites de candidatos e devolver resultados automaticamente — com retentativas quando há falha temporária. O candidato faz o teste e volta para a plataforma; a nota chega na candidatura.</p></div>
+          <button aria-expanded="false"><span class="q">Com quais sistemas a Práxis integra?</span><span class="ic"></span></button>
+          <div class="ans"><p>Hoje integra nativamente com Gupy e Recrutei. Para outros sistemas (hospitalares, educacionais, ERPs), oferecemos API aberta e webhook — a Práxis recebe o convite e devolve o resultado automaticamente, com retentativas quando há falha temporária.</p></div>
         </div>
         <div class="qa">
           <button aria-expanded="false"><span class="q">Como é a cobrança?</span><span class="ic"></span></button>
@@ -916,12 +989,16 @@ turno-3 ▸ <span class="ok">C</span>  +2 Comunicação
           <div class="ans"><p>Com a biblioteca de cenários, dá para publicar um teste no mesmo dia: o RH escolhe um modelo do cargo, ajusta o caso e os pesos, testa em modo piloto e publica.</p></div>
         </div>
         <div class="qa">
-          <button aria-expanded="false"><span class="q">O candidato vê pesos, gabarito ou marcadores críticos?</span><span class="ic"></span></button>
-          <div class="ans"><p>Nunca. A visão do candidato é limpa. Pesos, critérios e marcadores ficam restritos ao painel admin e à trilha de auditoria.</p></div>
+          <button aria-expanded="false"><span class="q">O participante vê pesos, gabarito ou marcadores críticos?</span><span class="ic"></span></button>
+          <div class="ans"><p>Nunca. A visão do participante é limpa. Pesos, critérios e marcadores ficam restritos ao painel admin e à trilha de auditoria.</p></div>
         </div>
         <div class="qa">
-          <button aria-expanded="false"><span class="q">A Práxis reprova alguém sozinha?</span><span class="ic"></span></button>
+          <button aria-expanded="false"><span class="q">A Práxis reprova ou elimina alguém sozinha?</span><span class="ic"></span></button>
           <div class="ans"><p>Não. A Práxis recomenda, nunca elimina automaticamente. Erro crítico aciona revisão humana — a decisão final é sempre de uma pessoa.</p></div>
+        </div>
+        <div class="qa">
+          <button aria-expanded="false"><span class="q">Funciona para áreas fora de recrutamento?</span><span class="ic"></span></button>
+          <div class="ans"><p>Sim. O motor é o mesmo: cenário situacional com score por competência. Já se aplica a saúde (avaliação clínica e prontidão de pacientes), educação (competências socioemocionais), compliance (conduta em dilemas éticos) e desenvolvimento interno (promoção e sucessão).</p></div>
         </div>
       </div>
     </div>
@@ -931,8 +1008,8 @@ turno-3 ▸ <span class="ok">C</span>  +2 Comunicação
   <section class="final" id="cta">
     <div class="wrap">
       <span class="eyebrow" style="justify-content:center;display:flex">Vamos conversar</span>
-      <h2 style="margin-top:1rem">Menos entrevista por currículo. Mais decisão por evidência.</h2>
-      <p class="lead">Mostre como seus candidatos decidem antes de chamar para a conversa. Agende uma demonstração da Práxis.</p>
+      <h2 style="margin-top:1rem">Menos achismo. Mais decisão por evidência.</h2>
+      <p class="lead">Mostre como as pessoas decidem antes de tomar qualquer próxima decisão sobre elas. Agende uma demonstração da Práxis.</p>
       <div class="hero-ctas">
         <a class="btn btn-primary" href="mailto:contato@iforce.com.br?subject=Demonstra%C3%A7%C3%A3o%20da%20Pr%C3%A1xis">Agendar demonstração <span class="btn-arrow">→</span></a>
         <a class="btn btn-ghost" href="#precos">Rever os planos</a>
@@ -1114,8 +1191,8 @@ function LandingPage() {
         amt.textContent = annual ? (amt.dataset.annual ?? "") : (amt.dataset.monthly ?? "");
         cyc.textContent = annual ? "/ m?s, no anual" : "/ m?s";
         sub.textContent = annual
-          ? "R$ 33,25/candidato ? 200 inclusos/m?s ? faturado anual (R$ 79.900)"
-          : "R$ 39,90/candidato ? 200 inclusos/m?s ? +R$ 49,90 por adicional";
+          ? "R$ 33,25/avaliação · 200 inclusas/mês · faturado anual (R$ 79.900)"
+          : "R$ 39,90/avaliação · 200 inclusas/mês · +R$ 49,90 por adicional";
       };
       const monthly = () => setCycle(false);
       const annual = () => setCycle(true);
