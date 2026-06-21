@@ -980,7 +980,7 @@ turno-3 ▸ <span class="ok">C</span>  +2 Comunicação
           <a class="btn btn-primary" href="#cta">Agendar demo <span class="btn-arrow">→</span></a>
           <ul class="plist">
             <li class="head"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/></svg>Tudo do Avulso, e mais:</li>
-            <li><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>Simulações e vagas ilimitadas</li>
+            <li><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>Simulações e processos ilimitados</li>
             <li><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>Edição completa da biblioteca</li>
             <li><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>Painel comparativo: ranqueie e compare participantes</li>
             <li><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>Modo piloto antes de publicar</li>
@@ -1240,7 +1240,7 @@ function LandingPage() {
         bM.setAttribute("aria-pressed", String(!annual));
         bA.setAttribute("aria-pressed", String(annual));
         amt.textContent = annual ? (amt.dataset.annual ?? "") : (amt.dataset.monthly ?? "");
-        cyc.textContent = annual ? "/ m?s, no anual" : "/ m?s";
+        cyc.textContent = annual ? "/ mês, no anual" : "/ mês";
         sub.textContent = annual
           ? "R$ 33,25/avaliação · 200 inclusas/mês · faturado anual (R$ 79.900)"
           : "R$ 39,90/avaliação · 200 inclusas/mês · +R$ 49,90 por adicional";
