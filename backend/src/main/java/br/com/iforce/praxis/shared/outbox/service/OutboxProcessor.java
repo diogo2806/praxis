@@ -17,13 +17,14 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.web.client.RestClientResponseException;
 import org.springframework.web.server.ResponseStatusException;
 
-import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
+import java.time.Duration;
 import java.time.Instant;
 
 @Slf4j
@@ -31,6 +32,12 @@ import java.time.Instant;
 public class OutboxProcessor {
 
     private static final int MAX_ATTEMPT_COUNT = 5;
+    private static final int BATCH_SIZE = 100;
+    /**
+     * Eventos PROCESSING mais antigos que isto são considerados órfãos (a instância que os
+     * reivindicou provavelmente morreu) e podem ser reivindicados novamente.
+     */
+    private static final Duration STUCK_PROCESSING_TIMEOUT = Duration.ofMinutes(5);
     private static final String RESULT_READY_EVENT = "RESULT_READY";
     private static final String ATTEMPT_STARTED_EVENT = "ATTEMPT_STARTED";
     private static final String ATTEMPT_ABANDONED_EVENT = "ATTEMPT_ABANDONED";
@@ -43,6 +50,7 @@ public class OutboxProcessor {
     private final GupyTestResultMapper gupyTestResultMapper;
     private final GupyOutboundUrlValidator outboundUrlValidator;
     private final ResultDeliveryDlqAlertService dlqAlertService;
+    private final TransactionTemplate txTemplate;
 
     public OutboxProcessor(
         OutboxEventRepository outboxEventRepository,
@@ -52,7 +60,8 @@ public class OutboxProcessor {
         SimulationCatalogService simulationCatalogService,
         GupyTestResultMapper gupyTestResultMapper,
         GupyOutboundUrlValidator outboundUrlValidator,
-        ResultDeliveryDlqAlertService dlqAlertService
+        ResultDeliveryDlqAlertService dlqAlertService,
+        PlatformTransactionManager transactionManager
     ) {
         this.outboxEventRepository = outboxEventRepository;
         this.resultWebhookClient = resultWebhookClient;
@@ -62,77 +71,124 @@ public class OutboxProcessor {
         this.gupyTestResultMapper = gupyTestResultMapper;
         this.outboundUrlValidator = outboundUrlValidator;
         this.dlqAlertService = dlqAlertService;
+        this.txTemplate = new TransactionTemplate(transactionManager);
     }
 
-    @Transactional
+    // Sem @Transactional: a entrega HTTP nunca pode acontecer dentro de uma transação aberta.
     public void processReadyEvents() {
-        List<OutboxEventEntity> readyEvents = outboxEventRepository
-            .findByStatusInAndNextAttemptAtLessThanEqualOrderByCreatedAtAsc(
-                Arrays.asList(
-                    OutboxEventEntity.OutboxEventStatus.PENDING,
-                    OutboxEventEntity.OutboxEventStatus.RETRYING
-                ),
-                Instant.now()
-            );
-
-        if (readyEvents.isEmpty()) {
+        List<Long> claimedIds = claimBatch();
+        if (claimedIds.isEmpty()) {
             return;
         }
 
-        log.info("Processando {} eventos do outbox", readyEvents.size());
+        log.info("Processando {} eventos do outbox", claimedIds.size());
 
-        for (OutboxEventEntity event : readyEvents) {
-            processEvent(event);
+        for (Long id : claimedIds) {
+            deliverAndFinalize(id);
         }
     }
 
-    @Transactional
     public int processReadyEventsForTenant(String tenantId) {
-        List<OutboxEventEntity> readyEvents = outboxEventRepository
-            .findByTenantIdAndStatusInAndNextAttemptAtLessThanEqualOrderByCreatedAtAsc(
-                tenantId,
-                Arrays.asList(
-                    OutboxEventEntity.OutboxEventStatus.PENDING,
-                    OutboxEventEntity.OutboxEventStatus.RETRYING
-                ),
-                Instant.now()
-            );
-
-        for (OutboxEventEntity event : readyEvents) {
-            processEvent(event);
+        List<Long> claimedIds = claimBatchForTenant(tenantId);
+        for (Long id : claimedIds) {
+            deliverAndFinalize(id);
         }
-        return readyEvents.size();
+        return claimedIds.size();
     }
 
-    @Transactional
     public void reprocessEvent(Long eventId, String tenantId) {
-        OutboxEventEntity event = outboxEventRepository.findByIdAndTenantId(eventId, tenantId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Evento de entrega não encontrado."));
-        if (event.getStatus() == OutboxEventEntity.OutboxEventStatus.SENT) {
+        Long claimedId = txTemplate.execute(status -> {
+            OutboxEventEntity event = outboxEventRepository.findByIdAndTenantId(eventId, tenantId)
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Evento de entrega não encontrado."));
+            if (event.getStatus() == OutboxEventEntity.OutboxEventStatus.SENT) {
+                return null;
+            }
+            markClaimed(event);
+            return event.getId();
+        });
+        if (claimedId == null) {
             return;
         }
-        event.setStatus(OutboxEventEntity.OutboxEventStatus.PENDING);
-        event.setNextAttemptAt(Instant.now());
-        processEvent(event);
+        deliverAndFinalize(claimedId);
     }
 
-    private void processEvent(OutboxEventEntity event) {
-        try {
-            event.setLastAttemptAt(Instant.now());
-            event.setAttempts(event.getAttempts() + 1);
-            if (RESULT_READY_EVENT.equals(event.getEventType())) {
-                processResultReadyEvent(event);
-            } else if (ATTEMPT_STARTED_EVENT.equals(event.getEventType())
-                    || ATTEMPT_ABANDONED_EVENT.equals(event.getEventType())) {
-                processAttemptEngagementEvent(event);
-            }
+    /** TX CURTA: trava o lote, marca PROCESSING e incrementa a tentativa. O commit libera a trava. */
+    private List<Long> claimBatch() {
+        return txTemplate.execute(status -> {
+            List<OutboxEventEntity> batch = outboxEventRepository.claimReadyBatch(
+                readyStatuses(),
+                Instant.now(),
+                stuckBefore(),
+                BATCH_SIZE
+            );
+            batch.forEach(this::markClaimed);
+            return batch.stream().map(OutboxEventEntity::getId).toList();
+        });
+    }
 
-            event.setStatus(OutboxEventEntity.OutboxEventStatus.SENT);
-            event.setNextAttemptAt(null);
-            event.setSentAt(Instant.now());
-            event.setLastError(null);
+    /** TX CURTA por tenant: trava e marca PROCESSING. */
+    private List<Long> claimBatchForTenant(String tenantId) {
+        return txTemplate.execute(status -> {
+            List<OutboxEventEntity> batch = outboxEventRepository.claimReadyBatchForTenant(
+                tenantId,
+                readyStatuses(),
+                Instant.now(),
+                stuckBefore(),
+                BATCH_SIZE
+            );
+            batch.forEach(this::markClaimed);
+            return batch.stream().map(OutboxEventEntity::getId).toList();
+        });
+    }
+
+    private void markClaimed(OutboxEventEntity event) {
+        event.setStatus(OutboxEventEntity.OutboxEventStatus.PROCESSING);
+        event.setAttempts(event.getAttempts() + 1);
+        event.setLastAttemptAt(Instant.now());
+    }
+
+    private List<String> readyStatuses() {
+        return List.of(
+            OutboxEventEntity.OutboxEventStatus.PENDING.name(),
+            OutboxEventEntity.OutboxEventStatus.RETRYING.name()
+        );
+    }
+
+    private Instant stuckBefore() {
+        return Instant.now().minus(STUCK_PROCESSING_TIMEOUT);
+    }
+
+    /** FORA de transação: faz o POST e só depois grava o resultado em uma TX CURTA. */
+    private void deliverAndFinalize(Long eventId) {
+        OutboxEventEntity snapshot = txTemplate.execute(s ->
+            outboxEventRepository.findById(eventId).orElse(null));
+        if (snapshot == null) {
+            return;
+        }
+        try {
+            dispatch(snapshot); // HTTP aqui, SEM transação aberta
+            txTemplate.executeWithoutResult(s -> {
+                OutboxEventEntity event = outboxEventRepository.findById(eventId).orElseThrow();
+                event.setStatus(OutboxEventEntity.OutboxEventStatus.SENT);
+                event.setNextAttemptAt(null);
+                event.setSentAt(Instant.now());
+                event.setLastError(null);
+            });
         } catch (Exception ex) {
-            handleEventFailure(event, ex);
+            txTemplate.executeWithoutResult(s -> {
+                OutboxEventEntity event = outboxEventRepository.findById(eventId).orElseThrow();
+                handleEventFailure(event, ex);
+            });
+        }
+    }
+
+    /** Apenas o roteamento do POST — sem mexer no status. */
+    private void dispatch(OutboxEventEntity event) {
+        if (RESULT_READY_EVENT.equals(event.getEventType())) {
+            processResultReadyEvent(event);
+        } else if (ATTEMPT_STARTED_EVENT.equals(event.getEventType())
+                || ATTEMPT_ABANDONED_EVENT.equals(event.getEventType())) {
+            processAttemptEngagementEvent(event);
         }
     }
 

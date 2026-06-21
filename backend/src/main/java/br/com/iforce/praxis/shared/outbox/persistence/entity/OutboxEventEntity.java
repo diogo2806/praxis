@@ -70,6 +70,7 @@ public class OutboxEventEntity implements TenantAwareEntity {
 
     public enum OutboxEventStatus {
         PENDING,
+        PROCESSING,
         SENT,
         RETRYING,
         DLQ

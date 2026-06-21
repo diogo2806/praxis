@@ -18,11 +18,11 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.web.client.RestClientResponseException;
 
 import java.time.Instant;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -53,6 +53,9 @@ class OutboxProcessorTest {
     @Mock
     private ResultDeliveryDlqAlertService dlqAlertService;
 
+    @Mock
+    private PlatformTransactionManager transactionManager;
+
     private OutboxProcessor outboxProcessor;
     private ObjectMapper objectMapper;
 
@@ -67,16 +70,25 @@ class OutboxProcessorTest {
             simulationCatalogService,
             gupyTestResultMapper,
             outboundUrlValidator,
-            dlqAlertService
+            dlqAlertService,
+            transactionManager
         );
+    }
+
+    /**
+     * Reivindica o evento (claim) e o devolve em findById, simulando o ciclo
+     * claim → entrega (HTTP) → finalização do processador real.
+     */
+    private void givenClaimed(OutboxEventEntity event) {
+        when(outboxEventRepository.claimReadyBatch(anyList(), any(Instant.class), any(Instant.class), anyInt()))
+            .thenReturn(List.of(event));
+        when(outboxEventRepository.findById(event.getId())).thenReturn(Optional.of(event));
     }
 
     @Test
     void shouldProcessPendingEvent() {
         OutboxEventEntity event = createPendingEvent();
-        when(outboxEventRepository.findByStatusInAndNextAttemptAtLessThanEqualOrderByCreatedAtAsc(
-            anyList(), any(Instant.class)
-        )).thenReturn(List.of(event));
+        givenClaimed(event);
 
         outboxProcessor.processReadyEvents();
 
@@ -89,9 +101,7 @@ class OutboxProcessorTest {
     void shouldRetryOnServerError() {
         OutboxEventEntity event = createPendingEvent();
         event.setAttempts(0);
-        when(outboxEventRepository.findByStatusInAndNextAttemptAtLessThanEqualOrderByCreatedAtAsc(
-            anyList(), any(Instant.class)
-        )).thenReturn(List.of(event));
+        givenClaimed(event);
         doThrow(new RestClientResponseException("Server error", 500, "Internal Server Error", null, null, null))
             .when(resultWebhookClient).postResult(anyString(), any(TestResultResponse.class));
 
@@ -106,9 +116,7 @@ class OutboxProcessorTest {
     void shouldMoveToDeadLetterQueueOnClientError() {
         OutboxEventEntity event = createPendingEvent();
         event.setAttempts(0);
-        when(outboxEventRepository.findByStatusInAndNextAttemptAtLessThanEqualOrderByCreatedAtAsc(
-            anyList(), any(Instant.class)
-        )).thenReturn(List.of(event));
+        givenClaimed(event);
         doThrow(new RestClientResponseException("Bad request", 400, "Bad Request", null, null, null))
             .when(resultWebhookClient).postResult(anyString(), any(TestResultResponse.class));
 
@@ -123,9 +131,7 @@ class OutboxProcessorTest {
     void shouldMoveToDeadLetterQueueAfterMaxAttempts() {
         OutboxEventEntity event = createPendingEvent();
         event.setAttempts(5);
-        when(outboxEventRepository.findByStatusInAndNextAttemptAtLessThanEqualOrderByCreatedAtAsc(
-            anyList(), any(Instant.class)
-        )).thenReturn(List.of(event));
+        givenClaimed(event);
         doThrow(new RuntimeException("Network error"))
             .when(resultWebhookClient).postResult(anyString(), any(TestResultResponse.class));
 
@@ -139,9 +145,7 @@ class OutboxProcessorTest {
     @Test
     void shouldCalculateExponentialBackoffDelay() {
         OutboxEventEntity event = createPendingEvent();
-        when(outboxEventRepository.findByStatusInAndNextAttemptAtLessThanEqualOrderByCreatedAtAsc(
-            anyList(), any(Instant.class)
-        )).thenReturn(List.of(event));
+        givenClaimed(event);
         doThrow(new RuntimeException("Error"))
             .when(resultWebhookClient).postResult(anyString(), any(TestResultResponse.class));
 
@@ -168,6 +172,7 @@ class OutboxProcessorTest {
     @Test
     void shouldFetchTestResultForMigratedEvent() {
         OutboxEventEntity event = new OutboxEventEntity();
+        event.setId(2L);
         event.setTenantId("tenant-1");
         event.setEventType("RESULT_READY");
         event.setAggregateType("CandidateAttempt");
@@ -182,9 +187,7 @@ class OutboxProcessorTest {
         PublishedSimulation simulation = mock(PublishedSimulation.class);
         TestResultResponse testResult = mock(TestResultResponse.class);
 
-        when(outboxEventRepository.findByStatusInAndNextAttemptAtLessThanEqualOrderByCreatedAtAsc(
-            anyList(), any(Instant.class)
-        )).thenReturn(List.of(event));
+        givenClaimed(event);
         when(candidateAttemptRepository.findByTenantIdAndId("tenant-1", "att_123"))
             .thenReturn(Optional.of(attempt));
         when(simulationCatalogService.findByVersionId(100L))
@@ -202,6 +205,7 @@ class OutboxProcessorTest {
     @Test
     void shouldPostAttemptEngagementEventPayload() {
         OutboxEventEntity event = new OutboxEventEntity();
+        event.setId(3L);
         event.setTenantId("tenant-1");
         event.setEventType("ATTEMPT_STARTED");
         event.setAggregateType("CandidateAttempt");
@@ -220,9 +224,7 @@ class OutboxProcessorTest {
         event.setAttempts(0);
         event.setNextAttemptAt(Instant.now());
 
-        when(outboxEventRepository.findByStatusInAndNextAttemptAtLessThanEqualOrderByCreatedAtAsc(
-            anyList(), any(Instant.class)
-        )).thenReturn(List.of(event));
+        givenClaimed(event);
 
         outboxProcessor.processReadyEvents();
 
@@ -235,9 +237,7 @@ class OutboxProcessorTest {
     @Test
     void shouldNotPostWhenWebhookUrlFailsOutboundValidation() {
         OutboxEventEntity event = createPendingEvent();
-        when(outboxEventRepository.findByStatusInAndNextAttemptAtLessThanEqualOrderByCreatedAtAsc(
-            anyList(), any(Instant.class)
-        )).thenReturn(List.of(event));
+        givenClaimed(event);
         when(outboundUrlValidator.validate("https://example.com/webhook"))
             .thenThrow(new IllegalArgumentException("URL externa invalida."));
 
@@ -249,9 +249,8 @@ class OutboxProcessorTest {
 
     @Test
     void shouldSkipProcessingWhenNoEventsReady() {
-        when(outboxEventRepository.findByStatusInAndNextAttemptAtLessThanEqualOrderByCreatedAtAsc(
-            anyList(), any(Instant.class)
-        )).thenReturn(List.of());
+        when(outboxEventRepository.claimReadyBatch(anyList(), any(Instant.class), any(Instant.class), anyInt()))
+            .thenReturn(List.of());
 
         outboxProcessor.processReadyEvents();
 
