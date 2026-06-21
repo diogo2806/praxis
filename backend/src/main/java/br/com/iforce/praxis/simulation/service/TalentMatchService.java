@@ -1,6 +1,7 @@
 package br.com.iforce.praxis.simulation.service;
 
 import br.com.iforce.praxis.auth.service.CurrentTenantService;
+import br.com.iforce.praxis.candidate.service.BlindMasking;
 import br.com.iforce.praxis.gupy.persistence.entity.CandidateAttemptEntity;
 import br.com.iforce.praxis.gupy.persistence.entity.ResultItemEntity;
 import br.com.iforce.praxis.gupy.persistence.repository.CandidateAttemptRepository;
@@ -42,7 +43,7 @@ public class TalentMatchService {
     }
 
     @Transactional(readOnly = true)
-    public TalentMatchResponse getTalentMatch(String simulationId, int versionNumber, List<String> attemptIds) {
+    public TalentMatchResponse getTalentMatch(String simulationId, int versionNumber, List<String> attemptIds, boolean blind) {
         String tenantId = currentTenantService.requiredTenantId();
         List<String> normalizedAttemptIds = normalizeAttemptIds(attemptIds);
         SimulationVersionEntity simulationVersionEntity = simulationVersionRepository
@@ -80,7 +81,7 @@ public class TalentMatchService {
 
         List<CandidateRadarDto> candidates = normalizedAttemptIds.stream()
                 .map(attemptsById::get)
-                .map(attempt -> toCandidateRadar(attempt, competencies))
+                .map(attempt -> toCandidateRadar(attempt, competencies, blind))
                 .toList();
 
         return new TalentMatchResponse(simulationId, versionNumber, benchmark, candidates);
@@ -110,7 +111,8 @@ public class TalentMatchService {
 
     private CandidateRadarDto toCandidateRadar(
             CandidateAttemptEntity attempt,
-            List<SimulationCompetencyEntity> competencies
+            List<SimulationCompetencyEntity> competencies,
+            boolean blind
     ) {
         Map<String, Integer> scoresByCompetency = new LinkedHashMap<>();
         attempt.getResultItems().stream()
@@ -124,9 +126,12 @@ public class TalentMatchService {
                 ))
                 .toList();
 
+        // Modo cego: o backend nunca envia o nome no comparativo onde a decisão acontece.
+        String candidateName = blind ? BlindMasking.maskedName(attempt.getId()) : attempt.getCandidateName();
+
         return new CandidateRadarDto(
                 attempt.getId(),
-                attempt.getCandidateName(),
+                candidateName,
                 attempt.getScore() == null ? 0 : attempt.getScore(),
                 scores
         );

@@ -327,9 +327,10 @@ public class SimulationAdminController {
     public ResponseEntity<TalentMatchResponse> getTalentMatch(
             @PathVariable String simulationId,
             @PathVariable int versionNumber,
-            @RequestParam List<String> attemptIds
+            @RequestParam List<String> attemptIds,
+            @RequestParam(name = "blind", defaultValue = "false") boolean blind
     ) {
-        return ResponseEntity.ok(talentMatchService.getTalentMatch(simulationId, versionNumber, attemptIds));
+        return ResponseEntity.ok(talentMatchService.getTalentMatch(simulationId, versionNumber, attemptIds, blind));
     }
 
     @DeleteMapping("/{simulationId}")

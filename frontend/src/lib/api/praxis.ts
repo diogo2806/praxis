@@ -463,6 +463,7 @@ function isAdminPath(path: string) {
     path.startsWith("/api/v1/gupy/result-deliveries") ||
     path.startsWith("/api/v1/notifications") ||
     path.startsWith("/api/v1/audit") ||
+    path.startsWith("/api/v1/terms") ||
     path.startsWith("/api/v1/candidate-links")
   );
 }
@@ -686,7 +687,8 @@ export interface CandidateLinkResponse {
   attemptId: string;
   candidateUrl: string;
   candidateName: string;
-  candidateEmail: string;
+  // Null no modo cego: o servidor não envia o e-mail enquanto o blind está ativo (REQ-L3).
+  candidateEmail: string | null;
   simulationId: string;
   simulationName: string;
   status: AttemptStatus;
@@ -733,8 +735,8 @@ export interface TalentMatchResponse {
   candidates: CandidateRadarDto[];
 }
 
-export function listCandidateLinks() {
-  return request<CandidateLinkResponse[]>("/api/v1/candidate-links");
+export function listCandidateLinks(blind = false) {
+  return request<CandidateLinkResponse[]>(`/api/v1/candidate-links${blind ? "?blind=true" : ""}`);
 }
 
 export function listLiveAttempts() {
@@ -748,13 +750,144 @@ export function createCandidateLink(body: CreateCandidateLinkRequest) {
   });
 }
 
+export type HumanDecision = "advanced" | "rejected" | "hired" | "onHold";
+
+export interface RegisterDispositionRequest {
+  decision: HumanDecision;
+  reason?: string;
+}
+
+/**
+ * Registra a decisão humana sobre o candidato (REQ-L1). O score é apenas apoio: a decisão
+ * final é sempre de uma pessoa, e este registro append-only guarda quem decidiu e por quê.
+ */
+export function registerCandidateDisposition(attemptId: string, body: RegisterDispositionRequest) {
+  return request<void>(`/api/v1/candidate-links/${encodeURIComponent(attemptId)}/disposition`, {
+    method: "POST",
+    body: JSON.stringify(body),
+  });
+}
+
+export interface EvidenceScoringDeclaration {
+  deterministic: boolean;
+  usesArtificialIntelligence: boolean;
+  usesTrainingData: boolean;
+  statement: string;
+  formula: string;
+  recommendInterviewThreshold: number;
+}
+
+export interface EvidenceCompetency {
+  name: string;
+  score: number;
+  tier: string;
+  weight: number | null;
+}
+
+export interface EvidencePathStep {
+  turnIndex: number;
+  nodeId: string;
+  speaker: string;
+  prompt: string;
+  answeredOptionId: string | null;
+  answeredOptionText: string | null;
+  timedOut: boolean;
+  critical: boolean;
+  competencyPoints: Record<string, number>;
+  answeredAt: string;
+}
+
+export interface EvidenceHumanDecision {
+  decision: string | null;
+  decidedByUserId: string | null;
+  reason: string | null;
+  decidedAt: string;
+}
+
+export interface EvidenceReport {
+  attemptId: string;
+  candidateName: string;
+  candidateEmail: string;
+  simulationId: string;
+  simulationName: string | null;
+  versionNumber: number | null;
+  versionId: number | null;
+  generalScore: number | null;
+  decision: string;
+  reliabilityLevel: string;
+  humanReviewRequired: boolean;
+  summaryMarkdown: string;
+  startedAt: string | null;
+  finishedAt: string | null;
+  declaration: EvidenceScoringDeclaration;
+  competencies: EvidenceCompetency[];
+  path: EvidencePathStep[];
+  humanDecision: EvidenceHumanDecision | null;
+  auditTrail: unknown[];
+}
+
+/**
+ * Relatório de transparência do scoring (REQ-L4): declaração de cálculo determinístico (sem IA,
+ * sem dados de treino), fórmula, caminho do candidato, pontos por competência, trilha imutável e
+ * a decisão humana. Documento entregável para compliance/jurídico.
+ */
+export function getEvidenceReport(attemptId: string) {
+  return request<EvidenceReport>(
+    `/api/v1/candidate-links/${encodeURIComponent(attemptId)}/evidence-report`,
+  );
+}
+
+export interface TermResponse {
+  type: string;
+  version: string;
+  text: string;
+}
+
+export interface TermAcceptanceStatusResponse {
+  type: string;
+  currentVersion: string;
+  accepted: boolean;
+  acceptedVersion: string | null;
+  acceptedAt: string | null;
+}
+
+export function getResponsibilityTerm() {
+  return request<TermResponse>("/api/v1/terms/responsibility");
+}
+
+export function getResponsibilityAcceptance() {
+  return request<TermAcceptanceStatusResponse>("/api/v1/terms/responsibility/acceptance");
+}
+
+export function acceptResponsibilityTerm(version: string) {
+  return request<TermAcceptanceStatusResponse>("/api/v1/terms/responsibility/acceptance", {
+    method: "POST",
+    body: JSON.stringify({ version }),
+  });
+}
+
+/**
+ * Pedido de revisão humana do candidato (REQ-L5 / LGPD art. 20). Rota pública: o candidato
+ * acessa pelo próprio link, sem autenticação.
+ */
+export function requestHumanReview(attemptId: string, reason?: string) {
+  return request<void>(`/candidate/attempts/${encodeURIComponent(attemptId)}/review-request`, {
+    method: "POST",
+    body: JSON.stringify({ reason: reason && reason.trim() ? reason.trim() : null }),
+  });
+}
+
 export function getTalentMatch(
   simulationId: string,
   versionNumber: number,
   attemptIds: string[],
+  blind = false,
 ) {
   const searchParams = new URLSearchParams();
   searchParams.set("attemptIds", attemptIds.join(","));
+  if (blind) {
+    searchParams.set("blind", "true");
+  }
 
   return request<TalentMatchResponse>(
     `/api/v1/simulations/${encodeURIComponent(simulationId)}/versions/${versionNumber}/talent-match?${searchParams.toString()}`,

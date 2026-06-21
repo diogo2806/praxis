@@ -1,5 +1,6 @@
 package br.com.iforce.praxis.media.service;
 
+import br.com.iforce.praxis.auth.context.TenantContextHolder;
 import br.com.iforce.praxis.config.ObjectStorageProperties;
 import br.com.iforce.praxis.media.dto.MediaUploadResponse;
 import br.com.iforce.praxis.shared.model.MediaType;
@@ -81,7 +82,11 @@ public class MediaStorageService {
         String detectedContentType = normalizeContentType(TIKA.detect(bytes));
         MediaType mediaType = resolveMediaType(detectedContentType);
         String extension = extensionFor(mediaType, detectedContentType);
-        String key = "media/" + UUID.randomUUID() + extension;
+
+        // Isola a mídia por tenant: permite limpeza no offboarding (deletar o prefixo
+        // media/{tenantId}/) e serve de base para cota/limite por plano.
+        String tenantId = TenantContextHolder.getRequired();
+        String key = "media/" + tenantId + "/" + UUID.randomUUID() + extension;
 
         ensureBucket();
         try {

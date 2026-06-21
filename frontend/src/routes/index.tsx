@@ -755,8 +755,8 @@ const landingMarkup = `<header class="nav" id="nav">
     <div class="wrap">
       <div class="sec-head">
         <span class="eyebrow">Por dentro</span>
-        <h2>Feito para decisão defensável.</h2>
-        <p class="lead">Cada nota é decomponível. Você consegue mostrar, ponto a ponto, por que uma pessoa recebeu o que recebeu.</p>
+        <h2>Feito para decisão auditável e transparente.</h2>
+        <p class="lead">Cada nota é decomponível: você mostra, ponto a ponto, como o score foi calculado. O conteúdo do teste e a decisão final são seus — a Práxis é ferramenta de apoio.</p>
       </div>
 
       <div class="feat-grid">
@@ -771,7 +771,7 @@ const landingMarkup = `<header class="nav" id="nav">
           </div>
           <div class="feat">
             <h3><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 12l2 2 4-4M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0z"/></svg></span>Trilha auditável</h3>
-            <p>Cada ponto tem origem: qual etapa, qual escolha, qual rubrica. Pronto para o gestor e para o jurídico.</p>
+            <p>Cada ponto tem origem: qual etapa, qual escolha, qual rubrica. Pronto para o gestor e para auditoria.</p>
           </div>
           <div class="feat">
             <h3><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a9 9 0 1 0 9 9M21 3l-9 9"/></svg></span>Decide, não reprova</h3>
@@ -922,8 +922,8 @@ turno-3 ▸ <span class="ok">C</span>  +2 Comunicação
         </div>
         <div class="gov">
           <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v18M5 7l7-4 7 4M5 7v6c0 4 3 6 7 7 4-1 7-3 7-7V7"/></svg></span>
-          <h3>Defensabilidade</h3>
-          <p>Pesos versionados e critérios visíveis permitem reconstruir por que cada candidato recebeu cada ponto.</p>
+          <h3>Transparência auditável</h3>
+          <p>Pesos versionados e critérios visíveis permitem reconstruir como cada candidato recebeu cada ponto. Você é responsável pelo conteúdo do teste e pela decisão final.</p>
         </div>
       </div>
       <div class="gov-foot">
