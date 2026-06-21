@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
-import { BarChart3, Check, CircleAlert, Target, UsersRound } from "lucide-react";
+import { BarChart3, Check, CircleAlert, FileText, Target, UsersRound } from "lucide-react";
 import {
   PolarAngleAxis,
   PolarGrid,
@@ -14,6 +14,7 @@ import {
 import { AppShell } from "@/components/app-shell";
 import { EmptyState, ScreenStateStrip, StateBanner, StatusBadge } from "@/components/praxis-ui";
 import {
+  getEvidenceReport,
   getSimulationVersion,
   getTalentMatch,
   listCandidateLinks,
@@ -435,6 +436,43 @@ function BenchmarkSummary({ benchmark }: { benchmark: CompetencyBenchmarkDto[] }
   );
 }
 
+function EvidenceReportButton({ attemptId }: { attemptId: string }) {
+  const mutation = useMutation({
+    mutationFn: async () => {
+      const report = await getEvidenceReport(attemptId);
+      const blob = new Blob([JSON.stringify(report, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const anchor = document.createElement("a");
+      anchor.href = url;
+      anchor.download = `evidencia-${attemptId}.json`;
+      anchor.click();
+      URL.revokeObjectURL(url);
+    },
+  });
+
+  return (
+    <div className="mt-3">
+      <button
+        type="button"
+        onClick={() => mutation.mutate()}
+        disabled={mutation.isPending}
+        className="inline-flex w-full items-center justify-center gap-1.5 rounded-md border border-border bg-background px-3 py-1.5 text-xs hover:bg-accent disabled:cursor-not-allowed disabled:opacity-50"
+        title="Declaração de scoring determinístico (sem IA), fórmula, caminho, competências e trilha."
+      >
+        <FileText className="h-3.5 w-3.5" />
+        {mutation.isPending ? "Gerando…" : "Relatório de evidência"}
+      </button>
+      {mutation.isError && (
+        <p className="mt-1.5 text-[11px] text-destructive">
+          {mutation.error instanceof Error
+            ? mutation.error.message
+            : "Não foi possível gerar o relatório."}
+        </p>
+      )}
+    </div>
+  );
+}
+
 function CandidateDecisionControl({ attemptId }: { attemptId: string }) {
   const [decision, setDecision] = useState<HumanDecision | "">("");
   const [reason, setReason] = useState("");
@@ -529,6 +567,7 @@ function CandidateLegend({ candidates }: { candidates: CandidateRadarDto[] }) {
               <div className="text-[10px] uppercase text-muted-foreground">score · apoio</div>
             </div>
           </div>
+          <EvidenceReportButton attemptId={candidate.attemptId} />
           <CandidateDecisionControl attemptId={candidate.attemptId} />
         </div>
       ))}

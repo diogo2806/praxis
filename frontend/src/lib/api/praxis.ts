@@ -766,6 +766,75 @@ export function registerCandidateDisposition(attemptId: string, body: RegisterDi
   });
 }
 
+export interface EvidenceScoringDeclaration {
+  deterministic: boolean;
+  usesArtificialIntelligence: boolean;
+  usesTrainingData: boolean;
+  statement: string;
+  formula: string;
+  recommendInterviewThreshold: number;
+}
+
+export interface EvidenceCompetency {
+  name: string;
+  score: number;
+  tier: string;
+  weight: number | null;
+}
+
+export interface EvidencePathStep {
+  turnIndex: number;
+  nodeId: string;
+  speaker: string;
+  prompt: string;
+  answeredOptionId: string | null;
+  answeredOptionText: string | null;
+  timedOut: boolean;
+  critical: boolean;
+  competencyPoints: Record<string, number>;
+  answeredAt: string;
+}
+
+export interface EvidenceHumanDecision {
+  decision: string | null;
+  decidedByUserId: string | null;
+  reason: string | null;
+  decidedAt: string;
+}
+
+export interface EvidenceReport {
+  attemptId: string;
+  candidateName: string;
+  candidateEmail: string;
+  simulationId: string;
+  simulationName: string | null;
+  versionNumber: number | null;
+  versionId: number | null;
+  generalScore: number | null;
+  decision: string;
+  reliabilityLevel: string;
+  humanReviewRequired: boolean;
+  summaryMarkdown: string;
+  startedAt: string | null;
+  finishedAt: string | null;
+  declaration: EvidenceScoringDeclaration;
+  competencies: EvidenceCompetency[];
+  path: EvidencePathStep[];
+  humanDecision: EvidenceHumanDecision | null;
+  auditTrail: unknown[];
+}
+
+/**
+ * Relatório de transparência do scoring (REQ-L4): declaração de cálculo determinístico (sem IA,
+ * sem dados de treino), fórmula, caminho do candidato, pontos por competência, trilha imutável e
+ * a decisão humana. Documento entregável para compliance/jurídico.
+ */
+export function getEvidenceReport(attemptId: string) {
+  return request<EvidenceReport>(
+    `/api/v1/candidate-links/${encodeURIComponent(attemptId)}/evidence-report`,
+  );
+}
+
 export function getTalentMatch(
   simulationId: string,
   versionNumber: number,

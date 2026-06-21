@@ -4,8 +4,10 @@ import br.com.iforce.praxis.candidate.dto.CandidateAttemptMonitoringResponse;
 import br.com.iforce.praxis.candidate.dto.CandidateLinkResponse;
 import br.com.iforce.praxis.candidate.dto.CreateCandidateLinkRequest;
 import br.com.iforce.praxis.candidate.dto.CreateCandidateLinkResponse;
+import br.com.iforce.praxis.candidate.dto.EvidenceReport;
 import br.com.iforce.praxis.candidate.dto.RegisterDispositionRequest;
 import br.com.iforce.praxis.candidate.service.CandidateDispositionService;
+import br.com.iforce.praxis.candidate.service.EvidenceReportService;
 import br.com.iforce.praxis.gupy.service.CandidateAttemptService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -28,13 +30,16 @@ public class CompanyCandidateLinkController {
 
     private final CandidateAttemptService candidateAttemptService;
     private final CandidateDispositionService candidateDispositionService;
+    private final EvidenceReportService evidenceReportService;
 
     public CompanyCandidateLinkController(
             CandidateAttemptService candidateAttemptService,
-            CandidateDispositionService candidateDispositionService
+            CandidateDispositionService candidateDispositionService,
+            EvidenceReportService evidenceReportService
     ) {
         this.candidateAttemptService = candidateAttemptService;
         this.candidateDispositionService = candidateDispositionService;
+        this.evidenceReportService = evidenceReportService;
     }
 
     @GetMapping
@@ -79,5 +84,16 @@ public class CompanyCandidateLinkController {
     ) {
         candidateDispositionService.register(attemptId, request);
         return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/{attemptId}/evidence-report")
+    @Operation(
+            summary = "Relatório de transparência do scoring",
+            description = "Documento consolidado: declaração de scoring determinístico (sem IA, sem "
+                    + "dados de treino), fórmula e versão do blueprint, caminho do candidato, pontos "
+                    + "por competência, trilha imutável e a decisão humana."
+    )
+    public ResponseEntity<EvidenceReport> evidenceReport(@PathVariable String attemptId) {
+        return ResponseEntity.ok(evidenceReportService.build(attemptId));
     }
 }
