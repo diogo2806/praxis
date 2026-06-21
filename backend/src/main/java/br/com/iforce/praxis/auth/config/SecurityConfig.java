@@ -52,7 +52,9 @@ public class SecurityConfig {
                                 "/swagger-ui/**",
                                 "/actuator/health",
                                 "/test",
-                                "/test/**"
+                                "/test/**",
+                                "/recrutei/test",
+                                "/recrutei/test/**"
                         ).permitAll()
                         .requestMatchers("/api/v1/simulations/**").hasRole("EMPRESA")
                         .requestMatchers("/api/v1/media/**").hasRole("EMPRESA")

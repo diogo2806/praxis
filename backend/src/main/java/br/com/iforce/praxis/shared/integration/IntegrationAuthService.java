@@ -1,6 +1,5 @@
-package br.com.iforce.praxis.gupy.service;
+package br.com.iforce.praxis.shared.integration;
 
-import br.com.iforce.praxis.auth.persistence.repository.TenantRepository;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
@@ -11,17 +10,17 @@ import java.security.NoSuchAlgorithmException;
 import java.util.Base64;
 
 @Service
-public class GupyAuthService {
+public class IntegrationAuthService {
 
     private static final String BEARER_PREFIX = "Bearer ";
 
-    private final TenantRepository tenantRepository;
+    private final IntegrationTokenRepository integrationTokenRepository;
 
-    public GupyAuthService(TenantRepository tenantRepository) {
-        this.tenantRepository = tenantRepository;
+    public IntegrationAuthService(IntegrationTokenRepository integrationTokenRepository) {
+        this.integrationTokenRepository = integrationTokenRepository;
     }
 
-    public GupyTenantContext validateBearerToken(String authorizationHeader) {
+    public IntegrationTenantContext validateBearerToken(String authorizationHeader, String provider) {
         if (authorizationHeader == null || !authorizationHeader.startsWith(BEARER_PREFIX)) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Token Bearer obrigatório.");
         }
@@ -29,8 +28,11 @@ public class GupyAuthService {
         String token = authorizationHeader.substring(BEARER_PREFIX.length());
         String tokenHash = sha256(token);
 
-        return tenantRepository.findFirstByIntegrationTokenHash(tokenHash)
-                .map(tenant -> new GupyTenantContext(tenant.getId(), tenant.getCompanyId()))
+        return integrationTokenRepository.findFirstByProviderAndTokenHash(provider, tokenHash)
+                .map(entity -> new IntegrationTenantContext(
+                        entity.getTenant().getId(),
+                        entity.getTenant().getCompanyId()
+                ))
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Token Bearer inválido."));
     }
 
@@ -42,8 +44,5 @@ public class GupyAuthService {
         } catch (NoSuchAlgorithmException exception) {
             throw new IllegalStateException("SHA-256 indisponível.", exception);
         }
-    }
-
-    public record GupyTenantContext(String tenantId, String companyId) {
     }
 }
