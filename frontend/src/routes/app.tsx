@@ -7,7 +7,6 @@ import {
   ExternalLink,
   FilePlus2,
   Filter,
-  PlayCircle,
   Search,
   Table2,
   Target,
@@ -29,7 +28,6 @@ import {
   type SimulationSummaryResponse,
   type SimulationVersionStatus,
 } from "@/lib/api/praxis";
-import { maturityForStatus } from "@/lib/simulation-meta";
 import { useSession } from "@/lib/session";
 import { cn } from "@/lib/utils";
 
@@ -122,6 +120,7 @@ function Dashboard() {
           </Link>
           <Link
             to="/talent-match"
+            search={{ simulationId: undefined, versionNumber: undefined }}
             className="inline-flex items-center gap-2 rounded-md border border-border bg-card px-3 py-2 text-sm hover:bg-accent"
           >
             <Target className="h-4 w-4" />
@@ -129,13 +128,7 @@ function Dashboard() {
           </Link>
           <Link
             to="/nova/blueprint"
-            className="inline-flex items-center gap-2 rounded-md border border-border bg-card px-3 py-2 text-sm hover:bg-accent"
-          >
-            <PlayCircle className="h-4 w-4" />
-            Fluxo guiado
-          </Link>
-          <Link
-            to="/nova/blueprint"
+            search={{ simulationId: undefined, versionNumber: undefined }}
             className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
           >
             <FilePlus2 className="h-4 w-4" />
@@ -162,6 +155,7 @@ function Dashboard() {
             <>
               <Link
                 to="/nova/blueprint"
+                search={{ simulationId: undefined, versionNumber: undefined }}
                 className="inline-flex items-center justify-between rounded-md border border-primary bg-primary px-4 py-3 text-sm font-medium text-primary-foreground hover:bg-primary/90"
               >
                 Criar primeiro teste
@@ -169,6 +163,7 @@ function Dashboard() {
               </Link>
               <Link
                 to="/nova/blueprint"
+                search={{ simulationId: undefined, versionNumber: undefined }}
                 className="inline-flex items-center justify-between rounded-md border border-border bg-card px-4 py-3 text-sm hover:bg-accent"
               >
                 Abrir fluxo de cadastro
@@ -278,7 +273,6 @@ function Dashboard() {
                       <th className="px-4 py-3 text-left font-medium">Teste</th>
                       <th className="px-4 py-3 text-left font-medium">Competências</th>
                       <th className="px-4 py-3 text-left font-medium">Status</th>
-                      <th className="px-4 py-3 text-left font-medium">Prontidão</th>
                       <th className="px-4 py-3 text-left font-medium">Conclusão</th>
                       <th className="px-4 py-3 text-right font-medium">Ações</th>
                     </tr>
@@ -325,13 +319,6 @@ function Dashboard() {
                         </td>
                         <td className="px-4 py-3">
                           <StatusBadge status={simulation.status} variant="status" />
-                        </td>
-                        <td className="px-4 py-3">
-                          <StatusBadge
-                            status={simulation.status}
-                            maturity={maturityForStatus(simulation.status)}
-                            variant="maturity"
-                          />
                         </td>
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-2">

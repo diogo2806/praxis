@@ -362,8 +362,6 @@ function SimulationLinks({
         </TableHeader>
         <TableBody>
           {filteredSimulations.map((simulation) => {
-            const canOpenAudit =
-              simulation.status === "published" && simulation.attemptsCreated > 0;
             return (
               <TableRow key={simulation.id}>
                 <TableCell className="min-w-[220px] font-medium">{simulation.name}</TableCell>
@@ -380,31 +378,16 @@ function SimulationLinks({
                   {simulation.attemptsCreated.toLocaleString("pt-BR")}
                 </TableCell>
                 <TableCell className="text-right">
-                  {canOpenAudit ? (
-                    <Link
-                      to="/governanca"
-                      search={{
-                        simulationId: simulation.id,
-                        versionNumber: simulation.versionNumber,
-                      }}
-                      className="inline-flex items-center justify-center rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
-                    >
-                      Ver auditoria
-                    </Link>
-                  ) : (
-                    <button
-                      type="button"
-                      disabled
-                      title={
-                        simulation.status !== "published"
-                          ? "A versão precisa estar publicada para abrir a auditoria."
-                          : "Não há auditoria disponível sem tentativas concluídas."
-                      }
-                      className="inline-flex cursor-not-allowed items-center justify-center rounded-md bg-primary/50 px-3 py-2 text-sm font-medium text-primary-foreground"
-                    >
-                      Ver auditoria
-                    </button>
-                  )}
+                  <Link
+                    to="/governanca"
+                    search={{
+                      simulationId: simulation.id,
+                      versionNumber: simulation.versionNumber,
+                    }}
+                    className="inline-flex items-center justify-center rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
+                  >
+                    Ver auditoria
+                  </Link>
                 </TableCell>
               </TableRow>
             );
