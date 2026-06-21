@@ -5,7 +5,6 @@ import type { ReactNode } from "react";
 import {
   BarChart3,
   ClipboardCheck,
-  HelpCircle,
   Home,
   Link2,
   Menu,
@@ -16,6 +15,7 @@ import {
 } from "lucide-react";
 import { GlobalErrorFlow, GlobalProductStateBar, StateBanner } from "@/components/praxis-ui";
 import { LanguageSelector } from "@/components/language-selector";
+import { ContextualHelpButton } from "@/components/contextual-help-dialog";
 import {
   Sheet,
   SheetClose,
@@ -314,13 +314,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           </div>
           <div className="ml-auto flex shrink-0 items-center justify-end gap-2 text-xs">
             <LanguageSelector />
-            <Link
-              to="/comecar"
-              className="inline-flex items-center gap-1.5 rounded-md border border-border bg-card px-2.5 py-1 text-muted-foreground hover:bg-accent"
-            >
-              <HelpCircle className="h-3.5 w-3.5" />
-              <span className="hidden sm:inline">Ajuda</span>
-            </Link>
+            <ContextualHelpButton />
             {mode === "technical" && (
               <a
                 href={pathname}
