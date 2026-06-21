@@ -27,7 +27,4 @@ public class TenantEntity {
 
     @Column(name = "integration_token_hash", length = 120)
     private String integrationTokenHash;
-
-    @Column(name = "recrutei_integration_token_hash", length = 120)
-    private String recruteiIntegrationTokenHash;
 }

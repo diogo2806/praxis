@@ -6,9 +6,9 @@ import br.com.iforce.praxis.gupy.dto.GupyTestResponse;
 import br.com.iforce.praxis.gupy.dto.TestItemsResponse;
 import br.com.iforce.praxis.gupy.dto.TestResultResponse;
 import br.com.iforce.praxis.gupy.service.CandidateAttemptService;
-import br.com.iforce.praxis.shared.integration.IntegrationTenantContext;
-import br.com.iforce.praxis.gupy.service.GupyAuthService;
 import br.com.iforce.praxis.gupy.service.SimulationCatalogService;
+import br.com.iforce.praxis.shared.integration.IntegrationAuthService;
+import br.com.iforce.praxis.shared.integration.IntegrationTenantContext;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.ExampleObject;
@@ -32,6 +32,7 @@ import java.util.List;
 @Tag(name = "Gupy Integration", description = "Endpoints REST consumidos pela Gupy para testes externos.")
 public class GupyIntegrationController {
 
+    private static final String PROVIDER = "gupy";
     private static final String ERROR_EXAMPLE = """
             {
               "timestamp": "2026-06-16T13:20:00Z",
@@ -45,16 +46,16 @@ public class GupyIntegrationController {
             }
             """;
 
-    private final GupyAuthService gupyAuthService;
+    private final IntegrationAuthService integrationAuthService;
     private final SimulationCatalogService simulationCatalogService;
     private final CandidateAttemptService candidateAttemptService;
 
     public GupyIntegrationController(
-            GupyAuthService gupyAuthService,
+            IntegrationAuthService integrationAuthService,
             SimulationCatalogService simulationCatalogService,
             CandidateAttemptService candidateAttemptService
     ) {
-        this.gupyAuthService = gupyAuthService;
+        this.integrationAuthService = integrationAuthService;
         this.simulationCatalogService = simulationCatalogService;
         this.candidateAttemptService = candidateAttemptService;
     }
@@ -73,7 +74,7 @@ public class GupyIntegrationController {
             @RequestParam(name = "offset", defaultValue = "0") int offset,
             @RequestParam(name = "limit", defaultValue = "50") int limit
     ) {
-        IntegrationTenantContext tenantContext = gupyAuthService.validateBearerToken(authorization);
+        IntegrationTenantContext tenantContext = integrationAuthService.validateBearerToken(authorization, PROVIDER);
 
         int normalizedOffset = Math.max(offset, 0);
         int normalizedLimit = Math.min(Math.max(limit, 1), 400);
@@ -105,7 +106,7 @@ public class GupyIntegrationController {
             @RequestHeader(name = "Authorization", required = false) String authorization,
             @Valid @RequestBody CreateCandidateRequest request
     ) {
-        IntegrationTenantContext tenantContext = gupyAuthService.validateBearerToken(authorization);
+        IntegrationTenantContext tenantContext = integrationAuthService.validateBearerToken(authorization, PROVIDER);
         return ResponseEntity.status(HttpStatus.CREATED).body(candidateAttemptService.createOrReuse(request, tenantContext));
     }
 
@@ -122,7 +123,7 @@ public class GupyIntegrationController {
             @PathVariable String resultId,
             @RequestParam(name = "company_id") String companyId
     ) {
-        IntegrationTenantContext tenantContext = gupyAuthService.validateBearerToken(authorization);
+        IntegrationTenantContext tenantContext = integrationAuthService.validateBearerToken(authorization, PROVIDER);
         return ResponseEntity.ok(candidateAttemptService.findResult(resultId, companyId, tenantContext));
     }
 }

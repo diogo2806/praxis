@@ -9,8 +9,8 @@ import br.com.iforce.praxis.recrutei.dto.RecruteiCreateCandidateResponse;
 import br.com.iforce.praxis.recrutei.dto.RecruteiTestListResponse;
 import br.com.iforce.praxis.recrutei.dto.RecruteiTestResponse;
 import br.com.iforce.praxis.recrutei.dto.RecruteiTestResultResponse;
-import br.com.iforce.praxis.recrutei.service.RecruteiAuthService;
 import br.com.iforce.praxis.recrutei.service.RecruteiTestResultMapper;
+import br.com.iforce.praxis.shared.integration.IntegrationAuthService;
 import br.com.iforce.praxis.shared.integration.IntegrationTenantContext;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -37,6 +37,7 @@ import java.util.List;
 @Tag(name = "Recrutei Integration", description = "Endpoints REST consumidos pela Recrutei para testes externos.")
 public class RecruteiIntegrationController {
 
+    private static final String PROVIDER = "recrutei";
     private static final String ERROR_EXAMPLE = """
             {
               "timestamp": "2026-06-21T13:20:00Z",
@@ -50,18 +51,18 @@ public class RecruteiIntegrationController {
             }
             """;
 
-    private final RecruteiAuthService recruteiAuthService;
+    private final IntegrationAuthService integrationAuthService;
     private final SimulationCatalogService simulationCatalogService;
     private final CandidateAttemptService candidateAttemptService;
     private final RecruteiTestResultMapper recruteiTestResultMapper;
 
     public RecruteiIntegrationController(
-            RecruteiAuthService recruteiAuthService,
+            IntegrationAuthService integrationAuthService,
             SimulationCatalogService simulationCatalogService,
             CandidateAttemptService candidateAttemptService,
             RecruteiTestResultMapper recruteiTestResultMapper
     ) {
-        this.recruteiAuthService = recruteiAuthService;
+        this.integrationAuthService = integrationAuthService;
         this.simulationCatalogService = simulationCatalogService;
         this.candidateAttemptService = candidateAttemptService;
         this.recruteiTestResultMapper = recruteiTestResultMapper;
@@ -80,7 +81,7 @@ public class RecruteiIntegrationController {
             @RequestParam(name = "offset", defaultValue = "0") int offset,
             @RequestParam(name = "limit", defaultValue = "50") int limit
     ) {
-        IntegrationTenantContext tenantContext = recruteiAuthService.validateBearerToken(authorization);
+        IntegrationTenantContext tenantContext = integrationAuthService.validateBearerToken(authorization, PROVIDER);
 
         int normalizedOffset = Math.max(offset, 0);
         int normalizedLimit = Math.min(Math.max(limit, 1), 400);
@@ -112,7 +113,7 @@ public class RecruteiIntegrationController {
             @RequestHeader(name = "Authorization", required = false) String authorization,
             @Valid @RequestBody RecruteiCreateCandidateRequest request
     ) {
-        IntegrationTenantContext tenantContext = recruteiAuthService.validateBearerToken(authorization);
+        IntegrationTenantContext tenantContext = integrationAuthService.validateBearerToken(authorization, PROVIDER);
 
         CreateCandidateRequest gupyRequest = new CreateCandidateRequest(
                 request.companyId(),
@@ -150,7 +151,7 @@ public class RecruteiIntegrationController {
             @PathVariable String resultId,
             @RequestParam(name = "company_id") String companyId
     ) {
-        IntegrationTenantContext tenantContext = recruteiAuthService.validateBearerToken(authorization);
+        IntegrationTenantContext tenantContext = integrationAuthService.validateBearerToken(authorization, PROVIDER);
 
         CandidateAttemptService.AttemptWithSimulation result =
                 candidateAttemptService.findAttemptResult(resultId, companyId, tenantContext);

@@ -1,7 +1,5 @@
-package br.com.iforce.praxis.recrutei.service;
+package br.com.iforce.praxis.shared.integration;
 
-import br.com.iforce.praxis.auth.persistence.repository.TenantRepository;
-import br.com.iforce.praxis.shared.integration.IntegrationTenantContext;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
@@ -12,17 +10,17 @@ import java.security.NoSuchAlgorithmException;
 import java.util.Base64;
 
 @Service
-public class RecruteiAuthService {
+public class IntegrationAuthService {
 
     private static final String BEARER_PREFIX = "Bearer ";
 
-    private final TenantRepository tenantRepository;
+    private final IntegrationTokenRepository integrationTokenRepository;
 
-    public RecruteiAuthService(TenantRepository tenantRepository) {
-        this.tenantRepository = tenantRepository;
+    public IntegrationAuthService(IntegrationTokenRepository integrationTokenRepository) {
+        this.integrationTokenRepository = integrationTokenRepository;
     }
 
-    public IntegrationTenantContext validateBearerToken(String authorizationHeader) {
+    public IntegrationTenantContext validateBearerToken(String authorizationHeader, String provider) {
         if (authorizationHeader == null || !authorizationHeader.startsWith(BEARER_PREFIX)) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Token Bearer obrigatório.");
         }
@@ -30,8 +28,11 @@ public class RecruteiAuthService {
         String token = authorizationHeader.substring(BEARER_PREFIX.length());
         String tokenHash = sha256(token);
 
-        return tenantRepository.findFirstByRecruteiIntegrationTokenHash(tokenHash)
-                .map(tenant -> new IntegrationTenantContext(tenant.getId(), tenant.getCompanyId()))
+        return integrationTokenRepository.findFirstByProviderAndTokenHash(provider, tokenHash)
+                .map(entity -> new IntegrationTenantContext(
+                        entity.getTenant().getId(),
+                        entity.getTenant().getCompanyId()
+                ))
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Token Bearer inválido."));
     }
 
