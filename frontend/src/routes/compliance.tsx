@@ -3,6 +3,7 @@ import { useNavigate } from "@tanstack/react-router";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Eye, Globe, CircleHelp, Link2, X } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
+import { ComplianceScope } from "@/components/compliance-scope";
 import { StateBanner, StatusBadge } from "@/components/praxis-ui";
 import {
   Table,
@@ -29,7 +30,7 @@ import {
 const CORTA = 60;
 
 type ComplianceRow = SimulationSummaryResponse & {
-  reliability: number;
+  completionRate: number;
 };
 
 type PathCandidate = {
@@ -126,7 +127,7 @@ function CompliancePage() {
     return (simulationsQuery.data ?? [])
       .map((simulation) => ({
         ...simulation,
-        reliability: Math.round(simulation.completionRatePercent),
+        completionRate: Math.round(simulation.completionRatePercent),
       }))
       .filter((item) => {
         const normalized = `${item.name} ${item.versionNumber}`.toLowerCase();
@@ -158,7 +159,8 @@ function CompliancePage() {
     );
   }, [hasContext, rows, search.simulationId, search.versionNumber]);
 
-  const closeDrawer = () => navigate({ to: "/compliance", search: {} });
+  const closeDrawer = () =>
+    navigate({ to: "/compliance", search: { simulationId: undefined, versionNumber: undefined } });
 
   return (
     <AppShell>
@@ -169,10 +171,12 @@ function CompliancePage() {
           </div>
           <h1 className="mt-1 font-serif text-3xl leading-tight">Compliance dos testes</h1>
           <p className="mt-2 max-w-3xl text-sm text-muted-foreground">
-            Cada linha é uma versão de teste: status de governança, confiabilidade do resultado e
-            bloqueios em aberto, em um único lugar.
+            Cada linha é uma versão de teste: status de governança, taxa de conclusão e bloqueios em
+            aberto, em um único lugar.
           </p>
         </div>
+
+        <ComplianceScope current="compliance" />
 
         <section className="rounded-xl border border-border bg-card">
           <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border px-4 py-3">
@@ -203,7 +207,7 @@ function CompliancePage() {
                   <TableHead>Teste</TableHead>
                   <TableHead>Versão</TableHead>
                   <TableHead>Status</TableHead>
-                  <TableHead>Confiabilidade</TableHead>
+                  <TableHead>Taxa de conclusão</TableHead>
                   <TableHead>Bloqueios</TableHead>
                   <TableHead>Autor</TableHead>
                   <TableHead>Tentativas</TableHead>
@@ -236,10 +240,10 @@ function CompliancePage() {
                   </TableRow>
                 ) : (
                   rows.map((row) => {
-                    const reliabilityTone: "published" | "draft" | "archived" =
-                      row.reliability >= CORTA
+                    const completionTone: "published" | "draft" | "archived" =
+                      row.completionRate >= CORTA
                         ? "published"
-                        : row.reliability >= 55
+                        : row.completionRate >= 55
                           ? "draft"
                           : "archived";
 
@@ -264,14 +268,14 @@ function CompliancePage() {
                         <TableCell className="px-4 py-2.5">
                           <span
                             className={`font-semibold ${
-                              reliabilityTone === "published"
+                              completionTone === "published"
                                 ? "text-success"
-                                : reliabilityTone === "draft"
+                                : completionTone === "draft"
                                   ? "text-warning"
                                   : "text-danger"
                             }`}
                           >
-                            {row.reliability}/100
+                            {row.completionRate}/100
                           </span>
                         </TableCell>
                         <TableCell className="px-4 py-2.5 text-sm text-muted-foreground">
@@ -429,6 +433,7 @@ function ComplianceSheet({
               </div>
               <Link
                 to="/governanca"
+                search={{ simulationId: undefined, versionNumber: undefined }}
                 className="mt-2 inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
               >
                 <Link2 className="h-3.5 w-3.5" /> Abrir trilha técnica
@@ -643,6 +648,8 @@ function buildMatrix(version: SimulationVersionDetailResponse): MatrixItem[] {
   }));
 }
 
+const MAX_PATHS = 50;
+
 function buildPaths(version: SimulationVersionDetailResponse, matrix: MatrixItem[]) {
   const byId = new Map<string, (typeof version.nodes)[number]>(
     version.nodes.map((node) => [node.id, node]),
@@ -659,11 +666,12 @@ function buildPaths(version: SimulationVersionDetailResponse, matrix: MatrixItem
     byCriteria: Record<string, number>,
     depth: number,
   ) => {
+    if (paths.length >= MAX_PATHS) return;
     if (depth > version.nodes.length + 5) return;
 
     if (node.options.length === 0) {
       paths.push({
-        sequence: `${sequence.join(" ? ")} ? Encerramento conservador`,
+        sequence: `${sequence.join(" → ")} → Encerramento`,
         total: calculateTotal(byCriteria, matrix),
         byCriteria: { ...byCriteria },
       });
@@ -671,6 +679,8 @@ function buildPaths(version: SimulationVersionDetailResponse, matrix: MatrixItem
     }
 
     for (const option of node.options) {
+      if (paths.length >= MAX_PATHS) return;
+
       const nextSequence = [...sequence, `${node.id}·${option.id}`];
       const nextCriteria: Record<string, number> = { ...byCriteria };
 
@@ -687,7 +697,7 @@ function buildPaths(version: SimulationVersionDetailResponse, matrix: MatrixItem
       }
 
       paths.push({
-        sequence: `${nextSequence.join(" ? ")} ? Encerramento conservador`,
+        sequence: `${nextSequence.join(" → ")} → Encerramento`,
         total: calculateTotal(nextCriteria, matrix),
         byCriteria: nextCriteria,
       });

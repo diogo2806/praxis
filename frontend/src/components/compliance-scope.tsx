@@ -2,7 +2,7 @@ import { Link } from "@tanstack/react-router";
 import { Scale, ShieldCheck, UserRound } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-type ComplianceArea = "governanca" | "lgpd" | "defensabilidade";
+type ComplianceArea = "governanca" | "lgpd" | "defensabilidade" | "compliance";
 
 const areas = [
   {
@@ -23,7 +23,7 @@ const areas = [
     id: "defensabilidade",
     to: "/defensabilidade",
     icon: Scale,
-    title: "Confiabilidade do resultado",
+    title: "Defensabilidade do resultado",
     body: "Base técnica do teste: construto, score auditável, pesos e limites da promessa comercial.",
   },
 ] as const;

@@ -59,6 +59,12 @@ const getNav = (t: TranslationMap) =>
 const getSecondary = (t: TranslationMap) =>
   [
     {
+      to: "/configuracoes",
+      label: "Configurações",
+      icon: Settings,
+      desc: "Perfil da empresa e integrações",
+    },
+    {
       to: "/nova/competencias",
       label: "Competências",
       icon: Settings,
@@ -228,6 +234,9 @@ function pageLabel(pathname: string, t: TranslationMap) {
   if (pathname === "/enviar-link") return t.common.sendLink;
   if (pathname === "/governanca") return t.common.governance;
   if (pathname === "/compliance") return "Compliance";
+  if (pathname === "/defensabilidade") return "Defensabilidade";
+  if (pathname === "/lgpd") return "LGPD";
+  if (pathname === "/configuracoes") return "Configurações";
   if (pathname === "/comecar") return t.common.startHere;
   return "Workspace";
 }
