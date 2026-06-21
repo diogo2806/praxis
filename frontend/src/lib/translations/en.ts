@@ -111,9 +111,6 @@ export const en = {
     competencySaveError: "Could not save the competency.",
     customCompetencyHelp:
       "Custom competencies can be organized in the internal competency catalog.",
-    resultUseCard: "Result usage",
-    resultUseHelp:
-      "Praxis delivers structured behavioral evidence. The process decision remains with the company, inside Gupy.",
     cancel: "Cancel",
     required: "Required",
     missingFieldsPrefix: "To continue, fill in",
@@ -128,7 +125,6 @@ export const en = {
     descriptionRoleLabel: "Role",
     descriptionCriticalSituationLabel: "Critical situation",
     descriptionCompetenciesLabel: "Competencies",
-    descriptionResultUseLabel: "Result usage",
   },
   dashboard: {
     title: "Dashboard - Praxis",
