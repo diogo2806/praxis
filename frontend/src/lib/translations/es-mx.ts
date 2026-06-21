@@ -111,9 +111,6 @@ export const esMx = {
     competencySaveError: "No se pudo guardar la competencia.",
     customCompetencyHelp:
       "Las competencias personalizadas pueden organizarse en el catálogo interno de competencias.",
-    resultUseCard: "Uso del resultado",
-    resultUseHelp:
-      "Praxis entrega evidencia conductual estructurada. La decisión del proceso continúa con la empresa, dentro de Gupy.",
     cancel: "Cancelar",
     required: "Obligatorio",
     missingFieldsPrefix: "Para avanzar, completa",
@@ -128,7 +125,6 @@ export const esMx = {
     descriptionRoleLabel: "Puesto",
     descriptionCriticalSituationLabel: "Situación crítica",
     descriptionCompetenciesLabel: "Competencias",
-    descriptionResultUseLabel: "Uso del resultado",
   },
   dashboard: {
     title: "Panel - Praxis",

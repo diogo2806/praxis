@@ -209,7 +209,6 @@ function CompliancePage() {
                   <TableHead>Status</TableHead>
                   <TableHead>Taxa de conclusão</TableHead>
                   <TableHead>Bloqueios</TableHead>
-                  <TableHead>Autor</TableHead>
                   <TableHead>Tentativas</TableHead>
                   <TableHead>Atualizado</TableHead>
                   <TableHead className="text-right">Ações</TableHead>
@@ -218,13 +217,13 @@ function CompliancePage() {
               <TableBody>
                 {simulationsQuery.isLoading ? (
                   <TableRow>
-                    <TableCell colSpan={9} className="p-4 text-sm text-muted-foreground">
+                    <TableCell colSpan={8} className="p-4 text-sm text-muted-foreground">
                       Carregando versões...
                     </TableCell>
                   </TableRow>
                 ) : simulationsQuery.isError ? (
                   <TableRow>
-                    <TableCell colSpan={9} className="p-4">
+                    <TableCell colSpan={8} className="p-4">
                       <StateBanner tone="danger" title="Não foi possível carregar as versões">
                         {simulationsQuery.error instanceof Error
                           ? simulationsQuery.error.message
@@ -234,7 +233,7 @@ function CompliancePage() {
                   </TableRow>
                 ) : rows.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={9} className="p-4 text-sm text-muted-foreground">
+                    <TableCell colSpan={8} className="p-4 text-sm text-muted-foreground">
                       Nenhum teste encontrado.
                     </TableCell>
                   </TableRow>
@@ -281,7 +280,6 @@ function CompliancePage() {
                         <TableCell className="px-4 py-2.5 text-sm text-muted-foreground">
                           —
                         </TableCell>
-                        <TableCell className="px-4 py-2.5">{row.resultUse ?? "—"}</TableCell>
                         <TableCell className="px-4 py-2.5">{row.attemptsCreated}</TableCell>
                         <TableCell className="px-4 py-2.5 text-muted-foreground">
                           {formatDate(row.updatedAt)}

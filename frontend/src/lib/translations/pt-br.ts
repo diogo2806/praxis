@@ -107,9 +107,6 @@ export const ptBr = {
     competencySaveError: "Não foi possível salvar a competência.",
     customCompetencyHelp:
       "Competências personalizadas podem ser organizadas no catálogo interno de competências.",
-    resultUseCard: "Uso do resultado",
-    resultUseHelp:
-      "O Práxis entrega evidência comportamental estruturada. A decisão do processo continua com a empresa, dentro da Gupy.",
     cancel: "Cancelar",
     required: "Obrigatório",
     missingFieldsPrefix: "Para avançar, preencha",
@@ -123,7 +120,6 @@ export const ptBr = {
     descriptionRoleLabel: "Cargo",
     descriptionCriticalSituationLabel: "Situação crítica",
     descriptionCompetenciesLabel: "Competências",
-    descriptionResultUseLabel: "Uso do resultado",
   },
   dashboard: {
     title: "Painel - Praxis",

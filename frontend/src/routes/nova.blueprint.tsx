@@ -73,11 +73,8 @@ function Page() {
     error: tenantConfigQueryError,
   } = useTenantConfig();
   const competencies = config?.competencies ?? [];
-  const resultUses = config?.resultUses ?? [];
-  const defaultResultUse = getDefaultOption(resultUses)?.value ?? "";
   const [role, setRole] = useState("");
   const [criticalSituation, setCriticalSituation] = useState("");
-  const [selectedResultUse, setSelectedResultUse] = useState(defaultResultUse);
   const [selectedCompetencies, setSelectedCompetencies] = useState<string[]>([]);
   const [newCompetency, setNewCompetency] = useState("");
   const [submitAttempted, setSubmitAttempted] = useState(false);
@@ -113,12 +110,6 @@ function Page() {
   });
 
   useEffect(() => {
-    if (!selectedResultUse || !resultUses.some((use) => use.value === selectedResultUse)) {
-      setSelectedResultUse(getDefaultOption(resultUses)?.value ?? "");
-    }
-  }, [selectedResultUse, resultUses]);
-
-  useEffect(() => {
     if (!versionQuery.data || tenantConfigLoading) {
       return;
     }
@@ -131,14 +122,11 @@ function Page() {
     const parsedBlueprint = parseBlueprintDescription(versionQuery.data.description);
     setRole(parsedBlueprint.role || versionQuery.data.name);
     setCriticalSituation(versionQuery.data.criticalSituation ?? parsedBlueprint.criticalSituation);
-    setSelectedResultUse(
-      (versionQuery.data.resultUse ?? parsedBlueprint.resultUse) || defaultResultUse,
-    );
     setSelectedCompetencies(
       versionQuery.data.blueprint.competencies.map((competency) => competency.name),
     );
     setHydratedVersionKey(versionKey);
-  }, [defaultResultUse, hydratedVersionKey, tenantConfigLoading, versionQuery.data]);
+  }, [hydratedVersionKey, tenantConfigLoading, versionQuery.data]);
 
   const createDraftMutation = useMutation({
     mutationFn: () =>
@@ -148,18 +136,15 @@ function Page() {
           role,
           criticalSituation,
           competencies: selectedCompetencies,
-          resultUse: selectedResultUse,
           labels: {
             role: copy.descriptionRoleLabel,
             criticalSituation: copy.descriptionCriticalSituationLabel,
             competencies: copy.descriptionCompetenciesLabel,
-            resultUse: copy.descriptionResultUseLabel,
           },
         }),
         rootNodeId: "etapa-1",
         competencies: selectedCompetencies,
         criticalSituation: criticalSituation.trim(),
-        resultUse: selectedResultUse,
       }),
     onSuccess: (simulation) => {
       void navigate({
@@ -181,7 +166,6 @@ function Page() {
           versionQuery.data?.blueprint.competencies,
         ),
         criticalSituation: criticalSituation.trim(),
-        resultUse: selectedResultUse,
       }),
     onSuccess: async (simulation) => {
       await queryClient.invalidateQueries({
@@ -417,33 +401,6 @@ function Page() {
               <Help>{copy.customCompetencyHelp}</Help>
             </Card>
 
-            <Card title={copy.resultUseCard}>
-              <div className="grid gap-2 md:grid-cols-4">
-                {resultUses.map((use) => (
-                  <label
-                    key={use.value}
-                    className={`flex cursor-pointer items-center gap-2 rounded-md border px-3 py-2 text-sm ${
-                      selectedResultUse === use.value
-                        ? "border-primary bg-primary/5 text-foreground"
-                        : use.locked
-                          ? "border-dashed border-border bg-muted/40 text-muted-foreground"
-                          : "border-border bg-card hover:bg-accent"
-                    }`}
-                  >
-                    <input
-                      type="radio"
-                      name="uso"
-                      checked={selectedResultUse === use.value}
-                      onChange={() => setSelectedResultUse(use.value)}
-                      disabled={use.locked}
-                      className="sr-only"
-                    />
-                    {use.label}
-                  </label>
-                ))}
-              </div>
-              <Help>{copy.resultUseHelp}</Help>
-            </Card>
 
             <div className="sticky bottom-0 -mx-6 mt-2 flex flex-col gap-3 border-t border-border bg-background/90 px-6 py-4 backdrop-blur sm:flex-row sm:items-center sm:justify-between lg:-mx-10 lg:px-10">
               <Link
@@ -506,25 +463,21 @@ function buildBlueprintDescription({
   role,
   criticalSituation,
   competencies,
-  resultUse,
   labels,
 }: {
   role: string;
   criticalSituation: string;
   competencies: string[];
-  resultUse: string;
   labels: {
     role: string;
     criticalSituation: string;
     competencies: string;
-    resultUse: string;
   };
 }) {
   const lines = [
     `${labels.role}: ${role.trim()}`,
     `${labels.criticalSituation}: ${criticalSituation.trim()}`,
     competencies.length > 0 && `${labels.competencies}: ${competencies.join(", ")}`,
-    resultUse.trim() && `${labels.resultUse}: ${resultUse.trim()}`,
   ].filter((line): line is string => Boolean(line));
 
   const description = lines.join("\n");
@@ -566,7 +519,6 @@ function parseBlueprintDescription(description: string) {
   const fields = {
     role: "",
     criticalSituation: "",
-    resultUse: "",
   };
 
   for (const line of description.split("\n")) {
@@ -586,8 +538,6 @@ function parseBlueprintDescription(description: string) {
       label === "critical role situation"
     ) {
       fields.criticalSituation = value;
-    } else if (["uso do resultado", "result usage", "uso del resultado"].includes(label)) {
-      fields.resultUse = value;
     }
   }
 
