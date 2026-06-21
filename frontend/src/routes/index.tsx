@@ -817,85 +817,85 @@ turno-3 ▸ <span class="ok">C</span>  +2 Comunicação
   </section>
 
   <!-- ONDE SE APLICA -->
-  <section class=”sec” id=”aplicacoes”>
-    <div class=”wrap”>
-      <div class=”sec-head”>
-        <span class=”eyebrow”>Onde se aplica</span>
+  <section class="sec" id="aplicacoes">
+    <div class="wrap">
+      <div class="sec-head">
+        <span class="eyebrow">Onde se aplica</span>
         <h2>Onde decisão importa, a Práxis entrega evidência.</h2>
-        <p class=”lead”>O mesmo motor — cenário situacional com score determinístico — se adapta a qualquer contexto onde você precisa avaliar como pessoas decidem.</p>
+        <p class="lead">O mesmo motor — cenário situacional com score determinístico — se adapta a qualquer contexto onde você precisa avaliar como pessoas decidem.</p>
       </div>
-      <div class=”use-cases”>
-        <div class=”uc uc-recruit”>
-          <span class=”uc-ico”><svg viewBox=”0 0 24 24” fill=”none” stroke-width=”2” stroke-linecap=”round” stroke-linejoin=”round”><path d=”M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2”/><circle cx=”9” cy=”7” r=”4”/><path d=”M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75”/></svg></span>
+      <div class="use-cases">
+        <div class="uc uc-recruit">
+          <span class="uc-ico"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg></span>
           <h3>Recrutamento e seleção</h3>
           <p>Avalie candidatos antes da entrevista. O gestor vê como a pessoa lida com a situação real do cargo.</p>
-          <div class=”uc-examples”>Processos seletivos, trainees, vagas de volume, headhunting</div>
+          <div class="uc-examples">Processos seletivos, trainees, vagas de volume, headhunting</div>
         </div>
-        <div class=”uc uc-health”>
-          <span class=”uc-ico”><svg viewBox=”0 0 24 24” fill=”none” stroke-width=”2” stroke-linecap=”round” stroke-linejoin=”round”><path d=”M22 12h-4l-3 9L9 3l-3 9H2”/></svg></span>
+        <div class="uc uc-health">
+          <span class="uc-ico"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg></span>
           <h3>Saúde — profissionais</h3>
           <p>Avalie tomada de decisão clínica: triagem, comunicação com paciente, dilemas éticos e conduta sob pressão.</p>
-          <div class=”uc-examples”>Seleção de residentes, enfermagem, equipes de emergência</div>
+          <div class="uc-examples">Seleção de residentes, enfermagem, equipes de emergência</div>
         </div>
-        <div class=”uc uc-health”>
-          <span class=”uc-ico”><svg viewBox=”0 0 24 24” fill=”none” stroke-width=”2” stroke-linecap=”round” stroke-linejoin=”round”><path d=”M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z”/></svg></span>
+        <div class="uc uc-health">
+          <span class="uc-ico"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg></span>
           <h3>Saúde — pacientes</h3>
           <p>Avalie prontidão para autocuidado: como o paciente decide em cenários de adesão ao tratamento, manejo de crises e hábitos de saúde.</p>
-          <div class=”uc-examples”>Doenças crônicas, pré-cirúrgico, saúde mental, reabilitação</div>
+          <div class="uc-examples">Doenças crônicas, pré-cirúrgico, saúde mental, reabilitação</div>
         </div>
-        <div class=”uc uc-edu”>
-          <span class=”uc-ico”><svg viewBox=”0 0 24 24” fill=”none” stroke-width=”2” stroke-linecap=”round” stroke-linejoin=”round”><path d=”M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z”/><path d=”M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z”/></svg></span>
+        <div class="uc uc-edu">
+          <span class="uc-ico"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg></span>
           <h3>Educação</h3>
           <p>Meça competências socioemocionais de alunos ou avalie professores em cenários de gestão de sala e inclusão.</p>
-          <div class=”uc-examples”>Escolas, universidades, concursos docentes, formação continuada</div>
+          <div class="uc-examples">Escolas, universidades, concursos docentes, formação continuada</div>
         </div>
-        <div class=”uc uc-corp”>
-          <span class=”uc-ico”><svg viewBox=”0 0 24 24” fill=”none” stroke-width=”2” stroke-linecap=”round” stroke-linejoin=”round”><path d=”M12 20V10M18 20V4M6 20v-4”/></svg></span>
+        <div class="uc uc-corp">
+          <span class="uc-ico"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20V10M18 20V4M6 20v-4"/></svg></span>
           <h3>Desenvolvimento interno</h3>
           <p>Diagnóstico de gaps de liderança, avaliação para promoção e programas de T&D com pré/pós mensuração.</p>
-          <div class=”uc-examples”>Sucessão, PDI, academias corporativas, onboarding de líderes</div>
+          <div class="uc-examples">Sucessão, PDI, academias corporativas, onboarding de líderes</div>
         </div>
-        <div class=”uc uc-compliance”>
-          <span class=”uc-ico”><svg viewBox=”0 0 24 24” fill=”none” stroke-width=”2” stroke-linecap=”round” stroke-linejoin=”round”><path d=”M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z”/></svg></span>
+        <div class="uc uc-compliance">
+          <span class="uc-ico"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></span>
           <h3>Compliance e segurança</h3>
           <p>Teste como colaboradores reagem a cenários de fraude, conflito de interesse, segurança do trabalho ou LGPD.</p>
-          <div class=”uc-examples”>Bancos, indústria, mineração, farmacêutico, varejo</div>
+          <div class="uc-examples">Bancos, indústria, mineração, farmacêutico, varejo</div>
         </div>
       </div>
     </div>
   </section>
 
   <!-- INTEGRAÇÕES -->
-  <section class=”sec sec-alt” id=”integracoes”>
-    <div class=”wrap”>
-      <div class=”sec-head”>
-        <span class=”eyebrow”>Integrações</span>
+  <section class="sec sec-alt" id="integracoes">
+    <div class="wrap">
+      <div class="sec-head">
+        <span class="eyebrow">Integrações</span>
         <h2>Seu sistema organiza o fluxo. A Práxis adiciona a evidência.</h2>
-        <p class=”lead”>A Práxis entra como uma etapa no processo que você já tem. A pessoa nem percebe que mudou de sistema, e o resultado volta sozinho — sem ninguém trocar de ferramenta.</p>
+        <p class="lead">A Práxis entra como uma etapa no processo que você já tem. A pessoa nem percebe que mudou de sistema, e o resultado volta sozinho — sem ninguém trocar de ferramenta.</p>
       </div>
-      <div class=”integ-band”>
-        <div class=”flow”>
-          <div class=”fstep gp”><span class=”fn”>1</span><span>Participante recebe o convite pelo <b>seu sistema</b></span></div>
-          <div class=”fstep”><span class=”fn”>2</span><span>Faz a avaliação situacional na Práxis</span></div>
-          <div class=”fstep”><span class=”fn”>3</span><span>Score e competências voltam automaticamente (com retentativas)</span></div>
-          <div class=”fstep gp”><span class=”fn”>4</span><span>Você decide com base na evidência, sem sair da plataforma</span></div>
+      <div class="integ-band">
+        <div class="flow">
+          <div class="fstep gp"><span class="fn">1</span><span>Participante recebe o convite pelo <b>seu sistema</b></span></div>
+          <div class="fstep"><span class="fn">2</span><span>Faz a avaliação situacional na Práxis</span></div>
+          <div class="fstep"><span class="fn">3</span><span>Score e competências voltam automaticamente (com retentativas)</span></div>
+          <div class="fstep gp"><span class="fn">4</span><span>Você decide com base na evidência, sem sair da plataforma</span></div>
         </div>
-        <div class=”connect” aria-label=”Como a integração funciona”>
-          <div class=”cstep”>
-            <span class=”ci ci-ats”>A</span>
+        <div class="connect" aria-label="Como a integração funciona">
+          <div class="cstep">
+            <span class="ci ci-ats">A</span>
             <div><b>Processo criado no seu sistema</b><span>Você adiciona a Práxis como etapa de avaliação (Gupy, Recrutei, API, webhook).</span></div>
           </div>
-          <div class=”cdown”></div>
-          <div class=”cstep”>
-            <span class=”ci ci-prx”>P</span>
+          <div class="cdown"></div>
+          <div class="cstep">
+            <span class="ci ci-prx">P</span>
             <div><b>A pessoa faz a avaliação</b><span>Dentro do fluxo do seu sistema, sem cadastro novo.</span></div>
           </div>
-          <div class=”cdown”></div>
-          <div class=”cstep”>
-            <span class=”ci ci-ok”><svg viewBox=”0 0 24 24” fill=”none” stroke-width=”2.4” stroke-linecap=”round” stroke-linejoin=”round”><path d=”M20 6 9 17l-5-5”/></svg></span>
+          <div class="cdown"></div>
+          <div class="cstep">
+            <span class="ci ci-ok"><svg viewBox="0 0 24 24" fill="none" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span>
             <div><b>Resultado entregue</b><span>A nota volta sozinha — mesmo se a conexão cair no meio.</span></div>
           </div>
-          <div class=”cnote”><span class=”pip”></span> Gupy · Recrutei · API aberta · Webhook — sem planilha ou copiar-e-colar.</div>
+          <div class="cnote"><span class="pip"></span> Gupy · Recrutei · API aberta · Webhook — sem planilha ou copiar-e-colar.</div>
         </div>
       </div>
     </div>
