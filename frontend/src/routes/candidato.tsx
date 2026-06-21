@@ -1,11 +1,12 @@
 import { createFileRoute, Link, Outlet, useChildMatches } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { useCallback, useEffect, useState, type CSSProperties } from "react";
 import { AppShell } from "@/components/app-shell";
 import { EmptyState } from "@/components/praxis-ui";
 import {
   getCandidateAttempt,
   PraxisApiError,
+  requestHumanReview,
   submitCandidateAnswer,
   type CandidateAttemptResponse,
   type CandidateNodeResponse,
@@ -450,10 +451,87 @@ function FocusedCandidateExperience({ token }: { token: string }) {
             <p className="mx-auto mt-3 max-w-xl opacity-80">
               O resultado será processado e entregue para a equipe responsável.
             </p>
+            <p className="mx-auto mt-3 max-w-xl text-sm opacity-70">
+              Esta avaliação mede como você age em uma situação de trabalho, por competência. Ela é
+              apoio à decisão: quem decide sobre a sua candidatura é uma pessoa, não um sistema
+              automático. Você pode pedir que uma pessoa revise o resultado.
+            </p>
+            <HumanReviewRequest attemptId={token} highContrast={highContrast} />
           </div>
         )}
       </section>
     </main>
+  );
+}
+
+function HumanReviewRequest({
+  attemptId,
+  highContrast,
+}: {
+  attemptId: string;
+  highContrast: boolean;
+}) {
+  const [open, setOpen] = useState(false);
+  const [reason, setReason] = useState("");
+  const mutation = useMutation({
+    mutationFn: () => requestHumanReview(attemptId, reason),
+  });
+
+  const fieldClass = cn(
+    "w-full resize-none rounded-md border p-2.5 text-sm",
+    highContrast ? "border-zinc-600 bg-zinc-900 text-zinc-100" : "border-slate-300 bg-white",
+  );
+  const buttonClass = cn(
+    "rounded-md px-4 py-2 text-sm font-medium",
+    highContrast ? "bg-zinc-100 text-zinc-900" : "bg-blue-600 text-white",
+    "disabled:cursor-not-allowed disabled:opacity-50",
+  );
+
+  if (mutation.isSuccess) {
+    return (
+      <p className="mx-auto mt-5 max-w-xl text-sm font-medium text-emerald-700" aria-live="polite">
+        Pedido de revisão registrado. Uma pessoa da equipe responsável vai analisar.
+      </p>
+    );
+  }
+
+  return (
+    <div className="mx-auto mt-5 w-full max-w-md">
+      {!open ? (
+        <button
+          type="button"
+          className="text-sm font-medium underline"
+          onClick={() => setOpen(true)}
+        >
+          Solicitar revisão humana
+        </button>
+      ) : (
+        <div className="space-y-2 text-left">
+          <label className="block text-sm font-medium">Solicitar revisão humana</label>
+          <textarea
+            value={reason}
+            onChange={(event) => setReason(event.target.value)}
+            rows={3}
+            maxLength={1000}
+            placeholder="Se quiser, conte por que (opcional)."
+            className={fieldClass}
+          />
+          <button
+            type="button"
+            className={buttonClass}
+            disabled={mutation.isPending}
+            onClick={() => mutation.mutate()}
+          >
+            {mutation.isPending ? "Enviando..." : "Enviar pedido"}
+          </button>
+          {mutation.isError && (
+            <p className="text-sm font-medium text-red-600" aria-live="assertive">
+              Não consegui registrar agora. Tente novamente em instantes.
+            </p>
+          )}
+        </div>
+      )}
+    </div>
   );
 }
 

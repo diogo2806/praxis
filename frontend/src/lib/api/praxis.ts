@@ -463,6 +463,7 @@ function isAdminPath(path: string) {
     path.startsWith("/api/v1/gupy/result-deliveries") ||
     path.startsWith("/api/v1/notifications") ||
     path.startsWith("/api/v1/audit") ||
+    path.startsWith("/api/v1/terms") ||
     path.startsWith("/api/v1/candidate-links")
   );
 }
@@ -834,6 +835,46 @@ export function getEvidenceReport(attemptId: string) {
   return request<EvidenceReport>(
     `/api/v1/candidate-links/${encodeURIComponent(attemptId)}/evidence-report`,
   );
+}
+
+export interface TermResponse {
+  type: string;
+  version: string;
+  text: string;
+}
+
+export interface TermAcceptanceStatusResponse {
+  type: string;
+  currentVersion: string;
+  accepted: boolean;
+  acceptedVersion: string | null;
+  acceptedAt: string | null;
+}
+
+export function getResponsibilityTerm() {
+  return request<TermResponse>("/api/v1/terms/responsibility");
+}
+
+export function getResponsibilityAcceptance() {
+  return request<TermAcceptanceStatusResponse>("/api/v1/terms/responsibility/acceptance");
+}
+
+export function acceptResponsibilityTerm(version: string) {
+  return request<TermAcceptanceStatusResponse>("/api/v1/terms/responsibility/acceptance", {
+    method: "POST",
+    body: JSON.stringify({ version }),
+  });
+}
+
+/**
+ * Pedido de revisão humana do candidato (REQ-L5 / LGPD art. 20). Rota pública: o candidato
+ * acessa pelo próprio link, sem autenticação.
+ */
+export function requestHumanReview(attemptId: string, reason?: string) {
+  return request<void>(`/candidate/attempts/${encodeURIComponent(attemptId)}/review-request`, {
+    method: "POST",
+    body: JSON.stringify({ reason: reason && reason.trim() ? reason.trim() : null }),
+  });
 }
 
 export function getTalentMatch(

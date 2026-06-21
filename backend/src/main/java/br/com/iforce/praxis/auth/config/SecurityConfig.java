@@ -62,6 +62,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/v1/gupy/result-deliveries/**").hasRole("EMPRESA")
                         .requestMatchers("/api/v1/notifications/**").hasRole("EMPRESA")
                         .requestMatchers("/api/v1/audit/**").hasRole("EMPRESA")
+                        .requestMatchers("/api/v1/terms/**").hasRole("EMPRESA")
                         .requestMatchers("/api/v1/candidate-links", "/api/v1/candidate-links/**").hasRole("EMPRESA")
                         .anyRequest().authenticated()
                 )

@@ -5,6 +5,9 @@ import { AppShell } from "@/components/app-shell";
 import { EmptyState, ScreenStateStrip, StateBanner, StatusBadge } from "@/components/praxis-ui";
 import { WizardStepper } from "@/components/wizard-stepper";
 import {
+  acceptResponsibilityTerm,
+  getResponsibilityAcceptance,
+  getResponsibilityTerm,
   listSimulations,
   listSimulationVersionAuditEvents,
   publishSimulationVersion,
@@ -83,6 +86,22 @@ function Page() {
       setPendingAction(null);
     },
   });
+
+  const termQuery = useQuery({
+    queryKey: ["responsibility-term"],
+    queryFn: getResponsibilityTerm,
+  });
+  const acceptanceQuery = useQuery({
+    queryKey: ["responsibility-acceptance"],
+    queryFn: getResponsibilityAcceptance,
+  });
+  const acceptMutation = useMutation({
+    mutationFn: () => acceptResponsibilityTerm(termQuery.data!.version),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["responsibility-acceptance"] });
+    },
+  });
+  const termAccepted = acceptanceQuery.data?.accepted ?? false;
 
   const visibleStatus = currentStatus ?? inferStatusFromEvents(auditQuery.data);
 
@@ -166,13 +185,28 @@ function Page() {
             )}
           </ol>
 
+          <ResponsibilityTermGate
+            text={termQuery.data?.text ?? ""}
+            accepted={termAccepted}
+            acceptedAt={acceptanceQuery.data?.acceptedAt ?? null}
+            accepting={acceptMutation.isPending}
+            failed={acceptMutation.isError}
+            canAccept={Boolean(termQuery.data)}
+            onAccept={() => acceptMutation.mutate()}
+          />
+
           <div className="mt-5 grid gap-2 md:grid-cols-1">
             <TransitionButton
               label="Publicar"
-              disabled={!hasGovernanceParams}
+              disabled={!hasGovernanceParams || !termAccepted}
               primary
               onClick={() => setPendingAction("publish")}
             />
+            {!termAccepted && (
+              <p className="text-xs text-muted-foreground">
+                Aceite o termo de responsabilidade acima para liberar a publicação.
+              </p>
+            )}
           </div>
         </div>
       )}
@@ -233,6 +267,52 @@ function Page() {
         </div>
       )}
     </AppShell>
+  );
+}
+
+function ResponsibilityTermGate({
+  text,
+  accepted,
+  acceptedAt,
+  accepting,
+  failed,
+  canAccept,
+  onAccept,
+}: {
+  text: string;
+  accepted: boolean;
+  acceptedAt: string | null;
+  accepting: boolean;
+  failed: boolean;
+  canAccept: boolean;
+  onAccept: () => void;
+}) {
+  return (
+    <div className="mt-5 rounded-md border border-border bg-background p-4">
+      <h4 className="text-sm font-semibold">Termo de responsabilidade</h4>
+      <p className="mt-2 text-sm text-muted-foreground">{text}</p>
+      {accepted ? (
+        <p className="mt-3 text-xs font-medium text-success">
+          Aceito{acceptedAt ? ` em ${formatDateTime(acceptedAt)}` : ""}.
+        </p>
+      ) : (
+        <div className="mt-3">
+          <button
+            type="button"
+            disabled={accepting || !canAccept}
+            onClick={onAccept}
+            className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {accepting ? "Registrando..." : "Li e aceito a responsabilidade"}
+          </button>
+          {failed && (
+            <p className="mt-2 text-xs text-danger">
+              Não foi possível registrar o aceite. Tente novamente.
+            </p>
+          )}
+        </div>
+      )}
+    </div>
   );
 }
 

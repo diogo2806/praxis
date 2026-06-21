@@ -3,6 +3,8 @@ package br.com.iforce.praxis.candidate.controller;
 import br.com.iforce.praxis.candidate.dto.ParticipacaoResponse;
 import br.com.iforce.praxis.candidate.dto.RegistrarRespostaRequest;
 import br.com.iforce.praxis.candidate.dto.RegistrarRespostaResponse;
+import br.com.iforce.praxis.candidate.dto.ReviewRequest;
+import br.com.iforce.praxis.candidate.service.CandidateReviewRequestService;
 import br.com.iforce.praxis.gupy.service.CandidateAttemptService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -21,9 +23,14 @@ import org.springframework.web.bind.annotation.RestController;
 public class CandidateAttemptController {
 
     private final CandidateAttemptService candidateAttemptService;
+    private final CandidateReviewRequestService candidateReviewRequestService;
 
-    public CandidateAttemptController(CandidateAttemptService candidateAttemptService) {
+    public CandidateAttemptController(
+            CandidateAttemptService candidateAttemptService,
+            CandidateReviewRequestService candidateReviewRequestService
+    ) {
         this.candidateAttemptService = candidateAttemptService;
+        this.candidateReviewRequestService = candidateReviewRequestService;
     }
 
     @GetMapping("/{attemptId}")
@@ -45,5 +52,19 @@ public class CandidateAttemptController {
             @Valid @RequestBody RegistrarRespostaRequest request
     ) {
         return ResponseEntity.ok(candidateAttemptService.submitAnswer(attemptId, request));
+    }
+
+    @PostMapping("/{attemptId}/review-request")
+    @Operation(
+            summary = "Solicita revisão humana",
+            description = "Registra o pedido de revisão humana do candidato (LGPD art. 20). Uma pessoa "
+                    + "decide; este pedido fica na trilha imutável para o recrutador."
+    )
+    public ResponseEntity<Void> requestHumanReview(
+            @PathVariable String attemptId,
+            @Valid @RequestBody(required = false) ReviewRequest request
+    ) {
+        candidateReviewRequestService.register(attemptId, request);
+        return ResponseEntity.noContent().build();
     }
 }
