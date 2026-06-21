@@ -17,6 +17,7 @@ import br.com.iforce.praxis.auth.service.JwtService;
 import br.com.iforce.praxis.gupy.dto.CreateCandidateRequest;
 import br.com.iforce.praxis.gupy.dto.CreateCandidateResponse;
 import br.com.iforce.praxis.gupy.dto.TestResultResponse;
+import br.com.iforce.praxis.shared.integration.IntegrationTenantContext;
 import br.com.iforce.praxis.gupy.model.AttemptAnswer;
 import br.com.iforce.praxis.gupy.model.AttemptStatus;
 import br.com.iforce.praxis.gupy.model.CandidateAttempt;
@@ -105,7 +106,7 @@ public class CandidateAttemptService {
     @Transactional
     public CreateCandidateResponse createOrReuse(
             CreateCandidateRequest request,
-            GupyAuthService.GupyTenantContext tenantContext
+            IntegrationTenantContext tenantContext
     ) {
         assertCompanyMatchesToken(request.companyId(), tenantContext);
         String tenantId = tenantContext.tenantId();
@@ -396,11 +397,14 @@ public class CandidateAttemptService {
         );
     }
 
+    public record AttemptWithSimulation(CandidateAttempt attempt, PublishedSimulation simulation) {
+    }
+
     @Transactional(readOnly = true)
-    public TestResultResponse findResult(
+    public AttemptWithSimulation findAttemptResult(
             String resultId,
             String companyId,
-            GupyAuthService.GupyTenantContext tenantContext
+            IntegrationTenantContext tenantContext
     ) {
         if (companyId == null || companyId.isBlank()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "company_id é obrigatório.");
@@ -416,10 +420,20 @@ public class CandidateAttemptService {
 
         CandidateAttempt attempt = candidateAttemptMapper.toDomain(candidateAttemptEntity);
         PublishedSimulation simulation = findSimulation(attempt);
-        return gupyTestResultMapper.toResponse(attempt, simulation);
+        return new AttemptWithSimulation(attempt, simulation);
     }
 
-    private void assertCompanyMatchesToken(String companyId, GupyAuthService.GupyTenantContext tenantContext) {
+    @Transactional(readOnly = true)
+    public TestResultResponse findResult(
+            String resultId,
+            String companyId,
+            IntegrationTenantContext tenantContext
+    ) {
+        AttemptWithSimulation result = findAttemptResult(resultId, companyId, tenantContext);
+        return gupyTestResultMapper.toResponse(result.attempt(), result.simulation());
+    }
+
+    private void assertCompanyMatchesToken(String companyId, IntegrationTenantContext tenantContext) {
         if (companyId == null || companyId.isBlank()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "company_id é obrigatório.");
         }

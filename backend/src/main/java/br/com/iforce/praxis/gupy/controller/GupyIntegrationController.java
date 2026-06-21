@@ -6,6 +6,7 @@ import br.com.iforce.praxis.gupy.dto.GupyTestResponse;
 import br.com.iforce.praxis.gupy.dto.TestItemsResponse;
 import br.com.iforce.praxis.gupy.dto.TestResultResponse;
 import br.com.iforce.praxis.gupy.service.CandidateAttemptService;
+import br.com.iforce.praxis.shared.integration.IntegrationTenantContext;
 import br.com.iforce.praxis.gupy.service.GupyAuthService;
 import br.com.iforce.praxis.gupy.service.SimulationCatalogService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -72,7 +73,7 @@ public class GupyIntegrationController {
             @RequestParam(name = "offset", defaultValue = "0") int offset,
             @RequestParam(name = "limit", defaultValue = "50") int limit
     ) {
-        GupyAuthService.GupyTenantContext tenantContext = gupyAuthService.validateBearerToken(authorization);
+        IntegrationTenantContext tenantContext = gupyAuthService.validateBearerToken(authorization);
 
         int normalizedOffset = Math.max(offset, 0);
         int normalizedLimit = Math.min(Math.max(limit, 1), 400);
@@ -104,7 +105,7 @@ public class GupyIntegrationController {
             @RequestHeader(name = "Authorization", required = false) String authorization,
             @Valid @RequestBody CreateCandidateRequest request
     ) {
-        GupyAuthService.GupyTenantContext tenantContext = gupyAuthService.validateBearerToken(authorization);
+        IntegrationTenantContext tenantContext = gupyAuthService.validateBearerToken(authorization);
         return ResponseEntity.status(HttpStatus.CREATED).body(candidateAttemptService.createOrReuse(request, tenantContext));
     }
 
@@ -121,7 +122,7 @@ public class GupyIntegrationController {
             @PathVariable String resultId,
             @RequestParam(name = "company_id") String companyId
     ) {
-        GupyAuthService.GupyTenantContext tenantContext = gupyAuthService.validateBearerToken(authorization);
+        IntegrationTenantContext tenantContext = gupyAuthService.validateBearerToken(authorization);
         return ResponseEntity.ok(candidateAttemptService.findResult(resultId, companyId, tenantContext));
     }
 }
