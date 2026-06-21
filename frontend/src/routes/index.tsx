@@ -16,7 +16,7 @@ export const Route = createFileRoute("/")({
       { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
       {
         rel: "stylesheet",
-        href: "https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,380;9..144,460;9..144,560;9..144,640&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;450;500;600;700&display=swap",
+        href: "https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,500;0,8..60,600;0,8..60,700;1,8..60,400;1,8..60,500&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;450;500;600;700&display=swap",
       },
     ],
   }),
@@ -49,7 +49,7 @@ const landingStyles = `
     --r-lg: 1.1rem;
     --r-pill: 999px;
 
-    --font-display: 'Fraunces', Georgia, 'Times New Roman', serif;
+    --font-display: 'Source Serif 4', Georgia, 'Times New Roman', serif;
     --font-sans: 'IBM Plex Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
     --font-mono: 'IBM Plex Mono', ui-monospace, 'SFMono-Regular', monospace;
 
@@ -76,9 +76,9 @@ const landingStyles = `
   }
   @media (max-width:560px){ body{font-size:16px} }
 
-  h1,h2,h3,h4{font-family:var(--font-display);font-weight:560;line-height:1.08;letter-spacing:-0.01em;margin:0;color:var(--ink)}
-  h1{font-size:clamp(2.4rem,5.4vw,4rem);font-weight:460}
-  h2{font-size:clamp(1.9rem,3.8vw,2.9rem);font-weight:460}
+  h1,h2,h3,h4{font-family:var(--font-display);font-weight:600;line-height:1.12;letter-spacing:-0.01em;margin:0;color:var(--ink)}
+  h1{font-size:clamp(2.4rem,5.4vw,4rem);font-weight:500}
+  h2{font-size:clamp(1.9rem,3.8vw,2.9rem);font-weight:500}
   h3{font-size:1.18rem;letter-spacing:0}
   p{margin:0}
   a{color:inherit;text-decoration:none}
@@ -115,7 +115,7 @@ const landingStyles = `
   header.nav{position:sticky;top:0;z-index:50;background:oklch(0.985 0.006 85 / 0.82);backdrop-filter:saturate(140%) blur(12px);border-bottom:1px solid transparent;transition:border-color .3s, box-shadow .3s}
   header.nav.scrolled{border-color:var(--line-soft);box-shadow:var(--shadow-sm)}
   .nav-inner{display:flex;align-items:center;justify-content:space-between;height:4.6rem;gap:1rem}
-  .brand{display:flex;align-items:baseline;gap:0.5rem;font-family:var(--font-display);font-size:1.4rem;font-weight:560;letter-spacing:-0.01em}
+  .brand{display:flex;align-items:baseline;gap:0.5rem;font-family:var(--font-display);font-size:1.4rem;font-weight:600;letter-spacing:-0.01em}
   .brand .dot{width:0.42rem;height:0.42rem;border-radius:50%;background:var(--gold);display:inline-block;transform:translateY(-0.05rem)}
   .brand small{font-family:var(--font-mono);font-size:0.62rem;letter-spacing:0.14em;text-transform:uppercase;color:var(--faint);font-weight:500}
   .nav-links{display:flex;align-items:center;gap:0.35rem}
@@ -332,7 +332,7 @@ const landingStyles = `
   .plan:hover{transform:translateY(-3px);box-shadow:var(--shadow)}
   .plan.feature{border-color:var(--primary);box-shadow:var(--shadow);background:linear-gradient(180deg, oklch(0.5 0.1 233 / 0.04), var(--surface))}
   .plan .ptag{position:absolute;top:-0.8rem;left:1.6rem;font-family:var(--font-mono);font-size:0.66rem;letter-spacing:0.1em;text-transform:uppercase;font-weight:600;background:var(--primary);color:white;padding:0.32rem 0.7rem;border-radius:var(--r-pill)}
-  .plan .pname{font-family:var(--font-display);font-size:1.4rem;font-weight:560}
+  .plan .pname{font-family:var(--font-display);font-size:1.4rem;font-weight:600}
   .plan .pfor{font-size:0.85rem;color:var(--faint);margin-top:0.25rem;min-height:2.4em}
   .price{margin:1.2rem 0 0;display:flex;align-items:baseline;gap:0.35rem;flex-wrap:wrap}
   .price .cur{font-family:var(--font-mono);font-size:1rem;color:var(--muted);font-weight:500}
@@ -353,7 +353,7 @@ const landingStyles = `
   .faq{margin-top:2.6rem;max-width:780px;border-top:1px solid var(--line)}
   .qa{border-bottom:1px solid var(--line)}
   .qa button{width:100%;text-align:left;background:none;border:none;cursor:pointer;font:inherit;padding:1.25rem 0.25rem;display:flex;justify-content:space-between;align-items:center;gap:1rem;color:var(--ink)}
-  .qa button .q{font-family:var(--font-display);font-size:1.1rem;font-weight:460}
+  .qa button .q{font-family:var(--font-display);font-size:1.1rem;font-weight:500}
   .qa .ic{flex:none;width:1.5rem;height:1.5rem;position:relative;transition:transform .25s}
   .qa .ic::before,.qa .ic::after{content:"";position:absolute;background:var(--primary);border-radius:2px;top:50%;left:50%;transform:translate(-50%,-50%)}
   .qa .ic::before{width:0.95rem;height:2px}
@@ -414,7 +414,7 @@ const landingStyles = `
   .appbar .url{margin-left:0.5rem;font-family:var(--font-mono);font-size:0.74rem;color:#9AA3AA}
   .mapwin{padding:1.2rem 1.3rem 0}
   .maphead .meyebrow{font-family:var(--font-mono);font-size:0.66rem;letter-spacing:0.14em;text-transform:uppercase;color:#1B6C8C;font-weight:600}
-  .maphead h3{font-family:var(--font-display);font-size:clamp(1.3rem,3vw,1.6rem);font-weight:460;color:#172128;margin:0.3rem 0 0}
+  .maphead h3{font-family:var(--font-display);font-size:clamp(1.3rem,3vw,1.6rem);font-weight:500;color:#172128;margin:0.3rem 0 0}
   .mapstats{display:flex;align-items:center;flex-wrap:wrap;gap:0.5rem 1rem;margin-top:0.7rem;font-size:0.86rem;color:#616A71}
   .mapstats b{color:#172128;font-weight:700;font-family:var(--font-mono)}
   .mapstats .sep{width:3px;height:3px;border-radius:50%;background:#9AA3AA}
