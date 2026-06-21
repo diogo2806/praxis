@@ -375,6 +375,57 @@ const landingStyles = `
   footer .brand small{color:oklch(0.6 0.02 245)}
   footer .fcopy{font-size:0.84rem;font-family:var(--font-mono);letter-spacing:0.02em}
 
+  /* ===== mobile polish ===== */
+  @media (max-width:560px){
+    :root{--pad-x:1rem;--sec-y:3.5rem}
+    h1{font-size:1.85rem;line-height:1.15}
+    h2{font-size:1.55rem;line-height:1.18}
+    .hero{padding-top:1.5rem}
+    .hero-copy .lead{font-size:0.98rem}
+    .hero-ctas{flex-direction:column;gap:0.6rem}
+    .hero-ctas .btn{width:100%;justify-content:center}
+    .integrations-line{font-size:0.82rem;flex-wrap:wrap}
+    .scenario .sc-msg{font-size:1.02rem}
+    .scenario .opt{font-size:0.85rem;padding:0.6rem 0.7rem}
+    .builder{display:none}
+    .sec-head .lead{font-size:0.95rem}
+    .split{gap:0.8rem;margin-top:2rem}
+    .col{padding:1.2rem}
+    .steps{gap:0.8rem;margin-top:2rem}
+    .step{padding:1.3rem 1.2rem}
+    .feat-grid{margin-top:2rem}
+    .feat h3{font-size:0.95rem}
+    .use-cases{gap:0.8rem;margin-top:2rem}
+    .uc{padding:1.2rem}
+    .integ-band{gap:1.6rem;margin-top:2rem}
+    .flow .fstep{font-size:0.88rem;padding:0.7rem 0.85rem}
+    .connect{padding:1.2rem 1.1rem 1rem}
+    .connect .cstep b{font-size:0.92rem}
+    .connect .cstep > div span{font-size:0.82rem}
+    .gov-grid{gap:0.8rem;margin-top:2rem}
+    .gov{padding:1.2rem}
+    .gov-foot{gap:0.45rem;margin-top:1.6rem}
+    .chip{font-size:0.65rem;padding:0.3rem 0.65rem}
+    .plans{margin-top:1.8rem;gap:1rem}
+    .plan{padding:1.4rem 1.2rem}
+    .price .amt{font-size:2rem}
+    .toggle{margin-top:1.4rem}
+    .pfoot{font-size:0.8rem}
+    .faq{margin-top:1.8rem}
+    .qa button .q{font-size:0.98rem}
+    .final h2{font-size:1.5rem;max-width:none}
+    .final .lead{font-size:0.95rem}
+    .final .hero-ctas{flex-direction:column}
+    .final .hero-ctas .btn{width:100%;justify-content:center}
+    .foot-inner{flex-direction:column;text-align:center;gap:0.6rem}
+  }
+  @media (max-width:380px){
+    h1{font-size:1.6rem}
+    .eyebrow{font-size:0.65rem}
+    .scenario .sc-top{padding:0.7rem 0.8rem}
+    .scenario .sc-body{padding:0.9rem 0.9rem 1rem}
+  }
+
   /* focus + motion */
   :focus-visible{outline:3px solid color-mix(in oklab, var(--primary) 65%, white);outline-offset:2px;border-radius:3px}
   @media (prefers-reduced-motion: reduce){
