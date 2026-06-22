@@ -91,7 +91,7 @@ public class AttemptStateMachine {
                 attempt.tenantId(),
                 attempt.id(),
                 AuditEventType.ATTEMPT_STARTED,
-                "Tentativa iniciada pelo candidato.",
+                "Tentativa iniciada pela pessoa participante.",
                 auditMetadata.of("startedAt", startedAt)
         );
 
@@ -160,10 +160,10 @@ public class AttemptStateMachine {
             ScoreCalculationResult scoreResult,
             Map<String, AttemptAnswer> answersByNodeId
     ) {
-        String decision = switch (scoreResult.decision()) {
-            case RECOMMEND_INTERVIEW -> "Pronto para entrevista";
-            case REVIEW_REQUIRED -> "Requer revisão";
-            case IN_PROGRESS -> "Aguardando conclusão";
+        String outcome = switch (scoreResult.decision()) {
+            case RECOMMEND_INTERVIEW -> "Atingiu a referência configurada";
+            case REVIEW_REQUIRED -> "Requer análise da equipe responsável";
+            case IN_PROGRESS -> "Participação concluída";
         };
         String reviewLine = scoreResult.humanReviewRequired()
                 ? "Resposta configurada como critica sinalizada para analise da equipe responsavel."
@@ -171,12 +171,12 @@ public class AttemptStateMachine {
         String responseTimeSignal = responseTimeSignalLabel(scoreResult.reliabilityLevel());
         String terminalReport = terminalReport(simulation, answersByNodeId);
 
-        String result = "Resumo do candidato\n\n"
+        String result = "Resumo da participação\n\n"
                 + "Avaliação: " + simulation.name() + "\n\n"
-                + "Decisão sugerida: " + decision + "\n\n"
+                + "Resultado em relação aos critérios: " + outcome + "\n\n"
                 + "Pontuação geral: " + scoreResult.score() + "/100\n\n"
                 + reviewLine + "\n\n"
-                + "Sinal tecnico de tempo de resposta: " + responseTimeSignal + ".";
+                + "Sinal técnico de tempo de resposta: " + responseTimeSignal + ".";
         if (terminalReport == null || terminalReport.isBlank()) {
             return result;
         }

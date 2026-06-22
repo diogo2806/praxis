@@ -207,7 +207,7 @@ function SidebarContent({
       <div className="border-t border-border p-4">
         <div
           className="rounded-md border border-border bg-accent/40 p-3 text-xs text-muted-foreground"
-          title="A nota do candidato é calculada por regras declaradas (critérios de pontuação, peso e cálculo). Nenhum modelo de IA decide ou julga o resultado."
+          title="A pontuação da participação é calculada por regras declaradas (critérios de pontuação, peso e cálculo). Nenhum modelo de IA decide ou julga o resultado."
         >
           <div className="font-medium text-foreground">{t.common.rulesBasedScoring}</div>
           <p className="mt-1 text-muted-foreground">{t.common.noSubjectiveAnswers}</p>
@@ -251,18 +251,17 @@ export function AppShell({ children }: { children: ReactNode }) {
   const hasIntegrationError = isIntegrationPage && gupyState === "error";
   const nav = getNav(t);
   const secondary = getSecondary(t);
-  const productState =
-    isIntegrationPage
-      ? {
-          gupy: gupyState,
-          draft: "published" as const,
-          publication: hasIntegrationError ? ("blocked" as const) : ("running" as const),
-        }
-      : pathname === "/nova/validador"
-        ? { draft: "dirty" as const, publication: "idle" as const }
-        : pathname === "/nova/piloto" || pathname.startsWith("/nova/mapa")
-          ? { draft: "saved" as const, publication: "idle" as const }
-          : { draft: "saved" as const, publication: "idle" as const };
+  const productState = isIntegrationPage
+    ? {
+        gupy: gupyState,
+        draft: "published" as const,
+        publication: hasIntegrationError ? ("blocked" as const) : ("running" as const),
+      }
+    : pathname === "/nova/validador"
+      ? { draft: "dirty" as const, publication: "idle" as const }
+      : pathname === "/nova/piloto" || pathname.startsWith("/nova/mapa")
+        ? { draft: "saved" as const, publication: "idle" as const }
+        : { draft: "saved" as const, publication: "idle" as const };
 
   return (
     <div className="flex min-h-screen bg-background text-foreground">

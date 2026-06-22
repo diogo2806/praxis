@@ -4,11 +4,11 @@ import { createFileRoute } from "@tanstack/react-router";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Práxis — Avaliação comportamental situacional" },
+      { title: "Práxis - Avaliações situacionais estruturadas e rastreáveis" },
       {
         name: "description",
         content:
-          "Avalie pessoas por como decidem em cenários realistas. Pontuação determinística, trilha auditável e integrações com ATS, sistemas de saúde e plataformas educacionais. Sem IA julgando ninguém.",
+          "Crie cenários interativos, defina competências e regras de pontuação, compartilhe por link e acompanhe resultados com registros organizados para análise.",
       },
     ],
     links: [
@@ -528,7 +528,7 @@ const landingMarkup = `<header class="nav" id="nav">
       <a class="link" href="#precos">Preços</a>
     </nav>
     <div class="nav-cta">
-      <a class="link" href="#entrar">Entrar</a>
+      <a class="link" href="https://praxis.iforce.com.br/comecar">Entrar</a>
       <a class="btn btn-primary" href="#cta">Agendar demo</a>
     </div>
     <button class="menu-btn" id="menuBtn" aria-label="Abrir menu" aria-expanded="false">
@@ -543,27 +543,27 @@ const landingMarkup = `<header class="nav" id="nav">
   <section class="hero">
     <div class="wrap hero-grid">
       <div class="hero-copy">
-        <span class="eyebrow reveal-up d1">Avaliação situacional · sem IA julgando pessoas</span>
-        <h1 class="reveal-up d2">Veja como a pessoa <span class="accent">decide</span> diante de um cenário realista.</h1>
-        <p class="lead reveal-up d3">Antes de gastar tempo com entrevistas, a Práxis mostra como alguém age diante de uma situação realista — com pontuação por competência e uma trilha auditável projetada para rastreabilidade. Para recrutamento, saúde, educação ou onde decisão importa.</p>
+        <span class="eyebrow reveal-up d1">Cenários interativos, critérios configuráveis e histórico de versões</span>
+        <h1 class="reveal-up d2">Transforme situações reais em <span class="accent">avaliações estruturadas</span> e rastreáveis.</h1>
+        <p class="lead reveal-up d3">Crie cenários interativos, defina competências e regras de pontuação, compartilhe por link e acompanhe os resultados com registros organizados para análise.</p>
         <div class="hero-ctas reveal-up d4">
-          <a class="btn btn-primary" href="#cta">Agendar demonstração <span class="btn-arrow">→</span></a>
-          <a class="btn btn-ghost" href="#aplicacoes">Ver onde se aplica</a>
+          <a class="btn btn-primary" href="#cta">Solicitar demonstração <span class="btn-arrow">→</span></a>
+          <a class="btn btn-ghost" href="#demo">Experimentar um cenário</a>
         </div>
         <div class="integrations-line reveal-up d5">
           <span class="pip"></span>
-          <span>Integra com <b>Gupy</b>, <b>Recrutei</b> e outros sistemas — o resultado volta para a plataforma de origem.</span>
+          <span>A Práxis organiza evidências e indicadores. A interpretação e a decisão final permanecem com a equipe responsável.</span>
         </div>
       </div>
 
       <!-- interactive scenario -->
-      <div class="scenario reveal-up d4" aria-label="Demonstração de um cenário">
+      <div class="scenario reveal-up d4" id="demo" aria-label="Demonstração de um cenário">
         <div class="sc-top">
           <div class="sc-id">
-            <div class="avatar">CM</div>
+            <div class="avatar">PP</div>
             <div>
-              <div class="who">Carlos M.</div>
-              <div class="stage">ETAPA 1/3 · ABERTURA</div>
+              <div class="who">Pessoa participante</div>
+              <div class="stage">Cenário 1/3 · abertura</div>
             </div>
           </div>
           <div class="sc-timer"><span class="tdot"></span>00:24</div>
@@ -579,7 +579,7 @@ const landingMarkup = `<header class="nav" id="nav">
           </div>
           <p class="sc-note" id="scNote">
             <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2 4 5v6c0 5 3.4 8.3 8 11 4.6-2.7 8-6 8-11V5z"/></svg>
-            <span>Demonstração interativa. Escolha uma resposta — todas são plausíveis de propósito.</span>
+            <span>Demonstração ilustrativa. Os critérios, pesos e resultados dependem da configuração criada para cada avaliação.</span>
           </p>
           <div class="sc-report" id="scReport" aria-live="polite">
             <div class="rh"><span class="rl">Leitura desta decisão</span><span class="tag" id="rTag"></span></div>
@@ -587,7 +587,7 @@ const landingMarkup = `<header class="nav" id="nav">
             <p class="read" id="rRead"></p>
             <p class="invisible-note">
               <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3l18 18M10.6 10.6a2 2 0 0 0 2.9 2.9M9.5 5.2A9 9 0 0 1 21 12a13 13 0 0 1-2.1 2.9M6.3 6.3A13 13 0 0 0 3 12a12 12 0 0 0 6 6"/></svg>
-              <span>Para o candidato isso fica invisível — ele só decide. Você recebe a leitura.</span>
+              <span>Pesos, critérios e marcadores ficam restritos à área de análise autorizada.</span>
             </p>
           </div>
         </div>
@@ -600,26 +600,26 @@ const landingMarkup = `<header class="nav" id="nav">
     <div class="wrap">
       <div class="sec-head">
         <span class="eyebrow">O problema</span>
-        <h2>O teste tradicional virou alvo fácil.</h2>
-        <p class="lead">Provas de múltipla escolha e redação perderam confiabilidade: o candidato consulta a IA, decora a resposta certa e passa. Você entrevista quem é bom de prova — não quem sabe lidar com a situação.</p>
+        <h2>Respostas teóricas não mostram, sozinhas, como decisões são tomadas em contexto.</h2>
+        <p class="lead">Questionários, entrevistas e conteúdos teóricos podem continuar fazendo parte do processo. A Práxis acrescenta cenários estruturados para observar escolhas, caminhos e indicadores definidos previamente.</p>
       </div>
       <div class="split">
         <div class="col bad">
-          <h3><span class="badge">Teste comum</span></h3>
+          <h3><span class="badge">Sem contexto estruturado</span></h3>
           <ul class="clist">
-            <li><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>Mede conhecimento decorável, não comportamento.</li>
-            <li><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>A resposta “certa” é óbvia e fácil de colar com IA.</li>
-            <li><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>Nota sem contexto: o gestor não sabe o porquê.</li>
-            <li><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>Entrevistas desperdiçadas com quem não tem o perfil.</li>
+            <li><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>Critérios podem permanecer dispersos ou implícitos.</li>
+            <li><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>Respostas podem ser avaliadas sem uma referência comum.</li>
+            <li><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>O caminho percorrido pode não ficar registrado.</li>
+            <li><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>Alterações no conteúdo podem dificultar comparações posteriores.</li>
           </ul>
         </div>
         <div class="col good">
-          <h3><span class="badge">Práxis</span></h3>
+          <h3><span class="badge">Com a Práxis</span></h3>
           <ul class="clist">
-            <li><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>Coloca a pessoa para decidir num cenário real do cargo.</li>
-            <li><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>Todas as opções são plausíveis: mede julgamento.</li>
-            <li><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>Pontuação por competência com a trilha exata de cada ponto.</li>
-            <li><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>O gestor entrevista quem já provou saber lidar.</li>
+            <li><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>Situações e alternativas são definidas pela equipe.</li>
+            <li><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>Competências, pesos e regras são configurados antes da publicação.</li>
+            <li><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>O caminho das respostas e os indicadores ficam organizados.</li>
+            <li><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>Versões e eventos relevantes podem ser consultados por usuários autorizados.</li>
           </ul>
         </div>
       </div>
@@ -631,26 +631,26 @@ const landingMarkup = `<header class="nav" id="nav">
     <div class="wrap">
       <div class="sec-head">
         <span class="eyebrow">Como funciona</span>
-        <h2>Um cenário ramificado, montado pelo seu RH.</h2>
-        <p class="lead">Sem programar e sem IA decidindo nada. O RH escreve o caso, as respostas e quanto cada uma vale por competência. A pontuação é determinística: regra e cálculo.</p>
+        <h2>Da situação ao resultado, com critérios definidos pela sua equipe.</h2>
+        <p class="lead">Sem programar e sem IA decidindo nada. A equipe define o objetivo da avaliação, constrói situações e caminhos, publica por link e analisa indicadores e registros.</p>
       </div>
       <div class="steps">
         <div class="step">
           <span class="rule"></span>
           <span class="num">PASSO 01</span>
-          <h3>O RH monta o caso</h3>
-          <p>Define a situação crítica do cargo, as respostas possíveis e o peso de cada competência.</p>
+          <h3>Defina objetivo e critérios</h3>
+          <p>Determine o contexto da avaliação, as competências observadas, os pesos e o uso esperado do resultado.</p>
         </div>
         <div class="step">
           <span class="rule"></span>
           <span class="num">PASSO 02</span>
-          <h3>A pessoa decide</h3>
-          <p>Pelo link ou direto no seu sistema, ela entra no cenário, enfrenta a situação e escolhe como agir — sob o tempo de cada etapa.</p>
+          <h3>Construa cenários e caminhos</h3>
+          <p>A pessoa participante acessa o cenário, enfrenta a situação configurada e escolhe como agir.</p>
         </div>
         <div class="step">
           <span class="num">PASSO 03</span>
-          <h3>Você recebe a evidência</h3>
-          <p>Pontuação por competência e a trilha de decisão voltam para o seu sistema, prontos para análise e tomada de decisão.</p>
+          <h3>Publique e analise</h3>
+          <p>Compartilhe por link, acompanhe participações e consulte indicadores, respostas e eventos.</p>
         </div>
       </div>
 
@@ -658,7 +658,7 @@ const landingMarkup = `<header class="nav" id="nav">
       <div class="builder">
         <p class="blead">
           <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
-          <span>Não é planilha nem formulário: o RH desenha o caso <b>visualmente</b>, ligando cada resposta ao próximo turno. É a tela que a sua equipe usa de verdade.</span>
+          <span>Não é planilha nem formulário: a equipe desenha o cenário <b>visualmente</b>, ligando cada resposta ao próximo passo.</span>
         </p>
         <div class="appwin">
           <div class="appbar"><span class="dots"><i></i><i></i><i></i></span><span class="url">praxis.iforce.com.br/nova/mapa</span></div>
@@ -762,7 +762,7 @@ const landingMarkup = `<header class="nav" id="nav">
       <div class="feat-grid">
         <div class="feats">
           <div class="feat">
-            <h3><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v18M3 12h18"/></svg></span>Sem IA julgando candidato</h3>
+            <h3><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v18M3 12h18"/></svg></span>Sem IA julgando participantes</h3>
             <p>A pontuação vem de critérios, pesos e cálculo. Zero caixa-preta, zero custo de IA, totalmente explicável.</p>
           </div>
           <div class="feat">
@@ -779,7 +779,7 @@ const landingMarkup = `<header class="nav" id="nav">
           </div>
           <div class="feat">
             <h3><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16v14H4zM4 9h16M9 9v10"/></svg></span>Biblioteca de cenários</h3>
-            <p>Modelos prontos por área e senioridade. O RH edita, testa com um piloto e publica quando quiser.</p>
+            <p>Modelos podem ser ajustados por contexto. A equipe edita, testa com um piloto e publica quando quiser.</p>
           </div>
           <div class="feat">
             <h3><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12a8 8 0 0 1 16 0M8 12a4 4 0 0 1 8 0M12 12v8"/></svg></span>No seu sistema</h3>
@@ -788,7 +788,7 @@ const landingMarkup = `<header class="nav" id="nav">
         </div>
 
         <!-- signature -->
-        <aside class="evidence" aria-label="Exemplo de cartão de evidência de um candidato">
+        <aside class="evidence" aria-label="Exemplo de cartão de evidência de uma participação">
           <div class="ev-top">
             <span class="t">Cartão de evidência · att_4f7c</span>
             <span class="ev-seal"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 12l2 2 4-4M12 3a9 9 0 1 0 9 9 9 9 0 0 0-9-9z"/></svg>verificável</span>
@@ -796,7 +796,7 @@ const landingMarkup = `<header class="nav" id="nav">
           <div class="ev-body">
             <div class="ev-score">
               <span class="n">82</span><span class="of">/100</span>
-              <span class="decision">Recomendar entrevista</span>
+              <span class="decision">Maior aderência aos critérios</span>
             </div>
             <div class="ev-comp" id="evComp">
               <div class="cbar"><div class="clabel"><span>Comunicação</span><b>88</b></div><div class="track"><span class="fill" data-w="88"></span></div></div>
@@ -821,50 +821,38 @@ turno-3 ▸ <span class="ok">C</span>  +2 Comunicação
     <div class="wrap">
       <div class="sec-head">
         <span class="eyebrow">Onde se aplica</span>
-        <h2>Onde decisão importa, a Práxis entrega evidência.</h2>
-        <p class="lead">O mesmo motor — cenário situacional com pontuação determinística — se adapta a qualquer contexto onde você precisa avaliar como pessoas decidem.</p>
+        <h2>Uma estrutura de avaliação que pode ser adaptada a diferentes contextos.</h2>
+        <p class="lead">A Práxis pode ser configurada para situações em que uma equipe precisa apresentar cenários, registrar escolhas e analisar critérios previamente definidos.</p>
       </div>
       <div class="use-cases">
         <div class="uc uc-recruit">
           <span class="uc-ico"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg></span>
-          <h3>Recrutamento e seleção</h3>
-          <p>Avalie candidatos antes da entrevista. O gestor vê como a pessoa lida com a situação real do cargo.</p>
-          <div class="uc-examples">Processos seletivos, trainees, vagas de volume, headhunting</div>
-        </div>
-        <div class="uc uc-health">
-          <span class="uc-ico"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg></span>
-          <h3>Saúde — profissionais</h3>
-          <p>Avalie tomada de decisão clínica: triagem, comunicação com paciente, dilemas éticos e conduta sob pressão.</p>
-          <div class="uc-examples">Seleção de residentes, enfermagem, equipes de emergência</div>
-        </div>
-        <div class="uc uc-health">
-          <span class="uc-ico"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg></span>
-          <h3>Saúde — educação do paciente</h3>
-          <p>Apoie ações educativas com cenários de prática: o paciente treina decisões do dia a dia, como organização de hábitos e seguimento das orientações combinadas com a equipe de saúde. É material de apoio educativo, não diagnóstico nem conduta clínica.</p>
-          <div class="uc-examples">Programas educativos, orientação pré-procedimento, promoção de hábitos, reabilitação</div>
+          <h3>Seleção e mobilidade interna</h3>
+          <p>Avalie respostas a situações relacionadas a uma função, atividade ou contexto profissional.</p>
+          <div class="uc-examples">Seleção, mobilidade interna e sucessão</div>
         </div>
         <div class="uc uc-edu">
           <span class="uc-ico"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg></span>
-          <h3>Educação</h3>
-          <p>Meça competências socioemocionais de alunos ou avalie professores em cenários de gestão de sala e inclusão.</p>
-          <div class="uc-examples">Escolas, universidades, concursos docentes, formação continuada</div>
+          <h3>Capacitação e desenvolvimento</h3>
+          <p>Utilize cenários para observar como participantes aplicam conhecimentos e critérios em situações simuladas.</p>
+          <div class="uc-examples">Desenvolvimento, onboarding e reciclagem</div>
         </div>
         <div class="uc uc-corp">
           <span class="uc-ico"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20V10M18 20V4M6 20v-4"/></svg></span>
-          <h3>Desenvolvimento interno</h3>
-          <p>Diagnóstico de gaps de liderança, avaliação para promoção e programas de T&D com pré/pós mensuração.</p>
-          <div class="uc-examples">Sucessão, PDI, academias corporativas, onboarding de líderes</div>
+          <h3>Atendimento e operações</h3>
+          <p>Represente ocorrências, decisões, procedimentos e consequências presentes na rotina das equipes.</p>
+          <div class="uc-examples">Rotinas, escalonamento e atendimento</div>
         </div>
         <div class="uc uc-compliance">
           <span class="uc-ico"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></span>
-          <h3>Compliance e segurança</h3>
-          <p>Teste como colaboradores reagem a cenários de fraude, conflito de interesse, segurança do trabalho ou LGPD.</p>
-          <div class="uc-examples">Bancos, indústria, mineração, farmacêutico, varejo</div>
+          <h3>Procedimentos e conformidade</h3>
+          <p>Avalie a compreensão e a aplicação de orientações internas por meio de situações contextualizadas.</p>
+          <div class="uc-examples">Políticas, processos e procedimentos</div>
         </div>
       </div>
       <p class="pfoot" style="margin-top:2.2rem">
         <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4M12 17h.01M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg>
-        A Práxis é uma ferramenta de apoio à decisão por meio de cenários situacionais. Não é instrumento de diagnóstico clínico, psicológico ou de saúde, nem dispositivo médico, e não substitui avaliação profissional. A definição do uso adequado, dos critérios e da decisão final é responsabilidade de quem contrata.
+        As aplicações dependem dos cenários, critérios e conteúdos configurados pela organização responsável.
       </p>
     </div>
   </section>
@@ -873,21 +861,21 @@ turno-3 ▸ <span class="ok">C</span>  +2 Comunicação
   <section class="sec sec-alt" id="integracoes">
     <div class="wrap">
       <div class="sec-head">
-        <span class="eyebrow">Integrações</span>
-        <h2>Seu sistema organiza o fluxo. A Práxis adiciona a evidência.</h2>
-        <p class="lead">A Práxis entra como uma etapa no processo que você já tem. A pessoa nem percebe que mudou de sistema, e o resultado volta sozinho — sem ninguém trocar de ferramenta.</p>
+        <span class="eyebrow">Operação independente</span>
+        <h2>Compartilhe por link e conecte integrações quando necessário.</h2>
+        <p class="lead">A Práxis pode operar por links diretos. Integrações opcionais conectam a avaliação a serviços compatíveis quando fizer sentido para o processo.</p>
       </div>
       <div class="integ-band">
         <div class="flow">
-          <div class="fstep gp"><span class="fn">1</span><span>Participante recebe o convite pelo <b>seu sistema</b></span></div>
-          <div class="fstep"><span class="fn">2</span><span>Faz a avaliação situacional na Práxis</span></div>
-          <div class="fstep"><span class="fn">3</span><span>Pontuação e competências voltam automaticamente (com retentativas)</span></div>
-          <div class="fstep gp"><span class="fn">4</span><span>Você decide com base na evidência, sem sair da plataforma</span></div>
+          <div class="fstep gp"><span class="fn">1</span><span>A equipe configura <b>cenários, critérios e pesos</b></span></div>
+          <div class="fstep"><span class="fn">2</span><span>A pessoa participante acessa a avaliação por link</span></div>
+          <div class="fstep"><span class="fn">3</span><span>Indicadores e registros ficam disponíveis para análise</span></div>
+          <div class="fstep gp"><span class="fn">4</span><span>Integrações opcionais podem entregar resultados a sistemas compatíveis</span></div>
         </div>
         <div class="connect" aria-label="Como a integração funciona">
           <div class="cstep">
             <span class="ci ci-ats">A</span>
-            <div><b>Processo criado no seu sistema</b><span>Você adiciona a Práxis como etapa de avaliação (Gupy, Recrutei, API, webhook).</span></div>
+            <div><b>Avaliação configurada</b><span>Cenários, critérios e pesos são definidos pela equipe responsável.</span></div>
           </div>
           <div class="cdown"></div>
           <div class="cstep">
@@ -899,7 +887,7 @@ turno-3 ▸ <span class="ok">C</span>  +2 Comunicação
             <span class="ci ci-ok"><svg viewBox="0 0 24 24" fill="none" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span>
             <div><b>Resultado entregue</b><span>A nota volta automaticamente, com novas tentativas caso a conexão falhe.</span></div>
           </div>
-          <div class="cnote"><span class="pip"></span> Gupy · Recrutei · API aberta · Webhook — sem planilha ou copiar-e-colar.</div>
+          <div class="cnote"><span class="pip"></span> Integrações opcionais · API aberta · Webhook.</div>
         </div>
       </div>
     </div>
@@ -927,12 +915,12 @@ turno-3 ▸ <span class="ok">C</span>  +2 Comunicação
         <div class="gov">
           <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v18M5 7l7-4 7 4M5 7v6c0 4 3 6 7 7 4-1 7-3 7-7V7"/></svg></span>
           <h3>Transparência auditável</h3>
-          <p>Pesos versionados e critérios visíveis permitem reconstruir como cada candidato recebeu cada ponto. Você é responsável pelo conteúdo do teste e pela decisão final.</p>
+          <p>Pesos versionados e critérios visíveis permitem compreender como os indicadores apresentados foram formados. A organização é responsável pelo conteúdo da avaliação e pela decisão final.</p>
         </div>
       </div>
       <div class="gov-foot">
-        <span class="chip">diretrizes <b>WCAG 2.1</b> · navegável por teclado e leitor de tela</span>
-        <span class="chip">alinhado à <b>LBI</b> · tempo ajustável por etapa</span>
+        <span class="chip">navegação por teclado nos fluxos principais</span>
+        <span class="chip">estrutura semântica e tempo ajustável por participação</span>
         <span class="chip">multi-tenant · <b>isolamento por empresa</b></span>
       </div>
     </div>
@@ -966,7 +954,7 @@ turno-3 ▸ <span class="ok">C</span>  +2 Comunicação
           <a class="btn btn-ghost" href="#cta">Começar</a>
           <ul class="plist">
             <li class="head"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>O essencial para validar</li>
-            <li><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>Integrações nativas (Gupy, Recrutei, API)</li>
+            <li><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>Links diretos e integrações opcionais</li>
             <li><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>1 simulação ativa</li>
             <li><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>Biblioteca de cenários (modelos)</li>
             <li><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>Pontuação por competência</li>
@@ -1033,15 +1021,15 @@ turno-3 ▸ <span class="ok">C</span>  +2 Comunicação
         </div>
         <div class="qa">
           <button aria-expanded="false"><span class="q">Com quais sistemas a Práxis integra?</span><span class="ic"></span></button>
-          <div class="ans"><p>Hoje integra nativamente com Gupy e Recrutei. Para outros sistemas (hospitalares, educacionais, ERPs), oferecemos API aberta e webhook — a Práxis recebe o convite e devolve o resultado automaticamente, com retentativas quando há falha temporária.</p></div>
+          <div class="ans"><p>A Práxis pode operar por links diretos. Integrações opcionais por API e webhook conectam a avaliação a serviços compatíveis quando necessário.</p></div>
         </div>
         <div class="qa">
           <button aria-expanded="false"><span class="q">Como é a cobrança?</span><span class="ic"></span></button>
-          <div class="ans"><p>No plano Avulso você paga por candidato avaliado, sem mensalidade — ideal para pilotos. No Crescimento, é uma assinatura por faixa de volume, com candidatos incluídos e adicionais por candidato. O Enterprise é contrato anual com escopo sob medida.</p></div>
+          <div class="ans"><p>No plano Avulso você paga por participação, sem mensalidade — ideal para pilotos. No Crescimento, é uma assinatura por faixa de volume, com participações incluídas e adicionais por participação. O Enterprise é contrato anual com escopo sob medida.</p></div>
         </div>
         <div class="qa">
           <button aria-expanded="false"><span class="q">Quanto tempo leva para colocar no ar?</span><span class="ic"></span></button>
-          <div class="ans"><p>Com a biblioteca de cenários, dá para publicar um teste no mesmo dia: o RH escolhe um modelo do cargo, ajusta o caso e os pesos, testa em modo piloto e publica.</p></div>
+          <div class="ans"><p>Com cenários já estruturados, a equipe pode ajustar o contexto, os critérios e os pesos, testar em modo piloto e publicar quando estiver pronto.</p></div>
         </div>
         <div class="qa">
           <button aria-expanded="false"><span class="q">O participante vê pesos, gabarito ou marcadores críticos?</span><span class="ic"></span></button>
@@ -1052,8 +1040,8 @@ turno-3 ▸ <span class="ok">C</span>  +2 Comunicação
           <div class="ans"><p>Não. A Práxis recomenda, não elimina automaticamente. Erro crítico aciona revisão humana — a decisão final cabe a uma pessoa.</p></div>
         </div>
         <div class="qa">
-          <button aria-expanded="false"><span class="q">Funciona para áreas fora de recrutamento?</span><span class="ic"></span></button>
-          <div class="ans"><p>Sim. O motor é o mesmo: cenário situacional com pontuação por competência. Já se aplica a saúde (avaliação clínica e prontidão de pacientes), educação (competências socioemocionais), compliance (conduta em dilemas éticos) e desenvolvimento interno (promoção e sucessão).</p></div>
+          <button aria-expanded="false"><span class="q">Para quais contextos serve?</span><span class="ic"></span></button>
+          <div class="ans"><p>A Práxis pode ser configurada para diferentes contextos em que uma equipe precisa apresentar situações, registrar escolhas e analisar critérios previamente definidos. As aplicações dependem do conteúdo e dos critérios definidos pela organização responsável.</p></div>
         </div>
       </div>
     </div>
@@ -1136,8 +1124,7 @@ function LandingPage() {
           ["Resolu??o de problemas", 0],
           ["Ader?ncia ? pol?tica", 0],
         ],
-        read:
-          "<b>Acolhe, mas promete sem garantir.</b> Cria uma expectativa que o time pode n?o conseguir cumprir.",
+        read: "<b>Acolhe, mas promete sem garantir.</b> Cria uma expectativa que o time pode n?o conseguir cumprir.",
       },
       B: {
         tag: "Decis?o registrada",
@@ -1147,8 +1134,7 @@ function LandingPage() {
           ["Resolu??o de problemas", 2],
           ["Ader?ncia ? pol?tica", 1],
         ],
-        read:
-          "<b>Acolhe, assume responsabilidade e alinha com o time.</b> A resposta mais equilibrada do turno.",
+        read: "<b>Acolhe, assume responsabilidade e alinha com o time.</b> A resposta mais equilibrada do turno.",
       },
       C: {
         tag: "Decis?o registrada",
@@ -1158,8 +1144,7 @@ function LandingPage() {
           ["Resolu??o de problemas", 0],
           ["Ader?ncia ? pol?tica", 2],
         ],
-        read:
-          "<b>Tecnicamente correta, por?m fria.</b> Segue a pol?tica, mas ignora um cliente j? irritado.",
+        read: "<b>Tecnicamente correta, por?m fria.</b> Segue a pol?tica, mas ignora um cliente j? irritado.",
       },
       D: {
         tag: "Aciona revis?o humana",
@@ -1169,8 +1154,7 @@ function LandingPage() {
           ["Resolu??o de problemas", 0],
           ["Ader?ncia ? pol?tica", 0],
         ],
-        read:
-          "<b>Esquiva da situa??o.</b> Marcada como decis?o cr?tica ? encaminhada para a revis?o de uma pessoa.",
+        read: "<b>Esquiva da situa??o.</b> Marcada como decis?o cr?tica ? encaminhada para a revis?o de uma pessoa.",
       },
     };
 

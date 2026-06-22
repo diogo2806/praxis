@@ -37,26 +37,26 @@ export const Route = createFileRoute("/comecar")({
 const steps = [
   {
     icon: ClipboardCheck,
-    title: "1. Você monta o teste",
-    text: "Escolha o cargo, descreva uma situação representativa do trabalho e configure as competências e os critérios considerados.",
+    title: "1. Defina o contexto",
+    text: "Informe o objetivo da avaliação, as situações observadas, as competências e os critérios de pontuação.",
   },
   {
     icon: Link2,
-    title: "2. O candidato responde",
-    text: "Você envia um link por e-mail ou WhatsApp. O tempo de conclusão varia conforme a quantidade e a complexidade dos cenários.",
+    title: "2. A pessoa participa",
+    text: "Compartilhe o acesso por link para que a pessoa responda aos cenários configurados.",
   },
   {
     icon: BarChart3,
-    title: "3. Você vê o resultado",
-    text: "A pontuação é calculada conforme as regras publicadas para aquela versão. A plataforma apresenta indicadores e caminho de respostas para apoiar sua análise.",
+    title: "3. Analise os registros",
+    text: "Consulte indicadores, respostas, percurso e eventos relacionados à participação.",
   },
 ];
 
 const audiences = [
-  "Empresas que fazem recrutamento e seleção",
-  "Equipes de Recursos Humanos (RH)",
-  "Gestores que desejam acrescentar cenários situacionais à avaliação",
-  "Organizações que precisam documentar critérios e versões dos testes",
+  "Equipes que estruturam avaliações situacionais",
+  "Áreas de desenvolvimento e capacitação",
+  "Equipes de atendimento e operações",
+  "Áreas responsáveis por procedimentos e conformidade",
 ];
 
 const startActions = [
@@ -76,8 +76,8 @@ const startActions = [
   },
   {
     icon: Link2,
-    title: "Enviar link a um candidato",
-    text: "Convide alguém para responder um teste pronto.",
+    title: "Compartilhar uma avaliação",
+    text: "Convide uma pessoa para responder uma avaliação pronta.",
     to: "/enviar-link" as const,
     primary: false,
   },
@@ -86,11 +86,11 @@ const startActions = [
 const faq = [
   {
     q: "O que é o Práxis, em uma frase?",
-    a: "É uma plataforma para acrescentar cenários situacionais e indicadores por competência ao processo seletivo.",
+    a: "É uma plataforma para transformar situações reais em avaliações estruturadas, mensuráveis e rastreáveis.",
   },
   {
-    q: "Quanto tempo leva para o candidato fazer o teste?",
-    a: "Depende da quantidade e da complexidade dos cenários configurados para cada teste.",
+    q: "Quanto tempo leva para a pessoa concluir a avaliação?",
+    a: "Depende da quantidade e da complexidade dos cenários configurados para cada avaliação.",
   },
   {
     q: "Como a pontuação é calculada?",
@@ -110,15 +110,15 @@ const faq = [
   },
   {
     q: "O Práxis garante conformidade com a LGPD?",
-    a: "A plataforma oferece recursos que apoiam a governança de privacidade. A adequação completa depende também das finalidades, bases legais, políticas, contratos e procedimentos adotados pela empresa responsável pelo processo seletivo.",
+    a: "A plataforma oferece recursos que apoiam a governança de privacidade. A adequação completa depende também das finalidades, bases legais, políticas, contratos e procedimentos adotados pela organização responsável.",
   },
   {
     q: "Preciso ter formação técnica para usar?",
     a: "Não. A criação do teste é guiada por etapas. Termos técnicos têm uma explicação simples quando você passa o mouse sobre eles.",
   },
   {
-    q: "O candidato me pediu um código de acesso. O que é isso?",
-    a: "É o código do convite. Ele já vai dentro do link enviado ao candidato; se a pessoa perder o acesso, basta reenviar o link pela tela Enviar link.",
+    q: "A pessoa participante pediu um código de acesso. O que é isso?",
+    a: "É o código do convite. Ele já vai dentro do link enviado; se a pessoa perder o acesso, basta reenviar o link pela tela Enviar link.",
   },
 ];
 
@@ -243,9 +243,8 @@ function GettingStartedPage() {
             <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-success" />
             <p className="text-sm leading-relaxed text-muted-foreground">
               <strong className="text-foreground">Resultado como indicador complementar.</strong> A
-              pontuação é calculada conforme as regras configuradas para cada teste e não substitui
-              a análise humana, a validação dos critérios para o cargo nem as demais etapas do
-              processo seletivo.
+              Práxis organiza cenários, respostas e indicadores definidos pela organização. A
+              interpretação e a decisão final permanecem sob responsabilidade da equipe responsável.
             </p>
           </div>
         </section>

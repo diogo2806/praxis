@@ -85,17 +85,17 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Práxis — Avaliação de candidatos transparente e auditável" },
+      { title: "Práxis - Avaliações situacionais estruturadas e rastreáveis" },
       {
         name: "description",
         content:
-          "Práxis é uma plataforma para avaliar candidatos com cenários realistas do trabalho. Resultados transparentes e auditáveis, sem inteligência artificial decidindo. Veja como funciona.",
+          "Práxis transforma situações reais em avaliações estruturadas, com cenários interativos, critérios configuráveis, pontuação por regras e registros rastreáveis.",
       },
-      { property: "og:title", content: "Práxis — Teste de candidatos" },
+      { property: "og:title", content: "Práxis - Avaliações situacionais" },
       {
         property: "og:description",
         content:
-          "Avalie candidatos com cenários realistas do trabalho. Resultados transparentes e auditáveis, sem IA decidindo sozinha.",
+          "Crie cenários interativos, compartilhe avaliações por link e acompanhe indicadores definidos previamente pela sua equipe.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
@@ -145,10 +145,7 @@ function RootShell({ children }: { children: ReactNode }) {
             __html: `<div vw class="enabled"><div vw-access-button class="active"></div><div vw-plugin-wrapper><div class="vw-plugin-top-wrapper"></div></div></div>`,
           }}
         />
-        <script
-          src="https://vlibras.gov.br/app/vlibras-plugin.js"
-          defer
-        />
+        <script src="https://vlibras.gov.br/app/vlibras-plugin.js" defer />
         <script
           dangerouslySetInnerHTML={{
             __html: `document.addEventListener('DOMContentLoaded', function() { if (window.VLibras) new window.VLibras.Widget('https://vlibras.gov.br/app'); });`,

@@ -41,10 +41,11 @@ export const Route = createFileRoute("/talent-match")({
   }),
   head: () => ({
     meta: [
-      { title: "Talent Match - Praxis" },
+      { title: "Comparar resultados - Praxis" },
       {
         name: "description",
-        content: "Comparativo visual de candidatos contra a régua alvo da vaga.",
+        content:
+          "Comparação visual de participações concluídas com a referência configurada para a avaliação.",
       },
     ],
   }),
@@ -134,14 +135,15 @@ function TalentMatchPage() {
 
   return (
     <AppShell>
-      <ScreenStateStrip blockedReason="sem candidatos concluídos para comparar" />
+      <ScreenStateStrip blockedReason="sem participações concluídas para comparar" />
       <div className="mb-5 flex flex-wrap items-end justify-between gap-4">
         <div>
           <div className="text-xs uppercase text-primary">{t.common.talentMatch}</div>
-          <h1 className="mt-1 text-3xl font-semibold">Comparativo de candidatos</h1>
+          <h1 className="mt-1 text-3xl font-semibold">Comparação de participações</h1>
           <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
-            Evidência para análise: sobreponha até 5 perfis no radar e compare cada competência
-            contra a régua alvo da vaga. A pontuação é apoio à decisão — quem decide é você.
+            Evidência para análise: sobreponha até 5 participações no radar e compare cada
+            competência com a referência configurada para a avaliação. A pontuação é indicador de
+            apoio; a interpretação permanece com a equipe responsável.
           </p>
         </div>
         <Link
@@ -154,8 +156,8 @@ function TalentMatchPage() {
 
       {!hasContext ? (
         <EmptyState
-          title="Selecione um teste para comparar talentos"
-          description="O painel usa candidatos concluídos do teste e a régua alvo configurada no blueprint da vaga."
+          title="Selecione uma avaliação para comparar resultados"
+          description="O painel usa participações concluídas e a referência configurada no plano da avaliação."
           actions={
             <SimulationLinks
               loading={simulationsQuery.isLoading}
@@ -166,32 +168,32 @@ function TalentMatchPage() {
       ) : (
         <div className="space-y-5">
           <StateBanner tone="info" title="Evidência para análise — a decisão é sua">
-            Os números são recomendação de apoio, não um veredito automático. A Práxis não aprova
-            nem reprova candidatos: a decisão final é registrada por uma pessoa, e um erro crítico
-            aciona revisão humana.
+            Os números são indicadores de apoio, não um veredito automático. A Práxis não aprova nem
+            reprova pessoas: a decisão final é registrada por uma pessoa, e um erro crítico aciona
+            revisão humana.
           </StateBanner>
           {!isVersionPublished && (
             <StateBanner tone="warn" title="Versão não disponível para comparação">
               Esta versão ainda não está publicada. Selecione uma versão publicada para comparar
-              talentos.
+              resultados.
             </StateBanner>
           )}
           {isVersionPublished && completedCandidates.length === 0 && (
-            <StateBanner tone="info" title="Ainda não há candidatos concluídos">
+            <StateBanner tone="info" title="Ainda não há participações concluídas">
               Selecione ou aguarde tentativas concluídas para essa versão antes de comparar no
               radar.
             </StateBanner>
           )}
           {selectedLimitReached && (
             <StateBanner tone="warn" title="Limite visual atingido">
-              O radar aceita no máximo 5 candidatos por comparação para manter leitura clara.
+              O radar aceita no máximo 5 participações por comparação para manter leitura clara.
             </StateBanner>
           )}
           {talentMatchQuery.isError && (
             <StateBanner tone="danger" title="Não foi possível carregar o comparativo">
               {talentMatchQuery.error instanceof Error
                 ? talentMatchQuery.error.message
-                : "Revise os candidatos selecionados e tente novamente."}
+                : "Revise as participações selecionadas e tente novamente."}
             </StateBanner>
           )}
 
@@ -201,7 +203,7 @@ function TalentMatchPage() {
                 <div>
                   <div className="flex items-center gap-2 text-sm font-semibold">
                     <UsersRound className="h-4 w-4" />
-                    Candidatos
+                    Participantes
                   </div>
                   <div className="mt-1 text-xs text-muted-foreground">
                     {selectedAttemptIds.length}/{MAX_SELECTED} selecionados
@@ -228,7 +230,7 @@ function TalentMatchPage() {
                     Modo cego
                   </span>
                   <span className="mt-0.5 block text-[11px] text-muted-foreground">
-                    Oculta nome e e-mail para reduzir viés na decisão. A identidade não é enviada
+                    Oculta nome e e-mail para reduzir viés na análise. A identidade não é enviada
                     pelo servidor enquanto ativo.
                   </span>
                 </span>
@@ -276,7 +278,7 @@ function TalentMatchPage() {
             <CandidateLegend candidates={selectedCandidateRows} />
           ) : (
             <StateBanner tone="info" title="Comparativo pendente">
-              A comparação aparece quando houver candidatos concluídos selecionados.
+              A comparação aparece quando houver participações concluídas selecionadas.
             </StateBanner>
           )}
         </div>
@@ -305,7 +307,7 @@ function CandidateSelector({
   if (candidates.length === 0) {
     return (
       <div className="rounded-md border border-border bg-background p-4 text-sm text-muted-foreground">
-        Nenhum candidato concluído encontrado para este teste.
+        Nenhuma participação concluída encontrada para esta avaliação.
       </div>
     );
   }
@@ -394,7 +396,7 @@ function RadarComparisonChart({
           <PolarRadiusAxis angle={90} domain={[0, 100]} tick={{ fontSize: 10 }} />
           <RechartsTooltip content={<RadarTooltip candidates={data?.candidates ?? []} />} />
           <Radar
-            name="Régua alvo"
+            name="Referência configurada"
             dataKey="benchmark"
             stroke="#52525b"
             strokeDasharray="5 4"
@@ -438,7 +440,7 @@ function RadarTooltip({
     .map((item) => ({
       name:
         item.dataKey === "benchmark"
-          ? "Régua alvo"
+          ? "Referência configurada"
           : (candidateNames.get(String(item.dataKey)) ?? item.name),
       value: Number(item.value ?? 0),
       benchmark: item.dataKey === "benchmark",
@@ -471,7 +473,7 @@ function BenchmarkSummary({ benchmark }: { benchmark: CompetencyBenchmarkDto[] }
   return (
     <div className="inline-flex items-center gap-2 rounded-md border border-border bg-background px-3 py-2 text-xs">
       <BarChart3 className="h-3.5 w-3.5 text-muted-foreground" />
-      <span className="text-muted-foreground">Media alvo</span>
+      <span className="text-muted-foreground">Referência média</span>
       <span className="font-semibold tabular-nums">{average}</span>
     </div>
   );
@@ -581,7 +583,7 @@ function CandidateLegend({ candidates }: { candidates: CandidateRadarDto[] }) {
   if (candidates.length === 0) {
     return (
       <StateBanner tone="info" title="Benchmark visível">
-        Selecione candidatos concluídos para sobrepor os perfis individuais ao radar da vaga.
+        Selecione participações concluídas para sobrepor os perfis individuais ao radar.
       </StateBanner>
     );
   }
@@ -667,8 +669,8 @@ function SimulationLinks({
             disabled
             title={
               simulation.status !== "published"
-                ? "A versão precisa estar publicada para comparar talentos."
-                : "Esta versão ainda não possui candidatos concluídos."
+                ? "A versão precisa estar publicada para comparar resultados."
+                : "Esta versão ainda não possui participações concluídas."
             }
             className="rounded-md border border-border bg-card px-4 py-3 text-sm opacity-70"
           >
