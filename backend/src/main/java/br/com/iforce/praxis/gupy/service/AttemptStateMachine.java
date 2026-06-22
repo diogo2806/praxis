@@ -166,9 +166,9 @@ public class AttemptStateMachine {
             case IN_PROGRESS -> "Aguardando conclusão";
         };
         String reviewLine = scoreResult.humanReviewRequired()
-                ? "Revisão humana obrigatória antes de qualquer decisão final."
-                : "Sem bloqueio crítico identificado nas respostas.";
-        String reliability = reliabilityLabel(scoreResult.reliabilityLevel());
+                ? "Resposta configurada como critica sinalizada para analise da equipe responsavel."
+                : "Sem bloqueio critico identificado nas respostas.";
+        String responseTimeSignal = responseTimeSignalLabel(scoreResult.reliabilityLevel());
         String terminalReport = terminalReport(simulation, answersByNodeId);
 
         String result = "Resumo do candidato\n\n"
@@ -176,7 +176,7 @@ public class AttemptStateMachine {
                 + "Decisão sugerida: " + decision + "\n\n"
                 + "Pontuação geral: " + scoreResult.score() + "/100\n\n"
                 + reviewLine + "\n\n"
-                + "Confiabilidade da resposta: " + reliability + ".";
+                + "Sinal tecnico de tempo de resposta: " + responseTimeSignal + ".";
         if (terminalReport == null || terminalReport.isBlank()) {
             return result;
         }
@@ -216,10 +216,10 @@ public class AttemptStateMachine {
                 .orElseThrow();
     }
 
-    private String reliabilityLabel(ReliabilityLevel reliabilityLevel) {
+    private String responseTimeSignalLabel(ReliabilityLevel reliabilityLevel) {
         return switch (reliabilityLevel) {
-            case LOW_RELIABILITY -> "baixa";
-            case NORMAL -> "adequada";
+            case LOW_RELIABILITY -> "uma ou mais respostas foram concluidas abaixo do intervalo de referencia configurado";
+            case NORMAL -> "nenhum alerta identificado";
         };
     }
 

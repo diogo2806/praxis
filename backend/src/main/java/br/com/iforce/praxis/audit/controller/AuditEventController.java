@@ -14,7 +14,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/v1/audit")
-@Tag(name = "Audit", description = "Leitura da trilha imutável de auditoria operacional.")
+@Tag(name = "Audit", description = "Leitura da trilha cronologica de auditoria operacional.")
 public class AuditEventController {
 
     private final AuditEventService auditEventService;

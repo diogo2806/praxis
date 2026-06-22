@@ -13,7 +13,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/v1/privacy")
-@Tag(name = "Privacy", description = "Politicas operacionais de privacidade, explicabilidade e revisao humana.")
+@Tag(name = "Privacy", description = "Informacoes operacionais de privacidade, explicabilidade e revisao.")
 public class PrivacyController {
 
     private final int retentionDays;
@@ -24,29 +24,29 @@ public class PrivacyController {
 
     @GetMapping("/compliance")
     @Operation(
-            summary = "Retorna politica LGPD operacional",
-            description = "Expõe bases legais, retencao e canal de revisao humana exibidos no frontend."
+            summary = "Retorna informacoes operacionais de privacidade",
+            description = "Exibe finalidades, retencao e orientacoes de revisao informadas para o frontend."
     )
     public ResponseEntity<PrivacyComplianceResponse> getCompliance() {
         return ResponseEntity.ok(new PrivacyComplianceResponse(
                 List.of(
                         new PrivacyComplianceResponse.LegalBasisDto(
-                                "Execucao de contrato",
-                                "Processamento necessario para disponibilizar a simulacao contratada pela empresa."
+                                "Base legal informada pelo controlador",
+                                "A empresa responsavel pelo processo seletivo define e documenta a base legal aplicavel a cada finalidade."
                         ),
                         new PrivacyComplianceResponse.LegalBasisDto(
-                                "Legitimo interesse",
-                                "Uso de evidencias comportamentais estruturadas para avaliacao proporcional e auditavel."
+                                "Finalidade e necessidade",
+                                "As informacoes exibidas refletem a configuracao informada pelo controlador e nao substituem sua avaliacao juridica."
                         ),
                         new PrivacyComplianceResponse.LegalBasisDto(
-                                "Exercicio regular de direitos",
-                                "Manutencao de trilhas de auditoria para contestacao, revisao e defesa tecnica."
+                                "Registro e salvaguardas",
+                                "Retencao, compartilhamentos e salvaguardas devem ser definidos conforme a politica aplicavel ao processo."
                         )
                 ),
                 retentionDays,
-                "Tentativas, respostas e resultados sao retidos por " + retentionDays + " dias apos conclusao ou expiracao, salvo obrigacao contratual distinta.",
-                "privacy-review@praxis.local",
-                "5 dias uteis",
+                "Os dados sao mantidos pelo periodo configurado para o processo, observadas as finalidades informadas, obrigacoes aplicaveis e hipoteses de preservacao necessarias ao exercicio regular de direitos.",
+                "Canal informado pela empresa responsavel pelo processo seletivo.",
+                "As solicitacoes serao tratadas nos prazos aplicaveis, conforme sua natureza e a legislacao vigente.",
                 false
         ));
     }

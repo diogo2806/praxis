@@ -38,24 +38,25 @@ const steps = [
   {
     icon: ClipboardCheck,
     title: "1. Você monta o teste",
-    text: "Escolhe o cargo e descreve uma situação real do trabalho. O Práxis transforma isso em um teste com perguntas de decisão.",
+    text: "Escolha o cargo, descreva uma situação representativa do trabalho e configure as competências e os critérios considerados.",
   },
   {
     icon: Link2,
     title: "2. O candidato responde",
-    text: "Você envia um link por e-mail ou WhatsApp. A pessoa responde do celular ou do computador, em 20 a 30 minutos.",
+    text: "Você envia um link por e-mail ou WhatsApp. O tempo de conclusão varia conforme a quantidade e a complexidade dos cenários.",
   },
   {
     icon: BarChart3,
     title: "3. Você vê o resultado",
-    text: "A nota sai de regras claras e iguais para todos. Você consegue ver o porquê de cada ponto, sem caixa-preta.",
+    text: "A pontuação é calculada conforme as regras publicadas para aquela versão. A plataforma apresenta indicadores e caminho de respostas para apoiar sua análise.",
   },
 ];
 
 const audiences = [
   "Empresas que fazem recrutamento e seleção",
   "Equipes de Recursos Humanos (RH)",
-  "Gestores que precisam avaliar candidatos de forma justa",
+  "Gestores que desejam acrescentar cenários situacionais à avaliação",
+  "Organizações que precisam documentar critérios e versões dos testes",
 ];
 
 const startActions = [
@@ -85,27 +86,31 @@ const startActions = [
 const faq = [
   {
     q: "O que é o Práxis, em uma frase?",
-    a: "É uma plataforma para avaliar candidatos em processos seletivos usando situações reais do trabalho, em vez de provas teóricas.",
+    a: "É uma plataforma para acrescentar cenários situacionais e indicadores por competência ao processo seletivo.",
   },
   {
     q: "Quanto tempo leva para o candidato fazer o teste?",
-    a: "Na maioria dos casos, entre 20 e 30 minutos.",
+    a: "Depende da quantidade e da complexidade dos cenários configurados para cada teste.",
   },
   {
-    q: "Os resultados são justos?",
-    a: "Sim. A nota vem de regras claras e iguais para todos, e não de uma inteligência artificial decidindo sozinha. Sempre dá para ver de onde veio cada ponto.",
+    q: "Como a pontuação é calculada?",
+    a: "A plataforma aplica as regras publicadas de forma padronizada e permite rastrear a origem da pontuação. A equidade também depende da qualidade dos cenários, da validação dos critérios, das acomodações oferecidas e da revisão da empresa.",
   },
   {
     q: "Usa inteligência artificial para julgar a pessoa?",
-    a: "Não. Nenhuma IA decide a aprovação. O cálculo segue critérios definidos antes do teste, e um erro grave sempre leva a uma revisão feita por uma pessoa.",
+    a: "Não. A pontuação atual é calculada por regras configuradas previamente. O Práxis não emite reprovação automática e pode sinalizar respostas críticas para análise da equipe responsável.",
   },
   {
     q: "Funciona no celular?",
-    a: "Sim. O candidato pode responder por celular, tablet ou computador.",
+    a: "A interface foi desenvolvida para navegadores modernos em computadores, tablets e celulares. A compatibilidade pode variar conforme o navegador, a versão do sistema e os recursos de acessibilidade utilizados.",
   },
   {
     q: "Meus dados estão seguros?",
-    a: "Sim. O Práxis segue a LGPD (a lei brasileira de proteção de dados) e guarda um histórico do que aconteceu para garantir transparência.",
+    a: "O Práxis adota controles técnicos e organizacionais destinados à proteção dos dados. Nenhum sistema é completamente imune a riscos, por isso os controles devem ser acompanhados de gestão de acesso, monitoramento e procedimentos de resposta a incidentes.",
+  },
+  {
+    q: "O Práxis garante conformidade com a LGPD?",
+    a: "A plataforma oferece recursos que apoiam a governança de privacidade. A adequação completa depende também das finalidades, bases legais, políticas, contratos e procedimentos adotados pela empresa responsável pelo processo seletivo.",
   },
   {
     q: "Preciso ter formação técnica para usar?",
@@ -237,9 +242,10 @@ function GettingStartedPage() {
           <div className="flex items-start gap-3">
             <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-success" />
             <p className="text-sm leading-relaxed text-muted-foreground">
-              <strong className="text-foreground">Sem IA julgando o candidato.</strong> Os
-              resultados vêm de regras claras, definidas antes do teste, e não de decisões
-              automáticas. Você sempre pode ver o porquê de cada nota.
+              <strong className="text-foreground">Resultado como indicador complementar.</strong> A
+              pontuação é calculada conforme as regras configuradas para cada teste e não substitui
+              a análise humana, a validação dos critérios para o cargo nem as demais etapas do
+              processo seletivo.
             </p>
           </div>
         </section>

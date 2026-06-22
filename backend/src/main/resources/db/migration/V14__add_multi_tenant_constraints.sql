@@ -5,8 +5,7 @@ ALTER TABLE audit_events ALTER COLUMN tenant_id SET NOT NULL;
 
 -- Criar índices compostos para idempotência (tenant_id + idempotency_key)
 CREATE UNIQUE INDEX IF NOT EXISTS idx_candidate_attempts_tenant_idempotency
-    ON candidate_attempts(tenant_id, idempotency_key)
-    WHERE idempotency_key IS NOT NULL;
+    ON candidate_attempts(tenant_id, idempotency_key);
 
 -- Criar índices para isolamento multi-tenant em queries críticas
 CREATE INDEX IF NOT EXISTS idx_candidate_attempts_tenant_simulation

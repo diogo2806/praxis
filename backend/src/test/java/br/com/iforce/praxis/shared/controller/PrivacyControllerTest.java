@@ -24,7 +24,7 @@ class PrivacyControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.legalBases.length()").value(greaterThan(0)))
                 .andExpect(jsonPath("$.retentionDays").value(180))
-                .andExpect(jsonPath("$.reviewChannel").value("privacy-review@praxis.local"))
+                .andExpect(jsonPath("$.reviewChannel").value("Canal informado pela empresa responsavel pelo processo seletivo."))
                 .andExpect(jsonPath("$.automatedDecisionWithoutReviewAllowed").value(false));
     }
 }

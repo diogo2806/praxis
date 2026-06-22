@@ -34,7 +34,7 @@ export const Route = createFileRoute("/")({
       {
         name: "description",
         content:
-          "Landing pública da Práxis: teste situacional determinística, integrada à Gupy, com governança, acessibilidade e trilha auditável.",
+          "Teste situacional integrado ao processo de recrutamento, com pontuação baseada em regras previamente definidas, indicadores por competência e trilha de auditoria.",
       },
     ],
   }),
@@ -84,18 +84,18 @@ const features = [
   },
   {
     icon: Scale,
-    title: "Score justo entre caminhos",
-    body: "A nota é normalizada pelo caminho percorrido: quem decide rápido não é penalizado por um cenário mais curto.",
+    title: "Comparação entre caminhos",
+    body: "A pontuação considera o caminho percorrido e as competências avaliadas em cada cenário, conforme a configuração publicada.",
   },
   {
     icon: ScrollText,
-    title: "Trilha auditável",
-    body: "Cada ponto tem origem: qual etapa, qual escolha, qual rubrica. Pronto para o gestor e para o jurídico.",
+    title: "Resultado rastreável",
+    body: "A equipe autorizada pode consultar etapas, escolhas, rubricas e eventos relacionados ao cálculo.",
   },
   {
     icon: UserCheck,
-    title: "Decide, não reprova",
-    body: "Erro crítico aciona revisão humana. A decisão final é sempre de uma pessoa.",
+    title: "Apoio à revisão humana",
+    body: "O Práxis não emite reprovação automática. Casos configurados como críticos são sinalizados para análise da empresa.",
   },
   {
     icon: Library,
@@ -104,26 +104,26 @@ const features = [
   },
   {
     icon: GitBranch,
-    title: "Dentro da Gupy",
-    body: "O gestor não troca de ferramenta. Nota e competências chegam direto na candidatura.",
+    title: "Integração com recrutamento",
+    body: "Quando habilitada, a integração envia indicadores e resultados para o ambiente de recrutamento configurado.",
   },
 ];
 
 const governance = [
   {
     icon: ShieldCheck,
-    title: "Trilha imutável",
-    body: "Cada evento da tentativa fica registrado: criação, resposta, timeout e finalização.",
+    title: "Trilha cronológica de auditoria",
+    body: "Eventos relevantes, como criação, resposta, expiração e conclusão, são registrados para consulta por usuários autorizados.",
   },
   {
     icon: Lock,
-    title: "LGPD por desenho",
-    body: "Bases legais expostas, retenção configurável e anonimização programada após o ciclo da seleção.",
+    title: "Apoio à governança de privacidade",
+    body: "Recursos ajudam a informar finalidades, prazos de retenção e canais de atendimento. A conformidade depende também das práticas de cada controlador.",
   },
   {
     icon: Scale,
     title: "Defensabilidade",
-    body: "Pesos versionados e critérios visíveis permitem reconstruir por que cada candidato recebeu cada ponto.",
+    body: "Pesos, rubricas e versões permitem identificar quais regras participaram do cálculo apresentado.",
   },
 ];
 
@@ -131,33 +131,33 @@ const accessibility = [
   {
     icon: Eye,
     title: "Contraste e legibilidade",
-    body: "Tipografia e cores seguem WCAG 2.1 AA: contraste mínimo em texto e interface.",
+    body: "A interface usa contraste, hierarquia visual e textos legíveis como parte das práticas de acessibilidade.",
   },
   {
     icon: Keyboard,
     title: "Operável por teclado",
-    body: "O teste é navegável com Tab, Shift+Tab e Enter, sem armadilha de foco.",
+    body: "A interface incorpora navegação por teclado e foco visível nos fluxos principais.",
   },
   {
     icon: Accessibility,
     title: "Leitores de tela",
-    body: "Enunciados, alternativas e cronômetro expostos com ARIA correto e idioma pt-BR.",
+    body: "Enunciados, alternativas e informações dinâmicas usam marcação semântica e idioma pt-BR.",
   },
   {
     icon: Timer,
     title: "Tempo ajustável",
-    body: "Limite por etapa pode ser estendido conforme a LBI, sem afetar o cálculo da pontuação.",
+    body: "Limites por etapa podem ser ajustados conforme as necessidades do candidato e as medidas adotadas pela empresa.",
   },
 ];
 
 const faq = [
   {
     q: "O Práxis usa IA generativa para avaliar o candidato?",
-    a: "Não. O teste é determinística: a pontuação sai de critérios e pesos versionados definidos pela sua equipe.",
+    a: "Não. A pontuação apresentada atualmente é calculada por regras, pesos e critérios previamente configurados pela equipe responsável pelo teste.",
   },
   {
     q: "Como funciona a integração com a Gupy?",
-    a: "Sim. A Práxis se conecta à Gupy para listar testes, abrir convites de candidatos e devolver resultados automaticamente com retentativas quando há falha temporária.",
+    a: "Quando devidamente contratada, habilitada e configurada, a integração pode receber convites e enviar resultados por meio da API disponível. O funcionamento está sujeito às credenciais, regras e disponibilidade do serviço de terceiros.",
   },
   {
     q: "Funciona com outros sistemas além da Gupy?",
@@ -169,11 +169,11 @@ const faq = [
   },
   {
     q: "O teste é acessível?",
-    a: "Sim. Há navegação por teclado, foco visível, contraste AA, marcação semântica e suporte a leitor de tela.",
+    a: "A interface foi desenvolvida com práticas de acessibilidade, incluindo navegação por teclado, foco visível, marcação semântica e recursos configuráveis de acomodação.",
   },
   {
     q: "O Práxis reprova alguém sozinho?",
-    a: "Não. O Práxis recomenda, nunca elimina automaticamente. Erro crítico aciona revisão humana.",
+    a: "Não. O resultado é um indicador complementar. Casos configurados como críticos são sinalizados para análise, e a decisão final permanece sob responsabilidade da empresa.",
   },
 ];
 
@@ -241,15 +241,15 @@ function LandingPage() {
             <div>
               <span className="inline-flex w-fit items-center gap-2 rounded-full bg-accent px-3 py-1.5 text-xs font-semibold text-primary">
                 <span className="h-2 w-2 rounded-full bg-success" />
-                Teste situacional, sem IA julgando candidato
+                Teste situacional com pontuação baseada em regras
               </span>
               <h1 className="mt-5 max-w-3xl font-display text-4xl font-extrabold leading-[1.05] tracking-tight text-foreground md:text-6xl">
-                Veja como o candidato decide no cenário real do trabalho.
+                Observe como cada candidato responde a situações representativas do trabalho.
               </h1>
               <p className="mt-5 max-w-xl text-base leading-relaxed text-muted-foreground md:text-lg">
-                Antes de gastar a agenda do gestor com entrevista, a Práxis mostra a decisão da
-                pessoa numa situação real do cargo, com pontuação por competência e trilha
-                auditável.
+                Antes de avançar para a entrevista, apresente cenários simulados do cargo e obtenha
+                indicadores por competência, acompanhados do caminho de respostas e dos critérios
+                utilizados no cálculo.
               </p>
               <div className="mt-7 flex flex-wrap gap-3">
                 <a
@@ -268,7 +268,8 @@ function LandingPage() {
               </div>
               <p className="mt-5 flex items-center gap-2 text-xs text-muted-foreground">
                 <CheckCircle2 className="h-3.5 w-3.5 text-success" aria-hidden />
-                Compatível com a API de testes da Gupy. O resultado volta para dentro da plataforma.
+                Integração técnica com a API de testes da Gupy, sujeita à habilitação, às
+                credenciais e à disponibilidade do serviço.
               </p>
             </div>
 
@@ -386,13 +387,14 @@ function LandingPage() {
         <section className="border-y border-border bg-card/60">
           <div className="mx-auto max-w-6xl px-5 py-8 text-center">
             <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
-              Pensado para empresas que recrutam pela
+              Integração técnica sujeita à habilitação no serviço de terceiros
             </p>
             <div className="mt-3 inline-flex flex-wrap items-center justify-center gap-2 text-sm font-semibold text-foreground/80">
               <span className="rounded-md bg-foreground px-2 py-1 text-xs font-bold text-background">
                 Gupy
               </span>
-              Hub de Integrações · categoria Testes
+              Gupy é marca de seu respectivo titular. A referência não implica endosso ou parceria,
+              salvo quando formalmente informada.
             </div>
           </div>
         </section>
@@ -401,28 +403,28 @@ function LandingPage() {
           <div className="mx-auto max-w-6xl px-5">
             <SectionHeading
               eyebrow="O problema"
-              title="O teste tradicional virou alvo fácil."
-              body="Provas de múltipla escolha e redação perderam confiabilidade: o candidato consulta a IA, decora a resposta certa e passa. Você entrevista quem é bom de prova, não quem sabe lidar com a situação."
+              title="Avaliações teóricas nem sempre mostram como a pessoa analisa uma situação prática."
+              body="Provas tradicionais continuam sendo úteis, mas podem oferecer um sinal limitado sobre priorização, comunicação, tomada de decisão e aderência a procedimentos diante de cenários do dia a dia."
             />
             <div className="mt-12 grid gap-4 md:grid-cols-2">
               <CompareCard
                 tone="bad"
-                title="Teste comum"
+                title="Avaliação exclusivamente teórica"
                 items={[
-                  "Mede conhecimento decorável, não comportamento",
-                  'Resposta "certa" é óbvia e fácil de colar com IA',
-                  "Nota sem contexto: o gestor não sabe o porquê",
-                  "Entrevistas desperdiçadas com quem não tem o perfil",
+                  "Concentra-se principalmente no conhecimento declarado",
+                  "Pode oferecer pouco contexto sobre o raciocínio aplicado",
+                  "Nem sempre permite reconstruir por que uma nota foi atribuída",
+                  "Pode exigir mais etapas para identificar candidatos alinhados ao cenário da vaga",
                 ]}
               />
               <CompareCard
                 tone="good"
                 title="Práxis"
                 items={[
-                  "Coloca a pessoa para decidir num cenário real do cargo",
-                  "Todas as opções são plausíveis: mede julgamento",
-                  "Score por competência com a trilha exata de cada ponto",
-                  "O gestor entrevista quem já provou saber lidar",
+                  "Apresenta cenários simulados inspirados no contexto do cargo",
+                  "Permite configurar alternativas plausíveis e critérios de pontuação",
+                  "Organiza indicadores por competência",
+                  "Registra o caminho de respostas para apoiar a análise do RH",
                 ]}
               />
             </div>
@@ -434,24 +436,24 @@ function LandingPage() {
             <SectionHeading
               eyebrow="Como funciona"
               title="Um cenário ramificado, montado pelo seu RH."
-              body="Sem programar, sem IA decidindo nada. O RH escreve o caso, as respostas e quanto cada uma vale por competência. A pontuação é determinística: regra e cálculo."
+              body="Sua equipe define o caso, as alternativas possíveis, as competências observadas e os critérios de pontuação. A plataforma calcula conforme as regras publicadas."
             />
             <div className="mt-12 grid gap-4 md:grid-cols-3">
               {[
                 {
                   n: "01",
-                  t: "O RH monta o caso",
-                  b: "Define a situação crítica do cargo, as respostas possíveis e o peso de cada competência.",
+                  t: "Sua equipe estrutura o cenário",
+                  b: "Defina uma situação relevante do cargo, as alternativas possíveis, as competências observadas e os critérios de pontuação.",
                 },
                 {
                   n: "02",
                   t: "O candidato decide",
-                  b: "Na Gupy, ele entra no teste, conversa com um cliente fictício e escolhe como agir.",
+                  b: "A pessoa analisa os cenários e escolhe como agiria em cada etapa, utilizando celular ou computador compatível.",
                 },
                 {
                   n: "03",
-                  t: "O gestor recebe a evidência",
-                  b: "Score por competência e trilha de decisão voltam para dentro da Gupy.",
+                  t: "O RH recebe indicadores",
+                  b: "A plataforma apresenta a pontuação, os indicadores e o caminho de respostas para análise conjunta com as demais etapas.",
                 },
               ].map((step) => (
                 <article key={step.n} className="rounded-lg border border-border bg-card p-6">
@@ -468,7 +470,7 @@ function LandingPage() {
 
         <IconGrid
           eyebrow="Por dentro"
-          title="Feito para decisão de contratação defensável."
+          title="Feito para decisões mais documentadas."
           items={features}
           shaded
         />
@@ -479,13 +481,13 @@ function LandingPage() {
               <div className="grid items-center gap-10 lg:grid-cols-[1.1fr_1fr]">
                 <div>
                   <div className="text-[11px] font-bold uppercase tracking-[0.12em] text-background/70">
-                    Compatível com a API de testes da Gupy
+                    Integração técnica com a API de testes da Gupy
                   </div>
                   <h2 className="mt-3 font-display text-3xl font-extrabold leading-tight md:text-4xl">
-                    A Gupy organiza o funil. A Práxis adiciona a evidência.
+                    A plataforma de recrutamento organiza o funil. A Práxis adiciona indicadores.
                   </h2>
                   <p className="mt-4 max-w-xl text-base leading-relaxed text-background/80">
-                    Arquitetura aderente ao contrato de provedores externos da Gupy: rotas{" "}
+                    Arquitetura preparada para integrações técnicas de testes externos: rotas{" "}
                     <code className="font-mono text-xs">/test</code>,{" "}
                     <code className="font-mono text-xs">/test/candidate</code>,{" "}
                     <code className="font-mono text-xs">/test/result/{"{id}"}</code>, auth Bearer e
@@ -493,8 +495,8 @@ function LandingPage() {
                   </p>
                   <p className="mt-4 inline-flex items-center gap-2 rounded-md border border-white/15 bg-white/5 px-3 py-2 text-xs text-background/75">
                     <Plug className="h-3.5 w-3.5" aria-hidden />
-                    Integração Gupy explícita, sem camada genérica criada antes de existir demanda
-                    real.
+                    Funcionamento sujeito à contratação, habilitação, credenciais, disponibilidade e
+                    regras do serviço de terceiros.
                   </p>
                 </div>
                 <ol className="space-y-2">
@@ -502,7 +504,7 @@ function LandingPage() {
                     'Candidato clica em "Iniciar teste" na Gupy',
                     "Faz o teste na Práxis",
                     "Score e competências voltam à Gupy",
-                    "Gestor decide sem sair da plataforma",
+                    "Equipe responsável analisa os indicadores no ambiente configurado",
                   ].map((item, index) => (
                     <li
                       key={item}
@@ -523,16 +525,16 @@ function LandingPage() {
         <IconGrid
           id="governanca"
           eyebrow="Governança & Auditoria"
-          title="Pronto para o jurídico e para o compliance."
-          body="As mesmas garantias que a sua equipe de governança exigiria de um sistema crítico, sem precisar pedir."
+          title="Recursos para decisões mais documentadas."
+          body="Versionamento, registros operacionais e critérios de pontuação apoiam processos internos de governança, auditoria e revisão."
           items={governance}
         />
 
         <IconGrid
           id="acessibilidade"
           eyebrow="Acessibilidade"
-          title="Teste justa também é teste acessível."
-          body="O Práxis nasce alinhado às WCAG 2.1 AA e à LBI: o candidato com deficiência percorre o mesmo teste, com os mesmos critérios."
+          title="Desenvolvido com práticas de acessibilidade."
+          body="A adequação de cada teste deve considerar o conteúdo criado, as necessidades do candidato e as medidas adotadas pela empresa responsável pelo processo."
           items={accessibility}
           shaded
           columns="four"
@@ -568,16 +570,16 @@ function LandingPage() {
           <div className="mx-auto max-w-6xl px-5">
             <div className="rounded-lg bg-foreground p-10 text-center text-background md:p-16">
               <h2 className="mx-auto max-w-[22ch] font-display text-3xl font-extrabold leading-tight md:text-5xl">
-                Menos entrevista por currículo. Mais decisão por evidência.
+                Acrescente indicadores situacionais ao seu processo seletivo.
               </h2>
               <p className="mx-auto mt-5 max-w-[46ch] text-base text-background/80">
-                Mostre como seus candidatos decidem antes de chamar para a conversa. Agende uma
-                demonstração da Práxis.
+                Conheça como a Práxis pode ajudar sua equipe a estruturar cenários, organizar
+                critérios e analisar respostas com mais contexto e rastreabilidade.
               </p>
               <button
                 type="button"
                 onClick={openDemoEmail}
-                className="mt-8 inline-flex items-center gap-2 rounded-md bg-background px-7 py-3.5 text-sm font-bold text-foreground shadow-lg hover:shadow-white/30"
+                className="mt-8 inline-flex items-center gap-2 rounded-md bg-white px-7 py-3.5 text-sm font-bold text-slate-950 shadow-lg hover:bg-slate-100 hover:shadow-white/30"
               >
                 Agendar demonstração
                 <ArrowRight className="h-4 w-4" aria-hidden />
