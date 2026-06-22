@@ -31,6 +31,9 @@ export const en = {
     integrationGupy: "Gupy Integration - v0.1",
     testCreator: "Situation Test Creator (SJT)",
     situationalAssessment: "Situational Assessment",
+    talentMatch: "Talent Match",
+    settings: "Settings",
+    competencies: "Competencies",
   },
   language: {
     select: "Select language",
@@ -47,6 +50,11 @@ export const en = {
     governance: "Test history and versions",
     lgpd: "Data protection and transparency",
     defensibility: "Why the result is reliable",
+    talentMatch: "Compare candidates",
+    settings: "Company profile and integrations",
+    competencies: "Manage competencies",
+    governanceNav: "History, versions and audit",
+    complianceNav: "LGPD, transparency and technical basis of the result",
   },
   wizard: {
     createTest: "Create new test model",

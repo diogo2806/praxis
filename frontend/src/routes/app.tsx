@@ -29,6 +29,7 @@ import {
   type SimulationVersionStatus,
 } from "@/lib/api/praxis";
 import { useSession } from "@/lib/session";
+import { useLanguage } from "@/lib/language-context";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/app")({
@@ -63,6 +64,7 @@ function Dashboard() {
   const [query, setQuery] = useState("");
   const queryClient = useQueryClient();
   const session = useSession();
+  const { t } = useLanguage();
   const firstName = session.userName.trim().split(/\s+/)[0] || "bem-vindo";
   const simulationsQuery = useQuery({
     queryKey: ["simulations"],
@@ -124,7 +126,7 @@ function Dashboard() {
             className="inline-flex items-center gap-2 rounded-md border border-border bg-card px-3 py-2 text-sm hover:bg-accent"
           >
             <Target className="h-4 w-4" />
-            Talent Match
+            {t.common.talentMatch}
           </Link>
           <Link
             to="/nova/blueprint"
@@ -398,7 +400,7 @@ function Dashboard() {
                                   <Target className="h-3.5 w-3.5" />
                                 </Link>
                               </TooltipTrigger>
-                              <TooltipContent>Talent Match</TooltipContent>
+                              <TooltipContent>{t.common.talentMatch}</TooltipContent>
                             </Tooltip>
                           </div>
                         </td>

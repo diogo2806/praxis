@@ -49,9 +49,9 @@ const getNav = (t: TranslationMap) =>
     },
     {
       to: "/talent-match",
-      label: "Talent Match",
+      label: t.common.talentMatch,
       icon: Target,
-      desc: "Comparar candidatos",
+      desc: t.descriptions.talentMatch,
     },
     { to: "/enviar-link", label: t.common.sendLink, icon: Link2, desc: t.descriptions.sendLink },
   ] as const;
@@ -60,27 +60,27 @@ const getSecondary = (t: TranslationMap) =>
   [
     {
       to: "/configuracoes",
-      label: "Configurações",
+      label: t.common.settings,
       icon: Settings,
-      desc: "Perfil da empresa e integrações",
+      desc: t.descriptions.settings,
     },
     {
       to: "/nova/competencias",
-      label: "Competências",
+      label: t.common.competencies,
       icon: Settings,
-      desc: "Gerenciar competências",
+      desc: t.descriptions.competencies,
     },
     {
       to: "/governanca",
       label: t.common.governance,
       icon: ShieldCheck,
-      desc: "Histórico, versões e auditoria",
+      desc: t.descriptions.governanceNav,
     },
     {
       to: "/compliance",
-      label: "Compliance",
+      label: t.common.compliance,
       icon: ShieldCheck,
-      desc: "LGPD, transparência e base técnica do resultado",
+      desc: t.descriptions.complianceNav,
     },
   ] as const;
 
@@ -230,15 +230,15 @@ function pageLabel(pathname: string, t: TranslationMap) {
   if (pathname === "/monitoramento") return t.common.monitoring;
   if (pathname === "/app") return t.common.dashboard;
   if (pathname.startsWith("/nova")) return t.common.createTest;
-  if (pathname === "/talent-match") return "Talent Match";
+  if (pathname === "/talent-match") return t.common.talentMatch;
   if (pathname === "/enviar-link") return t.common.sendLink;
   if (pathname === "/governanca") return t.common.governance;
-  if (pathname === "/compliance") return "Compliance";
-  if (pathname === "/defensabilidade") return "Defensabilidade";
-  if (pathname === "/lgpd") return "LGPD";
-  if (pathname === "/configuracoes") return "Configurações";
+  if (pathname === "/compliance") return t.common.compliance;
+  if (pathname === "/defensabilidade") return t.common.defensibility;
+  if (pathname === "/lgpd") return t.common.lgpd;
+  if (pathname === "/configuracoes") return t.common.settings;
   if (pathname === "/comecar") return t.common.startHere;
-  return "Workspace";
+  return t.common.workspace;
 }
 
 export function AppShell({ children }: { children: ReactNode }) {
@@ -310,7 +310,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             </SheetContent>
           </Sheet>
           <div className="min-w-0 truncate text-sm text-muted-foreground">
-            Workspace <span className="text-foreground">/ {pageLabel(pathname, t)}</span>
+            {t.common.workspace} <span className="text-foreground">/ {pageLabel(pathname, t)}</span>
           </div>
           <div className="ml-auto flex shrink-0 items-center justify-end gap-2 text-xs">
             <LanguageSelector />

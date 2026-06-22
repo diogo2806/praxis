@@ -5,6 +5,7 @@ import { AppShell } from "@/components/app-shell";
 import { ComplianceScope } from "@/components/compliance-scope";
 import { StateBanner } from "@/components/praxis-ui";
 import { getPrivacyCompliance } from "@/lib/api/praxis";
+import { useLanguage } from "@/lib/language-context";
 
 export const Route = createFileRoute("/lgpd")({
   head: () => ({
@@ -20,6 +21,7 @@ export const Route = createFileRoute("/lgpd")({
 });
 
 function LgpdPage() {
+  const { t } = useLanguage();
   const privacyQuery = useQuery({
     queryKey: ["privacy-compliance"],
     queryFn: getPrivacyCompliance,
@@ -32,7 +34,7 @@ function LgpdPage() {
       <div className="mx-auto max-w-6xl px-2 py-8 sm:px-6">
         <div className="mb-6">
           <div className="text-[11px] font-semibold uppercase tracking-wider text-primary">
-            Compliance
+            {t.common.compliance}
           </div>
           <h1 className="mt-1 font-serif text-3xl leading-tight">LGPD e direitos do candidato</h1>
           <p className="mt-2 max-w-3xl text-sm text-muted-foreground">

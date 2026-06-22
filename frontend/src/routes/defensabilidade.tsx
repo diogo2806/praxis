@@ -22,6 +22,7 @@ import {
   type SimulationVersionDetailResponse,
 } from "@/lib/api/praxis";
 import { DossiePanel } from "./compliance";
+import { useLanguage } from "@/lib/language-context";
 
 const CORTA = 60;
 
@@ -49,6 +50,7 @@ export const Route = createFileRoute("/defensabilidade")({
 });
 
 function DefensabilidadePage() {
+  const { t } = useLanguage();
   const search = Route.useSearch();
   const navigate = useNavigate({ from: "/defensabilidade" });
   const hasContext = Boolean(search.simulationId && search.versionNumber);
@@ -76,7 +78,7 @@ function DefensabilidadePage() {
       <div className="mx-auto max-w-6xl px-2 py-8 sm:px-6">
         <div className="mb-6">
           <div className="text-[11px] font-semibold uppercase tracking-wider text-primary">
-            Compliance
+            {t.common.compliance}
           </div>
           <h1 className="mt-1 font-serif text-3xl leading-tight">Defensabilidade do resultado</h1>
           <p className="mt-2 max-w-3xl text-sm text-muted-foreground">

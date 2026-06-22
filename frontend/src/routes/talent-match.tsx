@@ -28,6 +28,7 @@ import {
   type TalentMatchResponse,
 } from "@/lib/api/praxis";
 import { maturityForStatus } from "@/lib/simulation-meta";
+import { useLanguage } from "@/lib/language-context";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/talent-match")({
@@ -63,6 +64,7 @@ const DECISION_OPTIONS: { value: HumanDecision; label: string }[] = [
 const BLIND_MODE_STORAGE_KEY = "praxis.talent-match.blindMode";
 
 function TalentMatchPage() {
+  const { t } = useLanguage();
   const search = Route.useSearch();
   const hasContext = Boolean(search.simulationId && search.versionNumber);
   const [selectedAttemptIds, setSelectedAttemptIds] = useState<string[]>([]);
@@ -135,7 +137,7 @@ function TalentMatchPage() {
       <ScreenStateStrip blockedReason="sem candidatos concluídos para comparar" />
       <div className="mb-5 flex flex-wrap items-end justify-between gap-4">
         <div>
-          <div className="text-xs uppercase text-primary">Talent Match</div>
+          <div className="text-xs uppercase text-primary">{t.common.talentMatch}</div>
           <h1 className="mt-1 text-3xl font-semibold">Comparativo de candidatos</h1>
           <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
             Evidência para análise: sobreponha até 5 perfis no radar e compare cada competência

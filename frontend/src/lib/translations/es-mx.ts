@@ -31,6 +31,9 @@ export const esMx = {
     integrationGupy: "Integración Gupy - v0.1",
     testCreator: "Creador de Pruebas de Situación (SJT)",
     situationalAssessment: "Evaluación Situacional",
+    talentMatch: "Comparativo de candidatos",
+    settings: "Configuración",
+    competencies: "Competencias",
   },
   language: {
     select: "Seleccionar idioma",
@@ -47,6 +50,11 @@ export const esMx = {
     governance: "Historial y versiones de la prueba",
     lgpd: "Protección de datos y transparencia",
     defensibility: "Por qué el resultado es confiable",
+    talentMatch: "Comparar candidatos",
+    settings: "Perfil de la empresa e integraciones",
+    competencies: "Gestionar competencias",
+    governanceNav: "Historial, versiones y auditoría",
+    complianceNav: "LGPD, transparencia y base técnica del resultado",
   },
   wizard: {
     createTest: "Crear nuevo modelo de prueba",
