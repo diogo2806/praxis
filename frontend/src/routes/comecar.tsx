@@ -93,11 +93,11 @@ const faq = [
   },
   {
     q: "Os resultados são consistentes?",
-    a: "A nota vem de regras claras, aplicadas da mesma forma a cada pessoa, e não de uma inteligência artificial decidindo sozinha. Sempre dá para ver de onde veio cada ponto. A adequação dos critérios é de responsabilidade de quem cria o teste.",
+    a: "A nota vem de regras claras, aplicadas da mesma forma a cada pessoa, e não de uma inteligência artificial decidindo sozinha. É possível ver de onde veio cada ponto. A adequação dos critérios é de responsabilidade de quem cria o teste.",
   },
   {
     q: "Usa inteligência artificial para julgar a pessoa?",
-    a: "Não. Nenhuma IA decide a aprovação. O cálculo segue critérios definidos antes do teste, e um erro grave sempre leva a uma revisão feita por uma pessoa.",
+    a: "Não. Nenhuma IA decide a aprovação. O cálculo segue critérios definidos antes do teste, e um erro grave leva a uma revisão feita por uma pessoa.",
   },
   {
     q: "Funciona no celular?",
@@ -239,7 +239,7 @@ function GettingStartedPage() {
             <p className="text-sm leading-relaxed text-muted-foreground">
               <strong className="text-foreground">Sem IA julgando o candidato.</strong> Os
               resultados vêm de regras claras, definidas antes do teste, e não de decisões
-              automáticas. Você sempre pode ver o porquê de cada nota.
+              automáticas. É possível ver o porquê de cada nota.
             </p>
           </div>
         </section>

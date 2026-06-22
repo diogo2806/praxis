@@ -168,7 +168,7 @@ function TalentMatchPage() {
           <StateBanner tone="info" title="Evidência para análise — a decisão é sua">
             Os números são recomendação de apoio, não um veredito automático. A Práxis não aprova
             nem reprova candidatos: a decisão final é registrada por uma pessoa, e um erro crítico
-            sempre aciona revisão humana.
+            aciona revisão humana.
           </StateBanner>
           {!isVersionPublished && (
             <StateBanner tone="warn" title="Versão não disponível para comparação">

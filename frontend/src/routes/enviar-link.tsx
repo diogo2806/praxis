@@ -557,7 +557,7 @@ function ShareStep({
           </div>
 
           <StateBanner tone="info" title="Um link por candidato">
-            Se você gerar o link de novo com o mesmo e-mail e o mesmo teste, o link será sempre o
+            Se você gerar o link de novo com o mesmo e-mail e o mesmo teste, o link retornado será o
             mesmo. Pode reenviar sem medo de duplicar.
           </StateBanner>
         </aside>

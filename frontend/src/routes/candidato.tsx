@@ -639,7 +639,7 @@ function HealthConsentGate({
             />
             <span className="text-sm">
               Li e concordo que a empresa responsável trate os dados sensíveis de saúde informados
-              por mim nesta atividade, exclusivamente para as finalidades educativas acima.
+              por mim nesta atividade, para as finalidades educativas descritas acima.
             </span>
           </label>
           <label className={checkboxRowClass}>

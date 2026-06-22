@@ -775,7 +775,7 @@ const landingMarkup = `<header class="nav" id="nav">
           </div>
           <div class="feat">
             <h3><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a9 9 0 1 0 9 9M21 3l-9 9"/></svg></span>Decide, não reprova</h3>
-            <p>Erro crítico aciona revisão humana. A decisão final é sempre de uma pessoa.</p>
+            <p>Erro crítico aciona revisão humana. A decisão final cabe a uma pessoa.</p>
           </div>
           <div class="feat">
             <h3><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16v14H4zM4 9h16M9 9v10"/></svg></span>Biblioteca de cenários</h3>
@@ -1045,11 +1045,11 @@ turno-3 ▸ <span class="ok">C</span>  +2 Comunicação
         </div>
         <div class="qa">
           <button aria-expanded="false"><span class="q">O participante vê pesos, gabarito ou marcadores críticos?</span><span class="ic"></span></button>
-          <div class="ans"><p>Nunca. A visão do participante é limpa. Pesos, critérios e marcadores ficam restritos ao painel admin e à trilha de auditoria.</p></div>
+          <div class="ans"><p>Não. A visão do participante é limpa. Pesos, critérios e marcadores ficam restritos ao painel admin e à trilha de auditoria.</p></div>
         </div>
         <div class="qa">
           <button aria-expanded="false"><span class="q">A Práxis reprova ou elimina alguém sozinha?</span><span class="ic"></span></button>
-          <div class="ans"><p>Não. A Práxis recomenda, nunca elimina automaticamente. Erro crítico aciona revisão humana — a decisão final é sempre de uma pessoa.</p></div>
+          <div class="ans"><p>Não. A Práxis recomenda, não elimina automaticamente. Erro crítico aciona revisão humana — a decisão final cabe a uma pessoa.</p></div>
         </div>
         <div class="qa">
           <button aria-expanded="false"><span class="q">Funciona para áreas fora de recrutamento?</span><span class="ic"></span></button>

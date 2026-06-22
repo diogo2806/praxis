@@ -270,21 +270,21 @@ export function GlobalProductStateBar({
 const globalErrorItems = [
   {
     title: "Integração Gupy",
-    description: "Sempre aparece como banner de ação, com diagnóstico e tentativa de reenvio.",
+    description: "Aparece como banner de ação, com diagnóstico e tentativa de reenvio.",
     action: "Abrir diagnóstico",
     Icon: ServerCrash,
     tone: "danger",
   },
   {
     title: "Carregamento do teste",
-    description: "Fallback único: skeleton, recarregar e manter rascunho local visível.",
+    description: "Recuperação: skeleton, recarregar e manter rascunho local visível.",
     action: "Recarregar",
     Icon: Loader2,
     tone: "warn",
   },
   {
     title: "Publicação",
-    description: "Falha nunca some: permanece no topo até publicar, salvar rascunho ou corrigir.",
+    description: "Falha permanece no topo até publicar, salvar rascunho ou corrigir.",
     action: "Salvar rascunho",
     Icon: UploadCloud,
     tone: "info",
@@ -331,7 +331,7 @@ export function NextStepContract({
     <section className="rounded-md border border-border bg-card p-4">
       <div className="flex items-center gap-2 text-sm font-semibold">
         <Route className="h-4 w-4 text-primary" />
-        Próximo passo sempre
+        Próximo passo
       </div>
       <div className="mt-3 grid gap-2 text-xs md:grid-cols-2">
         <div className="rounded-md border border-primary/25 bg-primary/10 p-3 text-primary">
