@@ -459,6 +459,13 @@ function FocusedCandidateExperience({ token }: { token: string }) {
             <HumanReviewRequest attemptId={token} highContrast={highContrast} />
           </div>
         )}
+
+        <p className="mt-6 border-t border-current pt-4 text-center text-xs leading-relaxed opacity-50">
+          Seus dados são tratados exclusivamente para fins desta avaliação, conforme a LGPD. A
+          pontuação segue critérios definidos antes do teste, sem IA julgando você. A decisão sobre
+          a sua candidatura é tomada por uma pessoa, não por um sistema automático, e você pode
+          solicitar revisão humana do resultado.
+        </p>
       </section>
     </main>
   );

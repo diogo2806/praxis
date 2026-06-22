@@ -85,17 +85,17 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Práxis — Teste de candidatos de forma justa e clara" },
+      { title: "Práxis — Avaliação de candidatos transparente e auditável" },
       {
         name: "description",
         content:
-          "Práxis é uma plataforma para avaliar candidatos com situações reais do trabalho. Resultados justos e transparentes, sem inteligência artificial decidindo. Veja como funciona.",
+          "Práxis é uma plataforma para avaliar candidatos com cenários realistas do trabalho. Resultados transparentes e auditáveis, sem inteligência artificial decidindo. Veja como funciona.",
       },
       { property: "og:title", content: "Práxis — Teste de candidatos" },
       {
         property: "og:description",
         content:
-          "Avalie candidatos com situações reais do trabalho. Resultados justos e transparentes, sem IA decidindo sozinha.",
+          "Avalie candidatos com cenários realistas do trabalho. Resultados transparentes e auditáveis, sem IA decidindo sozinha.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
