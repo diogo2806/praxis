@@ -1,10 +1,16 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+﻿import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { AppShell } from "@/components/app-shell";
 import { EmptyState, ScreenStateStrip, StateBanner, StatusBadge } from "@/components/praxis-ui";
 import { WizardStepper } from "@/components/wizard-stepper";
 import {
+  acceptHealthUseTerm,
+  acceptResponsibilityTerm,
+  getHealthUseAcceptance,
+  getHealthUseTerm,
+  getResponsibilityAcceptance,
+  getResponsibilityTerm,
   listSimulations,
   listSimulationVersionAuditEvents,
   publishSimulationVersion,
@@ -27,8 +33,8 @@ export const Route = createFileRoute("/nova/governanca")({
   }),
   head: () => ({
     meta: [
-      { title: "Governança & Aprovações - Praxis" },
-      { name: "description", content: "Publicação validada do teste." },
+      { title: "Governan├ºa & Aprova├º├Áes - Praxis" },
+      { name: "description", content: "Publica├º├úo validada do teste." },
     ],
   }),
   component: Page,
@@ -46,9 +52,9 @@ const transitionCopy: Record<
   { title: string; description: string; cta: string }
 > = {
   publish: {
-    title: "Colocar versão no ar?",
+    title: "Colocar vers├úo no ar?",
     description:
-      "Ao entrar no ar, a versão fica protegida contra alterações. Bloqueios críticos continuam sem ajuste manual.",
+      "Ao entrar no ar, a vers├úo fica protegida contra altera├º├Áes. Bloqueios cr├¡ticos continuam sem ajuste manual.",
     cta: "Publicar",
   },
 };
@@ -84,52 +90,91 @@ function Page() {
     },
   });
 
+  const termQuery = useQuery({
+    queryKey: ["responsibility-term"],
+    queryFn: getResponsibilityTerm,
+  });
+  const acceptanceQuery = useQuery({
+    queryKey: ["responsibility-acceptance"],
+    queryFn: getResponsibilityAcceptance,
+  });
+  const acceptMutation = useMutation({
+    mutationFn: () => acceptResponsibilityTerm(termQuery.data!.version),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["responsibility-acceptance"] });
+    },
+  });
+  const termAccepted = acceptanceQuery.data?.accepted ?? false;
+
+  // Termo de uso na vertical de sa├║de (Minuta C). A publica├º├úo s├│ o exige quando o tenant opera
+  // nessa vertical: o backend bloqueia com 409, e ent├úo mostramos o aceite para liberar a republica├º├úo.
+  const healthTermQuery = useQuery({
+    queryKey: ["health-use-term"],
+    queryFn: getHealthUseTerm,
+  });
+  const healthAcceptanceQuery = useQuery({
+    queryKey: ["health-use-acceptance"],
+    queryFn: getHealthUseAcceptance,
+  });
+  const healthAcceptMutation = useMutation({
+    mutationFn: () => acceptHealthUseTerm(healthTermQuery.data!.version),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["health-use-acceptance"] });
+    },
+  });
+  const healthTermAccepted = healthAcceptanceQuery.data?.accepted ?? false;
+  const publishBlockedByHealthTerm =
+    !healthTermAccepted &&
+    transitionMutation.isError &&
+    transitionMutation.error instanceof Error &&
+    transitionMutation.error.message.toLowerCase().includes("vertical de sa├║de");
+
   const visibleStatus = currentStatus ?? inferStatusFromEvents(auditQuery.data);
 
   return (
     <AppShell>
       <WizardStepper current="publicacao" />
-      <ScreenStateStrip blockedReason="validação automática pendente" />
+      <ScreenStateStrip blockedReason="valida├º├úo autom├ítica pendente" />
       <div className="mb-6">
         <div className="text-xs uppercase tracking-[0.2em] text-primary">Passo 4</div>
-        <h1 className="mt-1 font-display text-3xl">Publicação para colocar no ar</h1>
+        <h1 className="mt-1 font-display text-3xl">Publica├º├úo para colocar no ar</h1>
         <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
-          Antes de entrar no ar, o teste passa pela validação automática e pelo preflight.
+          Antes de entrar no ar, o teste passa pela valida├º├úo autom├ítica e pelo preflight.
         </p>
       </div>
 
       {hasGovernanceParams && auditQuery.isLoading && (
-        <StateBanner tone="info" title="Governança conectada">
+        <StateBanner tone="info" title="Governan├ºa conectada">
           Buscando registro de auditoria do teste {search.simulationId} v{search.versionNumber}.
         </StateBanner>
       )}
 
       {hasGovernanceParams && auditQuery.isError && (
-        <StateBanner tone="danger" title="Não foi possível carregar a governança">
+        <StateBanner tone="danger" title="N├úo foi poss├¡vel carregar a governan├ºa">
           {auditQuery.error instanceof Error
             ? auditQuery.error.message
-            : "Verifique se o servidor está rodando e se a versão existe."}
+            : "Verifique se o servidor est├í rodando e se a vers├úo existe."}
         </StateBanner>
       )}
 
       {transitionMutation.isSuccess && (
-        <StateBanner tone="ok" title="Transição aplicada">
+        <StateBanner tone="ok" title="Transi├º├úo aplicada">
           Estado atual retornado pelo sistema: {statusLabel(transitionMutation.data.status)}.
         </StateBanner>
       )}
 
       {transitionMutation.isError && (
-        <StateBanner tone="danger" title="Transição recusada">
+        <StateBanner tone="danger" title="Transi├º├úo recusada">
           {transitionMutation.error instanceof Error
-            ? transitionMutation.error.message.replace("publicacao", "publicação")
-            : "O sistema recusou a transição de estado."}
+            ? transitionMutation.error.message.replace("publicacao", "publica├º├úo")
+            : "O sistema recusou a transi├º├úo de estado."}
         </StateBanner>
       )}
 
       {!hasGovernanceParams ? (
         <EmptyState
-          title="Selecione uma versão para governança"
-          description="As transições de estado e o registro de auditoria agora dependem do servidor."
+          title="Selecione uma vers├úo para governan├ºa"
+          description="As transi├º├Áes de estado e o registro de auditoria agora dependem do servidor."
           actions={
             <SimulationLinks
               loading={simulationsQuery.isLoading}
@@ -166,24 +211,51 @@ function Page() {
             )}
           </ol>
 
+          <ResponsibilityTermGate
+            text={termQuery.data?.text ?? ""}
+            accepted={termAccepted}
+            acceptedAt={acceptanceQuery.data?.acceptedAt ?? null}
+            accepting={acceptMutation.isPending}
+            failed={acceptMutation.isError}
+            canAccept={Boolean(termQuery.data)}
+            onAccept={() => acceptMutation.mutate()}
+          />
+
+          {(publishBlockedByHealthTerm || healthAcceptMutation.isSuccess) && (
+            <HealthUseTermGate
+              text={healthTermQuery.data?.text ?? ""}
+              accepted={healthTermAccepted}
+              acceptedAt={healthAcceptanceQuery.data?.acceptedAt ?? null}
+              accepting={healthAcceptMutation.isPending}
+              failed={healthAcceptMutation.isError}
+              canAccept={Boolean(healthTermQuery.data)}
+              onAccept={() => healthAcceptMutation.mutate()}
+            />
+          )}
+
           <div className="mt-5 grid gap-2 md:grid-cols-1">
             <TransitionButton
               label="Publicar"
-              disabled={!hasGovernanceParams}
+              disabled={!hasGovernanceParams || !termAccepted}
               primary
               onClick={() => setPendingAction("publish")}
             />
+            {!termAccepted && (
+              <p className="text-xs text-muted-foreground">
+                Aceite o termo de responsabilidade acima para liberar a publica├º├úo.
+              </p>
+            )}
           </div>
         </div>
       )}
 
       <div className="mt-6 rounded-xl border border-border bg-card p-5">
-        <h3 className="text-sm font-semibold">Trilha cronológica de auditoria</h3>
+        <h3 className="text-sm font-semibold">Registro de auditoria conectado</h3>
         {hasGovernanceParams ? (
           <AuditLog events={auditQuery.data ?? []} loading={auditQuery.isLoading} />
         ) : (
           <div className="mt-4 rounded-md border border-border bg-background p-4 text-sm text-muted-foreground">
-            Selecione uma versão para carregar eventos reais.
+            Selecione uma vers├úo para carregar eventos reais.
           </div>
         )}
       </div>
@@ -201,7 +273,7 @@ function Page() {
           search={{ simulationId: search.simulationId, versionNumber: search.versionNumber }}
           className="rounded-md bg-primary px-5 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
         >
-          Gupy: verificação
+          Gupy: verifica├º├úo
         </Link>
       </div>
 
@@ -233,6 +305,102 @@ function Page() {
         </div>
       )}
     </AppShell>
+  );
+}
+
+function ResponsibilityTermGate({
+  text,
+  accepted,
+  acceptedAt,
+  accepting,
+  failed,
+  canAccept,
+  onAccept,
+}: {
+  text: string;
+  accepted: boolean;
+  acceptedAt: string | null;
+  accepting: boolean;
+  failed: boolean;
+  canAccept: boolean;
+  onAccept: () => void;
+}) {
+  return (
+    <div className="mt-5 rounded-md border border-border bg-background p-4">
+      <h4 className="text-sm font-semibold">Termo de responsabilidade</h4>
+      <p className="mt-2 text-sm text-muted-foreground">{text}</p>
+      {accepted ? (
+        <p className="mt-3 text-xs font-medium text-success">
+          Aceito{acceptedAt ? ` em ${formatDateTime(acceptedAt)}` : ""}.
+        </p>
+      ) : (
+        <div className="mt-3">
+          <button
+            type="button"
+            disabled={accepting || !canAccept}
+            onClick={onAccept}
+            className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {accepting ? "Registrando..." : "Li e aceito a responsabilidade"}
+          </button>
+          {failed && (
+            <p className="mt-2 text-xs text-danger">
+              N├úo foi poss├¡vel registrar o aceite. Tente novamente.
+            </p>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function HealthUseTermGate({
+  text,
+  accepted,
+  acceptedAt,
+  accepting,
+  failed,
+  canAccept,
+  onAccept,
+}: {
+  text: string;
+  accepted: boolean;
+  acceptedAt: string | null;
+  accepting: boolean;
+  failed: boolean;
+  canAccept: boolean;
+  onAccept: () => void;
+}) {
+  return (
+    <div className="mt-4 rounded-md border border-amber-300 bg-amber-50 p-4">
+      <h4 className="text-sm font-semibold text-amber-900">Termo de uso na vertical de sa├║de</h4>
+      <p className="mt-1 text-xs text-amber-900/80">
+        Esta empresa opera na vertical de sa├║de. Para publicar, aceite as condi├º├Áes de uso educativo
+        e tratamento de dado sens├¡vel (LGPD).
+      </p>
+      <p className="mt-2 text-sm text-muted-foreground">{text}</p>
+      {accepted ? (
+        <p className="mt-3 text-xs font-medium text-success">
+          Aceito{acceptedAt ? ` em ${formatDateTime(acceptedAt)}` : ""}. Voc├¬ j├í pode publicar.
+        </p>
+      ) : (
+        <div className="mt-3">
+          <button
+            type="button"
+            disabled={accepting || !canAccept}
+            onClick={onAccept}
+            className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {accepting ? "Registrando..." : "Li e aceito o termo de uso em sa├║de"}
+          </button>
+          {failed && (
+            <p className="mt-2 text-xs text-danger">
+              N├úo foi poss├¡vel registrar o aceite. Tente novamente.
+            </p>
+          )}
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -276,7 +444,7 @@ function AuditLog({ events, loading }: { events: AuditEventResponse[]; loading: 
   if (events.length === 0) {
     return (
       <div className="mt-4 rounded-md border border-border bg-background p-4 text-sm text-muted-foreground">
-        Nenhum evento de auditoria registrado para esta versão.
+        Nenhum evento de auditoria registrado para esta vers├úo.
       </div>
     );
   }

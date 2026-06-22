@@ -1,10 +1,11 @@
-package br.com.iforce.praxis.gupy.service;
+﻿package br.com.iforce.praxis.gupy.service;
 
 import br.com.iforce.praxis.audit.model.AuditEventType;
 import br.com.iforce.praxis.audit.service.AuditEventService;
 import br.com.iforce.praxis.audit.service.AuditMetadata;
 import br.com.iforce.praxis.candidate.dto.CandidateAttemptMonitoringResponse;
 import br.com.iforce.praxis.candidate.dto.CandidateLinkResponse;
+import br.com.iforce.praxis.candidate.service.BlindMasking;
 import br.com.iforce.praxis.candidate.dto.CreateCandidateLinkRequest;
 import br.com.iforce.praxis.candidate.dto.CreateCandidateLinkResponse;
 import br.com.iforce.praxis.candidate.dto.EtapaAtualResponse;
@@ -13,10 +14,12 @@ import br.com.iforce.praxis.candidate.dto.ParticipacaoResponse.ProgressoResponse
 import br.com.iforce.praxis.candidate.dto.RegistrarRespostaRequest;
 import br.com.iforce.praxis.candidate.dto.RegistrarRespostaResponse;
 import br.com.iforce.praxis.config.PraxisProperties;
+import br.com.iforce.praxis.auth.service.HealthVerticalService;
 import br.com.iforce.praxis.auth.service.JwtService;
 import br.com.iforce.praxis.gupy.dto.CreateCandidateRequest;
 import br.com.iforce.praxis.gupy.dto.CreateCandidateResponse;
 import br.com.iforce.praxis.gupy.dto.TestResultResponse;
+import br.com.iforce.praxis.shared.integration.IntegrationTenantContext;
 import br.com.iforce.praxis.gupy.model.AttemptAnswer;
 import br.com.iforce.praxis.gupy.model.AttemptStatus;
 import br.com.iforce.praxis.gupy.model.CandidateAttempt;
@@ -32,7 +35,6 @@ import br.com.iforce.praxis.gupy.persistence.repository.CandidateAttemptReposito
 import br.com.iforce.praxis.shared.outbox.service.OutboxService;
 import br.com.iforce.praxis.shared.security.TenantSecurity;
 import org.springframework.dao.DataIntegrityViolationException;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -53,10 +55,10 @@ import java.util.Set;
 import java.util.UUID;
 
 /**
- * Orquestra o ciclo de vida da tentativa do candidato: idempotência na criação, persistência,
- * disparo de entrega à Gupy e montagem das respostas REST. As transições de estado ficam em
- * {@link AttemptStateMachine}, o mapeamento entidade↔domínio em {@link CandidateAttemptMapper} e o
- * cálculo de score em {@link ResultScoringService}.
+ * Orquestra o ciclo de vida da tentativa do candidato: idempot├¬ncia na cria├º├úo, persist├¬ncia,
+ * disparo de entrega ├á Gupy e montagem das respostas REST. As transi├º├Áes de estado ficam em
+ * {@link AttemptStateMachine}, o mapeamento entidadeÔåödom├¡nio em {@link CandidateAttemptMapper} e o
+ * c├ílculo de score em {@link ResultScoringService}.
  */
 @Service
 public class CandidateAttemptService {
@@ -78,7 +80,7 @@ public class CandidateAttemptService {
     private final CandidateAttemptMapper candidateAttemptMapper;
     private final AttemptStateMachine attemptStateMachine;
     private final GupyTestResultMapper gupyTestResultMapper;
-    private final boolean securityEnabled;
+    private final HealthVerticalService healthVerticalService;
 
     public CandidateAttemptService(
             CandidateAttemptRepository candidateAttemptRepository,
@@ -91,7 +93,7 @@ public class CandidateAttemptService {
             CandidateAttemptMapper candidateAttemptMapper,
             AttemptStateMachine attemptStateMachine,
             GupyTestResultMapper gupyTestResultMapper,
-            @Value("${praxis.security.enabled:true}") boolean securityEnabled
+            HealthVerticalService healthVerticalService
     ) {
         this.candidateAttemptRepository = candidateAttemptRepository;
         this.auditEventService = auditEventService;
@@ -103,19 +105,19 @@ public class CandidateAttemptService {
         this.candidateAttemptMapper = candidateAttemptMapper;
         this.attemptStateMachine = attemptStateMachine;
         this.gupyTestResultMapper = gupyTestResultMapper;
-        this.securityEnabled = securityEnabled;
+        this.healthVerticalService = healthVerticalService;
     }
 
     @Transactional
     public CreateCandidateResponse createOrReuse(
             CreateCandidateRequest request,
-            GupyAuthService.GupyTenantContext tenantContext
+            IntegrationTenantContext tenantContext
     ) {
         assertCompanyMatchesToken(request.companyId(), tenantContext);
         String tenantId = tenantContext.tenantId();
 
         PublishedSimulation publishedSimulation = simulationCatalogService.findPublishedById(tenantId, request.testId())
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Teste publicado não encontrado."));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Teste publicado n├úo encontrado."));
 
         String idempotencyKey = tenantId + "|" + tenantContext.companyId() + "|" + request.documentId() + "|" + request.testId();
         CandidateAttemptEntity candidateAttemptEntity = candidateAttemptRepository
@@ -134,7 +136,7 @@ public class CandidateAttemptService {
 
         PublishedSimulation publishedSimulation = simulationCatalogService
                 .findPublishedById(tenantId, request.simulationId())
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Simulação publicada não encontrada."));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Simula├º├úo publicada n├úo encontrada."));
 
         String idempotencyKey = tenantId + "|company|" + request.candidateEmail().trim() + "|" + request.simulationId();
 
@@ -162,7 +164,7 @@ public class CandidateAttemptService {
                             false,
                             ReliabilityLevel.NORMAL,
                             normalizeAccommodationMultiplier(request.accommodationTimeMultiplier()),
-                            "Resultado ainda não finalizado.",
+                            "Resultado ainda n├úo finalizado.",
                             Instant.now(),
                             null,
                             null
@@ -194,11 +196,11 @@ public class CandidateAttemptService {
     }
 
     @Transactional(readOnly = true)
-    public List<CandidateLinkResponse> listCompanyLinks() {
+    public List<CandidateLinkResponse> listCompanyLinks(boolean blind) {
         String tenantId = TenantSecurity.requiredTenant();
         return candidateAttemptRepository.findByTenantIdOrderByCreatedAtDesc(tenantId, PageRequest.of(0, 200))
                 .stream()
-                .map(this::toCandidateLinkResponse)
+                .map(entity -> toCandidateLinkResponse(entity, blind))
                 .toList();
     }
 
@@ -216,13 +218,16 @@ public class CandidateAttemptService {
                 .toList();
     }
 
-    private CandidateLinkResponse toCandidateLinkResponse(CandidateAttemptEntity entity) {
+    private CandidateLinkResponse toCandidateLinkResponse(CandidateAttemptEntity entity, boolean blind) {
         PublishedSimulation simulation = findSimulation(entity);
+        // Modo cego: o backend n├úo envia nome/e-mail (defesa em profundidade ÔÇö n├úo basta mascarar no cliente).
+        String candidateName = blind ? BlindMasking.maskedName(entity.getId()) : entity.getCandidateName();
+        String candidateEmail = blind ? null : entity.getCandidateEmail();
         return new CandidateLinkResponse(
                 entity.getId(),
                 candidatePageUrl(entity),
-                entity.getCandidateName(),
-                entity.getCandidateEmail(),
+                candidateName,
+                candidateEmail,
                 entity.getSimulationId(),
                 simulation.name(),
                 entity.getStatus(),
@@ -292,7 +297,7 @@ public class CandidateAttemptService {
                 tenantId,
                 candidateAttemptEntity.getId(),
                 AuditEventType.ATTEMPT_CREATED,
-                "Tentativa criada pela integração Gupy.",
+                "Tentativa criada pela integra├º├úo Gupy.",
                 auditMetadata.of(
                         "resultId", candidateAttemptEntity.getResultId(),
                         "testId", request.testId(),
@@ -328,7 +333,8 @@ public class CandidateAttemptService {
                 savedAttempt.status() == AttemptStatus.COMPLETED,
                 suggestedFrontendAction(savedAttempt.status()),
                 progressFor(savedAttempt, simulation, currentNode),
-                candidateAttemptMapper.toEtapaAtualResponse(currentNode, savedAttempt.accommodationTimeMultiplier())
+                candidateAttemptMapper.toEtapaAtualResponse(currentNode, savedAttempt.accommodationTimeMultiplier()),
+                healthVerticalService.isHealthVertical(candidateAttemptEntity.getTenantId())
         );
     }
 
@@ -339,7 +345,7 @@ public class CandidateAttemptService {
         String attemptId = resolveAttemptId(attemptToken);
         CandidateAttemptEntity candidateAttemptEntity = candidateAttemptRepository
                 .findByTenantIdAndIdForUpdate(tenantId, attemptId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Tentativa não encontrada."));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Tentativa n├úo encontrada."));
         CandidateAttempt originalAttempt = candidateAttemptMapper.toDomain(candidateAttemptEntity);
         AttemptStatus originalStatus = originalAttempt.status();
         CandidateAttempt attempt = attemptStateMachine.expireIfNeeded(originalAttempt);
@@ -364,10 +370,10 @@ public class CandidateAttemptService {
         }
 
         ScenarioNode currentNode = findCurrentNode(attempt, simulation)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.CONFLICT, "Não há etapa pendente para esta tentativa."));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.CONFLICT, "N├úo h├í etapa pendente para esta tentativa."));
         String etapaId = request.etapaId();
         if (etapaId != null && !etapaId.isBlank() && !currentNode.id().equals(etapaId)) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "A etapa informada não é a etapa atual da participação.");
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "A etapa informada n├úo ├® a etapa atual da participa├º├úo.");
         }
 
         AttemptAnswer answer = buildAnswer(attempt, simulation, currentNode, request, receivedAt);
@@ -400,35 +406,48 @@ public class CandidateAttemptService {
         );
     }
 
+    public record AttemptWithSimulation(CandidateAttempt attempt, PublishedSimulation simulation) {
+    }
+
     @Transactional(readOnly = true)
-    public TestResultResponse findResult(
+    public AttemptWithSimulation findAttemptResult(
             String resultId,
             String companyId,
-            GupyAuthService.GupyTenantContext tenantContext
+            IntegrationTenantContext tenantContext
     ) {
         if (companyId == null || companyId.isBlank()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "company_id é obrigatório.");
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "company_id ├® obrigat├│rio.");
         }
 
         assertCompanyMatchesToken(companyId, tenantContext);
         CandidateAttemptEntity candidateAttemptEntity = candidateAttemptRepository
                 .findByTenantIdAndResultId(tenantContext.tenantId(), resultId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Resultado de teste não encontrado."));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Resultado de teste n├úo encontrado."));
         if (!companyId.trim().equals(candidateAttemptEntity.getCompanyId())) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Resultado de teste não encontrado.");
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Resultado de teste n├úo encontrado.");
         }
 
         CandidateAttempt attempt = candidateAttemptMapper.toDomain(candidateAttemptEntity);
         PublishedSimulation simulation = findSimulation(attempt);
-        return gupyTestResultMapper.toResponse(attempt, simulation);
+        return new AttemptWithSimulation(attempt, simulation);
     }
 
-    private void assertCompanyMatchesToken(String companyId, GupyAuthService.GupyTenantContext tenantContext) {
+    @Transactional(readOnly = true)
+    public TestResultResponse findResult(
+            String resultId,
+            String companyId,
+            IntegrationTenantContext tenantContext
+    ) {
+        AttemptWithSimulation result = findAttemptResult(resultId, companyId, tenantContext);
+        return gupyTestResultMapper.toResponse(result.attempt(), result.simulation());
+    }
+
+    private void assertCompanyMatchesToken(String companyId, IntegrationTenantContext tenantContext) {
         if (companyId == null || companyId.isBlank()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "company_id é obrigatório.");
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "company_id ├® obrigat├│rio.");
         }
         if (!companyId.trim().equals(tenantContext.companyId())) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "company_id não pertence ao token informado.");
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "company_id n├úo pertence ao token informado.");
         }
     }
 
@@ -452,7 +471,7 @@ public class CandidateAttemptService {
                 ? existingAnswer.timedOut()
                 : !existingAnswer.timedOut() && internalOptionId != null && internalOptionId.equals(existingAnswer.optionId());
         if (!sameAnswer) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "Esta etapa já tem uma resposta final confirmada.");
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Esta etapa j├í tem uma resposta final confirmada.");
         }
 
         ScenarioNode currentNode = attempt.status() == AttemptStatus.COMPLETED
@@ -558,7 +577,7 @@ public class CandidateAttemptService {
         if (!isLastRecordedAnswer(attempt, existingAnswer)) {
             throw new ResponseStatusException(
                     HttpStatus.CONFLICT,
-                    "Esta etapa já direcionou etapas seguintes e não pode mais ser conciliada."
+                    "Esta etapa j├í direcionou etapas seguintes e n├úo pode mais ser conciliada."
             );
         }
 
@@ -627,15 +646,12 @@ public class CandidateAttemptService {
         Instant nodeStartedAt = resolveNodeStartedAt(attempt, simulation, currentNode);
         Instant clientAnsweredAt = request.respondidaEm();
         Instant answeredAt = clientAnsweredAt == null ? receivedAt : clientAnsweredAt;
-        if (clientAnsweredAt == null && answeredAt.isBefore(nodeStartedAt)) {
-            answeredAt = nodeStartedAt;
-        }
 
         if (answeredAt.isBefore(nodeStartedAt)) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "O horário da resposta é anterior ao início da etapa.");
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "O hor├írio da resposta ├® anterior ao in├¡cio da etapa.");
         }
         if (clientAnsweredAt != null && clientAnsweredAt.isAfter(receivedAt.plusSeconds(CLIENT_CLOCK_FUTURE_SKEW_SECONDS))) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "O horário da resposta está no futuro.");
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "O hor├írio da resposta est├í no futuro.");
         }
 
         Integer timeLimitSeconds = accommodatedTimeLimitSeconds(currentNode, attempt);
@@ -656,12 +672,12 @@ public class CandidateAttemptService {
                     )
             );
             if (receivedAt.isAfter(trustedClientArrivalDeadline)) {
-                throw new ResponseStatusException(HttpStatus.CONFLICT, "Resposta chegou após a janela de tolerância da etapa.");
+                throw new ResponseStatusException(HttpStatus.CONFLICT, "Resposta chegou ap├│s a janela de toler├óncia da etapa.");
             }
             return answeredAt;
         }
         if (receivedAt.isAfter(serverArrivalDeadline)) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "Resposta chegou após a janela de tolerância da etapa.");
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Resposta chegou ap├│s a janela de toler├óncia da etapa.");
         }
         if (clientAnsweredAt == null && answeredAt.isAfter(serverArrivalDeadline)) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Tempo da etapa esgotado.");
@@ -720,7 +736,7 @@ public class CandidateAttemptService {
         return node.options().stream()
                 .filter(option -> option.id().equals(optionId))
                 .findFirst()
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Resposta inválida para a etapa atual."));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Resposta inv├ílida para a etapa atual."));
     }
 
     private void auditAnswerSubmission(String tenantId, String attemptId, AttemptAnswer answer, CandidateAttempt updatedAttempt) {
@@ -737,7 +753,7 @@ public class CandidateAttemptService {
                     tenantId,
                     attemptId,
                     AuditEventType.ATTEMPT_COMPLETED,
-                    "Tentativa finalizada com pontuação calculada.",
+                    "Tentativa finalizada com pontua├º├úo calculada.",
                     auditMetadata.of(
                             "score", updatedAttempt.score(),
                             "humanReviewRequired", updatedAttempt.humanReviewRequired()
@@ -791,7 +807,7 @@ public class CandidateAttemptService {
     private void publishAttemptEngagementEvent(CandidateAttempt attempt, String eventType, Instant occurredAt) {
         CandidateAttemptEntity candidateAttemptEntity = candidateAttemptRepository
                 .findByTenantIdAndId(attempt.tenantId(), attempt.id())
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Tentativa não encontrada."));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Tentativa n├úo encontrada."));
         if (candidateAttemptEntity.getResultWebhookUrl() == null || candidateAttemptEntity.getResultWebhookUrl().isBlank()) {
             return;
         }
@@ -833,43 +849,40 @@ public class CandidateAttemptService {
     private PublishedSimulation findSimulation(CandidateAttempt attempt) {
         if (attempt.simulationVersionId() != null) {
             return simulationCatalogService.findByVersionId(attempt.simulationVersionId())
-                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Versão da simulação não encontrada."));
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Vers├úo da simula├º├úo n├úo encontrada."));
         }
 
         return simulationCatalogService.findPublishedById(attempt.tenantId(), attempt.simulationId())
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Simulação publicada não encontrada."));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Simula├º├úo publicada n├úo encontrada."));
     }
 
     private PublishedSimulation findSimulation(CandidateAttemptEntity candidateAttemptEntity) {
         if (candidateAttemptEntity.getSimulationVersionId() != null) {
             return simulationCatalogService.findByVersionId(candidateAttemptEntity.getSimulationVersionId())
-                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Versão da simulação não encontrada."));
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Vers├úo da simula├º├úo n├úo encontrada."));
         }
 
         return simulationCatalogService.findPublishedById(candidateAttemptEntity.getTenantId(), candidateAttemptEntity.getSimulationId())
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Simulação publicada não encontrada."));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Simula├º├úo publicada n├úo encontrada."));
     }
 
     private CandidateAttemptEntity findAttemptEntityByToken(String attemptToken) {
         String tenantId = TenantSecurity.requiredTenant();
         String attemptId = resolveAttemptId(attemptToken);
         return candidateAttemptRepository.findByTenantIdAndId(tenantId, attemptId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Tentativa não encontrada."));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Tentativa n├úo encontrada."));
     }
 
     private String resolveAttemptId(String attemptToken) {
         if (attemptToken == null || attemptToken.isBlank()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Token da tentativa é obrigatório.");
-        }
-        if (!securityEnabled && attemptToken.startsWith("att_")) {
-            return attemptToken;
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Token da tentativa ├® obrigat├│rio.");
         }
         try {
             return jwtService.parseCandidateAttemptToken(attemptToken).attemptId();
         } catch (RuntimeException exception) {
             throw new ResponseStatusException(
                     HttpStatus.UNAUTHORIZED,
-                    "Token da tentativa do candidato inválido."
+                    "Token da tentativa do candidato inv├ílido."
             );
         }
     }

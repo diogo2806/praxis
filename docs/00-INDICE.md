@@ -46,6 +46,10 @@
 - [Cadastro de cenarios para RH](cadastro_cenarios_rh.md) - documento principal de produto atualizado.
 - [Pesquisa de reclamacoes de concorrentes](research/competitor-complaints-research-2025-2026.md) - contexto de mercado.
 
+## Compliance e juridico
+
+- [Minuta de consentimento e termos para a vertical de Saude](PROPOSTA-CONSENTIMENTO-SAUDE.md) - propostas de texto (LGPD dado sensivel, uso educativo) para validacao juridica antes de habilitar a vertical.
+
 ## Historico
 
 - [Usabilidade - implementacao](USABILIDADE_IMPLEMENTACAO.md) - historico de uma entrega de UX; nao e contrato atual completo.

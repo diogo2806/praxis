@@ -1,4 +1,4 @@
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+﻿import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
   Outlet,
   Link,
@@ -85,17 +85,17 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Práxis — Teste situacional com critérios rastreáveis" },
+      { title: "Pr├íxis ÔÇö Avalia├º├úo de candidatos transparente e audit├ível" },
       {
         name: "description",
         content:
-          "Práxis é uma plataforma para acrescentar cenários situacionais e indicadores rastreáveis ao processo seletivo, sem inteligência artificial atribuindo notas.",
+          "Pr├íxis ├® uma plataforma para avaliar candidatos com cen├írios realistas do trabalho. Resultados transparentes e audit├íveis, sem intelig├¬ncia artificial decidindo. Veja como funciona.",
       },
-      { property: "og:title", content: "Práxis — Teste de candidatos" },
+      { property: "og:title", content: "Pr├íxis ÔÇö Teste de candidatos" },
       {
         property: "og:description",
         content:
-          "Acrescente cenários situacionais e indicadores rastreáveis ao processo seletivo, sem IA atribuindo notas.",
+          "Avalie candidatos com cen├írios realistas do trabalho. Resultados transparentes e audit├íveis, sem IA decidindo sozinha.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
@@ -140,6 +140,20 @@ function RootShell({ children }: { children: ReactNode }) {
       <body>
         {children}
         <Scripts />
+        <div
+          dangerouslySetInnerHTML={{
+            __html: `<div vw class="enabled"><div vw-access-button class="active"></div><div vw-plugin-wrapper><div class="vw-plugin-top-wrapper"></div></div></div>`,
+          }}
+        />
+        <script
+          src="https://vlibras.gov.br/app/vlibras-plugin.js"
+          defer
+        />
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `document.addEventListener('DOMContentLoaded', function() { if (window.VLibras) new window.VLibras.Widget('https://vlibras.gov.br/app'); });`,
+          }}
+        />
       </body>
     </html>
   );

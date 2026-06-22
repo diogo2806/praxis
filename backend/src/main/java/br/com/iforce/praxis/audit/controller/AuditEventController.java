@@ -1,4 +1,4 @@
-package br.com.iforce.praxis.audit.controller;
+﻿package br.com.iforce.praxis.audit.controller;
 
 import br.com.iforce.praxis.audit.dto.AuditEventResponse;
 import br.com.iforce.praxis.audit.service.AuditEventService;
@@ -26,7 +26,7 @@ public class AuditEventController {
     @GetMapping("/candidate-attempts/{attemptId}")
     @Operation(
             summary = "Lista auditoria da tentativa",
-            description = "Retorna eventos append-only registrados para criação, resposta e finalização da tentativa."
+            description = "Retorna eventos append-only registrados para cria├º├úo, resposta e finaliza├º├úo da tentativa."
     )
     public ResponseEntity<List<AuditEventResponse>> listCandidateAttemptEvents(@PathVariable String attemptId) {
         return ResponseEntity.ok(auditEventService.listCandidateAttemptEvents(attemptId));

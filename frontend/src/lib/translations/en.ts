@@ -1,4 +1,4 @@
-export const en = {
+﻿export const en = {
   common: {
     dashboard: "Dashboard",
     createTest: "Create new test model",
@@ -28,15 +28,19 @@ export const en = {
     openDiagnostics: "Open diagnostics",
     viewAdvancedSettings: "View technical mode",
     viewCommercialMode: "View commercial mode",
-    integrationGupy: "Integrations",
+    integrationGupy: "Gupy Integration - v0.1",
     testCreator: "Situation Test Creator (SJT)",
     situationalAssessment: "Situational Assessment",
+    talentMatch: "Talent Match",
+    settings: "Settings",
+    competencies: "Competencies",
+    status: "Status",
   },
   language: {
     select: "Select language",
-    portuguese: "Português (Brasil)",
+    portuguese: "Portugu├¬s (Brasil)",
     english: "English",
-    spanish: "Español (México)",
+    spanish: "Espa├▒ol (M├®xico)",
   },
   descriptions: {
     dashboard: "Your tests and results",
@@ -46,7 +50,12 @@ export const en = {
     candidateView: "See how the candidate views the test",
     governance: "Test history and versions",
     lgpd: "Data protection and transparency",
-    defensibility: "How the calculation is structured and traceable",
+    defensibility: "Why the result is reliable",
+    talentMatch: "Compare candidates",
+    settings: "Company profile and integrations",
+    competencies: "Manage competencies",
+    governanceNav: "History, versions and audit",
+    complianceNav: "LGPD, transparency and technical basis of the result",
   },
   wizard: {
     createTest: "Create new test model",
@@ -63,7 +72,7 @@ export const en = {
   },
   blueprint: {
     title: "Assessment plan",
-    metaTitle: "Assessment plan — Praxis",
+    metaTitle: "Assessment plan ÔÇö Praxis",
     metaDescription:
       "Define role, critical situation, evaluated competencies and result usage.",
     blockedReason: "role, critical situation and competency are required",
@@ -80,7 +89,7 @@ export const en = {
     loadingPlanBody: "Fetching simulation {simulationId} v{versionNumber}.",
     planErrorTitle: "Could not load the saved plan",
     planErrorFallback: "Check whether the simulation and version exist.",
-    whyTitle: "Why an assessment plaetapa",
+    whyTitle: "Why an assessment plan?",
     whyBodyStart: "The",
     whyTerm: "assessment plan",
     validatorTerm: "Validator",
@@ -111,9 +120,6 @@ export const en = {
     competencySaveError: "Could not save the competency.",
     customCompetencyHelp:
       "Custom competencies can be organized in the internal competency catalog.",
-    resultUseCard: "Result usage",
-    resultUseHelp:
-      "Praxis organizes indicators about responses to simulated scenarios. The process decision remains under the company's responsibility.",
     cancel: "Cancel",
     required: "Required",
     missingFieldsPrefix: "To continue, fill in",
@@ -128,19 +134,17 @@ export const en = {
     descriptionRoleLabel: "Role",
     descriptionCriticalSituationLabel: "Critical situation",
     descriptionCompetenciesLabel: "Competencies",
-    descriptionResultUseLabel: "Result usage",
   },
   dashboard: {
     title: "Dashboard - Praxis",
-    metaDescription:
-      "Dashboard for situational assessments, participations, quality and publication readiness.",
+    metaDescription: "Dashboard: active simulations, quality, maturity and link with Gupy jobs.",
     greeting: "Good afternoon",
     noSimulations: "No simulations created",
     createOrImport: "Create or import a simulation for it to appear here.",
     couldNotLoad: "Could not load simulations",
     verifySystem: "Verify that the system is available and try again.",
     couldNotArchive: "Could not archive the simulation",
-    blockedReason: "workspace without permission or pending required configuration",
+    blockedReason: "workspace without permission or Gupy disconnected",
     guidedFlow: "Guided flow",
     newSimulation: "New simulation",
     searchSimulation: "Search simulation",
@@ -176,7 +180,7 @@ export const en = {
   },
   getStarted: {
     title: "Get Started - Praxis",
-    heading: "Welcome to Praxis 👋",
+    heading: "Welcome to Praxis ­ƒæï",
     howItWorks: "How it works?",
     forWhom: "Who is it for?",
     whereToStart: "Where to start?",
@@ -196,7 +200,7 @@ export const en = {
     heading: "Governance and audit",
     editingPublished: "Editing published creates new version",
     candidatesInProgress: "Candidates in progress stay on current version",
-    createNewVersion: "Create new versioetapa",
+    createNewVersion: "Create new version?",
     confirmNewVersion: "Confirm new version",
     creating: "Creating...",
     auditRecordConnected: "Audit record connected",

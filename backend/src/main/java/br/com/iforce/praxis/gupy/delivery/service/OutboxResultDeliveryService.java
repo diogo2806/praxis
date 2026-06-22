@@ -80,7 +80,8 @@ public class OutboxResultDeliveryService {
                 .toList();
     }
 
-    @Transactional
+    // Sem @Transactional: o OutboxProcessor faz a entrega HTTP fora de qualquer transação
+    // aberta e persiste o resultado em transações curtas próprias.
     public ProcessReadyDeliveriesResponse processReadyDeliveries() {
         String tenantId = currentTenantService.requiredTenantId();
         int processed = outboxProcessor.processReadyEventsForTenant(tenantId);
@@ -88,7 +89,7 @@ public class OutboxResultDeliveryService {
         return new ProcessReadyDeliveriesResponse(processed, deliveries);
     }
 
-    @Transactional
+    // Sem @Transactional: idem processReadyDeliveries — a entrega HTTP roda fora de transação.
     public ReprocessDeliveryResponse reprocessDelivery(Long deliveryId) {
         String tenantId = currentTenantService.requiredTenantId();
         outboxProcessor.reprocessEvent(deliveryId, tenantId);

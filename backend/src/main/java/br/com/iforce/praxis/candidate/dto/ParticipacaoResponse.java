@@ -21,7 +21,14 @@ public record ParticipacaoResponse(
 
         ProgressoResponse progresso,
 
-        EtapaAtualResponse etapaAtual
+        EtapaAtualResponse etapaAtual,
+
+        @Schema(
+                example = "false",
+                description = "Quando verdadeiro, o tenant opera na vertical de saúde: o fluxo deve coletar "
+                        + "consentimento do participante para tratamento de dado sensível (LGPD)."
+        )
+        boolean verticalSaude
 ) {
     @Schema(description = "Resumo narrativo do progresso do candidato, sem expor gabarito ou proximas escolhas.")
     public record ProgressoResponse(

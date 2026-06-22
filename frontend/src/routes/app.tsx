@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+﻿import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState, type CSSProperties } from "react";
 import {
@@ -40,7 +40,7 @@ export const Route = createFileRoute("/app")({
       {
         name: "description",
         content:
-          "Painel de avaliações situacionais, participações, resultados, qualidade e prontidão para publicação.",
+          "Painel de avalia├º├Áes situacionais, participa├º├Áes, resultados, qualidade e prontid├úo para publica├º├úo.",
       },
     ],
   }),
@@ -101,16 +101,16 @@ function Dashboard() {
 
   return (
     <AppShell>
-      <ScreenStateStrip blockedReason="espaço de trabalho sem permissão ou configuração obrigatória pendente" />
+      <ScreenStateStrip blockedReason="espa├ºo de trabalho sem permiss├úo ou configura├º├úo obrigat├│ria pendente" />
       <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
         <div>
           <div className="text-xs uppercase text-muted-foreground">Painel</div>
           <h1 className="mt-1 text-3xl font-semibold text-foreground">Boa tarde, {firstName}.</h1>
           <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
             Teste situacional estruturado para recrutamento, com{" "}
-            <Termo id="pontuacao-criterios">pontuação por critérios definidos</Termo>,{" "}
-            <Termo id="decisao-contexto">escolha baseada na situação</Termo> e{" "}
-            <Termo id="trilha-auditavel">histórico completo de alterações</Termo>.
+            <Termo id="pontuacao-criterios">pontua├º├úo por crit├®rios definidos</Termo>,{" "}
+            <Termo id="decisao-contexto">escolha baseada na situa├º├úo</Termo> e{" "}
+            <Termo id="trilha-auditavel">hist├│rico completo de altera├º├Áes</Termo>.
           </p>
         </div>
         <div className="flex gap-2">
@@ -150,15 +150,15 @@ function Dashboard() {
           <SkeletonRows rows={5} />
         </section>
       ) : simulationsQuery.isError ? (
-        <StateBanner tone="danger" title="Não foi possível carregar os testes">
+        <StateBanner tone="danger" title="N├úo foi poss├¡vel carregar os testes">
           {simulationsQuery.error instanceof Error
             ? simulationsQuery.error.message
-            : "Verifique se o sistema está disponível e tente novamente."}
+            : "Verifique se o sistema est├í dispon├¡vel e tente novamente."}
         </StateBanner>
       ) : simulations.length === 0 ? (
         <EmptyState
           title="Nenhum teste cadastrado"
-          description="Crie ou importe um teste para que ele apareça aqui."
+          description="Crie ou importe um teste para que ele apare├ºa aqui."
           actions={
             <>
               <Link
@@ -181,7 +181,7 @@ function Dashboard() {
       ) : (
         <div className="space-y-6">
           {deleteMutation.isError && (
-            <StateBanner tone="danger" title="Não foi possível excluir o teste">
+            <StateBanner tone="danger" title="N├úo foi poss├¡vel excluir o teste">
               {deleteMutation.error instanceof Error
                 ? deleteMutation.error.message
                 : "Tente novamente."}
@@ -203,7 +203,7 @@ function Dashboard() {
             <Stat
               label="Rascunhos"
               value={totals.rascunhos}
-              hint="Em construção"
+              hint="Em constru├º├úo"
               onClick={() => setFilter("draft")}
             />
             <Stat
@@ -218,7 +218,7 @@ function Dashboard() {
             <div>
               <h2 className="text-xl font-semibold">Testes</h2>
               <p className="text-xs text-muted-foreground">
-                Status, prontidão, competências e tentativas organizados por coluna.
+                Status, prontid├úo, compet├¬ncias e tentativas organizados por coluna.
               </p>
             </div>
             <div className="flex min-w-0 flex-wrap gap-2">
@@ -277,11 +277,11 @@ function Dashboard() {
                   <thead className="border-b border-border bg-muted/45 text-xs uppercase text-muted-foreground">
                     <tr>
                       <th className="px-4 py-3 text-left font-medium">Teste</th>
-                      <th className="px-4 py-3 text-left font-medium">Competências</th>
+                      <th className="px-4 py-3 text-left font-medium">Compet├¬ncias</th>
                       <th className="px-4 py-3 text-left font-medium">Status</th>
-                      <th className="px-4 py-3 text-left font-medium">Prontidão</th>
-                      <th className="px-4 py-3 text-left font-medium">Conclusão</th>
-                      <th className="px-4 py-3 text-right font-medium">Ações</th>
+                      <th className="px-4 py-3 text-left font-medium">Prontid├úo</th>
+                      <th className="px-4 py-3 text-left font-medium">Conclus├úo</th>
+                      <th className="px-4 py-3 text-right font-medium">A├º├Áes</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -297,7 +297,7 @@ function Dashboard() {
                               <TooltipTrigger asChild>
                                 <button
                                   type="button"
-                                  aria-label={`Descrição de ${simulation.name}`}
+                                  aria-label={`Descri├º├úo de ${simulation.name}`}
                                   className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-md border border-border bg-background text-muted-foreground hover:bg-accent hover:text-foreground"
                                 >
                                   <CircleHelp className="h-3.5 w-3.5" />
@@ -361,7 +361,7 @@ function Dashboard() {
                         <td className="px-4 py-3 text-xs tabular-nums">
                           {simulation.attemptsCreated.toLocaleString("pt-BR")}
                           <div className="text-[10px] text-muted-foreground">
-                            {simulation.attemptsCompleted.toLocaleString("pt-BR")} concluídas
+                            {simulation.attemptsCompleted.toLocaleString("pt-BR")} conclu├¡das
                           </div>
                         </td>
                         <td className="px-4 py-3 text-right">

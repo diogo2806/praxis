@@ -8,6 +8,7 @@ import com.fasterxml.jackson.annotation.JsonValue;
 public enum ResultDeliveryStatus implements DescribedEnum {
 
     PENDING("pending"),
+    PROCESSING("processing"),
     RETRYING("retrying"),
     SENT("sent"),
     DLQ("dlq");

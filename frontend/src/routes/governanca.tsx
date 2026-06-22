@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+﻿import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { ArchiveRestore, Lock, RefreshCw } from "lucide-react";
@@ -34,7 +34,7 @@ export const Route = createFileRoute("/governanca")({
   }),
   head: () => ({
     meta: [
-      { title: "Governança & Auditoria - Praxis" },
+      { title: "Governan├ºa & Auditoria - Praxis" },
       { name: "description", content: "Controles operacionais, auditoria e versionamento." },
     ],
   }),
@@ -73,14 +73,14 @@ function GovernanceHub() {
 
   return (
     <AppShell>
-      <ScreenStateStrip blockedReason="papel atual não tem permissão para esta transição" />
+      <ScreenStateStrip blockedReason="papel atual n├úo tem permiss├úo para esta transi├º├úo" />
       <div className="mb-5">
         <div className="text-xs uppercase text-primary">{t.common.compliance}</div>
         <h1 className="mt-1 text-3xl font-semibold">{t.governance.heading}</h1>
         <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
-          Consulte o histórico das versões, abra o registro de auditoria e crie um novo rascunho
-          quando uma versão no ar precisar mudar. Aprovação e publicação continuam no fluxo guiado
-          de governança.
+          Consulte o hist├│rico das vers├Áes, abra o registro de auditoria e crie um novo rascunho
+          quando uma vers├úo no ar precisar mudar. Aprova├º├úo e publica├º├úo continuam no fluxo guiado
+          de governan├ºa.
         </p>
       </div>
       <ComplianceScope current="governanca" />
@@ -95,7 +95,7 @@ function GovernanceHub() {
         <StateBanner tone="danger" title={t.governance.couldNotLoadAudit}>
           {auditQuery.error instanceof Error
             ? auditQuery.error.message
-            : "Verifique sua conexão e tente novamente. Confira também se a versão existe."}
+            : "Verifique sua conex├úo e tente novamente. Confira tamb├®m se a vers├úo existe."}
         </StateBanner>
       )}
 
@@ -107,21 +107,21 @@ function GovernanceHub() {
       )}
 
       {cloneMutation.isError && (
-        <StateBanner tone="danger" title="Não foi possível criar a versão">
+        <StateBanner tone="danger" title="N├úo foi poss├¡vel criar a vers├úo">
           {cloneMutation.error instanceof Error
             ? cloneMutation.error.message
-            : "A mudança não foi permitida pelo sistema."}
+            : "A mudan├ºa n├úo foi permitida pelo sistema."}
         </StateBanner>
       )}
 
       <div className="mt-5 space-y-5">
         <section className="rounded-md border border-border bg-card p-5">
           <h2 className="text-sm font-semibold">
-            {hasGovernanceParams ? "Trilha cronológica de auditoria" : "Versões disponíveis"}
+            {hasGovernanceParams ? "Trilha cronol├│gica de auditoria" : "Vers├Áes dispon├¡veis"}
           </h2>
           {!hasGovernanceParams && (
             <p className="mt-1 text-xs text-muted-foreground">
-              Selecione uma versão para ver a trilha de decisões ou criar um rascunho derivado.
+              Selecione uma vers├úo para ver a trilha de decis├Áes ou criar um rascunho derivado.
             </p>
           )}
           {hasGovernanceParams ? (
@@ -163,8 +163,8 @@ function GovernanceHub() {
           )}
         </section>
         <aside className="space-y-3">
-          <StateBanner tone="warn" title="Editar teste no ar cria nova versão">
-            Candidatos em andamento continuam na versão atual.
+          <StateBanner tone="warn" title="Editar teste no ar cria nova vers├úo">
+            Candidatos em andamento continuam na vers├úo atual.
           </StateBanner>
           <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
             <button
@@ -175,8 +175,8 @@ function GovernanceHub() {
               <RefreshCw className="h-4 w-4 shrink-0" />
               <span className="min-w-0 truncate">
                 {hasGovernanceParams
-                  ? `Criar nova versão a partir da v${search.versionNumber}`
-                  : "Selecione uma versão"}
+                  ? `Criar nova vers├úo a partir da v${search.versionNumber}`
+                  : "Selecione uma vers├úo"}
               </span>
             </button>
             <button
@@ -194,7 +194,7 @@ function GovernanceHub() {
               }}
               className="inline-flex min-h-10 items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground"
             >
-              Abrir aprovação/publicação
+              Abrir aprova├º├úo/publica├º├úo
             </Link>
             <Link
               to="/"
@@ -206,9 +206,9 @@ function GovernanceHub() {
           <div className="flex items-start gap-2 rounded-md border border-border bg-muted/40 p-3 text-xs text-muted-foreground">
             <Lock className="mt-0.5 h-3.5 w-3.5" />
             <span>
-              Esta tela é consulta operacional. Publicar, aprovar ou reprovar uma versão é feito no
-              fluxo guiado, onde <Termo id="blocker">bloqueios</Termo> são validados antes da
-              mudança de estado.
+              Esta tela ├® consulta operacional. Publicar, aprovar ou reprovar uma vers├úo ├® feito no
+              fluxo guiado, onde <Termo id="blocker">bloqueios</Termo> s├úo validados antes da
+              mudan├ºa de estado.
             </span>
           </div>
         </aside>
@@ -216,15 +216,15 @@ function GovernanceHub() {
       {versionDialogOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-foreground/30 p-4">
           <div className="w-full max-w-md rounded-md border border-border bg-card p-5 shadow-xl">
-            <div className="text-sm font-semibold">Criar nova versão?</div>
+            <div className="text-sm font-semibold">Criar nova vers├úo?</div>
             <p className="mt-2 text-sm text-muted-foreground">
               {hasGovernanceParams
-                ? `Isto cria um rascunho a partir da versão ${search.versionNumber}. Candidatos em andamento continuam na versão atual.`
-                : "Escolha um teste real antes de criar nova versão."}
+                ? `Isto cria um rascunho a partir da vers├úo ${search.versionNumber}. Candidatos em andamento continuam na vers├úo atual.`
+                : "Escolha um teste real antes de criar nova vers├úo."}
             </p>
             <div className="mt-4 rounded-md border border-border bg-muted/45 p-3 text-xs text-muted-foreground">
-              Um erro de digitação conta como mudança menor. Mudanças em pontuação, peso ou no fluxo
-              da conversa contam como mudança maior.
+              Um erro de digita├º├úo conta como mudan├ºa menor. Mudan├ºas em pontua├º├úo, peso ou no fluxo
+              da conversa contam como mudan├ºa maior.
             </div>
             <div className="mt-5 flex justify-end gap-2">
               <button
@@ -246,7 +246,7 @@ function GovernanceHub() {
                 disabled={cloneMutation.isPending}
                 className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground disabled:cursor-not-allowed disabled:opacity-60"
               >
-                {cloneMutation.isPending ? "Criando..." : "Confirmar nova versão"}
+                {cloneMutation.isPending ? "Criando..." : "Confirmar nova vers├úo"}
               </button>
             </div>
           </div>
@@ -268,7 +268,7 @@ function AuditEventList({ events, loading }: { events: AuditEventResponse[]; loa
   if (events.length === 0) {
     return (
       <div className="mt-4 rounded-md border border-border bg-background p-4 text-sm text-muted-foreground">
-        Nenhum evento de auditoria registrado para esta versão.
+        Nenhum evento de auditoria registrado para esta vers├úo.
       </div>
     );
   }
@@ -355,9 +355,9 @@ function SimulationLinks({
           <TableRow>
             <TableHead>Teste</TableHead>
             <TableHead>Status</TableHead>
-            <TableHead className="text-right">Versão</TableHead>
+            <TableHead className="text-right">Vers├úo</TableHead>
             <TableHead className="text-right">Tentativas</TableHead>
-            <TableHead className="text-right">Ação</TableHead>
+            <TableHead className="text-right">A├º├úo</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -397,8 +397,8 @@ function SimulationLinks({
                       disabled
                       title={
                         simulation.status !== "published"
-                          ? "A versão precisa estar publicada para abrir a auditoria."
-                          : "Não há auditoria disponível sem tentativas concluídas."
+                          ? "A vers├úo precisa estar publicada para abrir a auditoria."
+                          : "N├úo h├í auditoria dispon├¡vel sem tentativas conclu├¡das."
                       }
                       className="inline-flex cursor-not-allowed items-center justify-center rounded-md bg-primary/50 px-3 py-2 text-sm font-medium text-primary-foreground"
                     >

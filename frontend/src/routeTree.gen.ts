@@ -15,6 +15,7 @@ import { Route as LgpdRouteImport } from './routes/lgpd'
 import { Route as GovernancaRouteImport } from './routes/governanca'
 import { Route as EnviarLinkRouteImport } from './routes/enviar-link'
 import { Route as DefensabilidadeRouteImport } from './routes/defensabilidade'
+import { Route as ConfiguracoesRouteImport } from './routes/configuracoes'
 import { Route as ComplianceRouteImport } from './routes/compliance'
 import { Route as ComecarRouteImport } from './routes/comecar'
 import { Route as CandidatoRouteImport } from './routes/candidato'
@@ -60,6 +61,11 @@ const EnviarLinkRoute = EnviarLinkRouteImport.update({
 const DefensabilidadeRoute = DefensabilidadeRouteImport.update({
   id: '/defensabilidade',
   path: '/defensabilidade',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ConfiguracoesRoute = ConfiguracoesRouteImport.update({
+  id: '/configuracoes',
+  path: '/configuracoes',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ComplianceRoute = ComplianceRouteImport.update({
@@ -149,6 +155,7 @@ export interface FileRoutesByFullPath {
   '/candidato': typeof CandidatoRouteWithChildren
   '/comecar': typeof ComecarRoute
   '/compliance': typeof ComplianceRoute
+  '/configuracoes': typeof ConfiguracoesRoute
   '/defensabilidade': typeof DefensabilidadeRoute
   '/enviar-link': typeof EnviarLinkRoute
   '/governanca': typeof GovernancaRoute
@@ -173,6 +180,7 @@ export interface FileRoutesByTo {
   '/candidato': typeof CandidatoRouteWithChildren
   '/comecar': typeof ComecarRoute
   '/compliance': typeof ComplianceRoute
+  '/configuracoes': typeof ConfiguracoesRoute
   '/defensabilidade': typeof DefensabilidadeRoute
   '/enviar-link': typeof EnviarLinkRoute
   '/governanca': typeof GovernancaRoute
@@ -198,6 +206,7 @@ export interface FileRoutesById {
   '/candidato': typeof CandidatoRouteWithChildren
   '/comecar': typeof ComecarRoute
   '/compliance': typeof ComplianceRoute
+  '/configuracoes': typeof ConfiguracoesRoute
   '/defensabilidade': typeof DefensabilidadeRoute
   '/enviar-link': typeof EnviarLinkRoute
   '/governanca': typeof GovernancaRoute
@@ -224,6 +233,7 @@ export interface FileRouteTypes {
     | '/candidato'
     | '/comecar'
     | '/compliance'
+    | '/configuracoes'
     | '/defensabilidade'
     | '/enviar-link'
     | '/governanca'
@@ -248,6 +258,7 @@ export interface FileRouteTypes {
     | '/candidato'
     | '/comecar'
     | '/compliance'
+    | '/configuracoes'
     | '/defensabilidade'
     | '/enviar-link'
     | '/governanca'
@@ -272,6 +283,7 @@ export interface FileRouteTypes {
     | '/candidato'
     | '/comecar'
     | '/compliance'
+    | '/configuracoes'
     | '/defensabilidade'
     | '/enviar-link'
     | '/governanca'
@@ -297,6 +309,7 @@ export interface RootRouteChildren {
   CandidatoRoute: typeof CandidatoRouteWithChildren
   ComecarRoute: typeof ComecarRoute
   ComplianceRoute: typeof ComplianceRoute
+  ConfiguracoesRoute: typeof ConfiguracoesRoute
   DefensabilidadeRoute: typeof DefensabilidadeRoute
   EnviarLinkRoute: typeof EnviarLinkRoute
   GovernancaRoute: typeof GovernancaRoute
@@ -357,6 +370,13 @@ declare module '@tanstack/react-router' {
       path: '/defensabilidade'
       fullPath: '/defensabilidade'
       preLoaderRoute: typeof DefensabilidadeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/configuracoes': {
+      id: '/configuracoes'
+      path: '/configuracoes'
+      fullPath: '/configuracoes'
+      preLoaderRoute: typeof ConfiguracoesRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/compliance': {
@@ -492,6 +512,7 @@ const rootRouteChildren: RootRouteChildren = {
   CandidatoRoute: CandidatoRouteWithChildren,
   ComecarRoute: ComecarRoute,
   ComplianceRoute: ComplianceRoute,
+  ConfiguracoesRoute: ConfiguracoesRoute,
   DefensabilidadeRoute: DefensabilidadeRoute,
   EnviarLinkRoute: EnviarLinkRoute,
   GovernancaRoute: GovernancaRoute,

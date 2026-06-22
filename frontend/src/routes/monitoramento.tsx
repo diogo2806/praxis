@@ -31,6 +31,7 @@ type AttemptFilter = "todos" | "ativos" | "sem-sinal";
 function MonitoringPage() {
   const [revealed, setRevealed] = useState(false);
   const [attemptFilter, setAttemptFilter] = useState<AttemptFilter>("todos");
+  const [simulationFilter, setSimulationFilter] = useState<string>("todos");
 
   const simulationsQuery = useQuery({
     queryKey: ["simulations"],
@@ -54,8 +55,9 @@ function MonitoringPage() {
   const failedDeliveries = deliveries.filter((delivery) => delivery.status === "dlq").length;
   const totals = buildTotals(simulations);
   const filteredAttempts = liveAttempts.filter((attempt) => {
-    if (attemptFilter === "ativos") return attempt.active;
-    if (attemptFilter === "sem-sinal") return !attempt.active;
+    if (attemptFilter === "ativos" && !attempt.active) return false;
+    if (attemptFilter === "sem-sinal" && attempt.active) return false;
+    if (simulationFilter !== "todos" && attempt.simulationId !== simulationFilter) return false;
     return true;
   });
 
@@ -148,10 +150,16 @@ function MonitoringPage() {
                 </p>
               </div>
               <div className="flex flex-wrap items-center gap-2">
-                <select className="h-8 min-h-8 rounded-md border border-border bg-background px-3 text-xs">
-                  <option>Todos os testes</option>
+                <select
+                  value={simulationFilter}
+                  onChange={(event) => setSimulationFilter(event.target.value)}
+                  className="h-8 min-h-8 rounded-md border border-border bg-background px-3 text-xs"
+                >
+                  <option value="todos">Todos os testes</option>
                   {simulations.map((simulation) => (
-                    <option key={simulation.id}>{simulation.name}</option>
+                    <option key={simulation.id} value={simulation.id}>
+                      {simulation.name}
+                    </option>
                   ))}
                 </select>
                 <AttemptToggle value={attemptFilter} onChange={setAttemptFilter} />
@@ -319,7 +327,11 @@ function ProductionSimulation({ simulation }: { simulation: SimulationSummaryRes
           <h3 className="truncate text-sm font-semibold">{simulation.name}</h3>
           <div className="mt-1 text-[11px] text-muted-foreground">v{simulation.versionNumber}</div>
         </div>
-        <Link to="/compliance" className="shrink-0 text-[11px] text-primary hover:underline">
+        <Link
+          to="/compliance"
+          search={{ simulationId: simulation.id, versionNumber: simulation.versionNumber }}
+          className="shrink-0 text-[11px] text-primary hover:underline"
+        >
           Compliance -&gt;
         </Link>
       </div>

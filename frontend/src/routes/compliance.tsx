@@ -3,6 +3,7 @@ import { useNavigate } from "@tanstack/react-router";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Eye, Globe, CircleHelp, Link2, X } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
+import { ComplianceScope } from "@/components/compliance-scope";
 import { StateBanner, StatusBadge } from "@/components/praxis-ui";
 import {
   Table,
@@ -13,6 +14,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Sheet, SheetClose, SheetContent, SheetTitle } from "@/components/ui/sheet";
+import { useLanguage } from "@/lib/language-context";
 import { useQuery } from "@tanstack/react-query";
 import {
   getPrivacyCompliance,
@@ -92,6 +94,7 @@ export const Route = createFileRoute("/compliance")({
 });
 
 function CompliancePage() {
+  const { t } = useLanguage();
   const search = Route.useSearch();
   const navigate = useNavigate({ from: "/compliance" });
   const hasContext = Boolean(search.simulationId && search.versionNumber);
@@ -158,21 +161,24 @@ function CompliancePage() {
     );
   }, [hasContext, rows, search.simulationId, search.versionNumber]);
 
-  const closeDrawer = () => navigate({ to: "/compliance", search: {} });
+  const closeDrawer = () =>
+    navigate({ to: "/compliance", search: { simulationId: undefined, versionNumber: undefined } });
 
   return (
     <AppShell>
       <div className="mx-auto max-w-6xl px-2 py-8 sm:px-6">
         <div className="mb-6">
           <div className="text-[11px] font-semibold uppercase tracking-wider text-primary">
-            Compliance
+            {t.common.compliance}
           </div>
-          <h1 className="mt-1 font-serif text-3xl leading-tight">Compliance dos testes</h1>
+          <h1 className="mt-1 font-serif text-3xl leading-tight">{t.common.compliance}</h1>
           <p className="mt-2 max-w-3xl text-sm text-muted-foreground">
-            Cada linha é uma versão de teste: status de governança, completude da configuração e
-            bloqueios em aberto, em um único lugar.
+            Cada linha é uma versão de teste: status de governança, taxa de conclusão e bloqueios em
+            aberto, em um único lugar.
           </p>
         </div>
+
+        <ComplianceScope current="compliance" />
 
         <section className="rounded-xl border border-border bg-card">
           <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border px-4 py-3">
@@ -202,10 +208,9 @@ function CompliancePage() {
                 <TableRow>
                   <TableHead>Teste</TableHead>
                   <TableHead>Versão</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Completude</TableHead>
+                  <TableHead>{t.common.status}</TableHead>
+                  <TableHead>Taxa de conclusão</TableHead>
                   <TableHead>Bloqueios</TableHead>
-                  <TableHead>Autor</TableHead>
                   <TableHead>Tentativas</TableHead>
                   <TableHead>Atualizado</TableHead>
                   <TableHead className="text-right">Ações</TableHead>
@@ -214,13 +219,13 @@ function CompliancePage() {
               <TableBody>
                 {simulationsQuery.isLoading ? (
                   <TableRow>
-                    <TableCell colSpan={9} className="p-4 text-sm text-muted-foreground">
+                    <TableCell colSpan={8} className="p-4 text-sm text-muted-foreground">
                       Carregando versões...
                     </TableCell>
                   </TableRow>
                 ) : simulationsQuery.isError ? (
                   <TableRow>
-                    <TableCell colSpan={9} className="p-4">
+                    <TableCell colSpan={8} className="p-4">
                       <StateBanner tone="danger" title="Não foi possível carregar as versões">
                         {simulationsQuery.error instanceof Error
                           ? simulationsQuery.error.message
@@ -230,7 +235,7 @@ function CompliancePage() {
                   </TableRow>
                 ) : rows.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={9} className="p-4 text-sm text-muted-foreground">
+                    <TableCell colSpan={8} className="p-4 text-sm text-muted-foreground">
                       Nenhum teste encontrado.
                     </TableCell>
                   </TableRow>
@@ -277,7 +282,6 @@ function CompliancePage() {
                         <TableCell className="px-4 py-2.5 text-sm text-muted-foreground">
                           —
                         </TableCell>
-                        <TableCell className="px-4 py-2.5">{row.resultUse ?? "—"}</TableCell>
                         <TableCell className="px-4 py-2.5">{row.attemptsCreated}</TableCell>
                         <TableCell className="px-4 py-2.5 text-muted-foreground">
                           {formatDate(row.updatedAt)}
@@ -397,14 +401,14 @@ function ComplianceSheet({
 
           <section className="space-y-2">
             <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-              Estrutura e rastreabilidade do cálculo
+              Confiabilidade do resultado
             </div>
             {loading || !version ? (
               <div className="rounded-md border border-border bg-card p-4 text-sm text-muted-foreground">
                 Carregando análise da versão...
               </div>
             ) : hasError ? (
-              <StateBanner tone="danger" title="Falha ao abrir dados da configuração">
+              <StateBanner tone="danger" title="Falha ao abrir dados de confiabilidade">
                 {errorMessage}
               </StateBanner>
             ) : (
@@ -429,6 +433,7 @@ function ComplianceSheet({
               </div>
               <Link
                 to="/governanca"
+                search={{ simulationId: undefined, versionNumber: undefined }}
                 className="mt-2 inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
               >
                 <Link2 className="h-3.5 w-3.5" /> Abrir trilha técnica
@@ -462,7 +467,7 @@ export function DossiePanel({
           <TableHeader>
             <TableRow>
               <TableHead>Critério</TableHead>
-              <TableHead>% do score</TableHead>
+              <TableHead>% da pontuação</TableHead>
               <TableHead>Cobrado em</TableHead>
             </TableRow>
           </TableHeader>
@@ -473,7 +478,7 @@ export function DossiePanel({
                 <TableRow key={item.criterio}>
                   <TableCell className="font-medium">{item.criterio}</TableCell>
                   <TableCell title={`peso ${item.peso} de ${totalWeight}`}>
-                    {percentual}% do score
+                    {percentual}% da pontuação
                   </TableCell>
                   <TableCell
                     className="text-muted-foreground"
@@ -643,6 +648,8 @@ function buildMatrix(version: SimulationVersionDetailResponse): MatrixItem[] {
   }));
 }
 
+const MAX_PATHS = 50;
+
 function buildPaths(version: SimulationVersionDetailResponse, matrix: MatrixItem[]) {
   const byId = new Map<string, (typeof version.nodes)[number]>(
     version.nodes.map((node) => [node.id, node]),
@@ -659,11 +666,12 @@ function buildPaths(version: SimulationVersionDetailResponse, matrix: MatrixItem
     byCriteria: Record<string, number>,
     depth: number,
   ) => {
+    if (paths.length >= MAX_PATHS) return;
     if (depth > version.nodes.length + 5) return;
 
     if (node.options.length === 0) {
       paths.push({
-        sequence: `${sequence.join(" ? ")} ? Encerramento conservador`,
+        sequence: `${sequence.join(" → ")} → Encerramento`,
         total: calculateTotal(byCriteria, matrix),
         byCriteria: { ...byCriteria },
       });
@@ -671,6 +679,8 @@ function buildPaths(version: SimulationVersionDetailResponse, matrix: MatrixItem
     }
 
     for (const option of node.options) {
+      if (paths.length >= MAX_PATHS) return;
+
       const nextSequence = [...sequence, `${node.id}·${option.id}`];
       const nextCriteria: Record<string, number> = { ...byCriteria };
 
@@ -687,7 +697,7 @@ function buildPaths(version: SimulationVersionDetailResponse, matrix: MatrixItem
       }
 
       paths.push({
-        sequence: `${nextSequence.join(" ? ")} ? Encerramento conservador`,
+        sequence: `${nextSequence.join(" → ")} → Encerramento`,
         total: calculateTotal(nextCriteria, matrix),
         byCriteria: nextCriteria,
       });

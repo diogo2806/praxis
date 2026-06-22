@@ -1,4 +1,4 @@
-package br.com.iforce.praxis.audit.dto;
+﻿package br.com.iforce.praxis.audit.dto;
 
 import br.com.iforce.praxis.audit.model.AuditEventType;
 import io.swagger.v3.oas.annotations.media.Schema;
