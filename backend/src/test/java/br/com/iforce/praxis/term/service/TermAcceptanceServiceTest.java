@@ -4,6 +4,7 @@ import br.com.iforce.praxis.auth.service.CurrentTenantService;
 import br.com.iforce.praxis.auth.service.CurrentUserService;
 import br.com.iforce.praxis.term.dto.AcceptTermRequest;
 import br.com.iforce.praxis.term.dto.TermAcceptanceStatusResponse;
+import br.com.iforce.praxis.term.model.HealthUseTerm;
 import br.com.iforce.praxis.term.model.ResponsibilityTerm;
 import br.com.iforce.praxis.term.persistence.entity.TermAcceptanceEntity;
 import br.com.iforce.praxis.term.persistence.repository.TermAcceptanceRepository;
@@ -100,6 +101,45 @@ class TermAcceptanceServiceTest {
                 .hasMessageContaining("409");
 
         verify(termAcceptanceRepository, never()).save(any());
+    }
+
+    @Test
+    void exposesCurrentHealthUseTerm() {
+        assertThat(service.healthUseTerm().type()).isEqualTo(HealthUseTerm.TYPE);
+        assertThat(service.healthUseTerm().version()).isEqualTo(HealthUseTerm.VERSION);
+        assertThat(service.healthUseTerm().text()).isNotBlank();
+    }
+
+    @Test
+    void healthUseNotAcceptedByCurrentUserWhenNoRecord() {
+        when(termAcceptanceRepository.findFirstByTenantIdAndUserIdAndTermTypeOrderByAcceptedAtDesc(
+                "tenant-1", "42", HealthUseTerm.TYPE)).thenReturn(Optional.empty());
+
+        assertThat(service.isHealthUseAcceptedByCurrentUser()).isFalse();
+    }
+
+    @Test
+    void healthUseAcceptedByCurrentUserWhenCurrentVersionRecorded() {
+        TermAcceptanceEntity current = new TermAcceptanceEntity();
+        current.setTenantId("tenant-1");
+        current.setUserId("42");
+        current.setTermType(HealthUseTerm.TYPE);
+        current.setTermVersion(HealthUseTerm.VERSION);
+        current.setAcceptedAt(Instant.now());
+        when(termAcceptanceRepository.findFirstByTenantIdAndUserIdAndTermTypeOrderByAcceptedAtDesc(
+                "tenant-1", "42", HealthUseTerm.TYPE)).thenReturn(Optional.of(current));
+
+        assertThat(service.isHealthUseAcceptedByCurrentUser()).isTrue();
+    }
+
+    @Test
+    void acceptingCurrentHealthUseVersionPersistsRecord() {
+        TermAcceptanceStatusResponse status = service.acceptHealthUse(new AcceptTermRequest(HealthUseTerm.VERSION));
+
+        ArgumentCaptor<TermAcceptanceEntity> captor = ArgumentCaptor.forClass(TermAcceptanceEntity.class);
+        verify(termAcceptanceRepository).save(captor.capture());
+        assertThat(captor.getValue().getTermType()).isEqualTo(HealthUseTerm.TYPE);
+        assertThat(status.accepted()).isTrue();
     }
 
     private TermAcceptanceEntity acceptanceWithVersion(String version) {

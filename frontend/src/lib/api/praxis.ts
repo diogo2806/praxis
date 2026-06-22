@@ -67,6 +67,8 @@ export interface CandidateAttemptResponse {
   acaoSugeridaFrontend?: "INICIAR" | "CONTINUAR_TESTE" | "VER_RESULTADOS";
   progresso: CandidateProgressResponse;
   etapaAtual: CandidateNodeResponse | null;
+  /** Quando verdadeiro, o tenant opera na vertical de saúde: o fluxo coleta consentimento (LGPD). */
+  verticalSaude?: boolean;
 }
 
 export interface SubmitAnswerRequest {
@@ -866,6 +868,21 @@ export function acceptResponsibilityTerm(version: string) {
   });
 }
 
+export function getHealthUseTerm() {
+  return request<TermResponse>("/api/v1/terms/health-use");
+}
+
+export function getHealthUseAcceptance() {
+  return request<TermAcceptanceStatusResponse>("/api/v1/terms/health-use/acceptance");
+}
+
+export function acceptHealthUseTerm(version: string) {
+  return request<TermAcceptanceStatusResponse>("/api/v1/terms/health-use/acceptance", {
+    method: "POST",
+    body: JSON.stringify({ version }),
+  });
+}
+
 /**
  * Pedido de revisão humana do candidato (REQ-L5 / LGPD art. 20). Rota pública: o candidato
  * acessa pelo próprio link, sem autenticação.
@@ -874,6 +891,20 @@ export function requestHumanReview(attemptId: string, reason?: string) {
   return request<void>(`/candidate/attempts/${encodeURIComponent(attemptId)}/review-request`, {
     method: "POST",
     body: JSON.stringify({ reason: reason && reason.trim() ? reason.trim() : null }),
+  });
+}
+
+/** Versão do aviso de consentimento de saúde (Minuta A) exibido ao participante. */
+export const HEALTH_CONSENT_VERSION = "2026-06-01";
+
+/**
+ * Registra o consentimento do participante para tratamento de dado sensível de saúde na vertical
+ * educativa (LGPD, arts. 11 e 14). Rota pública, sem autenticação.
+ */
+export function recordHealthConsent(attemptId: string, onBehalfOfMinor = false) {
+  return request<void>(`/candidate/attempts/${encodeURIComponent(attemptId)}/health-consent`, {
+    method: "POST",
+    body: JSON.stringify({ version: HEALTH_CONSENT_VERSION, onBehalfOfMinor }),
   });
 }
 

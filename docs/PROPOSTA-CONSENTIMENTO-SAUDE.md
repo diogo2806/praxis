@@ -145,15 +145,40 @@ por:
 6. **Necessidade de gate técnico.** Decidir se a vertical de saúde deve ser uma
    trava de produto (só habilita após aceite da Minuta C e configuração da Minuta A).
 
-## 8. Implementação sugerida (após sinal verde jurídico)
+## 8. Implementação (entregue)
 
-- Novo termo `HEALTH_USE` no domínio `term`, espelhando `ResponsibilityTerm`
-  (texto + versão + registro de aceite por usuário).
-- Flag por tenant `vertical=health` que: (a) exige aceite da Minuta C para publicar;
-  (b) injeta a Minuta A no início do fluxo do candidato; (c) troca o rodapé para a
-  Minuta B.
-- Auditoria do consentimento do titular (evento dedicado na trilha).
+> **Status: implementado** (validação jurídica registrada). A vertical permanece
+> **desligada por padrão** em todos os tenants; habilite-a conscientemente por tenant.
 
-> Enquanto o Jurídico não validar, **não** habilitar coleta de dado de saúde de
-> pacientes em produção. O reposicionamento educativo já aplicado na landing reduz a
-> exposição imediata; este documento prepara a operação segura da vertical.
+O que foi construído:
+
+- **Termo `HEALTH_USE`** (Minuta C) no domínio `term`, espelhando `ResponsibilityTerm`
+  (`HealthUseTerm`, texto + versão + registro de aceite por usuário). Endpoints:
+  `GET/POST /api/v1/terms/health-use[/acceptance]`.
+- **Flag por tenant** `tenants.health_vertical` (migração `V38`, default `false`),
+  resolvida por `HealthVerticalService`.
+- **Trava de publicação** (Minuta C): `SimulationAdminService.publishVersion` bloqueia
+  com `409` quando o tenant é da vertical de saúde e o recrutador não aceitou o termo
+  corrente. A tela `/nova/governanca` mostra o aceite quando o `409` ocorre.
+- **Consentimento do paciente** (Minuta A): o estado da tentativa expõe `verticalSaude`;
+  o fluxo do candidato (`/candidato/$token`) exibe o aviso de consentimento antes de
+  iniciar (cronômetro pausado) e troca o rodapé para a Minuta B. O aceite é registrado
+  na trilha via `POST /candidate/attempts/{id}/health-consent` (evento de auditoria
+  `healthConsentRecorded`, com versão do aviso, timestamp e marcação de responsável legal).
+
+### Como habilitar a vertical para um tenant
+
+```sql
+UPDATE tenants SET health_vertical = TRUE WHERE id = '<tenant-id>';
+```
+
+A partir daí: o recrutador precisa aceitar o termo de uso em saúde para publicar, e o
+participante precisa consentir antes de iniciar a atividade.
+
+### Pendências para evolução futura
+
+- UI administrativa para alternar a flag por tenant (hoje via SQL/configuração).
+- Versionamento do texto da Minuta A em fonte única (hoje o texto é copy de UI e a
+  versão é a constante `HEALTH_CONSENT_VERSION` no frontend / `noticeVersion` na trilha).
+- Fluxo dedicado de identificação do responsável legal (menor/vulnerável) além do
+  checkbox atual.

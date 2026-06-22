@@ -3,6 +3,8 @@ package br.com.iforce.praxis.simulation.service;
 import br.com.iforce.praxis.audit.model.AuditEventType;
 import br.com.iforce.praxis.audit.service.AuditEventService;
 import br.com.iforce.praxis.auth.service.CurrentTenantService;
+import br.com.iforce.praxis.auth.service.HealthVerticalService;
+import br.com.iforce.praxis.term.service.TermAcceptanceService;
 import br.com.iforce.praxis.simulation.dto.CloneSimulationVersionResponse;
 import br.com.iforce.praxis.simulation.dto.CompetencyWeightDto;
 import br.com.iforce.praxis.simulation.dto.CreateNodeRequest;
@@ -61,6 +63,8 @@ public class SimulationAdminService {
     private final SimulationMapperService simulationMapperService;
     private final AuditEventService auditEventService;
     private final CurrentTenantService currentTenantService;
+    private final HealthVerticalService healthVerticalService;
+    private final TermAcceptanceService termAcceptanceService;
 
     public SimulationAdminService(
             SimulationVersionRepository simulationVersionRepository,
@@ -70,7 +74,9 @@ public class SimulationAdminService {
             GupyPreflightService gupyPreflightService,
             SimulationMapperService simulationMapperService,
             AuditEventService auditEventService,
-            CurrentTenantService currentTenantService
+            CurrentTenantService currentTenantService,
+            HealthVerticalService healthVerticalService,
+            TermAcceptanceService termAcceptanceService
     ) {
         this.simulationVersionRepository = simulationVersionRepository;
         this.simulationRepository = simulationRepository;
@@ -80,6 +86,8 @@ public class SimulationAdminService {
         this.simulationMapperService = simulationMapperService;
         this.auditEventService = auditEventService;
         this.currentTenantService = currentTenantService;
+        this.healthVerticalService = healthVerticalService;
+        this.termAcceptanceService = termAcceptanceService;
     }
 
     @Transactional(readOnly = true)
@@ -511,6 +519,14 @@ public class SimulationAdminService {
         GupyPreflightResponse gupyPreflightResponse = gupyPreflightService.evaluate(simulationVersionEntity);
         if (!gupyPreflightResponse.ok()) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Preflight Gupy bloqueou a publicação.");
+        }
+
+        if (healthVerticalService.isHealthVertical(simulationVersionEntity.getSimulation().getTenantId())
+                && !termAcceptanceService.isHealthUseAcceptedByCurrentUser()) {
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "Aceite o termo de uso na vertical de saúde antes de publicar."
+            );
         }
 
         archiveOtherPublishedVersions(simulationVersionEntity);

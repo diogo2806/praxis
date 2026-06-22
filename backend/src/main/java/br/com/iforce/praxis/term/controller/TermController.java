@@ -44,4 +44,24 @@ public class TermController {
     ) {
         return ResponseEntity.ok(termAcceptanceService.acceptResponsibility(request));
     }
+
+    @GetMapping("/health-use")
+    @Operation(summary = "Texto e versão do termo de uso na vertical de saúde")
+    public ResponseEntity<TermResponse> healthUseTerm() {
+        return ResponseEntity.ok(termAcceptanceService.healthUseTerm());
+    }
+
+    @GetMapping("/health-use/acceptance")
+    @Operation(summary = "Situação de aceite do termo de uso em saúde pelo usuário atual")
+    public ResponseEntity<TermAcceptanceStatusResponse> healthUseStatus() {
+        return ResponseEntity.ok(termAcceptanceService.healthUseStatus());
+    }
+
+    @PostMapping("/health-use/acceptance")
+    @Operation(summary = "Registra o aceite do termo de uso em saúde")
+    public ResponseEntity<TermAcceptanceStatusResponse> acceptHealthUse(
+            @Valid @RequestBody AcceptTermRequest request
+    ) {
+        return ResponseEntity.ok(termAcceptanceService.acceptHealthUse(request));
+    }
 }

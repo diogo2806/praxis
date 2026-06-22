@@ -6,6 +6,7 @@ import { EmptyState } from "@/components/praxis-ui";
 import {
   getCandidateAttempt,
   PraxisApiError,
+  recordHealthConsent,
   requestHumanReview,
   submitCandidateAnswer,
   type CandidateAttemptResponse,
@@ -138,6 +139,7 @@ function FocusedCandidateExperience({ token }: { token: string }) {
   const [dyslexiaFont, setDyslexiaFont] = useState(false);
   const [submittingAnswer, setSubmittingAnswer] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [healthConsentGiven, setHealthConsentGiven] = useState(false);
 
   const attemptQuery = useQuery({
     queryKey: ["candidate-attempt", token],
@@ -153,6 +155,9 @@ function FocusedCandidateExperience({ token }: { token: string }) {
   const attempt = liveAttempt ?? attemptQuery.data;
   const currentNode = attempt?.etapaAtual ?? null;
   const finished = Boolean(attempt && (attempt.finalizado || !currentNode));
+  // Na vertical de saúde, o participante precisa consentir o tratamento de dado sensível
+  // antes de iniciar; enquanto isso, o cronômetro fica pausado para não autoenviar respostas.
+  const needsHealthConsent = Boolean(attempt?.verticalSaude) && !healthConsentGiven && !finished;
   const timeLimit = Math.max(
     1,
     currentNode?.tempoLimiteSegundosAcomodado ?? currentNode?.tempoLimiteSegundos ?? 30,
@@ -211,18 +216,33 @@ function FocusedCandidateExperience({ token }: { token: string }) {
   }, [currentNode?.numero, timeLimit]);
 
   useEffect(() => {
-    if (finished || submittingAnswer || !currentNode) return;
+    if (finished || submittingAnswer || !currentNode || needsHealthConsent) return;
     const id = window.setInterval(() => {
       setRemaining((value) => Math.max(0, value - 1));
     }, 1000);
     return () => window.clearInterval(id);
-  }, [submittingAnswer, currentNode, finished]);
+  }, [submittingAnswer, currentNode, finished, needsHealthConsent]);
 
   useEffect(() => {
-    if (remaining === 0 && !finished && currentNode && !selectedOptionId && !submittingAnswer) {
+    if (
+      remaining === 0 &&
+      !finished &&
+      currentNode &&
+      !selectedOptionId &&
+      !submittingAnswer &&
+      !needsHealthConsent
+    ) {
       void submitAnswer(currentNode, null, true);
     }
-  }, [currentNode, finished, remaining, selectedOptionId, submitAnswer, submittingAnswer]);
+  }, [
+    currentNode,
+    finished,
+    remaining,
+    selectedOptionId,
+    submitAnswer,
+    submittingAnswer,
+    needsHealthConsent,
+  ]);
 
   const pageClass = cn(
     "min-h-screen px-4 py-5 transition-colors sm:px-6",
@@ -299,7 +319,7 @@ function FocusedCandidateExperience({ token }: { token: string }) {
           </div>
         </div>
 
-        {currentNode && !finished && (
+        {currentNode && !finished && !needsHealthConsent && (
           <div className="mb-8 space-y-3">
             <div className="flex flex-wrap items-center justify-between gap-2 text-sm font-medium">
               <span>
@@ -343,6 +363,12 @@ function FocusedCandidateExperience({ token }: { token: string }) {
               )}
             </p>
           </div>
+        ) : needsHealthConsent ? (
+          <HealthConsentGate
+            token={token}
+            highContrast={highContrast}
+            onConsented={() => setHealthConsentGiven(true)}
+          />
         ) : currentNode && !finished ? (
           <div className="flex flex-1 flex-col justify-center">
             <div className="mx-auto w-full max-w-2xl">
@@ -461,10 +487,9 @@ function FocusedCandidateExperience({ token }: { token: string }) {
         )}
 
         <p className="mt-6 border-t border-current pt-4 text-center text-xs leading-relaxed opacity-50">
-          Seus dados são tratados exclusivamente para fins desta avaliação, conforme a LGPD. A
-          pontuação segue critérios definidos antes do teste, sem IA julgando você. A decisão sobre
-          a sua candidatura é tomada por uma pessoa, não por um sistema automático, e você pode
-          solicitar revisão humana do resultado.
+          {attempt?.verticalSaude
+            ? "Esta é uma atividade educativa. Seus dados são tratados apenas para esta finalidade, conforme a LGPD. Não é diagnóstico nem substitui avaliação profissional. A decisão é de uma pessoa, não de um sistema automático, e você pode pedir revisão humana."
+            : "Seus dados são tratados exclusivamente para fins desta avaliação, conforme a LGPD. A pontuação segue critérios definidos antes do teste, sem IA julgando você. A decisão sobre a sua candidatura é tomada por uma pessoa, não por um sistema automático, e você pode solicitar revisão humana do resultado."}
         </p>
       </section>
     </main>
@@ -538,6 +563,114 @@ function HumanReviewRequest({
           )}
         </div>
       )}
+    </div>
+  );
+}
+
+function HealthConsentGate({
+  token,
+  highContrast,
+  onConsented,
+}: {
+  token: string;
+  highContrast: boolean;
+  onConsented: () => void;
+}) {
+  const [agreed, setAgreed] = useState(false);
+  const [onBehalfOfMinor, setOnBehalfOfMinor] = useState(false);
+  const mutation = useMutation({
+    mutationFn: () => recordHealthConsent(token, onBehalfOfMinor),
+    onSuccess: onConsented,
+  });
+
+  const cardClass = cn(
+    "mx-auto w-full max-w-2xl rounded-md border p-5 text-left sm:p-6",
+    highContrast ? "border-white bg-black" : "border-slate-200 bg-white",
+  );
+  const checkboxRowClass = cn(
+    "flex items-start gap-3 rounded-md border p-3",
+    highContrast ? "border-zinc-600" : "border-slate-200",
+  );
+  const buttonClass = cn(
+    "inline-flex w-full items-center justify-center rounded-md px-5 py-3 text-sm font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto",
+    highContrast ? "bg-white text-black hover:bg-zinc-200" : "bg-blue-700 text-white hover:bg-blue-800",
+  );
+
+  return (
+    <div className="flex flex-1 flex-col justify-center">
+      <div className={cardClass}>
+        <div className="text-sm font-medium uppercase tracking-wide opacity-70">Antes de começar</div>
+        <h1 className="mt-2 text-2xl font-semibold">Uso dos seus dados nesta atividade</h1>
+        <div className="mt-4 space-y-3 text-sm leading-relaxed opacity-90">
+          <p>
+            Esta atividade é um <strong>exercício educativo de tomada de decisão</strong>. Ela
+            apresenta situações do dia a dia para você praticar escolhas.{" "}
+            <strong>Não é uma consulta, não é diagnóstico e não substitui a orientação de um
+            profissional de saúde.</strong>
+          </p>
+          <p>
+            Para realizar a atividade, a empresa responsável vai tratar respostas suas que podem
+            revelar informações relacionadas à sua saúde ou aos seus hábitos. Esses dados serão
+            usados <strong>somente</strong> para gerar o resultado educativo desta atividade e para
+            as finalidades descritas na política de privacidade da empresa responsável.
+          </p>
+          <ul className="list-disc space-y-1 pl-5">
+            <li>A pontuação segue critérios definidos antes da atividade. Não há IA julgando você.</li>
+            <li>
+              Seus dados não serão usados para decidir, sozinhos e de forma automatizada, sobre
+              tratamento, atendimento ou acesso a serviços.
+            </li>
+            <li>Você pode pedir que uma pessoa revise o resultado.</li>
+            <li>
+              Você pode acessar, corrigir ou excluir seus dados e revogar este consentimento a
+              qualquer momento, pelo canal indicado pela empresa responsável. A revogação não afeta
+              atividades já realizadas.
+            </li>
+          </ul>
+        </div>
+
+        <div className="mt-5 space-y-2">
+          <label className={checkboxRowClass}>
+            <input
+              type="checkbox"
+              className="mt-0.5 h-4 w-4"
+              checked={agreed}
+              onChange={(event) => setAgreed(event.target.checked)}
+            />
+            <span className="text-sm">
+              Li e concordo que a empresa responsável trate os dados sensíveis de saúde informados
+              por mim nesta atividade, exclusivamente para as finalidades educativas acima.
+            </span>
+          </label>
+          <label className={checkboxRowClass}>
+            <input
+              type="checkbox"
+              className="mt-0.5 h-4 w-4"
+              checked={onBehalfOfMinor}
+              onChange={(event) => setOnBehalfOfMinor(event.target.checked)}
+            />
+            <span className="text-sm">
+              Estou concordando como responsável legal pela pessoa sob minha responsabilidade.
+            </span>
+          </label>
+        </div>
+
+        <div className="mt-5 flex flex-col items-start gap-2">
+          <button
+            type="button"
+            className={buttonClass}
+            disabled={!agreed || mutation.isPending}
+            onClick={() => mutation.mutate()}
+          >
+            {mutation.isPending ? "Registrando consentimento..." : "Concordar e continuar"}
+          </button>
+          {mutation.isError && (
+            <p className="text-sm font-medium text-red-600" aria-live="assertive">
+              Não consegui registrar o consentimento agora. Tente novamente em instantes.
+            </p>
+          )}
+        </div>
+      </div>
     </div>
   );
 }

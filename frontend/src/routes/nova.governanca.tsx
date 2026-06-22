@@ -5,7 +5,10 @@ import { AppShell } from "@/components/app-shell";
 import { EmptyState, ScreenStateStrip, StateBanner, StatusBadge } from "@/components/praxis-ui";
 import { WizardStepper } from "@/components/wizard-stepper";
 import {
+  acceptHealthUseTerm,
   acceptResponsibilityTerm,
+  getHealthUseAcceptance,
+  getHealthUseTerm,
   getResponsibilityAcceptance,
   getResponsibilityTerm,
   listSimulations,
@@ -103,6 +106,29 @@ function Page() {
   });
   const termAccepted = acceptanceQuery.data?.accepted ?? false;
 
+  // Termo de uso na vertical de saúde (Minuta C). A publicação só o exige quando o tenant opera
+  // nessa vertical: o backend bloqueia com 409, e então mostramos o aceite para liberar a republicação.
+  const healthTermQuery = useQuery({
+    queryKey: ["health-use-term"],
+    queryFn: getHealthUseTerm,
+  });
+  const healthAcceptanceQuery = useQuery({
+    queryKey: ["health-use-acceptance"],
+    queryFn: getHealthUseAcceptance,
+  });
+  const healthAcceptMutation = useMutation({
+    mutationFn: () => acceptHealthUseTerm(healthTermQuery.data!.version),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["health-use-acceptance"] });
+    },
+  });
+  const healthTermAccepted = healthAcceptanceQuery.data?.accepted ?? false;
+  const publishBlockedByHealthTerm =
+    !healthTermAccepted &&
+    transitionMutation.isError &&
+    transitionMutation.error instanceof Error &&
+    transitionMutation.error.message.toLowerCase().includes("vertical de saúde");
+
   const visibleStatus = currentStatus ?? inferStatusFromEvents(auditQuery.data);
 
   return (
@@ -194,6 +220,18 @@ function Page() {
             canAccept={Boolean(termQuery.data)}
             onAccept={() => acceptMutation.mutate()}
           />
+
+          {(publishBlockedByHealthTerm || healthAcceptMutation.isSuccess) && (
+            <HealthUseTermGate
+              text={healthTermQuery.data?.text ?? ""}
+              accepted={healthTermAccepted}
+              acceptedAt={healthAcceptanceQuery.data?.acceptedAt ?? null}
+              accepting={healthAcceptMutation.isPending}
+              failed={healthAcceptMutation.isError}
+              canAccept={Boolean(healthTermQuery.data)}
+              onAccept={() => healthAcceptMutation.mutate()}
+            />
+          )}
 
           <div className="mt-5 grid gap-2 md:grid-cols-1">
             <TransitionButton
@@ -304,6 +342,56 @@ function ResponsibilityTermGate({
             className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-60"
           >
             {accepting ? "Registrando..." : "Li e aceito a responsabilidade"}
+          </button>
+          {failed && (
+            <p className="mt-2 text-xs text-danger">
+              Não foi possível registrar o aceite. Tente novamente.
+            </p>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function HealthUseTermGate({
+  text,
+  accepted,
+  acceptedAt,
+  accepting,
+  failed,
+  canAccept,
+  onAccept,
+}: {
+  text: string;
+  accepted: boolean;
+  acceptedAt: string | null;
+  accepting: boolean;
+  failed: boolean;
+  canAccept: boolean;
+  onAccept: () => void;
+}) {
+  return (
+    <div className="mt-4 rounded-md border border-amber-300 bg-amber-50 p-4">
+      <h4 className="text-sm font-semibold text-amber-900">Termo de uso na vertical de saúde</h4>
+      <p className="mt-1 text-xs text-amber-900/80">
+        Esta empresa opera na vertical de saúde. Para publicar, aceite as condições de uso educativo
+        e tratamento de dado sensível (LGPD).
+      </p>
+      <p className="mt-2 text-sm text-muted-foreground">{text}</p>
+      {accepted ? (
+        <p className="mt-3 text-xs font-medium text-success">
+          Aceito{acceptedAt ? ` em ${formatDateTime(acceptedAt)}` : ""}. Você já pode publicar.
+        </p>
+      ) : (
+        <div className="mt-3">
+          <button
+            type="button"
+            disabled={accepting || !canAccept}
+            onClick={onAccept}
+            className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {accepting ? "Registrando..." : "Li e aceito o termo de uso em saúde"}
           </button>
           {failed && (
             <p className="mt-2 text-xs text-danger">
