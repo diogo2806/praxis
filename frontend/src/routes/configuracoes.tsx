@@ -61,7 +61,7 @@ function ConfiguracoesPage() {
                 <div className="mt-1 text-sm font-medium">{session.workspaceName}</div>
               </div>
               <div>
-                <div className="text-xs uppercase text-muted-foreground">Tenant ID</div>
+                <div className="text-xs uppercase text-muted-foreground">ID da organização</div>
                 <div className="mt-1 font-mono text-sm text-muted-foreground">
                   {session.tenantId ?? "—"}
                 </div>
