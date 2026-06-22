@@ -1,14 +1,14 @@
-﻿import { useEffect } from "react";
+import { useEffect } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Pr├íxis ÔÇö Avalia├º├úo comportamental situacional" },
+      { title: "Práxis — Avaliação comportamental situacional" },
       {
         name: "description",
         content:
-          "Avalie pessoas por como decidem em cen├írios realistas. Pontua├º├úo determin├¡stica, trilha audit├ível e integra├º├Áes com ATS, sistemas de sa├║de e plataformas educacionais. Sem IA julgando ningu├®m.",
+          "Avalie pessoas por como decidem em cenários realistas. Pontuação determinística, trilha auditável e integrações com ATS, sistemas de saúde e plataformas educacionais. Sem IA julgando ninguém.",
       },
     ],
     links: [
@@ -299,7 +299,7 @@ const landingStyles = `
   .connect .cnote{margin-top:1.2rem;padding-top:1rem;border-top:1px solid var(--line-soft);font-size:0.84rem;color:var(--muted);display:flex;align-items:center;gap:0.5rem}
   .connect .cnote .pip{flex:none;width:0.5rem;height:0.5rem;border-radius:50%;background:var(--success);box-shadow:0 0 0 3px oklch(0.6 0.13 150 / 0.18)}
 
-  /* governance ÔÇö dark band */
+  /* governance — dark band */
   .dark-band{background:var(--navy);color:var(--on-navy);position:relative;overflow:hidden}
   .dark-band::before{content:"";position:absolute;inset:0;background:radial-gradient(50% 40% at 85% 0%, oklch(0.76 0.13 80 / 0.10), transparent 70%);pointer-events:none}
   .dark-band h2,.dark-band h3{color:var(--on-navy)}
@@ -452,7 +452,7 @@ const landingStyles = `
   .sc-report .invisible-note{margin-top:0.75rem;font-size:0.74rem;color:var(--faint);display:flex;gap:0.45rem;align-items:flex-start}
   .sc-report .invisible-note svg{flex:none;width:0.95rem;height:0.95rem;margin-top:0.1rem;stroke:var(--faint)}
 
-  /* ===== Mapa da simula├º├úo ÔÇö product mock (native canvas palette) ===== */
+  /* ===== Mapa da simulação — product mock (native canvas palette) ===== */
   .builder{margin-top:3rem}
   .builder .blead{display:flex;align-items:flex-start;gap:0.65rem;max-width:62ch;margin-bottom:1.4rem;color:var(--muted);font-size:1rem;line-height:1.55}
   .builder .blead svg{flex:none;width:1.25rem;height:1.25rem;margin-top:0.22rem;stroke:var(--gold-deep)}
@@ -517,15 +517,15 @@ const landingStyles = `
 `;
 const landingMarkup = `<header class="nav" id="nav">
   <div class="wrap nav-inner">
-    <a href="#topo" class="brand" aria-label="Pr├íxis, por iForce">
-      Pr├íxis<span class="dot"></span><small>by iForce</small>
+    <a href="#topo" class="brand" aria-label="Práxis, por iForce">
+      Práxis<span class="dot"></span><small>by iForce</small>
     </a>
-    <nav class="nav-links" aria-label="Se├º├Áes">
+    <nav class="nav-links" aria-label="Seções">
       <a class="link" href="#problema">Por que</a>
       <a class="link" href="#como">Como funciona</a>
       <a class="link" href="#aplicacoes">Onde se aplica</a>
-      <a class="link" href="#integracoes">Integra├º├Áes</a>
-      <a class="link" href="#precos">Pre├ºos</a>
+      <a class="link" href="#integracoes">Integrações</a>
+      <a class="link" href="#precos">Preços</a>
     </nav>
     <div class="nav-cta">
       <a class="link" href="#entrar">Entrar</a>
@@ -543,51 +543,51 @@ const landingMarkup = `<header class="nav" id="nav">
   <section class="hero">
     <div class="wrap hero-grid">
       <div class="hero-copy">
-        <span class="eyebrow reveal-up d1">Avalia├º├úo situacional ┬À sem IA julgando pessoas</span>
-        <h1 class="reveal-up d2">Veja como a pessoa <span class="accent">decide</span> diante de um cen├írio realista.</h1>
-        <p class="lead reveal-up d3">Antes de gastar tempo com entrevistas, a Pr├íxis mostra como algu├®m age diante de uma situa├º├úo realista ÔÇö com pontua├º├úo por compet├¬ncia e uma trilha audit├ível projetada para rastreabilidade. Para recrutamento, sa├║de, educa├º├úo ou onde decis├úo importa.</p>
+        <span class="eyebrow reveal-up d1">Avaliação situacional · sem IA julgando pessoas</span>
+        <h1 class="reveal-up d2">Veja como a pessoa <span class="accent">decide</span> diante de um cenário realista.</h1>
+        <p class="lead reveal-up d3">Antes de gastar tempo com entrevistas, a Práxis mostra como alguém age diante de uma situação realista — com pontuação por competência e uma trilha auditável projetada para rastreabilidade. Para recrutamento, saúde, educação ou onde decisão importa.</p>
         <div class="hero-ctas reveal-up d4">
-          <a class="btn btn-primary" href="#cta">Agendar demonstra├º├úo <span class="btn-arrow">ÔåÆ</span></a>
+          <a class="btn btn-primary" href="#cta">Agendar demonstração <span class="btn-arrow">→</span></a>
           <a class="btn btn-ghost" href="#aplicacoes">Ver onde se aplica</a>
         </div>
         <div class="integrations-line reveal-up d5">
           <span class="pip"></span>
-          <span>Integra com <b>Gupy</b>, <b>Recrutei</b> e outros sistemas ÔÇö o resultado volta para a plataforma de origem.</span>
+          <span>Integra com <b>Gupy</b>, <b>Recrutei</b> e outros sistemas — o resultado volta para a plataforma de origem.</span>
         </div>
       </div>
 
       <!-- interactive scenario -->
-      <div class="scenario reveal-up d4" aria-label="Demonstra├º├úo de um cen├írio">
+      <div class="scenario reveal-up d4" aria-label="Demonstração de um cenário">
         <div class="sc-top">
           <div class="sc-id">
             <div class="avatar">CM</div>
             <div>
               <div class="who">Carlos M.</div>
-              <div class="stage">ETAPA 1/3 ┬À ABERTURA</div>
+              <div class="stage">ETAPA 1/3 · ABERTURA</div>
             </div>
           </div>
           <div class="sc-timer"><span class="tdot"></span>00:24</div>
         </div>
         <div class="sc-body">
-          <div class="sc-tag">Cliente ┬À furioso</div>
-          <p class="sc-msg">ÔÇ£J├í ├® a terceira vez que abro chamado e ningu├®m resolve. Preciso disso hoje, ou vou escalar para cima.ÔÇØ</p>
-          <div class="sc-opts" role="group" aria-label="Como voc├¬ agiria?">
+          <div class="sc-tag">Cliente · furioso</div>
+          <p class="sc-msg">“Já é a terceira vez que abro chamado e ninguém resolve. Preciso disso hoje, ou vou escalar para cima.”</p>
+          <div class="sc-opts" role="group" aria-label="Como você agiria?">
             <button class="opt"><span class="key">A</span><span>Pedir desculpas e prometer retorno em 30min, sem confirmar com o time.</span></button>
-            <button class="opt"><span class="key">B</span><span>Reconhecer a frustra├º├úo, confirmar o n├║mero do chamado e dar um prazo realista alinhado ao time.</span></button>
-            <button class="opt"><span class="key">C</span><span>Explicar a pol├¡tica interna de SLA e pedir paci├¬ncia at├® o pr├│ximo ciclo.</span></button>
+            <button class="opt"><span class="key">B</span><span>Reconhecer a frustração, confirmar o número do chamado e dar um prazo realista alinhado ao time.</span></button>
+            <button class="opt"><span class="key">C</span><span>Explicar a política interna de SLA e pedir paciência até o próximo ciclo.</span></button>
             <button class="opt"><span class="key">D</span><span>Encaminhar direto para o supervisor sem tentar resolver.</span></button>
           </div>
           <p class="sc-note" id="scNote">
             <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2 4 5v6c0 5 3.4 8.3 8 11 4.6-2.7 8-6 8-11V5z"/></svg>
-            <span>Demonstra├º├úo interativa. Escolha uma resposta ÔÇö todas s├úo plaus├¡veis de prop├│sito.</span>
+            <span>Demonstração interativa. Escolha uma resposta — todas são plausíveis de propósito.</span>
           </p>
           <div class="sc-report" id="scReport" aria-live="polite">
-            <div class="rh"><span class="rl">Leitura desta decis├úo</span><span class="tag" id="rTag"></span></div>
+            <div class="rh"><span class="rl">Leitura desta decisão</span><span class="tag" id="rTag"></span></div>
             <div class="pts" id="rPts"></div>
             <p class="read" id="rRead"></p>
             <p class="invisible-note">
               <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3l18 18M10.6 10.6a2 2 0 0 0 2.9 2.9M9.5 5.2A9 9 0 0 1 21 12a13 13 0 0 1-2.1 2.9M6.3 6.3A13 13 0 0 0 3 12a12 12 0 0 0 6 6"/></svg>
-              <span>Para o candidato isso fica invis├¡vel ÔÇö ele s├│ decide. Voc├¬ recebe a leitura.</span>
+              <span>Para o candidato isso fica invisível — ele só decide. Você recebe a leitura.</span>
             </p>
           </div>
         </div>
@@ -600,26 +600,26 @@ const landingMarkup = `<header class="nav" id="nav">
     <div class="wrap">
       <div class="sec-head">
         <span class="eyebrow">O problema</span>
-        <h2>O teste tradicional virou alvo f├ícil.</h2>
-        <p class="lead">Provas de m├║ltipla escolha e reda├º├úo perderam confiabilidade: o candidato consulta a IA, decora a resposta certa e passa. Voc├¬ entrevista quem ├® bom de prova ÔÇö n├úo quem sabe lidar com a situa├º├úo.</p>
+        <h2>O teste tradicional virou alvo fácil.</h2>
+        <p class="lead">Provas de múltipla escolha e redação perderam confiabilidade: o candidato consulta a IA, decora a resposta certa e passa. Você entrevista quem é bom de prova — não quem sabe lidar com a situação.</p>
       </div>
       <div class="split">
         <div class="col bad">
           <h3><span class="badge">Teste comum</span></h3>
           <ul class="clist">
-            <li><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>Mede conhecimento decor├ível, n├úo comportamento.</li>
-            <li><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>A resposta ÔÇ£certaÔÇØ ├® ├│bvia e f├ícil de colar com IA.</li>
-            <li><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>Nota sem contexto: o gestor n├úo sabe o porqu├¬.</li>
-            <li><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>Entrevistas desperdi├ºadas com quem n├úo tem o perfil.</li>
+            <li><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>Mede conhecimento decorável, não comportamento.</li>
+            <li><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>A resposta “certa” é óbvia e fácil de colar com IA.</li>
+            <li><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>Nota sem contexto: o gestor não sabe o porquê.</li>
+            <li><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>Entrevistas desperdiçadas com quem não tem o perfil.</li>
           </ul>
         </div>
         <div class="col good">
-          <h3><span class="badge">Pr├íxis</span></h3>
+          <h3><span class="badge">Práxis</span></h3>
           <ul class="clist">
-            <li><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>Coloca a pessoa para decidir num cen├írio real do cargo.</li>
-            <li><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>Todas as op├º├Áes s├úo plaus├¡veis: mede julgamento.</li>
-            <li><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>Pontua├º├úo por compet├¬ncia com a trilha exata de cada ponto.</li>
-            <li><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>O gestor entrevista quem j├í provou saber lidar.</li>
+            <li><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>Coloca a pessoa para decidir num cenário real do cargo.</li>
+            <li><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>Todas as opções são plausíveis: mede julgamento.</li>
+            <li><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>Pontuação por competência com a trilha exata de cada ponto.</li>
+            <li><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>O gestor entrevista quem já provou saber lidar.</li>
           </ul>
         </div>
       </div>
@@ -631,44 +631,44 @@ const landingMarkup = `<header class="nav" id="nav">
     <div class="wrap">
       <div class="sec-head">
         <span class="eyebrow">Como funciona</span>
-        <h2>Um cen├írio ramificado, montado pelo seu RH.</h2>
-        <p class="lead">Sem programar e sem IA decidindo nada. O RH escreve o caso, as respostas e quanto cada uma vale por compet├¬ncia. A pontua├º├úo ├® determin├¡stica: regra e c├ílculo.</p>
+        <h2>Um cenário ramificado, montado pelo seu RH.</h2>
+        <p class="lead">Sem programar e sem IA decidindo nada. O RH escreve o caso, as respostas e quanto cada uma vale por competência. A pontuação é determinística: regra e cálculo.</p>
       </div>
       <div class="steps">
         <div class="step">
           <span class="rule"></span>
           <span class="num">PASSO 01</span>
           <h3>O RH monta o caso</h3>
-          <p>Define a situa├º├úo cr├¡tica do cargo, as respostas poss├¡veis e o peso de cada compet├¬ncia.</p>
+          <p>Define a situação crítica do cargo, as respostas possíveis e o peso de cada competência.</p>
         </div>
         <div class="step">
           <span class="rule"></span>
           <span class="num">PASSO 02</span>
           <h3>A pessoa decide</h3>
-          <p>Pelo link ou direto no seu sistema, ela entra no cen├írio, enfrenta a situa├º├úo e escolhe como agir ÔÇö sob o tempo de cada etapa.</p>
+          <p>Pelo link ou direto no seu sistema, ela entra no cenário, enfrenta a situação e escolhe como agir — sob o tempo de cada etapa.</p>
         </div>
         <div class="step">
           <span class="num">PASSO 03</span>
-          <h3>Voc├¬ recebe a evid├¬ncia</h3>
-          <p>Pontua├º├úo por compet├¬ncia e a trilha de decis├úo voltam para o seu sistema, prontos para an├ílise e tomada de decis├úo.</p>
+          <h3>Você recebe a evidência</h3>
+          <p>Pontuação por competência e a trilha de decisão voltam para o seu sistema, prontos para análise e tomada de decisão.</p>
         </div>
       </div>
 
-      <!-- Mapa da simula├º├úo ÔÇö product mock -->
+      <!-- Mapa da simulação — product mock -->
       <div class="builder">
         <p class="blead">
           <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
-          <span>N├úo ├® planilha nem formul├írio: o RH desenha o caso <b>visualmente</b>, ligando cada resposta ao pr├│ximo turno. ├ë a tela que a sua equipe usa de verdade.</span>
+          <span>Não é planilha nem formulário: o RH desenha o caso <b>visualmente</b>, ligando cada resposta ao próximo turno. É a tela que a sua equipe usa de verdade.</span>
         </p>
         <div class="appwin">
           <div class="appbar"><span class="dots"><i></i><i></i><i></i></span><span class="url">praxis.iforce.com.br/nova/mapa</span></div>
           <div class="mapwin">
             <div class="maphead">
-              <span class="meyebrow">Passo 3 ┬À construtor do fluxo</span>
-              <h3>Mapa da simula├º├úo</h3>
+              <span class="meyebrow">Passo 3 · construtor do fluxo</span>
+              <h3>Mapa da simulação</h3>
               <div class="mapstats">
                 <span><b>6</b> etapas</span><span class="sep"></span>
-                <span><b>2</b> sa├¡das</span><span class="sep"></span>
+                <span><b>2</b> saídas</span><span class="sep"></span>
                 <span><b>0</b> encerramentos</span>
                 <span class="pill-amber"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 2h4M12 8v5l3 2M12 22a8 8 0 1 0 0-16 8 8 0 0 0 0 16z"/></svg> 6 sem tempo</span>
               </div>
@@ -684,31 +684,31 @@ const landingMarkup = `<header class="nav" id="nav">
                   <span class="vxport" style="right:-6px;top:184px"></span>
                   <div class="vxmsg">
                     <div class="vxhead">
-                      <span class="vxid"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16v11H8l-4 4z"/></svg>turno-1 <span class="vxbadge">in├¡cio</span><svg class="vxlock" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 11h12v9H6zM9 11V8a3 3 0 0 1 6 0v3"/></svg></span>
+                      <span class="vxid"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16v11H8l-4 4z"/></svg>turno-1 <span class="vxbadge">início</span><svg class="vxlock" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 11h12v9H6zM9 11V8a3 3 0 0 1 6 0v3"/></svg></span>
                       <span class="vxtimer"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8v5l3 2M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18z"/></svg>45s</span>
                     </div>
-                    <div class="vxtext">Frustrado, o cliente entrou em contato ap├│s encontrar um erro no aplicativo e n├úoÔÇª</div>
+                    <div class="vxtext">Frustrado, o cliente entrou em contato após encontrar um erro no aplicativo e não…</div>
                   </div>
-                  <div class="vxsec-l"><span>Compet├¬ncias</span><span>Acum.</span></div>
+                  <div class="vxsec-l"><span>Competências</span><span>Acum.</span></div>
                   <div class="vxcomp">
                     <div class="vxcrow"><span class="cn">Pro</span><span class="cin"></span><span class="cacc">50</span></div>
                     <div class="vxcrow"><span class="cn">RdC</span><span class="cin"></span><span class="cacc">50</span></div>
                     <div class="vxcrow"><span class="cn">C3</span><span class="cin"></span><span class="cacc z">0</span></div>
                   </div>
                   <div class="vxout">
-                    <div class="vxsec-l" style="padding:0 0 5px"><span>Sa├¡das (respostas)</span></div>
+                    <div class="vxsec-l" style="padding:0 0 5px"><span>Saídas (respostas)</span></div>
                     <div class="vxorow">
                       <span class="otext">alternativa A</span>
-                      <span class="vxsel">ÔåÆ turno-2 <svg viewBox="0 0 24 24" fill="none" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></span>
+                      <span class="vxsel">→ turno-2 <svg viewBox="0 0 24 24" fill="none" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></span>
                       <span class="vxbtn del"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg></span>
                     </div>
                   </div>
                   <div class="vxto">
                     <span class="tl"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 2h4M12 8v5l3 2M12 22a8 8 0 1 0 0-16 8 8 0 0 0 0 16z"/></svg> Tempo acaba</span>
-                    <span class="tsel">ÔÇö defina ÔÇö</span>
+                    <span class="tsel">— defina —</span>
                     <span class="add"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 6v12M6 12h12"/></svg></span>
                   </div>
-                  <div class="vxfoot"><span class="fadd"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 6v12M6 12h12"/></svg> sa├¡da</span></div>
+                  <div class="vxfoot"><span class="fadd"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 6v12M6 12h12"/></svg> saída</span></div>
                 </article>
 
                 <!-- turno-2 -->
@@ -719,28 +719,28 @@ const landingMarkup = `<header class="nav" id="nav">
                       <span class="vxid"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 15l6-6M8 8H6a4 4 0 0 0 0 8h2M16 16h2a4 4 0 0 0 0-8h-2"/></svg>turno-2</span>
                       <span class="vxtimer"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8v5l3 2M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18z"/></svg>45s</span>
                     </div>
-                    <div class="vxtext">O bug parece estar relacionado ao login. J├í tentou reiniciar o aplicativo?</div>
+                    <div class="vxtext">O bug parece estar relacionado ao login. Já tentou reiniciar o aplicativo?</div>
                   </div>
-                  <div class="vxsec-l"><span>Compet├¬ncias</span><span>Acum.</span></div>
+                  <div class="vxsec-l"><span>Competências</span><span>Acum.</span></div>
                   <div class="vxcomp">
                     <div class="vxcrow"><span class="cn">Pro</span><span class="cin"></span><span class="cacc">100</span></div>
                     <div class="vxcrow"><span class="cn">RdC</span><span class="cin"></span><span class="cacc">100</span></div>
                     <div class="vxcrow"><span class="cn">C3</span><span class="cin"></span><span class="cacc z">0</span></div>
                   </div>
                   <div class="vxout">
-                    <div class="vxsec-l" style="padding:0 0 5px"><span>Sa├¡das (respostas)</span></div>
+                    <div class="vxsec-l" style="padding:0 0 5px"><span>Saídas (respostas)</span></div>
                     <div class="vxorow">
-                      <span class="otext">Sim, reiniciei mas n├úoÔÇª</span>
-                      <span class="vxsel">ÔÇö defina ÔÇö <svg viewBox="0 0 24 24" fill="none" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></span>
+                      <span class="otext">Sim, reiniciei mas não…</span>
+                      <span class="vxsel">— defina — <svg viewBox="0 0 24 24" fill="none" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></span>
                       <span class="vxbtn add"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 6v12M6 12h12"/></svg></span>
                     </div>
                   </div>
                   <div class="vxto">
                     <span class="tl"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 2h4M12 8v5l3 2M12 22a8 8 0 1 0 0-16 8 8 0 0 0 0 16z"/></svg> Tempo acaba</span>
-                    <span class="tsel">ÔÇö defina ÔÇö</span>
+                    <span class="tsel">— defina —</span>
                     <span class="add"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 6v12M6 12h12"/></svg></span>
                   </div>
-                  <div class="vxfoot"><span class="fadd"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 6v12M6 12h12"/></svg> sa├¡da</span></div>
+                  <div class="vxfoot"><span class="fadd"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 6v12M6 12h12"/></svg> saída</span></div>
                 </article>
               </div>
             </div>
@@ -755,43 +755,43 @@ const landingMarkup = `<header class="nav" id="nav">
     <div class="wrap">
       <div class="sec-head">
         <span class="eyebrow">Por dentro</span>
-        <h2>Feito para decis├úo audit├ível e transparente.</h2>
-        <p class="lead">Cada nota ├® decompon├¡vel: voc├¬ mostra, ponto a ponto, como a pontua├º├úo foi calculada. O conte├║do do teste e a decis├úo final s├úo seus ÔÇö a Pr├íxis ├® ferramenta de apoio.</p>
+        <h2>Feito para decisão auditável e transparente.</h2>
+        <p class="lead">Cada nota é decomponível: você mostra, ponto a ponto, como a pontuação foi calculada. O conteúdo do teste e a decisão final são seus — a Práxis é ferramenta de apoio.</p>
       </div>
 
       <div class="feat-grid">
         <div class="feats">
           <div class="feat">
             <h3><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v18M3 12h18"/></svg></span>Sem IA julgando candidato</h3>
-            <p>A pontua├º├úo vem de crit├®rios, pesos e c├ílculo. Zero caixa-preta, zero custo de IA, totalmente explic├ível.</p>
+            <p>A pontuação vem de critérios, pesos e cálculo. Zero caixa-preta, zero custo de IA, totalmente explicável.</p>
           </div>
           <div class="feat">
-            <h3><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h4l3-8 4 16 3-8h4"/></svg></span>Pontua├º├úo compar├ível entre caminhos</h3>
-            <p>A nota ├® normalizada pelo caminho percorrido, para que quem segue um cen├írio mais curto n├úo seja penalizado por isso.</p>
+            <h3><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h4l3-8 4 16 3-8h4"/></svg></span>Pontuação comparável entre caminhos</h3>
+            <p>A nota é normalizada pelo caminho percorrido, para que quem segue um cenário mais curto não seja penalizado por isso.</p>
           </div>
           <div class="feat">
-            <h3><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 12l2 2 4-4M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0z"/></svg></span>Trilha audit├ível</h3>
+            <h3><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 12l2 2 4-4M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0z"/></svg></span>Trilha auditável</h3>
             <p>Cada ponto tem origem: qual etapa, qual escolha, qual rubrica. Pronto para o gestor e para auditoria.</p>
           </div>
           <div class="feat">
-            <h3><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a9 9 0 1 0 9 9M21 3l-9 9"/></svg></span>Decide, n├úo reprova</h3>
-            <p>Erro cr├¡tico aciona revis├úo humana. A decis├úo final cabe a uma pessoa.</p>
+            <h3><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a9 9 0 1 0 9 9M21 3l-9 9"/></svg></span>Decide, não reprova</h3>
+            <p>Erro crítico aciona revisão humana. A decisão final cabe a uma pessoa.</p>
           </div>
           <div class="feat">
-            <h3><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16v14H4zM4 9h16M9 9v10"/></svg></span>Biblioteca de cen├írios</h3>
-            <p>Modelos prontos por ├írea e senioridade. O RH edita, testa com um piloto e publica quando quiser.</p>
+            <h3><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16v14H4zM4 9h16M9 9v10"/></svg></span>Biblioteca de cenários</h3>
+            <p>Modelos prontos por área e senioridade. O RH edita, testa com um piloto e publica quando quiser.</p>
           </div>
           <div class="feat">
             <h3><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12a8 8 0 0 1 16 0M8 12a4 4 0 0 1 8 0M12 12v8"/></svg></span>No seu sistema</h3>
-            <p>Ningu├®m troca de ferramenta. Nota e compet├¬ncias chegam direto na plataforma que voc├¬ j├í usa.</p>
+            <p>Ninguém troca de ferramenta. Nota e competências chegam direto na plataforma que você já usa.</p>
           </div>
         </div>
 
         <!-- signature -->
-        <aside class="evidence" aria-label="Exemplo de cart├úo de evid├¬ncia de um candidato">
+        <aside class="evidence" aria-label="Exemplo de cartão de evidência de um candidato">
           <div class="ev-top">
-            <span class="t">Cart├úo de evid├¬ncia ┬À att_4f7c</span>
-            <span class="ev-seal"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 12l2 2 4-4M12 3a9 9 0 1 0 9 9 9 9 0 0 0-9-9z"/></svg>verific├ível</span>
+            <span class="t">Cartão de evidência · att_4f7c</span>
+            <span class="ev-seal"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 12l2 2 4-4M12 3a9 9 0 1 0 9 9 9 9 0 0 0-9-9z"/></svg>verificável</span>
           </div>
           <div class="ev-body">
             <div class="ev-score">
@@ -799,16 +799,16 @@ const landingMarkup = `<header class="nav" id="nav">
               <span class="decision">Recomendar entrevista</span>
             </div>
             <div class="ev-comp" id="evComp">
-              <div class="cbar"><div class="clabel"><span>Comunica├º├úo</span><b>88</b></div><div class="track"><span class="fill" data-w="88"></span></div></div>
-              <div class="cbar"><div class="clabel"><span>Resolu├º├úo de problemas</span><b>80</b></div><div class="track"><span class="fill" data-w="80"></span></div></div>
-              <div class="cbar"><div class="clabel"><span>Ader├¬ncia ├á pol├¡tica</span><b>76</b></div><div class="track"><span class="fill" data-w="76"></span></div></div>
+              <div class="cbar"><div class="clabel"><span>Comunicação</span><b>88</b></div><div class="track"><span class="fill" data-w="88"></span></div></div>
+              <div class="cbar"><div class="clabel"><span>Resolução de problemas</span><b>80</b></div><div class="track"><span class="fill" data-w="80"></span></div></div>
+              <div class="cbar"><div class="clabel"><span>Aderência à política</span><b>76</b></div><div class="track"><span class="fill" data-w="76"></span></div></div>
             </div>
             <div class="ev-trail">
-              <div class="lab">Trilha de decis├úo</div>
-              <code>turno-1 Ôû© <span class="ok">B</span>  +3 Comunica├º├úo ┬À +2 Resolu├º├úo
-turno-2 Ôû© <span class="ok">A</span>  +2 Resolu├º├úo ┬À +1 Pol├¡tica
-turno-3 Ôû© <span class="ok">C</span>  +2 Comunica├º├úo
-<span class="gold">ÔÇöÔÇöÔÇö  nenhum erro cr├¡tico registrado</span></code>
+              <div class="lab">Trilha de decisão</div>
+              <code>turno-1 ▸ <span class="ok">B</span>  +3 Comunicação · +2 Resolução
+turno-2 ▸ <span class="ok">A</span>  +2 Resolução · +1 Política
+turno-3 ▸ <span class="ok">C</span>  +2 Comunicação
+<span class="gold">———  nenhum erro crítico registrado</span></code>
             </div>
           </div>
         </aside>
@@ -821,85 +821,85 @@ turno-3 Ôû© <span class="ok">C</span>  +2 Comunica├º├úo
     <div class="wrap">
       <div class="sec-head">
         <span class="eyebrow">Onde se aplica</span>
-        <h2>Onde decis├úo importa, a Pr├íxis entrega evid├¬ncia.</h2>
-        <p class="lead">O mesmo motor ÔÇö cen├írio situacional com pontua├º├úo determin├¡stica ÔÇö se adapta a qualquer contexto onde voc├¬ precisa avaliar como pessoas decidem.</p>
+        <h2>Onde decisão importa, a Práxis entrega evidência.</h2>
+        <p class="lead">O mesmo motor — cenário situacional com pontuação determinística — se adapta a qualquer contexto onde você precisa avaliar como pessoas decidem.</p>
       </div>
       <div class="use-cases">
         <div class="uc uc-recruit">
           <span class="uc-ico"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg></span>
-          <h3>Recrutamento e sele├º├úo</h3>
-          <p>Avalie candidatos antes da entrevista. O gestor v├¬ como a pessoa lida com a situa├º├úo real do cargo.</p>
+          <h3>Recrutamento e seleção</h3>
+          <p>Avalie candidatos antes da entrevista. O gestor vê como a pessoa lida com a situação real do cargo.</p>
           <div class="uc-examples">Processos seletivos, trainees, vagas de volume, headhunting</div>
         </div>
         <div class="uc uc-health">
           <span class="uc-ico"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg></span>
-          <h3>Sa├║de ÔÇö profissionais</h3>
-          <p>Avalie tomada de decis├úo cl├¡nica: triagem, comunica├º├úo com paciente, dilemas ├®ticos e conduta sob press├úo.</p>
-          <div class="uc-examples">Sele├º├úo de residentes, enfermagem, equipes de emerg├¬ncia</div>
+          <h3>Saúde — profissionais</h3>
+          <p>Avalie tomada de decisão clínica: triagem, comunicação com paciente, dilemas éticos e conduta sob pressão.</p>
+          <div class="uc-examples">Seleção de residentes, enfermagem, equipes de emergência</div>
         </div>
         <div class="uc uc-health">
           <span class="uc-ico"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg></span>
-          <h3>Sa├║de ÔÇö educa├º├úo do paciente</h3>
-          <p>Apoie a├º├Áes educativas com cen├írios de pr├ítica: o paciente treina decis├Áes do dia a dia, como organiza├º├úo de h├íbitos e seguimento das orienta├º├Áes combinadas com a equipe de sa├║de. ├ë material de apoio educativo, n├úo diagn├│stico nem conduta cl├¡nica.</p>
-          <div class="uc-examples">Programas educativos, orienta├º├úo pr├®-procedimento, promo├º├úo de h├íbitos, reabilita├º├úo</div>
+          <h3>Saúde — educação do paciente</h3>
+          <p>Apoie ações educativas com cenários de prática: o paciente treina decisões do dia a dia, como organização de hábitos e seguimento das orientações combinadas com a equipe de saúde. É material de apoio educativo, não diagnóstico nem conduta clínica.</p>
+          <div class="uc-examples">Programas educativos, orientação pré-procedimento, promoção de hábitos, reabilitação</div>
         </div>
         <div class="uc uc-edu">
           <span class="uc-ico"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg></span>
-          <h3>Educa├º├úo</h3>
-          <p>Me├ºa compet├¬ncias socioemocionais de alunos ou avalie professores em cen├írios de gest├úo de sala e inclus├úo.</p>
-          <div class="uc-examples">Escolas, universidades, concursos docentes, forma├º├úo continuada</div>
+          <h3>Educação</h3>
+          <p>Meça competências socioemocionais de alunos ou avalie professores em cenários de gestão de sala e inclusão.</p>
+          <div class="uc-examples">Escolas, universidades, concursos docentes, formação continuada</div>
         </div>
         <div class="uc uc-corp">
           <span class="uc-ico"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20V10M18 20V4M6 20v-4"/></svg></span>
           <h3>Desenvolvimento interno</h3>
-          <p>Diagn├│stico de gaps de lideran├ºa, avalia├º├úo para promo├º├úo e programas de T&D com pr├®/p├│s mensura├º├úo.</p>
-          <div class="uc-examples">Sucess├úo, PDI, academias corporativas, onboarding de l├¡deres</div>
+          <p>Diagnóstico de gaps de liderança, avaliação para promoção e programas de T&D com pré/pós mensuração.</p>
+          <div class="uc-examples">Sucessão, PDI, academias corporativas, onboarding de líderes</div>
         </div>
         <div class="uc uc-compliance">
           <span class="uc-ico"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></span>
-          <h3>Compliance e seguran├ºa</h3>
-          <p>Teste como colaboradores reagem a cen├írios de fraude, conflito de interesse, seguran├ºa do trabalho ou LGPD.</p>
-          <div class="uc-examples">Bancos, ind├║stria, minera├º├úo, farmac├¬utico, varejo</div>
+          <h3>Compliance e segurança</h3>
+          <p>Teste como colaboradores reagem a cenários de fraude, conflito de interesse, segurança do trabalho ou LGPD.</p>
+          <div class="uc-examples">Bancos, indústria, mineração, farmacêutico, varejo</div>
         </div>
       </div>
       <p class="pfoot" style="margin-top:2.2rem">
         <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4M12 17h.01M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg>
-        A Pr├íxis ├® uma ferramenta de apoio ├á decis├úo por meio de cen├írios situacionais. N├úo ├® instrumento de diagn├│stico cl├¡nico, psicol├│gico ou de sa├║de, nem dispositivo m├®dico, e n├úo substitui avalia├º├úo profissional. A defini├º├úo do uso adequado, dos crit├®rios e da decis├úo final ├® responsabilidade de quem contrata.
+        A Práxis é uma ferramenta de apoio à decisão por meio de cenários situacionais. Não é instrumento de diagnóstico clínico, psicológico ou de saúde, nem dispositivo médico, e não substitui avaliação profissional. A definição do uso adequado, dos critérios e da decisão final é responsabilidade de quem contrata.
       </p>
     </div>
   </section>
 
-  <!-- INTEGRA├ç├òES -->
+  <!-- INTEGRAÇÕES -->
   <section class="sec sec-alt" id="integracoes">
     <div class="wrap">
       <div class="sec-head">
-        <span class="eyebrow">Integra├º├Áes</span>
-        <h2>Seu sistema organiza o fluxo. A Pr├íxis adiciona a evid├¬ncia.</h2>
-        <p class="lead">A Pr├íxis entra como uma etapa no processo que voc├¬ j├í tem. A pessoa nem percebe que mudou de sistema, e o resultado volta sozinho ÔÇö sem ningu├®m trocar de ferramenta.</p>
+        <span class="eyebrow">Integrações</span>
+        <h2>Seu sistema organiza o fluxo. A Práxis adiciona a evidência.</h2>
+        <p class="lead">A Práxis entra como uma etapa no processo que você já tem. A pessoa nem percebe que mudou de sistema, e o resultado volta sozinho — sem ninguém trocar de ferramenta.</p>
       </div>
       <div class="integ-band">
         <div class="flow">
           <div class="fstep gp"><span class="fn">1</span><span>Participante recebe o convite pelo <b>seu sistema</b></span></div>
-          <div class="fstep"><span class="fn">2</span><span>Faz a avalia├º├úo situacional na Pr├íxis</span></div>
-          <div class="fstep"><span class="fn">3</span><span>Pontua├º├úo e compet├¬ncias voltam automaticamente (com retentativas)</span></div>
-          <div class="fstep gp"><span class="fn">4</span><span>Voc├¬ decide com base na evid├¬ncia, sem sair da plataforma</span></div>
+          <div class="fstep"><span class="fn">2</span><span>Faz a avaliação situacional na Práxis</span></div>
+          <div class="fstep"><span class="fn">3</span><span>Pontuação e competências voltam automaticamente (com retentativas)</span></div>
+          <div class="fstep gp"><span class="fn">4</span><span>Você decide com base na evidência, sem sair da plataforma</span></div>
         </div>
-        <div class="connect" aria-label="Como a integra├º├úo funciona">
+        <div class="connect" aria-label="Como a integração funciona">
           <div class="cstep">
             <span class="ci ci-ats">A</span>
-            <div><b>Processo criado no seu sistema</b><span>Voc├¬ adiciona a Pr├íxis como etapa de avalia├º├úo (Gupy, Recrutei, API, webhook).</span></div>
+            <div><b>Processo criado no seu sistema</b><span>Você adiciona a Práxis como etapa de avaliação (Gupy, Recrutei, API, webhook).</span></div>
           </div>
           <div class="cdown"></div>
           <div class="cstep">
             <span class="ci ci-prx">P</span>
-            <div><b>A pessoa faz a avalia├º├úo</b><span>Dentro do fluxo do seu sistema, sem cadastro novo.</span></div>
+            <div><b>A pessoa faz a avaliação</b><span>Dentro do fluxo do seu sistema, sem cadastro novo.</span></div>
           </div>
           <div class="cdown"></div>
           <div class="cstep">
             <span class="ci ci-ok"><svg viewBox="0 0 24 24" fill="none" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span>
-            <div><b>Resultado entregue</b><span>A nota volta automaticamente, com novas tentativas caso a conex├úo falhe.</span></div>
+            <div><b>Resultado entregue</b><span>A nota volta automaticamente, com novas tentativas caso a conexão falhe.</span></div>
           </div>
-          <div class="cnote"><span class="pip"></span> Gupy ┬À Recrutei ┬À API aberta ┬À Webhook ÔÇö sem planilha ou copiar-e-colar.</div>
+          <div class="cnote"><span class="pip"></span> Gupy · Recrutei · API aberta · Webhook — sem planilha ou copiar-e-colar.</div>
         </div>
       </div>
     </div>
@@ -909,31 +909,31 @@ turno-3 Ôû© <span class="ok">C</span>  +2 Comunica├º├úo
   <section class="sec dark-band" id="governanca">
     <div class="wrap">
       <div class="sec-head">
-        <span class="eyebrow">Governan├ºa & auditoria</span>
-        <h2>Pensado para apoiar o jur├¡dico e o compliance.</h2>
-        <p class="lead">Os mesmos controles que a sua equipe de governan├ºa costuma exigir de um sistema cr├¡tico ÔÇö j├í pensados desde o desenho.</p>
+        <span class="eyebrow">Governança & auditoria</span>
+        <h2>Pensado para apoiar o jurídico e o compliance.</h2>
+        <p class="lead">Os mesmos controles que a sua equipe de governança costuma exigir de um sistema crítico — já pensados desde o desenho.</p>
       </div>
       <div class="gov-grid">
         <div class="gov">
           <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2zM9 9h6M9 13h6M9 17h4"/></svg></span>
-          <h3>Trilha protegida contra altera├º├úo</h3>
-          <p>Cada evento da tentativa fica registrado ÔÇö cria├º├úo, resposta, timeout e finaliza├º├úo ÔÇö em trilha projetada para n├úo ser alterada ap├│s o registro.</p>
+          <h3>Trilha protegida contra alteração</h3>
+          <p>Cada evento da tentativa fica registrado — criação, resposta, timeout e finalização — em trilha projetada para não ser alterada após o registro.</p>
         </div>
         <div class="gov">
           <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 3v6c0 5-3.5 8-7 9-3.5-1-7-4-7-9V6z"/></svg></span>
           <h3>Privacidade desde o desenho</h3>
-          <p>Bases legais expostas, reten├º├úo configur├ível e rotinas de anonimiza├º├úo parametriz├íveis ap├│s o ciclo da sele├º├úo, para apoiar a sua adequa├º├úo ├á LGPD.</p>
+          <p>Bases legais expostas, retenção configurável e rotinas de anonimização parametrizáveis após o ciclo da seleção, para apoiar a sua adequação à LGPD.</p>
         </div>
         <div class="gov">
           <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v18M5 7l7-4 7 4M5 7v6c0 4 3 6 7 7 4-1 7-3 7-7V7"/></svg></span>
-          <h3>Transpar├¬ncia audit├ível</h3>
-          <p>Pesos versionados e crit├®rios vis├¡veis permitem reconstruir como cada candidato recebeu cada ponto. Voc├¬ ├® respons├ível pelo conte├║do do teste e pela decis├úo final.</p>
+          <h3>Transparência auditável</h3>
+          <p>Pesos versionados e critérios visíveis permitem reconstruir como cada candidato recebeu cada ponto. Você é responsável pelo conteúdo do teste e pela decisão final.</p>
         </div>
       </div>
       <div class="gov-foot">
-        <span class="chip">diretrizes <b>WCAG 2.1</b> ┬À naveg├ível por teclado e leitor de tela</span>
-        <span class="chip">alinhado ├á <b>LBI</b> ┬À tempo ajust├ível por etapa</span>
-        <span class="chip">multi-tenant ┬À <b>isolamento por empresa</b></span>
+        <span class="chip">diretrizes <b>WCAG 2.1</b> · navegável por teclado e leitor de tela</span>
+        <span class="chip">alinhado à <b>LBI</b> · tempo ajustável por etapa</span>
+        <span class="chip">multi-tenant · <b>isolamento por empresa</b></span>
       </div>
     </div>
   </section>
@@ -943,16 +943,16 @@ turno-3 Ôû© <span class="ok">C</span>  +2 Comunica├º├úo
     <div class="wrap">
       <div class="sec-head">
         <span class="eyebrow">Planos</span>
-        <h2>Comece por avalia├º├úo. Cres├ºa quando fizer sentido.</h2>
-        <p class="lead">Sem custo de IA, porque n├úo h├í IA na pontua├º├úo. Voc├¬ paga pela avalia├º├úo ÔÇö n├úo por infer├¬ncia.</p>
+        <h2>Comece por avaliação. Cresça quando fizer sentido.</h2>
+        <p class="lead">Sem custo de IA, porque não há IA na pontuação. Você paga pela avaliação — não por inferência.</p>
         <div class="roi">
           <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
-          <span>Uma decis├úo baseada em achismo custa caro ÔÇö em qualquer ├írea. A Pr├íxis custa uma fra├º├úo ÔÇö e deixa o porqu├¬ de cada resultado registrado.</span>
+          <span>Uma decisão baseada em achismo custa caro — em qualquer área. A Práxis custa uma fração — e deixa o porquê de cada resultado registrado.</span>
         </div>
-        <div class="toggle" role="group" aria-label="Ciclo de cobran├ºa">
+        <div class="toggle" role="group" aria-label="Ciclo de cobrança">
           <button id="bMonthly" class="on" aria-pressed="true">Mensal</button>
           <button id="bAnnual" aria-pressed="false">Anual</button>
-          <span class="save">2 meses gr├ítis</span>
+          <span class="save">2 meses grátis</span>
         </div>
       </div>
 
@@ -962,15 +962,15 @@ turno-3 Ôû© <span class="ok">C</span>  +2 Comunica├º├úo
           <div class="pname">Avulso</div>
           <div class="pfor">Para pilotos e demandas pontuais, sem mensalidade.</div>
           <div class="price"><span class="cur">R$</span><span class="amt">69,90</span><span class="per">/ pessoa avaliada</span></div>
-          <div class="psub">Pague s├│ por quem voc├¬ avaliar.</div>
-          <a class="btn btn-ghost" href="#cta">Come├ºar</a>
+          <div class="psub">Pague só por quem você avaliar.</div>
+          <a class="btn btn-ghost" href="#cta">Começar</a>
           <ul class="plist">
             <li class="head"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>O essencial para validar</li>
-            <li><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>Integra├º├Áes nativas (Gupy, Recrutei, API)</li>
-            <li><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>1 simula├º├úo ativa</li>
-            <li><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>Biblioteca de cen├írios (modelos)</li>
-            <li><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>Pontua├º├úo por compet├¬ncia</li>
-            <li><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>Trilha audit├ível</li>
+            <li><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>Integrações nativas (Gupy, Recrutei, API)</li>
+            <li><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>1 simulação ativa</li>
+            <li><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>Biblioteca de cenários (modelos)</li>
+            <li><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>Pontuação por competência</li>
+            <li><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>Trilha auditável</li>
           </ul>
         </div>
 
@@ -979,42 +979,42 @@ turno-3 Ôû© <span class="ok">C</span>  +2 Comunica├º├úo
           <span class="ptag">Mais escolhido</span>
           <div class="pname">Crescimento</div>
           <div class="pfor">Para quem avalia com volume recorrente.</div>
-          <div class="price"><span class="cur">R$</span><span class="amt" data-monthly="7.990" data-annual="6.658">7.990</span><span class="per" id="cycMonthly">/ m├¬s</span></div>
-          <div class="psub" id="cycSub">R$ 39,90/avalia├º├úo ┬À 200 inclusas/m├¬s ┬À +R$ 49,90 por adicional</div>
-          <a class="btn btn-primary" href="#cta">Agendar demo <span class="btn-arrow">ÔåÆ</span></a>
+          <div class="price"><span class="cur">R$</span><span class="amt" data-monthly="7.990" data-annual="6.658">7.990</span><span class="per" id="cycMonthly">/ mês</span></div>
+          <div class="psub" id="cycSub">R$ 39,90/avaliação · 200 inclusas/mês · +R$ 49,90 por adicional</div>
+          <a class="btn btn-primary" href="#cta">Agendar demo <span class="btn-arrow">→</span></a>
           <ul class="plist">
             <li class="head"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/></svg>Tudo do Avulso, e mais:</li>
-            <li><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>Simula├º├Áes e processos ilimitados</li>
-            <li><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>Edi├º├úo completa da biblioteca</li>
+            <li><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>Simulações e processos ilimitados</li>
+            <li><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>Edição completa da biblioteca</li>
             <li><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>Painel comparativo: ranqueie e compare participantes</li>
             <li><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>Modo piloto antes de publicar</li>
-            <li><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>Governan├ºa e LGPD configur├íveis</li>
-            <li><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>Multiusu├írio e suporte priorit├írio</li>
+            <li><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>Governança e LGPD configuráveis</li>
+            <li><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>Multiusuário e suporte prioritário</li>
           </ul>
         </div>
 
         <!-- Enterprise -->
         <div class="plan">
           <div class="pname">Enterprise</div>
-          <div class="pfor">Para alto volume e exig├¬ncia de compliance.</div>
+          <div class="pfor">Para alto volume e exigência de compliance.</div>
           <div class="price consulta"><span class="amt">Sob consulta</span></div>
           <div class="psub">Contrato anual, escopo sob medida.</div>
           <a class="btn btn-gold" href="#cta">Falar com vendas</a>
           <ul class="plist">
             <li class="head"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/></svg>Tudo do Crescimento, e mais:</li>
-            <li><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>Trilha protegida contra altera├º├úo, com reten├º├úo sob medida</li>
+            <li><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>Trilha protegida contra alteração, com retenção sob medida</li>
             <li><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>Comparativo entre participantes</li>
-            <li><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>Apoio metodol├│gico: estudo assistido de ader├¬ncia entre nota e crit├®rios definidos por voc├¬</li>
+            <li><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>Apoio metodológico: estudo assistido de aderência entre nota e critérios definidos por você</li>
             <li><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>SSO / SAML e ambiente dedicado</li>
             <li><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>SLA e gerente de conta</li>
-            <li><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>Contrato e DPA com o jur├¡dico</li>
+            <li><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>Contrato e DPA com o jurídico</li>
           </ul>
         </div>
       </div>
 
       <p class="pfoot">
         <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 12l2 2 4-4M12 3a9 9 0 1 0 9 9 9 9 0 0 0-9-9z"/></svg>
-        Todos os planos incluem integra├º├Áes nativas e a trilha audit├ível. Pre├ºos em reais, impostos ├á parte.
+        Todos os planos incluem integrações nativas e a trilha auditável. Preços em reais, impostos à parte.
       </p>
     </div>
   </section>
@@ -1028,32 +1028,32 @@ turno-3 Ôû© <span class="ok">C</span>  +2 Comunica├º├úo
       </div>
       <div class="faq">
         <div class="qa">
-          <button aria-expanded="false"><span class="q">A Pr├íxis usa IA generativa para avaliar pessoas?</span><span class="ic"></span></button>
-          <div class="ans"><p>N├úo. A pontua├º├úo sai de crit├®rios e pesos versionados definidos pela sua equipe. ├ë regra e c├ílculo ÔÇö audit├ível e sem custo de infer├¬ncia.</p></div>
+          <button aria-expanded="false"><span class="q">A Práxis usa IA generativa para avaliar pessoas?</span><span class="ic"></span></button>
+          <div class="ans"><p>Não. A pontuação sai de critérios e pesos versionados definidos pela sua equipe. É regra e cálculo — auditável e sem custo de inferência.</p></div>
         </div>
         <div class="qa">
-          <button aria-expanded="false"><span class="q">Com quais sistemas a Pr├íxis integra?</span><span class="ic"></span></button>
-          <div class="ans"><p>Hoje integra nativamente com Gupy e Recrutei. Para outros sistemas (hospitalares, educacionais, ERPs), oferecemos API aberta e webhook ÔÇö a Pr├íxis recebe o convite e devolve o resultado automaticamente, com retentativas quando h├í falha tempor├íria.</p></div>
+          <button aria-expanded="false"><span class="q">Com quais sistemas a Práxis integra?</span><span class="ic"></span></button>
+          <div class="ans"><p>Hoje integra nativamente com Gupy e Recrutei. Para outros sistemas (hospitalares, educacionais, ERPs), oferecemos API aberta e webhook — a Práxis recebe o convite e devolve o resultado automaticamente, com retentativas quando há falha temporária.</p></div>
         </div>
         <div class="qa">
-          <button aria-expanded="false"><span class="q">Como ├® a cobran├ºa?</span><span class="ic"></span></button>
-          <div class="ans"><p>No plano Avulso voc├¬ paga por candidato avaliado, sem mensalidade ÔÇö ideal para pilotos. No Crescimento, ├® uma assinatura por faixa de volume, com candidatos inclu├¡dos e adicionais por candidato. O Enterprise ├® contrato anual com escopo sob medida.</p></div>
+          <button aria-expanded="false"><span class="q">Como é a cobrança?</span><span class="ic"></span></button>
+          <div class="ans"><p>No plano Avulso você paga por candidato avaliado, sem mensalidade — ideal para pilotos. No Crescimento, é uma assinatura por faixa de volume, com candidatos incluídos e adicionais por candidato. O Enterprise é contrato anual com escopo sob medida.</p></div>
         </div>
         <div class="qa">
           <button aria-expanded="false"><span class="q">Quanto tempo leva para colocar no ar?</span><span class="ic"></span></button>
-          <div class="ans"><p>Com a biblioteca de cen├írios, d├í para publicar um teste no mesmo dia: o RH escolhe um modelo do cargo, ajusta o caso e os pesos, testa em modo piloto e publica.</p></div>
+          <div class="ans"><p>Com a biblioteca de cenários, dá para publicar um teste no mesmo dia: o RH escolhe um modelo do cargo, ajusta o caso e os pesos, testa em modo piloto e publica.</p></div>
         </div>
         <div class="qa">
-          <button aria-expanded="false"><span class="q">O participante v├¬ pesos, gabarito ou marcadores cr├¡ticos?</span><span class="ic"></span></button>
-          <div class="ans"><p>N├úo. A vis├úo do participante ├® limpa. Pesos, crit├®rios e marcadores ficam restritos ao painel admin e ├á trilha de auditoria.</p></div>
+          <button aria-expanded="false"><span class="q">O participante vê pesos, gabarito ou marcadores críticos?</span><span class="ic"></span></button>
+          <div class="ans"><p>Não. A visão do participante é limpa. Pesos, critérios e marcadores ficam restritos ao painel admin e à trilha de auditoria.</p></div>
         </div>
         <div class="qa">
-          <button aria-expanded="false"><span class="q">A Pr├íxis reprova ou elimina algu├®m sozinha?</span><span class="ic"></span></button>
-          <div class="ans"><p>N├úo. A Pr├íxis recomenda, n├úo elimina automaticamente. Erro cr├¡tico aciona revis├úo humana ÔÇö a decis├úo final cabe a uma pessoa.</p></div>
+          <button aria-expanded="false"><span class="q">A Práxis reprova ou elimina alguém sozinha?</span><span class="ic"></span></button>
+          <div class="ans"><p>Não. A Práxis recomenda, não elimina automaticamente. Erro crítico aciona revisão humana — a decisão final cabe a uma pessoa.</p></div>
         </div>
         <div class="qa">
-          <button aria-expanded="false"><span class="q">Funciona para ├íreas fora de recrutamento?</span><span class="ic"></span></button>
-          <div class="ans"><p>Sim. O motor ├® o mesmo: cen├írio situacional com pontua├º├úo por compet├¬ncia. J├í se aplica a sa├║de (avalia├º├úo cl├¡nica e prontid├úo de pacientes), educa├º├úo (compet├¬ncias socioemocionais), compliance (conduta em dilemas ├®ticos) e desenvolvimento interno (promo├º├úo e sucess├úo).</p></div>
+          <button aria-expanded="false"><span class="q">Funciona para áreas fora de recrutamento?</span><span class="ic"></span></button>
+          <div class="ans"><p>Sim. O motor é o mesmo: cenário situacional com pontuação por competência. Já se aplica a saúde (avaliação clínica e prontidão de pacientes), educação (competências socioemocionais), compliance (conduta em dilemas éticos) e desenvolvimento interno (promoção e sucessão).</p></div>
         </div>
       </div>
     </div>
@@ -1063,10 +1063,10 @@ turno-3 Ôû© <span class="ok">C</span>  +2 Comunica├º├úo
   <section class="final" id="cta">
     <div class="wrap">
       <span class="eyebrow" style="justify-content:center;display:flex">Vamos conversar</span>
-      <h2 style="margin-top:1rem">Menos achismo. Mais decis├úo por evid├¬ncia.</h2>
-      <p class="lead">Mostre como as pessoas decidem antes de tomar qualquer pr├│xima decis├úo sobre elas. Agende uma demonstra├º├úo da Pr├íxis.</p>
+      <h2 style="margin-top:1rem">Menos achismo. Mais decisão por evidência.</h2>
+      <p class="lead">Mostre como as pessoas decidem antes de tomar qualquer próxima decisão sobre elas. Agende uma demonstração da Práxis.</p>
       <div class="hero-ctas">
-        <a class="btn btn-primary" href="mailto:contato@iforce.com.br?subject=Demonstra%C3%A7%C3%A3o%20da%20Pr%C3%A1xis">Agendar demonstra├º├úo <span class="btn-arrow">ÔåÆ</span></a>
+        <a class="btn btn-primary" href="mailto:contato@iforce.com.br?subject=Demonstra%C3%A7%C3%A3o%20da%20Pr%C3%A1xis">Agendar demonstração <span class="btn-arrow">→</span></a>
         <a class="btn btn-ghost" href="#precos">Rever os planos</a>
       </div>
     </div>
@@ -1076,8 +1076,8 @@ turno-3 Ôû© <span class="ok">C</span>  +2 Comunica├º├úo
 
 <footer id="entrar">
   <div class="wrap foot-inner">
-    <a href="#topo" class="brand">Pr├íxis<span class="dot"></span><small>by iForce</small></a>
-    <span class="fcopy">┬® 2026 iForce ┬À praxis.iforce.com.br</span>
+    <a href="#topo" class="brand">Práxis<span class="dot"></span><small>by iForce</small></a>
+    <span class="fcopy">© 2026 iForce · praxis.iforce.com.br</span>
   </div>
 </footer>`;
 
@@ -1244,10 +1244,10 @@ function LandingPage() {
         bM.setAttribute("aria-pressed", String(!annual));
         bA.setAttribute("aria-pressed", String(annual));
         amt.textContent = annual ? (amt.dataset.annual ?? "") : (amt.dataset.monthly ?? "");
-        cyc.textContent = annual ? "/ m├¬s, no anual" : "/ m├¬s";
+        cyc.textContent = annual ? "/ mês, no anual" : "/ mês";
         sub.textContent = annual
-          ? "R$ 33,25/avalia├º├úo ┬À 200 inclusas/m├¬s ┬À faturado anual (R$ 79.900)"
-          : "R$ 39,90/avalia├º├úo ┬À 200 inclusas/m├¬s ┬À +R$ 49,90 por adicional";
+          ? "R$ 33,25/avaliação · 200 inclusas/mês · faturado anual (R$ 79.900)"
+          : "R$ 39,90/avaliação · 200 inclusas/mês · +R$ 49,90 por adicional";
       };
       const monthly = () => setCycle(false);
       const annual = () => setCycle(true);
