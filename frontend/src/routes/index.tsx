@@ -24,6 +24,9 @@ type HeroOption = {
   text: string;
   tone: "good" | "warn" | "bad";
   react: string;
+  overallScore: number;
+  decision: string;
+  auditTrail: string[];
   scores: Record<string, number>;
 };
 
@@ -35,6 +38,12 @@ const competencyPalette: Record<string, string> = {
 
 function scoreBarColor(label: string) {
   return competencyPalette[label] ?? "#1B6C8C";
+}
+
+function scoreSummaryTone(score: number) {
+  if (score >= 75) return "text-success";
+  if (score >= 50) return "text-warning";
+  return "text-destructive";
 }
 
 function scoreSummaryLabel(tone: HeroOption["tone"]) {
@@ -63,32 +72,56 @@ const heroOptions: HeroOption[] = [
     text: "Pedir desculpas e prometer retorno em 30min, sem confirmar com o time.",
     tone: "warn",
     react:
-      '"Tá, mas e se não resolver de novo?" Você prometeu prazo sem validar com o time. Isso liga um alerta de aderência.',
-    scores: { Empatia: 72, Resolução: 48, "Aderência à política": 30 },
+      '"Ta, mas e se nao resolver de novo?" Voce prometeu prazo sem validar com o time. Isso liga um alerta de aderencia.',
+    overallScore: 50,
+    decision: "Exige leitura contextual",
+    auditTrail: [
+      "turno-1 -> A  +2 Empatia ? +1 Resolucao",
+      "turno-2 -> alerta de aderencia por prometer prazo sem validacao",
+    ],
+    scores: { Empatia: 72, Resolucao: 48, "Aderencia a politica": 30 },
   },
   {
     k: "B",
-    text: "Reconhecer a frustração, confirmar o número do chamado e dar prazo realista alinhado ao time.",
+    text: "Reconhecer a frustracao, confirmar o numero do chamado e dar prazo realista alinhado ao time.",
     tone: "good",
     react:
-      '"Obrigado por pelo menos me dar um prazo de verdade." Você acolheu, confirmou o caso e alinhou expectativa.',
-    scores: { Empatia: 90, Resolução: 86, "Aderência à política": 80 },
+      '"Obrigado por pelo menos me dar um prazo de verdade." Voce acolheu, confirmou o caso e alinhou expectativa.',
+    overallScore: 85,
+    decision: "Recomendar entrevista",
+    auditTrail: [
+      "turno-1 -> B  +3 Empatia ? +3 Resolucao",
+      "turno-2 -> consistencia entre acolhimento, validacao e prazo realista",
+    ],
+    scores: { Empatia: 90, Resolucao: 86, "Aderencia a politica": 80 },
   },
   {
     k: "C",
-    text: "Explicar a política interna de SLA e pedir paciência até o próximo ciclo.",
+    text: "Explicar a politica interna de SLA e pedir paciencia ate o proximo ciclo.",
     tone: "warn",
     react:
-      '"Política? Eu só quero meu problema resolvido!" Correto no processo, mas frio para o momento do cliente.',
-    scores: { Empatia: 28, Resolução: 60, "Aderência à política": 82 },
+      '"Politica? Eu so quero meu problema resolvido!" Correto no processo, mas frio para o momento do cliente.',
+    overallScore: 57,
+    decision: "Exige leitura contextual",
+    auditTrail: [
+      "turno-1 -> C  +3 Aderencia a politica",
+      "turno-2 ? baixa empatia no contexto do cliente irritado",
+    ],
+    scores: { Empatia: 28, Resolucao: 60, "Aderencia a politica": 82 },
   },
   {
     k: "D",
     text: "Encaminhar direto para o supervisor sem tentar resolver.",
     tone: "bad",
     react:
-      '"De novo sou empurrado para outra pessoa?" Você pulou a tentativa de resolução e a leitura do caso.',
-    scores: { Empatia: 40, Resolução: 32, "Aderência à política": 45 },
+      '"De novo sou empurrado para outra pessoa?" Voce pulou a tentativa de resolucao e a leitura do caso.',
+    overallScore: 39,
+    decision: "Pede revisao do caminho",
+    auditTrail: [
+      "turno-1 -> D  +1 Empatia ? +1 Aderencia a politica",
+      "turno-2 -> ausencia de tentativa de resolucao inicial",
+    ],
+    scores: { Empatia: 40, Resolucao: 32, "Aderencia a politica": 45 },
   },
 ];
 
@@ -376,51 +409,71 @@ function LandingPage() {
                         {chosen.react}
                       </div>
                       <div className="mt-4 rounded-md border border-border bg-background/80 p-4">
-                        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border pb-3">
+                        <div className="flex flex-wrap items-start justify-between gap-3 border-b border-border pb-3">
                           <div>
                             <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-                              Cartão de evidência
+                              Cartao de evidencia
                             </div>
                             <div className="mt-1 text-sm font-semibold text-foreground">
-                              Indicadores por competência
+                              Indicadores por competencia
                             </div>
                           </div>
-                          <span
-                            className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold ${
-                              chosen.tone === "good"
-                                ? "bg-success/10 text-success"
-                                : chosen.tone === "warn"
-                                  ? "bg-warning/10 text-warning"
-                                  : "bg-destructive/10 text-destructive"
-                            }`}
-                          >
-                            {scoreSummaryLabel(chosen.tone)}
-                          </span>
+                          <div className="text-right">
+                            <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                              Score geral
+                            </div>
+                            <div className="mt-1 flex items-baseline justify-end gap-1">
+                              <span className={`text-2xl font-extrabold tabular-nums ${scoreSummaryTone(chosen.overallScore)}`}>
+                                {chosen.overallScore}
+                              </span>
+                              <span className="text-xs font-semibold text-muted-foreground">/100</span>
+                            </div>
+                            <div
+                              className={`mt-2 inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold ${
+                                chosen.tone === "good"
+                                  ? "bg-success/10 text-success"
+                                  : chosen.tone === "warn"
+                                    ? "bg-warning/10 text-warning"
+                                    : "bg-destructive/10 text-destructive"
+                              }`}
+                            >
+                              {chosen.decision}
+                            </div>
+                          </div>
                         </div>
                         <div className="mt-4 space-y-3">
-                        {Object.entries(chosen.scores).map(([label, value]) => (
-                          <div
-                            key={label}
-                            className="grid grid-cols-[minmax(8rem,1fr)_3rem] gap-2 text-xs"
-                          >
-                            <span className="text-muted-foreground">{label}</span>
-                            <span className="text-right font-bold tabular-nums">{value}</span>
-                            <span className="col-span-2 h-2 overflow-hidden rounded-full bg-accent">
-                              <span
-                                className="block h-full rounded-full bg-primary transition-all duration-700"
-                                style={{
-                                  width: `${value}%`,
-                                  backgroundColor: scoreBarColor(label),
-                                }}
-                              />
-                            </span>
+                          {Object.entries(chosen.scores).map(([label, value]) => (
+                            <div
+                              key={label}
+                              className="grid grid-cols-[minmax(8rem,1fr)_3rem] gap-2 text-xs"
+                            >
+                              <span className="text-muted-foreground">{label}</span>
+                              <span className="text-right font-bold tabular-nums">{value}</span>
+                              <span className="praxis-progress-track praxis-progress-track-md col-span-2">
+                                <span
+                                  className="praxis-progress-fill block transition-all duration-700"
+                                  style={{
+                                    ["--praxis-progress-value" as string]: `${value}%`,
+                                    backgroundColor: scoreBarColor(label),
+                                  }}
+                                />
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                        <div className="mt-4 rounded-md bg-accent/50 px-3 py-2.5">
+                          <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                            Trilha de decisao
                           </div>
-                        ))}
+                          <div className="mt-2 space-y-1 text-[11px] leading-relaxed text-muted-foreground">
+                            {chosen.auditTrail.map((entry) => (
+                              <p key={entry}>{entry}</p>
+                            ))}
+                          </div>
                         </div>
                         <p className="mt-4 text-[11px] leading-relaxed text-muted-foreground">
-                          A leitura final considera o caminho percorrido no cenário. Os valores acima
-                          representam competências observadas nesta resposta, não uma nota única
-                          universal.
+                          O score geral resume o caminho percorrido no cenario. As barras mostram como
+                          cada competencia contribuiu para esse resultado.
                         </p>
                       </div>
                       <button
