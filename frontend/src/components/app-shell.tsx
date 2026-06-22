@@ -71,12 +71,6 @@ const getSecondary = (t: TranslationMap) =>
       desc: t.descriptions.competencies,
     },
     {
-      to: "/governanca",
-      label: t.common.governance,
-      icon: ShieldCheck,
-      desc: t.descriptions.governanceNav,
-    },
-    {
       to: "/compliance",
       label: t.common.compliance,
       icon: ShieldCheck,
@@ -232,10 +226,7 @@ function pageLabel(pathname: string, t: TranslationMap) {
   if (pathname.startsWith("/nova")) return t.common.createTest;
   if (pathname === "/talent-match") return t.common.talentMatch;
   if (pathname === "/enviar-link") return t.common.sendLink;
-  if (pathname === "/governanca") return t.common.governance;
   if (pathname === "/compliance") return t.common.compliance;
-  if (pathname === "/defensabilidade") return t.common.defensibility;
-  if (pathname === "/lgpd") return t.common.lgpd;
   if (pathname === "/configuracoes") return t.common.settings;
   if (pathname === "/comecar") return t.common.startHere;
   return t.common.workspace;

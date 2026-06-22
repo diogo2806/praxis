@@ -192,7 +192,7 @@ function ConfiguracoesPage() {
               ) : null}
               <div className="mt-4">
                 <Link
-                  to="/lgpd"
+                  to="/compliance"
                   className="inline-flex items-center gap-1.5 text-xs text-primary hover:underline"
                 >
                   <Link2 className="h-3 w-3" />

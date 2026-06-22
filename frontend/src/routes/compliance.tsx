@@ -3,7 +3,6 @@ import { useNavigate } from "@tanstack/react-router";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Eye, Globe, CircleHelp, Link2, X } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
-import { ComplianceScope } from "@/components/compliance-scope";
 import { StateBanner, StatusBadge } from "@/components/praxis-ui";
 import {
   Table,
@@ -177,8 +176,6 @@ function CompliancePage() {
             aberto, em um único lugar.
           </p>
         </div>
-
-        <ComplianceScope current="compliance" />
 
         <section className="rounded-xl border border-border bg-card">
           <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border px-4 py-3">
@@ -432,7 +429,7 @@ function ComplianceSheet({
                 Bloqueios em aberto: {validation.blockerCount}
               </div>
               <Link
-                to="/governanca"
+                to="/compliance"
                 search={{ simulationId: undefined, versionNumber: undefined }}
                 className="mt-2 inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
               >
