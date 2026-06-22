@@ -1,4 +1,4 @@
-﻿import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import {
   BarChart3,
   CheckCircle2,
@@ -37,26 +37,26 @@ export const Route = createFileRoute("/comecar")({
 const steps = [
   {
     icon: ClipboardCheck,
-    title: "1. Voc├¬ monta o teste",
-    text: "Escolha o cargo, descreva uma situa├º├úo representativa do trabalho e configure as compet├¬ncias e os crit├®rios considerados.",
+    title: "1. Você monta o teste",
+    text: "Escolha o cargo, descreva uma situação representativa do trabalho e configure as competências e os critérios considerados.",
   },
   {
     icon: Link2,
     title: "2. O candidato responde",
-    text: "Voc├¬ envia um link por e-mail ou WhatsApp. O tempo de conclus├úo varia conforme a quantidade e a complexidade dos cen├írios.",
+    text: "Você envia um link por e-mail ou WhatsApp. O tempo de conclusão varia conforme a quantidade e a complexidade dos cenários.",
   },
   {
     icon: BarChart3,
-    title: "3. Voc├¬ v├¬ o resultado",
-    text: "A pontua├º├úo ├® calculada conforme as regras publicadas para aquela vers├úo. A plataforma apresenta indicadores e caminho de respostas para apoiar sua an├ílise.",
+    title: "3. Você vê o resultado",
+    text: "A pontuação é calculada conforme as regras publicadas para aquela versão. A plataforma apresenta indicadores e caminho de respostas para apoiar sua análise.",
   },
 ];
 
 const audiences = [
-  "Empresas que fazem recrutamento e sele├º├úo",
+  "Empresas que fazem recrutamento e seleção",
   "Equipes de Recursos Humanos (RH)",
-  "Gestores que desejam acrescentar cen├írios situacionais ├á avalia├º├úo",
-  "Organiza├º├Áes que precisam documentar crit├®rios e vers├Áes dos testes",
+  "Gestores que desejam acrescentar cenários situacionais à avaliação",
+  "Organizações que precisam documentar critérios e versões dos testes",
 ];
 
 const startActions = [
@@ -70,14 +70,14 @@ const startActions = [
   {
     icon: BarChart3,
     title: "Ver o painel",
-    text: "Veja os testes e resultados que j├í existem.",
+    text: "Veja os testes e resultados que já existem.",
     to: "/" as const,
     primary: false,
   },
   {
     icon: Link2,
     title: "Enviar link a um candidato",
-    text: "Convide algu├®m para responder um teste pronto.",
+    text: "Convide alguém para responder um teste pronto.",
     to: "/enviar-link" as const,
     primary: false,
   },
@@ -85,40 +85,40 @@ const startActions = [
 
 const faq = [
   {
-    q: "O que ├® o Pr├íxis, em uma frase?",
-    a: "├ë uma plataforma para acrescentar cen├írios situacionais e indicadores por compet├¬ncia ao processo seletivo.",
+    q: "O que é o Práxis, em uma frase?",
+    a: "É uma plataforma para acrescentar cenários situacionais e indicadores por competência ao processo seletivo.",
   },
   {
     q: "Quanto tempo leva para o candidato fazer o teste?",
-    a: "Depende da quantidade e da complexidade dos cen├írios configurados para cada teste.",
+    a: "Depende da quantidade e da complexidade dos cenários configurados para cada teste.",
   },
   {
-    q: "Como a pontua├º├úo ├® calculada?",
-    a: "A plataforma aplica as regras publicadas de forma padronizada e permite rastrear a origem da pontua├º├úo. A equidade tamb├®m depende da qualidade dos cen├írios, da valida├º├úo dos crit├®rios, das acomoda├º├Áes oferecidas e da revis├úo da empresa.",
+    q: "Como a pontuação é calculada?",
+    a: "A plataforma aplica as regras publicadas de forma padronizada e permite rastrear a origem da pontuação. A equidade também depende da qualidade dos cenários, da validação dos critérios, das acomodações oferecidas e da revisão da empresa.",
   },
   {
-    q: "Usa intelig├¬ncia artificial para julgar a pessoa?",
-    a: "N├úo. A pontua├º├úo atual ├® calculada por regras configuradas previamente. O Pr├íxis n├úo emite reprova├º├úo autom├ítica e pode sinalizar respostas cr├¡ticas para an├ílise da equipe respons├ível.",
+    q: "Usa inteligência artificial para julgar a pessoa?",
+    a: "Não. A pontuação atual é calculada por regras configuradas previamente. O Práxis não emite reprovação automática e pode sinalizar respostas críticas para análise da equipe responsável.",
   },
   {
     q: "Funciona no celular?",
-    a: "A interface foi desenvolvida para navegadores modernos em computadores, tablets e celulares. A compatibilidade pode variar conforme o navegador, a vers├úo do sistema e os recursos de acessibilidade utilizados.",
+    a: "A interface foi desenvolvida para navegadores modernos em computadores, tablets e celulares. A compatibilidade pode variar conforme o navegador, a versão do sistema e os recursos de acessibilidade utilizados.",
   },
   {
-    q: "Meus dados est├úo seguros?",
-    a: "O Pr├íxis adota controles t├®cnicos e organizacionais destinados ├á prote├º├úo dos dados. Nenhum sistema ├® completamente imune a riscos, por isso os controles devem ser acompanhados de gest├úo de acesso, monitoramento e procedimentos de resposta a incidentes.",
+    q: "Meus dados estão seguros?",
+    a: "O Práxis adota controles técnicos e organizacionais destinados à proteção dos dados. Nenhum sistema é completamente imune a riscos, por isso os controles devem ser acompanhados de gestão de acesso, monitoramento e procedimentos de resposta a incidentes.",
   },
   {
-    q: "O Pr├íxis garante conformidade com a LGPD?",
-    a: "A plataforma oferece recursos que apoiam a governan├ºa de privacidade. A adequa├º├úo completa depende tamb├®m das finalidades, bases legais, pol├¡ticas, contratos e procedimentos adotados pela empresa respons├ível pelo processo seletivo.",
+    q: "O Práxis garante conformidade com a LGPD?",
+    a: "A plataforma oferece recursos que apoiam a governança de privacidade. A adequação completa depende também das finalidades, bases legais, políticas, contratos e procedimentos adotados pela empresa responsável pelo processo seletivo.",
   },
   {
-    q: "Preciso ter forma├º├úo t├®cnica para usar?",
-    a: "N├úo. A cria├º├úo do teste ├® guiada por etapas. Termos t├®cnicos t├¬m uma explica├º├úo simples quando voc├¬ passa o mouse sobre eles.",
+    q: "Preciso ter formação técnica para usar?",
+    a: "Não. A criação do teste é guiada por etapas. Termos técnicos têm uma explicação simples quando você passa o mouse sobre eles.",
   },
   {
-    q: "O candidato me pediu um c├│digo de acesso. O que ├® isso?",
-    a: "├ë o c├│digo do convite. Ele j├í vai dentro do link enviado ao candidato; se a pessoa perder o acesso, basta reenviar o link pela tela Enviar link.",
+    q: "O candidato me pediu um código de acesso. O que é isso?",
+    a: "É o código do convite. Ele já vai dentro do link enviado ao candidato; se a pessoa perder o acesso, basta reenviar o link pela tela Enviar link.",
   },
 ];
 
@@ -243,8 +243,8 @@ function GettingStartedPage() {
             <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-success" />
             <p className="text-sm leading-relaxed text-muted-foreground">
               <strong className="text-foreground">Resultado como indicador complementar.</strong> A
-              pontua├º├úo ├® calculada conforme as regras configuradas para cada teste e n├úo substitui
-              a an├ílise humana, a valida├º├úo dos crit├®rios para o cargo nem as demais etapas do
+              pontuação é calculada conforme as regras configuradas para cada teste e não substitui
+              a análise humana, a validação dos critérios para o cargo nem as demais etapas do
               processo seletivo.
             </p>
           </div>

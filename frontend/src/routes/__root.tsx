@@ -1,4 +1,4 @@
-﻿import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
   Outlet,
   Link,
@@ -85,17 +85,17 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Pr├íxis ÔÇö Avalia├º├úo de candidatos transparente e audit├ível" },
+      { title: "Práxis — Avaliação de candidatos transparente e auditável" },
       {
         name: "description",
         content:
-          "Pr├íxis ├® uma plataforma para avaliar candidatos com cen├írios realistas do trabalho. Resultados transparentes e audit├íveis, sem intelig├¬ncia artificial decidindo. Veja como funciona.",
+          "Práxis é uma plataforma para avaliar candidatos com cenários realistas do trabalho. Resultados transparentes e auditáveis, sem inteligência artificial decidindo. Veja como funciona.",
       },
-      { property: "og:title", content: "Pr├íxis ÔÇö Teste de candidatos" },
+      { property: "og:title", content: "Práxis — Teste de candidatos" },
       {
         property: "og:description",
         content:
-          "Avalie candidatos com cen├írios realistas do trabalho. Resultados transparentes e audit├íveis, sem IA decidindo sozinha.",
+          "Avalie candidatos com cenários realistas do trabalho. Resultados transparentes e auditáveis, sem IA decidindo sozinha.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },

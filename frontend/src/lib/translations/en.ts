@@ -1,4 +1,4 @@
-﻿export const en = {
+export const en = {
   common: {
     dashboard: "Dashboard",
     createTest: "Create new test model",
@@ -38,9 +38,9 @@
   },
   language: {
     select: "Select language",
-    portuguese: "Portugu├¬s (Brasil)",
+    portuguese: "Português (Brasil)",
     english: "English",
-    spanish: "Espa├▒ol (M├®xico)",
+    spanish: "Español (México)",
   },
   descriptions: {
     dashboard: "Your tests and results",
@@ -72,7 +72,7 @@
   },
   blueprint: {
     title: "Assessment plan",
-    metaTitle: "Assessment plan ÔÇö Praxis",
+    metaTitle: "Assessment plan — Praxis",
     metaDescription:
       "Define role, critical situation, evaluated competencies and result usage.",
     blockedReason: "role, critical situation and competency are required",
@@ -180,7 +180,7 @@
   },
   getStarted: {
     title: "Get Started - Praxis",
-    heading: "Welcome to Praxis ­ƒæï",
+    heading: "Welcome to Praxis 👋",
     howItWorks: "How it works?",
     forWhom: "Who is it for?",
     whereToStart: "Where to start?",
