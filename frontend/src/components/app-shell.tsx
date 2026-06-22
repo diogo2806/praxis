@@ -207,7 +207,7 @@ function SidebarContent({
       <div className="border-t border-border p-4">
         <div
           className="rounded-md border border-border bg-accent/40 p-3 text-xs text-muted-foreground"
-          title="A nota do candidato é calculada por regras declaradas (critérios de pontuação, peso e cálculo). Nenhum modelo de IA decide ou julga o resultado."
+          title="A pontuação da participação é calculada pelas regras configuradas, incluindo critérios e pesos. O cálculo exibido não é atribuído por um modelo de inteligência artificial."
         >
           <div className="font-medium text-foreground">{t.common.rulesBasedScoring}</div>
           <p className="mt-1 text-muted-foreground">{t.common.noSubjectiveAnswers}</p>

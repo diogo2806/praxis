@@ -85,17 +85,17 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Pr├íxis ÔÇö Avalia├º├úo de candidatos transparente e audit├ível" },
+      { title: "Práxis — Simulações e avaliações situacionais rastreáveis" },
       {
         name: "description",
         content:
-          "Pr├íxis ├® uma plataforma para avaliar candidatos com cen├írios realistas do trabalho. Resultados transparentes e audit├íveis, sem intelig├¬ncia artificial decidindo. Veja como funciona.",
+          "Crie cenários interativos, configure competências e regras de pontuação, compartilhe por link e acompanhe resultados com histórico de versões e auditoria.",
       },
-      { property: "og:title", content: "Pr├íxis ÔÇö Teste de candidatos" },
+      { property: "og:title", content: "Práxis — Avaliações situacionais estruturadas" },
       {
         property: "og:description",
         content:
-          "Avalie candidatos com cen├írios realistas do trabalho. Resultados transparentes e audit├íveis, sem IA decidindo sozinha.",
+          "Transforme situações reais em cenários interativos com critérios configuráveis, indicadores e registros rastreáveis.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },

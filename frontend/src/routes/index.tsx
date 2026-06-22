@@ -4,11 +4,11 @@ import { createFileRoute } from "@tanstack/react-router";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Pr├íxis ÔÇö Avalia├º├úo comportamental situacional" },
+      { title: "Práxis — Simulações e avaliações situacionais rastreáveis" },
       {
         name: "description",
         content:
-          "Avalie pessoas por como decidem em cen├írios realistas. Pontua├º├úo determin├¡stica, trilha audit├ível e integra├º├Áes com ATS, sistemas de sa├║de e plataformas educacionais. Sem IA julgando ningu├®m.",
+          "Crie cenários interativos, configure competências e regras de pontuação, compartilhe por link e acompanhe resultados com histórico de versões e auditoria.",
       },
     ],
     links: [
@@ -560,9 +560,9 @@ const landingMarkup = `<header class="nav" id="nav">
       <div class="scenario reveal-up d4" aria-label="Demonstra├º├úo de um cen├írio">
         <div class="sc-top">
           <div class="sc-id">
-            <div class="avatar">CM</div>
+            <div class="avatar">PP</div>
             <div>
-              <div class="who">Carlos M.</div>
+              <div class="who">Pessoa participante</div>
               <div class="stage">ETAPA 1/3 ┬À ABERTURA</div>
             </div>
           </div>
@@ -587,7 +587,7 @@ const landingMarkup = `<header class="nav" id="nav">
             <p class="read" id="rRead"></p>
             <p class="invisible-note">
               <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3l18 18M10.6 10.6a2 2 0 0 0 2.9 2.9M9.5 5.2A9 9 0 0 1 21 12a13 13 0 0 1-2.1 2.9M6.3 6.3A13 13 0 0 0 3 12a12 12 0 0 0 6 6"/></svg>
-              <span>Para o candidato isso fica invis├¡vel ÔÇö ele s├│ decide. Voc├¬ recebe a leitura.</span>
+              <span>Para a pessoa participante isso fica invisível — ela só decide. Você recebe a leitura.</span>
             </p>
           </div>
         </div>
@@ -762,7 +762,7 @@ const landingMarkup = `<header class="nav" id="nav">
       <div class="feat-grid">
         <div class="feats">
           <div class="feat">
-            <h3><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v18M3 12h18"/></svg></span>Sem IA julgando candidato</h3>
+            <h3><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v18M3 12h18"/></svg></span>Sem IA julgando a pessoa</h3>
             <p>A pontua├º├úo vem de crit├®rios, pesos e c├ílculo. Zero caixa-preta, zero custo de IA, totalmente explic├ível.</p>
           </div>
           <div class="feat">
@@ -796,7 +796,7 @@ const landingMarkup = `<header class="nav" id="nav">
           <div class="ev-body">
             <div class="ev-score">
               <span class="n">82</span><span class="of">/100</span>
-              <span class="decision">Recomendar entrevista</span>
+              <span class="decision">Atingiu a referência configurada</span>
             </div>
             <div class="ev-comp" id="evComp">
               <div class="cbar"><div class="clabel"><span>Comunica├º├úo</span><b>88</b></div><div class="track"><span class="fill" data-w="88"></span></div></div>
@@ -927,12 +927,12 @@ turno-3 Ôû© <span class="ok">C</span>  +2 Comunica├º├úo
         <div class="gov">
           <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v18M5 7l7-4 7 4M5 7v6c0 4 3 6 7 7 4-1 7-3 7-7V7"/></svg></span>
           <h3>Transpar├¬ncia audit├ível</h3>
-          <p>Pesos versionados e crit├®rios vis├¡veis permitem reconstruir como cada candidato recebeu cada ponto. Voc├¬ ├® respons├ível pelo conte├║do do teste e pela decis├úo final.</p>
+          <p>Pesos versionados e critérios visíveis permitem reconstruir como cada participação recebeu cada ponto. Você é responsável pelo conteúdo da avaliação e pela decisão final.</p>
         </div>
       </div>
       <div class="gov-foot">
-        <span class="chip">diretrizes <b>WCAG 2.1</b> ┬À naveg├ível por teclado e leitor de tela</span>
-        <span class="chip">alinhado ├á <b>LBI</b> ┬À tempo ajust├ível por etapa</span>
+        <span class="chip"><b>Navegação por teclado</b> e estrutura semântica nos fluxos principais</span>
+        <span class="chip"><b>Contraste e legibilidade</b> · tempo configurável por participação</span>
         <span class="chip">multi-tenant ┬À <b>isolamento por empresa</b></span>
       </div>
     </div>
@@ -1077,7 +1077,7 @@ turno-3 Ôû© <span class="ok">C</span>  +2 Comunica├º├úo
 <footer id="entrar">
   <div class="wrap foot-inner">
     <a href="#topo" class="brand">Pr├íxis<span class="dot"></span><small>by iForce</small></a>
-    <span class="fcopy">┬® 2026 iForce ┬À praxis.iforce.com.br</span>
+    <span class="fcopy"><a href="mailto:contato@iforce.com.br">contato@iforce.com.br</a> ┬À ┬® 2026 iForce</span>
   </div>
 </footer>`;
 

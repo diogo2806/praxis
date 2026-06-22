@@ -30,10 +30,11 @@ import { cn } from "@/lib/utils";
 export const Route = createFileRoute("/enviar-link")({
   head: () => ({
     meta: [
-      { title: "Enviar Link ao Candidato - Praxis" },
+      { title: "Compartilhar acesso por link - Praxis" },
       {
         name: "description",
-        content: "Gere um link de teste para enviar ao candidato por e-mail ou WhatsApp.",
+        content:
+          "Gere um link de participação para compartilhar a avaliação por e-mail ou WhatsApp.",
       },
     ],
   }),
@@ -126,10 +127,10 @@ function EnviarLinkPage() {
 
       <div className="mb-6">
         <div className="text-xs uppercase text-primary">Envio direto</div>
-        <h1 className="mt-1 text-3xl font-semibold">Enviar link ao candidato</h1>
+        <h1 className="mt-1 text-3xl font-semibold">Compartilhar acesso por link</h1>
         <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
-          Selecione um teste no ar, preencha os dados do candidato e compartilhe o link por e-mail
-          ou WhatsApp.
+          Selecione um teste no ar, preencha os dados da pessoa participante e compartilhe o link
+          por e-mail ou WhatsApp.
         </p>
       </div>
 
@@ -142,7 +143,7 @@ function EnviarLinkPage() {
         />
         <StepIndicator
           number={2}
-          label="Candidato"
+          label="Participante"
           active={step === "form"}
           done={step === "share"}
         />
@@ -375,15 +376,15 @@ function CandidateFormStep({
   return (
     <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_360px]">
       <div className="rounded-md border border-border bg-card p-6">
-        <h2 className="text-lg font-semibold">Dados do candidato</h2>
+        <h2 className="text-lg font-semibold">Dados da pessoa participante</h2>
         <p className="mt-1 text-sm text-muted-foreground">
-          Preencha o nome e o e-mail do candidato para gerar o link de acesso.
+          Preencha o nome e o e-mail da pessoa participante para gerar o link de acesso.
         </p>
 
         <div className="mt-5 space-y-4">
           <div>
             <label htmlFor="candidate-name" className="mb-1.5 block text-sm font-medium">
-              Nome do candidato
+              Nome da pessoa participante
             </label>
             <input
               id="candidate-name"
@@ -397,7 +398,7 @@ function CandidateFormStep({
 
           <div>
             <label htmlFor="candidate-email" className="mb-1.5 block text-sm font-medium">
-              E-mail do candidato
+              E-mail da pessoa participante
             </label>
             <input
               id="candidate-email"
@@ -487,7 +488,7 @@ function ShareStep({
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_360px]">
         <div className="space-y-5">
           <div className="rounded-md border border-border bg-card p-6">
-            <h2 className="text-lg font-semibold">Link do candidato</h2>
+            <h2 className="text-lg font-semibold">Link de participação</h2>
             <p className="mt-1 text-sm text-muted-foreground">
               Copie o link abaixo ou use os botões para compartilhar diretamente.
             </p>
@@ -514,7 +515,7 @@ function ShareStep({
           <div className="rounded-md border border-border bg-card p-6">
             <h2 className="text-lg font-semibold">Compartilhar</h2>
             <p className="mt-1 text-sm text-muted-foreground">
-              Envie o link diretamente para o candidato pelo canal preferido.
+              Envie o link diretamente para a pessoa participante pelo canal preferido.
             </p>
             <div className="mt-4 flex flex-wrap gap-3">
               <button
@@ -542,7 +543,7 @@ function ShareStep({
             <h3 className="text-sm font-semibold">Resumo do envio</h3>
             <dl className="mt-3 space-y-3">
               <div>
-                <dt className="text-xs uppercase text-muted-foreground">Candidato</dt>
+                <dt className="text-xs uppercase text-muted-foreground">Participante</dt>
                 <dd className="mt-0.5 text-sm font-medium">{candidateName}</dd>
               </div>
               <div>
@@ -556,7 +557,7 @@ function ShareStep({
             </dl>
           </div>
 
-          <StateBanner tone="info" title="Um link por candidato">
+          <StateBanner tone="info" title="Um link por participante">
             Se você gerar o link de novo com o mesmo e-mail e o mesmo teste, o link retornado será o
             mesmo. Pode reenviar sem medo de duplicar.
           </StateBanner>
@@ -570,7 +571,7 @@ function ShareStep({
           className="inline-flex items-center gap-2 rounded-md bg-primary px-5 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
         >
           <Send className="h-4 w-4" />
-          Enviar para outro candidato
+          Enviar para outra pessoa
         </button>
         <Link
           to="/"
