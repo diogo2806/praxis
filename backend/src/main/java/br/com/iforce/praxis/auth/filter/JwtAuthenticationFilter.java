@@ -21,11 +21,22 @@ import java.util.List;
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private static final String BEARER_PREFIX = "Bearer ";
+    private static final String GUPY_TEST_PATH = "/test";
 
     private final JwtService jwtService;
 
     public JwtAuthenticationFilter(JwtService jwtService) {
         this.jwtService = jwtService;
+    }
+
+    @Override
+    protected boolean shouldNotFilter(HttpServletRequest request) {
+        String contextPath = request.getContextPath();
+        String requestUri = request.getRequestURI();
+        String path = contextPath == null || contextPath.isBlank()
+                ? requestUri
+                : requestUri.substring(contextPath.length());
+        return GUPY_TEST_PATH.equals(path) || path.startsWith(GUPY_TEST_PATH + "/");
     }
 
     @Override
