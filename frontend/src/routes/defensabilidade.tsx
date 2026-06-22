@@ -41,7 +41,7 @@ export const Route = createFileRoute("/defensabilidade")({
       {
         name: "description",
         content:
-          "Base técnica do resultado: construto, score auditável, pesos e limites da promessa.",
+          "Base técnica do resultado: construto, score auditável, pesos e limites do uso.",
       },
     ],
   }),

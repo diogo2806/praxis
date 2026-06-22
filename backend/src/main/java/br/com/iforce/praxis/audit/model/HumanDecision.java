@@ -7,7 +7,7 @@ import com.fasterxml.jackson.annotation.JsonValue;
 
 /**
  * Disposição registrada por uma pessoa sobre um candidato. É o evento que materializa o
- * "humano no controle": a decisão final nunca é da ferramenta, e sim de quem registra aqui.
+ * "humano no controle": a decisão final cabe a quem registra aqui, não à ferramenta.
  */
 public enum HumanDecision implements DescribedEnum {
 

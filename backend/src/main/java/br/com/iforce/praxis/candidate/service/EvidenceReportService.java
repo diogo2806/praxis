@@ -32,15 +32,15 @@ import java.util.Optional;
 /**
  * Monta o relatório de transparência do scoring (REQ-L4). Não recalcula nem altera nada: apenas
  * consolida o que já está persistido (resultado determinístico, caminho do candidato, trilha
- * imutável e decisão humana) em um documento entregável para defesa jurídica e venda.
+ * append-only e decisão humana) em um documento entregável para defesa jurídica e venda.
  */
 @Service
 public class EvidenceReportService {
 
     private static final String DETERMINISTIC_STATEMENT =
-            "A pontuação é 100% determinística: função pura das opções escolhidas e do grafo "
+            "A pontuação é determinística: função pura das opções escolhidas e do grafo "
                     + "publicado. Não há IA, modelo estatístico nem dados de treino. Dado o mesmo "
-                    + "cenário e as mesmas respostas, o resultado é sempre idêntico.";
+                    + "cenário e as mesmas respostas, o resultado produzido é idêntico.";
 
     private static final String SCORING_FORMULA =
             "raw(c) = Σ pontos das opções escolhidas que pontuam em c; "

@@ -17,10 +17,10 @@ public final class HealthUseTerm {
                     + "educativo/treinamento de decisão, sem fins de diagnóstico, prescrição ou conduta "
                     + "clínica; (2) é o controlador dos dados dos participantes e define finalidade, base "
                     + "legal e retenção, sendo a Práxis operadora nos limites do contrato e do DPA; (3) "
-                    + "garante base legal válida para dado sensível de saúde e coleta o consentimento "
+                    + "declara possuir base legal válida para dado sensível de saúde e coleta o consentimento "
                     + "específico quando aplicável, inclusive para menores e vulneráveis; (4) não usa o "
                     + "resultado, isoladamente, para decisão automatizada sobre tratamento, atendimento ou "
-                    + "acesso a serviços de saúde, assegurando revisão humana; (5) responde pelo conteúdo "
+                    + "acesso a serviços de saúde, mantendo revisão humana; (5) responde pelo conteúdo "
                     + "dos cenários, sem prometer cura ou resultado clínico; e (6) disponibiliza política "
                     + "de privacidade e canal do Encarregado (DPO) aos participantes.";
 

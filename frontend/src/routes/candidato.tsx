@@ -488,8 +488,8 @@ function FocusedCandidateExperience({ token }: { token: string }) {
 
         <p className="mt-6 border-t border-current pt-4 text-center text-xs leading-relaxed opacity-50">
           {attempt?.verticalSaude
-            ? "Esta é uma atividade educativa. Seus dados são tratados apenas para esta finalidade, conforme a LGPD. Não é diagnóstico nem substitui avaliação profissional. A decisão é de uma pessoa, não de um sistema automático, e você pode pedir revisão humana."
-            : "Seus dados são tratados exclusivamente para fins desta avaliação, conforme a LGPD. A pontuação segue critérios definidos antes do teste, sem IA julgando você. A decisão sobre a sua candidatura é tomada por uma pessoa, não por um sistema automático, e você pode solicitar revisão humana do resultado."}
+            ? "Esta é uma atividade educativa. Seus dados são tratados para esta finalidade, conforme a LGPD e a política de privacidade da empresa responsável. Não é diagnóstico nem substitui avaliação profissional. A decisão é de uma pessoa, não de um sistema automático, e você pode pedir revisão humana."
+            : "Seus dados são tratados para fins desta avaliação, conforme a LGPD e a política de privacidade da empresa responsável. A pontuação segue critérios definidos antes do teste, sem IA julgando você. A decisão sobre a sua candidatura é tomada por uma pessoa, não por um sistema automático, e você pode solicitar revisão humana do resultado."}
         </p>
       </section>
     </main>

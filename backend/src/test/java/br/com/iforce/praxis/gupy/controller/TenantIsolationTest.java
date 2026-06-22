@@ -17,7 +17,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
- * Garante que dados de um tenant nunca vazam para outro pelos endpoints Gupy. O tenant-1
+ * Verifica que dados de um tenant não vazam para outro pelos endpoints Gupy. O tenant-1
  * (empresa-123, token "tenant1-token") e o tenant-2 (empresa-456, token "tenant2-token") possuem
  * simulações publicadas distintas; nenhum dos dois enxerga a simulação ou o resultado do outro.
  */

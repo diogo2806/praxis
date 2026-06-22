@@ -545,7 +545,7 @@ const landingMarkup = `<header class="nav" id="nav">
       <div class="hero-copy">
         <span class="eyebrow reveal-up d1">Avaliação situacional · sem IA julgando pessoas</span>
         <h1 class="reveal-up d2">Veja como a pessoa <span class="accent">decide</span> diante de um cenário realista.</h1>
-        <p class="lead reveal-up d3">Antes de gastar tempo com entrevistas, a Práxis mostra como alguém age diante de uma situação realista — com pontuação por competência e uma trilha auditável que pode ser verificada de forma independente. Para recrutamento, saúde, educação ou onde decisão importa.</p>
+        <p class="lead reveal-up d3">Antes de gastar tempo com entrevistas, a Práxis mostra como alguém age diante de uma situação realista — com pontuação por competência e uma trilha auditável projetada para rastreabilidade. Para recrutamento, saúde, educação ou onde decisão importa.</p>
         <div class="hero-ctas reveal-up d4">
           <a class="btn btn-primary" href="#cta">Agendar demonstração <span class="btn-arrow">→</span></a>
           <a class="btn btn-ghost" href="#aplicacoes">Ver onde se aplica</a>

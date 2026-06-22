@@ -250,7 +250,7 @@ function Page() {
       )}
 
       <div className="mt-6 rounded-xl border border-border bg-card p-5">
-        <h3 className="text-sm font-semibold">Registro de auditoria imutável</h3>
+        <h3 className="text-sm font-semibold">Registro de auditoria conectado</h3>
         {hasGovernanceParams ? (
           <AuditLog events={auditQuery.data ?? []} loading={auditQuery.isLoading} />
         ) : (

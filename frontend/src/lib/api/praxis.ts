@@ -830,7 +830,7 @@ export interface EvidenceReport {
 
 /**
  * Relatório de transparência do scoring (REQ-L4): declaração de cálculo determinístico (sem IA,
- * sem dados de treino), fórmula, caminho do candidato, pontos por competência, trilha imutável e
+ * sem dados de treino), fórmula, caminho do candidato, pontos por competência, trilha append-only e
  * a decisão humana. Documento entregável para compliance/jurídico.
  */
 export function getEvidenceReport(attemptId: string) {

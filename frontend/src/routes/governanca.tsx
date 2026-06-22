@@ -117,7 +117,7 @@ function GovernanceHub() {
       <div className="mt-5 space-y-5">
         <section className="rounded-md border border-border bg-card p-5">
           <h2 className="text-sm font-semibold">
-            {hasGovernanceParams ? "Registro de auditoria imutável" : "Versões disponíveis"}
+            {hasGovernanceParams ? "Registro de auditoria conectado" : "Versões disponíveis"}
           </h2>
           {!hasGovernanceParams && (
             <p className="mt-1 text-xs text-muted-foreground">

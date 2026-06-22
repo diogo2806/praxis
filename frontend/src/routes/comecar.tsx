@@ -93,7 +93,7 @@ const faq = [
   },
   {
     q: "Os resultados são consistentes?",
-    a: "Sim. A nota vem de regras claras, aplicadas da mesma forma a cada pessoa, e não de uma inteligência artificial decidindo sozinha. Sempre dá para ver de onde veio cada ponto. A adequação dos critérios é definida por quem cria o teste.",
+    a: "A nota vem de regras claras, aplicadas da mesma forma a cada pessoa, e não de uma inteligência artificial decidindo sozinha. Sempre dá para ver de onde veio cada ponto. A adequação dos critérios é de responsabilidade de quem cria o teste.",
   },
   {
     q: "Usa inteligência artificial para julgar a pessoa?",
@@ -105,7 +105,7 @@ const faq = [
   },
   {
     q: "Meus dados estão seguros?",
-    a: "O Práxis foi desenhado seguindo a LGPD (a lei brasileira de proteção de dados): registra um histórico do tratamento e oferece controles de retenção e revisão. A empresa que aplica o teste é a responsável pelo uso dos dados.",
+    a: "O Práxis foi desenhado com controles alinhados à LGPD (a lei brasileira de proteção de dados): registra um histórico do tratamento e oferece configurações de retenção e revisão. A empresa que aplica o teste é a responsável pelo uso dos dados e pela adequação à legislação aplicável.",
   },
   {
     q: "Preciso ter formação técnica para usar?",
