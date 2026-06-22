@@ -78,7 +78,7 @@ public class CompanyCandidateLinkController {
     @PostMapping("/{attemptId}/disposition")
     @Operation(
             summary = "Registra a decisão humana sobre o candidato",
-            description = "Registra na trilha append-only quem decidiu, quando e por quê. O score é "
+            description = "Registra na trilha append-only quem decidiu, quando e por quê. A pontuação é "
                     + "apenas apoio: a decisão final cabe a uma pessoa."
     )
     public ResponseEntity<Void> registerDisposition(

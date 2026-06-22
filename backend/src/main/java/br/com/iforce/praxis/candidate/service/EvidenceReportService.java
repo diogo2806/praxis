@@ -137,7 +137,7 @@ public class EvidenceReportService {
 
     /**
      * Reconstrói o caminho percorrido do nó raiz em diante, seguindo as escolhas (ou a rota de
-     * timeout) — a mesma travessia determinística usada no cálculo do score, exposta turno a turno.
+     * timeout) — a mesma travessia determinística usada no cálculo da pontuação, exposta turno a turno.
      */
     private List<EvidenceReport.PathStepEvidence> buildPath(
             CandidateAttemptEntity attempt,

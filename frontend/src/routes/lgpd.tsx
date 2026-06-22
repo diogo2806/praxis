@@ -144,7 +144,7 @@ function LgpdPage() {
                 <UserRound className="mt-0.5 h-5 w-5 shrink-0 text-primary" />
                 <div className="text-sm text-muted-foreground">
                   <strong className="text-foreground">Explicabilidade para o candidato.</strong> O
-                  Praxis não usa IA generativa para julgar respostas. O score vem de alternativas
+                  Praxis não usa IA generativa para julgar respostas. A pontuação vem de alternativas
                   pré-definidas com pesos declarados. A qualquer momento, o candidato pode solicitar
                   a explicação do resultado pelo canal indicado acima.
                 </div>

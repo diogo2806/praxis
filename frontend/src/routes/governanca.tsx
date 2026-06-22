@@ -316,6 +316,7 @@ function SimulationLinks({
   simulationSearch: string;
   statusFilter: "all" | "draft" | "published" | "archived";
 }) {
+  const { t } = useLanguage();
   const normalizedSearch = simulationSearch.trim().toLowerCase();
   const filteredSimulations = useMemo(() => {
     return simulations.filter((simulation) => {
@@ -354,7 +355,7 @@ function SimulationLinks({
         <TableHeader>
           <TableRow>
             <TableHead>Teste</TableHead>
-            <TableHead>Status</TableHead>
+            <TableHead>{t.common.status}</TableHead>
             <TableHead className="text-right">Versão</TableHead>
             <TableHead className="text-right">Tentativas</TableHead>
             <TableHead className="text-right">Ação</TableHead>

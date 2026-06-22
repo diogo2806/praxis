@@ -618,7 +618,7 @@ const landingMarkup = `<header class="nav" id="nav">
           <ul class="clist">
             <li><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>Coloca a pessoa para decidir num cenário real do cargo.</li>
             <li><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>Todas as opções são plausíveis: mede julgamento.</li>
-            <li><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>Score por competência com a trilha exata de cada ponto.</li>
+            <li><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>Pontuação por competência com a trilha exata de cada ponto.</li>
             <li><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>O gestor entrevista quem já provou saber lidar.</li>
           </ul>
         </div>
@@ -650,7 +650,7 @@ const landingMarkup = `<header class="nav" id="nav">
         <div class="step">
           <span class="num">PASSO 03</span>
           <h3>Você recebe a evidência</h3>
-          <p>Score por competência e a trilha de decisão voltam para o seu sistema, prontos para análise e tomada de decisão.</p>
+          <p>Pontuação por competência e a trilha de decisão voltam para o seu sistema, prontos para análise e tomada de decisão.</p>
         </div>
       </div>
 
@@ -756,7 +756,7 @@ const landingMarkup = `<header class="nav" id="nav">
       <div class="sec-head">
         <span class="eyebrow">Por dentro</span>
         <h2>Feito para decisão auditável e transparente.</h2>
-        <p class="lead">Cada nota é decomponível: você mostra, ponto a ponto, como o score foi calculado. O conteúdo do teste e a decisão final são seus — a Práxis é ferramenta de apoio.</p>
+        <p class="lead">Cada nota é decomponível: você mostra, ponto a ponto, como a pontuação foi calculada. O conteúdo do teste e a decisão final são seus — a Práxis é ferramenta de apoio.</p>
       </div>
 
       <div class="feat-grid">
@@ -766,7 +766,7 @@ const landingMarkup = `<header class="nav" id="nav">
             <p>A pontuação vem de critérios, pesos e cálculo. Zero caixa-preta, zero custo de IA, totalmente explicável.</p>
           </div>
           <div class="feat">
-            <h3><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h4l3-8 4 16 3-8h4"/></svg></span>Score comparável entre caminhos</h3>
+            <h3><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h4l3-8 4 16 3-8h4"/></svg></span>Pontuação comparável entre caminhos</h3>
             <p>A nota é normalizada pelo caminho percorrido, para que quem segue um cenário mais curto não seja penalizado por isso.</p>
           </div>
           <div class="feat">
@@ -822,7 +822,7 @@ turno-3 ▸ <span class="ok">C</span>  +2 Comunicação
       <div class="sec-head">
         <span class="eyebrow">Onde se aplica</span>
         <h2>Onde decisão importa, a Práxis entrega evidência.</h2>
-        <p class="lead">O mesmo motor — cenário situacional com score determinístico — se adapta a qualquer contexto onde você precisa avaliar como pessoas decidem.</p>
+        <p class="lead">O mesmo motor — cenário situacional com pontuação determinística — se adapta a qualquer contexto onde você precisa avaliar como pessoas decidem.</p>
       </div>
       <div class="use-cases">
         <div class="uc uc-recruit">
@@ -881,7 +881,7 @@ turno-3 ▸ <span class="ok">C</span>  +2 Comunicação
         <div class="flow">
           <div class="fstep gp"><span class="fn">1</span><span>Participante recebe o convite pelo <b>seu sistema</b></span></div>
           <div class="fstep"><span class="fn">2</span><span>Faz a avaliação situacional na Práxis</span></div>
-          <div class="fstep"><span class="fn">3</span><span>Score e competências voltam automaticamente (com retentativas)</span></div>
+          <div class="fstep"><span class="fn">3</span><span>Pontuação e competências voltam automaticamente (com retentativas)</span></div>
           <div class="fstep gp"><span class="fn">4</span><span>Você decide com base na evidência, sem sair da plataforma</span></div>
         </div>
         <div class="connect" aria-label="Como a integração funciona">
@@ -969,7 +969,7 @@ turno-3 ▸ <span class="ok">C</span>  +2 Comunicação
             <li><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>Integrações nativas (Gupy, Recrutei, API)</li>
             <li><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>1 simulação ativa</li>
             <li><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>Biblioteca de cenários (modelos)</li>
-            <li><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>Score por competência</li>
+            <li><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>Pontuação por competência</li>
             <li><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>Trilha auditável</li>
           </ul>
         </div>
@@ -1003,7 +1003,7 @@ turno-3 ▸ <span class="ok">C</span>  +2 Comunicação
           <ul class="plist">
             <li class="head"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/></svg>Tudo do Crescimento, e mais:</li>
             <li><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>Trilha protegida contra alteração, com retenção sob medida</li>
-            <li><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>Talent-match entre participantes</li>
+            <li><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>Comparativo entre participantes</li>
             <li><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>Apoio metodológico: estudo assistido de aderência entre nota e critérios definidos por você</li>
             <li><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>SSO / SAML e ambiente dedicado</li>
             <li><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>SLA e gerente de conta</li>
@@ -1053,7 +1053,7 @@ turno-3 ▸ <span class="ok">C</span>  +2 Comunicação
         </div>
         <div class="qa">
           <button aria-expanded="false"><span class="q">Funciona para áreas fora de recrutamento?</span><span class="ic"></span></button>
-          <div class="ans"><p>Sim. O motor é o mesmo: cenário situacional com score por competência. Já se aplica a saúde (avaliação clínica e prontidão de pacientes), educação (competências socioemocionais), compliance (conduta em dilemas éticos) e desenvolvimento interno (promoção e sucessão).</p></div>
+          <div class="ans"><p>Sim. O motor é o mesmo: cenário situacional com pontuação por competência. Já se aplica a saúde (avaliação clínica e prontidão de pacientes), educação (competências socioemocionais), compliance (conduta em dilemas éticos) e desenvolvimento interno (promoção e sucessão).</p></div>
         </div>
       </div>
     </div>

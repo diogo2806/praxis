@@ -141,7 +141,7 @@ function TalentMatchPage() {
           <h1 className="mt-1 text-3xl font-semibold">Comparativo de candidatos</h1>
           <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
             Evidência para análise: sobreponha até 5 perfis no radar e compare cada competência
-            contra a régua alvo da vaga. O score é apoio à decisão — quem decide é você.
+            contra a régua alvo da vaga. A pontuação é apoio à decisão — quem decide é você.
           </p>
         </div>
         <Link
@@ -528,7 +528,7 @@ function CandidateDecisionControl({ attemptId }: { attemptId: string }) {
   if (mutation.isSuccess) {
     return (
       <div className="mt-3 rounded-md border border-primary/40 bg-primary/5 p-2.5 text-[11px] text-muted-foreground">
-        Decisão registrada na trilha de auditoria. O score é apenas apoio — a decisão é sua.
+        Decisão registrada na trilha de auditoria. A pontuação é apenas apoio — a decisão é sua.
       </div>
     );
   }
@@ -605,7 +605,7 @@ function CandidateLegend({ candidates }: { candidates: CandidateRadarDto[] }) {
             </div>
             <div className="text-right">
               <div className="text-xl font-semibold tabular-nums">{candidate.generalScore}</div>
-              <div className="text-[10px] uppercase text-muted-foreground">score · apoio</div>
+              <div className="text-[10px] uppercase text-muted-foreground">pontuação · apoio</div>
             </div>
           </div>
           <EvidenceReportButton attemptId={candidate.attemptId} />

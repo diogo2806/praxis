@@ -38,7 +38,7 @@ public record EvidenceReport(
         List<AuditEventResponse> auditTrail
 ) {
 
-    @Schema(description = "Declaração formal de como o score é produzido.")
+    @Schema(description = "Declaração formal de como a pontuação é produzida.")
     public record ScoringDeclaration(
             boolean deterministic,
             boolean usesArtificialIntelligence,

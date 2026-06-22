@@ -34,6 +34,7 @@ export const esMx = {
     talentMatch: "Comparativo de candidatos",
     settings: "Configuración",
     competencies: "Competencias",
+    status: "Estado",
   },
   language: {
     select: "Seleccionar idioma",

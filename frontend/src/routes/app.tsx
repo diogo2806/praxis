@@ -274,7 +274,7 @@ function Dashboard() {
                     <tr>
                       <th className="px-4 py-3 text-left font-medium">Teste</th>
                       <th className="px-4 py-3 text-left font-medium">Competências</th>
-                      <th className="px-4 py-3 text-left font-medium">Status</th>
+                      <th className="px-4 py-3 text-left font-medium">{t.common.status}</th>
                       <th className="px-4 py-3 text-left font-medium">Conclusão</th>
                       <th className="px-4 py-3 text-right font-medium">Ações</th>
                     </tr>

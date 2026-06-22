@@ -34,6 +34,7 @@ export const en = {
     talentMatch: "Talent Match",
     settings: "Settings",
     competencies: "Competencies",
+    status: "Status",
   },
   language: {
     select: "Select language",

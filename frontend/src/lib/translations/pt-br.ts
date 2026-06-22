@@ -35,6 +35,7 @@ export const ptBr = {
     talentMatch: "Comparativo de candidatos",
     settings: "Configurações",
     competencies: "Competências",
+    status: "Estado",
   },
   language: {
     select: "Selecionar idioma",

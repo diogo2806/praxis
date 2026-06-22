@@ -208,7 +208,7 @@ function CompliancePage() {
                 <TableRow>
                   <TableHead>Teste</TableHead>
                   <TableHead>Versão</TableHead>
-                  <TableHead>Status</TableHead>
+                  <TableHead>{t.common.status}</TableHead>
                   <TableHead>Taxa de conclusão</TableHead>
                   <TableHead>Bloqueios</TableHead>
                   <TableHead>Tentativas</TableHead>
@@ -467,7 +467,7 @@ export function DossiePanel({
           <TableHeader>
             <TableRow>
               <TableHead>Critério</TableHead>
-              <TableHead>% do score</TableHead>
+              <TableHead>% da pontuação</TableHead>
               <TableHead>Cobrado em</TableHead>
             </TableRow>
           </TableHeader>
@@ -478,7 +478,7 @@ export function DossiePanel({
                 <TableRow key={item.criterio}>
                   <TableCell className="font-medium">{item.criterio}</TableCell>
                   <TableCell title={`peso ${item.peso} de ${totalWeight}`}>
-                    {percentual}% do score
+                    {percentual}% da pontuação
                   </TableCell>
                   <TableCell
                     className="text-muted-foreground"
