@@ -14,6 +14,7 @@ import br.com.iforce.praxis.candidate.dto.ParticipacaoResponse.ProgressoResponse
 import br.com.iforce.praxis.candidate.dto.RegistrarRespostaRequest;
 import br.com.iforce.praxis.candidate.dto.RegistrarRespostaResponse;
 import br.com.iforce.praxis.config.PraxisProperties;
+import br.com.iforce.praxis.auth.service.HealthVerticalService;
 import br.com.iforce.praxis.auth.service.JwtService;
 import br.com.iforce.praxis.gupy.dto.CreateCandidateRequest;
 import br.com.iforce.praxis.gupy.dto.CreateCandidateResponse;
@@ -79,6 +80,7 @@ public class CandidateAttemptService {
     private final CandidateAttemptMapper candidateAttemptMapper;
     private final AttemptStateMachine attemptStateMachine;
     private final GupyTestResultMapper gupyTestResultMapper;
+    private final HealthVerticalService healthVerticalService;
 
     public CandidateAttemptService(
             CandidateAttemptRepository candidateAttemptRepository,
@@ -90,7 +92,8 @@ public class CandidateAttemptService {
             SimulationCatalogService simulationCatalogService,
             CandidateAttemptMapper candidateAttemptMapper,
             AttemptStateMachine attemptStateMachine,
-            GupyTestResultMapper gupyTestResultMapper
+            GupyTestResultMapper gupyTestResultMapper,
+            HealthVerticalService healthVerticalService
     ) {
         this.candidateAttemptRepository = candidateAttemptRepository;
         this.auditEventService = auditEventService;
@@ -102,6 +105,7 @@ public class CandidateAttemptService {
         this.candidateAttemptMapper = candidateAttemptMapper;
         this.attemptStateMachine = attemptStateMachine;
         this.gupyTestResultMapper = gupyTestResultMapper;
+        this.healthVerticalService = healthVerticalService;
     }
 
     @Transactional
@@ -329,7 +333,8 @@ public class CandidateAttemptService {
                 savedAttempt.status() == AttemptStatus.COMPLETED,
                 suggestedFrontendAction(savedAttempt.status()),
                 progressFor(savedAttempt, simulation, currentNode),
-                candidateAttemptMapper.toEtapaAtualResponse(currentNode, savedAttempt.accommodationTimeMultiplier())
+                candidateAttemptMapper.toEtapaAtualResponse(currentNode, savedAttempt.accommodationTimeMultiplier()),
+                healthVerticalService.isHealthVertical(candidateAttemptEntity.getTenantId())
         );
     }
 

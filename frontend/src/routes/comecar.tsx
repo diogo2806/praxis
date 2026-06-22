@@ -55,7 +55,7 @@ const steps = [
 const audiences = [
   "Empresas que fazem recrutamento e seleção",
   "Equipes de Recursos Humanos (RH)",
-  "Gestores que precisam avaliar candidatos de forma justa",
+  "Gestores que precisam avaliar candidatos de forma consistente",
 ];
 
 const startActions = [
@@ -92,8 +92,8 @@ const faq = [
     a: "Na maioria dos casos, entre 20 e 30 minutos.",
   },
   {
-    q: "Os resultados são justos?",
-    a: "Sim. A nota vem de regras claras e iguais para todos, e não de uma inteligência artificial decidindo sozinha. Sempre dá para ver de onde veio cada ponto.",
+    q: "Os resultados são consistentes?",
+    a: "Sim. A nota vem de regras claras, aplicadas da mesma forma a cada pessoa, e não de uma inteligência artificial decidindo sozinha. Sempre dá para ver de onde veio cada ponto. A adequação dos critérios é definida por quem cria o teste.",
   },
   {
     q: "Usa inteligência artificial para julgar a pessoa?",
@@ -105,7 +105,7 @@ const faq = [
   },
   {
     q: "Meus dados estão seguros?",
-    a: "Sim. O Práxis segue a LGPD (a lei brasileira de proteção de dados) e guarda um histórico do que aconteceu para garantir transparência.",
+    a: "O Práxis foi desenhado seguindo a LGPD (a lei brasileira de proteção de dados): registra um histórico do tratamento e oferece controles de retenção e revisão. A empresa que aplica o teste é a responsável pelo uso dos dados.",
   },
   {
     q: "Preciso ter formação técnica para usar?",

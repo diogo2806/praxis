@@ -8,7 +8,7 @@ export const Route = createFileRoute("/")({
       {
         name: "description",
         content:
-          "Avalie pessoas por como decidem em situações reais. Pontuação determinística, trilha auditável e integrações com ATS, sistemas hospitalares e plataformas educacionais. Sem IA julgando ninguém.",
+          "Avalie pessoas por como decidem em cenários realistas. Pontuação determinística, trilha auditável e integrações com ATS, sistemas de saúde e plataformas educacionais. Sem IA julgando ninguém.",
       },
     ],
     links: [
@@ -544,8 +544,8 @@ const landingMarkup = `<header class="nav" id="nav">
     <div class="wrap hero-grid">
       <div class="hero-copy">
         <span class="eyebrow reveal-up d1">Avaliação situacional · sem IA julgando pessoas</span>
-        <h1 class="reveal-up d2">Veja como a pessoa <span class="accent">decide</span> no cenário real.</h1>
-        <p class="lead reveal-up d3">Antes de gastar tempo com entrevistas, a Práxis mostra como alguém age numa situação real — com pontuação por competência e uma trilha que qualquer auditor pode verificar. Para recrutamento, saúde, educação ou onde decisão importa.</p>
+        <h1 class="reveal-up d2">Veja como a pessoa <span class="accent">decide</span> diante de um cenário realista.</h1>
+        <p class="lead reveal-up d3">Antes de gastar tempo com entrevistas, a Práxis mostra como alguém age diante de uma situação realista — com pontuação por competência e uma trilha auditável que pode ser verificada de forma independente. Para recrutamento, saúde, educação ou onde decisão importa.</p>
         <div class="hero-ctas reveal-up d4">
           <a class="btn btn-primary" href="#cta">Agendar demonstração <span class="btn-arrow">→</span></a>
           <a class="btn btn-ghost" href="#aplicacoes">Ver onde se aplica</a>
@@ -766,8 +766,8 @@ const landingMarkup = `<header class="nav" id="nav">
             <p>A pontuação vem de critérios, pesos e cálculo. Zero caixa-preta, zero custo de IA, totalmente explicável.</p>
           </div>
           <div class="feat">
-            <h3><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h4l3-8 4 16 3-8h4"/></svg></span>Score justo entre caminhos</h3>
-            <p>A nota é normalizada pelo caminho percorrido: quem segue um cenário mais curto não é penalizado.</p>
+            <h3><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h4l3-8 4 16 3-8h4"/></svg></span>Score comparável entre caminhos</h3>
+            <p>A nota é normalizada pelo caminho percorrido, para que quem segue um cenário mais curto não seja penalizado por isso.</p>
           </div>
           <div class="feat">
             <h3><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 12l2 2 4-4M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0z"/></svg></span>Trilha auditável</h3>
@@ -839,9 +839,9 @@ turno-3 ▸ <span class="ok">C</span>  +2 Comunicação
         </div>
         <div class="uc uc-health">
           <span class="uc-ico"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg></span>
-          <h3>Saúde — pacientes</h3>
-          <p>Avalie prontidão para autocuidado: como o paciente decide em cenários de adesão ao tratamento, manejo de crises e hábitos de saúde.</p>
-          <div class="uc-examples">Doenças crônicas, pré-cirúrgico, saúde mental, reabilitação</div>
+          <h3>Saúde — educação do paciente</h3>
+          <p>Apoie ações educativas com cenários de prática: o paciente treina decisões do dia a dia, como organização de hábitos e seguimento das orientações combinadas com a equipe de saúde. É material de apoio educativo, não diagnóstico nem conduta clínica.</p>
+          <div class="uc-examples">Programas educativos, orientação pré-procedimento, promoção de hábitos, reabilitação</div>
         </div>
         <div class="uc uc-edu">
           <span class="uc-ico"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg></span>
@@ -862,6 +862,10 @@ turno-3 ▸ <span class="ok">C</span>  +2 Comunicação
           <div class="uc-examples">Bancos, indústria, mineração, farmacêutico, varejo</div>
         </div>
       </div>
+      <p class="pfoot" style="margin-top:2.2rem">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4M12 17h.01M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg>
+        A Práxis é uma ferramenta de apoio à decisão por meio de cenários situacionais. Não é instrumento de diagnóstico clínico, psicológico ou de saúde, nem dispositivo médico, e não substitui avaliação profissional. A definição do uso adequado, dos critérios e da decisão final é responsabilidade de quem contrata.
+      </p>
     </div>
   </section>
 
@@ -893,7 +897,7 @@ turno-3 ▸ <span class="ok">C</span>  +2 Comunicação
           <div class="cdown"></div>
           <div class="cstep">
             <span class="ci ci-ok"><svg viewBox="0 0 24 24" fill="none" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span>
-            <div><b>Resultado entregue</b><span>A nota volta sozinha — mesmo se a conexão cair no meio.</span></div>
+            <div><b>Resultado entregue</b><span>A nota volta automaticamente, com novas tentativas caso a conexão falhe.</span></div>
           </div>
           <div class="cnote"><span class="pip"></span> Gupy · Recrutei · API aberta · Webhook — sem planilha ou copiar-e-colar.</div>
         </div>
@@ -906,19 +910,19 @@ turno-3 ▸ <span class="ok">C</span>  +2 Comunicação
     <div class="wrap">
       <div class="sec-head">
         <span class="eyebrow">Governança & auditoria</span>
-        <h2>Pronto para o jurídico e para o compliance.</h2>
-        <p class="lead">As mesmas garantias que a sua equipe de governança exigiria de um sistema crítico — sem precisar pedir.</p>
+        <h2>Pensado para apoiar o jurídico e o compliance.</h2>
+        <p class="lead">Os mesmos controles que a sua equipe de governança costuma exigir de um sistema crítico — já pensados desde o desenho.</p>
       </div>
       <div class="gov-grid">
         <div class="gov">
           <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2zM9 9h6M9 13h6M9 17h4"/></svg></span>
-          <h3>Trilha imutável</h3>
-          <p>Cada evento da tentativa fica registrado — criação, resposta, timeout e finalização — e não pode ser alterado depois.</p>
+          <h3>Trilha protegida contra alteração</h3>
+          <p>Cada evento da tentativa fica registrado — criação, resposta, timeout e finalização — em trilha projetada para não ser alterada após o registro.</p>
         </div>
         <div class="gov">
           <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 3v6c0 5-3.5 8-7 9-3.5-1-7-4-7-9V6z"/></svg></span>
-          <h3>LGPD por desenho</h3>
-          <p>Bases legais expostas, retenção configurável e anonimização programada após o ciclo da seleção.</p>
+          <h3>Privacidade desde o desenho</h3>
+          <p>Bases legais expostas, retenção configurável e rotinas de anonimização parametrizáveis após o ciclo da seleção, para apoiar a sua adequação à LGPD.</p>
         </div>
         <div class="gov">
           <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v18M5 7l7-4 7 4M5 7v6c0 4 3 6 7 7 4-1 7-3 7-7V7"/></svg></span>
@@ -927,8 +931,8 @@ turno-3 ▸ <span class="ok">C</span>  +2 Comunicação
         </div>
       </div>
       <div class="gov-foot">
-        <span class="chip"><b>WCAG 2.1 AA</b> · acessível por teclado e leitor de tela</span>
-        <span class="chip">conforme a <b>LBI</b> · tempo ajustável por etapa</span>
+        <span class="chip">diretrizes <b>WCAG 2.1</b> · navegável por teclado e leitor de tela</span>
+        <span class="chip">alinhado à <b>LBI</b> · tempo ajustável por etapa</span>
         <span class="chip">multi-tenant · <b>isolamento por empresa</b></span>
       </div>
     </div>
@@ -998,9 +1002,9 @@ turno-3 ▸ <span class="ok">C</span>  +2 Comunicação
           <a class="btn btn-gold" href="#cta">Falar com vendas</a>
           <ul class="plist">
             <li class="head"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/></svg>Tudo do Crescimento, e mais:</li>
-            <li><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>Trilha imutável com retenção sob medida</li>
+            <li><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>Trilha protegida contra alteração, com retenção sob medida</li>
             <li><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>Talent-match entre participantes</li>
-            <li><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>Validação assistida: estudo nota × desempenho</li>
+            <li><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>Apoio metodológico: estudo assistido de aderência entre nota e critérios definidos por você</li>
             <li><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>SSO / SAML e ambiente dedicado</li>
             <li><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>SLA e gerente de conta</li>
             <li><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>Contrato e DPA com o jurídico</li>

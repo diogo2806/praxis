@@ -28,7 +28,8 @@ public enum AuditEventType implements DescribedEnum {
     SIMULATION_GUPY_INTEGRATION_ACTIVATED("simulationGupyIntegrationActivated"),
     SIMULATION_ARCHIVED("simulationArchived"),
     HUMAN_DECISION("humanDecision"),
-    REVIEW_REQUESTED("reviewRequested");
+    REVIEW_REQUESTED("reviewRequested"),
+    HEALTH_CONSENT_RECORDED("healthConsentRecorded");
 
     private final String descricao;
 

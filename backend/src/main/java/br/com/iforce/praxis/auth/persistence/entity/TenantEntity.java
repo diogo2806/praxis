@@ -27,4 +27,12 @@ public class TenantEntity {
 
     @Column(name = "integration_token_hash", length = 120)
     private String integrationTokenHash;
+
+    /**
+     * Habilita a vertical de saúde (uso educativo). Quando verdadeiro, a publicação exige aceite do
+     * termo de uso em saúde pelo recrutador e o fluxo do candidato coleta o consentimento do
+     * paciente para tratamento de dado sensível (LGPD, arts. 11 e 14).
+     */
+    @Column(name = "health_vertical", nullable = false)
+    private boolean healthVertical;
 }
