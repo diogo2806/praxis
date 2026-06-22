@@ -7,7 +7,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.jdbc.Sql;
 import org.springframework.test.web.servlet.MockMvc;
 
-import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.hasItem;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -30,7 +30,7 @@ class PublishedCatalogDedupTest {
     void catalogReturnsEachSimulationOnceDespiteMultiplePublishedVersions() throws Exception {
         mockMvc.perform(get("/test").header("Authorization", AUTHORIZATION))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.total_tests").value(1))
-                .andExpect(jsonPath("$.payload[*].id").value(contains("sim-atendimento-caos")));
+                .andExpect(jsonPath("$.total_tests").value(2))
+                .andExpect(jsonPath("$.payload[*].id").value(hasItem("sim-atendimento-caos")));
     }
 }

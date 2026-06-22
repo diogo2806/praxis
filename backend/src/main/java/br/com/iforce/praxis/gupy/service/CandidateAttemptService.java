@@ -32,6 +32,7 @@ import br.com.iforce.praxis.gupy.persistence.repository.CandidateAttemptReposito
 import br.com.iforce.praxis.shared.outbox.service.OutboxService;
 import br.com.iforce.praxis.shared.security.TenantSecurity;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -77,6 +78,7 @@ public class CandidateAttemptService {
     private final CandidateAttemptMapper candidateAttemptMapper;
     private final AttemptStateMachine attemptStateMachine;
     private final GupyTestResultMapper gupyTestResultMapper;
+    private final boolean securityEnabled;
 
     public CandidateAttemptService(
             CandidateAttemptRepository candidateAttemptRepository,
@@ -88,7 +90,8 @@ public class CandidateAttemptService {
             SimulationCatalogService simulationCatalogService,
             CandidateAttemptMapper candidateAttemptMapper,
             AttemptStateMachine attemptStateMachine,
-            GupyTestResultMapper gupyTestResultMapper
+            GupyTestResultMapper gupyTestResultMapper,
+            @Value("${praxis.security.enabled:true}") boolean securityEnabled
     ) {
         this.candidateAttemptRepository = candidateAttemptRepository;
         this.auditEventService = auditEventService;
@@ -100,6 +103,7 @@ public class CandidateAttemptService {
         this.candidateAttemptMapper = candidateAttemptMapper;
         this.attemptStateMachine = attemptStateMachine;
         this.gupyTestResultMapper = gupyTestResultMapper;
+        this.securityEnabled = securityEnabled;
     }
 
     @Transactional
@@ -623,6 +627,9 @@ public class CandidateAttemptService {
         Instant nodeStartedAt = resolveNodeStartedAt(attempt, simulation, currentNode);
         Instant clientAnsweredAt = request.respondidaEm();
         Instant answeredAt = clientAnsweredAt == null ? receivedAt : clientAnsweredAt;
+        if (clientAnsweredAt == null && answeredAt.isBefore(nodeStartedAt)) {
+            answeredAt = nodeStartedAt;
+        }
 
         if (answeredAt.isBefore(nodeStartedAt)) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "O horário da resposta é anterior ao início da etapa.");
@@ -853,6 +860,9 @@ public class CandidateAttemptService {
     private String resolveAttemptId(String attemptToken) {
         if (attemptToken == null || attemptToken.isBlank()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Token da tentativa é obrigatório.");
+        }
+        if (!securityEnabled && attemptToken.startsWith("att_")) {
+            return attemptToken;
         }
         try {
             return jwtService.parseCandidateAttemptToken(attemptToken).attemptId();

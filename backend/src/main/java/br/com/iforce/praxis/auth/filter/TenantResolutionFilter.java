@@ -69,6 +69,10 @@ public class TenantResolutionFilter extends OncePerRequestFilter {
     }
 
     private String resolvePublicCandidateTenant(HttpServletRequest request) {
+        if (!securityEnabled) {
+            return defaultTenantId;
+        }
+
         String token = extractCandidateAttemptToken(request);
         if (token == null || token.isBlank()) {
             return defaultTenantId;

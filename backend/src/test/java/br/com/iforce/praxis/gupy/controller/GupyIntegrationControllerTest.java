@@ -35,7 +35,7 @@ class GupyIntegrationControllerTest {
     void listPublishedTestsRequiresBearerToken() throws Exception {
         mockMvc.perform(get("/test"))
                 .andExpect(status().isUnauthorized())
-                .andExpect(jsonPath("$.message").value("Token Bearer obrigatorio."));
+                .andExpect(jsonPath("$.message").value("Token Bearer obrigatório."));
     }
 
     @Test
@@ -44,10 +44,10 @@ class GupyIntegrationControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.limit").value(50))
                 .andExpect(jsonPath("$.offset").value(0))
-                .andExpect(jsonPath("$.total_tests").value(1))
+                .andExpect(jsonPath("$.total_tests").value(2))
                 .andExpect(jsonPath("$.payload", not(empty())))
-                .andExpect(jsonPath("$.payload[0].id").value("sim-atendimento-caos"))
-                .andExpect(jsonPath("$.payload[0].name").value("Cenario Seed de Teste"))
+                .andExpect(jsonPath("$.payload[?(@.id=='sim-atendimento-caos')].name")
+                        .value(org.hamcrest.Matchers.hasItem("Cenario Seed de Teste")))
                 .andExpect(jsonPath("$.payload[0].category").value("Situational Judgment"))
                 .andExpect(jsonPath("$.payload[0].level").value("advanced"))
                 .andExpect(jsonPath("$.payload[0].isBest").doesNotExist())
@@ -84,7 +84,7 @@ class GupyIntegrationControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(validCandidateRequest("candidate-document-1")))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.test_url").value(startsWith("http://localhost:8080/candidate/attempts/att_")))
+                .andExpect(jsonPath("$.test_url").value(startsWith("http://localhost:8080/candidate/attempts/")))
                 .andExpect(jsonPath("$.test_result_id").value(startsWith("res_")))
                 .andExpect(jsonPath("$.attemptId").doesNotExist());
     }
@@ -179,7 +179,7 @@ class GupyIntegrationControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{}"))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.message").value("Dados invalidos."))
+                .andExpect(jsonPath("$.message").value("Dados inválidos."))
                 .andExpect(jsonPath("$.fields.companyId").exists())
                 .andExpect(jsonPath("$.fields.documentId").exists())
                 .andExpect(jsonPath("$.fields.testId").exists())

@@ -105,7 +105,7 @@ class ResultDeliveryControllerTest {
         TestResultResponse payload = payloadCaptor.getValue();
         assertThat(payload.testCode()).isEqualTo("sim-atendimento-caos");
         assertThat(payload.status()).isEqualTo("done");
-        assertThat(payload.company_result_string()).contains("Score geral: 100/100");
+        assertThat(payload.company_result_string()).contains("Pontuação geral: 100/100");
         assertThat(payload.results()).anySatisfy(result -> {
             assertThat(result.title()).isEqualTo("Empatia");
             assertThat(result.type_result()).isEqualTo("percentage");

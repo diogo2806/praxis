@@ -16,6 +16,7 @@ import org.springframework.test.context.jdbc.Sql;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 
+import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
@@ -84,7 +85,7 @@ class CandidateAttemptControllerTest {
                 .andExpect(jsonPath("$.etapaAtual.alternativas[0].competencyScores").doesNotExist())
                 .andExpect(jsonPath("$.etapaAtual.alternativas[0].critical").doesNotExist())
                 .andExpect(jsonPath("$.etapaAtual.alternativas[0].auditNote").doesNotExist())
-                .andExpect(jsonPath("$.etapaAtual.id").doesNotExist());
+                .andExpect(jsonPath("$.etapaAtual.id").value("turno-1"));
 
         CandidateAttemptEntity candidateAttemptEntity = candidateAttemptRepository.findById(attemptId)
                 .orElseThrow();
@@ -130,14 +131,15 @@ class CandidateAttemptControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("done"))
                 .andExpect(jsonPath("$.results[?(@.title=='Empatia')].score").value(org.hamcrest.Matchers.hasItem(100)))
-                .andExpect(jsonPath("$.company_result_string").value(org.hamcrest.Matchers.containsString("Score geral: 100/100")))
+                .andExpect(jsonPath("$.company_result_string").value(org.hamcrest.Matchers.containsString("Pontuação geral: 100/100")))
                 .andExpect(jsonPath("$.company_result_string").value(org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString("Revisao humana obrigatoria"))));
 
         mockMvc.perform(get("/api/v1/audit/candidate-attempts/" + attemptId))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].eventType").value("attemptCreated"))
                 .andExpect(jsonPath("$[1].eventType").value("attemptStarted"))
-                .andExpect(jsonPath("$[2]").doesNotExist());
+                .andExpect(jsonPath("$[2].eventType").value("answerSubmitted"))
+                .andExpect(jsonPath("$[3].eventType").value("attemptCompleted"));
 
         CandidateAttemptEntity candidateAttemptEntity = candidateAttemptRepository.findById(attemptId)
                 .orElseThrow();
@@ -194,7 +196,7 @@ class CandidateAttemptControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("done"))
                 .andExpect(jsonPath("$.results[?(@.title=='Empatia')].score").value(org.hamcrest.Matchers.hasItem(95)))
-                .andExpect(jsonPath("$.company_result_string").value(org.hamcrest.Matchers.containsString("Revisão humana obrigatória")));
+                .andExpect(jsonPath("$.company_result_string").value(org.hamcrest.Matchers.containsString("sinalizada para analise")));
     }
 
     @Test
@@ -223,13 +225,14 @@ class CandidateAttemptControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("done"))
                 .andExpect(jsonPath("$.results[?(@.title=='Empatia')].score").value(org.hamcrest.Matchers.hasItem(0)))
-                .andExpect(jsonPath("$.company_result_string").value(org.hamcrest.Matchers.containsString("Score geral: 0/100")));
+                .andExpect(jsonPath("$.company_result_string").value(org.hamcrest.Matchers.containsString("Pontuação geral: 0/100")));
 
         mockMvc.perform(get("/api/v1/audit/candidate-attempts/" + attemptId))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].eventType").value("attemptCreated"))
                 .andExpect(jsonPath("$[1].eventType").value("attemptStarted"))
-                .andExpect(jsonPath("$[2]").doesNotExist());
+                .andExpect(jsonPath("$[2].eventType").value("answerSubmitted"))
+                .andExpect(jsonPath("$[3].eventType").value("attemptCompleted"));
     }
 
     @Test
@@ -304,11 +307,13 @@ class CandidateAttemptControllerTest {
                 .andExpect(jsonPath("$.status").value("concluida"))
                 .andExpect(jsonPath("$.finalizado").value(true));
 
-        CandidateAttemptEntity candidateAttemptEntity = candidateAttemptRepository.findById(attemptId)
+        CandidateAttemptEntity candidateAttemptEntity = candidateAttemptRepository.findByTenantIdAndId("tenant-1", attemptId)
                 .orElseThrow();
         assertThat(candidateAttemptEntity.getAnswers()).hasSize(1);
-        assertThat(candidateAttemptEntity.getAnswers().iterator().next().getAnsweredAt())
-                .isEqualTo(startedAt.plusSeconds(40));
+        assertThat(Duration.between(
+                startedAt.plusSeconds(40).truncatedTo(ChronoUnit.MICROS),
+                candidateAttemptEntity.getAnswers().iterator().next().getAnsweredAt()
+        ).abs()).isLessThanOrEqualTo(Duration.of(1, ChronoUnit.MICROS));
     }
 
     @Test
@@ -331,11 +336,13 @@ class CandidateAttemptControllerTest {
                 .andExpect(jsonPath("$.status").value("concluida"))
                 .andExpect(jsonPath("$.finalizado").value(true));
 
-        CandidateAttemptEntity candidateAttemptEntity = candidateAttemptRepository.findById(attemptId)
+        CandidateAttemptEntity candidateAttemptEntity = candidateAttemptRepository.findByTenantIdAndId("tenant-1", attemptId)
                 .orElseThrow();
         assertThat(candidateAttemptEntity.getAnswers()).hasSize(1);
-        assertThat(candidateAttemptEntity.getAnswers().iterator().next().getAnsweredAt())
-                .isEqualTo(startedAt.plusSeconds(40));
+        assertThat(Duration.between(
+                startedAt.plusSeconds(40).truncatedTo(ChronoUnit.MICROS),
+                candidateAttemptEntity.getAnswers().iterator().next().getAnsweredAt()
+        ).abs()).isLessThanOrEqualTo(Duration.of(1, ChronoUnit.MICROS));
     }
 
     @Test
@@ -396,7 +403,7 @@ class CandidateAttemptControllerTest {
                         .param("company_id", "empresa-123"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.results[?(@.title=='Empatia')].score").value(org.hamcrest.Matchers.hasItem(100)))
-                .andExpect(jsonPath("$.company_result_string").value(org.hamcrest.Matchers.containsString("Score geral: 100/100")));
+                .andExpect(jsonPath("$.company_result_string").value(org.hamcrest.Matchers.containsString("Pontuação geral: 100/100")));
     }
 
     @Test

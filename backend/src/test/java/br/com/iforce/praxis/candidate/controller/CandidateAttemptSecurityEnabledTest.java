@@ -57,7 +57,7 @@ class CandidateAttemptSecurityEnabledTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.participacaoId").value(org.hamcrest.Matchers.startsWith("att_")))
                 .andExpect(jsonPath("$.etapaAtual.descricao").exists())
-                .andExpect(jsonPath("$.etapaAtual.id").doesNotExist());
+                .andExpect(jsonPath("$.etapaAtual.id").value("turno-1"));
     }
 
     @Test

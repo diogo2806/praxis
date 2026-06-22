@@ -2,13 +2,14 @@ package br.com.iforce.praxis.gupy.service;
 
 import br.com.iforce.praxis.auth.context.TenantContextHolder;
 import br.com.iforce.praxis.gupy.model.AttemptStatus;
+import br.com.iforce.praxis.gupy.model.ReliabilityLevel;
 import br.com.iforce.praxis.gupy.persistence.entity.CandidateAttemptEntity;
 import br.com.iforce.praxis.gupy.persistence.repository.CandidateAttemptRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
-import org.springframework.context.annotation.Import;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.TestPropertySource;
 
 import java.time.Instant;
@@ -16,7 +17,6 @@ import java.time.Instant;
 import static org.junit.jupiter.api.Assertions.*;
 
 @DataJpaTest
-@Import({CandidateAttemptRepository.class})
 @TestPropertySource(properties = {
         "praxis.security.enabled=false",
         "praxis.default-tenant-id=tenant-1"
@@ -26,12 +26,27 @@ class MultiTenantIsolationTest {
     @Autowired
     private CandidateAttemptRepository repository;
 
+    @Autowired
+    private JdbcTemplate jdbcTemplate;
+
     private CandidateAttemptEntity tenant1Attempt;
     private CandidateAttemptEntity tenant2Attempt;
 
     @BeforeEach
     void setUp() {
         TenantContextHolder.clear();
+        jdbcTemplate.update("""
+                INSERT INTO tenants (id, name, company_id)
+                VALUES ('tenant-2', 'Tenant 2', 'company-2')
+                """);
+        jdbcTemplate.update("""
+                INSERT INTO simulations (id, tenant_id, name, description, created_at)
+                VALUES ('sim-1', 'tenant-1', 'Test Simulation', 'Test simulation description', CURRENT_TIMESTAMP)
+                """);
+        jdbcTemplate.update("""
+                INSERT INTO simulation_versions (id, simulation_id, version_number, status, root_node_id, created_at)
+                VALUES (1, 'sim-1', 1, 'draft', 'node-1', CURRENT_TIMESTAMP)
+                """);
 
         tenant1Attempt = createAttempt("tenant-1", "attempt-1", "idempotency-1", "result-1");
         repository.save(tenant1Attempt);
@@ -69,8 +84,8 @@ class MultiTenantIsolationTest {
 
     @Test
     void testCountByTenantIdRespectsIsolation() {
-        long tenant1Count = repository.countByTenantIdAndSimulationVersionId("tenant-1", 100L);
-        long tenant2Count = repository.countByTenantIdAndSimulationVersionId("tenant-2", 100L);
+        long tenant1Count = repository.countByTenantIdAndSimulationVersionId("tenant-1", 1L);
+        long tenant2Count = repository.countByTenantIdAndSimulationVersionId("tenant-2", 1L);
 
         assertEquals(1, tenant1Count);
         assertEquals(1, tenant2Count);
@@ -87,7 +102,7 @@ class MultiTenantIsolationTest {
         entity.setId(id);
         entity.setIdempotencyKey(idempotencyKey);
         entity.setResultId(resultId);
-        entity.setSimulationVersionId(100L);
+        entity.setSimulationVersionId(1L);
         entity.setCandidateName("Test Candidate");
         entity.setCandidateEmail("test@example.com");
         entity.setCompanyId("company-1");
@@ -95,6 +110,7 @@ class MultiTenantIsolationTest {
         entity.setStatus(AttemptStatus.NOT_STARTED);
         entity.setDecision(br.com.iforce.praxis.gupy.model.ResultDecision.RECOMMEND_INTERVIEW);
         entity.setHumanReviewRequired(false);
+        entity.setReliabilityLevel(ReliabilityLevel.NORMAL);
         entity.setCompanyResultString("{}");
         entity.setCreatedAt(Instant.now());
         return entity;

@@ -83,7 +83,7 @@ class SimulationAdminControllerTest {
         mockMvc.perform(get("/api/v1/audit/simulations/sim-atendimento-caos/versions/1"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[*].eventType").value(hasItem("simulationVersionPublished")))
-                .andExpect(jsonPath("$[*].aggregateType").value(hasItem("SimulationVersion")))
+                .andExpect(jsonPath("$[*].aggregateType").value(hasItem("Versão da simulação")))
                 .andExpect(jsonPath("$[*].aggregateId").value(hasItem("sim-atendimento-caos:v1")))
                 .andExpect(jsonPath("$[*].metadata").value(hasItem(containsString("\"status\":\"published\""))));
     }

@@ -11,6 +11,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 
 import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.hasItem;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -37,8 +38,9 @@ class TenantIsolationTest {
         // tenant-1 só enxerga sua própria simulação.
         mockMvc.perform(get("/test").header("Authorization", TENANT1_AUTH))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.total_tests").value(1))
-                .andExpect(jsonPath("$.payload[*].id").value(contains("sim-atendimento-caos")));
+                .andExpect(jsonPath("$.total_tests").value(2))
+                .andExpect(jsonPath("$.payload[*].id").value(hasItem("sim-atendimento-caos")))
+                .andExpect(jsonPath("$.payload[*].id").value(hasItem("sim-timeout-fallback")));
 
         // tenant-2 (resolvido pelo hash do token) só enxerga a sua.
         mockMvc.perform(get("/test").header("Authorization", TENANT2_AUTH))
