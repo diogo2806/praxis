@@ -63,7 +63,7 @@ public class CandidateAttemptController {
     @Operation(
             summary = "Solicita revisão humana",
             description = "Registra o pedido de revisão humana do candidato (LGPD art. 20). Uma pessoa "
-                    + "decide; este pedido fica na trilha imutável para o recrutador."
+                    + "decide; este pedido fica na trilha append-only para o recrutador."
     )
     public ResponseEntity<Void> requestHumanReview(
             @PathVariable String attemptId,
@@ -77,7 +77,7 @@ public class CandidateAttemptController {
     @Operation(
             summary = "Registra consentimento de saúde do participante",
             description = "Na vertical de saúde, registra o consentimento do participante para tratamento "
-                    + "de dado sensível (LGPD, arts. 11 e 14) na trilha imutável, antes de iniciar a atividade."
+                    + "de dado sensível (LGPD, arts. 11 e 14) na trilha append-only, antes de iniciar a atividade."
     )
     public ResponseEntity<Void> registerHealthConsent(
             @PathVariable String attemptId,

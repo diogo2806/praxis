@@ -24,6 +24,7 @@ import {
   type SimulationSummaryResponse,
 } from "@/lib/api/praxis";
 import { maturityForStatus } from "@/lib/simulation-meta";
+import { useLanguage } from "@/lib/language-context";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/enviar-link")({
@@ -261,6 +262,8 @@ function SelectSimulationStep({
     );
   }
 
+  const { t } = useLanguage();
+
   if (simulations.length === 0) {
     return (
       <EmptyState
@@ -287,7 +290,7 @@ function SelectSimulationStep({
             <TableRow>
               <TableHead>Teste</TableHead>
               <TableHead>Descrição</TableHead>
-              <TableHead>Status</TableHead>
+              <TableHead>{t.common.status}</TableHead>
               <TableHead className="text-right">Versão</TableHead>
               <TableHead>Competências</TableHead>
               <TableHead className="text-right">Tentativas</TableHead>
@@ -554,7 +557,7 @@ function ShareStep({
           </div>
 
           <StateBanner tone="info" title="Um link por candidato">
-            Se você gerar o link de novo com o mesmo e-mail e o mesmo teste, o link será sempre o
+            Se você gerar o link de novo com o mesmo e-mail e o mesmo teste, o link retornado será o
             mesmo. Pode reenviar sem medo de duplicar.
           </StateBanner>
         </aside>

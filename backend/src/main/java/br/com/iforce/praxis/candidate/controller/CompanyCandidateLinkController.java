@@ -78,8 +78,8 @@ public class CompanyCandidateLinkController {
     @PostMapping("/{attemptId}/disposition")
     @Operation(
             summary = "Registra a decisão humana sobre o candidato",
-            description = "Registra na trilha append-only quem decidiu, quando e por quê. O score é "
-                    + "apenas apoio: a decisão final é sempre de uma pessoa."
+            description = "Registra na trilha append-only quem decidiu, quando e por quê. A pontuação é "
+                    + "apenas apoio: a decisão final cabe a uma pessoa."
     )
     public ResponseEntity<Void> registerDisposition(
             @PathVariable String attemptId,
@@ -94,7 +94,7 @@ public class CompanyCandidateLinkController {
             summary = "Relatório de transparência do scoring",
             description = "Documento consolidado: declaração de scoring determinístico (sem IA, sem "
                     + "dados de treino), fórmula e versão do blueprint, caminho do candidato, pontos "
-                    + "por competência, trilha imutável e a decisão humana."
+                    + "por competência, trilha append-only e a decisão humana."
     )
     public ResponseEntity<EvidenceReport> evidenceReport(@PathVariable String attemptId) {
         return ResponseEntity.ok(evidenceReportService.build(attemptId));

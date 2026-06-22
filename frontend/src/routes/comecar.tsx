@@ -93,11 +93,11 @@ const faq = [
   },
   {
     q: "Os resultados são consistentes?",
-    a: "Sim. A nota vem de regras claras, aplicadas da mesma forma a cada pessoa, e não de uma inteligência artificial decidindo sozinha. Sempre dá para ver de onde veio cada ponto. A adequação dos critérios é definida por quem cria o teste.",
+    a: "A nota vem de regras claras, aplicadas da mesma forma a cada pessoa, e não de uma inteligência artificial decidindo sozinha. É possível ver de onde veio cada ponto. A adequação dos critérios é de responsabilidade de quem cria o teste.",
   },
   {
     q: "Usa inteligência artificial para julgar a pessoa?",
-    a: "Não. Nenhuma IA decide a aprovação. O cálculo segue critérios definidos antes do teste, e um erro grave sempre leva a uma revisão feita por uma pessoa.",
+    a: "Não. Nenhuma IA decide a aprovação. O cálculo segue critérios definidos antes do teste, e um erro grave leva a uma revisão feita por uma pessoa.",
   },
   {
     q: "Funciona no celular?",
@@ -105,7 +105,7 @@ const faq = [
   },
   {
     q: "Meus dados estão seguros?",
-    a: "O Práxis foi desenhado seguindo a LGPD (a lei brasileira de proteção de dados): registra um histórico do tratamento e oferece controles de retenção e revisão. A empresa que aplica o teste é a responsável pelo uso dos dados.",
+    a: "O Práxis foi desenhado com controles alinhados à LGPD (a lei brasileira de proteção de dados): registra um histórico do tratamento e oferece configurações de retenção e revisão. A empresa que aplica o teste é a responsável pelo uso dos dados e pela adequação à legislação aplicável.",
   },
   {
     q: "Preciso ter formação técnica para usar?",
@@ -239,7 +239,7 @@ function GettingStartedPage() {
             <p className="text-sm leading-relaxed text-muted-foreground">
               <strong className="text-foreground">Sem IA julgando o candidato.</strong> Os
               resultados vêm de regras claras, definidas antes do teste, e não de decisões
-              automáticas. Você sempre pode ver o porquê de cada nota.
+              automáticas. É possível ver o porquê de cada nota.
             </p>
           </div>
         </section>

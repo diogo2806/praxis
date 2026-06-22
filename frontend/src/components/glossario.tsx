@@ -42,15 +42,15 @@ export const glossario = {
     "Provas baseadas em como a pessoa age, e não apenas no que ela diz saber.",
   construto: "O conceito que se quer medir, por exemplo liderança ou atenção a detalhes.",
   "pontuacao-deterministica":
-    "A nota sai sempre das mesmas regras e cálculos: respostas iguais geram sempre a mesma nota.",
+    "A nota sai das mesmas regras e cálculos: respostas iguais geram a mesma nota.",
   versionamento: "Guardar cada alteração como uma nova versão, sem apagar as anteriores.",
   auditlog:
-    "Registro de auditoria: lista, em ordem, tudo o que aconteceu, e não pode ser alterada.",
+    "Registro de auditoria: lista, em ordem, tudo o que aconteceu, protegida contra alteração.",
   wizard: "Guia passo a passo que conduz você por cada etapa.",
   blocker: "Bloqueio: um problema que impede de avançar até ser resolvido.",
   sjt: "Teste de Julgamento Situacional (SJT) — teste que mostra como alguém decide diante de situações reais do trabalho.",
   determinisitco:
-    "Nota calculada por regras fixas, sempre igual: as mesmas respostas geram sempre a mesma pontuação.",
+    "Nota calculada por regras fixas: as mesmas respostas geram a mesma pontuação.",
   tenant: "Sua empresa ou cliente — espaço isolado onde você cria e gerencia testes.",
   taxonomia: "Catálogo de competências da sua empresa — lista de habilidades que você mede.",
   workspace: "Área de trabalho: seu espaço pessoal para criar e gerenciar testes.",

@@ -5,6 +5,7 @@ import { AppShell } from "@/components/app-shell";
 import { StateBanner } from "@/components/praxis-ui";
 import { getPrivacyCompliance, getTenantConfig } from "@/lib/api/praxis";
 import { useSession } from "@/lib/session";
+import { useLanguage } from "@/lib/language-context";
 
 export const Route = createFileRoute("/configuracoes")({
   head: () => ({
@@ -21,6 +22,7 @@ export const Route = createFileRoute("/configuracoes")({
 
 function ConfiguracoesPage() {
   const session = useSession();
+  const { t } = useLanguage();
 
   const tenantConfigQuery = useQuery({
     queryKey: ["tenant-config"],
@@ -55,11 +57,11 @@ function ConfiguracoesPage() {
             </div>
             <div className="grid gap-4 p-5 md:grid-cols-2">
               <div>
-                <div className="text-xs uppercase text-muted-foreground">Workspace</div>
+                <div className="text-xs uppercase text-muted-foreground">{t.common.workspace}</div>
                 <div className="mt-1 text-sm font-medium">{session.workspaceName}</div>
               </div>
               <div>
-                <div className="text-xs uppercase text-muted-foreground">Tenant ID</div>
+                <div className="text-xs uppercase text-muted-foreground">ID da organização</div>
                 <div className="mt-1 font-mono text-sm text-muted-foreground">
                   {session.tenantId ?? "—"}
                 </div>

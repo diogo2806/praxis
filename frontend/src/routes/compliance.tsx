@@ -14,6 +14,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Sheet, SheetClose, SheetContent, SheetTitle } from "@/components/ui/sheet";
+import { useLanguage } from "@/lib/language-context";
 import { useQuery } from "@tanstack/react-query";
 import {
   getPrivacyCompliance,
@@ -93,6 +94,7 @@ export const Route = createFileRoute("/compliance")({
 });
 
 function CompliancePage() {
+  const { t } = useLanguage();
   const search = Route.useSearch();
   const navigate = useNavigate({ from: "/compliance" });
   const hasContext = Boolean(search.simulationId && search.versionNumber);
@@ -167,9 +169,9 @@ function CompliancePage() {
       <div className="mx-auto max-w-6xl px-2 py-8 sm:px-6">
         <div className="mb-6">
           <div className="text-[11px] font-semibold uppercase tracking-wider text-primary">
-            Compliance
+            {t.common.compliance}
           </div>
-          <h1 className="mt-1 font-serif text-3xl leading-tight">Compliance dos testes</h1>
+          <h1 className="mt-1 font-serif text-3xl leading-tight">{t.common.compliance}</h1>
           <p className="mt-2 max-w-3xl text-sm text-muted-foreground">
             Cada linha é uma versão de teste: status de governança, taxa de conclusão e bloqueios em
             aberto, em um único lugar.
@@ -206,7 +208,7 @@ function CompliancePage() {
                 <TableRow>
                   <TableHead>Teste</TableHead>
                   <TableHead>Versão</TableHead>
-                  <TableHead>Status</TableHead>
+                  <TableHead>{t.common.status}</TableHead>
                   <TableHead>Taxa de conclusão</TableHead>
                   <TableHead>Bloqueios</TableHead>
                   <TableHead>Tentativas</TableHead>
@@ -465,7 +467,7 @@ export function DossiePanel({
           <TableHeader>
             <TableRow>
               <TableHead>Critério</TableHead>
-              <TableHead>% do score</TableHead>
+              <TableHead>% da pontuação</TableHead>
               <TableHead>Cobrado em</TableHead>
             </TableRow>
           </TableHeader>
@@ -476,7 +478,7 @@ export function DossiePanel({
                 <TableRow key={item.criterio}>
                   <TableCell className="font-medium">{item.criterio}</TableCell>
                   <TableCell title={`peso ${item.peso} de ${totalWeight}`}>
-                    {percentual}% do score
+                    {percentual}% da pontuação
                   </TableCell>
                   <TableCell
                     className="text-muted-foreground"

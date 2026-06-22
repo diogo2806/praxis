@@ -32,6 +32,10 @@ export const ptBr = {
     integrationGupy: "Integração Gupy - v0.1",
     testCreator: "Criador de Testes de Situação",
     situationalAssessment: "Teste situacional",
+    talentMatch: "Comparativo de candidatos",
+    settings: "Configurações",
+    competencies: "Competências",
+    status: "Estado",
   },
   language: {
     select: "Selecionar idioma",
@@ -48,6 +52,11 @@ export const ptBr = {
     governance: "Histórico e versões dos testes",
     lgpd: "Proteção de dados e transparência",
     defensibility: "Por que o resultado é confiável",
+    talentMatch: "Comparar candidatos",
+    settings: "Perfil da empresa e integrações",
+    competencies: "Gerenciar competências",
+    governanceNav: "Histórico, versões e auditoria",
+    complianceNav: "LGPD, transparência e base técnica do resultado",
   },
   wizard: {
     createTest: "Criar novo teste",

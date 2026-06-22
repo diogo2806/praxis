@@ -13,7 +13,7 @@ import java.util.Map;
  * Relatório consolidado de transparência do scoring (REQ-L4). Documento legível por
  * compliance/jurídico do cliente (ou um regulador) que comprova que a pontuação é determinística,
  * sem IA e sem dados de treino, mostrando a fórmula, a versão do blueprint, o caminho percorrido,
- * os pontos por competência, a trilha imutável e a decisão humana (REQ-L1).
+ * os pontos por competência, a trilha append-only e a decisão humana (REQ-L1).
  */
 @Schema(description = "Relatório de transparência do scoring de um candidato.")
 public record EvidenceReport(
@@ -38,7 +38,7 @@ public record EvidenceReport(
         List<AuditEventResponse> auditTrail
 ) {
 
-    @Schema(description = "Declaração formal de como o score é produzido.")
+    @Schema(description = "Declaração formal de como a pontuação é produzida.")
     public record ScoringDeclaration(
             boolean deterministic,
             boolean usesArtificialIntelligence,
@@ -73,7 +73,7 @@ public record EvidenceReport(
     ) {
     }
 
-    @Schema(description = "Decisão humana registrada (REQ-L1), extraída da trilha imutável.")
+    @Schema(description = "Decisão humana registrada (REQ-L1), extraída da trilha append-only.")
     public record HumanDecisionEvidence(
             String decision,
             String decidedByUserId,

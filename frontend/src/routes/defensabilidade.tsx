@@ -22,6 +22,7 @@ import {
   type SimulationVersionDetailResponse,
 } from "@/lib/api/praxis";
 import { DossiePanel } from "./compliance";
+import { useLanguage } from "@/lib/language-context";
 
 const CORTA = 60;
 
@@ -41,7 +42,7 @@ export const Route = createFileRoute("/defensabilidade")({
       {
         name: "description",
         content:
-          "Base técnica do resultado: construto, score auditável, pesos e limites da promessa.",
+          "Base técnica do resultado: construto, pontuação auditável, pesos e limites do uso.",
       },
     ],
   }),
@@ -49,6 +50,7 @@ export const Route = createFileRoute("/defensabilidade")({
 });
 
 function DefensabilidadePage() {
+  const { t } = useLanguage();
   const search = Route.useSearch();
   const navigate = useNavigate({ from: "/defensabilidade" });
   const hasContext = Boolean(search.simulationId && search.versionNumber);
@@ -76,11 +78,11 @@ function DefensabilidadePage() {
       <div className="mx-auto max-w-6xl px-2 py-8 sm:px-6">
         <div className="mb-6">
           <div className="text-[11px] font-semibold uppercase tracking-wider text-primary">
-            Compliance
+            {t.common.compliance}
           </div>
           <h1 className="mt-1 font-serif text-3xl leading-tight">Defensabilidade do resultado</h1>
           <p className="mt-2 max-w-3xl text-sm text-muted-foreground">
-            Base técnica que sustenta cada score: construto medido, critérios de pontuação, pesos
+            Base técnica que sustenta cada pontuação: construto medido, critérios de pontuação, pesos
             relativos e caminhos possíveis. Se alguém perguntar "por que essa nota?", esta tela
             responde.
           </p>
@@ -99,7 +101,7 @@ function DefensabilidadePage() {
                 <TableRow>
                   <TableHead>Teste</TableHead>
                   <TableHead>Versão</TableHead>
-                  <TableHead>Status</TableHead>
+                  <TableHead>{t.common.status}</TableHead>
                   <TableHead>Competências</TableHead>
                   <TableHead className="text-right">Ação</TableHead>
                 </TableRow>
@@ -169,9 +171,9 @@ function DefensabilidadePage() {
           <div className="flex items-start gap-3">
             <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-success" />
             <div className="text-sm text-muted-foreground">
-              <strong className="text-foreground">Por que "defensabilidade"?</strong> Porque o score
+              <strong className="text-foreground">Por que "defensabilidade"?</strong> Porque a pontuação
               de cada candidato é reproduzível: dado o mesmo cenário e as mesmas respostas, o
-              resultado será sempre idêntico. Não há componente subjetivo ou modelo estatístico que
+              resultado produzido é idêntico. Não há componente subjetivo ou modelo estatístico que
               varie entre execuções.
             </div>
           </div>

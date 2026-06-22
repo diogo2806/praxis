@@ -5,7 +5,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 
 import java.time.Instant;
 
-@Schema(description = "Evento imutável de auditoria operacional.")
+@Schema(description = "Evento append-only de auditoria operacional.")
 public record AuditEventResponse(
         @Schema(example = "1")
         Long id,

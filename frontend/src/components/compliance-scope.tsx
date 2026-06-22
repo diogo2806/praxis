@@ -1,44 +1,39 @@
 import { Link } from "@tanstack/react-router";
 import { Scale, ShieldCheck, UserRound } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useLanguage } from "@/lib/language-context";
 
 type ComplianceArea = "governanca" | "lgpd" | "defensabilidade" | "compliance";
 
-const areas = [
-  {
-    id: "governanca",
-    to: "/governanca",
-    icon: ShieldCheck,
-    title: "Governança e auditoria",
-    body: "Histórico de versões, eventos registrados, aprovações e criação de novo rascunho.",
-  },
-  {
-    id: "lgpd",
-    to: "/lgpd",
-    icon: UserRound,
-    title: "LGPD e direitos do candidato",
-    body: "Retenção de dados, canal de revisão humana e explicação do resultado para o titular.",
-  },
-  {
-    id: "defensabilidade",
-    to: "/defensabilidade",
-    icon: Scale,
-    title: "Defensabilidade do resultado",
-    body: "Base técnica do teste: construto, score auditável, pesos e limites da promessa comercial.",
-  },
-] as const;
-
 export function ComplianceScope({ current }: { current: ComplianceArea }) {
+  const { t } = useLanguage();
+
+  const areas = [
+    {
+      id: "governanca",
+      to: "/governanca",
+      icon: ShieldCheck,
+      title: t.governance.heading,
+      body: t.descriptions.governanceNav,
+    },
+    {
+      id: "lgpd",
+      to: "/lgpd",
+      icon: UserRound,
+      title: t.lgpd.heading,
+      body: t.descriptions.lgpd,
+    },
+    {
+      id: "defensabilidade",
+      to: "/defensabilidade",
+      icon: Scale,
+      title: t.defensability.heading,
+      body: t.descriptions.defensibility,
+    },
+  ] as const;
+
   return (
     <section className="mb-5 rounded-md border border-border bg-card p-4">
-      <div className="mb-3">
-        <div className="text-xs font-semibold uppercase text-muted-foreground">
-          Como estas telas se dividem
-        </div>
-        <p className="mt-1 text-sm text-muted-foreground">
-          As três telas usam parte das mesmas evidências, mas respondem perguntas diferentes.
-        </p>
-      </div>
       <div className="grid gap-3 lg:grid-cols-3">
         {areas.map(({ id, to, icon: Icon, title, body }) => {
           const active = id === current;
