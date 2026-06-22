@@ -1,4 +1,4 @@
-﻿package br.com.iforce.praxis.audit.controller;
+package br.com.iforce.praxis.audit.controller;
 
 import br.com.iforce.praxis.audit.dto.AuditEventResponse;
 import br.com.iforce.praxis.audit.service.AuditEventService;

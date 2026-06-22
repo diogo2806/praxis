@@ -1,4 +1,4 @@
-﻿package br.com.iforce.praxis.gupy.service;
+package br.com.iforce.praxis.gupy.service;
 
 import br.com.iforce.praxis.audit.model.AuditEventType;
 import br.com.iforce.praxis.audit.service.AuditEventService;
