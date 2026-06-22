@@ -46,11 +46,6 @@ function scoreSummaryTone(score: number) {
   return "text-destructive";
 }
 
-function scoreSummaryLabel(tone: HeroOption["tone"]) {
-  if (tone === "good") return "Sinal favorável para avançar";
-  if (tone === "warn") return "Exige leitura contextual";
-  return "Pede revisão do caminho";
-}
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -76,7 +71,7 @@ const heroOptions: HeroOption[] = [
     overallScore: 50,
     decision: "Exige leitura contextual",
     auditTrail: [
-      "turno-1 -> A  +2 Empatia ? +1 Resolucao",
+      "turno-1 -> A  +2 Empatia +1 Resolucao",
       "turno-2 -> alerta de aderencia por prometer prazo sem validacao",
     ],
     scores: { Empatia: 72, Resolucao: 48, "Aderencia a politica": 30 },
@@ -90,7 +85,7 @@ const heroOptions: HeroOption[] = [
     overallScore: 85,
     decision: "Recomendar entrevista",
     auditTrail: [
-      "turno-1 -> B  +3 Empatia ? +3 Resolucao",
+      "turno-1 -> B  +3 Empatia +3 Resolucao",
       "turno-2 -> consistencia entre acolhimento, validacao e prazo realista",
     ],
     scores: { Empatia: 90, Resolucao: 86, "Aderencia a politica": 80 },
@@ -105,7 +100,7 @@ const heroOptions: HeroOption[] = [
     decision: "Exige leitura contextual",
     auditTrail: [
       "turno-1 -> C  +3 Aderencia a politica",
-      "turno-2 ? baixa empatia no contexto do cliente irritado",
+      "turno-2 -> baixa empatia no contexto do cliente irritado",
     ],
     scores: { Empatia: 28, Resolucao: 60, "Aderencia a politica": 82 },
   },
@@ -118,7 +113,7 @@ const heroOptions: HeroOption[] = [
     overallScore: 39,
     decision: "Pede revisao do caminho",
     auditTrail: [
-      "turno-1 -> D  +1 Empatia ? +1 Aderencia a politica",
+      "turno-1 -> D  +1 Empatia +1 Aderencia a politica",
       "turno-2 -> ausencia de tentativa de resolucao inicial",
     ],
     scores: { Empatia: 40, Resolucao: 32, "Aderencia a politica": 45 },
