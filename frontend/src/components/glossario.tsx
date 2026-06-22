@@ -17,35 +17,35 @@ export const glossario = {
   "criterios-pontuacao":
     "Critérios de pontuação: regras simples que dizem quantos pontos cada resposta vale.",
   "decisao-contexto":
-    "Escolha baseada na situação: avaliar a pessoa pela decisão que toma diante de um cenário real, e não por uma prova teórica.",
+    "Escolha baseada na situação: registrar a decisão da pessoa diante de um cenário simulado, para apoiar a análise do processo.",
   "trilha-auditavel":
     "Histórico completo de alterações: registro de todos os passos do teste, que pode ser conferido depois por outra pessoa.",
   "score-auditavel":
     "Cada ponto da nota pode ser conferido: dá para ver de qual regra e de qual resposta ele veio.",
   blueprint: "Plano do teste: define o cargo, a situação e o que será medido.",
-  validador: "Etapa que confere se o teste realmente mede o que prometeu antes de entrar no ar.",
+  validador: "Etapa que confere se a estrutura do teste está completa e coerente antes de entrar no ar.",
   calibracao:
     "Análise dos dados reais do piloto para encontrar ajustes necessários. Não é uma etapa obrigatória para entender a tela.",
   "vazamento-prova":
-    "Quando as respostas certas vazam e o teste perde o valor; aqui isso é monitorado.",
+    "Quando respostas ou critérios internos circulam fora do público autorizado, reduzindo a utilidade do teste.",
   maturidade:
     "Prontidão do teste: indica se ele ainda está em rascunho, em revisão ou pronto para uso.",
   backend: "A parte do sistema que roda nos servidores, nos bastidores, fora da tela.",
   "caixa-preta":
-    "Sistema que decide sem explicar como chegou ao resultado. Aqui evitamos isso: tudo é explicado.",
-  "erro-critico": "Uma falha grave na resposta que obriga uma pessoa a revisar o resultado.",
+    "Sistema que decide sem explicar como chegou ao resultado. Aqui o cálculo usa regras, pesos e critérios consultáveis.",
+  "erro-critico": "Resposta marcada como crítica que gera um sinal para análise da equipe responsável.",
   "pontuacao-normalizada":
     "Notas ajustadas para a mesma base, como provas escolares colocadas na mesma escala.",
   "julgamento-situacional":
     "Capacidade de tomar boas decisões diante de situações do dia a dia do trabalho.",
   "evidencia-comportamental":
-    "Provas baseadas em como a pessoa age, e não apenas no que ela diz saber.",
+    "Indicadores derivados das escolhas realizadas pelo candidato diante de cenários simulados. Esses indicadores devem ser analisados em conjunto com outras etapas do processo seletivo.",
   construto: "O conceito que se quer medir, por exemplo liderança ou atenção a detalhes.",
   "pontuacao-deterministica":
     "A nota sai sempre das mesmas regras e cálculos: respostas iguais geram sempre a mesma nota.",
   versionamento: "Guardar cada alteração como uma nova versão, sem apagar as anteriores.",
   auditlog:
-    "Registro de auditoria: lista, em ordem, tudo o que aconteceu, e não pode ser alterada.",
+    "Trilha cronológica de auditoria: eventos relevantes registrados em ordem temporal para consulta por usuários autorizados.",
   wizard: "Guia passo a passo que conduz você por cada etapa.",
   blocker: "Bloqueio: um problema que impede de avançar até ser resolvido.",
   sjt: "Teste de Julgamento Situacional (SJT) — teste que mostra como alguém decide diante de situações reais do trabalho.",
@@ -56,7 +56,7 @@ export const glossario = {
   workspace: "Área de trabalho: seu espaço pessoal para criar e gerenciar testes.",
   score: "Nota ou pontuação — resultado numérico do teste.",
   defensabilidade:
-    "Confiabilidade e segurança técnica: por que o resultado desse teste se sustenta (inclusive se contestado na justiça).",
+    "Capacidade de demonstrar quais regras, critérios, pesos, respostas e versões participaram do cálculo apresentado.",
   override: "Ajuste manual ou exceção — quando alguém altera um resultado fora das regras normais.",
   explicabilidade:
     "Transparência do resultado: capacidade de explicar de forma clara por que o candidato recebeu aquela nota.",

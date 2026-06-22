@@ -1,4 +1,4 @@
-import { Link } from "@tanstack/react-router";
+﻿import { Link } from "@tanstack/react-router";
 import { Scale, ShieldCheck, UserRound } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -23,8 +23,8 @@ const areas = [
     id: "defensabilidade",
     to: "/defensabilidade",
     icon: Scale,
-    title: "Confiabilidade do resultado",
-    body: "Base técnica do teste: construto, score auditável, pesos e limites da promessa comercial.",
+    title: "Estrutura e rastreabilidade do cálculo",
+    body: "Critérios, pesos, competências, caminhos possíveis e registros relacionados à versão analisada.",
   },
 ] as const;
 
@@ -73,3 +73,4 @@ export function ComplianceScope({ current }: { current: ComplianceArea }) {
     </section>
   );
 }
+

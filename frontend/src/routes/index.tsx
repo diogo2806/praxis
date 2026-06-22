@@ -27,14 +27,30 @@ type HeroOption = {
   scores: Record<string, number>;
 };
 
+const competencyPalette: Record<string, string> = {
+  Empatia: "#2F855A",
+  Resolução: "#2B6CB0",
+  "Aderência à política": "#B7791F",
+};
+
+function scoreBarColor(label: string) {
+  return competencyPalette[label] ?? "#1B6C8C";
+}
+
+function scoreSummaryLabel(tone: HeroOption["tone"]) {
+  if (tone === "good") return "Sinal favorável para avançar";
+  if (tone === "warn") return "Exige leitura contextual";
+  return "Pede revisão do caminho";
+}
+
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Práxis - Teste situacional para Gupy" },
+      { title: "Práxis — Avaliações situacionais com critérios rastreáveis" },
       {
         name: "description",
         content:
-          "Teste situacional integrado ao processo de recrutamento, com pontuação baseada em regras previamente definidas, indicadores por competência e trilha de auditoria.",
+          "Crie avaliações com cenários do trabalho, critérios configuráveis, indicadores por competência e histórico das respostas para apoiar processos seletivos mais contextualizados.",
       },
     ],
   }),
@@ -78,34 +94,40 @@ const heroOptions: HeroOption[] = [
 
 const features = [
   {
-    icon: Sparkles,
-    title: "Sem IA julgando candidato",
-    body: "A pontuação vem de critérios, pesos e cálculo. Zero caixa-preta, zero custo de IA, totalmente explicável.",
+    icon: Scale,
+    title: "Pontuação baseada em regras",
+    body:
+      "Critérios, pesos e competências são configurados antes da publicação e aplicados às respostas registradas.",
   },
   {
-    icon: Scale,
-    title: "Comparação entre caminhos",
-    body: "A pontuação considera o caminho percorrido e as competências avaliadas em cada cenário, conforme a configuração publicada.",
+    icon: GitBranch,
+    title: "Cenários ramificados",
+    body:
+      "Cada alternativa pode conduzir a uma nova etapa, representando diferentes caminhos e consequências.",
   },
   {
     icon: ScrollText,
     title: "Resultado rastreável",
-    body: "A equipe autorizada pode consultar etapas, escolhas, rubricas e eventos relacionados ao cálculo.",
+    body:
+      "Usuários autorizados podem consultar respostas, versões, critérios e eventos relacionados à avaliação.",
   },
   {
     icon: UserCheck,
-    title: "Apoio à revisão humana",
-    body: "O Práxis não emite reprovação automática. Casos configurados como críticos são sinalizados para análise da empresa.",
+    title: "Apoio à análise humana",
+    body:
+      "Os indicadores complementam as demais etapas do processo e não determinam isoladamente a contratação.",
   },
   {
     icon: Library,
-    title: "Biblioteca de cenários",
-    body: "Modelos prontos por área e senioridade. O RH edita, testa com um piloto e publica quando estiver pronto.",
+    title: "Competências configuráveis",
+    body:
+      "A equipe define as competências relevantes para o cargo e como elas participam da pontuação.",
   },
   {
-    icon: GitBranch,
-    title: "Integração com recrutamento",
-    body: "Quando habilitada, a integração envia indicadores e resultados para o ambiente de recrutamento configurado.",
+    icon: Plug,
+    title: "Operação independente",
+    body:
+      "A avaliação pode ser enviada diretamente por link. Integrações são utilizadas quando necessárias.",
   },
 ];
 
@@ -152,28 +174,28 @@ const accessibility = [
 
 const faq = [
   {
-    q: "O Práxis usa IA generativa para avaliar o candidato?",
-    a: "Não. A pontuação apresentada atualmente é calculada por regras, pesos e critérios previamente configurados pela equipe responsável pelo teste.",
+    q: "Como a pontuação é calculada?",
+    a: "A pontuação utiliza regras, critérios, pesos e competências configurados pela equipe responsável antes da publicação da avaliação.",
   },
   {
-    q: "Como funciona a integração com a Gupy?",
-    a: "Quando devidamente contratada, habilitada e configurada, a integração pode receber convites e enviar resultados por meio da API disponível. O funcionamento está sujeito às credenciais, regras e disponibilidade do serviço de terceiros.",
+    q: "Posso utilizar a Práxis sem integrar com outro sistema?",
+    a: "Sim. A empresa pode gerar um link de participação e compartilhá-lo diretamente com o candidato. Integrações são opcionais.",
   },
   {
-    q: "Funciona com outros sistemas além da Gupy?",
-    a: "O foco operacional hoje é a Gupy. Outras integrações só entram quando houver contrato, cliente real e validação fim a fim.",
+    q: "O candidato vê pesos ou critérios internos?",
+    a: "Pesos, critérios de pontuação e marcadores internos não são apresentados na experiência destinada ao candidato.",
   },
   {
-    q: "O candidato vê pesos, gabarito ou marcadores críticos?",
-    a: "Nunca. A visão do candidato é limpa. Pesos, critérios e marcadores ficam restritos ao painel admin e à trilha de auditoria.",
+    q: "A Práxis decide quem deve ser contratado?",
+    a: "Não. A plataforma organiza indicadores sobre respostas a cenários simulados. A decisão permanece sob responsabilidade da empresa.",
   },
   {
-    q: "O teste é acessível?",
-    a: "A interface foi desenvolvida com práticas de acessibilidade, incluindo navegação por teclado, foco visível, marcação semântica e recursos configuráveis de acomodação.",
+    q: "A avaliação pode ser adaptada?",
+    a: "A plataforma oferece recursos configuráveis, como tempo por etapa e conteúdos acessíveis. A adequação final depende também do conteúdo e das medidas adotadas pela empresa.",
   },
   {
-    q: "O Práxis reprova alguém sozinho?",
-    a: "Não. O resultado é um indicador complementar. Casos configurados como críticos são sinalizados para análise, e a decisão final permanece sob responsabilidade da empresa.",
+    q: "É possível consultar como o resultado foi formado?",
+    a: "Usuários autorizados podem consultar registros, respostas, versões e critérios relacionados à avaliação, conforme suas permissões.",
   },
 ];
 
@@ -213,24 +235,28 @@ function LandingPage() {
           <Brand />
           <nav className="hidden items-center gap-6 text-sm text-muted-foreground md:flex">
             <a className="hover:text-foreground" href="#problema">
-              Por que
+              Produto
             </a>
             <a className="hover:text-foreground" href="#como">
               Como funciona
             </a>
-            <a className="hover:text-foreground" href="#gupy">
-              Integração Gupy
+            <a className="hover:text-foreground" href="#recursos">
+              Recursos
             </a>
             <a className="hover:text-foreground" href="#governanca">
               Governança
             </a>
+            <a className="hover:text-foreground" href="#faq">
+              Perguntas frequentes
+            </a>
           </nav>
-          <a
-            href="#cta"
+          <button
+            type="button"
+            onClick={openDemoEmail}
             className="inline-flex items-center gap-1.5 rounded-md bg-foreground px-4 py-2 text-sm font-semibold text-background hover:opacity-90"
           >
-            Falar com a gente
-          </a>
+            Solicitar demonstração
+          </button>
         </div>
       </header>
 
@@ -241,35 +267,35 @@ function LandingPage() {
             <div>
               <span className="inline-flex w-fit items-center gap-2 rounded-full bg-accent px-3 py-1.5 text-xs font-semibold text-primary">
                 <span className="h-2 w-2 rounded-full bg-success" />
-                Teste situacional com pontuação baseada em regras
+                Avaliações situacionais com pontuação baseada em regras
               </span>
               <h1 className="mt-5 max-w-3xl font-display text-4xl font-extrabold leading-[1.05] tracking-tight text-foreground md:text-6xl">
-                Observe como cada candidato responde a situações representativas do trabalho.
+                Veja como candidatos respondem a situações do cargo antes da entrevista.
               </h1>
               <p className="mt-5 max-w-xl text-base leading-relaxed text-muted-foreground md:text-lg">
-                Antes de avançar para a entrevista, apresente cenários simulados do cargo e obtenha
-                indicadores por competência, acompanhados do caminho de respostas e dos critérios
-                utilizados no cálculo.
+                Crie cenários alinhados à realidade da função, defina competências e critérios de
+                pontuação e organize os resultados com mais contexto para a análise da sua equipe.
               </p>
               <div className="mt-7 flex flex-wrap gap-3">
-                <a
-                  href="#cta"
+                <button
+                  type="button"
+                  onClick={openDemoEmail}
                   className="inline-flex items-center gap-2 rounded-md bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground shadow-lg shadow-primary/20 hover:bg-primary/90"
                 >
-                  Agendar demonstração
+                  Solicitar demonstração
                   <ArrowRight className="h-4 w-4" aria-hidden />
-                </a>
+                </button>
                 <a
                   href="#demo"
                   className="inline-flex items-center gap-2 rounded-md border border-border bg-card px-6 py-3 text-sm font-semibold hover:bg-accent"
                 >
-                  Ver como funciona
+                  Experimentar um cenário
                 </a>
               </div>
               <p className="mt-5 flex items-center gap-2 text-xs text-muted-foreground">
                 <CheckCircle2 className="h-3.5 w-3.5 text-success" aria-hidden />
-                Integração técnica com a API de testes da Gupy, sujeita à habilitação, às
-                credenciais e à disponibilidade do serviço.
+                A Práxis organiza indicadores para apoiar a análise. A decisão do processo permanece
+                com a empresa responsável.
               </p>
             </div>
 
@@ -349,22 +375,53 @@ function LandingPage() {
                         </div>
                         {chosen.react}
                       </div>
-                      <div className="mt-4 space-y-2">
+                      <div className="mt-4 rounded-md border border-border bg-background/80 p-4">
+                        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border pb-3">
+                          <div>
+                            <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                              Cartão de evidência
+                            </div>
+                            <div className="mt-1 text-sm font-semibold text-foreground">
+                              Indicadores por competência
+                            </div>
+                          </div>
+                          <span
+                            className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold ${
+                              chosen.tone === "good"
+                                ? "bg-success/10 text-success"
+                                : chosen.tone === "warn"
+                                  ? "bg-warning/10 text-warning"
+                                  : "bg-destructive/10 text-destructive"
+                            }`}
+                          >
+                            {scoreSummaryLabel(chosen.tone)}
+                          </span>
+                        </div>
+                        <div className="mt-4 space-y-3">
                         {Object.entries(chosen.scores).map(([label, value]) => (
                           <div
                             key={label}
-                            className="grid grid-cols-[minmax(6.5rem,8rem)_1fr_2.5rem] items-center gap-3 text-xs"
+                            className="grid grid-cols-[minmax(8rem,1fr)_3rem] gap-2 text-xs"
                           >
                             <span className="text-muted-foreground">{label}</span>
-                            <span className="h-1.5 overflow-hidden rounded-full bg-accent">
+                            <span className="text-right font-bold tabular-nums">{value}</span>
+                            <span className="col-span-2 h-2 overflow-hidden rounded-full bg-accent">
                               <span
                                 className="block h-full rounded-full bg-primary transition-all duration-700"
-                                style={{ width: `${value}%` }}
+                                style={{
+                                  width: `${value}%`,
+                                  backgroundColor: scoreBarColor(label),
+                                }}
                               />
                             </span>
-                            <span className="text-right font-bold tabular-nums">{value}</span>
                           </div>
                         ))}
+                        </div>
+                        <p className="mt-4 text-[11px] leading-relaxed text-muted-foreground">
+                          A leitura final considera o caminho percorrido no cenário. Os valores acima
+                          representam competências observadas nesta resposta, não uma nota única
+                          universal.
+                        </p>
                       </div>
                       <button
                         type="button"
@@ -384,27 +441,12 @@ function LandingPage() {
           </div>
         </section>
 
-        <section className="border-y border-border bg-card/60">
-          <div className="mx-auto max-w-6xl px-5 py-8 text-center">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
-              Integração técnica sujeita à habilitação no serviço de terceiros
-            </p>
-            <div className="mt-3 inline-flex flex-wrap items-center justify-center gap-2 text-sm font-semibold text-foreground/80">
-              <span className="rounded-md bg-foreground px-2 py-1 text-xs font-bold text-background">
-                Gupy
-              </span>
-              Gupy é marca de seu respectivo titular. A referência não implica endosso ou parceria,
-              salvo quando formalmente informada.
-            </div>
-          </div>
-        </section>
-
         <section id="problema" className="py-20">
           <div className="mx-auto max-w-6xl px-5">
             <SectionHeading
               eyebrow="O problema"
-              title="Avaliações teóricas nem sempre mostram como a pessoa analisa uma situação prática."
-              body="Provas tradicionais continuam sendo úteis, mas podem oferecer um sinal limitado sobre priorização, comunicação, tomada de decisão e aderência a procedimentos diante de cenários do dia a dia."
+              title="Conhecimento declarado não mostra toda a forma de decidir."
+              body="Currículo, perguntas teóricas e entrevistas continuam importantes, mas podem oferecer pouco contexto sobre como uma pessoa prioriza informações, se comunica e toma decisões diante de situações do trabalho."
             />
             <div className="mt-12 grid gap-4 md:grid-cols-2">
               <CompareCard
@@ -435,25 +477,25 @@ function LandingPage() {
           <div className="mx-auto max-w-6xl px-5">
             <SectionHeading
               eyebrow="Como funciona"
-              title="Um cenário ramificado, montado pelo seu RH."
-              body="Sua equipe define o caso, as alternativas possíveis, as competências observadas e os critérios de pontuação. A plataforma calcula conforme as regras publicadas."
+              title="Estruture, publique e analise com mais contexto."
+              body="Sua equipe define o cargo, o contexto, as alternativas possíveis, as competências observadas e os critérios utilizados na pontuação."
             />
             <div className="mt-12 grid gap-4 md:grid-cols-3">
               {[
                 {
                   n: "01",
-                  t: "Sua equipe estrutura o cenário",
-                  b: "Defina uma situação relevante do cargo, as alternativas possíveis, as competências observadas e os critérios de pontuação.",
+                  t: "Estruture a situação",
+                  b: "Defina o cargo, o contexto, as alternativas possíveis, as competências observadas e os critérios utilizados na pontuação.",
                 },
                 {
                   n: "02",
-                  t: "O candidato decide",
-                  b: "A pessoa analisa os cenários e escolhe como agiria em cada etapa, utilizando celular ou computador compatível.",
+                  t: "Publique e compartilhe",
+                  b: "Disponibilize a avaliação e envie o link diretamente ao candidato. Integrações podem ser utilizadas quando fizerem parte da operação da empresa.",
                 },
                 {
                   n: "03",
-                  t: "O RH recebe indicadores",
-                  b: "A plataforma apresenta a pontuação, os indicadores e o caminho de respostas para análise conjunta com as demais etapas.",
+                  t: "Analise com mais contexto",
+                  b: "Consulte a pontuação, os indicadores por competência e o caminho de respostas para complementar as demais etapas do processo.",
                 },
               ].map((step) => (
                 <article key={step.n} className="rounded-lg border border-border bg-card p-6">
@@ -469,42 +511,39 @@ function LandingPage() {
         </section>
 
         <IconGrid
-          eyebrow="Por dentro"
-          title="Feito para decisões mais documentadas."
+          id="recursos"
+          eyebrow="Recursos"
+          title="Feito para avaliações mais contextualizadas e documentadas."
           items={features}
           shaded
         />
 
-        <section id="gupy" className="py-20">
+        <section id="fluxo" className="py-20">
           <div className="mx-auto max-w-6xl px-5">
             <div className="overflow-hidden rounded-lg bg-foreground p-8 text-background md:p-12">
               <div className="grid items-center gap-10 lg:grid-cols-[1.1fr_1fr]">
                 <div>
                   <div className="text-[11px] font-bold uppercase tracking-[0.12em] text-background/70">
-                    Integração técnica com a API de testes da Gupy
+                    Do convite ao resultado
                   </div>
                   <h2 className="mt-3 font-display text-3xl font-extrabold leading-tight md:text-4xl">
-                    A plataforma de recrutamento organiza o funil. A Práxis adiciona indicadores.
+                    A Práxis funciona de forma independente.
                   </h2>
                   <p className="mt-4 max-w-xl text-base leading-relaxed text-background/80">
-                    Arquitetura preparada para integrações técnicas de testes externos: rotas{" "}
-                    <code className="font-mono text-xs">/test</code>,{" "}
-                    <code className="font-mono text-xs">/test/candidate</code>,{" "}
-                    <code className="font-mono text-xs">/test/result/{"{id}"}</code>, auth Bearer e
-                    envio automático com retentativas.
+                    Sua equipe estrutura e publica a avaliação, gera o acesso do candidato,
+                    acompanha a participação e consulta os indicadores dentro da plataforma.
                   </p>
                   <p className="mt-4 inline-flex items-center gap-2 rounded-md border border-white/15 bg-white/5 px-3 py-2 text-xs text-background/75">
                     <Plug className="h-3.5 w-3.5" aria-hidden />
-                    Funcionamento sujeito à contratação, habilitação, credenciais, disponibilidade e
-                    regras do serviço de terceiros.
+                    Integrações são opcionais e dependem da configuração de cada serviço conectado.
                   </p>
                 </div>
                 <ol className="space-y-2">
                   {[
-                    'Candidato clica em "Iniciar teste" na Gupy',
-                    "Faz o teste na Práxis",
-                    "Score e competências voltam à Gupy",
-                    "Equipe responsável analisa os indicadores no ambiente configurado",
+                    "Sua equipe estrutura e publica a avaliação",
+                    "A Práxis gera um link para o candidato",
+                    "O candidato responde aos cenários",
+                    "A equipe acompanha e analisa os indicadores",
                   ].map((item, index) => (
                     <li
                       key={item}
@@ -570,18 +609,18 @@ function LandingPage() {
           <div className="mx-auto max-w-6xl px-5">
             <div className="rounded-lg bg-foreground p-10 text-center text-background md:p-16">
               <h2 className="mx-auto max-w-[22ch] font-display text-3xl font-extrabold leading-tight md:text-5xl">
-                Acrescente indicadores situacionais ao seu processo seletivo.
+                Leve mais contexto para a análise dos seus candidatos.
               </h2>
-              <p className="mx-auto mt-5 max-w-[46ch] text-base text-background/80">
-                Conheça como a Práxis pode ajudar sua equipe a estruturar cenários, organizar
-                critérios e analisar respostas com mais contexto e rastreabilidade.
+              <p className="mx-auto mt-5 max-w-[48ch] text-base text-background/80">
+                Conheça como a Práxis pode ajudar sua equipe a estruturar situações do cargo,
+                aplicar critérios consistentes e consultar resultados com mais rastreabilidade.
               </p>
               <button
                 type="button"
                 onClick={openDemoEmail}
                 className="mt-8 inline-flex items-center gap-2 rounded-md bg-white px-7 py-3.5 text-sm font-bold text-slate-950 shadow-lg hover:bg-slate-100 hover:shadow-white/30"
               >
-                Agendar demonstração
+                Solicitar demonstração por e-mail
                 <ArrowRight className="h-4 w-4" aria-hidden />
               </button>
             </div>

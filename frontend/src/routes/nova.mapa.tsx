@@ -226,8 +226,8 @@ function Page() {
           {!isEditable && (
             <div className="mb-4">
               <StateBanner tone="warn" title="Versão protegida contra edição">
-                Esta versão não pode ser alterada. Crie um rascunho na tela de diálogo antes de
-                mudar conexoes ou adicionar etapas.
+                Esta versão publicada não recebe edição direta. Crie um rascunho na tela de diálogo
+                antes de mudar conexões ou adicionar etapas.
               </StateBanner>
             </div>
           )}

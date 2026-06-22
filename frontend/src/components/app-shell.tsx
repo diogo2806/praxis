@@ -116,7 +116,7 @@ function SidebarContent({
           </span>
         </div>
         <div className="mt-3 text-[11px] uppercase text-muted-foreground">
-          {t.common.integrationGupy}
+          Avaliações situacionais com critérios rastreáveis
         </div>
       </div>
 
@@ -236,27 +236,24 @@ export function AppShell({ children }: { children: ReactNode }) {
   const pathname = useRouterState({ select: (state) => state.location.pathname });
   const mode = useViewMode();
   const session = useSession();
+  const isIntegrationPage = pathname === "/nova/gupy";
   const gupyState = useGupyConnectionState(pathname);
   const { t } = useLanguage();
-  const hasGlobalError = gupyState === "error";
+  const hasIntegrationError = isIntegrationPage && gupyState === "error";
   const nav = getNav(t);
   const secondary = getSecondary(t);
   const productState =
-    pathname === "/nova/gupy"
+    isIntegrationPage
       ? {
           gupy: gupyState,
           draft: "published" as const,
-          publication: hasGlobalError ? ("blocked" as const) : ("running" as const),
+          publication: hasIntegrationError ? ("blocked" as const) : ("running" as const),
         }
       : pathname === "/nova/validador"
-        ? { gupy: gupyState, draft: "dirty" as const, publication: "idle" as const }
+        ? { draft: "dirty" as const, publication: "idle" as const }
         : pathname === "/nova/piloto" || pathname.startsWith("/nova/mapa")
-          ? {
-              gupy: gupyState,
-              draft: "saved" as const,
-              publication: "idle" as const,
-            }
-          : { gupy: gupyState, draft: "saved" as const, publication: "idle" as const };
+          ? { draft: "saved" as const, publication: "idle" as const }
+          : { draft: "saved" as const, publication: "idle" as const };
 
   return (
     <div className="flex min-h-screen bg-background text-foreground">
@@ -324,7 +321,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         </header>
         <div className="min-h-[calc(100vh-3.5rem)] px-6 py-8 lg:px-10">
           <GlobalProductStateBar state={productState} />
-          {hasGlobalError && mode === "commercial" && (
+          {hasIntegrationError && mode === "commercial" && (
             <StateBanner
               tone="danger"
               title={t.common.gupyConnectionError}
@@ -340,7 +337,7 @@ export function AppShell({ children }: { children: ReactNode }) {
               {t.common.couldNotConfirmSubmission}
             </StateBanner>
           )}
-          {(mode === "technical" || hasGlobalError) && <GlobalErrorFlow />}
+          {(mode === "technical" || hasIntegrationError) && <GlobalErrorFlow />}
           {children}
         </div>
       </main>

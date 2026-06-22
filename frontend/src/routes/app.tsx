@@ -39,7 +39,8 @@ export const Route = createFileRoute("/app")({
       { title: "Painel - Praxis" },
       {
         name: "description",
-        content: "Painel: testes ativos, qualidade, prontidão e vínculo com vagas Gupy.",
+        content:
+          "Painel de avaliações situacionais, participações, resultados, qualidade e prontidão para publicação.",
       },
     ],
   }),
@@ -100,7 +101,7 @@ function Dashboard() {
 
   return (
     <AppShell>
-      <ScreenStateStrip blockedReason="espaço de trabalho sem permissão ou Gupy desconectada" />
+      <ScreenStateStrip blockedReason="espaço de trabalho sem permissão ou configuração obrigatória pendente" />
       <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
         <div>
           <div className="text-xs uppercase text-muted-foreground">Painel</div>

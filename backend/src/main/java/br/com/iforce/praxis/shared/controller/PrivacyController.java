@@ -17,9 +17,26 @@ import java.util.List;
 public class PrivacyController {
 
     private final int retentionDays;
+    private final String controllerName;
+    private final String serviceEmail;
+    private final String serviceUrl;
+    private final String dataProtectionOfficerContact;
+    private final String reviewInstructions;
 
-    public PrivacyController(@Value("${praxis.privacy-retention-days:180}") int retentionDays) {
+    public PrivacyController(
+            @Value("${praxis.privacy-retention-days:180}") int retentionDays,
+            @Value("${praxis.privacy.controller-name:Controlador a ser informado pelo tenant}") String controllerName,
+            @Value("${praxis.privacy.service-email:}") String serviceEmail,
+            @Value("${praxis.privacy.service-url:}") String serviceUrl,
+            @Value("${praxis.privacy.dpo-contact:}") String dataProtectionOfficerContact,
+            @Value("${praxis.privacy.review-instructions:Solicite revisao pelo canal de atendimento configurado pela empresa responsavel pelo processo seletivo.}") String reviewInstructions
+    ) {
         this.retentionDays = retentionDays;
+        this.controllerName = controllerName;
+        this.serviceEmail = serviceEmail;
+        this.serviceUrl = serviceUrl;
+        this.dataProtectionOfficerContact = dataProtectionOfficerContact;
+        this.reviewInstructions = reviewInstructions;
     }
 
     @GetMapping("/compliance")
@@ -45,9 +62,30 @@ public class PrivacyController {
                 ),
                 retentionDays,
                 "Os dados sao mantidos pelo periodo configurado para o processo, observadas as finalidades informadas, obrigacoes aplicaveis e hipoteses de preservacao necessarias ao exercicio regular de direitos.",
-                "Canal informado pela empresa responsavel pelo processo seletivo.",
+                new PrivacyComplianceResponse.ControllerContactDto(
+                        controllerName,
+                        blankToNull(serviceEmail),
+                        blankToNull(serviceUrl),
+                        blankToNull(dataProtectionOfficerContact),
+                        reviewInstructions
+                ),
+                reviewChannel(),
                 "As solicitacoes serao tratadas nos prazos aplicaveis, conforme sua natureza e a legislacao vigente.",
                 false
         ));
+    }
+
+    private String reviewChannel() {
+        if (serviceUrl != null && !serviceUrl.isBlank()) {
+            return serviceUrl;
+        }
+        if (serviceEmail != null && !serviceEmail.isBlank()) {
+            return serviceEmail;
+        }
+        return "Canal de privacidade nao configurado para este tenant. Configure PRAXIS_PRIVACY_SERVICE_EMAIL ou PRAXIS_PRIVACY_SERVICE_URL antes de operar processos reais.";
+    }
+
+    private String blankToNull(String value) {
+        return value == null || value.isBlank() ? null : value;
     }
 }

@@ -13,6 +13,7 @@ public enum AuditEventType implements DescribedEnum {
     ATTEMPT_EXPIRED("attemptExpired"),
     ANSWER_SUBMITTED("answerSubmitted"),
     ATTEMPT_COMPLETED("attemptCompleted"),
+    ATTEMPT_ANONYMIZED("attemptAnonymized"),
     SIMULATION_VERSION_DRAFT_CREATED("simulationVersionDraftCreated"),
     SIMULATION_VERSION_BLUEPRINT_UPDATED("simulationVersionBlueprintUpdated"),
     SIMULATION_NODE_ADDED("simulationNodeAdded"),

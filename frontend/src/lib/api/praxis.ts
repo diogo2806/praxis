@@ -345,6 +345,13 @@ export interface PrivacyComplianceResponse {
   }[];
   retentionDays: number;
   retentionPolicy: string;
+  controllerContact: {
+    controllerName: string;
+    serviceEmail: string | null;
+    serviceUrl: string | null;
+    dataProtectionOfficerContact: string | null;
+    reviewInstructions: string;
+  };
   reviewChannel: string;
   reviewSla: string;
   automatedDecisionWithoutReviewAllowed: boolean;

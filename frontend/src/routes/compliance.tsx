@@ -29,7 +29,7 @@ import {
 const CORTA = 60;
 
 type ComplianceRow = SimulationSummaryResponse & {
-  reliability: number;
+  completionRate: number;
 };
 
 type PathCandidate = {
@@ -126,7 +126,7 @@ function CompliancePage() {
     return (simulationsQuery.data ?? [])
       .map((simulation) => ({
         ...simulation,
-        reliability: Math.round(simulation.completionRatePercent),
+        completionRate: Math.round(simulation.completionRatePercent),
       }))
       .filter((item) => {
         const normalized = `${item.name} ${item.versionNumber}`.toLowerCase();
@@ -169,7 +169,7 @@ function CompliancePage() {
           </div>
           <h1 className="mt-1 font-serif text-3xl leading-tight">Compliance dos testes</h1>
           <p className="mt-2 max-w-3xl text-sm text-muted-foreground">
-            Cada linha é uma versão de teste: status de governança, confiabilidade do resultado e
+            Cada linha é uma versão de teste: status de governança, completude da configuração e
             bloqueios em aberto, em um único lugar.
           </p>
         </div>
@@ -203,7 +203,7 @@ function CompliancePage() {
                   <TableHead>Teste</TableHead>
                   <TableHead>Versão</TableHead>
                   <TableHead>Status</TableHead>
-                  <TableHead>Confiabilidade</TableHead>
+                  <TableHead>Completude</TableHead>
                   <TableHead>Bloqueios</TableHead>
                   <TableHead>Autor</TableHead>
                   <TableHead>Tentativas</TableHead>
@@ -236,10 +236,10 @@ function CompliancePage() {
                   </TableRow>
                 ) : (
                   rows.map((row) => {
-                    const reliabilityTone: "published" | "draft" | "archived" =
-                      row.reliability >= CORTA
+                    const completionTone: "published" | "draft" | "archived" =
+                      row.completionRate >= CORTA
                         ? "published"
-                        : row.reliability >= 55
+                        : row.completionRate >= 55
                           ? "draft"
                           : "archived";
 
@@ -264,14 +264,14 @@ function CompliancePage() {
                         <TableCell className="px-4 py-2.5">
                           <span
                             className={`font-semibold ${
-                              reliabilityTone === "published"
+                              completionTone === "published"
                                 ? "text-success"
-                                : reliabilityTone === "draft"
+                                : completionTone === "draft"
                                   ? "text-warning"
                                   : "text-danger"
                             }`}
                           >
-                            {row.reliability}/100
+                            {row.completionRate}/100
                           </span>
                         </TableCell>
                         <TableCell className="px-4 py-2.5 text-sm text-muted-foreground">
@@ -397,14 +397,14 @@ function ComplianceSheet({
 
           <section className="space-y-2">
             <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-              Confiabilidade do resultado
+              Estrutura e rastreabilidade do cálculo
             </div>
             {loading || !version ? (
               <div className="rounded-md border border-border bg-card p-4 text-sm text-muted-foreground">
                 Carregando análise da versão...
               </div>
             ) : hasError ? (
-              <StateBanner tone="danger" title="Falha ao abrir dados de confiabilidade">
+              <StateBanner tone="danger" title="Falha ao abrir dados da configuração">
                 {errorMessage}
               </StateBanner>
             ) : (
