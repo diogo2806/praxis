@@ -1178,9 +1178,9 @@ function LandingPage() {
             ([name, value]) =>
               '<div class="ptrow"><span class="pn">' +
               name +
-              '</span><span class="pt-track"><span class="pt-fill" style="width:' +
+              '</span><span class="pt-track"><span class="pt-fill" data-w="' +
               (value / 3) * 100 +
-              '%"></span></span><span class="pv' +
+              '"></span></span><span class="pv' +
               (value === 0 ? " zero" : "") +
               '">+' +
               value +
@@ -1189,6 +1189,11 @@ function LandingPage() {
           .join("");
         rRead.innerHTML = data.read;
         report.classList.add("show");
+        requestAnimationFrame(() => {
+          rPts.querySelectorAll<HTMLElement>(".pt-fill[data-w]").forEach((el) => {
+            el.style.width = el.dataset.w + "%";
+          });
+        });
       };
       button.addEventListener("click", onPick);
       cleanups.push(() => button.removeEventListener("click", onPick));
