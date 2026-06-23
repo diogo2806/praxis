@@ -4,11 +4,11 @@ import { createFileRoute } from "@tanstack/react-router";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Práxis - Avaliações situacionais estruturadas e rastreáveis" },
+      { title: "Práxis - Avaliação por cenários para seleção, treinamento e operações" },
       {
         name: "description",
         content:
-          "Crie cenários interativos, defina competências e regras de pontuação, compartilhe por link e acompanhe resultados com registros organizados para análise.",
+          "Coloque candidatos ou equipes diante de situações reais, registre cada escolha e compare todos pelo mesmo critério. Para seleção, treinamento, atendimento e conformidade.",
       },
     ],
     links: [
@@ -543,9 +543,9 @@ const landingMarkup = `<header class="nav" id="nav">
   <section class="hero">
     <div class="wrap hero-grid">
       <div class="hero-copy">
-        <span class="eyebrow reveal-up d1">Cenários interativos, critérios configuráveis e histórico de versões</span>
-        <h1 class="reveal-up d2">Transforme situações reais em <span class="accent">avaliações estruturadas</span> e rastreáveis.</h1>
-        <p class="lead reveal-up d3">Crie cenários interativos, defina competências e regras de pontuação, compartilhe por link e acompanhe os resultados com registros organizados para análise.</p>
+        <span class="eyebrow reveal-up d1">Avaliação por cenários · do RH ao treinamento, vendas e operações</span>
+        <h1 class="reveal-up d2">Veja como as pessoas <span class="accent">decidem na prática</span> — e compare todas pelo mesmo critério.</h1>
+        <p class="lead reveal-up d3">A Práxis coloca candidatos ou equipes diante de situações reais do seu negócio, registra cada escolha e organiza os resultados para você decidir com mais consistência — em seleção, capacitação, atendimento ou conformidade.</p>
         <div class="hero-ctas reveal-up d4">
           <a class="btn btn-primary" href="#cta">Solicitar demonstração <span class="btn-arrow">→</span></a>
           <a class="btn btn-ghost" href="#demo">Experimentar um cenário</a>
@@ -755,7 +755,7 @@ const landingMarkup = `<header class="nav" id="nav">
     <div class="wrap">
       <div class="sec-head">
         <span class="eyebrow">Por dentro</span>
-        <h2>Feito para decisão auditável e transparente.</h2>
+        <h2>Feito para avaliação transparente e rastreável.</h2>
         <p class="lead">Cada nota é decomponível: você mostra, ponto a ponto, como a pontuação foi calculada. O conteúdo do teste e a decisão final são seus — a Práxis é ferramenta de apoio.</p>
       </div>
 
@@ -829,13 +829,13 @@ turno-3 ▸ <span class="ok">C</span>  +2 Comunicação
           <span class="uc-ico"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg></span>
           <h3>Seleção e mobilidade interna</h3>
           <p>Avalie respostas a situações relacionadas a uma função, atividade ou contexto profissional.</p>
-          <div class="uc-examples">Seleção, mobilidade interna e sucessão</div>
+          <div class="uc-examples">Seleção, mobilidade interna, sucessão e padronização entre unidades</div>
         </div>
         <div class="uc uc-edu">
           <span class="uc-ico"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg></span>
           <h3>Capacitação e desenvolvimento</h3>
           <p>Utilize cenários para observar como participantes aplicam conhecimentos e critérios em situações simuladas.</p>
-          <div class="uc-examples">Desenvolvimento, onboarding e reciclagem</div>
+          <div class="uc-examples">Capacitação, onboarding, reciclagem e certificação</div>
         </div>
         <div class="uc uc-corp">
           <span class="uc-ico"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20V10M18 20V4M6 20v-4"/></svg></span>
@@ -910,7 +910,7 @@ turno-3 ▸ <span class="ok">C</span>  +2 Comunicação
         <div class="gov">
           <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 3v6c0 5-3.5 8-7 9-3.5-1-7-4-7-9V6z"/></svg></span>
           <h3>Privacidade desde o desenho</h3>
-          <p>Bases legais expostas, retenção configurável e rotinas de anonimização parametrizáveis após o ciclo da seleção, para apoiar a sua adequação à LGPD.</p>
+          <p>Bases legais expostas, retenção configurável e rotinas de anonimização parametrizáveis após o ciclo da avaliação, para apoiar a sua adequação à LGPD.</p>
         </div>
         <div class="gov">
           <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v18M5 7l7-4 7 4M5 7v6c0 4 3 6 7 7 4-1 7-3 7-7V7"/></svg></span>
