@@ -37,6 +37,18 @@ type PathCandidate = {
   sequence: string;
   total: number;
   byCriteria: Record<string, number>;
+  steps: PathStep[];
+};
+
+type PathStep = {
+  nodeId: string;
+  optionId: string;
+  turnIndex: number;
+  speaker: string;
+  clientMessage: string;
+  optionText: string;
+  nextNodeId: string | null;
+  competencyLevels: Record<string, number>;
 };
 
 type MatrixItem = {
@@ -450,6 +462,7 @@ export function DossiePanel({
   version: SimulationVersionDetailResponse;
   cutoff: number;
 }) {
+  const [selectedPathIndex, setSelectedPathIndex] = useState<number | null>(null);
   const matrix = useMemo(() => buildMatrix(version), [version]);
   const paths = useMemo(() => buildPaths(version, matrix), [version, matrix]);
   const totalWeight = matrix.reduce((sum, item) => sum + item.peso, 0);
@@ -508,6 +521,7 @@ export function DossiePanel({
           ) : (
             paths.map((path, index) => {
               const isPass = path.total >= cutoff;
+              const isSelected = selectedPathIndex === index;
               return (
                 <div
                   key={path.sequence}
@@ -539,18 +553,60 @@ export function DossiePanel({
                     <div className="col-span-3 text-right">
                       <button
                         type="button"
+                        aria-expanded={isSelected}
+                        onClick={() => setSelectedPathIndex(isSelected ? null : index)}
                         className="rounded-md border border-border px-2 py-0.5 text-xs text-muted-foreground hover:bg-accent hover:text-foreground"
                       >
-                        Ver tentativa #{index + 1}
+                        {isSelected ? "Ocultar tentativa" : `Ver tentativa #${index + 1}`}
                       </button>
                     </div>
                   </div>
+                  {isSelected ? <PathAttemptDetails path={path} /> : null}
                 </div>
               );
             })
           )}
         </div>
       </div>
+    </div>
+  );
+}
+
+function PathAttemptDetails({ path }: { path: PathCandidate }) {
+  return (
+    <div className="mt-3 space-y-2 border-t border-border pt-3">
+      <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+        Tentativa simulada
+      </div>
+      {path.steps.map((step, index) => (
+        <div key={`${step.nodeId}:${step.optionId}:${index}`} className="rounded-md bg-muted/40 p-2">
+          <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
+            <span className="font-mono text-muted-foreground">
+              turno {step.turnIndex} · {step.nodeId} → {step.optionId}
+            </span>
+            <span className="text-muted-foreground">
+              {step.nextNodeId ? `próximo: ${step.nextNodeId}` : "encerramento"}
+            </span>
+          </div>
+          <div className="mt-2 text-xs">
+            <div className="font-medium">{step.speaker || "Atendente"}</div>
+            <div className="mt-0.5 text-muted-foreground">{step.clientMessage}</div>
+          </div>
+          <div className="mt-2 rounded-md border border-border bg-background p-2 text-xs">
+            {step.optionText}
+          </div>
+          <div className="mt-2 flex flex-wrap gap-1">
+            {Object.entries(step.competencyLevels).map(([criterion, score]) => (
+              <span
+                key={criterion}
+                className="rounded-md border border-border bg-background px-2 py-0.5 text-[11px] text-muted-foreground"
+              >
+                {criterion}: <span className="font-mono text-foreground">{score}</span>
+              </span>
+            ))}
+          </div>
+        </div>
+      ))}
     </div>
   );
 }
@@ -661,6 +717,7 @@ function buildPaths(version: SimulationVersionDetailResponse, matrix: MatrixItem
     node: (typeof version.nodes)[number],
     sequence: string[],
     byCriteria: Record<string, number>,
+    steps: PathStep[],
     depth: number,
   ) => {
     if (paths.length >= MAX_PATHS) return;
@@ -671,6 +728,7 @@ function buildPaths(version: SimulationVersionDetailResponse, matrix: MatrixItem
         sequence: `${sequence.join(" → ")} → Encerramento`,
         total: calculateTotal(byCriteria, matrix),
         byCriteria: { ...byCriteria },
+        steps,
       });
       return;
     }
@@ -680,6 +738,19 @@ function buildPaths(version: SimulationVersionDetailResponse, matrix: MatrixItem
 
       const nextSequence = [...sequence, `${node.id}·${option.id}`];
       const nextCriteria: Record<string, number> = { ...byCriteria };
+      const nextSteps = [
+        ...steps,
+        {
+          nodeId: node.id,
+          optionId: option.id,
+          turnIndex: node.turnIndex,
+          speaker: node.speaker,
+          clientMessage: node.clientMessage,
+          optionText: option.text,
+          nextNodeId: option.nextNodeId,
+          competencyLevels: option.competencyLevels,
+        },
+      ];
 
       Object.entries(option.competencyLevels).forEach(([criterio, pontos]) => {
         nextCriteria[criterio] = (nextCriteria[criterio] ?? 0) + pontos;
@@ -688,7 +759,7 @@ function buildPaths(version: SimulationVersionDetailResponse, matrix: MatrixItem
       if (option.nextNodeId) {
         const nextNode = byId.get(option.nextNodeId);
         if (nextNode) {
-          walk(nextNode, nextSequence, nextCriteria, depth + 1);
+          walk(nextNode, nextSequence, nextCriteria, nextSteps, depth + 1);
           continue;
         }
       }
@@ -697,11 +768,12 @@ function buildPaths(version: SimulationVersionDetailResponse, matrix: MatrixItem
         sequence: `${nextSequence.join(" → ")} → Encerramento`,
         total: calculateTotal(nextCriteria, matrix),
         byCriteria: nextCriteria,
+        steps: nextSteps,
       });
     }
   };
 
-  walk(start, [], {}, 0);
+  walk(start, [], {}, [], 0);
   return paths;
 }
 
