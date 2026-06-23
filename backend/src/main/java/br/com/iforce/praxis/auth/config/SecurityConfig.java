@@ -56,6 +56,8 @@ public class SecurityConfig {
                                 "/recrutei/test",
                                 "/recrutei/test/**"
                         ).permitAll()
+                        .requestMatchers("/api/v1/account/**").hasRole("EMPRESA")
+                        .requestMatchers("/api/v1/integrations/**").hasRole("EMPRESA")
                         .requestMatchers("/api/v1/simulations/**").hasRole("EMPRESA")
                         .requestMatchers("/api/v1/media/**").hasRole("EMPRESA")
                         .requestMatchers("/api/v1/tenant-config/**").hasRole("EMPRESA")

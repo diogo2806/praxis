@@ -359,6 +359,31 @@ export interface PrivacyComplianceResponse {
   automatedDecisionWithoutReviewAllowed: boolean;
 }
 
+export interface AccountResponse {
+  id: number;
+  tenantId: string;
+  name: string;
+  email: string;
+  roles: string[];
+}
+
+export interface ChangePasswordRequest {
+  currentPassword: string;
+  newPassword: string;
+}
+
+export type IntegrationProvider = "gupy" | "recrutei";
+
+export interface IntegrationTokenResponse {
+  provider: IntegrationProvider;
+  configured: boolean;
+  createdAt: string | null;
+}
+
+export interface RotateIntegrationTokenResponse extends IntegrationTokenResponse {
+  token: string;
+}
+
 export type TenantConfigType =
   | "COMPETENCY"
   | "SENIORITY_LEVEL"
@@ -469,6 +494,8 @@ function isAdminPath(path: string) {
   return (
     path.startsWith("/api/v1/simulations") ||
     path.startsWith("/api/v1/tenant-config") ||
+    path.startsWith("/api/v1/account") ||
+    path.startsWith("/api/v1/integrations") ||
     path.startsWith("/api/v1/gupy/result-deliveries") ||
     path.startsWith("/api/v1/notifications") ||
     path.startsWith("/api/v1/audit") ||
@@ -485,6 +512,34 @@ export function updateTenantConfig(configType: TenantConfigType, options: Tenant
   return request<TenantConfigOption[]>(`/api/v1/tenant-config/${configType}`, {
     method: "PUT",
     body: JSON.stringify({ options }),
+  });
+}
+
+export function getCurrentAccount() {
+  return request<AccountResponse>("/api/v1/account/me");
+}
+
+export function changePassword(body: ChangePasswordRequest) {
+  return request<AccountResponse>("/api/v1/account/password", {
+    method: "POST",
+    body: JSON.stringify(body),
+  });
+}
+
+export function listIntegrationTokens() {
+  return request<IntegrationTokenResponse[]>("/api/v1/integrations/tokens");
+}
+
+export function rotateIntegrationToken(provider: IntegrationProvider) {
+  return request<RotateIntegrationTokenResponse>(
+    `/api/v1/integrations/tokens/${encodeURIComponent(provider)}/rotate`,
+    { method: "POST" },
+  );
+}
+
+export function deleteIntegrationToken(provider: IntegrationProvider) {
+  return request<void>(`/api/v1/integrations/tokens/${encodeURIComponent(provider)}`, {
+    method: "DELETE",
   });
 }
 
