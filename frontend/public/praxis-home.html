@@ -177,9 +177,16 @@
   section{position:relative}
   .sec{padding-block:var(--sec-y)}
   .sec-alt{background:var(--bg-alt)}
-  .sec-head{max-width:62ch}
+  .sec-head{
+    max-width:760px;
+    margin-inline:auto;
+    text-align:center;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+  }
   .sec-head h2{margin-top:0.9rem}
-  .sec-head .lead{margin-top:1rem}
+  .sec-head .lead{margin-top:1rem;margin-inline:auto}
 
   /* problem split */
   .split{display:grid;grid-template-columns:1fr 1fr;gap:1.1rem;margin-top:2.8rem}
@@ -241,12 +248,14 @@
   .ev-trail code .gold{color:var(--gold-deep)}
 
   /* gupy band */
-  .gupy-band{display:grid;grid-template-columns:1fr 0.85fr;gap:clamp(2rem,5vw,4rem);align-items:center}
-  @media (max-width:880px){ .gupy-band{grid-template-columns:1fr;gap:2.4rem} }
+  .gupy-band{max-width:760px;margin:2.8rem auto 0}
+  #gupy .sec-head{text-align:center;align-items:center}
   .flow{display:flex;flex-direction:column;gap:0.7rem}
-  .flow .fstep{display:flex;align-items:center;gap:0.9rem;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:0.85rem 1rem;font-size:0.95rem}
+  .flow .fstep{display:flex;align-items:center;gap:0.9rem;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:1rem 1.05rem;font-size:0.95rem;box-shadow:var(--shadow-sm)}
   .flow .fstep .fn{flex:none;width:1.7rem;height:1.7rem;border-radius:50%;background:var(--ink);color:white;display:grid;place-items:center;font-family:var(--font-mono);font-size:0.78rem;font-weight:600}
   .flow .fstep.gp .fn{background:var(--gold-deep)}
+  .flow-note{margin-top:1rem;display:flex;gap:0.55rem;align-items:flex-start;justify-content:center;font-size:0.9rem;color:var(--muted);text-align:center}
+  .flow-note .pip{flex:none;width:0.5rem;height:0.5rem;border-radius:50%;background:var(--success);box-shadow:0 0 0 3px oklch(0.6 0.13 150 / 0.18);margin-top:0.55rem}
   .connect{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-lg);padding:1.6rem 1.5rem 1.3rem;box-shadow:var(--shadow)}
   .connect .cstep{display:flex;gap:0.9rem;align-items:flex-start}
   .connect .ci{flex:none;width:2.4rem;height:2.4rem;border-radius:0.7rem;display:grid;place-items:center;font-family:var(--font-display);font-weight:600;font-size:1.05rem}
@@ -279,7 +288,7 @@
   .chip b{color:var(--on-navy);font-weight:600}
 
   /* pricing */
-  .roi{display:flex;gap:0.8rem;align-items:flex-start;max-width:60ch;margin-top:1.4rem;font-size:1.02rem;color:var(--muted)}
+  .roi{display:flex;gap:0.8rem;align-items:flex-start;max-width:60ch;margin:1.4rem auto 0;text-align:left;font-size:1.02rem;color:var(--muted)}
   .roi svg{flex:none;width:1.3rem;height:1.3rem;margin-top:0.25rem;stroke:var(--gold-deep)}
   .roi b{color:var(--ink);font-weight:600}
   .toggle{display:inline-flex;align-items:center;gap:0.2rem;margin-top:2rem;background:var(--surface);border:1px solid var(--line);border-radius:var(--r-pill);padding:0.28rem}
@@ -307,11 +316,11 @@
   .plist li svg{flex:none;width:1.05rem;height:1.05rem;margin-top:0.18rem;stroke:var(--primary)}
   .plist li.head{color:var(--ink);font-weight:600;font-size:0.86rem}
   .plist li.head svg{stroke:var(--gold-deep)}
-  .pfoot{margin-top:2rem;font-size:0.86rem;color:var(--faint);display:flex;gap:0.55rem;align-items:flex-start;max-width:70ch}
+  .pfoot{margin:2rem auto 0;font-size:0.86rem;color:var(--faint);display:flex;gap:0.55rem;align-items:flex-start;max-width:70ch}
   .pfoot svg{flex:none;width:1.05rem;height:1.05rem;margin-top:0.16rem;stroke:var(--success)}
 
   /* faq */
-  .faq{margin-top:2.6rem;max-width:780px;border-top:1px solid var(--line)}
+  .faq{margin:2.6rem auto 0;max-width:780px;border-top:1px solid var(--line)}
   .qa{border-bottom:1px solid var(--line)}
   .qa button{width:100%;text-align:left;background:none;border:none;cursor:pointer;font:inherit;padding:1.25rem 0.25rem;display:flex;justify-content:space-between;align-items:center;gap:1rem;color:var(--ink)}
   .qa button .q{font-family:var(--font-display);font-size:1.1rem;font-weight:460}
@@ -382,8 +391,8 @@
   .mapstats .pill-amber{display:inline-flex;align-items:center;gap:0.35rem;font-size:0.78rem;font-weight:600;color:#7A5410;background:#FCF2DB;border:1px solid #E6C98A;border-radius:var(--r-pill);padding:0.24rem 0.68rem}
   .mapstats .pill-amber svg{width:0.85rem;height:0.85rem;stroke:#E1A536}
   .canvas{position:relative;margin-top:1rem;background:#FCFAF6;background-image:radial-gradient(#E6E3DA 1.4px, transparent 1.4px);background-size:18px 18px;border-top:1px solid #EBEEF0;overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch}
-  .canvas-inner{position:relative;width:720px;height:360px;margin:0 auto}
-  .canvas svg.edges{position:absolute;inset:0;width:720px;height:360px;overflow:visible;pointer-events:none;z-index:5}
+  .canvas-inner{position:relative;width:720px;height:420px;margin:0 auto}
+  .canvas svg.edges{position:absolute;inset:0;width:720px;height:420px;overflow:visible;pointer-events:none;z-index:5}
   .canvas svg.edges path{fill:none;stroke:#b7bfce;stroke-width:1.8}
   .edge-label{position:absolute;font-size:10.5px;color:#616A71;background:#fff;border:1px solid #D9DFE3;border-radius:999px;padding:1.5px 9px;z-index:13;white-space:nowrap;box-shadow:0 1px 2px rgba(20,30,55,.05)}
   .vxn{position:absolute;width:255px;background:#fff;border:1px solid #D9DFE3;border-radius:12px;box-shadow:0 2px 6px rgba(20,30,55,.07);z-index:10}
@@ -465,7 +474,7 @@
         </div>
         <div class="gupy-line reveal-up d5">
           <span class="pip"></span>
-          <span>Compatível com a <b>API de testes da Gupy</b> — o resultado volta para dentro da plataforma.</span>
+          <span>Funciona junto com a <b>Gupy</b> — o resultado volta para dentro da candidatura.</span>
         </div>
       </div>
 
@@ -712,9 +721,9 @@
               <span class="decision">Recomendar entrevista</span>
             </div>
             <div class="ev-comp" id="evComp">
-              <div class="cbar"><div class="clabel"><span>Comunicação</span><b>88</b></div><div class="track"><span class="fill" data-w="88"></span></div></div>
-              <div class="cbar"><div class="clabel"><span>Resolução de problemas</span><b>80</b></div><div class="track"><span class="fill" data-w="80"></span></div></div>
-              <div class="cbar"><div class="clabel"><span>Aderência à política</span><b>76</b></div><div class="track"><span class="fill" data-w="76"></span></div></div>
+              <div class="cbar"><div class="clabel"><span>Comunicação</span><b>88</b></div><div class="track"><span class="fill" style="width:88%"></span></div></div>
+              <div class="cbar"><div class="clabel"><span>Resolução de problemas</span><b>80</b></div><div class="track"><span class="fill" style="width:80%"></span></div></div>
+              <div class="cbar"><div class="clabel"><span>Aderência à política</span><b>76</b></div><div class="track"><span class="fill" style="width:76%"></span></div></div>
             </div>
             <div class="ev-trail">
               <div class="lab">Trilha de decisão</div>
@@ -735,32 +744,16 @@ turno-3 ▸ <span class="ok">C</span>  +2 Comunicação
       <div class="sec-head">
         <span class="eyebrow">Integração com a Gupy</span>
         <h2>A Gupy organiza o funil. A Práxis adiciona a evidência.</h2>
-        <p class="lead">A Práxis entra como uma etapa de teste da sua vaga. O candidato nem percebe que mudou de sistema, e o resultado volta direto para a candidatura — sem o recrutador trocar de ferramenta.</p>
+        <p class="lead">A Práxis entra como uma etapa de teste da sua vaga. O candidato segue o fluxo normalmente, e o resultado volta direto para a candidatura — sem o recrutador trocar de ferramenta.</p>
       </div>
       <div class="gupy-band">
         <div class="flow">
           <div class="fstep gp"><span class="fn">1</span><span>Candidato clica em <b>“Iniciar teste”</b> na Gupy</span></div>
           <div class="fstep"><span class="fn">2</span><span>Faz o teste situacional na Práxis</span></div>
-          <div class="fstep"><span class="fn">3</span><span>Pontuação e competências voltam à Gupy (com retentativas)</span></div>
+          <div class="fstep"><span class="fn">3</span><span>Pontuação e competências aparecem na candidatura</span></div>
           <div class="fstep gp"><span class="fn">4</span><span>Gestor decide sem sair da plataforma</span></div>
         </div>
-        <div class="connect" aria-label="Como a integração funciona">
-          <div class="cstep">
-            <span class="ci ci-gupy">G</span>
-            <div><b>Vaga publicada na Gupy</b><span>O recrutador adiciona a Práxis como uma etapa de teste.</span></div>
-          </div>
-          <div class="cdown"></div>
-          <div class="cstep">
-            <span class="ci ci-prx">P</span>
-            <div><b>O candidato faz o teste</b><span>Dentro do fluxo da Gupy, sem cadastro novo.</span></div>
-          </div>
-          <div class="cdown"></div>
-          <div class="cstep">
-            <span class="ci ci-ok"><svg viewBox="0 0 24 24" fill="none" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span>
-            <div><b>Resultado na candidatura</b><span>A nota volta sozinha — mesmo se a conexão cair no meio.</span></div>
-          </div>
-          <div class="cnote"><span class="pip"></span> Conexão automática. Nada de planilha, e-mail ou copiar-e-colar.</div>
-        </div>
+        <p class="flow-note"><span class="pip"></span><span>Sem planilha, e-mail ou copiar e colar.</span></p>
       </div>
     </div>
   </section>
@@ -771,7 +764,7 @@ turno-3 ▸ <span class="ok">C</span>  +2 Comunicação
       <div class="sec-head">
         <span class="eyebrow">Governança & auditoria</span>
         <h2>Pensado para apoiar o jurídico e o compliance.</h2>
-        <p class="lead">Os mesmos controles que a sua equipe de governança costuma exigir de um sistema crítico — já pensados desde o desenho.</p>
+        <p class="lead">Os mesmos cuidados que a sua equipe de governança costuma exigir de um processo sensível — já pensados desde o desenho.</p>
       </div>
       <div class="gov-grid">
         <div class="gov">
@@ -791,9 +784,9 @@ turno-3 ▸ <span class="ok">C</span>  +2 Comunicação
         </div>
       </div>
       <div class="gov-foot">
-        <span class="chip">diretrizes <b>WCAG 2.1</b> · navegável por teclado e leitor de tela</span>
-        <span class="chip">alinhado à <b>LBI</b> · tempo ajustável por etapa</span>
-        <span class="chip">multi-tenant · <b>isolamento por empresa</b></span>
+        <span class="chip">navegável por teclado e leitor de tela</span>
+        <span class="chip">tempo ajustável por etapa</span>
+        <span class="chip">dados separados por empresa</span>
       </div>
     </div>
   </section>
@@ -893,7 +886,7 @@ turno-3 ▸ <span class="ok">C</span>  +2 Comunicação
         </div>
         <div class="qa">
           <button aria-expanded="false"><span class="q">Como funciona a integração com a Gupy?</span><span class="ic"></span></button>
-          <div class="ans"><p>A Práxis se conecta à API de testes da Gupy para listar testes, abrir convites de candidatos e devolver resultados automaticamente — com retentativas quando há falha temporária. O candidato faz o teste e volta para a plataforma; a nota chega na candidatura.</p></div>
+          <div class="ans"><p>A Práxis aparece como uma etapa de teste na vaga. O candidato inicia a avaliação, responde ao cenário e volta para a plataforma; a nota chega na candidatura sem planilha, e-mail ou copiar e colar.</p></div>
         </div>
         <div class="qa">
           <button aria-expanded="false"><span class="q">Como é a cobrança?</span><span class="ic"></span></button>
@@ -982,31 +975,13 @@ turno-3 ▸ <span class="ok">C</span>  +2 Comunicação
       rTag.textContent = d.tag; rTag.className = 'tag ' + d.cls;
       rPts.innerHTML = d.pts.map(([name, v]) =>
         '<div class="ptrow"><span class="pn">' + name + '</span>' +
-        '<span class="pt-track"><span class="pt-fill"></span></span>' +
+        '<span class="pt-track"><span class="pt-fill" style="width:' + (v / MAXP * 100) + '%"></span></span>' +
         '<span class="pv' + (v === 0 ? ' zero' : '') + '">+' + v + '</span></div>'
       ).join('');
       rRead.innerHTML = d.read;
       report.classList.add('show');
-      requestAnimationFrame(() => requestAnimationFrame(() => {
-        rPts.querySelectorAll('.pt-fill').forEach((f, i) => { f.style.width = (d.pts[i][1] / MAXP * 100) + '%'; });
-      }));
     });
   });
-
-  // animate competency bars when the evidence card enters view
-  const comp = document.getElementById('evComp');
-  const fillBars = () => comp.querySelectorAll('.fill').forEach(f => f.style.width = f.dataset.w + '%');
-  if ('IntersectionObserver' in window) {
-    const io = new IntersectionObserver((entries) => {
-      entries.forEach(e => { if (e.isIntersecting) { fillBars(); io.unobserve(comp); } });
-    }, {threshold:.1});
-    io.observe(comp);
-    // check if already visible on page load
-    setTimeout(() => {
-      const rect = comp.getBoundingClientRect();
-      if (rect.top < window.innerHeight && rect.bottom > 0) fillBars();
-    }, 0);
-  } else { fillBars(); }
 
   // pricing toggle
   const bM = document.getElementById('bMonthly'), bA = document.getElementById('bAnnual');

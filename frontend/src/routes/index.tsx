@@ -192,9 +192,16 @@ const landingStyles = `
   section{position:relative}
   .sec{padding-block:var(--sec-y)}
   .sec-alt{background:var(--bg-alt)}
-  .sec-head{max-width:62ch}
+  .sec-head{
+    max-width:760px;
+    margin-inline:auto;
+    text-align:center;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+  }
   .sec-head h2{margin-top:0.9rem}
-  .sec-head .lead{margin-top:1rem}
+  .sec-head .lead{margin-top:1rem;margin-inline:auto}
 
   /* problem split */
   .split{display:grid;grid-template-columns:1fr 1fr;gap:1.1rem;margin-top:2.8rem}
@@ -280,12 +287,14 @@ const landingStyles = `
   .uc-public .uc-ico svg{stroke:var(--muted)}
 
   /* integrations band */
-  .integ-band{display:grid;grid-template-columns:1fr 0.85fr;gap:clamp(2rem,5vw,4rem);align-items:center}
-  @media (max-width:880px){ .integ-band{grid-template-columns:1fr;gap:2.4rem} }
+  .integ-band{max-width:760px;margin:2.8rem auto 0}
+  #integracoes .sec-head{text-align:center;align-items:center}
   .flow{display:flex;flex-direction:column;gap:0.7rem}
-  .flow .fstep{display:flex;align-items:center;gap:0.9rem;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:0.85rem 1rem;font-size:0.95rem}
+  .flow .fstep{display:flex;align-items:center;gap:0.9rem;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:1rem 1.05rem;font-size:0.95rem;box-shadow:var(--shadow-sm)}
   .flow .fstep .fn{flex:none;width:1.7rem;height:1.7rem;border-radius:50%;background:var(--ink);color:white;display:grid;place-items:center;font-family:var(--font-mono);font-size:0.78rem;font-weight:600}
   .flow .fstep.gp .fn{background:var(--gold-deep)}
+  .flow-note{margin-top:1rem;display:flex;gap:0.55rem;align-items:flex-start;justify-content:center;font-size:0.9rem;color:var(--muted);text-align:center}
+  .flow-note .pip{flex:none;width:0.5rem;height:0.5rem;border-radius:50%;background:var(--success);box-shadow:0 0 0 3px oklch(0.6 0.13 150 / 0.18);margin-top:0.55rem}
   .connect{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-lg);padding:1.6rem 1.5rem 1.3rem;box-shadow:var(--shadow)}
   .connect .cstep{display:flex;gap:0.9rem;align-items:flex-start}
   .connect .ci{flex:none;width:2.4rem;height:2.4rem;border-radius:0.7rem;display:grid;place-items:center;font-family:var(--font-display);font-weight:600;font-size:1.05rem}
@@ -318,7 +327,7 @@ const landingStyles = `
   .chip b{color:var(--on-navy);font-weight:600}
 
   /* pricing */
-  .roi{display:flex;gap:0.8rem;align-items:flex-start;max-width:60ch;margin-top:1.4rem;font-size:1.02rem;color:var(--muted)}
+  .roi{display:flex;gap:0.8rem;align-items:flex-start;max-width:60ch;margin:1.4rem auto 0;text-align:left;font-size:1.02rem;color:var(--muted)}
   .roi svg{flex:none;width:1.3rem;height:1.3rem;margin-top:0.25rem;stroke:var(--gold-deep)}
   .roi b{color:var(--ink);font-weight:600}
   .toggle{display:inline-flex;align-items:center;gap:0.2rem;margin-top:2rem;background:var(--surface);border:1px solid var(--line);border-radius:var(--r-pill);padding:0.28rem}
@@ -346,11 +355,11 @@ const landingStyles = `
   .plist li svg{flex:none;width:1.05rem;height:1.05rem;margin-top:0.18rem;stroke:var(--primary)}
   .plist li.head{color:var(--ink);font-weight:600;font-size:0.86rem}
   .plist li.head svg{stroke:var(--gold-deep)}
-  .pfoot{margin-top:2rem;font-size:0.86rem;color:var(--faint);display:flex;gap:0.55rem;align-items:flex-start;max-width:70ch}
+  .pfoot{margin:2rem auto 0;font-size:0.86rem;color:var(--faint);display:flex;gap:0.55rem;align-items:flex-start;max-width:70ch}
   .pfoot svg{flex:none;width:1.05rem;height:1.05rem;margin-top:0.16rem;stroke:var(--success)}
 
   /* faq */
-  .faq{margin-top:2.6rem;max-width:780px;border-top:1px solid var(--line)}
+  .faq{margin:2.6rem auto 0;max-width:780px;border-top:1px solid var(--line)}
   .qa{border-bottom:1px solid var(--line)}
   .qa button{width:100%;text-align:left;background:none;border:none;cursor:pointer;font:inherit;padding:1.25rem 0.25rem;display:flex;justify-content:space-between;align-items:center;gap:1rem;color:var(--ink)}
   .qa button .q{font-family:var(--font-display);font-size:1.1rem;font-weight:500}
@@ -472,8 +481,8 @@ const landingStyles = `
   .mapstats .pill-amber{display:inline-flex;align-items:center;gap:0.35rem;font-size:0.78rem;font-weight:600;color:#7A5410;background:#FCF2DB;border:1px solid #E6C98A;border-radius:var(--r-pill);padding:0.24rem 0.68rem}
   .mapstats .pill-amber svg{width:0.85rem;height:0.85rem;stroke:#E1A536}
   .canvas{position:relative;margin-top:1rem;background:#FCFAF6;background-image:radial-gradient(#E6E3DA 1.4px, transparent 1.4px);background-size:18px 18px;border-top:1px solid #EBEEF0;overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch}
-  .canvas-inner{position:relative;width:720px;height:360px;margin:0 auto}
-  .canvas svg.edges{position:absolute;inset:0;width:720px;height:360px;overflow:visible;pointer-events:none;z-index:5}
+  .canvas-inner{position:relative;width:720px;height:420px;margin:0 auto}
+  .canvas svg.edges{position:absolute;inset:0;width:720px;height:420px;overflow:visible;pointer-events:none;z-index:5}
   .canvas svg.edges path{fill:none;stroke:#b7bfce;stroke-width:1.8}
   .edge-label{position:absolute;font-size:10.5px;color:#616A71;background:#fff;border:1px solid #D9DFE3;border-radius:999px;padding:1.5px 9px;z-index:13;white-space:nowrap;box-shadow:0 1px 2px rgba(20,30,55,.05)}
   .vxn{position:absolute;width:255px;background:#fff;border:1px solid #D9DFE3;border-radius:12px;box-shadow:0 2px 6px rgba(20,30,55,.07);z-index:10}
@@ -799,9 +808,9 @@ const landingMarkup = `<header class="nav" id="nav">
               <span class="decision">Maior aderência aos critérios</span>
             </div>
             <div class="ev-comp" id="evComp">
-              <div class="cbar"><div class="clabel"><span>Comunicação</span><b>88</b></div><div class="track"><span class="fill" data-w="88"></span></div></div>
-              <div class="cbar"><div class="clabel"><span>Resolução de problemas</span><b>80</b></div><div class="track"><span class="fill" data-w="80"></span></div></div>
-              <div class="cbar"><div class="clabel"><span>Aderência à política</span><b>76</b></div><div class="track"><span class="fill" data-w="76"></span></div></div>
+              <div class="cbar"><div class="clabel"><span>Comunicação</span><b>88</b></div><div class="track"><span class="fill" style="width:88%"></span></div></div>
+              <div class="cbar"><div class="clabel"><span>Resolução de problemas</span><b>80</b></div><div class="track"><span class="fill" style="width:80%"></span></div></div>
+              <div class="cbar"><div class="clabel"><span>Aderência à política</span><b>76</b></div><div class="track"><span class="fill" style="width:76%"></span></div></div>
             </div>
             <div class="ev-trail">
               <div class="lab">Trilha de decisão</div>
@@ -849,6 +858,18 @@ turno-3 ▸ <span class="ok">C</span>  +2 Comunicação
           <p>Avalie a compreensão e a aplicação de orientações internas por meio de situações contextualizadas.</p>
           <div class="uc-examples">Políticas, processos e procedimentos</div>
         </div>
+        <div class="uc uc-public">
+          <span class="uc-ico"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5V5a2 2 0 0 1 2-2h12v18H6a2 2 0 0 1-2-1.5z"/><path d="M8 7h6M8 11h8M8 15h5"/></svg></span>
+          <h3>Educação e certificação</h3>
+          <p>Observe como participantes aplicam conceitos e critérios em casos práticos, além da resposta teórica.</p>
+          <div class="uc-examples">Cursos, provas práticas, certificações e trilhas de aprendizagem</div>
+        </div>
+        <div class="uc uc-health">
+          <span class="uc-ico"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-8 0v2"/><circle cx="12" cy="7" r="4"/><path d="M4 21h16M18 8l2 2 2-2"/></svg></span>
+          <h3>Treinamento de lideranças</h3>
+          <p>Simule conversas difíceis, decisões de gestão e situações que exigem julgamento consistente.</p>
+          <div class="uc-examples">Feedback, priorização, mediação de conflitos e tomada de decisão</div>
+        </div>
       </div>
       <p class="pfoot" style="margin-top:2.2rem">
         <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4M12 17h.01M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg>
@@ -862,33 +883,17 @@ turno-3 ▸ <span class="ok">C</span>  +2 Comunicação
     <div class="wrap">
       <div class="sec-head">
         <span class="eyebrow">Operação independente</span>
-        <h2>Compartilhe por link e conecte integrações quando necessário.</h2>
-        <p class="lead">A Práxis pode operar por links diretos. Integrações opcionais conectam a avaliação a serviços compatíveis quando fizer sentido para o processo.</p>
+        <h2>Compartilhe por link e envie o resultado para onde sua equipe trabalha.</h2>
+        <p class="lead">A Práxis pode operar por links diretos. Quando fizer sentido, o resultado também pode aparecer na ferramenta que sua equipe já usa no processo.</p>
       </div>
       <div class="integ-band">
         <div class="flow">
           <div class="fstep gp"><span class="fn">1</span><span>A equipe configura <b>cenários, critérios e pesos</b></span></div>
           <div class="fstep"><span class="fn">2</span><span>A pessoa participante acessa a avaliação por link</span></div>
           <div class="fstep"><span class="fn">3</span><span>Indicadores e registros ficam disponíveis para análise</span></div>
-          <div class="fstep gp"><span class="fn">4</span><span>Integrações opcionais podem entregar resultados a sistemas compatíveis</span></div>
+          <div class="fstep gp"><span class="fn">4</span><span>O resultado pode chegar na ferramenta usada pela equipe</span></div>
         </div>
-        <div class="connect" aria-label="Como a integração funciona">
-          <div class="cstep">
-            <span class="ci ci-ats">A</span>
-            <div><b>Avaliação configurada</b><span>Cenários, critérios e pesos são definidos pela equipe responsável.</span></div>
-          </div>
-          <div class="cdown"></div>
-          <div class="cstep">
-            <span class="ci ci-prx">P</span>
-            <div><b>A pessoa faz a avaliação</b><span>Dentro do fluxo do seu sistema, sem cadastro novo.</span></div>
-          </div>
-          <div class="cdown"></div>
-          <div class="cstep">
-            <span class="ci ci-ok"><svg viewBox="0 0 24 24" fill="none" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span>
-            <div><b>Resultado entregue</b><span>A nota volta automaticamente, com novas tentativas caso a conexão falhe.</span></div>
-          </div>
-          <div class="cnote"><span class="pip"></span> Integrações opcionais · API aberta · Webhook.</div>
-        </div>
+        <p class="flow-note"><span class="pip"></span><span>Sem planilha, e-mail ou copiar e colar.</span></p>
       </div>
     </div>
   </section>
@@ -899,7 +904,7 @@ turno-3 ▸ <span class="ok">C</span>  +2 Comunicação
       <div class="sec-head">
         <span class="eyebrow">Governança & auditoria</span>
         <h2>Pensado para apoiar o jurídico e o compliance.</h2>
-        <p class="lead">Os mesmos controles que a sua equipe de governança costuma exigir de um sistema crítico — já pensados desde o desenho.</p>
+        <p class="lead">Os mesmos cuidados que a sua equipe de governança costuma exigir de um processo sensível — já pensados desde o desenho.</p>
       </div>
       <div class="gov-grid">
         <div class="gov">
@@ -921,7 +926,7 @@ turno-3 ▸ <span class="ok">C</span>  +2 Comunicação
       <div class="gov-foot">
         <span class="chip">navegação por teclado nos fluxos principais</span>
         <span class="chip">estrutura semântica e tempo ajustável por participação</span>
-        <span class="chip">multi-tenant · <b>isolamento por empresa</b></span>
+        <span class="chip">dados separados por empresa</span>
       </div>
     </div>
   </section>
@@ -1021,7 +1026,7 @@ turno-3 ▸ <span class="ok">C</span>  +2 Comunicação
         </div>
         <div class="qa">
           <button aria-expanded="false"><span class="q">Com quais sistemas a Práxis integra?</span><span class="ic"></span></button>
-          <div class="ans"><p>A Práxis pode operar por links diretos. Integrações opcionais por API e webhook conectam a avaliação a serviços compatíveis quando necessário.</p></div>
+          <div class="ans"><p>A Práxis pode operar por links diretos. Quando fizer sentido, o resultado também pode aparecer automaticamente na ferramenta usada pela sua equipe, sem planilha, e-mail ou copiar e colar.</p></div>
         </div>
         <div class="qa">
           <button aria-expanded="false"><span class="q">Como é a cobrança?</span><span class="ic"></span></button>
@@ -1078,7 +1083,6 @@ function LandingPage() {
     const rTag = document.getElementById("rTag");
     const rPts = document.getElementById("rPts");
     const rRead = document.getElementById("rRead");
-    const comp = document.getElementById("evComp");
     const bM = document.getElementById("bMonthly");
     const bA = document.getElementById("bAnnual");
     const amt = document.querySelector<HTMLElement>(".amt[data-monthly]");
@@ -1117,44 +1121,44 @@ function LandingPage() {
       { tag: string; cls: string; pts: Array<[string, number]>; read: string }
     > = {
       A: {
-        tag: "Decis?o registrada",
+        tag: "Decisão registrada",
         cls: "tag-ok",
         pts: [
-          ["Comunica??o", 2],
-          ["Resolu??o de problemas", 0],
-          ["Ader?ncia ? pol?tica", 0],
+          ["Comunicação", 2],
+          ["Resolução de problemas", 0],
+          ["Aderência à política", 0],
         ],
-        read: "<b>Acolhe, mas promete sem garantir.</b> Cria uma expectativa que o time pode n?o conseguir cumprir.",
+        read: "<b>Acolhe, mas promete sem garantir.</b> Cria uma expectativa que o time pode não conseguir cumprir.",
       },
       B: {
-        tag: "Decis?o registrada",
+        tag: "Decisão registrada",
         cls: "tag-ok",
         pts: [
-          ["Comunica??o", 3],
-          ["Resolu??o de problemas", 2],
-          ["Ader?ncia ? pol?tica", 1],
+          ["Comunicação", 3],
+          ["Resolução de problemas", 2],
+          ["Aderência à política", 1],
         ],
         read: "<b>Acolhe, assume responsabilidade e alinha com o time.</b> A resposta mais equilibrada do turno.",
       },
       C: {
-        tag: "Decis?o registrada",
+        tag: "Decisão registrada",
         cls: "tag-ok",
         pts: [
-          ["Comunica??o", 1],
-          ["Resolu??o de problemas", 0],
-          ["Ader?ncia ? pol?tica", 2],
+          ["Comunicação", 1],
+          ["Resolução de problemas", 0],
+          ["Aderência à política", 2],
         ],
-        read: "<b>Tecnicamente correta, por?m fria.</b> Segue a pol?tica, mas ignora um cliente j? irritado.",
+        read: "<b>Tecnicamente correta, porém fria.</b> Segue a política, mas ignora um cliente já irritado.",
       },
       D: {
-        tag: "Aciona revis?o humana",
+        tag: "Aciona revisão humana",
         cls: "tag-rev",
         pts: [
-          ["Comunica??o", 0],
-          ["Resolu??o de problemas", 0],
-          ["Ader?ncia ? pol?tica", 0],
+          ["Comunicação", 0],
+          ["Resolução de problemas", 0],
+          ["Aderência à política", 0],
         ],
-        read: "<b>Esquiva da situa??o.</b> Marcada como decis?o cr?tica ? encaminhada para a revis?o de uma pessoa.",
+        read: "<b>Esquiva da situação.</b> Marcada como decisão crítica e encaminhada para a revisão de uma pessoa.",
       },
     };
 
@@ -1174,7 +1178,9 @@ function LandingPage() {
             ([name, value]) =>
               '<div class="ptrow"><span class="pn">' +
               name +
-              '</span><span class="pt-track"><span class="pt-fill"></span></span><span class="pv' +
+              '</span><span class="pt-track"><span class="pt-fill" style="width:' +
+              (value / 3) * 100 +
+              '%"></span></span><span class="pv' +
               (value === 0 ? " zero" : "") +
               '">+' +
               value +
@@ -1183,43 +1189,10 @@ function LandingPage() {
           .join("");
         rRead.innerHTML = data.read;
         report.classList.add("show");
-        requestAnimationFrame(() =>
-          requestAnimationFrame(() => {
-            rPts.querySelectorAll<HTMLElement>(".pt-fill").forEach((fill, index) => {
-              fill.style.width = (data.pts[index][1] / 3) * 100 + "%";
-            });
-          }),
-        );
       };
       button.addEventListener("click", onPick);
       cleanups.push(() => button.removeEventListener("click", onPick));
     });
-
-    if (comp) {
-      const fillBars = () => {
-        comp.querySelectorAll<HTMLElement>(".fill").forEach((fill) => {
-          fill.style.width = (fill.dataset.w ?? "0") + "%";
-        });
-      };
-
-      if ("IntersectionObserver" in window) {
-        const observer = new IntersectionObserver(
-          (entries) => {
-            entries.forEach((entry) => {
-              if (entry.isIntersecting) {
-                fillBars();
-                observer.disconnect();
-              }
-            });
-          },
-          { threshold: 0.4 },
-        );
-        observer.observe(comp);
-        cleanups.push(() => observer.disconnect());
-      } else {
-        fillBars();
-      }
-    }
 
     if (bM && bA && amt && cyc && sub) {
       const setCycle = (annual: boolean) => {
