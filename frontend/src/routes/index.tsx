@@ -808,14 +808,14 @@ const landingMarkup = `<header class="nav" id="nav">
               <span class="decision">Maior aderência aos critérios</span>
             </div>
             <div class="ev-comp" id="evComp">
-              <div class="cbar"><div class="clabel"><span>Comunicação</span><b>88</b></div><div class="track"><span class="fill" style="width:88%"></span></div></div>
-              <div class="cbar"><div class="clabel"><span>Resolução de problemas</span><b>80</b></div><div class="track"><span class="fill" style="width:80%"></span></div></div>
-              <div class="cbar"><div class="clabel"><span>Aderência à política</span><b>76</b></div><div class="track"><span class="fill" style="width:76%"></span></div></div>
+              <div class="cbar"><div class="clabel"><span>Comunicação</span><b>88</b></div><div class="track"><span class="fill" data-w="88"></span></div></div>
+              <div class="cbar"><div class="clabel"><span>Resolução de Conflitos</span><b>80</b></div><div class="track"><span class="fill" data-w="80"></span></div></div>
+              <div class="cbar"><div class="clabel"><span>Aderência à Política</span><b>76</b></div><div class="track"><span class="fill" data-w="76"></span></div></div>
             </div>
             <div class="ev-trail">
               <div class="lab">Trilha de decisão</div>
-              <code>turno-1 ▸ <span class="ok">B</span>  +3 Comunicação · +2 Resolução
-turno-2 ▸ <span class="ok">A</span>  +2 Resolução · +1 Política
+              <code>turno-1 ▸ <span class="ok">B</span>  +3 Comunicação · +2 Res. Conflitos
+turno-2 ▸ <span class="ok">A</span>  +2 Res. Conflitos · +1 Aderência
 turno-3 ▸ <span class="ok">C</span>  +2 Comunicação
 <span class="gold">———  nenhum erro crítico registrado</span></code>
             </div>
@@ -1125,8 +1125,8 @@ function LandingPage() {
         cls: "tag-ok",
         pts: [
           ["Comunicação", 2],
-          ["Resolução de problemas", 0],
-          ["Aderência à política", 0],
+          ["Resolução de Conflitos", 0],
+          ["Aderência à Política", 0],
         ],
         read: "<b>Acolhe, mas promete sem garantir.</b> Cria uma expectativa que o time pode não conseguir cumprir.",
       },
@@ -1135,8 +1135,8 @@ function LandingPage() {
         cls: "tag-ok",
         pts: [
           ["Comunicação", 3],
-          ["Resolução de problemas", 2],
-          ["Aderência à política", 1],
+          ["Resolução de Conflitos", 2],
+          ["Aderência à Política", 1],
         ],
         read: "<b>Acolhe, assume responsabilidade e alinha com o time.</b> A resposta mais equilibrada do turno.",
       },
@@ -1145,8 +1145,8 @@ function LandingPage() {
         cls: "tag-ok",
         pts: [
           ["Comunicação", 1],
-          ["Resolução de problemas", 0],
-          ["Aderência à política", 2],
+          ["Resolução de Conflitos", 0],
+          ["Aderência à Política", 2],
         ],
         read: "<b>Tecnicamente correta, porém fria.</b> Segue a política, mas ignora um cliente já irritado.",
       },
@@ -1155,8 +1155,8 @@ function LandingPage() {
         cls: "tag-rev",
         pts: [
           ["Comunicação", 0],
-          ["Resolução de problemas", 0],
-          ["Aderência à política", 0],
+          ["Resolução de Conflitos", 0],
+          ["Aderência à Política", 0],
         ],
         read: "<b>Esquiva da situação.</b> Marcada como decisão crítica e encaminhada para a revisão de uma pessoa.",
       },
@@ -1178,9 +1178,9 @@ function LandingPage() {
             ([name, value]) =>
               '<div class="ptrow"><span class="pn">' +
               name +
-              '</span><span class="pt-track"><span class="pt-fill" style="width:' +
+              '</span><span class="pt-track"><span class="pt-fill" data-w="' +
               (value / 3) * 100 +
-              '%"></span></span><span class="pv' +
+              '"></span></span><span class="pv' +
               (value === 0 ? " zero" : "") +
               '">+' +
               value +
@@ -1189,6 +1189,11 @@ function LandingPage() {
           .join("");
         rRead.innerHTML = data.read;
         report.classList.add("show");
+        requestAnimationFrame(() => {
+          rPts.querySelectorAll<HTMLElement>(".pt-fill[data-w]").forEach((el) => {
+            el.style.width = el.dataset.w + "%";
+          });
+        });
       };
       button.addEventListener("click", onPick);
       cleanups.push(() => button.removeEventListener("click", onPick));
@@ -1226,6 +1231,24 @@ function LandingPage() {
       button.addEventListener("click", onToggle);
       cleanups.push(() => button.removeEventListener("click", onToggle));
     });
+
+    const evComp = document.getElementById("evComp");
+    if (evComp) {
+      const fills = evComp.querySelectorAll<HTMLElement>(".fill[data-w]");
+      const obs = new IntersectionObserver(
+        (entries) => {
+          entries.forEach((entry) => {
+            if (entry.isIntersecting) {
+              fills.forEach((el) => { el.style.width = el.dataset.w + "%"; });
+              obs.disconnect();
+            }
+          });
+        },
+        { threshold: 0.3 },
+      );
+      obs.observe(evComp);
+      cleanups.push(() => obs.disconnect());
+    }
 
     return () => cleanups.forEach((cleanup) => cleanup());
   }, []);
