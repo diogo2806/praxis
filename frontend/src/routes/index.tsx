@@ -808,9 +808,9 @@ const landingMarkup = `<header class="nav" id="nav">
               <span class="decision">Maior aderência aos critérios</span>
             </div>
             <div class="ev-comp" id="evComp">
-              <div class="cbar"><div class="clabel"><span>Comunicação</span><b>88</b></div><div class="track"><span class="fill" style="width:88%"></span></div></div>
-              <div class="cbar"><div class="clabel"><span>Resolução de Conflitos</span><b>80</b></div><div class="track"><span class="fill" style="width:80%"></span></div></div>
-              <div class="cbar"><div class="clabel"><span>Aderência à Política</span><b>76</b></div><div class="track"><span class="fill" style="width:76%"></span></div></div>
+              <div class="cbar"><div class="clabel"><span>Comunicação</span><b>88</b></div><div class="track"><span class="fill" data-w="88"></span></div></div>
+              <div class="cbar"><div class="clabel"><span>Resolução de Conflitos</span><b>80</b></div><div class="track"><span class="fill" data-w="80"></span></div></div>
+              <div class="cbar"><div class="clabel"><span>Aderência à Política</span><b>76</b></div><div class="track"><span class="fill" data-w="76"></span></div></div>
             </div>
             <div class="ev-trail">
               <div class="lab">Trilha de decisão</div>
@@ -1226,6 +1226,24 @@ function LandingPage() {
       button.addEventListener("click", onToggle);
       cleanups.push(() => button.removeEventListener("click", onToggle));
     });
+
+    const evComp = document.getElementById("evComp");
+    if (evComp) {
+      const fills = evComp.querySelectorAll<HTMLElement>(".fill[data-w]");
+      const obs = new IntersectionObserver(
+        (entries) => {
+          entries.forEach((entry) => {
+            if (entry.isIntersecting) {
+              fills.forEach((el) => { el.style.width = el.dataset.w + "%"; });
+              obs.disconnect();
+            }
+          });
+        },
+        { threshold: 0.3 },
+      );
+      obs.observe(evComp);
+      cleanups.push(() => obs.disconnect());
+    }
 
     return () => cleanups.forEach((cleanup) => cleanup());
   }, []);
