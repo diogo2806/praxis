@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useCallback, useEffect, useState } from "react";
 import {
   Pencil,
@@ -97,6 +97,7 @@ interface DiagnosticGroup {
 function ValidatorPage() {
   const search = Route.useSearch();
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const [activeEditNodeId, setActiveEditNodeId] = useState<string | null>(null);
   const [editDraft, setEditDraft] = useState<{
@@ -516,6 +517,56 @@ function ValidatorPage() {
           Para alterar esta versão, mova o fluxo para rascunho/reprovada ou publique uma versão para
           clonar como novo rascunho.
         </StateBanner>
+      )}
+
+      {hasValidationParams && (
+        <div className="sticky bottom-0 -mx-6 mt-6 flex flex-col gap-3 border-t border-border bg-background/90 px-6 py-4 backdrop-blur sm:flex-row sm:items-center sm:justify-between lg:-mx-10 lg:px-10">
+          <Link
+            to="/nova/personagem"
+            search={{
+              simulationId: search.simulationId,
+              versionNumber: search.versionNumber,
+            }}
+            className="rounded-md border border-border bg-card px-4 py-2 text-sm hover:bg-accent"
+          >
+            ← Voltar: Cenário
+          </Link>
+          <div className="flex flex-col items-start gap-2 sm:items-end">
+            {!canPublish && (
+              <p className="text-xs text-muted-foreground" aria-live="polite">
+                {validation
+                  ? `Resolva ${blockers} bloqueio${blockers === 1 ? "" : "s"} para liberar a publicação.`
+                  : "Carregando diagnóstico..."}
+              </p>
+            )}
+            <button
+              type="button"
+              disabled={!canPublish}
+              title={
+                canPublish
+                  ? "Avançar para publicação"
+                  : "Resolva os bloqueios do diagnóstico para avançar"
+              }
+              aria-disabled={!canPublish}
+              onClick={() => {
+                if (!canPublish) return;
+                void navigate({
+                  to: "/nova/piloto",
+                  search: {
+                    simulationId: search.simulationId,
+                    versionNumber: search.versionNumber,
+                  },
+                });
+              }}
+              className={cn(
+                "rounded-md bg-primary px-5 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90",
+                !canPublish && "cursor-not-allowed opacity-50",
+              )}
+            >
+              Ir para publicação →
+            </button>
+          </div>
+        </div>
       )}
 
       {!hasValidationParams && (
