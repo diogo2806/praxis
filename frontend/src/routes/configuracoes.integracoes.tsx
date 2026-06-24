@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Check, Copy, KeyRound, RefreshCw, Trash2 } from "lucide-react";
 
 import { AppShell } from "@/components/app-shell";
@@ -37,6 +37,14 @@ function IntegrationsPage() {
   const queryClient = useQueryClient();
   const [visibleTokens, setVisibleTokens] = useState<Partial<Record<IntegrationProvider, string>>>({});
   const [copiedProvider, setCopiedProvider] = useState<IntegrationProvider | null>(null);
+  const copyTimerRef = useRef<ReturnType<typeof setTimeout>>(null);
+
+  useEffect(() => {
+    return () => {
+      if (copyTimerRef.current) clearTimeout(copyTimerRef.current);
+    };
+  }, []);
+
   const tokensQuery = useQuery({
     queryKey: ["integration-tokens"],
     queryFn: listIntegrationTokens,
@@ -65,7 +73,8 @@ function IntegrationsPage() {
   const copyToken = async (provider: IntegrationProvider, token: string) => {
     await navigator.clipboard.writeText(token);
     setCopiedProvider(provider);
-    window.setTimeout(() => setCopiedProvider(null), 2000);
+    if (copyTimerRef.current) clearTimeout(copyTimerRef.current);
+    copyTimerRef.current = setTimeout(() => setCopiedProvider(null), 2000);
   };
 
   return (
