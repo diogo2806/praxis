@@ -37,6 +37,8 @@ public interface CandidateAttemptRepository extends JpaRepository<CandidateAttem
             @Param("id") String id
     );
 
+    long countByTenantIdAndSimulationId(String tenantId, String simulationId);
+
     long countByTenantIdAndSimulationVersionId(String tenantId, Long simulationVersionId);
 
     long countByTenantIdAndSimulationVersionIdAndStatus(

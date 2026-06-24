@@ -468,6 +468,14 @@ public class SimulationAdminService {
         SimulationEntity simulationEntity = simulationRepository.findByTenantIdAndId(tenantId, simulationId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Simulação não encontrada."));
 
+        long candidateAttempts = candidateAttemptRepository.countByTenantIdAndSimulationId(tenantId, simulationId);
+        if (candidateAttempts > 0) {
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "Não é possível excluir a simulação porque existem tentativas de candidatos vinculadas a ela."
+            );
+        }
+
         simulationRepository.delete(simulationEntity);
     }
 

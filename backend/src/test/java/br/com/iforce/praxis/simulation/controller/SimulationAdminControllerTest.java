@@ -278,6 +278,18 @@ class SimulationAdminControllerTest {
     }
 
     @Test
+    @Sql(statements = {
+            "INSERT INTO candidate_attempts (id, tenant_id, company_id, result_id, simulation_id, simulation_version_id, simulation_version_number, idempotency_key, candidate_name, candidate_email, result_webhook_url, status, score, decision, human_review_required, company_result_string, created_at, started_at, finished_at, anonymized_at) VALUES ('attempt-delete-guard-1', 'tenant-1', 'empresa-123', 'result-delete-guard-1', 'sim-atendimento-caos', 1, 1, 'idem-delete-guard-1', 'Ana Costa', 'ana@example.com', 'https://cliente.gupy.io/result-webhook', 'COMPLETED', 85, 'RECOMMEND_INTERVIEW', FALSE, 'Resultado Ana', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, NULL)"
+    })
+    void deleteSimulationWithCandidateAttemptsReturnsConflict() throws Exception {
+        mockMvc.perform(delete("/api/v1/simulations/sim-atendimento-caos"))
+                .andExpect(status().isConflict());
+
+        mockMvc.perform(get("/api/v1/simulations/sim-atendimento-caos/versions/1/validation"))
+                .andExpect(status().isOk());
+    }
+
+    @Test
     void monitorSeededVersionReturnsAttemptIndicators() throws Exception {
         mockMvc.perform(post("/test/candidate")
                         .header("Authorization", "Bearer tenant1-token")
