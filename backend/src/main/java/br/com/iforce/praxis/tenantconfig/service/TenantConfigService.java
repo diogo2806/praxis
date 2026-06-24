@@ -37,9 +37,6 @@ public class TenantConfigService {
         String tenantId = currentTenantService.requiredTenantId();
         return new TenantConfigResponse(
                 loadOrDefault(tenantId, TenantConfigType.COMPETENCY),
-                loadOrDefault(tenantId, TenantConfigType.SENIORITY_LEVEL),
-                loadOrDefault(tenantId, TenantConfigType.LANGUAGE_CHECKLIST),
-                loadOrDefault(tenantId, TenantConfigType.RESULT_USE),
                 loadOrDefault(tenantId, TenantConfigType.ANSWER_TIME_LIMIT)
         );
     }

@@ -367,6 +367,15 @@ export interface AccountResponse {
   roles: string[];
 }
 
+export interface CompanyProfileResponse {
+  tradeName: string | null;
+  legalName: string | null;
+  taxId: string | null;
+  corporateEmail: string | null;
+  phone: string | null;
+  website: string | null;
+}
+
 export interface ChangePasswordRequest {
   currentPassword: string;
   newPassword: string;
@@ -386,9 +395,6 @@ export interface RotateIntegrationTokenResponse extends IntegrationTokenResponse
 
 export type TenantConfigType =
   | "COMPETENCY"
-  | "SENIORITY_LEVEL"
-  | "LANGUAGE_CHECKLIST"
-  | "RESULT_USE"
   | "ANSWER_TIME_LIMIT";
 
 export interface TenantConfigOption {
@@ -400,9 +406,6 @@ export interface TenantConfigOption {
 
 export interface TenantConfig {
   competencies: TenantConfigOption[];
-  seniorityLevels: TenantConfigOption[];
-  languageChecklist: TenantConfigOption[];
-  resultUses: TenantConfigOption[];
   answerTimeLimits: TenantConfigOption[];
 }
 
@@ -495,6 +498,7 @@ function isAdminPath(path: string) {
     path.startsWith("/api/v1/simulations") ||
     path.startsWith("/api/v1/tenant-config") ||
     path.startsWith("/api/v1/account") ||
+    path.startsWith("/api/v1/company-profile") ||
     path.startsWith("/api/v1/integrations") ||
     path.startsWith("/api/v1/gupy/result-deliveries") ||
     path.startsWith("/api/v1/notifications") ||
@@ -517,6 +521,10 @@ export function updateTenantConfig(configType: TenantConfigType, options: Tenant
 
 export function getCurrentAccount() {
   return request<AccountResponse>("/api/v1/account/me");
+}
+
+export function getCompanyProfile() {
+  return request<CompanyProfileResponse>("/api/v1/company-profile");
 }
 
 export function changePassword(body: ChangePasswordRequest) {

@@ -2,17 +2,22 @@
 
 import { Link, useRouterState } from "@tanstack/react-router";
 import type { ReactNode } from "react";
+import { useState } from "react";
 import {
   BarChart3,
+  Building2,
+  ChevronDown,
   ClipboardCheck,
   HelpCircle,
   Home,
+  KeyRound,
   Link2,
   Menu,
   Settings,
   ShieldCheck,
   Sparkles,
   Target,
+  UserRound,
 } from "lucide-react";
 import { GlobalErrorFlow, GlobalProductStateBar, StateBanner } from "@/components/praxis-ui";
 import { LanguageSelector } from "@/components/language-selector";
@@ -59,22 +64,38 @@ const getNav = (t: TranslationMap) =>
 const getSecondary = (t: TranslationMap) =>
   [
     {
-      to: "/configuracoes",
-      label: t.common.settings,
-      icon: Settings,
-      desc: t.descriptions.settings,
-    },
-    {
-      to: "/nova/competencias",
-      label: t.common.competencies,
-      icon: Settings,
-      desc: t.descriptions.competencies,
-    },
-    {
       to: "/compliance",
       label: t.common.compliance,
       icon: ShieldCheck,
       desc: t.descriptions.complianceNav,
+    },
+  ] as const;
+
+const getSettingsNav = (t: TranslationMap) =>
+  [
+    {
+      to: "/configuracoes/perfil",
+      label: "Perfil da empresa",
+      icon: Building2,
+      desc: t.descriptions.settings,
+    },
+    {
+      to: "/configuracoes/conta",
+      label: "Minha conta",
+      icon: UserRound,
+      desc: "Dados de acesso",
+    },
+    {
+      to: "/configuracoes/integracoes",
+      label: "Integrações",
+      icon: KeyRound,
+      desc: "Conexões externas",
+    },
+    {
+      to: "/competencias",
+      label: t.common.competencies,
+      icon: Settings,
+      desc: t.descriptions.competencies,
     },
   ] as const;
 
@@ -101,6 +122,11 @@ function SidebarContent({
   secondary: ReturnType<typeof getSecondary>;
   closeOnSelect?: boolean;
 }) {
+  const settingsNav = getSettingsNav(t);
+  const settingsActive =
+    pathname === "/competencias" || pathname === "/configuracoes" || pathname.startsWith("/configuracoes/");
+  const [settingsOpen, setSettingsOpen] = useState(settingsActive);
+
   return (
     <>
       <div className="border-b border-border px-5 py-5">
@@ -175,6 +201,46 @@ function SidebarContent({
         <div className="mt-6 px-3 pb-2 text-[10px] font-semibold uppercase text-muted-foreground">
           {t.common.compliance}
         </div>
+        <button
+          type="button"
+          onClick={() => setSettingsOpen((current) => !current)}
+          className={cn(
+            "mb-1.5 flex w-full items-center gap-3 rounded-md px-3 py-2 text-left text-sm transition",
+            settingsActive
+              ? "bg-accent text-accent-foreground"
+              : "text-foreground/85 hover:bg-accent hover:text-foreground",
+          )}
+          aria-expanded={settingsOpen}
+        >
+          <Settings className="h-4 w-4 shrink-0 text-muted-foreground" />
+          <span className="min-w-0 flex-1">{t.common.settings}</span>
+          <ChevronDown
+            className={cn("h-4 w-4 shrink-0 text-muted-foreground transition-transform", settingsOpen && "rotate-180")}
+          />
+        </button>
+        {settingsOpen && (
+          <div className="mb-2 ml-3 border-l border-border pl-2">
+            {settingsNav.map((item) => {
+              const active = pathname === item.to;
+              return (
+                <ShellLink key={item.to} closeOnSelect={closeOnSelect}>
+                  <Link
+                    to={item.to}
+                    className={cn(
+                      "mb-1 flex items-center gap-2 rounded-md px-3 py-2 text-sm transition",
+                      active
+                        ? "bg-accent text-accent-foreground"
+                        : "text-foreground/80 hover:bg-accent hover:text-foreground",
+                    )}
+                  >
+                    <item.icon className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                    <span className="min-w-0 flex-1">{item.label}</span>
+                  </Link>
+                </ShellLink>
+              );
+            })}
+          </div>
+        )}
         {secondary.map((item) => {
           const active = pathname === item.to;
           return (
@@ -227,7 +293,11 @@ function pageLabel(pathname: string, t: TranslationMap) {
   if (pathname === "/talent-match") return t.common.talentMatch;
   if (pathname === "/enviar-link") return t.common.sendLink;
   if (pathname === "/compliance") return t.common.compliance;
-  if (pathname === "/configuracoes") return t.common.settings;
+  if (pathname === "/configuracoes" || pathname === "/configuracoes/perfil")
+    return "Perfil da empresa";
+  if (pathname === "/configuracoes/conta") return "Minha conta";
+  if (pathname === "/configuracoes/integracoes") return "Integrações";
+  if (pathname === "/competencias") return t.common.competencies;
   if (pathname === "/comecar") return t.common.startHere;
   return t.common.workspace;
 }

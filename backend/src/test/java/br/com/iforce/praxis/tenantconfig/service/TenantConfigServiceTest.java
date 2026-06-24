@@ -25,14 +25,13 @@ class TenantConfigServiceTest {
     private final TenantConfigService service = new TenantConfigService(repository, currentTenantService);
 
     @Test
-    void getConfigFallsBackToDefaultsWhenTenantHasNoRows() {
+    void getConfigFallsBackToActiveDefaultsWhenTenantHasNoRows() {
         when(currentTenantService.requiredTenantId()).thenReturn("tenant-1");
         when(repository.findByTenantIdAndConfigTypeOrderByDisplayOrderAscIdAsc(eq("tenant-1"), any()))
                 .thenReturn(List.of());
 
         TenantConfigResponse config = service.getConfig();
 
-        // Mesmos padroes que antes ficavam fixos no frontend.
         assertThat(config.competencies()).extracting(ConfigOptionDto::value)
                 .containsExactly(
                         "Empatia",
@@ -44,13 +43,6 @@ class TenantConfigServiceTest {
                         "Liderança",
                         "Proatividade"
                 );
-        assertThat(config.seniorityLevels()).filteredOn(ConfigOptionDto::selectedByDefault)
-                .extracting(ConfigOptionDto::value)
-                .containsExactly("Pleno");
-        assertThat(config.resultUses()).filteredOn(ConfigOptionDto::locked)
-                .extracting(ConfigOptionDto::value)
-                .containsExactly("Decisão final");
-        assertThat(config.languageChecklist()).hasSize(5);
         assertThat(config.answerTimeLimits()).filteredOn(ConfigOptionDto::selectedByDefault)
                 .extracting(ConfigOptionDto::value)
                 .containsExactly("45");
@@ -61,12 +53,6 @@ class TenantConfigServiceTest {
         when(currentTenantService.requiredTenantId()).thenReturn("tenant-1");
         when(repository.findByTenantIdAndConfigTypeOrderByDisplayOrderAscIdAsc(eq("tenant-1"), eq(TenantConfigType.COMPETENCY)))
                 .thenReturn(List.of(option("Pensamento Crítico", "Pensamento Crítico", false, false, 0)));
-        when(repository.findByTenantIdAndConfigTypeOrderByDisplayOrderAscIdAsc(eq("tenant-1"), eq(TenantConfigType.SENIORITY_LEVEL)))
-                .thenReturn(List.of());
-        when(repository.findByTenantIdAndConfigTypeOrderByDisplayOrderAscIdAsc(eq("tenant-1"), eq(TenantConfigType.LANGUAGE_CHECKLIST)))
-                .thenReturn(List.of());
-        when(repository.findByTenantIdAndConfigTypeOrderByDisplayOrderAscIdAsc(eq("tenant-1"), eq(TenantConfigType.RESULT_USE)))
-                .thenReturn(List.of());
         when(repository.findByTenantIdAndConfigTypeOrderByDisplayOrderAscIdAsc(eq("tenant-1"), eq(TenantConfigType.ANSWER_TIME_LIMIT)))
                 .thenReturn(List.of());
 
@@ -74,9 +60,8 @@ class TenantConfigServiceTest {
 
         assertThat(config.competencies()).extracting(ConfigOptionDto::value)
                 .containsExactly("Pensamento Crítico");
-        // Tipos sem customizacao continuam caindo nos padroes.
-        assertThat(config.seniorityLevels()).extracting(ConfigOptionDto::value)
-                .containsExactly("Júnior", "Pleno", "Sênior");
+        assertThat(config.answerTimeLimits()).extracting(ConfigOptionDto::value)
+                .containsExactly("0", "30", "45", "60");
     }
 
     @Test
@@ -93,7 +78,6 @@ class TenantConfigServiceTest {
 
         verify(repository).deleteByTenantIdAndConfigType("tenant-1", TenantConfigType.COMPETENCY);
         verify(repository).flush();
-        // Label vazio reutiliza o value.
         assertThat(result).extracting(ConfigOptionDto::label)
                 .containsExactly("Empatia", "Foco no Cliente");
         assertThat(result).extracting(ConfigOptionDto::selectedByDefault)

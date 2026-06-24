@@ -22,6 +22,24 @@ public class TenantEntity {
     @Column(name = "name", nullable = false, length = 180)
     private String name;
 
+    @Column(name = "trade_name", length = 180)
+    private String tradeName;
+
+    @Column(name = "legal_name", length = 180)
+    private String legalName;
+
+    @Column(name = "tax_id", length = 40)
+    private String taxId;
+
+    @Column(name = "corporate_email", length = 180)
+    private String corporateEmail;
+
+    @Column(name = "phone", length = 40)
+    private String phone;
+
+    @Column(name = "website", length = 240)
+    private String website;
+
     @Column(name = "company_id", nullable = false, length = 120)
     private String companyId;
 

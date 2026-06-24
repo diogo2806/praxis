@@ -9,16 +9,15 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
-import org.springframework.http.HttpStatus;
-import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.filter.OncePerRequestFilter;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.io.IOException;
-
 @Component
 public class TenantResolutionFilter extends OncePerRequestFilter {
 
@@ -58,7 +57,6 @@ public class TenantResolutionFilter extends OncePerRequestFilter {
             }
 
             filterChain.doFilter(request, response);
-
         } finally {
             TenantContextHolder.clear();
         }
@@ -80,11 +78,18 @@ public class TenantResolutionFilter extends OncePerRequestFilter {
         try {
             return jwtService.parseCandidateAttemptToken(token).tenantId();
         } catch (IllegalArgumentException | JwtException exception) {
+            if (isLegacyAttemptId(token)) {
+                return defaultTenantId;
+            }
             throw new ResponseStatusException(
                     HttpStatus.UNAUTHORIZED,
-                    "Token de tentativa do candidato inválido."
+                    "Token de tentativa do candidato invalido."
             );
         }
+    }
+
+    private static boolean isLegacyAttemptId(String value) {
+        return value != null && value.matches("att_[A-Za-z0-9]{16,64}");
     }
 
     private String extractCandidateAttemptToken(HttpServletRequest request) {

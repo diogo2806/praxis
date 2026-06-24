@@ -14,6 +14,7 @@ import { Route as MonitoramentoRouteImport } from './routes/monitoramento'
 import { Route as EnviarLinkRouteImport } from './routes/enviar-link'
 import { Route as ConfiguracoesRouteImport } from './routes/configuracoes'
 import { Route as ComplianceRouteImport } from './routes/compliance'
+import { Route as CompetenciasRouteImport } from './routes/competencias'
 import { Route as ComecarRouteImport } from './routes/comecar'
 import { Route as CandidatoRouteImport } from './routes/candidato'
 import { Route as AppRouteImport } from './routes/app'
@@ -28,6 +29,9 @@ import { Route as NovaGovernancaRouteImport } from './routes/nova.governanca'
 import { Route as NovaDialogoRouteImport } from './routes/nova.dialogo'
 import { Route as NovaCompetenciasRouteImport } from './routes/nova.competencias'
 import { Route as NovaBlueprintRouteImport } from './routes/nova.blueprint'
+import { Route as ConfiguracoesPerfilRouteImport } from './routes/configuracoes.perfil'
+import { Route as ConfiguracoesIntegracoesRouteImport } from './routes/configuracoes.integracoes'
+import { Route as ConfiguracoesContaRouteImport } from './routes/configuracoes.conta'
 import { Route as CandidatoTokenRouteImport } from './routes/candidato.$token'
 
 const TalentMatchRoute = TalentMatchRouteImport.update({
@@ -53,6 +57,11 @@ const ConfiguracoesRoute = ConfiguracoesRouteImport.update({
 const ComplianceRoute = ComplianceRouteImport.update({
   id: '/compliance',
   path: '/compliance',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CompetenciasRoute = CompetenciasRouteImport.update({
+  id: '/competencias',
+  path: '/competencias',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ComecarRoute = ComecarRouteImport.update({
@@ -125,6 +134,22 @@ const NovaBlueprintRoute = NovaBlueprintRouteImport.update({
   path: '/nova/blueprint',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ConfiguracoesPerfilRoute = ConfiguracoesPerfilRouteImport.update({
+  id: '/perfil',
+  path: '/perfil',
+  getParentRoute: () => ConfiguracoesRoute,
+} as any)
+const ConfiguracoesIntegracoesRoute =
+  ConfiguracoesIntegracoesRouteImport.update({
+    id: '/integracoes',
+    path: '/integracoes',
+    getParentRoute: () => ConfiguracoesRoute,
+  } as any)
+const ConfiguracoesContaRoute = ConfiguracoesContaRouteImport.update({
+  id: '/conta',
+  path: '/conta',
+  getParentRoute: () => ConfiguracoesRoute,
+} as any)
 const CandidatoTokenRoute = CandidatoTokenRouteImport.update({
   id: '/$token',
   path: '/$token',
@@ -136,12 +161,16 @@ export interface FileRoutesByFullPath {
   '/app': typeof AppRoute
   '/candidato': typeof CandidatoRouteWithChildren
   '/comecar': typeof ComecarRoute
+  '/competencias': typeof CompetenciasRoute
   '/compliance': typeof ComplianceRoute
-  '/configuracoes': typeof ConfiguracoesRoute
+  '/configuracoes': typeof ConfiguracoesRouteWithChildren
   '/enviar-link': typeof EnviarLinkRoute
   '/monitoramento': typeof MonitoramentoRoute
   '/talent-match': typeof TalentMatchRoute
   '/candidato/$token': typeof CandidatoTokenRoute
+  '/configuracoes/conta': typeof ConfiguracoesContaRoute
+  '/configuracoes/integracoes': typeof ConfiguracoesIntegracoesRoute
+  '/configuracoes/perfil': typeof ConfiguracoesPerfilRoute
   '/nova/blueprint': typeof NovaBlueprintRoute
   '/nova/competencias': typeof NovaCompetenciasRoute
   '/nova/dialogo': typeof NovaDialogoRoute
@@ -158,12 +187,16 @@ export interface FileRoutesByTo {
   '/app': typeof AppRoute
   '/candidato': typeof CandidatoRouteWithChildren
   '/comecar': typeof ComecarRoute
+  '/competencias': typeof CompetenciasRoute
   '/compliance': typeof ComplianceRoute
-  '/configuracoes': typeof ConfiguracoesRoute
+  '/configuracoes': typeof ConfiguracoesRouteWithChildren
   '/enviar-link': typeof EnviarLinkRoute
   '/monitoramento': typeof MonitoramentoRoute
   '/talent-match': typeof TalentMatchRoute
   '/candidato/$token': typeof CandidatoTokenRoute
+  '/configuracoes/conta': typeof ConfiguracoesContaRoute
+  '/configuracoes/integracoes': typeof ConfiguracoesIntegracoesRoute
+  '/configuracoes/perfil': typeof ConfiguracoesPerfilRoute
   '/nova/blueprint': typeof NovaBlueprintRoute
   '/nova/competencias': typeof NovaCompetenciasRoute
   '/nova/dialogo': typeof NovaDialogoRoute
@@ -181,12 +214,16 @@ export interface FileRoutesById {
   '/app': typeof AppRoute
   '/candidato': typeof CandidatoRouteWithChildren
   '/comecar': typeof ComecarRoute
+  '/competencias': typeof CompetenciasRoute
   '/compliance': typeof ComplianceRoute
-  '/configuracoes': typeof ConfiguracoesRoute
+  '/configuracoes': typeof ConfiguracoesRouteWithChildren
   '/enviar-link': typeof EnviarLinkRoute
   '/monitoramento': typeof MonitoramentoRoute
   '/talent-match': typeof TalentMatchRoute
   '/candidato/$token': typeof CandidatoTokenRoute
+  '/configuracoes/conta': typeof ConfiguracoesContaRoute
+  '/configuracoes/integracoes': typeof ConfiguracoesIntegracoesRoute
+  '/configuracoes/perfil': typeof ConfiguracoesPerfilRoute
   '/nova/blueprint': typeof NovaBlueprintRoute
   '/nova/competencias': typeof NovaCompetenciasRoute
   '/nova/dialogo': typeof NovaDialogoRoute
@@ -205,12 +242,16 @@ export interface FileRouteTypes {
     | '/app'
     | '/candidato'
     | '/comecar'
+    | '/competencias'
     | '/compliance'
     | '/configuracoes'
     | '/enviar-link'
     | '/monitoramento'
     | '/talent-match'
     | '/candidato/$token'
+    | '/configuracoes/conta'
+    | '/configuracoes/integracoes'
+    | '/configuracoes/perfil'
     | '/nova/blueprint'
     | '/nova/competencias'
     | '/nova/dialogo'
@@ -227,12 +268,16 @@ export interface FileRouteTypes {
     | '/app'
     | '/candidato'
     | '/comecar'
+    | '/competencias'
     | '/compliance'
     | '/configuracoes'
     | '/enviar-link'
     | '/monitoramento'
     | '/talent-match'
     | '/candidato/$token'
+    | '/configuracoes/conta'
+    | '/configuracoes/integracoes'
+    | '/configuracoes/perfil'
     | '/nova/blueprint'
     | '/nova/competencias'
     | '/nova/dialogo'
@@ -249,12 +294,16 @@ export interface FileRouteTypes {
     | '/app'
     | '/candidato'
     | '/comecar'
+    | '/competencias'
     | '/compliance'
     | '/configuracoes'
     | '/enviar-link'
     | '/monitoramento'
     | '/talent-match'
     | '/candidato/$token'
+    | '/configuracoes/conta'
+    | '/configuracoes/integracoes'
+    | '/configuracoes/perfil'
     | '/nova/blueprint'
     | '/nova/competencias'
     | '/nova/dialogo'
@@ -272,8 +321,9 @@ export interface RootRouteChildren {
   AppRoute: typeof AppRoute
   CandidatoRoute: typeof CandidatoRouteWithChildren
   ComecarRoute: typeof ComecarRoute
+  CompetenciasRoute: typeof CompetenciasRoute
   ComplianceRoute: typeof ComplianceRoute
-  ConfiguracoesRoute: typeof ConfiguracoesRoute
+  ConfiguracoesRoute: typeof ConfiguracoesRouteWithChildren
   EnviarLinkRoute: typeof EnviarLinkRoute
   MonitoramentoRoute: typeof MonitoramentoRoute
   TalentMatchRoute: typeof TalentMatchRoute
@@ -324,6 +374,13 @@ declare module '@tanstack/react-router' {
       path: '/compliance'
       fullPath: '/compliance'
       preLoaderRoute: typeof ComplianceRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/competencias': {
+      id: '/competencias'
+      path: '/competencias'
+      fullPath: '/competencias'
+      preLoaderRoute: typeof CompetenciasRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/comecar': {
@@ -424,6 +481,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof NovaBlueprintRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/configuracoes/perfil': {
+      id: '/configuracoes/perfil'
+      path: '/perfil'
+      fullPath: '/configuracoes/perfil'
+      preLoaderRoute: typeof ConfiguracoesPerfilRouteImport
+      parentRoute: typeof ConfiguracoesRoute
+    }
+    '/configuracoes/integracoes': {
+      id: '/configuracoes/integracoes'
+      path: '/integracoes'
+      fullPath: '/configuracoes/integracoes'
+      preLoaderRoute: typeof ConfiguracoesIntegracoesRouteImport
+      parentRoute: typeof ConfiguracoesRoute
+    }
+    '/configuracoes/conta': {
+      id: '/configuracoes/conta'
+      path: '/conta'
+      fullPath: '/configuracoes/conta'
+      preLoaderRoute: typeof ConfiguracoesContaRouteImport
+      parentRoute: typeof ConfiguracoesRoute
+    }
     '/candidato/$token': {
       id: '/candidato/$token'
       path: '/$token'
@@ -446,13 +524,30 @@ const CandidatoRouteWithChildren = CandidatoRoute._addFileChildren(
   CandidatoRouteChildren,
 )
 
+interface ConfiguracoesRouteChildren {
+  ConfiguracoesContaRoute: typeof ConfiguracoesContaRoute
+  ConfiguracoesIntegracoesRoute: typeof ConfiguracoesIntegracoesRoute
+  ConfiguracoesPerfilRoute: typeof ConfiguracoesPerfilRoute
+}
+
+const ConfiguracoesRouteChildren: ConfiguracoesRouteChildren = {
+  ConfiguracoesContaRoute: ConfiguracoesContaRoute,
+  ConfiguracoesIntegracoesRoute: ConfiguracoesIntegracoesRoute,
+  ConfiguracoesPerfilRoute: ConfiguracoesPerfilRoute,
+}
+
+const ConfiguracoesRouteWithChildren = ConfiguracoesRoute._addFileChildren(
+  ConfiguracoesRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AppRoute: AppRoute,
   CandidatoRoute: CandidatoRouteWithChildren,
   ComecarRoute: ComecarRoute,
+  CompetenciasRoute: CompetenciasRoute,
   ComplianceRoute: ComplianceRoute,
-  ConfiguracoesRoute: ConfiguracoesRoute,
+  ConfiguracoesRoute: ConfiguracoesRouteWithChildren,
   EnviarLinkRoute: EnviarLinkRoute,
   MonitoramentoRoute: MonitoramentoRoute,
   TalentMatchRoute: TalentMatchRoute,

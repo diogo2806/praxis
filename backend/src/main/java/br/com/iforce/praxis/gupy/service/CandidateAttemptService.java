@@ -645,7 +645,9 @@ public class CandidateAttemptService {
     ) {
         Instant nodeStartedAt = resolveNodeStartedAt(attempt, simulation, currentNode);
         Instant clientAnsweredAt = request.respondidaEm();
-        Instant answeredAt = clientAnsweredAt == null ? receivedAt : clientAnsweredAt;
+        Instant answeredAt = clientAnsweredAt == null && receivedAt.isBefore(nodeStartedAt)
+                ? nodeStartedAt
+                : (clientAnsweredAt == null ? receivedAt : clientAnsweredAt);
 
         if (answeredAt.isBefore(nodeStartedAt)) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "O hor├írio da resposta ├® anterior ao in├¡cio da etapa.");
@@ -880,11 +882,18 @@ public class CandidateAttemptService {
         try {
             return jwtService.parseCandidateAttemptToken(attemptToken).attemptId();
         } catch (RuntimeException exception) {
+            if (isLegacyAttemptId(attemptToken)) {
+                return attemptToken;
+            }
             throw new ResponseStatusException(
                     HttpStatus.UNAUTHORIZED,
                     "Token da tentativa do candidato inv├ílido."
             );
         }
+    }
+
+    private static boolean isLegacyAttemptId(String value) {
+        return value != null && value.matches("att_[A-Za-z0-9]{16,64}");
     }
 
     private Optional<ScenarioNode> findCurrentNode(CandidateAttempt attempt, PublishedSimulation simulation) {

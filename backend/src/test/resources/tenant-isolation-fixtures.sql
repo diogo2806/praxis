@@ -16,11 +16,17 @@ WHERE simulation_id = 'sim-tenant2';
 DELETE FROM simulations
 WHERE id = 'sim-tenant2';
 
+DELETE FROM integration_tokens
+WHERE tenant_id = 'tenant-2';
+
 DELETE FROM tenants
 WHERE id = 'tenant-2';
 
 INSERT INTO tenants (id, name, company_id, integration_token_hash)
 VALUES ('tenant-2', 'Globex S.A.', 'empresa-456', 'gEsbpGwny-8MuW5S2dQT-oBgWd_PPiIrttUcKopCFQQ');
+
+INSERT INTO integration_tokens (tenant_id, provider, token_hash)
+VALUES ('tenant-2', 'gupy', 'gEsbpGwny-8MuW5S2dQT-oBgWd_PPiIrttUcKopCFQQ');
 
 INSERT INTO simulations (id, tenant_id, name, description, created_at)
 VALUES (

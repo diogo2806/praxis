@@ -23,6 +23,13 @@ UPDATE tenants
 SET integration_token_hash = 'mIpDNk36Ser0rI9x2CntfUygEZ8TN-9xe3Ux_VOl6xE'
 WHERE id = 'tenant-1';
 
+DELETE FROM integration_tokens
+WHERE tenant_id = 'tenant-1'
+  AND provider = 'gupy';
+
+INSERT INTO integration_tokens (tenant_id, provider, token_hash)
+VALUES ('tenant-1', 'gupy', 'mIpDNk36Ser0rI9x2CntfUygEZ8TN-9xe3Ux_VOl6xE');
+
 INSERT INTO simulations (id, tenant_id, name, description, created_at)
 VALUES (
     'sim-atendimento-caos',

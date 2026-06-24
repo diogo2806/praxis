@@ -20,7 +20,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/v1/tenant-config")
-@Tag(name = "Tenant Config", description = "Catalogos configuraveis por empresa (competencias, senioridade, checklist, usos e tempos).")
+@Tag(name = "Tenant Config", description = "Catalogos configuraveis por empresa usados nas telas de autoria.")
 public class TenantConfigController {
 
     private final TenantConfigService tenantConfigService;
@@ -32,7 +32,7 @@ public class TenantConfigController {
     @GetMapping
     @Operation(
             summary = "Carrega catalogos do tenant",
-            description = "Retorna competencias, niveis de senioridade, checklist de linguagem, usos do resultado e limites de tempo. Tipos nao customizados caem nos padroes embutidos."
+            description = "Retorna competencias e limites de tempo. Tipos nao customizados caem nos padroes embutidos."
     )
     public ResponseEntity<TenantConfigResponse> getConfig() {
         return ResponseEntity.ok(tenantConfigService.getConfig());
