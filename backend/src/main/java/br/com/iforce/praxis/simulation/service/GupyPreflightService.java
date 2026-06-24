@@ -46,8 +46,8 @@ public class GupyPreflightService {
     @Transactional(readOnly = true)
     public GupyPreflightResponse getPreflight(String simulationId, int versionNumber) {
         SimulationVersionEntity simulationVersionEntity = findVersion(simulationId, versionNumber);
-        if (simulationVersionEntity.getStatus() != SimulationVersionStatus.PUBLISHED) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "Somente versões publicadas podem passar no preflight Gupy.");
+        if (simulationVersionEntity.getStatus() == SimulationVersionStatus.ARCHIVED) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Versões arquivadas não podem passar no preflight Gupy.");
         }
 
         return evaluate(simulationVersionEntity);
@@ -101,7 +101,10 @@ public class GupyPreflightService {
         return tenantRepository.findById(tenantId)
                 .filter(tenant -> !isBlank(tenant.getIntegrationTokenHash()))
                 .map(tenant -> ok(GupyPreflightCheckCode.INTEGRATION_TOKEN, "Token de integração configurado no tenant."))
-                .orElseGet(() -> blocker(GupyPreflightCheckCode.INTEGRATION_TOKEN, "Token de integração Gupy não configurado no tenant."));
+                .orElseGet(() -> warning(
+                        GupyPreflightCheckCode.INTEGRATION_TOKEN,
+                        "Token de integração Gupy não configurado no tenant. A simulação será publicada, mas o envio de resultados para a Gupy ficará indisponível até a integração ser configurada."
+                ));
     }
 
     private GupyPreflightCheckResponse validateSimulation(SimulationVersionEntity simulationVersionEntity) {
@@ -123,6 +126,10 @@ public class GupyPreflightService {
 
     private GupyPreflightCheckResponse ok(GupyPreflightCheckCode code, String message) {
         return new GupyPreflightCheckResponse(code, GupyPreflightCheckStatus.OK, message);
+    }
+
+    private GupyPreflightCheckResponse warning(GupyPreflightCheckCode code, String message) {
+        return new GupyPreflightCheckResponse(code, GupyPreflightCheckStatus.WARNING, message);
     }
 
     private GupyPreflightCheckResponse blocker(GupyPreflightCheckCode code, String message) {

@@ -280,7 +280,8 @@ public class SimulationAdminController {
     @GetMapping("/{simulationId}/versions/{versionNumber}/gupy-preflight")
     @Operation(
             summary = "Executa preflight Gupy",
-            description = "Valida configuracao publica, token de integracao e estrutura do teste antes da publicacao."
+            description = "Valida configuracao publica, token de integracao e estrutura do teste. "
+                    + "Disponivel para versoes em rascunho ou publicadas, permitindo diagnosticar bloqueios antes de publicar."
     )
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Preflight executado."),
