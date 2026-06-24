@@ -81,7 +81,7 @@ function Dashboard() {
   });
 
   const totals = {
-    noAr: simulations.filter((s) => s.status === "published").length,
+    noAr: simulations.filter(isLive).length,
     rascunhos: simulations.filter((s) => s.status === "draft").length,
     arquivadas: simulations.filter((s) => s.status === "archived").length,
     tentativas: simulations.reduce((a, s) => a + s.attemptsCreated, 0),
@@ -90,7 +90,12 @@ function Dashboard() {
   const filtered = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();
     return simulations.filter((simulation) => {
-      const byStatus = filter === "todas" || simulation.status === filter;
+      // O filtro "No Ar" também inclui rascunhos que mantêm uma versão publicada ativa,
+      // já que essa avaliação continua acessível por link mesmo em edição.
+      const byStatus =
+        filter === "todas" ||
+        simulation.status === filter ||
+        (filter === "published" && isLive(simulation));
       const byQuery =
         normalizedQuery.length === 0 ||
         simulation.name.toLowerCase().includes(normalizedQuery) ||
@@ -326,6 +331,20 @@ function Dashboard() {
                         </td>
                         <td className="px-4 py-3">
                           <StatusBadge status={simulation.status} variant="status" />
+                          {hasLiveVersionBehind(simulation) && (
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <span className="mt-1 inline-flex items-center gap-1 rounded-md border border-success/40 bg-success/10 px-1.5 py-0.5 text-[10px] font-medium text-success">
+                                  <PlayCircle className="h-3 w-3" />v
+                                  {simulation.livePublishedVersionNumber} no ar
+                                </span>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                A versão v{simulation.livePublishedVersionNumber} continua publicada e
+                                acessível por link enquanto este rascunho é editado.
+                              </TooltipContent>
+                            </Tooltip>
+                          )}
                         </td>
                         <td className="px-4 py-3">
                           <StatusBadge
@@ -427,6 +446,22 @@ function Dashboard() {
       )}
     </AppShell>
   );
+}
+
+/**
+ * Uma avaliação está "no ar" quando a versão exibida já é publicada ou quando
+ * existe uma versão publicada anterior ainda ativa por trás de um rascunho em edição.
+ */
+function isLive(simulation: SimulationSummaryResponse) {
+  return simulation.status === "published" || simulation.livePublishedVersionNumber != null;
+}
+
+/**
+ * Verdadeiro quando a versão exibida não é a publicada, mas há uma versão publicada
+ * no ar atendendo candidatos — ex.: rascunho criado para editar uma versão já publicada.
+ */
+function hasLiveVersionBehind(simulation: SimulationSummaryResponse) {
+  return simulation.status !== "published" && simulation.livePublishedVersionNumber != null;
 }
 
 function simulationSearch(simulation: SimulationSummaryResponse) {

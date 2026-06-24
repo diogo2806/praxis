@@ -129,6 +129,13 @@ export interface SimulationSummaryResponse {
   resultUse?: string | null;
   versionNumber: number;
   status: SimulationVersionStatus;
+  /**
+   * Número da versão publicada que está no ar, quando existe. Pode diferir de
+   * `versionNumber` quando a versão exibida é um rascunho criado para edição
+   * enquanto a versão publicada anterior continua atendendo links de candidatos.
+   * `null` quando nenhuma versão da avaliação está publicada.
+   */
+  livePublishedVersionNumber: number | null;
   updatedAt: string;
   competencies: string[];
   attemptsCreated: number;

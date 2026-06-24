@@ -77,8 +77,10 @@ function EnviarLinkPage() {
     },
   });
 
+  // Inclui também avaliações cuja versão exibida é rascunho mas mantêm uma versão
+  // publicada no ar: o link de candidato é gerado contra a versão publicada ativa.
   const publishedSimulations = (simulationsQuery.data ?? []).filter(
-    (s) => s.status === "published",
+    (s) => s.status === "published" || s.livePublishedVersionNumber != null,
   );
 
   function handleSelectSimulation(simulation: SimulationSummaryResponse) {

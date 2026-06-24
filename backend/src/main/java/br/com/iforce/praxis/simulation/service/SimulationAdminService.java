@@ -842,6 +842,16 @@ public class SimulationAdminService {
                 ? 0.0
                 : Math.round((attemptsCompleted * 10000.0) / attemptsCreated) / 100.0;
 
+        // A versao exibida na lista e sempre a mais recente, que pode ser um rascunho criado
+        // para edicao enquanto uma versao publicada anterior continua no ar servindo links de
+        // candidatos. Sinalizamos essa versao publicada ativa para o painel nao parecer "fora do ar".
+        Integer livePublishedVersionNumber = simulationEntity.getVersions()
+                .stream()
+                .filter(version -> version.getStatus() == SimulationVersionStatus.PUBLISHED)
+                .map(SimulationVersionEntity::getVersionNumber)
+                .max(Integer::compareTo)
+                .orElse(null);
+
         return new SimulationSummaryResponse(
                 simulationEntity.getId(),
                 simulationEntity.getName(),
@@ -850,6 +860,7 @@ public class SimulationAdminService {
                 simulationEntity.getResultUse(),
                 versionEntity.getVersionNumber(),
                 versionEntity.getStatus(),
+                livePublishedVersionNumber,
                 versionEntity.getPublishedAt() != null ? versionEntity.getPublishedAt() : versionEntity.getCreatedAt(),
                 versionEntity.getCompetencies()
                         .stream()
