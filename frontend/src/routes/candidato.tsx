@@ -1,6 +1,6 @@
 import { createFileRoute, Link, Outlet, useChildMatches } from "@tanstack/react-router";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { useCallback, useEffect, useState, type CSSProperties } from "react";
+import { useCallback, useEffect, useRef, useState, type CSSProperties } from "react";
 import { AppShell } from "@/components/app-shell";
 import { EmptyState } from "@/components/praxis-ui";
 import {
@@ -14,6 +14,302 @@ import {
   type MediaType,
 } from "@/lib/api/praxis";
 import { cn } from "@/lib/utils";
+
+const candidateStyles = `
+  .cand-root {
+    --bg: oklch(0.985 0.006 85);
+    --bg-alt: oklch(0.965 0.009 235);
+    --surface: oklch(1 0 0);
+    --c-ink: oklch(0.24 0.02 240);
+    --c-muted: oklch(0.49 0.018 240);
+    --c-faint: oklch(0.62 0.015 240);
+    --line: oklch(0.9 0.01 240);
+    --line-soft: oklch(0.93 0.008 240);
+    --c-primary: oklch(0.5 0.1 233);
+    --c-primary-deep: oklch(0.4 0.09 238);
+    --c-gold: oklch(0.76 0.13 80);
+    --c-gold-deep: oklch(0.62 0.12 76);
+    --c-success: oklch(0.6 0.13 150);
+    --c-danger: oklch(0.58 0.18 28);
+    --r-sm: 0.5rem;
+    --r: 0.75rem;
+    --r-lg: 1.1rem;
+    --r-pill: 999px;
+    --font-display: 'Source Serif 4', Georgia, 'Times New Roman', serif;
+    --font-sans: 'IBM Plex Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+    --font-mono: 'IBM Plex Mono', ui-monospace, 'SFMono-Regular', monospace;
+    --shadow-lg: 0 40px 80px -40px oklch(0.30 0.06 245 / 0.40);
+
+    min-height: 100vh;
+    background: var(--bg);
+    font-family: var(--font-sans);
+    color: var(--c-ink);
+    line-height: 1.6;
+    font-size: 17px;
+    -webkit-font-smoothing: antialiased;
+    padding: clamp(1rem, 4vw, 2.5rem);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+  }
+  .cand-root.hc {
+    --bg: #000;
+    --bg-alt: #111;
+    --surface: #000;
+    --c-ink: #fff;
+    --c-muted: #ccc;
+    --c-faint: #aaa;
+    --line: #444;
+    --line-soft: #333;
+    --c-primary: #6cf;
+    --c-primary-deep: #4af;
+    --c-gold: #fc0;
+    --c-gold-deep: #da0;
+    --c-success: #6c6;
+    --c-danger: #f66;
+    --shadow-lg: none;
+    background: #000;
+    color: #fff;
+  }
+  .cand-root.large-text { font-size: 20px; }
+  @media (max-width: 560px) { .cand-root { font-size: 16px; } }
+
+  .cand-a11y {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.5rem;
+    margin-bottom: 1.2rem;
+  }
+  .cand-a11y button {
+    font-family: var(--font-sans);
+    font-size: 0.82rem;
+    font-weight: 500;
+    padding: 0.5rem 0.9rem;
+    border-radius: var(--r-pill);
+    border: 1px solid var(--line);
+    background: var(--surface);
+    color: var(--c-ink);
+    cursor: pointer;
+    transition: border-color .15s, background .15s;
+  }
+  .cand-a11y button:hover { border-color: var(--c-primary); color: var(--c-primary); }
+  .cand-a11y button[aria-pressed="true"] {
+    border-color: var(--c-primary);
+    background: oklch(0.5 0.1 233 / 0.08);
+    color: var(--c-primary);
+  }
+  .cand-root.hc .cand-a11y button[aria-pressed="true"] {
+    background: #222;
+    color: #6cf;
+    border-color: #6cf;
+  }
+
+  .scenario {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--r-lg);
+    box-shadow: var(--shadow-lg);
+    overflow: hidden;
+    width: 100%;
+    max-width: 620px;
+  }
+  .sc-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.9rem 1.1rem;
+    border-bottom: 1px solid var(--line-soft);
+    background: linear-gradient(var(--bg-alt), transparent);
+  }
+  .sc-id { display: flex; align-items: center; gap: 0.65rem; }
+  .avatar {
+    width: 2.2rem; height: 2.2rem; border-radius: 50%;
+    background: linear-gradient(135deg, var(--c-primary), var(--c-primary-deep));
+    color: white; display: grid; place-items: center;
+    font-weight: 600; font-size: 0.8rem; font-family: var(--font-mono);
+  }
+  .sc-id .who { font-weight: 600; font-size: 0.92rem; line-height: 1.1; }
+  .sc-id .stage { font-family: var(--font-mono); font-size: 0.68rem; color: var(--c-faint); letter-spacing: 0.04em; }
+  .sc-timer {
+    font-family: var(--font-mono); font-weight: 500; font-size: 0.95rem;
+    color: var(--c-muted); display: flex; align-items: center; gap: 0.4rem;
+  }
+  .sc-timer .tdot {
+    width: 0.45rem; height: 0.45rem; border-radius: 50%;
+    background: var(--c-gold); animation: cand-pulse 1.6s ease-in-out infinite;
+  }
+  @keyframes cand-pulse { 50% { opacity: 0.35; } }
+
+  .sc-body { padding: 1.15rem 1.2rem 1.3rem; }
+  .sc-tag {
+    font-family: var(--font-mono); font-size: 0.66rem; letter-spacing: 0.12em;
+    text-transform: uppercase; color: var(--c-danger); font-weight: 500;
+  }
+  .sc-msg {
+    font-family: var(--font-display); font-size: 1.18rem; line-height: 1.35;
+    margin: 0.55rem 0 1.1rem; color: var(--c-ink);
+  }
+  .sc-opts { display: flex; flex-direction: column; gap: 0.55rem; }
+  .opt {
+    display: flex; gap: 0.7rem; align-items: flex-start; text-align: left;
+    width: 100%; background: var(--surface); border: 1px solid var(--line);
+    border-radius: var(--r); padding: 0.7rem 0.8rem; cursor: pointer;
+    font: inherit; font-size: 0.9rem; color: var(--c-ink);
+    transition: border-color .15s, background .15s, transform .1s; line-height: 1.35;
+  }
+  .opt:hover { border-color: var(--c-primary); background: oklch(0.5 0.1 233 / 0.04); }
+  .opt .key {
+    flex: none; width: 1.5rem; height: 1.5rem; border-radius: 0.4rem;
+    border: 1px solid var(--line); display: grid; place-items: center;
+    font-family: var(--font-mono); font-size: 0.78rem; font-weight: 600;
+    color: var(--c-muted); transition: .15s;
+  }
+  .opt:hover .key { border-color: var(--c-primary); color: var(--c-primary); }
+  .opt.picked { border-color: var(--c-primary); background: oklch(0.5 0.1 233 / 0.06); }
+  .opt.picked .key { background: var(--c-primary); color: white; border-color: var(--c-primary); }
+  .opt:disabled { opacity: 0.6; cursor: not-allowed; }
+
+  .cand-root.hc .opt:hover { background: #222; }
+  .cand-root.hc .opt.picked { background: #222; }
+  .cand-root.hc .opt.picked .key { background: #6cf; color: #000; }
+
+  .sc-note {
+    margin-top: 1rem; font-size: 0.82rem; color: var(--c-faint);
+    display: flex; gap: 0.55rem; align-items: flex-start; min-height: 1.2rem;
+  }
+  .sc-note svg { flex: none; width: 1rem; height: 1rem; margin-top: 0.15rem; stroke: var(--c-gold-deep); }
+
+  .sc-confirm {
+    margin-top: 1rem; display: flex; flex-direction: column; align-items: center; gap: 0.5rem;
+  }
+  .sc-confirm .confirm-hint {
+    font-size: 0.82rem; color: var(--c-faint); font-family: var(--font-sans);
+  }
+  .sc-confirm button {
+    font-family: var(--font-sans); font-weight: 600; font-size: 0.94rem;
+    padding: 0.72rem 1.6rem; border-radius: var(--r-pill); cursor: pointer;
+    border: 1px solid transparent; background: var(--c-primary); color: white;
+    box-shadow: 0 8px 20px -10px oklch(0.5 0.1 233 / 0.7);
+    transition: transform .15s, box-shadow .2s, background .2s;
+  }
+  .sc-confirm button:hover { background: var(--c-primary-deep); }
+  .sc-confirm button:active { transform: translateY(1px); }
+  .sc-confirm button:disabled { opacity: 0.6; cursor: not-allowed; }
+
+  .sc-error {
+    margin-top: 0.7rem; font-size: 0.82rem; font-weight: 500;
+    color: var(--c-danger); text-align: center;
+  }
+
+  .sc-media { margin: 0.6rem 0; display: flex; justify-content: center; }
+  .sc-media img { max-height: 12rem; width: auto; border-radius: var(--r); border: 1px solid var(--line); object-fit: contain; }
+  .sc-media audio { width: 100%; }
+
+  .cand-progress {
+    width: 100%; max-width: 620px; margin-bottom: 0.8rem;
+    display: flex; flex-direction: column; gap: 0.4rem;
+  }
+  .cand-progress .cp-info {
+    display: flex; justify-content: space-between; align-items: center;
+    font-family: var(--font-mono); font-size: 0.75rem; color: var(--c-muted); font-weight: 500;
+  }
+  .cand-progress .cp-track {
+    height: 0.38rem; border-radius: var(--r-pill);
+    background: oklch(0.5 0.06 240 / 0.1); overflow: hidden;
+  }
+  .cand-progress .cp-fill {
+    height: 100%; border-radius: var(--r-pill);
+    background: linear-gradient(90deg, var(--c-primary), oklch(0.62 0.12 215));
+    transition: width 1s linear;
+  }
+  .cand-progress .cp-fill.low { background: linear-gradient(90deg, oklch(0.7 0.14 60), oklch(0.58 0.18 28)); }
+
+  .cand-status {
+    width: 100%; max-width: 620px;
+    background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-lg);
+    box-shadow: var(--shadow-lg); padding: 2.5rem 1.5rem; text-align: center;
+  }
+  .cand-status .cs-label {
+    font-family: var(--font-mono); font-size: 0.66rem; letter-spacing: 0.12em;
+    text-transform: uppercase; font-weight: 500;
+  }
+  .cand-status .cs-label.loading { color: var(--c-muted); }
+  .cand-status .cs-label.error { color: var(--c-danger); }
+  .cand-status .cs-label.done { color: var(--c-success); }
+  .cand-status h1 {
+    font-family: var(--font-display); font-size: 1.8rem; font-weight: 500;
+    margin: 0.7rem 0 0; color: var(--c-ink); line-height: 1.15;
+  }
+  .cand-status p { margin-top: 0.7rem; font-size: 0.92rem; color: var(--c-muted); max-width: 44ch; margin-inline: auto; }
+  .cand-status .cs-note { font-size: 0.82rem; color: var(--c-faint); margin-top: 0.7rem; max-width: 48ch; margin-inline: auto; }
+
+  .cand-review { margin-top: 1.2rem; }
+  .cand-review a, .cand-review button.link-btn {
+    font-family: var(--font-sans); font-size: 0.88rem; font-weight: 500;
+    color: var(--c-primary); text-decoration: underline; cursor: pointer;
+    background: none; border: none;
+  }
+  .cand-review textarea {
+    width: 100%; max-width: 24rem; margin: 0.5rem auto; display: block;
+    border: 1px solid var(--line); border-radius: var(--r); padding: 0.6rem 0.8rem;
+    font: inherit; font-size: 0.88rem; resize: none; background: var(--surface); color: var(--c-ink);
+  }
+  .cand-review .rev-btn {
+    font-family: var(--font-sans); font-weight: 600; font-size: 0.88rem;
+    padding: 0.55rem 1.2rem; border-radius: var(--r-pill); cursor: pointer;
+    border: 1px solid transparent; background: var(--c-primary); color: white;
+    transition: background .15s;
+  }
+  .cand-review .rev-btn:hover { background: var(--c-primary-deep); }
+  .cand-review .rev-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+  .cand-review .rev-ok { color: var(--c-success); font-size: 0.88rem; font-weight: 500; margin-top: 0.5rem; }
+  .cand-review .rev-err { color: var(--c-danger); font-size: 0.82rem; font-weight: 500; margin-top: 0.5rem; }
+
+  .cand-footer {
+    width: 100%; max-width: 620px; margin-top: 1.2rem;
+    padding-top: 0.8rem; border-top: 1px solid var(--line-soft);
+    font-size: 0.74rem; color: var(--c-faint); text-align: center; line-height: 1.55;
+  }
+
+  .cand-consent {
+    width: 100%; max-width: 620px;
+    background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-lg);
+    box-shadow: var(--shadow-lg); padding: 1.5rem; text-align: left;
+  }
+  .cand-consent .cc-label {
+    font-family: var(--font-mono); font-size: 0.66rem; letter-spacing: 0.12em;
+    text-transform: uppercase; color: var(--c-muted); font-weight: 500;
+  }
+  .cand-consent h1 {
+    font-family: var(--font-display); font-size: 1.5rem; font-weight: 500;
+    margin: 0.5rem 0 0; color: var(--c-ink); line-height: 1.2;
+  }
+  .cand-consent .cc-body { margin-top: 1rem; font-size: 0.9rem; color: var(--c-muted); line-height: 1.6; }
+  .cand-consent .cc-body p + p { margin-top: 0.7rem; }
+  .cand-consent .cc-body strong { color: var(--c-ink); }
+  .cand-consent .cc-body ul { margin: 0.5rem 0; padding-left: 1.2rem; }
+  .cand-consent .cc-body li + li { margin-top: 0.3rem; }
+  .cand-consent .cc-checks { margin-top: 1.2rem; display: flex; flex-direction: column; gap: 0.5rem; }
+  .cand-consent .cc-check {
+    display: flex; align-items: flex-start; gap: 0.7rem;
+    padding: 0.7rem 0.8rem; border: 1px solid var(--line); border-radius: var(--r);
+    font-size: 0.88rem; color: var(--c-ink);
+  }
+  .cand-consent .cc-check input { margin-top: 0.15rem; }
+  .cand-consent .cc-actions { margin-top: 1.2rem; }
+  .cand-consent .cc-btn {
+    font-family: var(--font-sans); font-weight: 600; font-size: 0.94rem;
+    padding: 0.72rem 1.6rem; border-radius: var(--r-pill); cursor: pointer;
+    border: 1px solid transparent; background: var(--c-primary); color: white;
+    box-shadow: 0 8px 20px -10px oklch(0.5 0.1 233 / 0.7);
+    transition: transform .15s, background .2s;
+  }
+  .cand-consent .cc-btn:hover { background: var(--c-primary-deep); }
+  .cand-consent .cc-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+  .cand-consent .cc-err { color: var(--c-danger); font-size: 0.82rem; font-weight: 500; margin-top: 0.5rem; }
+`;
 
 export const Route = createFileRoute("/candidato")({
   head: () => ({
@@ -130,6 +426,14 @@ function CandidateMedia({
   );
 }
 
+const OPTION_LETTERS = ["A", "B", "C", "D", "E", "F", "G", "H"];
+
+function formatTimer(seconds: number): string {
+  const m = Math.floor(seconds / 60);
+  const s = seconds % 60;
+  return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
+}
+
 function FocusedCandidateExperience({ token }: { token: string }) {
   const [liveAttempt, setLiveAttempt] = useState<CandidateAttemptResponse | null>(null);
   const [remaining, setRemaining] = useState(30);
@@ -140,6 +444,16 @@ function FocusedCandidateExperience({ token }: { token: string }) {
   const [submittingAnswer, setSubmittingAnswer] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [healthConsentGiven, setHealthConsentGiven] = useState(false);
+  const stylesInjected = useRef(false);
+
+  useEffect(() => {
+    if (stylesInjected.current) return;
+    stylesInjected.current = true;
+    const style = document.createElement("style");
+    style.textContent = candidateStyles;
+    document.head.appendChild(style);
+    return () => { document.head.removeChild(style); };
+  }, []);
 
   const attemptQuery = useQuery({
     queryKey: ["candidate-attempt", token],
@@ -155,8 +469,6 @@ function FocusedCandidateExperience({ token }: { token: string }) {
   const attempt = liveAttempt ?? attemptQuery.data;
   const currentNode = attempt?.etapaAtual ?? null;
   const finished = Boolean(attempt && (attempt.finalizado || !currentNode));
-  // Na vertical de saúde, o participante precisa consentir o tratamento de dado sensível
-  // antes de iniciar; enquanto isso, o cronômetro fica pausado para não autoenviar respostas.
   const needsHealthConsent = Boolean(attempt?.verticalSaude) && !healthConsentGiven && !finished;
   const timeLimit = Math.max(
     1,
@@ -244,320 +556,255 @@ function FocusedCandidateExperience({ token }: { token: string }) {
     needsHealthConsent,
   ]);
 
-  const pageClass = cn(
-    "min-h-screen px-4 py-5 transition-colors sm:px-6",
-    highContrast ? "bg-black text-white" : "bg-slate-50 text-slate-950",
-    largeText ? "text-lg" : "text-base",
+  const rootClass = cn(
+    "cand-root",
+    highContrast && "hc",
+    largeText && "large-text",
   );
   const fontStyle = {
     fontFamily: dyslexiaFont
       ? "'OpenDyslexic', 'Atkinson Hyperlegible', Verdana, Arial, sans-serif"
       : undefined,
   } satisfies CSSProperties;
-  const panelClass = cn(
-    "mx-auto flex min-h-[calc(100vh-2.5rem)] w-full max-w-3xl flex-col",
-    "rounded-md border p-4 shadow-sm sm:p-6",
-    highContrast ? "border-white bg-black" : "border-slate-200 bg-white",
-  );
-  const controlClass = cn(
-    "inline-flex h-10 items-center gap-2 rounded-md border px-3 text-sm font-medium transition-colors",
-    highContrast
-      ? "border-white bg-black text-white hover:bg-white hover:text-black"
-      : "border-slate-300 bg-white text-slate-900 hover:bg-slate-100",
-  );
-  const optionClass = cn(
-    "w-full rounded-md border-2 p-4 text-left leading-relaxed transition-colors disabled:cursor-not-allowed disabled:opacity-60",
-    highContrast
-      ? "border-white bg-black text-white hover:bg-white hover:text-black"
-      : "border-slate-200 bg-white text-slate-950 hover:border-blue-600 hover:bg-blue-50",
-  );
-  const selectedOptionClass = highContrast
-    ? "border-yellow-300 bg-white text-black"
-    : "border-blue-700 bg-blue-50 ring-2 ring-blue-700/20";
-  const primaryButtonClass = cn(
-    "inline-flex w-full items-center justify-center rounded-md px-5 py-3 text-sm font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto",
-    highContrast
-      ? "border border-white bg-white text-black hover:bg-zinc-200"
-      : "bg-blue-700 text-white hover:bg-blue-800",
-  );
 
   return (
-    <main className={pageClass} style={fontStyle}>
-      <section className={panelClass}>
-        <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
-          <div className="text-sm font-semibold uppercase tracking-wide opacity-70">
-            Acessibilidade
-          </div>
-          <div className="flex flex-wrap justify-end gap-2">
-            <button
-              type="button"
-              className={controlClass}
-              onClick={() => setHighContrast((value) => !value)}
-              aria-pressed={highContrast}
-              title="Alterna para alto contraste"
-            >
-              Alto contraste
-            </button>
-            <button
-              type="button"
-              className={controlClass}
-              onClick={() => setLargeText((value) => !value)}
-              aria-pressed={largeText}
-              title="Aumenta o tamanho do texto"
-            >
-              Texto {largeText ? "normal" : "maior"}
-            </button>
-            <button
-              type="button"
-              className={controlClass}
-              onClick={() => setDyslexiaFont((value) => !value)}
-              aria-pressed={dyslexiaFont}
-              title="Troca para uma fonte mais fácil de ler"
-            >
-              Fonte para dislexia
-            </button>
-          </div>
-        </div>
+    <main className={rootClass} style={fontStyle}>
+      <div className="cand-a11y">
+        <button
+          type="button"
+          onClick={() => setHighContrast((v) => !v)}
+          aria-pressed={highContrast}
+          title="Alterna para alto contraste"
+        >
+          Alto contraste
+        </button>
+        <button
+          type="button"
+          onClick={() => setLargeText((v) => !v)}
+          aria-pressed={largeText}
+          title="Aumenta o tamanho do texto"
+        >
+          Texto {largeText ? "normal" : "maior"}
+        </button>
+        <button
+          type="button"
+          onClick={() => setDyslexiaFont((v) => !v)}
+          aria-pressed={dyslexiaFont}
+          title="Troca para uma fonte mais fácil de ler"
+        >
+          Fonte para dislexia
+        </button>
+      </div>
 
-        {currentNode && !finished && !needsHealthConsent && (
-          <div className="mb-8 space-y-3">
-            <div className="flex flex-wrap items-center justify-between gap-2 text-sm font-medium">
-              <span>
-                Etapa {currentStep} de {totalSteps}
-              </span>
-              <span className="tabular-nums">{remaining}s restantes</span>
+      {attemptQuery.isLoading ? (
+        <div className="cand-status">
+          <div className="cs-label loading">Carregando</div>
+          <h1>Preparando seu teste.</h1>
+        </div>
+      ) : attemptQuery.isError && !attempt ? (
+        <div className="cand-status">
+          <div className="cs-label error">Acesso indisponível</div>
+          <h1>Não foi possível carregar o teste.</h1>
+          <p>
+            {friendlyApiErrorMessage(
+              attemptQuery.error,
+              LOAD_ERROR_MESSAGES,
+              "Verifique o link recebido e tente novamente.",
+            )}
+          </p>
+        </div>
+      ) : needsHealthConsent ? (
+        <HealthConsentGate
+          token={token}
+          onConsented={() => setHealthConsentGiven(true)}
+        />
+      ) : currentNode && !finished ? (
+        <>
+          <div className="cand-progress">
+            <div className="cp-info">
+              <span>Cenário {currentStep}/{totalSteps}</span>
+              <span>{remaining}s</span>
             </div>
-            <div
-              className={cn(
-                "h-2 w-full overflow-hidden rounded-full",
-                highContrast ? "bg-zinc-800" : "bg-slate-200",
-              )}
-            >
+            <div className="cp-track">
               <div
-                className={cn(
-                  "h-full rounded-full transition-all duration-1000 ease-linear",
-                  timePercentage > 35 ? "bg-blue-600" : "bg-amber-500",
-                )}
+                className={cn("cp-fill", timePercentage <= 35 && "low")}
                 style={{ width: `${timePercentage}%` }}
               />
             </div>
           </div>
-        )}
 
-        {attemptQuery.isLoading ? (
-          <div className="flex flex-1 flex-col justify-center">
-            <div className="text-sm font-medium uppercase tracking-wide opacity-70">Carregando</div>
-            <h1 className="mt-3 text-3xl font-semibold">Preparando seu teste.</h1>
-          </div>
-        ) : attemptQuery.isError && !attempt ? (
-          <div className="flex flex-1 flex-col justify-center">
-            <div className="text-sm font-medium uppercase tracking-wide text-red-600">
-              Acesso indisponível
-            </div>
-            <h1 className="mt-3 text-3xl font-semibold">Não foi possível carregar o teste.</h1>
-            <p className="mt-3 max-w-xl opacity-80">
-              {friendlyApiErrorMessage(
-                attemptQuery.error,
-                LOAD_ERROR_MESSAGES,
-                "Verifique o link recebido e tente novamente.",
-              )}
-            </p>
-          </div>
-        ) : needsHealthConsent ? (
-          <HealthConsentGate
-            token={token}
-            highContrast={highContrast}
-            onConsented={() => setHealthConsentGiven(true)}
-          />
-        ) : currentNode && !finished ? (
-          <div className="flex flex-1 flex-col justify-center">
-            <div className="mx-auto w-full max-w-2xl">
-              <div className="mb-6 text-center">
-                <div className="text-sm font-medium uppercase tracking-wide opacity-70">
-                  {attempt?.avaliacaoNome ?? "Teste"}
+          <div className="scenario" aria-label="Cenário do teste">
+            <div className="sc-top">
+              <div className="sc-id">
+                <div className="avatar">
+                  {(currentNode.pessoa ?? "P").substring(0, 2).toUpperCase()}
                 </div>
-                <h1 className="mt-3 text-2xl font-semibold sm:text-3xl">{currentNode.pessoa}</h1>
-                <p className="mt-3 text-sm font-medium opacity-75">
-                  Escolha uma alternativa. Você pode trocar antes de confirmar; depois de confirmar,
-                  a resposta é final.
-                </p>
+                <div>
+                  <div className="who">{currentNode.pessoa ?? "Participante"}</div>
+                  <div className="stage">
+                    Cenário {currentStep}/{totalSteps} · {attempt?.avaliacaoNome ?? "teste"}
+                  </div>
+                </div>
               </div>
+              <div className="sc-timer">
+                <span className="tdot" />
+                {formatTimer(remaining)}
+              </div>
+            </div>
 
-              <div className="space-y-4 text-center">
-                <p
-                  className="text-pretty text-xl leading-relaxed sm:text-2xl"
-                  aria-label={currentNode.descricaoAcessivel || currentNode.descricao}
-                >
-                  {currentNode.descricao}
-                </p>
-                {currentNode.audioDescricaoUrl && (
-                  <audio
-                    controls
-                    src={currentNode.audioDescricaoUrl}
-                    className="mx-auto w-full max-w-md"
-                  >
+            <div className="sc-body">
+              {currentNode.pessoa && (
+                <div className="sc-tag">{currentNode.pessoa}</div>
+              )}
+              <p
+                className="sc-msg"
+                aria-label={currentNode.descricaoAcessivel || currentNode.descricao}
+              >
+                {currentNode.descricao}
+              </p>
+
+              {currentNode.audioDescricaoUrl && (
+                <div className="sc-media">
+                  <audio controls src={currentNode.audioDescricaoUrl}>
                     Seu navegador não suporta áudio.
                   </audio>
-                )}
-                {currentNode.midiaUrl && (
-                  <div className="flex justify-center">
-                    <CandidateMedia
-                      mediaUrl={currentNode.midiaUrl}
-                      mediaType={currentNode.tipoMidia ?? null}
-                    />
-                  </div>
-                )}
-              </div>
+                </div>
+              )}
+              {currentNode.midiaUrl && (
+                <div className="sc-media">
+                  <CandidateMedia
+                    mediaUrl={currentNode.midiaUrl}
+                    mediaType={currentNode.tipoMidia ?? null}
+                  />
+                </div>
+              )}
 
-              <div className="mt-8 grid gap-3">
-                {currentNode.alternativas.map((option) => (
-                  <div key={option.id} className="space-y-2">
+              <div className="sc-opts" role="group" aria-label="Como você agiria?">
+                {currentNode.alternativas.map((option, idx) => (
+                  <div key={option.id}>
                     <button
                       type="button"
+                      className={cn("opt", selectedOptionId === option.id && "picked")}
                       onClick={() => {
                         setSubmitError(null);
                         setSelectedOptionId(option.id);
                       }}
                       disabled={submittingAnswer}
-                      className={cn(
-                        optionClass,
-                        selectedOptionId === option.id && selectedOptionClass,
-                      )}
                       aria-label={option.descricaoAcessivel || option.texto}
                       aria-pressed={selectedOptionId === option.id}
                     >
-                      {option.texto}
+                      <span className="key">{OPTION_LETTERS[idx] ?? String(idx + 1)}</span>
+                      <span>{option.texto}</span>
                     </button>
                     {option.audioDescricaoUrl && (
-                      <audio controls src={option.audioDescricaoUrl} className="w-full">
-                        Seu navegador não suporta áudio.
-                      </audio>
+                      <div className="sc-media">
+                        <audio controls src={option.audioDescricaoUrl}>
+                          Seu navegador não suporta áudio.
+                        </audio>
+                      </div>
                     )}
                     {option.midiaUrl && (
-                      <CandidateMedia
-                        mediaUrl={option.midiaUrl}
-                        mediaType={option.tipoMidia ?? null}
-                      />
+                      <div className="sc-media">
+                        <CandidateMedia
+                          mediaUrl={option.midiaUrl}
+                          mediaType={option.tipoMidia ?? null}
+                        />
+                      </div>
                     )}
                   </div>
                 ))}
               </div>
 
               {selectedOption && (
-                <div className="mt-5 space-y-3 text-center" aria-live="polite">
-                  <div className="text-sm font-medium opacity-75">
-                    Alternativa selecionada. Confirme para enviar sua resposta final.
-                  </div>
+                <div className="sc-confirm" aria-live="polite">
+                  <span className="confirm-hint">
+                    Confirme para enviar sua resposta final.
+                  </span>
                   <button
                     type="button"
-                    className={primaryButtonClass}
                     onClick={() => submitAnswer(currentNode, selectedOption.id, false)}
                     disabled={submittingAnswer}
                   >
-                    {submittingAnswer ? "Registrando resposta..." : "Confirmar resposta final"}
+                    {submittingAnswer ? "Registrando..." : "Confirmar resposta final"}
                   </button>
                 </div>
               )}
               {submitError && (
-                <div
-                  className="mt-5 text-center text-sm font-medium text-red-600"
-                  aria-live="assertive"
-                >
-                  {submitError}
-                </div>
+                <div className="sc-error" aria-live="assertive">{submitError}</div>
               )}
-            </div>
-          </div>
-        ) : (
-          <div className="flex flex-1 flex-col justify-center text-center">
-            <div className="text-sm font-medium uppercase tracking-wide text-emerald-700">
-              Participação finalizada
-            </div>
-            <h1 className="mt-3 text-3xl font-semibold">Obrigado por participar.</h1>
-            <p className="mx-auto mt-3 max-w-xl opacity-80">
-              O resultado será processado e entregue para a equipe responsável.
-            </p>
-            <p className="mx-auto mt-3 max-w-xl text-sm opacity-70">
-              Esta avaliação mede como você age em uma situação de trabalho, por competência. Ela é
-              apoio à decisão: quem decide sobre a sua candidatura é uma pessoa, não um sistema
-              automático. Você pode pedir que uma pessoa revise o resultado.
-            </p>
-            <HumanReviewRequest attemptId={token} highContrast={highContrast} />
-          </div>
-        )}
 
-        <p className="mt-6 border-t border-current pt-4 text-center text-xs leading-relaxed opacity-50">
-          {attempt?.verticalSaude
-            ? "Esta é uma atividade educativa. Seus dados são tratados para esta finalidade, conforme a LGPD e a política de privacidade da empresa responsável. Não é diagnóstico nem substitui avaliação profissional. A decisão é de uma pessoa, não de um sistema automático, e você pode pedir revisão humana."
-            : "Seus dados são tratados para fins desta avaliação, conforme a LGPD e a política de privacidade da empresa responsável. A pontuação segue critérios definidos antes do teste, sem IA julgando você. A decisão sobre a sua candidatura é tomada por uma pessoa, não por um sistema automático, e você pode solicitar revisão humana do resultado."}
-        </p>
-      </section>
+              <p className="sc-note">
+                <svg viewBox="0 0 24 24" fill="none" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M12 2 4 5v6c0 5 3.4 8.3 8 11 4.6-2.7 8-6 8-11V5z" />
+                </svg>
+                <span>Escolha uma alternativa. Você pode trocar antes de confirmar; depois de confirmar, a resposta é final.</span>
+              </p>
+            </div>
+          </div>
+        </>
+      ) : (
+        <div className="cand-status">
+          <div className="cs-label done">Participação finalizada</div>
+          <h1>Obrigado por participar.</h1>
+          <p>O resultado será processado e entregue para a equipe responsável.</p>
+          <div className="cs-note">
+            Esta avaliação mede como você age em uma situação de trabalho, por competência.
+            Ela é apoio à decisão: quem decide sobre a sua candidatura é uma pessoa, não um
+            sistema automático. Você pode pedir que uma pessoa revise o resultado.
+          </div>
+          <HumanReviewRequest attemptId={token} />
+        </div>
+      )}
+
+      <div className="cand-footer">
+        {attempt?.verticalSaude
+          ? "Esta é uma atividade educativa. Seus dados são tratados para esta finalidade, conforme a LGPD e a política de privacidade da empresa responsável. Não é diagnóstico nem substitui avaliação profissional. A decisão é de uma pessoa, não de um sistema automático, e você pode pedir revisão humana."
+          : "Seus dados são tratados para fins desta avaliação, conforme a LGPD e a política de privacidade da empresa responsável. A pontuação segue critérios definidos antes do teste, sem IA julgando você. A decisão sobre a sua candidatura é tomada por uma pessoa, não por um sistema automático, e você pode solicitar revisão humana do resultado."}
+      </div>
     </main>
   );
 }
 
-function HumanReviewRequest({
-  attemptId,
-  highContrast,
-}: {
-  attemptId: string;
-  highContrast: boolean;
-}) {
+function HumanReviewRequest({ attemptId }: { attemptId: string }) {
   const [open, setOpen] = useState(false);
   const [reason, setReason] = useState("");
   const mutation = useMutation({
     mutationFn: () => requestHumanReview(attemptId, reason),
   });
 
-  const fieldClass = cn(
-    "w-full resize-none rounded-md border p-2.5 text-sm",
-    highContrast ? "border-zinc-600 bg-zinc-900 text-zinc-100" : "border-slate-300 bg-white",
-  );
-  const buttonClass = cn(
-    "rounded-md px-4 py-2 text-sm font-medium",
-    highContrast ? "bg-zinc-100 text-zinc-900" : "bg-blue-600 text-white",
-    "disabled:cursor-not-allowed disabled:opacity-50",
-  );
-
   if (mutation.isSuccess) {
     return (
-      <p className="mx-auto mt-5 max-w-xl text-sm font-medium text-emerald-700" aria-live="polite">
-        Pedido de revisão registrado. Uma pessoa da equipe responsável vai analisar.
-      </p>
+      <div className="cand-review" aria-live="polite">
+        <p className="rev-ok">Pedido de revisão registrado. Uma pessoa da equipe responsável vai analisar.</p>
+      </div>
     );
   }
 
   return (
-    <div className="mx-auto mt-5 w-full max-w-md">
+    <div className="cand-review">
       {!open ? (
-        <button
-          type="button"
-          className="text-sm font-medium underline"
-          onClick={() => setOpen(true)}
-        >
+        <button type="button" className="link-btn" onClick={() => setOpen(true)}>
           Solicitar revisão humana
         </button>
       ) : (
-        <div className="space-y-2 text-left">
-          <label className="block text-sm font-medium">Solicitar revisão humana</label>
+        <div>
           <textarea
             value={reason}
             onChange={(event) => setReason(event.target.value)}
             rows={3}
             maxLength={1000}
             placeholder="Se quiser, conte por que (opcional)."
-            className={fieldClass}
           />
           <button
             type="button"
-            className={buttonClass}
+            className="rev-btn"
             disabled={mutation.isPending}
             onClick={() => mutation.mutate()}
           >
             {mutation.isPending ? "Enviando..." : "Enviar pedido"}
           </button>
           {mutation.isError && (
-            <p className="text-sm font-medium text-red-600" aria-live="assertive">
+            <p className="rev-err" aria-live="assertive">
               Não consegui registrar agora. Tente novamente em instantes.
             </p>
           )}
@@ -569,11 +816,9 @@ function HumanReviewRequest({
 
 function HealthConsentGate({
   token,
-  highContrast,
   onConsented,
 }: {
   token: string;
-  highContrast: boolean;
   onConsented: () => void;
 }) {
   const [agreed, setAgreed] = useState(false);
@@ -583,93 +828,76 @@ function HealthConsentGate({
     onSuccess: onConsented,
   });
 
-  const cardClass = cn(
-    "mx-auto w-full max-w-2xl rounded-md border p-5 text-left sm:p-6",
-    highContrast ? "border-white bg-black" : "border-slate-200 bg-white",
-  );
-  const checkboxRowClass = cn(
-    "flex items-start gap-3 rounded-md border p-3",
-    highContrast ? "border-zinc-600" : "border-slate-200",
-  );
-  const buttonClass = cn(
-    "inline-flex w-full items-center justify-center rounded-md px-5 py-3 text-sm font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto",
-    highContrast ? "bg-white text-black hover:bg-zinc-200" : "bg-blue-700 text-white hover:bg-blue-800",
-  );
-
   return (
-    <div className="flex flex-1 flex-col justify-center">
-      <div className={cardClass}>
-        <div className="text-sm font-medium uppercase tracking-wide opacity-70">Antes de começar</div>
-        <h1 className="mt-2 text-2xl font-semibold">Uso dos seus dados nesta atividade</h1>
-        <div className="mt-4 space-y-3 text-sm leading-relaxed opacity-90">
-          <p>
-            Esta atividade é um <strong>exercício educativo de tomada de decisão</strong>. Ela
-            apresenta situações do dia a dia para você praticar escolhas.{" "}
-            <strong>Não é uma consulta, não é diagnóstico e não substitui a orientação de um
-            profissional de saúde.</strong>
-          </p>
-          <p>
-            Para realizar a atividade, a empresa responsável vai tratar respostas suas que podem
-            revelar informações relacionadas à sua saúde ou aos seus hábitos. Esses dados serão
-            usados <strong>somente</strong> para gerar o resultado educativo desta atividade e para
-            as finalidades descritas na política de privacidade da empresa responsável.
-          </p>
-          <ul className="list-disc space-y-1 pl-5">
-            <li>A pontuação segue critérios definidos antes da atividade. Não há IA julgando você.</li>
-            <li>
-              Seus dados não serão usados para decidir, sozinhos e de forma automatizada, sobre
-              tratamento, atendimento ou acesso a serviços.
-            </li>
-            <li>Você pode pedir que uma pessoa revise o resultado.</li>
-            <li>
-              Você pode acessar, corrigir ou excluir seus dados e revogar este consentimento a
-              qualquer momento, pelo canal indicado pela empresa responsável. A revogação não afeta
-              atividades já realizadas.
-            </li>
-          </ul>
-        </div>
+    <div className="cand-consent">
+      <div className="cc-label">Antes de começar</div>
+      <h1>Uso dos seus dados nesta atividade</h1>
+      <div className="cc-body">
+        <p>
+          Esta atividade é um <strong>exercício educativo de tomada de decisão</strong>. Ela
+          apresenta situações do dia a dia para você praticar escolhas.{" "}
+          <strong>Não é uma consulta, não é diagnóstico e não substitui a orientação de um
+          profissional de saúde.</strong>
+        </p>
+        <p>
+          Para realizar a atividade, a empresa responsável vai tratar respostas suas que podem
+          revelar informações relacionadas à sua saúde ou aos seus hábitos. Esses dados serão
+          usados <strong>somente</strong> para gerar o resultado educativo desta atividade e para
+          as finalidades descritas na política de privacidade da empresa responsável.
+        </p>
+        <ul>
+          <li>A pontuação segue critérios definidos antes da atividade. Não há IA julgando você.</li>
+          <li>
+            Seus dados não serão usados para decidir, sozinhos e de forma automatizada, sobre
+            tratamento, atendimento ou acesso a serviços.
+          </li>
+          <li>Você pode pedir que uma pessoa revise o resultado.</li>
+          <li>
+            Você pode acessar, corrigir ou excluir seus dados e revogar este consentimento a
+            qualquer momento, pelo canal indicado pela empresa responsável. A revogação não afeta
+            atividades já realizadas.
+          </li>
+        </ul>
+      </div>
 
-        <div className="mt-5 space-y-2">
-          <label className={checkboxRowClass}>
-            <input
-              type="checkbox"
-              className="mt-0.5 h-4 w-4"
-              checked={agreed}
-              onChange={(event) => setAgreed(event.target.checked)}
-            />
-            <span className="text-sm">
-              Li e concordo que a empresa responsável trate os dados sensíveis de saúde informados
-              por mim nesta atividade, para as finalidades educativas descritas acima.
-            </span>
-          </label>
-          <label className={checkboxRowClass}>
-            <input
-              type="checkbox"
-              className="mt-0.5 h-4 w-4"
-              checked={onBehalfOfMinor}
-              onChange={(event) => setOnBehalfOfMinor(event.target.checked)}
-            />
-            <span className="text-sm">
-              Estou concordando como responsável legal pela pessoa sob minha responsabilidade.
-            </span>
-          </label>
-        </div>
+      <div className="cc-checks">
+        <label className="cc-check">
+          <input
+            type="checkbox"
+            checked={agreed}
+            onChange={(event) => setAgreed(event.target.checked)}
+          />
+          <span>
+            Li e concordo que a empresa responsável trate os dados sensíveis de saúde informados
+            por mim nesta atividade, para as finalidades educativas descritas acima.
+          </span>
+        </label>
+        <label className="cc-check">
+          <input
+            type="checkbox"
+            checked={onBehalfOfMinor}
+            onChange={(event) => setOnBehalfOfMinor(event.target.checked)}
+          />
+          <span>
+            Estou concordando como responsável legal pela pessoa sob minha responsabilidade.
+          </span>
+        </label>
+      </div>
 
-        <div className="mt-5 flex flex-col items-start gap-2">
-          <button
-            type="button"
-            className={buttonClass}
-            disabled={!agreed || mutation.isPending}
-            onClick={() => mutation.mutate()}
-          >
-            {mutation.isPending ? "Registrando consentimento..." : "Concordar e continuar"}
-          </button>
-          {mutation.isError && (
-            <p className="text-sm font-medium text-red-600" aria-live="assertive">
-              Não consegui registrar o consentimento agora. Tente novamente em instantes.
-            </p>
-          )}
-        </div>
+      <div className="cc-actions">
+        <button
+          type="button"
+          className="cc-btn"
+          disabled={!agreed || mutation.isPending}
+          onClick={() => mutation.mutate()}
+        >
+          {mutation.isPending ? "Registrando consentimento..." : "Concordar e continuar"}
+        </button>
+        {mutation.isError && (
+          <p className="cc-err" aria-live="assertive">
+            Não consegui registrar o consentimento agora. Tente novamente em instantes.
+          </p>
+        )}
       </div>
     </div>
   );
