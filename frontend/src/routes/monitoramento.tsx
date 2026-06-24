@@ -6,9 +6,11 @@ import { Activity, CheckCircle2, Eye, RefreshCw, Send, XCircle } from "lucide-re
 import { AppShell } from "@/components/app-shell";
 import { Button } from "@/components/ui/button";
 import {
+  listCandidateLinks,
   listLiveAttempts,
   listResultDeliveries,
   listSimulations,
+  type CandidateLinkResponse,
   type SimulationSummaryResponse,
 } from "@/lib/api/praxis";
 import { cn } from "@/lib/utils";
@@ -45,6 +47,10 @@ function MonitoringPage() {
     queryKey: ["live-attempts"],
     queryFn: listLiveAttempts,
   });
+  const candidateLinksQuery = useQuery({
+    queryKey: ["candidate-links"],
+    queryFn: () => listCandidateLinks(),
+  });
 
   const simulations = useMemo(
     () => (simulationsQuery.data ?? []).filter((simulation) => simulation.status === "published"),
@@ -52,8 +58,9 @@ function MonitoringPage() {
   );
   const deliveries = deliveriesQuery.data ?? [];
   const liveAttempts = liveAttemptsQuery.data ?? [];
+  const candidateLinks = candidateLinksQuery.data ?? [];
   const failedDeliveries = deliveries.filter((delivery) => delivery.status === "dlq").length;
-  const totals = buildTotals(simulations);
+  const totals = buildTotals(candidateLinks);
   const filteredAttempts = liveAttempts.filter((attempt) => {
     if (attemptFilter === "ativos" && !attempt.active) return false;
     if (attemptFilter === "sem-sinal" && attempt.active) return false;
@@ -97,6 +104,7 @@ function MonitoringPage() {
                 void simulationsQuery.refetch();
                 void deliveriesQuery.refetch();
                 void liveAttemptsQuery.refetch();
+                void candidateLinksQuery.refetch();
               }}
             >
               <RefreshCw className="h-3.5 w-3.5" />
@@ -363,11 +371,12 @@ function ProductionSimulation({ simulation }: { simulation: SimulationSummaryRes
   );
 }
 
-function buildTotals(simulations: SimulationSummaryResponse[]) {
-  const created = simulations.reduce((sum, simulation) => sum + simulation.attemptsCreated, 0);
-  const completed = simulations.reduce((sum, simulation) => sum + simulation.attemptsCompleted, 0);
-  const invites = created;
-  const started = created;
+function buildTotals(candidateLinks: CandidateLinkResponse[]) {
+  // "Convites enviados" = links de candidato efetivamente gerados (fonte da verdade).
+  const invites = candidateLinks.length;
+  // Tentativas iniciadas = candidatos que sairam do estado "notStarted".
+  const started = candidateLinks.filter((link) => link.status !== "notStarted").length;
+  const completed = candidateLinks.filter((link) => link.status === "completed").length;
   const completion = Math.round((completed / Math.max(started, 1)) * 100);
   return {
     invites,
