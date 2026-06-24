@@ -326,7 +326,7 @@ export const Route = createFileRoute("/candidato")({
 
 const SUBMIT_ERROR_MESSAGES: Record<number, string> = {
   400: "Não consegui registrar agora. Toque na resposta de novo, por favor.",
-  409: "O tempo desta etapa terminou. Sua resposta foi registrada e seguimos para a próxima.",
+  409: "O tempo desta etapa terminou. Atualize a página para conferir a etapa atual.",
 };
 
 const LOAD_ERROR_MESSAGES: Record<number, string> = {
@@ -485,13 +485,13 @@ function FocusedCandidateExperience({ token }: { token: string }) {
       setSubmittingAnswer(true);
       setSubmitError(null);
 
-      try {
+      const sendAnswer = async (timeExpired: boolean) => {
         const response = await submitCandidateAnswer(token, {
           etapaId: node.id,
           etapaNumero: node.numero,
-          respostaId: optionId,
+          respostaId: timeExpired ? null : optionId,
           respondidaEm: new Date().toISOString(),
-          tempoEsgotado: timedOut,
+          tempoEsgotado: timeExpired,
         });
         setLiveAttempt({
           participacaoId: response.participacaoId,
@@ -506,7 +506,30 @@ function FocusedCandidateExperience({ token }: { token: string }) {
         });
         setSelectedOptionId(null);
         void attemptQuery.refetch();
+      };
+
+      try {
+        await sendAnswer(timedOut);
       } catch (error) {
+        // Se o tempo da etapa estourou (409) e ainda estávamos enviando uma
+        // resposta real, reenviamos como tempo esgotado para que o fluxo siga
+        // para a alternativa de timeout em vez de deixar o candidato travado.
+        if (!timedOut && error instanceof PraxisApiError && error.status === 409) {
+          try {
+            await sendAnswer(true);
+            return;
+          } catch (retryError) {
+            setSubmitError(
+              friendlyApiErrorMessage(
+                retryError,
+                SUBMIT_ERROR_MESSAGES,
+                "Tivemos um problema ao salvar. Tente novamente.",
+              ),
+            );
+            setSelectedOptionId(null);
+            return;
+          }
+        }
         setSubmitError(
           friendlyApiErrorMessage(
             error,
