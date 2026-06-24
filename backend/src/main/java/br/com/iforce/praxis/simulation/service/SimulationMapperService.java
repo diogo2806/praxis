@@ -15,8 +15,11 @@ import org.springframework.stereotype.Service;
 
 import java.util.Comparator;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 
 @Service
 public class SimulationMapperService {
@@ -38,21 +41,50 @@ public class SimulationMapperService {
 
     public void applyBlueprintUpdate(SimulationVersionEntity simulationVersionEntity, UpdateBlueprintRequest request) {
         simulationVersionEntity.setRootNodeId(request.rootNodeId().trim());
-        simulationVersionEntity.getCompetencies().clear();
 
-        request.competencies()
+        List<NormalizedCompetency> requestedCompetencies = request.competencies()
                 .stream()
                 .map(competency -> new NormalizedCompetency(
                         competency.name().trim(),
                         competency.weight(),
                         competency.normalizedTargetScore()
                 ))
-                .forEach(competency -> addCompetency(
+                .toList();
+
+        // Reconciliamos a coleção no lugar (atualizando/removendo/inserindo) em vez de
+        // limpar e recriar. Um clear() seguido de re-inserção agenda DELETEs e INSERTs na
+        // mesma transação, e o Hibernate executa os INSERTs antes dos DELETEs, violando a
+        // unique constraint uk_simulation_competency quando o nome de uma competência é mantido.
+        Map<String, SimulationCompetencyEntity> existingByName = new LinkedHashMap<>();
+        for (SimulationCompetencyEntity competencyEntity : simulationVersionEntity.getCompetencies()) {
+            existingByName.put(normalizeName(competencyEntity.getName()), competencyEntity);
+        }
+
+        Set<String> requestedNames = new LinkedHashSet<>();
+        for (NormalizedCompetency requested : requestedCompetencies) {
+            String key = normalizeName(requested.name());
+            requestedNames.add(key);
+            SimulationCompetencyEntity existing = existingByName.get(key);
+            if (existing != null) {
+                existing.setName(requested.name());
+                existing.setWeight(requested.weight());
+                existing.setTargetScore(requested.targetScore());
+            } else {
+                addCompetency(
                         simulationVersionEntity,
-                        competency.name(),
-                        competency.weight(),
-                        competency.targetScore()
-                ));
+                        requested.name(),
+                        requested.weight(),
+                        requested.targetScore()
+                );
+            }
+        }
+
+        simulationVersionEntity.getCompetencies()
+                .removeIf(competencyEntity -> !requestedNames.contains(normalizeName(competencyEntity.getName())));
+    }
+
+    private String normalizeName(String name) {
+        return name == null ? "" : name.trim().toLowerCase(Locale.ROOT);
     }
 
     public PublishedSimulation toPublishedSimulation(SimulationVersionEntity simulationVersionEntity) {
