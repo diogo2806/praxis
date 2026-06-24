@@ -341,7 +341,8 @@ public class SimulationAdminController {
     @ApiResponses({
             @ApiResponse(responseCode = "204", description = "Simulacao removida."),
             @ApiResponse(responseCode = "403", description = "Acesso negado.", content = @Content(examples = @ExampleObject(value = ERROR_EXAMPLE))),
-            @ApiResponse(responseCode = "404", description = "Simulacao nao encontrada.", content = @Content(examples = @ExampleObject(value = ERROR_EXAMPLE)))
+            @ApiResponse(responseCode = "404", description = "Simulacao nao encontrada.", content = @Content(examples = @ExampleObject(value = ERROR_EXAMPLE))),
+            @ApiResponse(responseCode = "409", description = "Simulacao possui tentativas de candidatos vinculadas.", content = @Content(examples = @ExampleObject(value = ERROR_EXAMPLE)))
     })
     public ResponseEntity<Void> deleteSimulation(@PathVariable String simulationId) {
         simulationAdminService.deleteSimulation(simulationId);
