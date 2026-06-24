@@ -2,7 +2,7 @@
 
 import { Link, useRouterState } from "@tanstack/react-router";
 import type { ReactNode } from "react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   BarChart3,
   Building2,
@@ -126,6 +126,10 @@ function SidebarContent({
   const settingsActive =
     pathname === "/competencias" || pathname === "/configuracoes" || pathname.startsWith("/configuracoes/");
   const [settingsOpen, setSettingsOpen] = useState(settingsActive);
+
+  useEffect(() => {
+    if (settingsActive) setSettingsOpen(true);
+  }, [settingsActive]);
 
   return (
     <>
