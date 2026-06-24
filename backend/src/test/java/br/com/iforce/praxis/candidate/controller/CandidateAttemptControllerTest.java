@@ -366,6 +366,31 @@ class CandidateAttemptControllerTest {
     }
 
     @Test
+    void timedOutAnswerAfterFrontendLimitRoutesToTimeoutAlternative() throws Exception {
+        String attemptId = createStartedAttempt("candidate-timeout-after-frontend-limit");
+        Instant startedAt = Instant.now().minusSeconds(60);
+        updateStartedAt(attemptId, startedAt);
+
+        mockMvc.perform(post("/candidate/attempts/" + attemptId + "/answers")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "nodeId": "turno-1",
+                                  "nodeNumber": 1,
+                                  "timedOut": true,
+                                  "answeredAt": "%s"
+                                }
+                                """.formatted(startedAt.plusSeconds(50))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("concluida"));
+
+        CandidateAttemptEntity candidateAttemptEntity = candidateAttemptRepository.findByTenantIdAndId("tenant-1", attemptId)
+                .orElseThrow();
+        assertThat(candidateAttemptEntity.getAnswers()).hasSize(1);
+        assertThat(candidateAttemptEntity.getAnswers().iterator().next().isTimedOut()).isTrue();
+    }
+
+    @Test
     void lateRealAnswerReconcilesPreviousAutomaticTimeoutForSameStep() throws Exception {
         String attemptId = createStartedAttempt("candidate-reconciles-timeout");
         String resultId = candidateAttemptRepository.findById(attemptId).orElseThrow().getResultId();

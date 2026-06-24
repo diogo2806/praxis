@@ -662,6 +662,15 @@ public class CandidateAttemptService {
         }
 
         Instant frontendDeadline = nodeStartedAt.plusSeconds(timeLimitSeconds);
+
+        // Uma resposta por tempo esgotado acontece, por defini├º├úo, quando o limite da etapa ├®
+        // atingido. Ela deve sempre seguir para a alternativa de timeout (timeoutNextNodeId) em
+        // vez de ser rejeitada por chegar no/ap├│s o limite -- caso contr├írio o candidato fica
+        // travado na etapa. Fixamos o hor├írio no limite da etapa quando ela j├í foi ultrapassada.
+        if (request.tempoEsgotado()) {
+            return answeredAt.isAfter(frontendDeadline) ? frontendDeadline : answeredAt;
+        }
+
         Instant serverArrivalDeadline = frontendDeadline.plusSeconds(praxisProperties.answerGracePeriodSeconds());
         if (clientAnsweredAt != null) {
             if (clientAnsweredAt.isAfter(frontendDeadline)) {
