@@ -37,6 +37,19 @@ public class GlobalExceptionHandler {
         return buildResponse(HttpStatus.BAD_REQUEST, "Dados inválidos.", request.getRequestURI(), fields);
     }
 
+    @ExceptionHandler(ApiException.class)
+    public ResponseEntity<ApiErrorResponse> handleApiException(
+            ApiException exception,
+            HttpServletRequest request
+    ) {
+        return buildResponse(
+                exception.getStatus(),
+                exception.getMessage(),
+                request.getRequestURI(),
+                exception.getFields()
+        );
+    }
+
     @ExceptionHandler(ResponseStatusException.class)
     public ResponseEntity<ApiErrorResponse> handleStatus(
             ResponseStatusException exception,

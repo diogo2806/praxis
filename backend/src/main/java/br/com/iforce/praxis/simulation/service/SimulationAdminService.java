@@ -11,6 +11,7 @@ import br.com.iforce.praxis.simulation.dto.CreateNodeRequest;
 import br.com.iforce.praxis.simulation.dto.CreateOptionRequest;
 import br.com.iforce.praxis.simulation.dto.CreateSimulationDraftRequest;
 import br.com.iforce.praxis.simulation.dto.CreateSimulationRequest;
+import br.com.iforce.praxis.simulation.dto.GupyPreflightCheckResponse;
 import br.com.iforce.praxis.simulation.dto.GupyPreflightResponse;
 import br.com.iforce.praxis.simulation.dto.PublishSimulationResponse;
 import br.com.iforce.praxis.simulation.dto.SimulationSummaryResponse;
@@ -22,6 +23,8 @@ import br.com.iforce.praxis.simulation.dto.UpdateOptionRequest;
 import br.com.iforce.praxis.gupy.model.AttemptStatus;
 import br.com.iforce.praxis.gupy.persistence.repository.CandidateAttemptRepository;
 import br.com.iforce.praxis.shared.model.MediaType;
+import br.com.iforce.praxis.shared.web.ApiException;
+import br.com.iforce.praxis.simulation.model.GupyPreflightCheckStatus;
 import br.com.iforce.praxis.simulation.model.SimulationVersionStatus;
 import br.com.iforce.praxis.simulation.persistence.entity.OptionCompetencyScoreEntity;
 import br.com.iforce.praxis.simulation.persistence.entity.SimulationCompetencyEntity;
@@ -526,7 +529,13 @@ public class SimulationAdminService {
 
         GupyPreflightResponse gupyPreflightResponse = gupyPreflightService.evaluate(simulationVersionEntity);
         if (!gupyPreflightResponse.ok()) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "Preflight Gupy bloqueou a publicação.");
+            Map<String, String> blockers = new LinkedHashMap<>();
+            for (GupyPreflightCheckResponse check : gupyPreflightResponse.checks()) {
+                if (GupyPreflightCheckStatus.BLOCKER.equals(check.status())) {
+                    blockers.put(check.code().getDescricao(), check.message());
+                }
+            }
+            throw new ApiException(HttpStatus.CONFLICT, "Preflight Gupy bloqueou a publicação.", blockers);
         }
 
         if (healthVerticalService.isHealthVertical(simulationVersionEntity.getSimulation().getTenantId())

@@ -46,8 +46,8 @@ public class GupyPreflightService {
     @Transactional(readOnly = true)
     public GupyPreflightResponse getPreflight(String simulationId, int versionNumber) {
         SimulationVersionEntity simulationVersionEntity = findVersion(simulationId, versionNumber);
-        if (simulationVersionEntity.getStatus() != SimulationVersionStatus.PUBLISHED) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "Somente versões publicadas podem passar no preflight Gupy.");
+        if (simulationVersionEntity.getStatus() == SimulationVersionStatus.ARCHIVED) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Versões arquivadas não podem passar no preflight Gupy.");
         }
 
         return evaluate(simulationVersionEntity);
