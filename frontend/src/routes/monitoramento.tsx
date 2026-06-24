@@ -205,12 +205,20 @@ function MonitoringPage() {
                       </td>
                       <td className="px-4 py-3 text-right">
                         <Button
-                          type="button"
+                          asChild
                           variant="outline"
                           size="sm"
                           className="h-8 min-h-8 bg-background text-xs"
                         >
-                          Acompanhar
+                          <Link
+                            to="/compliance"
+                            search={{
+                              simulationId: attempt.simulationId,
+                              versionNumber: attempt.versionNumber,
+                            }}
+                          >
+                            Acompanhar
+                          </Link>
                         </Button>
                       </td>
                     </tr>
