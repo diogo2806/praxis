@@ -3,6 +3,7 @@ package br.com.iforce.praxis.auth.filter;
 import br.com.iforce.praxis.auth.context.TenantContextHolder;
 import br.com.iforce.praxis.auth.service.CurrentTenantService;
 import br.com.iforce.praxis.auth.service.JwtService;
+import br.com.iforce.praxis.gupy.persistence.repository.CandidateAttemptRepository;
 import io.jsonwebtoken.JwtException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -23,17 +24,20 @@ public class TenantResolutionFilter extends OncePerRequestFilter {
 
     private final CurrentTenantService currentTenantService;
     private final JwtService jwtService;
+    private final CandidateAttemptRepository candidateAttemptRepository;
     private final boolean securityEnabled;
     private final String defaultTenantId;
 
     public TenantResolutionFilter(
             CurrentTenantService currentTenantService,
             JwtService jwtService,
+            CandidateAttemptRepository candidateAttemptRepository,
             @Value("${praxis.security.enabled:true}") boolean securityEnabled,
             @Value("${praxis.default-tenant-id:tenant-1}") String defaultTenantId
     ) {
         this.currentTenantService = currentTenantService;
         this.jwtService = jwtService;
+        this.candidateAttemptRepository = candidateAttemptRepository;
         this.securityEnabled = securityEnabled;
         this.defaultTenantId = defaultTenantId;
     }
@@ -79,7 +83,9 @@ public class TenantResolutionFilter extends OncePerRequestFilter {
             return jwtService.parseCandidateAttemptToken(token).tenantId();
         } catch (IllegalArgumentException | JwtException exception) {
             if (isLegacyAttemptId(token)) {
-                return defaultTenantId;
+                return candidateAttemptRepository.findById(token)
+                        .map(candidateAttempt -> candidateAttempt.getTenantId())
+                        .orElse(defaultTenantId);
             }
             throw new ResponseStatusException(
                     HttpStatus.UNAUTHORIZED,

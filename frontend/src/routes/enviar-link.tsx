@@ -70,8 +70,7 @@ function EnviarLinkPage() {
   const linkMutation = useMutation({
     mutationFn: createCandidateLink,
     onSuccess: (data) => {
-      const frontendUrl = `${window.location.origin}/candidato/${data.attemptId}`;
-      setGeneratedLink(frontendUrl);
+      setGeneratedLink(data.candidateUrl);
       setSimulationName(data.simulationName);
       setStep("share");
       void queryClient.invalidateQueries({ queryKey: ["candidate-links"] });
@@ -370,8 +369,7 @@ function SelectSimulationStep({
 }
 
 function getParticipantLink(link: CandidateLinkResponse) {
-  if (typeof window === "undefined") return link.candidateUrl;
-  return `${window.location.origin}/candidato/${link.attemptId}`;
+  return link.candidateUrl;
 }
 
 function candidateStatusLabel(status: CandidateLinkResponse["status"]) {
