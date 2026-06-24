@@ -12,7 +12,7 @@ import {
   Tooltip as RechartsTooltip,
 } from "recharts";
 import { AppShell } from "@/components/app-shell";
-import { EmptyState, ScreenStateStrip, StateBanner, StatusBadge } from "@/components/praxis-ui";
+import { ScreenStateStrip, StateBanner, StatusBadge } from "@/components/praxis-ui";
 import {
   getEvidenceReport,
   getSimulationVersion,
@@ -155,15 +155,9 @@ function TalentMatchPage() {
       </div>
 
       {!hasContext ? (
-        <EmptyState
-          title="Selecione uma avaliação para comparar resultados"
-          description="O painel usa participações concluídas e a referência configurada no plano da avaliação."
-          actions={
-            <SimulationLinks
-              loading={simulationsQuery.isLoading}
-              simulations={simulationsQuery.data ?? []}
-            />
-          }
+        <SimulationSelectionTable
+          loading={simulationsQuery.isLoading}
+          simulations={simulationsQuery.data ?? []}
         />
       ) : (
         <div className="space-y-5">
@@ -618,7 +612,7 @@ function CandidateLegend({ candidates }: { candidates: CandidateRadarDto[] }) {
   );
 }
 
-function SimulationLinks({
+function SimulationSelectionTable({
   simulations,
   loading,
 }: {
@@ -627,58 +621,138 @@ function SimulationLinks({
 }) {
   if (loading) {
     return (
-      <div className="rounded-md border border-border bg-card px-4 py-3 text-sm">Carregando...</div>
+      <section className="rounded-md border border-border bg-card p-5">
+        <div className="text-sm text-muted-foreground">Carregando avaliações...</div>
+      </section>
     );
   }
 
   if (simulations.length === 0) {
     return (
-      <div className="inline-flex items-center gap-2 rounded-md border border-border bg-card px-4 py-3 text-sm text-muted-foreground">
-        <CircleAlert className="h-4 w-4" />
-        Nenhum teste cadastrado.
-      </div>
+      <section className="rounded-md border border-border bg-card p-8 text-center">
+        <CircleAlert className="mx-auto h-6 w-6 text-muted-foreground" />
+        <h2 className="mt-3 text-lg font-semibold">Nenhuma avaliação cadastrada</h2>
+        <p className="mx-auto mt-1 max-w-md text-sm text-muted-foreground">
+          Crie uma avaliação e conclua participações para comparar resultados.
+        </p>
+        <Link
+          to="/nova/blueprint"
+          className="mt-5 inline-flex rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
+        >
+          Criar avaliação
+        </Link>
+      </section>
     );
   }
 
+  const sorted = [...simulations].sort((a, b) => {
+    const rank = (simulation: SimulationSummaryResponse) => {
+      const hasReference = simulation.competencies.length > 0;
+      const comparable =
+        simulation.status === "published" && simulation.attemptsCompleted > 0 && hasReference;
+
+      if (comparable) return 0;
+      if (simulation.status === "published") return 1;
+      return 2;
+    };
+
+    const rankDelta = rank(a) - rank(b);
+    if (rankDelta !== 0) return rankDelta;
+    return Number(new Date(b.updatedAt)) - Number(new Date(a.updatedAt));
+  });
+
   return (
-    <>
-      {simulations.slice(0, 4).map((simulation) => {
-        const canSelect = simulation.status === "published" && simulation.attemptsCreated > 0;
-        return canSelect ? (
-          <Link
-            key={simulation.id}
-            to="/talent-match"
-            search={{
-              simulationId: simulation.id,
-              versionNumber: simulation.versionNumber,
-            }}
-            className="rounded-md border border-border bg-card px-4 py-3 text-sm hover:bg-accent"
-          >
-            <span className="block font-medium">{simulation.name}</span>
-            <span className="mt-1 block">
-              <StatusBadge
-                status={simulation.status}
-                maturity={maturityForStatus(simulation.status)}
-              />
-            </span>
-          </Link>
-        ) : (
-          <button
-            type="button"
-            key={simulation.id}
-            disabled
-            title={
-              simulation.status !== "published"
-                ? "A versão precisa estar publicada para comparar resultados."
-                : "Esta versão ainda não possui participações concluídas."
-            }
-            className="rounded-md border border-border bg-card px-4 py-3 text-sm opacity-70"
-          >
-            <span className="block font-medium text-left">{simulation.name}</span>
-            <span className="mt-1 block text-xs text-muted-foreground">Sem dados suficientes</span>
-          </button>
-        );
-      })}
-    </>
+    <section className="rounded-md border border-border bg-card">
+      <div className="border-b border-border p-5">
+        <h2 className="text-xl font-semibold">Selecione uma avaliação para comparar resultados</h2>
+        <p className="mt-1 text-sm text-muted-foreground">
+          O painel usa participações concluídas e a referência configurada no plano da avaliação.
+        </p>
+      </div>
+      <div className="overflow-x-auto">
+        <table className="w-full min-w-[860px] text-left text-sm">
+          <thead className="border-b border-border bg-muted/45 text-xs uppercase text-muted-foreground">
+            <tr>
+              <th className="px-4 py-3 font-medium">Avaliação</th>
+              <th className="px-4 py-3 font-medium">Status</th>
+              <th className="px-4 py-3 font-medium">Versão</th>
+              <th className="px-4 py-3 text-right font-medium">Participações concluídas</th>
+              <th className="px-4 py-3 font-medium">Referência</th>
+              <th className="px-4 py-3 text-right font-medium">Ação</th>
+            </tr>
+          </thead>
+          <tbody>
+            {sorted.map((simulation) => {
+              const hasReference = simulation.competencies.length > 0;
+              const canCompare =
+                simulation.status === "published" &&
+                simulation.attemptsCompleted > 0 &&
+                hasReference;
+
+              return (
+                <tr
+                  key={simulation.id}
+                  className="border-b border-border last:border-0 hover:bg-accent/35"
+                >
+                  <td className="px-4 py-3">
+                    <div className="font-medium text-foreground">{simulation.name}</div>
+                    {simulation.description && (
+                      <div className="mt-1 max-w-md truncate text-xs text-muted-foreground">
+                        {simulation.description}
+                      </div>
+                    )}
+                  </td>
+                  <td className="px-4 py-3">
+                    <StatusBadge
+                      status={simulation.status}
+                      maturity={maturityForStatus(simulation.status)}
+                      variant="status"
+                    />
+                  </td>
+                  <td className="px-4 py-3 font-mono text-xs text-muted-foreground">
+                    v{simulation.versionNumber}
+                  </td>
+                  <td className="px-4 py-3 text-right font-medium tabular-nums">
+                    {simulation.attemptsCompleted.toLocaleString("pt-BR")}
+                  </td>
+                  <td className="px-4 py-3">
+                    {hasReference ? (
+                      <span className="text-xs text-muted-foreground">
+                        {simulation.competencies.length} competência
+                        {simulation.competencies.length === 1 ? "" : "s"}
+                      </span>
+                    ) : (
+                      <span className="text-xs text-warning">Configure a referência</span>
+                    )}
+                  </td>
+                  <td className="px-4 py-3 text-right">
+                    {canCompare ? (
+                      <Link
+                        to="/talent-match"
+                        search={{
+                          simulationId: simulation.id,
+                          versionNumber: simulation.versionNumber,
+                        }}
+                        className="inline-flex rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary/90"
+                      >
+                        Comparar participações
+                      </Link>
+                    ) : (
+                      <span className="text-xs text-muted-foreground">
+                        {simulation.status !== "published"
+                          ? "Publique a avaliação"
+                          : !hasReference
+                            ? "Configure a referência"
+                            : "Sem dados suficientes"}
+                      </span>
+                    )}
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    </section>
   );
 }

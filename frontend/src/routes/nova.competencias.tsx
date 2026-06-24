@@ -224,50 +224,64 @@ function CompetenciasManagement() {
                 <thead className="border-b border-border bg-muted/45 text-xs uppercase text-muted-foreground">
                   <tr>
                     <th className="px-4 py-3 text-left font-medium">Competência</th>
+                    <th className="px-4 py-3 text-left font-medium">Status</th>
                     <th className="px-4 py-3 text-right font-medium">Ações</th>
                   </tr>
                 </thead>
                 <tbody>
                   {visibleCompetencias.length === 0 ? (
                     <tr>
-                      <td colSpan={2} className="px-4 py-5 text-center text-muted-foreground">
+                      <td colSpan={3} className="px-4 py-5 text-center text-muted-foreground">
                         Nenhuma competência encontrada com o filtro atual.
                       </td>
                     </tr>
                   ) : (
-                    visibleCompetencias.map((competencia) => (
-                      <tr
-                        key={competencia.value}
-                        className="border-b border-border last:border-0 transition"
-                      >
-                        <td className="px-4 py-3">
-                          <div className="font-medium text-foreground">{competencia.label}</div>
-                          <div className="mt-0.5 text-xs text-muted-foreground">
-                            {competencia.value}
-                          </div>
-                        </td>
-                        <td className="px-4 py-3 text-right">
-                          <div className="flex justify-end gap-2">
-                            <button
-                              onClick={() => handleOpenEditDialog(competencia)}
-                              disabled={saveCatalogMutation.isPending}
-                              className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-border bg-background text-foreground hover:bg-accent disabled:cursor-not-allowed disabled:opacity-50"
-                              title="Editar"
-                            >
-                              <Edit2 className="h-3.5 w-3.5" />
-                            </button>
-                            <button
-                              onClick={() => requestDelete(competencia)}
-                              disabled={saveCatalogMutation.isPending}
-                              className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-border bg-background text-muted-foreground hover:bg-danger/10 hover:text-danger disabled:cursor-not-allowed disabled:opacity-50"
-                              title="Remover"
-                            >
-                              <Trash2 className="h-3.5 w-3.5" />
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))
+                    visibleCompetencias.map((competencia) => {
+                      const showIdentifier =
+                        competencia.value.trim().toLowerCase() !==
+                        competencia.label.trim().toLowerCase();
+
+                      return (
+                        <tr
+                          key={competencia.value}
+                          className="border-b border-border last:border-0 transition"
+                        >
+                          <td className="px-4 py-3">
+                            <div className="font-medium text-foreground">{competencia.label}</div>
+                            {showIdentifier && (
+                              <div className="mt-0.5 text-xs text-muted-foreground">
+                                ID: {competencia.value}
+                              </div>
+                            )}
+                          </td>
+                          <td className="px-4 py-3">
+                            <span className="inline-flex rounded-md border border-success/30 bg-success/10 px-2 py-1 text-xs font-medium text-success">
+                              Ativa
+                            </span>
+                          </td>
+                          <td className="px-4 py-3 text-right">
+                            <div className="flex justify-end gap-2">
+                              <button
+                                onClick={() => handleOpenEditDialog(competencia)}
+                                disabled={saveCatalogMutation.isPending}
+                                className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-border bg-background text-foreground hover:bg-accent disabled:cursor-not-allowed disabled:opacity-50"
+                                title="Editar"
+                              >
+                                <Edit2 className="h-3.5 w-3.5" />
+                              </button>
+                              <button
+                                onClick={() => requestDelete(competencia)}
+                                disabled={saveCatalogMutation.isPending}
+                                className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-border bg-background text-muted-foreground hover:bg-danger/10 hover:text-danger disabled:cursor-not-allowed disabled:opacity-50"
+                                title="Remover"
+                              >
+                                <Trash2 className="h-3.5 w-3.5" />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })
                   )}
                 </tbody>
               </table>

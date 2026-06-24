@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { CheckCircle2, Copy, Link2, Mail, MessageCircle, Send } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
@@ -20,7 +20,9 @@ import {
 } from "@/components/ui/table";
 import {
   createCandidateLink,
+  listCandidateLinks,
   listSimulations,
+  type CandidateLinkResponse,
   type SimulationSummaryResponse,
 } from "@/lib/api/praxis";
 import { maturityForStatus } from "@/lib/simulation-meta";
@@ -43,6 +45,7 @@ export const Route = createFileRoute("/enviar-link")({
 type Step = "select" | "form" | "share";
 
 function EnviarLinkPage() {
+  const queryClient = useQueryClient();
   const [step, setStep] = useState<Step>("select");
   const [selectedSimulation, setSelectedSimulation] = useState<SimulationSummaryResponse | null>(
     null,
@@ -58,6 +61,11 @@ function EnviarLinkPage() {
     queryFn: listSimulations,
     retry: false,
   });
+  const candidateLinksQuery = useQuery({
+    queryKey: ["candidate-links", { blind: false }],
+    queryFn: () => listCandidateLinks(false),
+    retry: false,
+  });
 
   const linkMutation = useMutation({
     mutationFn: createCandidateLink,
@@ -66,6 +74,7 @@ function EnviarLinkPage() {
       setGeneratedLink(frontendUrl);
       setSimulationName(data.simulationName);
       setStep("share");
+      void queryClient.invalidateQueries({ queryKey: ["candidate-links"] });
     },
   });
 
@@ -195,6 +204,15 @@ function EnviarLinkPage() {
           onReset={handleReset}
         />
       )}
+
+      <CandidateLinksTable
+        links={candidateLinksQuery.data ?? []}
+        loading={candidateLinksQuery.isLoading}
+        error={candidateLinksQuery.isError}
+        errorMessage={
+          candidateLinksQuery.error instanceof Error ? candidateLinksQuery.error.message : undefined
+        }
+      />
     </AppShell>
   );
 }
@@ -348,6 +366,166 @@ function SelectSimulationStep({
         </Table>
       </section>
     </div>
+  );
+}
+
+function getParticipantLink(link: CandidateLinkResponse) {
+  if (typeof window === "undefined") return link.candidateUrl;
+  return `${window.location.origin}/candidato/${link.attemptId}`;
+}
+
+function candidateStatusLabel(status: CandidateLinkResponse["status"]) {
+  const labels: Record<CandidateLinkResponse["status"], string> = {
+    created: "Criado",
+    started: "Em andamento",
+    completed: "Concluído",
+    expired: "Expirado",
+  };
+
+  return labels[status] ?? status;
+}
+
+function CandidateLinksTable({
+  links,
+  loading,
+  error,
+  errorMessage,
+}: {
+  links: CandidateLinkResponse[];
+  loading: boolean;
+  error: boolean;
+  errorMessage?: string;
+}) {
+  const [copiedAttemptId, setCopiedAttemptId] = useState<string | null>(null);
+
+  async function copyLink(link: CandidateLinkResponse) {
+    await navigator.clipboard.writeText(getParticipantLink(link));
+    setCopiedAttemptId(link.attemptId);
+    window.setTimeout(() => setCopiedAttemptId(null), 2000);
+  }
+
+  async function shareLink(link: CandidateLinkResponse) {
+    const url = getParticipantLink(link);
+    const text = `${link.candidateName}, você foi convidado(a) para participar da avaliação "${link.simulationName}".`;
+
+    if (navigator.share) {
+      await navigator.share({
+        title: `Avaliação: ${link.simulationName}`,
+        text,
+        url,
+      });
+      return;
+    }
+
+    await navigator.clipboard.writeText(url);
+    setCopiedAttemptId(link.attemptId);
+    window.setTimeout(() => setCopiedAttemptId(null), 2000);
+  }
+
+  return (
+    <section className="mt-8 rounded-md border border-border bg-card">
+      <div className="border-b border-border p-5">
+        <h2 className="text-xl font-semibold">Links de participação</h2>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Consulte os participantes, avaliações, links gerados e compartilhe o acesso novamente
+          quando necessário.
+        </p>
+      </div>
+
+      {loading ? (
+        <div className="p-5">
+          <SkeletonRows rows={4} />
+        </div>
+      ) : error ? (
+        <div className="p-5">
+          <StateBanner tone="danger" title="Não foi possível carregar os links">
+            {errorMessage ?? "Verifique se o sistema está disponível e tente novamente."}
+          </StateBanner>
+        </div>
+      ) : links.length === 0 ? (
+        <div className="p-5 text-sm text-muted-foreground">
+          Nenhum link de participação foi gerado ainda.
+        </div>
+      ) : (
+        <div className="overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Participante</TableHead>
+                <TableHead>Avaliação / fluxo</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Link</TableHead>
+                <TableHead className="text-right">Ações</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {links.map((link) => {
+                const participantLink = getParticipantLink(link);
+                const copied = copiedAttemptId === link.attemptId;
+
+                return (
+                  <TableRow key={link.attemptId}>
+                    <TableCell className="min-w-[220px]">
+                      <div className="font-medium text-foreground">{link.candidateName}</div>
+                      {link.candidateEmail && (
+                        <div className="mt-0.5 text-xs text-muted-foreground">
+                          {link.candidateEmail}
+                        </div>
+                      )}
+                    </TableCell>
+                    <TableCell className="min-w-[220px]">
+                      <div className="font-medium text-foreground">{link.simulationName}</div>
+                      <div className="mt-0.5 text-xs text-muted-foreground">
+                        ID: {link.simulationId}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <span className="rounded-md border border-border bg-background px-2 py-1 text-xs text-muted-foreground">
+                        {candidateStatusLabel(link.status)}
+                      </span>
+                    </TableCell>
+                    <TableCell className="min-w-[280px] max-w-[420px]">
+                      <code className="block truncate rounded-md border border-border bg-background px-2 py-1.5 text-xs text-muted-foreground">
+                        {participantLink}
+                      </code>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex justify-end gap-2">
+                        <button
+                          type="button"
+                          onClick={() => void copyLink(link)}
+                          className={cn(
+                            "inline-flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-xs font-medium hover:bg-accent",
+                            copied
+                              ? "border-success bg-success/10 text-success"
+                              : "border-border bg-card",
+                          )}
+                        >
+                          {copied ? (
+                            <CheckCircle2 className="h-3.5 w-3.5" />
+                          ) : (
+                            <Copy className="h-3.5 w-3.5" />
+                          )}
+                          {copied ? "Copiado" : "Copiar"}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => void shareLink(link)}
+                          className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary/90"
+                        >
+                          <Send className="h-3.5 w-3.5" />
+                          Compartilhar
+                        </button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
+        </div>
+      )}
+    </section>
   );
 }
 
