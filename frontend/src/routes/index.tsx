@@ -450,12 +450,13 @@ const landingStyles = `
   .tag-ok{background:oklch(0.6 0.13 150 / 0.14);color:var(--success)}
   .tag-rev{background:oklch(0.76 0.13 80 / 0.18);color:var(--gold-deep)}
   .sc-report .pts{display:flex;flex-direction:column;gap:0.5rem}
-  .ptrow{display:grid;grid-template-columns:8.5rem 1fr 1.8rem;align-items:center;gap:0.6rem}
+  .ptrow{display:grid;grid-template-columns:8.5rem 1fr auto;align-items:center;gap:0.6rem}
   .ptrow .pn{font-size:0.8rem;color:var(--muted)}
   .ptrow .pt-track{height:0.42rem;border-radius:var(--r-pill);background:oklch(0.5 0.06 240 / 0.1);overflow:hidden}
   .ptrow .pt-fill{display:block;height:100%;border-radius:var(--r-pill);background:linear-gradient(90deg,var(--primary),oklch(0.62 0.12 215));width:0;transition:width .55s cubic-bezier(.2,.7,.2,1)}
-  .ptrow .pv{font-family:var(--font-mono);font-size:0.78rem;font-weight:600;color:var(--primary);text-align:right}
+  .ptrow .pv{font-family:var(--font-mono);font-size:0.78rem;font-weight:600;color:var(--primary);text-align:right;white-space:nowrap}
   .ptrow .pv.zero{color:var(--faint)}
+  .ptrow .pv .acc{font-size:0.68rem;font-weight:500;color:var(--faint);margin-left:0.3rem}
   .sc-report .read{margin-top:0.85rem;font-size:0.84rem;color:var(--muted);line-height:1.5}
   .sc-report .read b{color:var(--ink);font-weight:600}
   .sc-report .invisible-note{margin-top:0.75rem;font-size:0.74rem;color:var(--faint);display:flex;gap:0.45rem;align-items:flex-start}
@@ -1162,6 +1163,10 @@ function LandingPage() {
       },
     };
 
+    const acc: Record<string, number> = { "Comunicação": 0, "Resolução de Conflitos": 0, "Aderência à Política": 0 };
+    const best: Record<string, number> = {};
+    reads.B.pts.forEach(([name, value]) => { best[name] = value; });
+
     document.querySelectorAll<HTMLButtonElement>(".opt").forEach((button) => {
       const onPick = () => {
         document.querySelectorAll(".opt").forEach((option) => option.classList.remove("picked"));
@@ -1170,21 +1175,26 @@ function LandingPage() {
         const data = reads[key];
         if (!data || !note || !report || !rTag || !rPts || !rRead) return;
 
+        data.pts.forEach(([name, value]) => { acc[name] += value; });
+
         note.style.display = "none";
         rTag.textContent = data.tag;
         rTag.className = "tag " + data.cls;
         rPts.innerHTML = data.pts
           .map(
-            ([name, value]) =>
-              '<div class="ptrow"><span class="pn">' +
+            ([name, value]) => {
+              const pct = best[name] > 0 ? Math.round((value / best[name]) * 100) : 0;
+              return '<div class="ptrow"><span class="pn">' +
               name +
               '</span><span class="pt-track"><span class="pt-fill" data-w="' +
-              (value / 3) * 100 +
+              pct +
               '"></span></span><span class="pv' +
               (value === 0 ? " zero" : "") +
               '">+' +
               value +
-              "</span></div>",
+              '<span class="acc">acum ' + acc[name] + '</span>' +
+              "</span></div>";
+            },
           )
           .join("");
         rRead.innerHTML = data.read;
