@@ -70,7 +70,7 @@ function EnviarLinkPage() {
   const linkMutation = useMutation({
     mutationFn: createCandidateLink,
     onSuccess: (data) => {
-      setGeneratedLink(data.candidateUrl);
+      setGeneratedLink(toParticipantPageUrl(data.candidateUrl));
       setSimulationName(data.simulationName);
       setStep("share");
       void queryClient.invalidateQueries({ queryKey: ["candidate-links"] });
@@ -368,8 +368,29 @@ function SelectSimulationStep({
   );
 }
 
+// The candidate page (`/candidato/{token}`) is always served by this frontend
+// app on the same origin the RH user is currently on. The backend builds
+// `candidateUrl` from `PRAXIS_CANDIDATE_PAGE_BASE_URL`, which may be
+// misconfigured to the API domain (e.g. `api-praxis.iforce.com.br`). Rebuild the
+// link against the current origin so the displayed/copied/shared link always
+// points to the candidate page that actually exists.
+function toParticipantPageUrl(candidateUrl: string) {
+  if (typeof window === "undefined") {
+    return candidateUrl;
+  }
+  try {
+    const token = new URL(candidateUrl).pathname.split("/candidato/")[1];
+    if (token) {
+      return `${window.location.origin}/candidato/${token}`;
+    }
+  } catch {
+    // Fall back to the backend-provided URL if it cannot be parsed.
+  }
+  return candidateUrl;
+}
+
 function getParticipantLink(link: CandidateLinkResponse) {
-  return link.candidateUrl;
+  return toParticipantPageUrl(link.candidateUrl);
 }
 
 function candidateStatusLabel(status: CandidateLinkResponse["status"]) {
