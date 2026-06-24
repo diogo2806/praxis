@@ -13,6 +13,7 @@ public record SimulationSummaryResponse(
         String resultUse,
         int versionNumber,
         SimulationVersionStatus status,
+        Integer livePublishedVersionNumber,
         Instant updatedAt,
         List<String> competencies,
         long attemptsCreated,
