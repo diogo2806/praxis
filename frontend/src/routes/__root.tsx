@@ -85,11 +85,11 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Práxis - Avaliações situacionais estruturadas e rastreáveis" },
+      { title: "Práxis — Avaliações por cenários estruturadas e rastreáveis" },
       {
         name: "description",
         content:
-          "Práxis transforma situações reais em avaliações estruturadas, com cenários interativos, critérios configuráveis, pontuação por regras e registros rastreáveis.",
+          "Crie avaliações por cenários, configure critérios e pesos, compartilhe por link e acompanhe respostas, indicadores e registros do percurso.",
       },
       { property: "og:title", content: "Práxis - Avaliações situacionais" },
       {

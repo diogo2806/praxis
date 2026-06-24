@@ -191,7 +191,7 @@ function Dashboard() {
             <Stat
               label="No ar"
               value={totals.noAr}
-              hint="Em vagas ativas"
+              hint="Em aplicações ativas"
               onClick={() => setFilter("published")}
             />
             <Stat
@@ -406,13 +406,13 @@ function Dashboard() {
                                 <Link
                                   to="/talent-match"
                                   search={simulationSearch(simulation)}
-                                  aria-label={`Comparar candidatos de ${simulation.name}`}
+                                  aria-label={`Comparar participações de ${simulation.name}`}
                                   className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-border bg-background text-primary hover:bg-primary/10"
                                 >
                                   <Target className="h-3.5 w-3.5" />
                                 </Link>
                               </TooltipTrigger>
-                              <TooltipContent>Talent Match</TooltipContent>
+                              <TooltipContent>Comparar participações</TooltipContent>
                             </Tooltip>
                           </div>
                         </td>

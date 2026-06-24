@@ -427,10 +427,10 @@ export default function FlowCanvas({
                       <span className="vx-end-note-final">final ponderada <b>{nota == null ? "—" : nota}%</b></span>
                     </div>
                     <div className="vx-end-report">
-                      <div className="vx-end-report-label">Relatório ao recrutador {pending && <em>*</em>}</div>
+                      <div className="vx-end-report-label">Relatório para a equipe responsável {pending && <em>*</em>}</div>
                       <textarea className={pending ? "vx-end-report-warn" : ""} value={report} disabled={!canEdit}
                         onChange={(e) => onUpdateNode(n.id, { reportText: e.target.value })}
-                        placeholder="Resumo enviado ao recrutador ao fim deste caminho…" />
+                        placeholder="Resumo apresentado à equipe responsável ao fim deste caminho…" />
                     </div>
                   </div>
                 );
@@ -511,7 +511,7 @@ export default function FlowCanvas({
               <div className="vx-insp-tag">Card de encerramento</div>
               <div className="vx-insp-note">Nota determinística deste caminho<b>{pathScore(sel.id) ?? "—"}<small>/100</small></b></div>
               <label className={`vx-field ${!((sel as { reportText?: string }).reportText ?? "").trim() ? "vx-field-warn" : ""}`} style={{ marginTop: 12 }}>
-                <span>Texto do relatório (vai para o recrutador) *</span>
+                <span>Texto do relatório para a equipe responsável *</span>
                 <textarea rows={8} disabled={!canEdit} value={(sel as { reportText?: string }).reportText ?? ""} onChange={(e) => onUpdateNode(sel.id, { reportText: e.target.value })} />
               </label>
             </div>

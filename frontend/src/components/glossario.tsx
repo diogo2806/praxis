@@ -39,7 +39,7 @@ export const glossario = {
   "julgamento-situacional":
     "Capacidade de tomar boas decisões diante de situações do dia a dia do trabalho.",
   "evidencia-comportamental":
-    "Indicadores derivados das escolhas realizadas pelo candidato diante de cenários simulados. Esses indicadores devem ser analisados em conjunto com outras etapas do processo seletivo.",
+    "Indicadores derivados das escolhas realizadas pela pessoa participante diante dos cenários apresentados. Devem ser analisados em conjunto com outras informações relevantes para o contexto da avaliação.",
   construto: "O conceito que se quer medir, por exemplo liderança ou atenção a detalhes.",
   "pontuacao-deterministica":
     "A nota sai sempre das mesmas regras e cálculos: respostas iguais geram sempre a mesma nota.",
@@ -59,7 +59,7 @@ export const glossario = {
     "Capacidade de demonstrar quais regras, critérios, pesos, respostas e versões participaram do cálculo apresentado.",
   override: "Ajuste manual ou exceção — quando alguém altera um resultado fora das regras normais.",
   explicabilidade:
-    "Transparência do resultado: capacidade de explicar de forma clara por que o candidato recebeu aquela nota.",
+    "Capacidade de demonstrar quais critérios, pesos, respostas e regras participaram da formação da pontuação apresentada.",
 } as const;
 
 export type TermoId = keyof typeof glossario;

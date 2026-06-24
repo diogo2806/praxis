@@ -7,7 +7,7 @@ export const ptBr = {
     candidateView: "Visão da pessoa participante",
     governance: "Governança & Auditoria",
     lgpd: "LGPD & Transparência do resultado",
-    defensibility: "Confiabilidade e segurança técnica",
+    defensibility: "Como o resultado é calculado e registrado",
     startHere: "Comece por aqui",
     whatIsPraxis: "O que é o Práxis e como funciona",
     operation: "Operação",
@@ -17,7 +17,7 @@ export const ptBr = {
     search: "Buscar",
     rulesBasedScoring: "Baseado em regras fixas",
     noSubjectiveAnswers:
-      "Sem respostas subjetivas. A nota sai de critérios de pontuação, peso e cálculo.",
+      "A pontuação é calculada a partir de critérios, pesos e regras configurados previamente.",
     notFound: "Página não encontrada",
     pageNotFoundDesc: "A página que você procura não existe ou foi movida.",
     backToPanel: "Voltar ao painel",

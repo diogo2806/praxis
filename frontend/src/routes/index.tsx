@@ -4,11 +4,11 @@ import { createFileRoute } from "@tanstack/react-router";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Práxis - Avaliação por cenários para seleção, treinamento e operações" },
+      { title: "Práxis — Avaliações por cenários estruturadas e rastreáveis" },
       {
         name: "description",
         content:
-          "Coloque candidatos ou equipes diante de situações reais, registre cada escolha e compare todos pelo mesmo critério. Para seleção, treinamento, atendimento e conformidade.",
+          "Crie avaliações por cenários, configure critérios e pesos, compartilhe por link e acompanhe respostas, indicadores e registros do percurso.",
       },
     ],
     links: [
@@ -330,11 +330,6 @@ const landingStyles = `
   .roi{display:flex;gap:0.8rem;align-items:flex-start;max-width:60ch;margin:1.4rem auto 0;text-align:left;font-size:1.02rem;color:var(--muted)}
   .roi svg{flex:none;width:1.3rem;height:1.3rem;margin-top:0.25rem;stroke:var(--gold-deep)}
   .roi b{color:var(--ink);font-weight:600}
-  .toggle{display:inline-flex;align-items:center;gap:0.2rem;margin-top:2rem;background:var(--surface);border:1px solid var(--line);border-radius:var(--r-pill);padding:0.28rem}
-  .toggle button{font:inherit;font-size:0.86rem;font-weight:600;border:none;background:none;cursor:pointer;color:var(--muted);padding:0.5rem 1.05rem;border-radius:var(--r-pill);transition:.2s}
-  .toggle button.on{background:var(--ink);color:white}
-  .toggle .save{font-family:var(--font-mono);font-size:0.66rem;color:var(--gold-deep);font-weight:500;padding-right:0.6rem;letter-spacing:0.04em}
-
   .plans{display:grid;grid-template-columns:repeat(3,1fr);gap:1.2rem;margin-top:2.4rem;align-items:stretch}
   @media (max-width:920px){ .plans{grid-template-columns:1fr;max-width:460px} }
   .plan{display:flex;flex-direction:column;background:var(--surface);border:1px solid var(--line);border-radius:var(--r-lg);padding:1.8rem 1.6rem;position:relative;transition:transform .2s ease, box-shadow .2s ease}
@@ -418,7 +413,6 @@ const landingStyles = `
     .plans{margin-top:1.8rem;gap:1rem}
     .plan{padding:1.4rem 1.2rem}
     .price .amt{font-size:2rem}
-    .toggle{margin-top:1.4rem}
     .pfoot{font-size:0.8rem}
     .faq{margin-top:1.8rem}
     .qa button .q{font-size:0.98rem}
@@ -531,15 +525,16 @@ const landingMarkup = `<header class="nav" id="nav">
       Práxis<span class="dot"></span><small>by iForce</small>
     </a>
     <nav class="nav-links" aria-label="Seções">
-      <a class="link" href="#problema">Por que</a>
+      <a class="link" href="#problema">Por que usar</a>
       <a class="link" href="#como">Como funciona</a>
+      <a class="link" href="#evidencia">Recursos</a>
       <a class="link" href="#aplicacoes">Onde se aplica</a>
-      <a class="link" href="#integracoes">Integrações</a>
-      <a class="link" href="#precos">Preços</a>
+      <a class="link" href="#governanca">Governança</a>
+      <a class="link" href="#contratacao">Contratação</a>
     </nav>
     <div class="nav-cta">
       <a class="link" href="https://praxis.iforce.com.br/comecar">Entrar</a>
-      <a class="btn btn-primary" href="#cta">Agendar demo</a>
+      <a class="btn btn-primary" href="#cta">Solicitar demonstração</a>
     </div>
     <button class="menu-btn" id="menuBtn" aria-label="Abrir menu" aria-expanded="false">
       <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
@@ -553,9 +548,10 @@ const landingMarkup = `<header class="nav" id="nav">
   <section class="hero">
     <div class="wrap hero-grid">
       <div class="hero-copy">
-        <span class="eyebrow reveal-up d1">Avaliação por cenários · do RH ao treinamento, vendas e operações</span>
-        <h1 class="reveal-up d2">Veja como as pessoas <span class="accent">decidem na prática</span> — e compare todas pelo mesmo critério.</h1>
-        <p class="lead reveal-up d3">A Práxis coloca candidatos ou equipes diante de situações reais do seu negócio, registra cada escolha e organiza os resultados para você decidir com mais consistência — em seleção, capacitação, atendimento ou conformidade.</p>
+        <span class="eyebrow reveal-up d1">Avaliações situacionais para diferentes contextos</span>
+        <h1 class="reveal-up d2">Transforme situações do dia a dia em avaliações estruturadas e rastreáveis.</h1>
+        <p class="lead reveal-up d3">Crie cenários, defina critérios e pesos, compartilhe a avaliação por link e acompanhe as respostas, os indicadores por competência e os registros do percurso.</p>
+        <p class="lead reveal-up d3">Use em treinamento, operações, atendimento, vendas, liderança, conformidade, educação, seleção e outros contextos que possam ser representados por cenários e critérios previamente definidos.</p>
         <div class="hero-ctas reveal-up d4">
           <a class="btn btn-primary" href="#cta">Solicitar demonstração <span class="btn-arrow">→</span></a>
           <a class="btn btn-ghost" href="#demo">Experimentar um cenário</a>
@@ -589,7 +585,7 @@ const landingMarkup = `<header class="nav" id="nav">
           </div>
           <p class="sc-note" id="scNote">
             <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2 4 5v6c0 5 3.4 8.3 8 11 4.6-2.7 8-6 8-11V5z"/></svg>
-            <span>Demonstração ilustrativa. Os critérios, pesos e resultados dependem da configuração criada para cada avaliação.</span>
+          <span>Exemplo demonstrativo — os critérios e pontos são configurados pela organização responsável.</span>
           </p>
           <div class="sc-report" id="scReport" aria-live="polite">
             <div class="rh"><span class="rl">Leitura desta decisão</span><span class="tag" id="rTag"></span></div>
@@ -610,8 +606,8 @@ const landingMarkup = `<header class="nav" id="nav">
     <div class="wrap">
       <div class="sec-head">
         <span class="eyebrow">O problema</span>
-        <h2>Respostas teóricas não mostram, sozinhas, como decisões são tomadas em contexto.</h2>
-        <p class="lead">Questionários, entrevistas e conteúdos teóricos podem continuar fazendo parte do processo. A Práxis acrescenta cenários estruturados para observar escolhas, caminhos e indicadores definidos previamente.</p>
+        <h2>Respostas teóricas não mostram, sozinhas, como critérios são aplicados em contexto.</h2>
+        <p class="lead">A Práxis permite apresentar situações, registrar escolhas e aplicar regras de pontuação configuradas antes da publicação da avaliação.</p>
       </div>
       <div class="split">
         <div class="col bad">
@@ -641,26 +637,26 @@ const landingMarkup = `<header class="nav" id="nav">
     <div class="wrap">
       <div class="sec-head">
         <span class="eyebrow">Como funciona</span>
-        <h2>Da situação ao resultado, com critérios definidos pela sua equipe.</h2>
-        <p class="lead">Sem programar e sem IA decidindo nada. A equipe define o objetivo da avaliação, constrói situações e caminhos, publica por link e analisa indicadores e registros.</p>
+        <h2>Da avaliação aos registros, com critérios definidos pela sua equipe.</h2>
+        <p class="lead">A equipe define o objetivo, constrói cenários e caminhos, publica por link e analisa indicadores, respostas e eventos registrados.</p>
       </div>
       <div class="steps">
         <div class="step">
           <span class="rule"></span>
           <span class="num">PASSO 01</span>
-          <h3>Defina objetivo e critérios</h3>
-          <p>Determine o contexto da avaliação, as competências observadas, os pesos e o uso esperado do resultado.</p>
+          <h3>Estruture a avaliação</h3>
+          <p>Defina o objetivo, os cenários, as alternativas e os possíveis caminhos.</p>
         </div>
         <div class="step">
           <span class="rule"></span>
           <span class="num">PASSO 02</span>
-          <h3>Construa cenários e caminhos</h3>
-          <p>A pessoa participante acessa o cenário, enfrenta a situação configurada e escolhe como agir.</p>
+          <h3>Configure os critérios</h3>
+          <p>Associe competências, pesos, pontos e respostas que exigem análise humana.</p>
         </div>
         <div class="step">
           <span class="num">PASSO 03</span>
-          <h3>Publique e analise</h3>
-          <p>Compartilhe por link, acompanhe participações e consulte indicadores, respostas e eventos.</p>
+          <h3>Compartilhe e analise</h3>
+          <p>Envie o acesso por link e consulte respostas, percurso, indicadores, eventos e relatório de evidências.</p>
         </div>
       </div>
 
@@ -765,35 +761,35 @@ const landingMarkup = `<header class="nav" id="nav">
     <div class="wrap">
       <div class="sec-head">
         <span class="eyebrow">Por dentro</span>
-        <h2>Feito para avaliação transparente e rastreável.</h2>
-        <p class="lead">Cada nota é decomponível: você mostra, ponto a ponto, como a pontuação foi calculada. O conteúdo do teste e a decisão final são seus — a Práxis é ferramenta de apoio.</p>
+        <h2>Critérios configurados antes da aplicação. Registros disponíveis depois dela.</h2>
+        <p class="lead">O relatório reúne critérios, pesos, versão, percurso e pontos registrados para apoiar a compreensão do resultado. A decisão final permanece com a equipe responsável.</p>
       </div>
 
       <div class="feat-grid">
         <div class="feats">
           <div class="feat">
-            <h3><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v18M3 12h18"/></svg></span>Sem IA julgando participantes</h3>
-            <p>A pontuação vem de critérios, pesos e cálculo. Zero caixa-preta, zero custo de IA, totalmente explicável.</p>
+            <h3><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v18M3 12h18"/></svg></span>Pontuação baseada em regras configuradas</h3>
+            <p>Os critérios, pesos e cálculos são definidos previamente e associados à versão publicada da avaliação.</p>
           </div>
           <div class="feat">
             <h3><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h4l3-8 4 16 3-8h4"/></svg></span>Pontuação comparável entre caminhos</h3>
             <p>A nota é normalizada pelo caminho percorrido, para que quem segue um cenário mais curto não seja penalizado por isso.</p>
           </div>
           <div class="feat">
-            <h3><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 12l2 2 4-4M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0z"/></svg></span>Trilha auditável</h3>
-            <p>Cada ponto tem origem: qual etapa, qual escolha, qual rubrica. Pronto para o gestor e para auditoria.</p>
+            <h3><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 12l2 2 4-4M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0z"/></svg></span>Origem da pontuação registrada</h3>
+            <p>Respostas, etapas, pontos por competência e eventos podem ser consultados para apoiar a análise do resultado.</p>
           </div>
           <div class="feat">
-            <h3><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a9 9 0 1 0 9 9M21 3l-9 9"/></svg></span>Decide, não reprova</h3>
-            <p>Erro crítico aciona revisão humana. A decisão final cabe a uma pessoa.</p>
+            <h3><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a9 9 0 1 0 9 9M21 3l-9 9"/></svg></span>Revisão humana</h3>
+            <p>Respostas configuradas como críticas podem exigir análise da equipe responsável. A plataforma não toma a decisão final automaticamente.</p>
           </div>
           <div class="feat">
-            <h3><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16v14H4zM4 9h16M9 9v10"/></svg></span>Biblioteca de cenários</h3>
-            <p>Modelos podem ser ajustados por contexto. A equipe edita, testa com um piloto e publica quando quiser.</p>
+            <h3><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16v14H4zM4 9h16M9 9v10"/></svg></span>Versionamento das avaliações</h3>
+            <p>Uma versão publicada pode ser preservada enquanto a equipe prepara e testa uma nova versão.</p>
           </div>
           <div class="feat">
-            <h3><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12a8 8 0 0 1 16 0M8 12a4 4 0 0 1 8 0M12 12v8"/></svg></span>No seu sistema</h3>
-            <p>Ninguém troca de ferramenta. Nota e competências chegam direto na plataforma que você já usa.</p>
+            <h3><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12a8 8 0 0 1 16 0M8 12a4 4 0 0 1 8 0M12 12v8"/></svg></span>Operação por link</h3>
+            <p>A avaliação pode ser aplicada diretamente pela Práxis, sem depender de integração com outro sistema.</p>
           </div>
         </div>
 
@@ -884,17 +880,17 @@ turno-3 ▸ <span class="ok">C</span>  +2 Comunicação
     <div class="wrap">
       <div class="sec-head">
         <span class="eyebrow">Operação independente</span>
-        <h2>Compartilhe por link e envie o resultado para onde sua equipe trabalha.</h2>
-        <p class="lead">A Práxis pode operar por links diretos. Quando fizer sentido, o resultado também pode aparecer na ferramenta que sua equipe já usa no processo.</p>
+        <h2>Compartilhe por link e integre apenas quando houver conector compatível.</h2>
+        <p class="lead">A Práxis funciona de forma independente por links. Quando houver uma integração compatível e configurada, o resultado também poderá ser enviado ao sistema integrado.</p>
       </div>
       <div class="integ-band">
         <div class="flow">
           <div class="fstep gp"><span class="fn">1</span><span>A equipe configura <b>cenários, critérios e pesos</b></span></div>
           <div class="fstep"><span class="fn">2</span><span>A pessoa participante acessa a avaliação por link</span></div>
           <div class="fstep"><span class="fn">3</span><span>Indicadores e registros ficam disponíveis para análise</span></div>
-          <div class="fstep gp"><span class="fn">4</span><span>O resultado pode chegar na ferramenta usada pela equipe</span></div>
+          <div class="fstep gp"><span class="fn">4</span><span>Integrações opcionais dependem de disponibilidade e configuração</span></div>
         </div>
-        <p class="flow-note"><span class="pip"></span><span>Sem planilha, e-mail ou copiar e colar.</span></p>
+        <p class="flow-note"><span class="pip"></span><span>A operação por link não depende de outro sistema.</span></p>
       </div>
     </div>
   </section>
@@ -903,9 +899,9 @@ turno-3 ▸ <span class="ok">C</span>  +2 Comunicação
   <section class="sec dark-band" id="governanca">
     <div class="wrap">
       <div class="sec-head">
-        <span class="eyebrow">Governança & auditoria</span>
-        <h2>Pensado para apoiar o jurídico e o compliance.</h2>
-        <p class="lead">Os mesmos cuidados que a sua equipe de governança costuma exigir de um processo sensível — já pensados desde o desenho.</p>
+        <span class="eyebrow">Governança</span>
+        <h2>Recursos para apoiar governança, privacidade e revisão.</h2>
+        <p class="lead">Trilha cronológica, versionamento, relatório de evidências, retenção, anonimização e revisão humana apoiam a operação responsável das avaliações.</p>
       </div>
       <div class="gov-grid">
         <div class="gov">
@@ -915,8 +911,8 @@ turno-3 ▸ <span class="ok">C</span>  +2 Comunicação
         </div>
         <div class="gov">
           <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 3v6c0 5-3.5 8-7 9-3.5-1-7-4-7-9V6z"/></svg></span>
-          <h3>Privacidade desde o desenho</h3>
-          <p>Bases legais expostas, retenção configurável e rotinas de anonimização parametrizáveis após o ciclo da avaliação, para apoiar a sua adequação à LGPD.</p>
+          <h3>Retenção e anonimização</h3>
+          <p>Bases legais expostas, retenção configurável e rotinas de anonimização parametrizáveis após o ciclo da avaliação apoiam práticas de privacidade.</p>
         </div>
         <div class="gov">
           <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v18M5 7l7-4 7 4M5 7v6c0 4 3 6 7 7 4-1 7-3 7-7V7"/></svg></span>
@@ -929,86 +925,70 @@ turno-3 ▸ <span class="ok">C</span>  +2 Comunicação
         <span class="chip">estrutura semântica e tempo ajustável por participação</span>
         <span class="chip">dados separados por empresa</span>
       </div>
+      <p class="lead" style="margin:2rem auto 0;text-align:center">
+        A conformidade depende também das finalidades, bases legais, configurações, contratos, políticas e práticas adotadas pela organização responsável.
+      </p>
     </div>
   </section>
 
-  <!-- PRICING -->
-  <section class="sec" id="precos">
+  <!-- CONTRATAÇÃO -->
+  <section class="sec" id="contratacao">
     <div class="wrap">
       <div class="sec-head">
-        <span class="eyebrow">Planos</span>
-        <h2>Comece por avaliação. Cresça quando fizer sentido.</h2>
-        <p class="lead">Sem custo de IA, porque não há IA na pontuação. Você paga pela avaliação — não por inferência.</p>
-        <div class="roi">
-          <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
-          <span>Uma decisão baseada em achismo custa caro — em qualquer área. A Práxis custa uma fração — e deixa o porquê de cada resultado registrado.</span>
-        </div>
-        <div class="toggle" role="group" aria-label="Ciclo de cobrança">
-          <button id="bMonthly" class="on" aria-pressed="true">Mensal</button>
-          <button id="bAnnual" aria-pressed="false">Anual</button>
-          <span class="save">2 meses grátis</span>
-        </div>
+        <span class="eyebrow">Contratação</span>
+        <h2>Defina o formato conforme o volume e o escopo da operação.</h2>
+        <p class="lead">A proposta comercial é estruturada conforme o volume de participações, as necessidades de integração, governança e suporte.</p>
       </div>
 
       <div class="plans">
-        <!-- Avulso -->
         <div class="plan">
-          <div class="pname">Avulso</div>
-          <div class="pfor">Para pilotos e demandas pontuais, sem mensalidade.</div>
-          <div class="price"><span class="cur">R$</span><span class="amt">69,90</span><span class="per">/ pessoa avaliada</span></div>
-          <div class="psub">Pague só por quem você avaliar.</div>
-          <a class="btn btn-ghost" href="#cta">Começar</a>
+          <div class="pname">Conhecer a plataforma</div>
+          <div class="pfor">Para visualizar o fluxo e avaliar a aderência ao seu contexto.</div>
+          <div class="price consulta"><span class="amt">Demonstração</span></div>
+          <div class="psub">Apresentação da criação, aplicação e análise de uma avaliação.</div>
+          <a class="btn btn-ghost" href="mailto:contato@iforce.com.br?subject=Demonstra%C3%A7%C3%A3o%20da%20Pr%C3%A1xis">Solicitar demonstração</a>
           <ul class="plist">
-            <li class="head"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>O essencial para validar</li>
-            <li><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>Links diretos e integrações opcionais</li>
-            <li><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>1 simulação ativa</li>
-            <li><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>Biblioteca de cenários (modelos)</li>
-            <li><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>Pontuação por competência</li>
-            <li><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>Trilha auditável</li>
+            <li class="head">Fluxo apresentado</li>
+            <li>Criação de cenários e caminhos</li>
+            <li>Configuração de critérios e pesos</li>
+            <li>Participação por link</li>
+            <li>Indicadores e relatório de evidências</li>
           </ul>
         </div>
 
-        <!-- Crescimento (feature) -->
         <div class="plan feature">
-          <span class="ptag">Mais escolhido</span>
-          <div class="pname">Crescimento</div>
-          <div class="pfor">Para quem avalia com volume recorrente.</div>
-          <div class="price"><span class="cur">R$</span><span class="amt" data-monthly="7.990" data-annual="6.658">7.990</span><span class="per" id="cycMonthly">/ mês</span></div>
-          <div class="psub" id="cycSub">R$ 39,90/avaliação · 200 inclusas/mês · +R$ 49,90 por adicional</div>
-          <a class="btn btn-primary" href="#cta">Agendar demo <span class="btn-arrow">→</span></a>
+          <div class="pname">Uso recorrente</div>
+          <div class="pfor">Para equipes que pretendem aplicar avaliações com frequência.</div>
+          <div class="price consulta"><span class="amt">Sob proposta</span></div>
+          <div class="psub">Volume e condições comerciais definidos antes da contratação.</div>
+          <a class="btn btn-primary" href="mailto:contato@iforce.com.br?subject=Proposta%20comercial%20da%20Pr%C3%A1xis">Solicitar proposta <span class="btn-arrow">→</span></a>
           <ul class="plist">
-            <li class="head"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/></svg>Tudo do Avulso, e mais:</li>
-            <li><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>Simulações e processos ilimitados</li>
-            <li><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>Edição completa da biblioteca</li>
-            <li><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>Painel comparativo: ranqueie e compare participantes</li>
-            <li><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>Modo piloto antes de publicar</li>
-            <li><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>Governança e LGPD configuráveis</li>
-            <li><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>Multiusuário e suporte prioritário</li>
+            <li class="head">Escopo a definir</li>
+            <li>Volume de participações</li>
+            <li>Forma de operação</li>
+            <li>Necessidades de suporte</li>
+            <li>Condições comerciais e contratuais</li>
           </ul>
         </div>
 
-        <!-- Enterprise -->
         <div class="plan">
-          <div class="pname">Enterprise</div>
-          <div class="pfor">Para alto volume e exigência de compliance.</div>
-          <div class="price consulta"><span class="amt">Sob consulta</span></div>
-          <div class="psub">Contrato anual, escopo sob medida.</div>
-          <a class="btn btn-gold" href="#cta">Falar com vendas</a>
+          <div class="pname">Integração e governança</div>
+          <div class="pfor">Para operações com requisitos técnicos ou jurídicos específicos.</div>
+          <div class="price consulta"><span class="amt">Escopo técnico</span></div>
+          <div class="psub">Viabilidade e responsabilidades validadas antes da proposta.</div>
+          <a class="btn btn-gold" href="mailto:contato@iforce.com.br?subject=Escopo%20corporativo%20da%20Pr%C3%A1xis">Falar com a equipe</a>
           <ul class="plist">
-            <li class="head"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/></svg>Tudo do Crescimento, e mais:</li>
-            <li><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>Trilha protegida contra alteração, com retenção sob medida</li>
-            <li><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>Comparativo entre participantes</li>
-            <li><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>Apoio metodológico: estudo assistido de aderência entre nota e critérios definidos por você</li>
-            <li><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>SSO / SAML e ambiente dedicado</li>
-            <li><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>SLA e gerente de conta</li>
-            <li><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>Contrato e DPA com o jurídico</li>
+            <li class="head">Análise necessária</li>
+            <li>Compatibilidade da integração desejada</li>
+            <li>Requisitos de governança e privacidade</li>
+            <li>Volume e ambiente de operação</li>
+            <li>Responsabilidades previstas em contrato</li>
           </ul>
         </div>
       </div>
 
       <p class="pfoot">
-        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 12l2 2 4-4M12 3a9 9 0 1 0 9 9 9 9 0 0 0-9-9z"/></svg>
-        Todos os planos incluem integrações nativas e a trilha auditável. Preços em reais, impostos à parte.
+        Valores, franquias, adicionais, integrações, níveis de atendimento e demais condições devem constar da proposta comercial e do contrato aplicáveis.
       </p>
     </div>
   </section>
@@ -1023,15 +1003,15 @@ turno-3 ▸ <span class="ok">C</span>  +2 Comunicação
       <div class="faq">
         <div class="qa">
           <button aria-expanded="false"><span class="q">A Práxis usa IA generativa para avaliar pessoas?</span><span class="ic"></span></button>
-          <div class="ans"><p>Não. A pontuação sai de critérios e pesos versionados definidos pela sua equipe. É regra e cálculo — auditável e sem custo de inferência.</p></div>
+          <div class="ans"><p>Não. A pontuação é calculada a partir de critérios, pesos e regras configurados previamente pela equipe responsável.</p></div>
         </div>
         <div class="qa">
-          <button aria-expanded="false"><span class="q">Com quais sistemas a Práxis integra?</span><span class="ic"></span></button>
-          <div class="ans"><p>A Práxis pode operar por links diretos. Quando fizer sentido, o resultado também pode aparecer automaticamente na ferramenta usada pela sua equipe, sem planilha, e-mail ou copiar e colar.</p></div>
+          <button aria-expanded="false"><span class="q">Preciso integrar a Práxis a outro sistema?</span><span class="ic"></span></button>
+          <div class="ans"><p>Não. A operação pode ser realizada por links diretos e acompanhada no painel. Integrações são opcionais e dependem da existência e configuração de um conector compatível.</p></div>
         </div>
         <div class="qa">
-          <button aria-expanded="false"><span class="q">Como é a cobrança?</span><span class="ic"></span></button>
-          <div class="ans"><p>No plano Avulso você paga por participação, sem mensalidade — ideal para pilotos. No Crescimento, é uma assinatura por faixa de volume, com participações incluídas e adicionais por participação. O Enterprise é contrato anual com escopo sob medida.</p></div>
+          <button aria-expanded="false"><span class="q">Como funciona a contratação?</span><span class="ic"></span></button>
+          <div class="ans"><p>O formato comercial é definido conforme o volume de participações e o escopo contratado. Valores, franquias, adicionais, suporte e integrações devem constar da proposta comercial aplicável.</p></div>
         </div>
         <div class="qa">
           <button aria-expanded="false"><span class="q">Quanto tempo leva para colocar no ar?</span><span class="ic"></span></button>
@@ -1042,8 +1022,8 @@ turno-3 ▸ <span class="ok">C</span>  +2 Comunicação
           <div class="ans"><p>Não. A visão do participante é limpa. Pesos, critérios e marcadores ficam restritos ao painel admin e à trilha de auditoria.</p></div>
         </div>
         <div class="qa">
-          <button aria-expanded="false"><span class="q">A Práxis reprova ou elimina alguém sozinha?</span><span class="ic"></span></button>
-          <div class="ans"><p>Não. A Práxis recomenda, não elimina automaticamente. Erro crítico aciona revisão humana — a decisão final cabe a uma pessoa.</p></div>
+          <button aria-expanded="false"><span class="q">A Práxis toma a decisão final?</span><span class="ic"></span></button>
+          <div class="ans"><p>Não. A plataforma organiza critérios, pontuações e registros para apoiar a análise. Respostas configuradas como críticas podem exigir revisão, e a interpretação e a decisão final permanecem com a equipe responsável.</p></div>
         </div>
         <div class="qa">
           <button aria-expanded="false"><span class="q">Para quais contextos serve?</span><span class="ic"></span></button>
@@ -1057,11 +1037,11 @@ turno-3 ▸ <span class="ok">C</span>  +2 Comunicação
   <section class="final" id="cta">
     <div class="wrap">
       <span class="eyebrow" style="justify-content:center;display:flex">Vamos conversar</span>
-      <h2 style="margin-top:1rem">Menos achismo. Mais decisão por evidência.</h2>
-      <p class="lead">Mostre como as pessoas decidem antes de tomar qualquer próxima decisão sobre elas. Agende uma demonstração da Práxis.</p>
+      <h2 style="margin-top:1rem">Estruture cenários, critérios e evidências em um só fluxo.</h2>
+      <p class="lead">Conheça a criação de avaliações, a participação por link e a análise dos resultados em uma demonstração da Práxis.</p>
       <div class="hero-ctas">
-        <a class="btn btn-primary" href="mailto:contato@iforce.com.br?subject=Demonstra%C3%A7%C3%A3o%20da%20Pr%C3%A1xis">Agendar demonstração <span class="btn-arrow">→</span></a>
-        <a class="btn btn-ghost" href="#precos">Rever os planos</a>
+        <a class="btn btn-primary" href="mailto:contato@iforce.com.br?subject=Demonstra%C3%A7%C3%A3o%20da%20Pr%C3%A1xis">Solicitar demonstração <span class="btn-arrow">→</span></a>
+        <a class="btn btn-ghost" href="#contratacao">Ver formas de contratação</a>
       </div>
     </div>
   </section>
@@ -1084,11 +1064,6 @@ function LandingPage() {
     const rTag = document.getElementById("rTag");
     const rPts = document.getElementById("rPts");
     const rRead = document.getElementById("rRead");
-    const bM = document.getElementById("bMonthly");
-    const bA = document.getElementById("bAnnual");
-    const amt = document.querySelector<HTMLElement>(".amt[data-monthly]");
-    const cyc = document.getElementById("cycMonthly");
-    const sub = document.getElementById("cycSub");
 
     const cleanups: Array<() => void> = [];
 
@@ -1208,26 +1183,6 @@ function LandingPage() {
       button.addEventListener("click", onPick);
       cleanups.push(() => button.removeEventListener("click", onPick));
     });
-
-    if (bM && bA && amt && cyc && sub) {
-      const setCycle = (annual: boolean) => {
-        bM.classList.toggle("on", !annual);
-        bA.classList.toggle("on", annual);
-        bM.setAttribute("aria-pressed", String(!annual));
-        bA.setAttribute("aria-pressed", String(annual));
-        amt.textContent = annual ? (amt.dataset.annual ?? "") : (amt.dataset.monthly ?? "");
-        cyc.textContent = annual ? "/ mês, no anual" : "/ mês";
-        sub.textContent = annual
-          ? "R$ 33,25/avaliação · 200 inclusas/mês · faturado anual (R$ 79.900)"
-          : "R$ 39,90/avaliação · 200 inclusas/mês · +R$ 49,90 por adicional";
-      };
-      const monthly = () => setCycle(false);
-      const annual = () => setCycle(true);
-      bM.addEventListener("click", monthly);
-      bA.addEventListener("click", annual);
-      cleanups.push(() => bM.removeEventListener("click", monthly));
-      cleanups.push(() => bA.removeEventListener("click", annual));
-    }
 
     document.querySelectorAll<HTMLButtonElement>(".qa button").forEach((button) => {
       const onToggle = () => {

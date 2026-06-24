@@ -145,8 +145,8 @@ function MonitoringPage() {
                   Tentativas em andamento
                 </div>
                 <p className="mt-1 text-xs text-muted-foreground">
-                  {filteredAttempts.length} de {liveAttempts.length} candidatos fazendo o teste
-                  agora ou pausados
+                  {filteredAttempts.length} de {liveAttempts.length} participações em andamento
+                  ou pausadas
                 </p>
               </div>
               <div className="flex flex-wrap items-center gap-2">
@@ -169,8 +169,8 @@ function MonitoringPage() {
               <table className="w-full min-w-[680px] text-left text-sm">
                 <thead className="border-b border-border bg-muted/50 text-[11px] uppercase text-muted-foreground">
                   <tr>
-                    <th className="px-4 py-3 font-medium">Candidato</th>
-                    <th className="px-4 py-3 font-medium">Teste</th>
+                    <th className="px-4 py-3 font-medium">Participante</th>
+                    <th className="px-4 py-3 font-medium">Avaliação</th>
                     <th className="px-4 py-3 font-medium">Etapa</th>
                     <th className="px-4 py-3 font-medium">Tempo</th>
                     <th className="px-4 py-3 font-medium">Ultimo sinal</th>

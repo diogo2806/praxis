@@ -62,16 +62,16 @@ const audiences = [
 const startActions = [
   {
     icon: Rocket,
-    title: "Criar meu primeiro teste",
-    text: "Monte um teste do zero, passo a passo.",
+    title: "Criar minha primeira avaliação",
+    text: "Monte uma avaliação por cenários, passo a passo.",
     to: "/nova/blueprint" as const,
     primary: true,
   },
   {
     icon: BarChart3,
     title: "Ver o painel",
-    text: "Veja os testes e resultados que já existem.",
-    to: "/" as const,
+    text: "Veja as avaliações e participações que já existem.",
+    to: "/app" as const,
     primary: false,
   },
   {
@@ -86,7 +86,7 @@ const startActions = [
 const faq = [
   {
     q: "O que é o Práxis, em uma frase?",
-    a: "É uma plataforma para transformar situações reais em avaliações estruturadas, mensuráveis e rastreáveis.",
+    a: "É uma plataforma para criar avaliações por cenários, aplicar critérios configurados e acompanhar respostas, indicadores e registros do percurso.",
   },
   {
     q: "Quanto tempo leva para a pessoa concluir a avaliação?",
