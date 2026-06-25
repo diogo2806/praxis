@@ -53,6 +53,16 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.function.Consumer;
 
+/**
+ * Cérebro da autoria e administração das provas (simulações).
+ *
+ * <p>Na visão do processo, concentra as regras de negócio do "estúdio" de
+ * provas: criar uma prova, editar o rascunho (plano, etapas e respostas),
+ * validar, clonar e publicar versões, além de excluir provas. Cada prova
+ * evolui em versões — as publicadas são imutáveis e a edição acontece sempre
+ * em um rascunho. Toda alteração relevante fica registrada na trilha de
+ * auditoria, garantindo rastreabilidade de quem mudou o quê.</p>
+ */
 @Service
 public class SimulationAdminService {
 
@@ -93,6 +103,13 @@ public class SimulationAdminService {
         this.termAcceptanceService = termAcceptanceService;
     }
 
+    /**
+     * Lista as provas ativas da empresa, trazendo a versão mais recente de cada.
+     *
+     * <p>Alimenta o painel administrativo de provas.</p>
+     *
+     * @return o resumo de cada prova ativa
+     */
     @Transactional(readOnly = true)
     public List<SimulationSummaryResponse> listActiveSimulations() {
         return simulationRepository.findByTenantIdOrderByCreatedAtDesc(
@@ -103,6 +120,15 @@ public class SimulationAdminService {
                 .toList();
     }
 
+    /**
+     * Cria uma prova nova com a primeira versão (v1) em rascunho.
+     *
+     * <p>Fluxo do processo: valida os pesos das competências, cria a prova com
+     * uma etapa inicial padrão e registra a criação na trilha de auditoria.</p>
+     *
+     * @param request dados iniciais da prova (nome, competências, pesos, etc.)
+     * @return os detalhes da versão recém-criada
+     */
     @Transactional
     public SimulationVersionDetailResponse createSimulation(CreateSimulationRequest request) {
         simulationValidationService.validateWeights(request.competencies());
@@ -149,11 +175,28 @@ public class SimulationAdminService {
         return toDetailResponse(versionEntity);
     }
 
+    /**
+     * Carrega os detalhes de uma versão da prova (para a tela de autoria).
+     *
+     * @param simulationId identificador da prova
+     * @param versionNumber número da versão
+     * @return os detalhes completos da versão
+     */
     @Transactional(readOnly = true)
     public SimulationVersionDetailResponse loadVersion(String simulationId, int versionNumber) {
         return toDetailResponse(findVersion(simulationId, versionNumber));
     }
 
+    /**
+     * Cria uma prova em rascunho a partir do plano da avaliação.
+     *
+     * <p>Fluxo do processo: garante que os nomes das competências não se
+     * repetem, aplica o plano informado (etapa inicial e competências) e
+     * registra a criação na trilha de auditoria.</p>
+     *
+     * @param request o plano da avaliação que dá origem ao rascunho
+     * @return o resumo da prova criada
+     */
     @Transactional
     public SimulationSummaryResponse createDraftSimulation(CreateSimulationDraftRequest request) {
         Instant createdAt = Instant.now();
@@ -189,17 +232,47 @@ public class SimulationAdminService {
         return toSummaryResponse(savedSimulationEntity, versionEntity);
     }
 
+    /**
+     * Obtém os detalhes de uma versão da prova no formato da tela de autoria.
+     *
+     * @param simulationId identificador da prova
+     * @param versionNumber número da versão
+     * @return os detalhes completos da versão
+     */
     @Transactional(readOnly = true)
     public SimulationVersionDetailResponse getSimulationVersion(String simulationId, int versionNumber) {
         return simulationMapperService.toVersionDetail(findVersion(simulationId, versionNumber));
     }
 
+    /**
+     * Roda a validação de qualidade de uma versão da prova.
+     *
+     * <p>Devolve os impedimentos e avisos encontrados, ajudando a equipe a
+     * corrigir a prova antes de publicar.</p>
+     *
+     * @param simulationId identificador da prova
+     * @param versionNumber número da versão
+     * @return o relatório de validação
+     */
     @Transactional(readOnly = true)
     public SimulationValidationResponse validateVersion(String simulationId, int versionNumber) {
         SimulationVersionEntity simulationVersionEntity = findVersion(simulationId, versionNumber);
         return simulationValidationService.validate(simulationVersionEntity);
     }
 
+    /**
+     * Atualiza o plano da avaliação de uma versão em rascunho.
+     *
+     * <p>Fluxo do processo: valida os pesos, garante que a versão está em
+     * rascunho (publicada não pode ser editada), aplica as mudanças de etapa
+     * inicial, competências, pesos e textos descritivos, e registra a
+     * alteração na trilha de auditoria.</p>
+     *
+     * @param simulationId identificador da prova
+     * @param versionNumber número da versão em rascunho
+     * @param request os novos dados do plano
+     * @return o resumo atualizado da prova
+     */
     @Transactional
     public SimulationSummaryResponse updateBlueprint(String simulationId, int versionNumber, UpdateBlueprintRequest request) {
         simulationValidationService.validateBlueprintWeights(request.competencies());
@@ -233,6 +306,19 @@ public class SimulationAdminService {
         return toSummaryResponse(savedVersionEntity.getSimulation(), savedVersionEntity);
     }
 
+    /**
+     * Adiciona uma nova etapa (cena) ao rascunho da prova.
+     *
+     * <p>Fluxo do processo: garante que a versão está em rascunho, valida o
+     * conteúdo (toda etapa que não é de encerramento precisa de fala; etapas
+     * de encerramento não têm destino por tempo) e registra a inclusão na
+     * trilha de auditoria.</p>
+     *
+     * @param simulationId identificador da prova
+     * @param versionNumber número da versão em rascunho
+     * @param request o conteúdo da nova etapa
+     * @return o identificador da etapa criada
+     */
     @Transactional
     public String addNode(String simulationId, int versionNumber, CreateNodeRequest request) {
         SimulationVersionEntity versionEntity = findAndAssertDraft(simulationId, versionNumber);
@@ -277,6 +363,18 @@ public class SimulationAdminService {
         return nodeId;
     }
 
+    /**
+     * Atualiza o conteúdo de uma etapa existente no rascunho da prova.
+     *
+     * <p>Garante que a versão está em rascunho, aplica as alterações
+     * informadas (mantém obrigatória a fala de etapas que não são de
+     * encerramento) e registra a mudança na trilha de auditoria.</p>
+     *
+     * @param simulationId identificador da prova
+     * @param versionNumber número da versão em rascunho
+     * @param nodeId identificador da etapa
+     * @param request os novos dados da etapa
+     */
     @Transactional
     public void updateNode(String simulationId, int versionNumber, String nodeId, UpdateNodeRequest request) {
         SimulationVersionEntity versionEntity = findAndAssertDraft(simulationId, versionNumber);
@@ -339,6 +437,16 @@ public class SimulationAdminService {
         );
     }
 
+    /**
+     * Remove uma etapa do rascunho da prova.
+     *
+     * <p>Não permite remover a etapa inicial. Registra a remoção na trilha de
+     * auditoria.</p>
+     *
+     * @param simulationId identificador da prova
+     * @param versionNumber número da versão em rascunho
+     * @param nodeId identificador da etapa a remover
+     */
     @Transactional
     public void deleteNode(String simulationId, int versionNumber, String nodeId) {
         SimulationVersionEntity versionEntity = findAndAssertDraft(simulationId, versionNumber);
@@ -359,6 +467,20 @@ public class SimulationAdminService {
         );
     }
 
+    /**
+     * Adiciona uma resposta (alternativa) a uma etapa do rascunho.
+     *
+     * <p>Fluxo do processo: garante que a versão está em rascunho, que a etapa
+     * não é de encerramento, que o limite de respostas por etapa não foi
+     * atingido e que os pontos por competência são válidos. Registra a
+     * inclusão na trilha de auditoria.</p>
+     *
+     * @param simulationId identificador da prova
+     * @param versionNumber número da versão em rascunho
+     * @param nodeId identificador da etapa
+     * @param request o conteúdo da nova resposta (texto, destino e pontos)
+     * @return o identificador da resposta criada
+     */
     @Transactional
     public String addOption(String simulationId, int versionNumber, String nodeId, CreateOptionRequest request) {
         SimulationVersionEntity versionEntity = findAndAssertDraft(simulationId, versionNumber);
@@ -397,6 +519,19 @@ public class SimulationAdminService {
         return optionId;
     }
 
+    /**
+     * Atualiza uma resposta (alternativa) de uma etapa do rascunho.
+     *
+     * <p>Aplica apenas os campos informados (os demais permanecem como
+     * estavam), validando destino e pontos por competência quando alterados,
+     * e registra a mudança na trilha de auditoria.</p>
+     *
+     * @param simulationId identificador da prova
+     * @param versionNumber número da versão em rascunho
+     * @param nodeId identificador da etapa
+     * @param optionId identificador da resposta
+     * @param request os campos a atualizar na resposta
+     */
     @Transactional
     public void updateOption(
             String simulationId,
@@ -447,6 +582,16 @@ public class SimulationAdminService {
         );
     }
 
+    /**
+     * Remove uma resposta (alternativa) de uma etapa do rascunho.
+     *
+     * <p>Registra a remoção na trilha de auditoria.</p>
+     *
+     * @param simulationId identificador da prova
+     * @param versionNumber número da versão em rascunho
+     * @param nodeId identificador da etapa
+     * @param optionId identificador da resposta a remover
+     */
     @Transactional
     public void deleteOption(String simulationId, int versionNumber, String nodeId, String optionId) {
         SimulationVersionEntity versionEntity = findAndAssertDraft(simulationId, versionNumber);
@@ -465,6 +610,15 @@ public class SimulationAdminService {
         );
     }
 
+    /**
+     * Exclui definitivamente uma prova e todas as suas versões.
+     *
+     * <p>Ação irreversível. Recusa a exclusão se houver candidatos
+     * (tentativas) vinculados à prova, preservando o histórico das
+     * avaliações.</p>
+     *
+     * @param simulationId identificador da prova a remover
+     */
     @Transactional
     public void deleteSimulation(String simulationId) {
         String tenantId = currentTenantService.requiredTenantId();
@@ -482,6 +636,17 @@ public class SimulationAdminService {
         simulationRepository.delete(simulationEntity);
     }
 
+    /**
+     * Cria a próxima versão em rascunho a partir de uma versão publicada.
+     *
+     * <p>Permite evoluir a prova preservando intacta a versão publicada (que é
+     * imutável): copia o conteúdo para uma nova versão em rascunho e registra
+     * a clonagem na trilha de auditoria.</p>
+     *
+     * @param simulationId identificador da prova
+     * @param versionNumber número da versão publicada a clonar
+     * @return os dados da nova versão em rascunho
+     */
     @Transactional
     public CloneSimulationVersionResponse clonePublishedVersionToDraft(String simulationId, int versionNumber) {
         SimulationVersionEntity sourceVersionEntity = findVersion(simulationId, versionNumber);
@@ -513,6 +678,20 @@ public class SimulationAdminService {
     }
 
 
+    /**
+     * Publica uma versão da prova, tornando-a disponível para uso real.
+     *
+     * <p>Fluxo do processo, com várias travas de segurança: só publica se a
+     * validação não acusar impedimentos; só aceita versões em rascunho (ou já
+     * publicadas); exige que a checagem de prontidão da Gupy (preflight) passe;
+     * e, na vertical de saúde, exige o aceite do termo de uso. Ao publicar,
+     * arquiva automaticamente as outras versões publicadas (mantendo apenas
+     * uma no ar) e registra a publicação na trilha de auditoria.</p>
+     *
+     * @param simulationId identificador da prova
+     * @param versionNumber número da versão a publicar
+     * @return o resultado da publicação
+     */
     @Transactional
     public PublishSimulationResponse publishVersion(String simulationId, int versionNumber) {
         SimulationVersionEntity simulationVersionEntity = findVersion(simulationId, versionNumber);
