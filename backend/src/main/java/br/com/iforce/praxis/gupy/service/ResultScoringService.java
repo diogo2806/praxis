@@ -47,6 +47,17 @@ public class ResultScoringService {
         this.praxisProperties = praxisProperties;
     }
 
+    /**
+     * Calcula a pontuação final de uma prova a partir das respostas.
+     *
+     * <p>Versão simplificada, sem informação de tempo das respostas (não
+     * avalia o sinal de "respostas rápidas demais"). Veja a sobrecarga com
+     * {@code firstTurnReceivedAt} para o cálculo completo.</p>
+     *
+     * @param simulation a prova respondida (cenário e pesos das competências)
+     * @param answersByNodeId as respostas do candidato, por etapa
+     * @return a pontuação final, o detalhamento por competência e a decisão sugerida
+     */
     public ScoreCalculationResult calculate(
             PublishedSimulation simulation,
             Map<String, AttemptAnswer> answersByNodeId
@@ -54,6 +65,25 @@ public class ResultScoringService {
         return calculate(simulation, answersByNodeId, null);
     }
 
+    /**
+     * Calcula a pontuação final de uma prova de forma determinística.
+     *
+     * <p>Fluxo do processo: percorre o caminho que o candidato realmente
+     * seguiu, soma os pontos obtidos em cada competência e compara com o
+     * máximo possível naquele mesmo caminho, ponderando pelo peso de cada
+     * competência. O resultado é uma nota de 0 a 100, sem nenhuma IA: dadas as
+     * mesmas respostas e a mesma prova, o resultado é sempre idêntico. Também
+     * sinaliza se uma revisão humana é obrigatória (erro crítico) e se há
+     * indício de baixa confiabilidade (respostas rápidas demais em pontos
+     * decisivos). Nunca há reprovação automática.</p>
+     *
+     * @param simulation a prova respondida (cenário e pesos das competências)
+     * @param answersByNodeId as respostas do candidato, por etapa
+     * @param firstTurnReceivedAt momento em que a primeira etapa foi exibida,
+     *                            usado para avaliar o tempo de resposta (pode ser nulo)
+     * @return a pontuação final, o detalhamento por competência, a necessidade
+     *         de revisão humana, o nível de confiabilidade e a decisão sugerida
+     */
     public ScoreCalculationResult calculate(
             PublishedSimulation simulation,
             Map<String, AttemptAnswer> answersByNodeId,

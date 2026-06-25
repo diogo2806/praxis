@@ -14,6 +14,15 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 
+/**
+ * Catálogo de consulta das provas (simulações) publicadas de cada empresa.
+ *
+ * <p>Na visão do processo, é a "vitrine" somente leitura das provas que estão
+ * no ar: lista as provas publicadas, permite buscar por texto, contar e
+ * localizar uma prova específica (pela sua versão publicada mais recente). É
+ * usado tanto pelas telas internas quanto pela integração com a Gupy para
+ * mostrar quais avaliações estão disponíveis.</p>
+ */
 @Service
 public class SimulationCatalogService {
 
@@ -48,6 +57,17 @@ public class SimulationCatalogService {
         return List.copyOf(latestBySimulationId.values());
     }
 
+    /**
+     * Lista as provas publicadas da empresa filtrando por texto e paginando.
+     *
+     * <p>A busca considera o identificador, o nome e a descrição da prova.</p>
+     *
+     * @param tenantId empresa dona das provas
+     * @param searchString texto opcional de busca
+     * @param offset a partir de qual posição começar (paginação)
+     * @param limit quantas provas trazer
+     * @return a página de provas publicadas que atendem ao filtro
+     */
     @Transactional(readOnly = true)
     public List<PublishedSimulation> findPublished(String tenantId, String searchString, int offset, int limit) {
         int normalizedOffset = Math.max(offset, 0);
@@ -59,11 +79,27 @@ public class SimulationCatalogService {
                 .toList();
     }
 
+    /**
+     * Conta quantas provas publicadas da empresa atendem ao filtro de busca.
+     *
+     * <p>Usado para informar o total ao paginar a listagem.</p>
+     *
+     * @param tenantId empresa dona das provas
+     * @param searchString texto opcional de busca
+     * @return o total de provas publicadas que atendem ao filtro
+     */
     @Transactional(readOnly = true)
     public int countPublished(String tenantId, String searchString) {
         return filteredPublished(tenantId, searchString).size();
     }
 
+    /**
+     * Localiza uma prova publicada pela sua versão publicada mais recente.
+     *
+     * @param tenantId empresa dona da prova
+     * @param simulationId identificador da prova
+     * @return a prova publicada, se existir
+     */
     @Transactional(readOnly = true)
     public Optional<PublishedSimulation> findPublishedById(String tenantId, String simulationId) {
         return simulationVersionRepository
@@ -77,12 +113,28 @@ public class SimulationCatalogService {
                 .map(simulationMapperService::toPublishedSimulation);
     }
 
+    /**
+     * Localiza uma prova por uma versão específica (exata) dela.
+     *
+     * <p>Importante para reconstruir exatamente a prova que um candidato
+     * respondeu, mesmo que a prova já tenha sido republicada depois.</p>
+     *
+     * @param simulationVersionId identificador da versão da prova
+     * @return a prova daquela versão, se existir
+     */
     @Transactional(readOnly = true)
     public Optional<PublishedSimulation> findByVersionId(Long simulationVersionId) {
         return simulationVersionRepository.findById(simulationVersionId)
                 .map(simulationMapperService::toPublishedSimulation);
     }
 
+    /**
+     * Encontra uma etapa (nó) específica dentro de uma prova.
+     *
+     * @param simulation a prova onde procurar
+     * @param nodeId identificador da etapa
+     * @return a etapa correspondente, se existir
+     */
     public Optional<ScenarioNode> findNode(PublishedSimulation simulation, String nodeId) {
         return simulation.nodes().stream()
                 .filter(node -> node.id().equals(nodeId))
