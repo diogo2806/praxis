@@ -5,6 +5,15 @@ import io.swagger.v3.oas.annotations.media.Schema;
 
 import java.util.List;
 
+/**
+ * O resultado completo de uma prova, no formato esperado pela Recrutei.
+ *
+ * <p>Na visão do processo, é o "boletim" entregue à Recrutei depois que o
+ * candidato termina: traz o nome e a descrição da prova, quem é o fornecedor
+ * (Práxis), a situação atual, um resumo da pontuação, os links para abrir o
+ * relatório (da empresa e do candidato) e a lista de competências avaliadas,
+ * cada uma com sua nota e nível.</p>
+ */
 @Schema(description = "Resultado do teste Praxis no formato esperado pela Recrutei.")
 public record RecruteiTestResultResponse(
         String title,
