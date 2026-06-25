@@ -16,6 +16,16 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 
+/**
+ * Gerencia a política de retenção de dados e conformidade com LGPD (Lei Geral de Proteção de Dados).
+ *
+ * Automaticamente anonimiza dados de candidatos após um período pré-configurado (padrão: 180 dias).
+ * Quando um processo de seleção é finalizado, o candidato tem direto de esquecimento: seus dados
+ * pessoais (nome, email) são removidos e substituídos por informações genéricas. Isso garante
+ * que apenas dados estritamente necessários são mantidos, em conformidade com a LGPD brasileira.
+ *
+ * Registra todas as anonimizações no histórico de auditoria para rastreabilidade.
+ */
 @Service
 public class PrivacyRetentionService {
 
@@ -53,6 +63,22 @@ public class PrivacyRetentionService {
         this.retentionDays = retentionDays;
     }
 
+    /**
+     * Anonimiza os dados de candidatos cuja retenção expirou.
+     *
+     * Busca todos os candidatos que:
+     * - Tiveram seus processos de seleção finalizados (completado, abandonado, expirado ou falhou)
+     * - Passaram mais tempo que o período de retenção configurado (padrão: 180 dias)
+     *
+     * Para cada candidato encontrado, substitui o nome e email por informações genéricas,
+     * mantendo apenas o ID para rastreabilidade. Registra a anonimização no histórico para
+     * conformidade regulatória.
+     *
+     * Processa em lotes de 100 registros para não sobrecarregar o banco de dados.
+     *
+     * @param tenantId A empresa para a qual executar a anonimização
+     * @return Quantidade de candidatos que tiveram seus dados anonimizados
+     */
     @Transactional
     public int anonymizeExpiredAttemptsForTenant(String tenantId) {
         Instant cutoff = Instant.now(clock).minus(retentionDays, ChronoUnit.DAYS);
@@ -68,6 +94,21 @@ public class PrivacyRetentionService {
         return candidates.size();
     }
 
+    /**
+     * Executa a anonimização de um candidato específico.
+     *
+     * Remove as informações pessoais do candidato:
+     * - Nome é substituído por um valor genérico
+     * - Email é substituído por um identificador anônimo único
+     * - URL do webhook (usada para enviar resultados) é removida
+     * - ID idempotente é marcado como anonimizado
+     *
+     * Em seguida, registra o evento de anonimização no histórico de auditoria
+     * com informações sobre quando ocorreu e qual política foi aplicada.
+     *
+     * @param candidate Dados do candidato a ser anonimizado
+     * @param anonymizedAt Momento da anonimização
+     */
     private void anonymize(CandidateAttemptEntity candidate, Instant anonymizedAt) {
         String attemptId = candidate.getId();
         candidate.setCandidateName("Candidato anonimizado");

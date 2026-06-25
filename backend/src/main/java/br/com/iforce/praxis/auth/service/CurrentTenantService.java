@@ -8,9 +8,14 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
 /**
- * Resolve o tenant autenticado do contexto de segurança para os fluxos administrativos.
- * Quando {@code praxis.security.enabled=false} (perfis de desenvolvimento e testes), devolve o
- * tenant padrão configurado, mantendo os endpoints utilizáveis sem JWT.
+ * Obtém qual empresa o usuário autenticado está usando no momento.
+ *
+ * O sistema é multi-tenant: cada empresa tem dados isolados. Este serviço
+ * descobre qual empresa o usuário logado representa, extraindo a informação
+ * do token JWT (em produção) ou de uma configuração padrão (em desenvolvimento).
+ *
+ * Isso garante que um usuário nunca consegue acessar dados de outra empresa,
+ * mesmo que tente manipular requisições.
  */
 @Service
 public class CurrentTenantService {
@@ -26,6 +31,18 @@ public class CurrentTenantService {
         this.defaultTenantId = defaultTenantId;
     }
 
+    /**
+     * Obtém o ID da empresa do usuário autenticado.
+     *
+     * Busca a informação da empresa na sessão de segurança atual. Se o usuário
+     * não estiver autenticado ou a informação estiver faltando, lança uma exceção.
+     *
+     * Em ambiente de desenvolvimento/testes (quando segurança está desativada),
+     * retorna a empresa padrão configurada para permitir testes sem autenticação.
+     *
+     * @return ID da empresa do usuário autenticado
+     * @throws ResponseStatusException se o usuário não está autenticado ou a sessão expirou
+     */
     public String requiredTenantId() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         Object details = authentication == null ? null : authentication.getDetails();

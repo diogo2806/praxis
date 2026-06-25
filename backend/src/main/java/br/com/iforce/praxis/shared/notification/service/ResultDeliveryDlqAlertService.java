@@ -19,6 +19,16 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 
+/**
+ * Notifica administradores quando um resultado falha na entrega.
+ *
+ * Quando um evento entra em "Dead Letter Queue" (DLQ) porque falhou 5 vezes
+ * de entregar o resultado para a Gupy, este serviço cria uma notificação
+ * in-app para alertar os administradores da empresa.
+ *
+ * A notificação inclui detalhes do candidato afetado para que possam
+ * investigar e corrigir o problema manualmente se necessário.
+ */
 @Slf4j
 @Service
 public class ResultDeliveryDlqAlertService {
@@ -42,6 +52,22 @@ public class ResultDeliveryDlqAlertService {
         this.objectMapper = objectMapper;
     }
 
+    /**
+     * Cria notificações para alertar administradores de um evento não-entregável.
+     *
+     * Quando um evento não consegue ser entregue após várias tentativas,
+     * todos os administradores da empresa recebem uma notificação alertando
+     * que:
+     * - Um resultado de candidato não foi enviado para a Gupy
+     * - O sistema tentou várias vezes mas falhou
+     * - Precisa de intervenção manual para corrigir
+     *
+     * Evita notificar o mesmo administrador mais de uma vez para o mesmo evento.
+     *
+     * Este método DEVE ser chamado dentro de uma transação de banco de dados existente.
+     *
+     * @param event O evento que falhou em todas as tentativas de entrega
+     */
     @Transactional(propagation = Propagation.MANDATORY)
     public void alertTenantAdmins(OutboxEventEntity event) {
         String attemptId = resolveAttemptId(event);
