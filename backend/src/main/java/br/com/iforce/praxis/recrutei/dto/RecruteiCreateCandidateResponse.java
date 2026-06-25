@@ -3,6 +3,14 @@ package br.com.iforce.praxis.recrutei.dto;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.swagger.v3.oas.annotations.media.Schema;
 
+/**
+ * Resposta devolvida à Recrutei após inscrever o candidato na prova.
+ *
+ * <p>Na visão do processo, é o "comprovante de inscrição": entrega o link para
+ * o candidato fazer a prova, o identificador que a Recrutei usará depois para
+ * consultar o resultado e o identificador da vaga, devolvido tal como veio para
+ * a Recrutei conseguir relacionar tudo do lado dela.</p>
+ */
 @Schema(description = "Resposta com URL da simulação e identificador para consulta do resultado.")
 public record RecruteiCreateCandidateResponse(
         @JsonProperty("test_url")

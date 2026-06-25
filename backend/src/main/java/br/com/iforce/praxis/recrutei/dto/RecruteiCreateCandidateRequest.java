@@ -8,6 +8,15 @@ import jakarta.validation.constraints.NotBlank;
 import java.math.BigDecimal;
 import java.net.URI;
 
+/**
+ * Pedido da Recrutei para colocar um candidato em uma prova da Práxis.
+ *
+ * <p>Na visão do processo, é o "formulário de inscrição" que a Recrutei envia:
+ * diz qual empresa está pedindo, quem é o candidato (identificador, nome e
+ * e-mail), qual prova aplicar e a qual vaga isso se refere. Também pode trazer
+ * o endereço para onde avisar quando o resultado ficar pronto e um multiplicador
+ * de tempo, usado quando o candidato precisa de mais tempo por acessibilidade.</p>
+ */
 @Schema(description = "Pedido da Recrutei para registrar um candidato em um teste Praxis.")
 public record RecruteiCreateCandidateRequest(
         @NotBlank
