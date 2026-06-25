@@ -32,6 +32,14 @@ public class TenantConfigService {
         this.currentTenantService = currentTenantService;
     }
 
+    /**
+     * Devolve os catálogos configuráveis da empresa logada.
+     *
+     * <p>Traz as competências e os limites de tempo; quando a empresa não
+     * personalizou um tipo, devolve o catálogo padrão.</p>
+     *
+     * @return os catálogos da empresa para as telas de autoria
+     */
     @Transactional(readOnly = true)
     public TenantConfigResponse getConfig() {
         String tenantId = currentTenantService.requiredTenantId();
@@ -41,6 +49,17 @@ public class TenantConfigService {
         );
     }
 
+    /**
+     * Substitui por completo as opções de um catálogo da empresa.
+     *
+     * <p>Fluxo do processo: apaga as opções atuais daquele tipo e grava a
+     * nova lista informada, preservando a ordem. Devolve o catálogo
+     * resultante.</p>
+     *
+     * @param configType o tipo de catálogo a personalizar
+     * @param request a nova lista completa de opções
+     * @return a lista de opções resultante
+     */
     @Transactional
     public List<ConfigOptionDto> updateConfig(TenantConfigType configType, UpdateTenantConfigRequest request) {
         String tenantId = currentTenantService.requiredTenantId();
@@ -67,6 +86,10 @@ public class TenantConfigService {
                 .toList();
     }
 
+    /**
+     * Carrega as opções de um catálogo da empresa; se não houver
+     * personalização, devolve os valores padrão embutidos. Uso interno.
+     */
     private List<ConfigOptionDto> loadOrDefault(String tenantId, TenantConfigType configType) {
         List<TenantConfigOptionEntity> rows =
                 repository.findByTenantIdAndConfigTypeOrderByDisplayOrderAscIdAsc(tenantId, configType);

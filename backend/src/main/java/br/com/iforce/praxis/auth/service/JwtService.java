@@ -145,6 +145,7 @@ public class JwtService {
                 .getPayload();
     }
 
+    /** Dados extraídos do link do candidato: a empresa e a participação a que ele dá acesso. */
     public record CandidateAttemptToken(String tenantId, String attemptId) {
     }
 }
