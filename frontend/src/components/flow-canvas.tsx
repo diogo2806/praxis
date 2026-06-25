@@ -671,7 +671,7 @@ const CSS = `
 .vx-score-row input{flex:none;width:60px;height:21px;border:1px solid var(--border);border-radius:6px;background:#fff;text-align:center;font-size:12px;font-weight:600;font-variant-numeric:tabular-nums;color:var(--primary-ink);outline:none;padding:0 2px}
 .vx-score-row input:focus{border-color:var(--primary);box-shadow:0 0 0 2px var(--primary-weak)}
 .vx-score-row input:disabled{background:var(--bg);color:var(--soft)}
-.vx-sr-acc{flex:1;text-align:right;font-size:10.5px;color:var(--soft)} .vx-sr-acc b{color:var(--primary-ink);font-size:12px;font-variant-numeric:tabular-nums;margin-left:2px}
+.vx-sr-acc{flex:1;min-width:0;text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:10.5px;color:var(--soft)} .vx-sr-acc b{color:var(--primary-ink);font-size:12px;font-variant-numeric:tabular-nums;margin-left:2px}
 .vx-score-empty{font-size:10.5px;color:var(--amber);font-style:italic;padding:4px 0}
 .vx-mini-del{flex:none;width:22px;height:22px;display:inline-flex;align-items:center;justify-content:center;border:1px solid var(--border);border-radius:6px;background:var(--danger-weak);color:var(--danger);cursor:pointer}
 .vx-mini-add{flex:none;width:22px;height:22px;display:inline-flex;align-items:center;justify-content:center;border:1px solid var(--border);border-radius:6px;background:var(--primary-weak);color:var(--primary);cursor:pointer}
