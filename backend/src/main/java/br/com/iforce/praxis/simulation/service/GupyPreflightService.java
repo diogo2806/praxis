@@ -20,6 +20,16 @@ import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Faz a "checagem de prontidão" de uma prova para a integração com a Gupy.
+ *
+ * <p>Na visão do processo, antes de colocar uma prova no ar para a Gupy, é
+ * preciso garantir que tudo está configurado. Este componente roda uma
+ * espécie de checklist (preflight): confere se o endereço público do sistema
+ * está configurado, se a empresa tem token de integração e se a estrutura da
+ * prova passou na validação. Cada item vira um status (OK, aviso ou
+ * impedimento), ajudando a equipe a corrigir problemas antes de publicar.</p>
+ */
 @Service
 public class GupyPreflightService {
 
@@ -43,6 +53,16 @@ public class GupyPreflightService {
         this.tenantRepository = tenantRepository;
     }
 
+    /**
+     * Roda a checagem de prontidão (preflight) de uma versão da prova.
+     *
+     * <p>Recusa versões arquivadas e, para as demais, devolve o resultado de
+     * cada item do checklist e se a versão está liberada para a Gupy.</p>
+     *
+     * @param simulationId identificador da prova
+     * @param versionNumber número da versão
+     * @return o resultado da checagem, item a item
+     */
     @Transactional(readOnly = true)
     public GupyPreflightResponse getPreflight(String simulationId, int versionNumber) {
         SimulationVersionEntity simulationVersionEntity = findVersion(simulationId, versionNumber);
@@ -60,6 +80,15 @@ public class GupyPreflightService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Versão de simulação não encontrada."));
     }
 
+    /**
+     * Executa os itens do checklist sobre uma versão e consolida o resultado.
+     *
+     * <p>Verifica a URL pública, o token de integração e a validação da prova.
+     * A versão é considerada liberada quando não há nenhum impedimento.</p>
+     *
+     * @param simulationVersionEntity a versão da prova a checar
+     * @return o resultado consolidado da checagem
+     */
     public GupyPreflightResponse evaluate(SimulationVersionEntity simulationVersionEntity) {
         List<GupyPreflightCheckResponse> checks = new ArrayList<>();
         checks.add(validatePublicBaseUrl());

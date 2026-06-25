@@ -23,6 +23,16 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
+/**
+ * Compara candidatos entre si e contra o perfil ideal da vaga (talent match).
+ *
+ * <p>Na visão do processo, ajuda o recrutador a decidir comparando até 5
+ * candidatos da mesma versão de prova lado a lado: mostra o referencial
+ * (benchmark) esperado em cada competência e o desempenho de cada candidato,
+ * formando um "radar" por competência. Garante que todos os candidatos
+ * pertencem à empresa e à mesma versão, e oferece o modo "às cegas" para
+ * ocultar a identificação e reduzir o viés na decisão.</p>
+ */
 @Service
 public class TalentMatchService {
 
@@ -42,6 +52,20 @@ public class TalentMatchService {
         this.currentTenantService = currentTenantService;
     }
 
+    /**
+     * Monta o comparativo de candidatos contra o referencial da vaga.
+     *
+     * <p>Fluxo do processo: valida a seleção (de 1 a 5 candidatos), confere
+     * que todos pertencem à empresa e à mesma versão da prova, monta o
+     * referencial por competência e o desempenho de cada candidato. No modo
+     * "às cegas", a identificação dos candidatos é ocultada.</p>
+     *
+     * @param simulationId identificador da prova
+     * @param versionNumber número da versão
+     * @param attemptIds os candidatos (participações) a comparar (no máximo 5)
+     * @param blind quando verdadeiro, oculta o nome dos candidatos
+     * @return o referencial da vaga e o radar de competências de cada candidato
+     */
     @Transactional(readOnly = true)
     public TalentMatchResponse getTalentMatch(String simulationId, int versionNumber, List<String> attemptIds, boolean blind) {
         String tenantId = currentTenantService.requiredTenantId();
@@ -87,6 +111,10 @@ public class TalentMatchService {
         return new TalentMatchResponse(simulationId, versionNumber, benchmark, candidates);
     }
 
+    /**
+     * Limpa e valida a lista de candidatos selecionados: remove vazios e
+     * duplicados e exige de 1 a 5 candidatos. Uso interno.
+     */
     private List<String> normalizeAttemptIds(List<String> attemptIds) {
         if (attemptIds == null || attemptIds.isEmpty()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Selecione ao menos uma tentativa.");
@@ -109,6 +137,10 @@ public class TalentMatchService {
         return normalized;
     }
 
+    /**
+     * Monta o "radar" de um candidato: seus pontos em cada competência,
+     * aplicando o modo às cegas quando solicitado. Uso interno.
+     */
     private CandidateRadarDto toCandidateRadar(
             CandidateAttemptEntity attempt,
             List<SimulationCompetencyEntity> competencies,
