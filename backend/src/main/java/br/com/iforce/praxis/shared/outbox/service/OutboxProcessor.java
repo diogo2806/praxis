@@ -27,6 +27,21 @@ import java.util.Optional;
 import java.time.Duration;
 import java.time.Instant;
 
+/**
+ * Processa e entrega eventos armazenados na fila do outbox.
+ *
+ * Funciona como um "carteiro" que busca eventos pendentes de entrega (como resultados
+ * de provas, status de candidatos) e os envia para os webhooks cadastrados nas integrações.
+ *
+ * Se uma entrega falhar:
+ * - Tenta novamente com mais tempo de espera entre as tentativas
+ * - Após 5 tentativas sem sucesso, move o evento para "Dead Letter Queue" (DLQ)
+ * - Avisa os administradores da empresa que há eventos nãoentregáveis
+ *
+ * Processa em lotes de 100 eventos por vez para não sobrecarregar o sistema.
+ * Isso garante que todas as integrações externas sempre recebem as notificações,
+ * mesmo que o servidor seja reiniciado ou haja indisponibilidades temporárias.
+ */
 @Slf4j
 @Component
 public class OutboxProcessor {
@@ -74,7 +89,16 @@ public class OutboxProcessor {
         this.txTemplate = new TransactionTemplate(transactionManager);
     }
 
-    // Sem @Transactional: a entrega HTTP nunca pode acontecer dentro de uma transação aberta.
+    /**
+     * Processa todos os eventos pendentes de entrega no sistema.
+     *
+     * Busca um lote de até 100 eventos que estão prontos para serem entregues,
+     * bloqueia eles (para outra instância não processar em paralelo), e tenta
+     * enviar para os webhooks correspondentes.
+     *
+     * Se a tentativa falhar, agenda uma nova tentativa com backoff (espera progressiva).
+     * Se depois de 5 tentativas ainda não funcionar, desiste e marca como irrecuperável (DLQ).
+     */
     public void processReadyEvents() {
         List<Long> claimedIds = claimBatch();
         if (claimedIds.isEmpty()) {
@@ -88,6 +112,16 @@ public class OutboxProcessor {
         }
     }
 
+    /**
+     * Processa eventos pendentes de uma empresa específica.
+     *
+     * Semelhante a {@link #processReadyEvents()}, mas lida apenas com eventos
+     * da empresa informada. Usado quando se quer reprocessar eventos de uma
+     * empresa em particular ou disparar processamento sob demanda.
+     *
+     * @param tenantId A empresa cujos eventos serão processados
+     * @return Quantidade de eventos que foram processados
+     */
     public int processReadyEventsForTenant(String tenantId) {
         List<Long> claimedIds = claimBatchForTenant(tenantId);
         for (Long id : claimedIds) {
@@ -96,6 +130,18 @@ public class OutboxProcessor {
         return claimedIds.size();
     }
 
+    /**
+     * Reprocessa um evento específico que falhou anteriormente.
+     *
+     * Usado quando um evento ficou preso em "Dead Letter Queue" (DLQ) porque
+     * falhou 5 vezes. Um administrador pode corrigir o problema (por exemplo,
+     * corrigir a URL do webhook) e chamar este método para tentar novamente.
+     *
+     * Se o evento já foi entregue com sucesso, ignora o reprocessamento.
+     *
+     * @param eventId ID do evento a reprocessar
+     * @param tenantId A empresa que o evento pertence (para isolamento de dados)
+     */
     public void reprocessEvent(Long eventId, String tenantId) {
         Long claimedId = txTemplate.execute(status -> {
             OutboxEventEntity event = outboxEventRepository.findByIdAndTenantId(eventId, tenantId)

@@ -12,6 +12,20 @@ import java.time.Instant;
 import java.util.Date;
 import java.util.Set;
 
+/**
+ * Cria e valida tokens de segurança (JWT).
+ *
+ * JWT (JSON Web Token) é um padrão de token assinado digitalmente que prova
+ * a identidade de um usuário. O token contém:
+ * - Quem é o usuário (ID)
+ * - Qual empresa ele pertence (tenant)
+ * - Quais permissões tem (roles)
+ * - Quando expira (TTL)
+ *
+ * Dois tipos de tokens são gerados:
+ * 1. Para administradores/recrutadores: dura 8 horas (configurável)
+ * 2. Para candidatos em prova: dura apenas o tempo que levam para fazer a prova
+ */
 @Service
 public class JwtService {
 
@@ -39,6 +53,18 @@ public class JwtService {
         this.expirationHours = expirationHours;
     }
 
+    /**
+     * Cria um token de sessão para um usuário (administrador/recrutador).
+     *
+     * O token contém a identidade do usuário, sua empresa, e suas permissões.
+     * É válido por um período configurado (padrão: 8 horas). Após expirar,
+     * o usuário precisa fazer login novamente.
+     *
+     * @param userId ID único do usuário
+     * @param tenantId ID da empresa do usuário
+     * @param roles Conjunto de permissões (ex: ADMIN, RECRUITER)
+     * @return Token JWT assinado que pode ser enviado em requisições
+     */
     public String generateToken(String userId, String tenantId, Set<String> roles) {
         Instant now = Instant.now();
         return Jwts.builder()
@@ -51,6 +77,20 @@ public class JwtService {
                 .compact();
     }
 
+    /**
+     * Cria um token para um candidato fazendo uma prova.
+     *
+     * Este token é mais restritivo que o de administrador: vale apenas enquanto
+     * o candidato está fazendo a prova. Contém o ID da tentativa e da empresa.
+     *
+     * O tempo de validade é passado como parâmetro para que seja flexível:
+     * uma prova de 1 hora recebe um token de 1 hora, uma de 2 horas recebe 2 horas.
+     *
+     * @param tenantId ID da empresa
+     * @param attemptId ID da tentativa da prova
+     * @param ttlHours Tempo de validade do token em horas
+     * @return Token JWT para usar durante a prova
+     */
     public String generateCandidateAttemptToken(String tenantId, String attemptId, int ttlHours) {
         Instant now = Instant.now();
         return Jwts.builder()
@@ -64,6 +104,16 @@ public class JwtService {
                 .compact();
     }
 
+    /**
+     * Extrai as informações de um token de prova.
+     *
+     * Valida a assinatura do token (garante que não foi falsificado) e extrai
+     * o ID da tentativa e da empresa.
+     *
+     * @param token Token JWT recebido do candidato
+     * @return ID da tentativa e da empresa contidos no token
+     * @throws IllegalArgumentException se o token é inválido ou expirou
+     */
     public CandidateAttemptToken parseCandidateAttemptToken(String token) {
         Claims claims = parse(token);
         if (!CANDIDATE_ATTEMPT_TOKEN_TYPE.equals(claims.get("typ", String.class))) {
@@ -77,6 +127,16 @@ public class JwtService {
         return new CandidateAttemptToken(tenantId, attemptId);
     }
 
+    /**
+     * Decodifica um token JWT.
+     *
+     * Valida a assinatura e retorna todas as informações (claims) contidas no token.
+     * Este é o método de baixo nível; use os métodos especializados acima em vez deste.
+     *
+     * @param token Token JWT assinado
+     * @return Dados decodificados do token
+     * @throws RuntimeException se o token é inválido ou expirou
+     */
     public Claims parse(String token) {
         return Jwts.parser()
                 .verifyWith(secretKey)
