@@ -330,7 +330,7 @@ export default function FlowCanvas({
               {resultUse && <div className="vx-ctx-row"><b>Uso do resultado</b><span>{resultUse}</span></div>}
               <div className="vx-ctx-row"><b>Competências</b>
                 <span className="vx-ctx-comps">
-                  {comps.length ? comps.map((c) => <i key={c.name} title={`peso ${c.weight}`}>{c.name}<small>{c.weight}</small></i>) : "—"}
+                  {comps.length ? comps.map((c) => <i key={c.name} title={`peso ${c.weight}`}>{c.name}</i>) : "—"}
                 </span>
               </div>
             </div>
@@ -627,7 +627,6 @@ const CSS = `
 .vx-ctx-row b{color:var(--soft);font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:.03em;padding-top:1px}
 .vx-ctx-row span{color:var(--ink)} .vx-ctx-quote{font-style:italic;color:var(--muted)}
 .vx-ctx-comps{display:flex;flex-wrap:wrap;gap:5px} .vx-ctx-comps i{font-style:normal;display:inline-flex;align-items:center;gap:4px;background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:1px 7px;font-size:11.5px}
-.vx-ctx-comps small{color:var(--primary-ink);font-weight:700;background:var(--primary-weak);border-radius:4px;padding:0 4px}
 .vx-bar{display:flex;align-items:center;gap:14px;padding:10px 14px;background:var(--panel);border-bottom:1px solid var(--border)}
 .vx-counts{display:flex;align-items:center;gap:9px;font-size:13px;color:var(--muted)} .vx-counts b{color:var(--ink)} .vx-counts span{display:inline-flex;align-items:center;gap:4px}
 .vx-dot{width:3px;height:3px;border-radius:50%;background:var(--soft)}
