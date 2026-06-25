@@ -39,6 +39,20 @@ async function normalizeCatastrophicSsrResponse(response: Response): Promise<Res
   });
 }
 
+const requestLoggingEnabled = process.env.PRAXIS_REQUEST_LOG !== "false";
+
+function logRequest(request: Request, response: Response, startedAt: number): void {
+  if (!requestLoggingEnabled) return;
+  const { pathname } = new URL(request.url);
+  const durationMs = Math.round(performance.now() - startedAt);
+  const line = `${request.method} ${pathname} → ${response.status} (${durationMs}ms)`;
+  if (response.status >= 500) {
+    console.error(line);
+  } else {
+    console.log(line);
+  }
+}
+
 function getBackendBaseUrl(): string {
   return (
     process.env.VITE_PRAXIS_API_BASE_URL ??
@@ -84,21 +98,25 @@ async function proxyToBackend(request: Request): Promise<Response> {
 
 export default {
   async fetch(request: Request, env: unknown, ctx: unknown) {
+    const startedAt = performance.now();
+    let response: Response;
     try {
       const url = new URL(request.url);
       if (shouldProxyToBackend(url.pathname)) {
-        return await proxyToBackend(request);
+        response = await proxyToBackend(request);
+      } else {
+        const handler = await getServerEntry();
+        const handled = await handler.fetch(request, env, ctx);
+        response = await normalizeCatastrophicSsrResponse(handled);
       }
-
-      const handler = await getServerEntry();
-      const response = await handler.fetch(request, env, ctx);
-      return await normalizeCatastrophicSsrResponse(response);
     } catch (error) {
       console.error(error);
-      return new Response(renderErrorPage(), {
+      response = new Response(renderErrorPage(), {
         status: 500,
         headers: { "content-type": "text/html; charset=utf-8" },
       });
     }
+    logRequest(request, response, startedAt);
+    return response;
   },
 };
