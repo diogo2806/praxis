@@ -125,7 +125,7 @@ export interface SimulationSummaryResponse {
   id: string;
   name: string;
   description: string;
-  criticalSituatioetapa: string | null;
+  criticalSituation: string | null;
   resultUse?: string | null;
   versionNumber: number;
   status: SimulationVersionStatus;
@@ -148,7 +148,7 @@ export interface CreateSimulationDraftRequest {
   description: string;
   rootNodeId: string;
   competencies: string[];
-  criticalSituatioetapa: string;
+  criticalSituation: string;
   resultUse?: string;
 }
 
@@ -161,7 +161,7 @@ export interface UpdateBlueprintCompetencyRequest {
 export interface UpdateBlueprintRequest {
   rootNodeId: string;
   competencies: UpdateBlueprintCompetencyRequest[];
-  criticalSituatioetapa: string | null;
+  criticalSituation: string | null;
   resultUse?: string | null;
 }
 
@@ -200,7 +200,7 @@ export interface SimulationVersionDetailResponse {
   simulationId: string;
   name: string;
   description: string;
-  criticalSituatioetapa: string | null;
+  criticalSituation: string | null;
   resultUse?: string | null;
   versionNumber: number;
   status: SimulationVersionStatus;

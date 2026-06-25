@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
 import { AppShell } from "@/components/app-shell";
 import { EmptyState, ScreenStateStrip, StateBanner, StatusBadge } from "@/components/praxis-ui";
 import { WizardStepper } from "@/components/wizard-stepper";
@@ -9,6 +10,14 @@ import {
   updateSimulationBlueprint,
   type SimulationSummaryResponse,
 } from "@/lib/api/praxis";
+
+function normalizeCompetency(value: string) {
+  return value
+    .normalize("NFD")
+    .replace(/\p{Diacritic}/gu, "")
+    .trim()
+    .toLowerCase();
+}
 
 export const Route = createFileRoute("/nova/objetivo")({
   validateSearch: (search: Record<string, unknown>) => ({
@@ -44,22 +53,90 @@ function Page() {
     queryFn: () => getSimulationVersion(search.simulationId!, search.versionNumber!),
     enabled: hasDraftContext,
   });
+
+  const isDraft = versionQuery.data?.status === "draft";
+  const [editedCompetencies, setEditedCompetencies] = useState<string[]>([]);
+  const [newCompetency, setNewCompetency] = useState("");
+  const [hydratedVersionKey, setHydratedVersionKey] = useState<string | null>(null);
+
+  // Reidrata o rascunho local apenas quando muda a versão carregada do servidor,
+  // preservando edições não salvas durante refetches da mesma versão.
+  useEffect(() => {
+    if (!versionQuery.data) {
+      return;
+    }
+    const versionKey = `${versionQuery.data.simulationId}:${versionQuery.data.versionNumber}`;
+    if (hydratedVersionKey === versionKey) {
+      return;
+    }
+    setEditedCompetencies(versionQuery.data.blueprint.competencies.map((item) => item.name));
+    setNewCompetency("");
+    setHydratedVersionKey(versionKey);
+  }, [hydratedVersionKey, versionQuery.data]);
+
+  const displayCompetencies = isDraft
+    ? editedCompetencies
+    : (versionQuery.data?.blueprint.competencies.map((item) => item.name) ?? []);
+  const trimmedNewCompetency = newCompetency.trim();
+  const canAddCompetency =
+    trimmedNewCompetency.length > 0 &&
+    trimmedNewCompetency.length <= 140 &&
+    !displayCompetencies.some(
+      (name) => normalizeCompetency(name) === normalizeCompetency(trimmedNewCompetency),
+    );
+
+  function addCompetency() {
+    if (!canAddCompetency) {
+      return;
+    }
+    setEditedCompetencies((current) => [...current, trimmedNewCompetency]);
+    setNewCompetency("");
+  }
+
+  function removeCompetency(name: string) {
+    setEditedCompetencies((current) => current.filter((item) => item !== name));
+  }
+
+  function buildBlueprintBody() {
+    const version = versionQuery.data!;
+    // Em rascunho, redistribui pesos iguais (somando 1.0) para o conjunto editado;
+    // fora de rascunho, reenvia as competências como estão.
+    const competencies = isDraft
+      ? editedCompetencies.map((name) => {
+          const existing = version.blueprint.competencies.find((item) => item.name === name);
+          return {
+            name,
+            weight: editedCompetencies.length > 0 ? 1 / editedCompetencies.length : 1,
+            targetScore: existing?.targetScore ?? null,
+          };
+        })
+      : version.blueprint.competencies;
+    return {
+      rootNodeId: version.blueprint.rootNodeId,
+      competencies,
+      criticalSituation: version.criticalSituation ?? null,
+      resultUse: version.resultUse ?? null,
+    };
+  }
+
   const saveMutation = useMutation({
-    mutationFn: () =>
-      updateSimulationBlueprint(search.simulationId!, search.versionNumber!, {
-        rootNodeId: versionQuery.data!.blueprint.rootNodeId,
-        competencies: versionQuery.data!.blueprint.competencies,
-      }),
-    onSuccess: async (simulation) => {
+    mutationFn: (_options: { advance: boolean }) =>
+      updateSimulationBlueprint(search.simulationId!, search.versionNumber!, buildBlueprintBody()),
+    onSuccess: async (simulation, options) => {
       await queryClient.invalidateQueries({
         queryKey: ["simulation-version", search.simulationId, search.versionNumber],
       });
-      void navigate({
-        to: "/nova/personagem",
-        search: { simulationId: simulation.id, versionNumber: simulation.versionNumber },
-      });
+      await queryClient.invalidateQueries({ queryKey: ["simulations"] });
+      if (options.advance) {
+        void navigate({
+          to: "/nova/personagem",
+          search: { simulationId: simulation.id, versionNumber: simulation.versionNumber },
+        });
+      }
     },
   });
+
+  const hasNoCompetencies = displayCompetencies.length === 0;
 
   return (
     <AppShell>
@@ -112,20 +189,66 @@ function Page() {
               <Info label="Versão" value={`v${versionQuery.data.versionNumber}`} />
             </div>
             <div className="mt-5">
-              <h3 className="text-sm font-semibold">Competências e pesos</h3>
+              <div className="flex items-center justify-between gap-3">
+                <h3 className="text-sm font-semibold">Competências</h3>
+                {isDraft && (
+                  <span className="text-xs text-muted-foreground">
+                    Rascunho · edite as competências abaixo
+                  </span>
+                )}
+              </div>
               <div className="mt-3 grid gap-2 md:grid-cols-3">
-                {versionQuery.data.blueprint.competencies.map((competency) => (
+                {displayCompetencies.map((competency) => (
                   <div
-                    key={competency.name}
-                    className="rounded-md border border-border bg-background p-3"
+                    key={competency}
+                    className="flex items-center justify-between gap-2 rounded-md border border-border bg-background p-3"
                   >
-                    <div className="text-sm font-medium">{competency.name}</div>
-                    <div className="mt-1 text-xs tabular-nums text-muted-foreground">
-                      {(competency.weight * 100).toFixed(0)}%
-                    </div>
+                    <span className="text-sm font-medium">{competency}</span>
+                    {isDraft && (
+                      <button
+                        type="button"
+                        onClick={() => removeCompetency(competency)}
+                        aria-label={`Remover ${competency}`}
+                        className="rounded-md px-2 text-sm text-muted-foreground hover:bg-accent hover:text-foreground"
+                      >
+                        ×
+                      </button>
+                    )}
                   </div>
                 ))}
               </div>
+              {isDraft && (
+                <>
+                  <div className="mt-3 grid gap-2 md:grid-cols-[1fr_auto]">
+                    <input
+                      className="rounded-md border border-border bg-background px-3 py-2 text-sm"
+                      placeholder="Adicionar competência"
+                      maxLength={140}
+                      value={newCompetency}
+                      onChange={(event) => setNewCompetency(event.target.value)}
+                      onKeyDown={(event) => {
+                        if (event.key === "Enter") {
+                          event.preventDefault();
+                          addCompetency();
+                        }
+                      }}
+                    />
+                    <button
+                      type="button"
+                      onClick={addCompetency}
+                      disabled={!canAddCompetency}
+                      className="rounded-md border border-border bg-card px-4 py-2 text-sm hover:bg-accent disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      Adicionar
+                    </button>
+                  </div>
+                  {hasNoCompetencies && (
+                    <p className="mt-2 text-xs text-danger">
+                      Mantenha ao menos uma competência para salvar.
+                    </p>
+                  )}
+                </>
+              )}
             </div>
           </section>
           {saveMutation.isError && (
@@ -137,15 +260,34 @@ function Page() {
               </StateBanner>
             </div>
           )}
-          <div className="mt-8 flex flex-row-reverse justify-between">
-            <button
-              type="button"
-              onClick={() => saveMutation.mutate()}
-              disabled={saveMutation.isPending}
-              className="rounded-md bg-primary px-5 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              {saveMutation.isPending ? "Salvando..." : "Personagem →"}
-            </button>
+          {isDraft && saveMutation.isSuccess && !saveMutation.isPending && (
+            <div className="mt-5">
+              <StateBanner tone="info" title="Alterações salvas">
+                As competências do rascunho foram atualizadas.
+              </StateBanner>
+            </div>
+          )}
+          <div className="mt-8 flex flex-row-reverse items-center justify-between gap-3">
+            <div className="flex flex-row-reverse items-center gap-2">
+              <button
+                type="button"
+                onClick={() => saveMutation.mutate({ advance: true })}
+                disabled={saveMutation.isPending || hasNoCompetencies}
+                className="rounded-md bg-primary px-5 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {saveMutation.isPending ? "Salvando..." : "Personagem →"}
+              </button>
+              {isDraft && (
+                <button
+                  type="button"
+                  onClick={() => saveMutation.mutate({ advance: false })}
+                  disabled={saveMutation.isPending || hasNoCompetencies}
+                  className="rounded-md border border-border bg-card px-4 py-2 text-sm hover:bg-accent disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  Salvar alterações
+                </button>
+              )}
+            </div>
             <Link
               to="/nova/blueprint"
               search={{ simulationId: search.simulationId, versionNumber: search.versionNumber }}
