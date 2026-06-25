@@ -612,7 +612,7 @@ const CSS = `
   --danger:#CC3E35;--danger-weak:#FAE7E5;
   --amber:#7A5410;--amber-weak:#FCF2DB;--amber-line:#E6C98A;--amber-solid:#E1A536;
   --gold:#8A6312;--gold-weak:#FBEFD4;--gold-line:#E4C57E;
-  --dot:#E6E3DA;
+  --dot:#CFC8B6;
   font-family:system-ui,-apple-system,"Segoe UI",sans-serif;color:var(--ink);
   display:flex;flex-direction:column;border:1px solid var(--border);border-radius:14px;overflow:hidden;background:var(--bg)}
 .vx-root b{font-weight:650}
