@@ -32,6 +32,16 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
+/**
+ * Porta de entrada (API) usada pela Recrutei para integrar com a Práxis.
+ *
+ * <p>Na visão do processo, funciona como a integração com a Gupy, mas para a
+ * plataforma Recrutei: lista as provas publicadas, cadastra um candidato para
+ * fazer a prova e consulta o resultado depois de pronto — sempre com um token
+ * de acesso que identifica a empresa solicitante. Internamente, reaproveita a
+ * mesma lógica de participação usada pela Gupy, apenas traduzindo os dados
+ * para o formato esperado pela Recrutei.</p>
+ */
 @RestController
 @RequestMapping("/recrutei")
 @Tag(name = "Recrutei Integration", description = "Endpoints REST consumidos pela Recrutei para testes externos.")
@@ -68,6 +78,18 @@ public class RecruteiIntegrationController {
         this.recruteiTestResultMapper = recruteiTestResultMapper;
     }
 
+    /**
+     * Lista, para a Recrutei, as provas publicadas e disponíveis.
+     *
+     * <p>Permite buscar por texto e paginar. Valida antes o token para saber
+     * de qual empresa é a requisição.</p>
+     *
+     * @param authorization token de acesso da integração (cabeçalho HTTP)
+     * @param search texto opcional para filtrar as provas
+     * @param offset a partir de qual posição começar (paginação)
+     * @param limit quantas provas trazer por página
+     * @return a lista de provas publicadas no formato da Recrutei
+     */
     @GetMapping("/test")
     @Operation(summary = "Lista simulações publicadas", description = "Retorna as simulações Praxis publicadas para a Recrutei.")
     @ApiResponses({
@@ -101,6 +123,17 @@ public class RecruteiIntegrationController {
         return ResponseEntity.ok(new RecruteiTestListResponse(normalizedLimit, normalizedOffset, total, tests));
     }
 
+    /**
+     * Registra um candidato para fazer uma prova (vindo da Recrutei).
+     *
+     * <p>Cria a participação ou reaproveita uma existente para o mesmo
+     * candidato e prova, evitando duplicidade. Devolve o link da prova e os
+     * identificadores no formato da Recrutei.</p>
+     *
+     * @param authorization token de acesso da integração (cabeçalho HTTP)
+     * @param request dados do candidato e da prova a aplicar
+     * @return a participação criada ou reaproveitada, no formato da Recrutei
+     */
     @PostMapping("/test/candidate")
     @Operation(summary = "Registra candidato", description = "Cria ou reutiliza tentativa por company_id, candidate_id e test_id.")
     @ApiResponses({
@@ -138,6 +171,17 @@ public class RecruteiIntegrationController {
         );
     }
 
+    /**
+     * Consulta o resultado de uma prova já finalizada (para a Recrutei).
+     *
+     * <p>Devolve a pontuação e o desempenho por competência. Exige a empresa
+     * (company_id) para garantir que o resultado pertence a quem consulta.</p>
+     *
+     * @param authorization token de acesso da integração (cabeçalho HTTP)
+     * @param resultId identificador do resultado consultado
+     * @param companyId identificador da empresa dona do resultado
+     * @return o resultado da prova no formato da Recrutei
+     */
     @GetMapping("/test/result/{resultId}")
     @Operation(summary = "Consulta resultado", description = "Retorna o resultado do teste para a Recrutei, incluindo pontuação e competências.")
     @ApiResponses({

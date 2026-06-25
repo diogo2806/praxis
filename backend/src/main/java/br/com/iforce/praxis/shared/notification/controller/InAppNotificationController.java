@@ -11,6 +11,13 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
+/**
+ * Porta de entrada (API) das notificações exibidas dentro do sistema.
+ *
+ * <p>Na visão do processo, alimenta o "sininho" de avisos da empresa: lista
+ * as notificações internas (por exemplo, alertas sobre entregas de resultado
+ * que falharam) da empresa logada, da mais recente para a mais antiga.</p>
+ */
 @RestController
 @RequestMapping("/api/v1/notifications")
 public class InAppNotificationController {
@@ -26,6 +33,11 @@ public class InAppNotificationController {
         this.notificationRepository = notificationRepository;
     }
 
+    /**
+     * Lista as notificações internas da empresa logada.
+     *
+     * @return as notificações, da mais recente para a mais antiga
+     */
     @GetMapping
     public ResponseEntity<List<InAppNotificationResponse>> listNotifications() {
         String tenantId = currentTenantService.requiredTenantId();
@@ -35,6 +47,7 @@ public class InAppNotificationController {
                 .toList());
     }
 
+    /** Converte a notificação interna no formato simplificado exibido na tela. Uso interno. */
     private InAppNotificationResponse toResponse(InAppNotificationEntity notification) {
         return new InAppNotificationResponse(
                 notification.getId(),

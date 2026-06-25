@@ -11,6 +11,15 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
+/**
+ * Porta de entrada (API) das informações de privacidade exibidas ao usuário.
+ *
+ * <p>Na visão do processo, é por aqui que a tela mostra ao candidato as
+ * informações de privacidade do processo seletivo: finalidades do uso dos
+ * dados, por quanto tempo são guardados, contato do responsável e como pedir
+ * revisão. O conteúdo vem de configurações definidas pela empresa
+ * responsável, sem expor dados técnicos internos.</p>
+ */
 @RestController
 @RequestMapping("/api/v1/privacy")
 @Tag(name = "Privacy", description = "Informacoes operacionais de privacidade, explicabilidade e revisao.")
@@ -39,6 +48,14 @@ public class PrivacyController {
         this.reviewInstructions = reviewInstructions;
     }
 
+    /**
+     * Devolve as informações de privacidade para exibir na tela.
+     *
+     * <p>Reúne as bases legais, o prazo de retenção, o contato do responsável
+     * e o canal/orientações para solicitar revisão.</p>
+     *
+     * @return o pacote de informações de privacidade do processo
+     */
     @GetMapping("/compliance")
     @Operation(
             summary = "Retorna informacoes operacionais de privacidade",
@@ -75,6 +92,11 @@ public class PrivacyController {
         ));
     }
 
+    /**
+     * Define qual canal de privacidade mostrar ao candidato: prioriza o site
+     * configurado, depois o e-mail; se nada estiver configurado, devolve um
+     * aviso orientando a configuração. Uso interno.
+     */
     private String reviewChannel() {
         if (serviceUrl != null && !serviceUrl.isBlank()) {
             return serviceUrl;
@@ -85,6 +107,7 @@ public class PrivacyController {
         return "Canal de privacidade nao configurado para este tenant. Configure PRAXIS_PRIVACY_SERVICE_EMAIL ou PRAXIS_PRIVACY_SERVICE_URL antes de operar processos reais.";
     }
 
+    /** Trata texto em branco como ausência de valor (nulo). Uso interno. */
     private String blankToNull(String value) {
         return value == null || value.isBlank() ? null : value;
     }
