@@ -19,6 +19,15 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+/**
+ * Porta de entrada (API) do fluxo público do candidato durante a avaliação.
+ *
+ * <p>É por aqui que a tela usada pelo próprio candidato conversa com o
+ * sistema enquanto ele faz a prova: carregar a etapa atual, enviar respostas,
+ * pedir revisão humana do resultado e registrar consentimento de dados de
+ * saúde. Tudo é exposto sem revelar gabarito, pesos ou informações internas,
+ * preservando a integridade da avaliação e a privacidade do participante.</p>
+ */
 @RestController
 @RequestMapping("/candidate/attempts")
 @Tag(name = "Participacoes", description = "Fluxo publico do candidato para executar a avaliacao.")
@@ -38,6 +47,15 @@ public class CandidateAttemptController {
         this.candidateHealthConsentService = candidateHealthConsentService;
     }
 
+    /**
+     * Carrega a tela atual da prova para o candidato.
+     *
+     * <p>Devolve a etapa em que o candidato está, sem expor gabarito, pesos
+     * ou dados internos — apenas o que ele precisa ver para continuar.</p>
+     *
+     * @param attemptId identificador da participação do candidato
+     * @return a etapa atual da avaliação
+     */
     @GetMapping("/{attemptId}")
     @Operation(
             summary = "Carrega participacao do candidato",
@@ -47,6 +65,16 @@ public class CandidateAttemptController {
         return ResponseEntity.ok(candidateAttemptService.findCandidateAttempt(attemptId));
     }
 
+    /**
+     * Registra a resposta que o candidato deu na etapa atual.
+     *
+     * <p>Guarda a resposta e avança o fluxo. Quando é a última etapa, o
+     * sistema fecha a avaliação e calcula o resultado.</p>
+     *
+     * @param attemptId identificador da participação do candidato
+     * @param request a resposta informada pelo candidato
+     * @return a próxima etapa ou o desfecho da avaliação
+     */
     @PostMapping("/{attemptId}/answers")
     @Operation(
             summary = "Registra resposta do candidato",
@@ -59,6 +87,17 @@ public class CandidateAttemptController {
         return ResponseEntity.ok(candidateAttemptService.submitAnswer(attemptId, request));
     }
 
+    /**
+     * Registra o pedido do candidato para que um humano revise o resultado.
+     *
+     * <p>Direito garantido pela LGPD (art. 20): o candidato pode pedir que
+     * uma pessoa revise a decisão. O pedido fica registrado na trilha de
+     * auditoria para que o recrutador o atenda.</p>
+     *
+     * @param attemptId identificador da participação do candidato
+     * @param request justificativa opcional do pedido de revisão
+     * @return confirmação sem conteúdo (apenas registra o pedido)
+     */
     @PostMapping("/{attemptId}/review-request")
     @Operation(
             summary = "Solicita revisão humana",
@@ -73,6 +112,17 @@ public class CandidateAttemptController {
         return ResponseEntity.noContent().build();
     }
 
+    /**
+     * Registra o consentimento do participante para usar dados de saúde.
+     *
+     * <p>Na vertical de saúde, antes de iniciar a atividade o participante
+     * precisa autorizar o tratamento de dados sensíveis (LGPD, arts. 11 e
+     * 14). Esse consentimento fica guardado na trilha de auditoria.</p>
+     *
+     * @param attemptId identificador da participação do candidato
+     * @param request dados do consentimento informado
+     * @return confirmação sem conteúdo (apenas registra o consentimento)
+     */
     @PostMapping("/{attemptId}/health-consent")
     @Operation(
             summary = "Registra consentimento de saúde do participante",
