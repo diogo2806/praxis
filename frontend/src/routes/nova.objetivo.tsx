@@ -105,14 +105,28 @@ function Page() {
                   {versionQuery.data.description}
                 </p>
               </div>
-              <StatusBadge status={versionQuery.data.status} />
+              <div className="flex flex-col items-end gap-2">
+                <StatusBadge status={versionQuery.data.status} />
+                {versionQuery.data.status === "draft" && (
+                  <Link
+                    to="/nova/blueprint"
+                    search={{
+                      simulationId: search.simulationId,
+                      versionNumber: search.versionNumber,
+                    }}
+                    className="rounded-md border border-border bg-card px-3 py-1.5 text-xs font-medium hover:bg-accent"
+                  >
+                    Editar modelo base
+                  </Link>
+                )}
+              </div>
             </div>
             <div className="mt-5 grid gap-3 md:grid-cols-2">
               <Info label="Primeira etapa" value={versionQuery.data.blueprint.rootNodeId} />
               <Info label="Versão" value={`v${versionQuery.data.versionNumber}`} />
             </div>
             <div className="mt-5">
-              <h3 className="text-sm font-semibold">Competências e pesos</h3>
+              <h3 className="text-sm font-semibold">Competências</h3>
               <div className="mt-3 grid gap-2 md:grid-cols-3">
                 {versionQuery.data.blueprint.competencies.map((competency) => (
                   <div
@@ -120,9 +134,6 @@ function Page() {
                     className="rounded-md border border-border bg-background p-3"
                   >
                     <div className="text-sm font-medium">{competency.name}</div>
-                    <div className="mt-1 text-xs tabular-nums text-muted-foreground">
-                      {(competency.weight * 100).toFixed(0)}%
-                    </div>
                   </div>
                 ))}
               </div>
