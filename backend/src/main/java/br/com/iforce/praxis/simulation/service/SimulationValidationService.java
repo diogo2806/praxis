@@ -23,6 +23,18 @@ import java.util.Map;
 import java.util.OptionalDouble;
 import java.util.Set;
 
+/**
+ * Verifica a qualidade e a integridade de uma prova antes da publicação.
+ *
+ * <p>Na visão do processo, é o "revisor automático" da prova. Ele percorre
+ * todo o cenário e aponta problemas, separando-os em <b>impedimentos</b>
+ * (que bloqueiam a publicação — por exemplo, uma etapa inicial inexistente,
+ * caminhos sem saída, ciclos que prendem o candidato ou pesos de competência
+ * inválidos) e <b>avisos</b> (que não bloqueiam, mas merecem atenção, como um
+ * cenário muito grande). Ao final, calcula uma nota de qualidade e diz se a
+ * prova está liberada para publicar. Assim, a equipe corrige os problemas
+ * antes que a prova chegue a um candidato real.</p>
+ */
 @Service
 public class SimulationValidationService {
 
@@ -35,6 +47,18 @@ public class SimulationValidationService {
         this.praxisProperties = praxisProperties;
     }
 
+    /**
+     * Revisa uma versão da prova e relata todos os problemas encontrados.
+     *
+     * <p>Fluxo do processo: confere a etapa inicial, valida cada etapa e suas
+     * respostas, verifica os pesos das competências e analisa o cenário como
+     * um todo (caminhos sem saída, ciclos, profundidade excessiva e equilíbrio
+     * de pontuação). Devolve a lista de impedimentos e avisos, uma nota de
+     * qualidade e a informação de se a prova pode ou não ser publicada.</p>
+     *
+     * @param simulationVersionEntity a versão da prova a revisar
+     * @return o relatório de validação (impedimentos, avisos, nota e se é publicável)
+     */
     public SimulationValidationResponse validate(SimulationVersionEntity simulationVersionEntity) {
         List<ValidationIssueResponse> issues = new ArrayList<>();
         Map<String, SimulationNodeEntity> nodesById = buildNodeMap(simulationVersionEntity, issues);
@@ -276,6 +300,15 @@ public class SimulationValidationService {
         }
     }
 
+    /**
+     * Confere se os pesos das competências de uma prova são válidos.
+     *
+     * <p>Usado ao criar/editar a prova para garantir que os pesos fazem
+     * sentido (por exemplo, somam o esperado e não têm valores inválidos),
+     * recusando o cadastro caso contrário.</p>
+     *
+     * @param competencies as competências com seus pesos
+     */
     public void validateWeights(List<CompetencyWeightDto> competencies) {
         validateWeightValues(
                 competencies.stream()
@@ -284,6 +317,14 @@ public class SimulationValidationService {
         );
     }
 
+    /**
+     * Confere se os pesos das competências de um plano de avaliação são válidos.
+     *
+     * <p>Mesma verificação de {@link #validateWeights}, aplicada aos dados que
+     * chegam na atualização do plano da avaliação.</p>
+     *
+     * @param competencies as competências do plano com seus pesos
+     */
     public void validateBlueprintWeights(List<UpdateBlueprintRequest.CompetencyRequest> competencies) {
         validateWeightValues(
                 competencies.stream()

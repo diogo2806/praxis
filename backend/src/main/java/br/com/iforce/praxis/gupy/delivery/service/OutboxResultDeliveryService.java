@@ -20,6 +20,16 @@ import org.springframework.web.server.ResponseStatusException;
 import java.time.Instant;
 import java.util.List;
 
+/**
+ * Gerencia a fila de entrega dos resultados de prova para a Gupy.
+ *
+ * <p>Na visão do processo, quando uma prova termina, o resultado fica
+ * registrado para ser enviado de volta à Gupy (o endereço de webhook dela). O
+ * envio é assíncrono e com novas tentativas automáticas em caso de falha. Este
+ * componente é o painel de controle dessa fila: permite consultar o que já foi
+ * entregue, o que está aguardando reenvio e o que falhou, além de disparar o
+ * reenvio em lote ou de uma entrega específica.</p>
+ */
 @Service
 public class OutboxResultDeliveryService {
 
@@ -45,6 +55,17 @@ public class OutboxResultDeliveryService {
         this.objectMapper = objectMapper;
     }
 
+    /**
+     * Lista as entregas de resultado da empresa atual para acompanhamento.
+     *
+     * <p>Permite filtrar pela situação da entrega e/ou pela prova e versão
+     * específicas. É apenas consulta.</p>
+     *
+     * @param status situação desejada (ou nulo para todas)
+     * @param simulationId prova específica (opcional)
+     * @param versionNumber versão específica da prova (opcional)
+     * @return as entregas que atendem aos filtros
+     */
     @Transactional(readOnly = true)
     public List<ResultDeliveryResponse> listDeliveries(
             ResultDeliveryStatus status,
@@ -66,6 +87,14 @@ public class OutboxResultDeliveryService {
                 .toList();
     }
 
+    /**
+     * Lista as entregas que já estão prontas para uma nova tentativa de envio.
+     *
+     * <p>São as entregas pendentes ou em retentativa cujo horário agendado
+     * para nova tentativa já passou.</p>
+     *
+     * @return as entregas prontas para reenvio
+     */
     @Transactional(readOnly = true)
     public List<ResultDeliveryResponse> listReadyForRetry() {
         return outboxEventRepository
@@ -80,6 +109,14 @@ public class OutboxResultDeliveryService {
                 .toList();
     }
 
+    /**
+     * Processa, de uma vez, todas as entregas prontas da empresa atual.
+     *
+     * <p>Dispara o envio de cada entrega cujo prazo de espera já venceu e
+     * devolve quantas foram processadas, junto com as que ainda restam.</p>
+     *
+     * @return o total processado e as entregas ainda pendentes
+     */
     // Sem @Transactional: o OutboxProcessor faz a entrega HTTP fora de qualquer transação
     // aberta e persiste o resultado em transações curtas próprias.
     public ProcessReadyDeliveriesResponse processReadyDeliveries() {
@@ -89,6 +126,15 @@ public class OutboxResultDeliveryService {
         return new ProcessReadyDeliveriesResponse(processed, deliveries);
     }
 
+    /**
+     * Reenvia manualmente uma entrega específica.
+     *
+     * <p>Força uma nova tentativa de envio do resultado para a Gupy e devolve
+     * a situação atualizada da entrega.</p>
+     *
+     * @param deliveryId identificador da entrega a reenviar
+     * @return a situação atualizada da entrega após a tentativa
+     */
     // Sem @Transactional: idem processReadyDeliveries — a entrega HTTP roda fora de transação.
     public ReprocessDeliveryResponse reprocessDelivery(Long deliveryId) {
         String tenantId = currentTenantService.requiredTenantId();

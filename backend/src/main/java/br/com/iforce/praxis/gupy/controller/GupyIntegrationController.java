@@ -28,6 +28,15 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
+/**
+ * Porta de entrada (API) usada pela Gupy para integrar com a Práxis.
+ *
+ * <p>Na visão do processo, é por aqui que a plataforma de recrutamento Gupy
+ * conversa com a Práxis: lista as provas (simulações) publicadas, cadastra um
+ * candidato para fazer a prova e consulta o resultado depois de pronto. Cada
+ * chamada precisa apresentar um token de acesso válido, que identifica de qual
+ * empresa (tenant) é a requisição, garantindo o isolamento dos dados.</p>
+ */
 @RestController
 @Tag(name = "Gupy Integration", description = "Endpoints REST consumidos pela Gupy para testes externos.")
 public class GupyIntegrationController {
@@ -60,6 +69,18 @@ public class GupyIntegrationController {
         this.candidateAttemptService = candidateAttemptService;
     }
 
+    /**
+     * Lista, para a Gupy, as provas que estão publicadas e disponíveis.
+     *
+     * <p>Permite buscar por texto e paginar os resultados. Antes de tudo,
+     * valida o token de acesso para descobrir a empresa solicitante.</p>
+     *
+     * @param authorization token de acesso da integração (cabeçalho HTTP)
+     * @param searchString texto opcional para filtrar as provas pelo nome
+     * @param offset a partir de qual posição começar a listagem (paginação)
+     * @param limit quantas provas trazer por página
+     * @return a lista de provas publicadas, no formato esperado pela Gupy
+     */
     @GetMapping("/test")
     @Operation(summary = "Lista simulações publicadas", description = "Retorna as simulações Práxis publicadas como Test[].")
     @ApiResponses({
@@ -94,6 +115,17 @@ public class GupyIntegrationController {
         return ResponseEntity.ok(new TestItemsResponse(normalizedLimit, normalizedOffset, totalTests, tests));
     }
 
+    /**
+     * Registra um candidato para fazer uma prova (vindo da Gupy).
+     *
+     * <p>Se o mesmo candidato (mesma empresa, documento e prova) já tiver uma
+     * participação, ela é reaproveitada em vez de criar outra — evitando
+     * duplicidade. Devolve os dados da participação criada ou reutilizada.</p>
+     *
+     * @param authorization token de acesso da integração (cabeçalho HTTP)
+     * @param request dados do candidato e da prova a aplicar
+     * @return a participação criada ou reaproveitada
+     */
     @PostMapping("/test/candidate")
     @Operation(summary = "Registra candidato", description = "Cria ou reutiliza tentativa por company_id, document_id e test_id.")
     @ApiResponses({
@@ -110,6 +142,18 @@ public class GupyIntegrationController {
         return ResponseEntity.status(HttpStatus.CREATED).body(candidateAttemptService.createOrReuse(request, tenantContext));
     }
 
+    /**
+     * Consulta o resultado de uma prova já finalizada (para a Gupy).
+     *
+     * <p>Devolve a pontuação e o desempenho por competência do candidato.
+     * Exige a empresa (company_id) para garantir que o resultado pertence a
+     * quem está consultando.</p>
+     *
+     * @param authorization token de acesso da integração (cabeçalho HTTP)
+     * @param resultId identificador do resultado consultado
+     * @param companyId identificador da empresa dona do resultado
+     * @return o resultado da prova no formato esperado pela Gupy
+     */
     @GetMapping("/test/result/{resultId}")
     @Operation(summary = "Consulta resultado", description = "Retorna o resultado do teste para a Gupy, incluindo pontuação e competências.")
     @ApiResponses({

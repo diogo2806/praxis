@@ -20,6 +20,17 @@ public class HealthVerticalService {
         this.tenantRepository = tenantRepository;
     }
 
+    /**
+     * Indica se a empresa opera na vertical de saúde (uso educativo).
+     *
+     * <p>Quando verdadeiro, o processo passa a exigir regras adicionais de
+     * privacidade: aceite do termo de uso em saúde pelo recrutador antes de
+     * publicar e consentimento do participante para dados sensíveis. Empresas
+     * sem essa marcação seguem o comportamento padrão.</p>
+     *
+     * @param tenantId identificador da empresa
+     * @return {@code true} se a empresa está na vertical de saúde
+     */
     public boolean isHealthVertical(String tenantId) {
         if (tenantId == null || tenantId.isBlank()) {
             return false;

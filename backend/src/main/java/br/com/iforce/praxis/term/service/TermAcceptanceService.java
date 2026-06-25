@@ -48,29 +48,70 @@ public class TermAcceptanceService {
         this.currentUserService = currentUserService;
     }
 
+    /**
+     * Devolve o texto e a versão atual do termo de responsabilidade.
+     *
+     * @return o conteúdo do termo de responsabilidade
+     */
     public TermResponse responsibilityTerm() {
         return termResponse(RESPONSIBILITY);
     }
 
+    /**
+     * Informa se o usuário logado já aceitou a versão atual do termo de
+     * responsabilidade.
+     *
+     * @return a situação de aceite do usuário atual
+     */
     @Transactional(readOnly = true)
     public TermAcceptanceStatusResponse responsibilityStatus() {
         return statusFor(RESPONSIBILITY);
     }
 
+    /**
+     * Registra o aceite do termo de responsabilidade pelo usuário logado.
+     *
+     * <p>Guarda quem aceitou, quando e qual versão (registro que nunca é
+     * apagado), para comprovar que o recrutador assumiu as responsabilidades.
+     * Recusa o aceite se a versão informada não for a atual.</p>
+     *
+     * @param request dados do aceite, incluindo a versão aceita
+     * @return a situação de aceite atualizada
+     */
     @Transactional
     public TermAcceptanceStatusResponse acceptResponsibility(AcceptTermRequest request) {
         return accept(RESPONSIBILITY, request);
     }
 
+    /**
+     * Devolve o texto e a versão atual do termo de uso na vertical de saúde.
+     *
+     * @return o conteúdo do termo de uso em saúde
+     */
     public TermResponse healthUseTerm() {
         return termResponse(HEALTH_USE);
     }
 
+    /**
+     * Informa se o usuário logado já aceitou a versão atual do termo de uso
+     * em saúde.
+     *
+     * @return a situação de aceite do usuário atual
+     */
     @Transactional(readOnly = true)
     public TermAcceptanceStatusResponse healthUseStatus() {
         return statusFor(HEALTH_USE);
     }
 
+    /**
+     * Registra o aceite do termo de uso em saúde pelo usuário logado.
+     *
+     * <p>Mesmo registro insert-only do termo de responsabilidade. É
+     * pré-requisito para publicar provas na vertical de saúde.</p>
+     *
+     * @param request dados do aceite, incluindo a versão aceita
+     * @return a situação de aceite atualizada
+     */
     @Transactional
     public TermAcceptanceStatusResponse acceptHealthUse(AcceptTermRequest request) {
         return accept(HEALTH_USE, request);

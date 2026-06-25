@@ -24,6 +24,16 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
+/**
+ * Porta de entrada (API) para a empresa gerar e acompanhar links de avaliação.
+ *
+ * <p>Na visão do processo, é por aqui que o recrutador da empresa: cria o
+ * link de simulação para enviar ao candidato, acompanha quem está fazendo a
+ * prova agora, registra a decisão final (humana) sobre cada candidato e
+ * consulta o relatório de transparência que explica como a pontuação foi
+ * calculada. A pontuação é apoio à decisão — a palavra final é sempre de uma
+ * pessoa.</p>
+ */
 @RestController
 @RequestMapping("/api/v1/candidate-links")
 @Tag(name = "Company Candidate Links", description = "Geração de links de simulação para envio direto ao candidato pela empresa.")
@@ -43,6 +53,13 @@ public class CompanyCandidateLinkController {
         this.evidenceReportService = evidenceReportService;
     }
 
+    /**
+     * Lista os links de avaliação já gerados pela empresa.
+     *
+     * @param blind quando verdadeiro, oculta dados que identificam o
+     *              candidato (avaliação às cegas, para reduzir viés)
+     * @return os links/tentativas da empresa, com a URL pública de cada um
+     */
     @GetMapping
     @Operation(
             summary = "Lista links de candidatos",
@@ -54,6 +71,14 @@ public class CompanyCandidateLinkController {
         return ResponseEntity.ok(candidateAttemptService.listCompanyLinks(blind));
     }
 
+    /**
+     * Lista as provas que estão acontecendo agora (em andamento ou pausadas).
+     *
+     * <p>Alimenta a tela de monitoramento ao vivo, mostrando o progresso de
+     * cada candidato em tempo real.</p>
+     *
+     * @return as tentativas ativas com seu progresso
+     */
     @GetMapping("/live-attempts")
     @Operation(
             summary = "Lista tentativas em andamento",
@@ -63,6 +88,15 @@ public class CompanyCandidateLinkController {
         return ResponseEntity.ok(candidateAttemptService.listLiveAttempts());
     }
 
+    /**
+     * Gera um novo link de avaliação para enviar a um candidato.
+     *
+     * <p>Cria a participação (tentativa) e devolve o link que o recrutador
+     * envia ao candidato por e-mail ou WhatsApp.</p>
+     *
+     * @param request dados do candidato e da prova que será aplicada
+     * @return o link criado para compartilhar com o candidato
+     */
     @PostMapping
     @Operation(
             summary = "Gera link para candidato",
@@ -75,6 +109,17 @@ public class CompanyCandidateLinkController {
                 .body(candidateAttemptService.createCompanyLink(request));
     }
 
+    /**
+     * Registra a decisão humana final sobre o candidato.
+     *
+     * <p>Guarda na trilha de auditoria quem decidiu, quando e por quê (por
+     * exemplo, avançar ou reprovar). A pontuação é apenas apoio: a decisão é
+     * sempre de uma pessoa.</p>
+     *
+     * @param attemptId identificador da participação do candidato
+     * @param request a decisão tomada e sua justificativa
+     * @return confirmação sem conteúdo (apenas registra a decisão)
+     */
     @PostMapping("/{attemptId}/disposition")
     @Operation(
             summary = "Registra a decisão humana sobre o candidato",
@@ -89,6 +134,18 @@ public class CompanyCandidateLinkController {
         return ResponseEntity.noContent().build();
     }
 
+    /**
+     * Monta o relatório de transparência da avaliação de um candidato.
+     *
+     * <p>Documento que comprova como a nota foi calculada: declara que a
+     * pontuação é determinística (sem IA e sem dados de treino), mostra a
+     * fórmula e a versão usada, o caminho que o candidato percorreu, os
+     * pontos por competência, a trilha de auditoria e a decisão humana.
+     * Serve para auditoria, conformidade e para responder ao candidato.</p>
+     *
+     * @param attemptId identificador da participação do candidato
+     * @return o relatório consolidado de transparência
+     */
     @GetMapping("/{attemptId}/evidence-report")
     @Operation(
             summary = "Relatório de transparência do scoring",

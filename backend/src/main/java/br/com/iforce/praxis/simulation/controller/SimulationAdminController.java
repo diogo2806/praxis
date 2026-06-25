@@ -40,6 +40,17 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
+/**
+ * Porta de entrada (API) da autoria e administração das provas (simulações).
+ *
+ * <p>Na visão do processo, é o "estúdio" onde a equipe monta e gerencia as
+ * provas: cria uma prova nova, edita o rascunho (plano da avaliação,
+ * competências, pesos, etapas e respostas), valida a estrutura, publica a
+ * versão, clona uma versão publicada para gerar a próxima, e acompanha a
+ * prova depois de no ar (monitoramento, diagnóstico de integração e
+ * comparação de candidatos). Cada prova evolui em versões: as publicadas são
+ * imutáveis e as edições acontecem sempre em um rascunho.</p>
+ */
 @RestController
 @RequestMapping("/api/v1/simulations")
 @Tag(name = "Simulations Admin", description = "Validação e publicação de versões de simulações.")
@@ -73,6 +84,13 @@ public class SimulationAdminController {
         this.talentMatchService = talentMatchService;
     }
 
+    /**
+     * Lista as provas ativas para o painel administrativo.
+     *
+     * <p>Traz a versão mais recente de cada prova não arquivada.</p>
+     *
+     * @return o resumo de cada prova ativa
+     */
     @GetMapping
     @Operation(
             summary = "Lista simulacoes ativas",
@@ -86,6 +104,14 @@ public class SimulationAdminController {
         return ResponseEntity.ok(simulationAdminService.listActiveSimulations());
     }
 
+    /**
+     * Cria uma prova nova já com a primeira versão (v1) em rascunho.
+     *
+     * <p>Define as competências e os pesos de cada uma logo na criação.</p>
+     *
+     * @param request dados iniciais da prova (competências e pesos)
+     * @return os detalhes da versão recém-criada
+     */
     @PostMapping
     @Operation(
             summary = "Cria simulacao e versao inicial",
@@ -102,6 +128,12 @@ public class SimulationAdminController {
         return ResponseEntity.status(201).body(simulationAdminService.createSimulation(request));
     }
 
+    /**
+     * Cria uma prova em rascunho a partir do plano da avaliação.
+     *
+     * @param request o plano da avaliação que dá origem ao rascunho
+     * @return o resumo da prova criada
+     */
     @PostMapping("/drafts")
     @Operation(
             summary = "Cria simulacao em rascunho",
@@ -118,6 +150,15 @@ public class SimulationAdminController {
         return ResponseEntity.ok(simulationAdminService.createDraftSimulation(request));
     }
 
+    /**
+     * Abre uma versão da prova para edição/visualização na tela de autoria.
+     *
+     * <p>Traz o plano, as competências, as etapas e as respostas da versão.</p>
+     *
+     * @param simulationId identificador da prova
+     * @param versionNumber número da versão
+     * @return os detalhes completos da versão
+     */
     @GetMapping("/{simulationId}/versions/{versionNumber}")
     @Operation(
             summary = "Detalha versao de simulacao",
@@ -134,6 +175,17 @@ public class SimulationAdminController {
         return ResponseEntity.ok(simulationAdminService.loadVersion(simulationId, versionNumber));
     }
 
+    /**
+     * Atualiza o plano da avaliação de uma versão em rascunho.
+     *
+     * <p>Permite alterar a etapa inicial, as competências e os pesos. Só vale
+     * para versões em rascunho (as publicadas são imutáveis).</p>
+     *
+     * @param simulationId identificador da prova
+     * @param versionNumber número da versão
+     * @param request os novos dados do plano
+     * @return o resumo atualizado da prova
+     */
     @PatchMapping("/{simulationId}/versions/{versionNumber}/blueprint")
     @Operation(
             summary = "Atualiza plano da avaliacao da versao",
@@ -153,6 +205,14 @@ public class SimulationAdminController {
         return ResponseEntity.ok(simulationAdminService.updateBlueprint(simulationId, versionNumber, request));
     }
 
+    /**
+     * Adiciona uma nova etapa (cena) ao rascunho da prova.
+     *
+     * @param simulationId identificador da prova
+     * @param versionNumber número da versão em rascunho
+     * @param request o conteúdo da nova etapa
+     * @return o identificador da etapa criada
+     */
     @PostMapping("/{simulationId}/versions/{versionNumber}/nodes")
     @Operation(summary = "Adiciona etapa ao rascunho")
     public ResponseEntity<String> addNode(
@@ -163,6 +223,15 @@ public class SimulationAdminController {
         return ResponseEntity.status(201).body(simulationAdminService.addNode(simulationId, versionNumber, request));
     }
 
+    /**
+     * Atualiza o conteúdo de uma etapa existente no rascunho.
+     *
+     * @param simulationId identificador da prova
+     * @param versionNumber número da versão em rascunho
+     * @param nodeId identificador da etapa
+     * @param request os novos dados da etapa
+     * @return confirmação sem conteúdo
+     */
     @PutMapping("/{simulationId}/versions/{versionNumber}/nodes/{nodeId}")
     @Operation(summary = "Atualiza etapa do rascunho")
     public ResponseEntity<Void> updateNode(
@@ -175,6 +244,14 @@ public class SimulationAdminController {
         return ResponseEntity.noContent().build();
     }
 
+    /**
+     * Remove uma etapa do rascunho da prova.
+     *
+     * @param simulationId identificador da prova
+     * @param versionNumber número da versão em rascunho
+     * @param nodeId identificador da etapa a remover
+     * @return confirmação sem conteúdo
+     */
     @DeleteMapping("/{simulationId}/versions/{versionNumber}/nodes/{nodeId}")
     @Operation(summary = "Remove etapa do rascunho")
     public ResponseEntity<Void> deleteNode(
@@ -186,6 +263,15 @@ public class SimulationAdminController {
         return ResponseEntity.noContent().build();
     }
 
+    /**
+     * Adiciona uma resposta (alternativa) a uma etapa do rascunho.
+     *
+     * @param simulationId identificador da prova
+     * @param versionNumber número da versão em rascunho
+     * @param nodeId identificador da etapa
+     * @param request o conteúdo da nova resposta (texto e pontos por competência)
+     * @return o identificador da resposta criada
+     */
     @PostMapping("/{simulationId}/versions/{versionNumber}/nodes/{nodeId}/options")
     @Operation(summary = "Adiciona resposta à etapa do rascunho")
     public ResponseEntity<String> addOption(
@@ -197,6 +283,16 @@ public class SimulationAdminController {
         return ResponseEntity.status(201).body(simulationAdminService.addOption(simulationId, versionNumber, nodeId, request));
     }
 
+    /**
+     * Atualiza uma resposta (alternativa) de uma etapa do rascunho.
+     *
+     * @param simulationId identificador da prova
+     * @param versionNumber número da versão em rascunho
+     * @param nodeId identificador da etapa
+     * @param optionId identificador da resposta
+     * @param request os novos dados da resposta
+     * @return confirmação sem conteúdo
+     */
     @PutMapping("/{simulationId}/versions/{versionNumber}/nodes/{nodeId}/options/{optionId}")
     @Operation(summary = "Atualiza alternativa do rascunho")
     public ResponseEntity<Void> updateOption(
@@ -210,6 +306,15 @@ public class SimulationAdminController {
         return ResponseEntity.noContent().build();
     }
 
+    /**
+     * Remove uma resposta (alternativa) de uma etapa do rascunho.
+     *
+     * @param simulationId identificador da prova
+     * @param versionNumber número da versão em rascunho
+     * @param nodeId identificador da etapa
+     * @param optionId identificador da resposta a remover
+     * @return confirmação sem conteúdo
+     */
     @DeleteMapping("/{simulationId}/versions/{versionNumber}/nodes/{nodeId}/options/{optionId}")
     @Operation(summary = "Remove alternativa do rascunho")
     public ResponseEntity<Void> deleteOption(
@@ -222,6 +327,16 @@ public class SimulationAdminController {
         return ResponseEntity.noContent().build();
     }
 
+    /**
+     * Valida a estrutura de uma versão antes da publicação.
+     *
+     * <p>Aponta problemas que impedem a publicação (por exemplo, etapas sem
+     * saída ou competências sem pontuação), para que a equipe corrija.</p>
+     *
+     * @param simulationId identificador da prova
+     * @param versionNumber número da versão
+     * @return o resultado da validação, com eventuais problemas encontrados
+     */
     @GetMapping("/{simulationId}/versions/{versionNumber}/validation")
     @Operation(
             summary = "Valida versão de simulação",
@@ -240,6 +355,16 @@ public class SimulationAdminController {
         return ResponseEntity.ok(simulationAdminService.validateVersion(simulationId, versionNumber));
     }
 
+    /**
+     * Cria a próxima versão em rascunho a partir de uma versão já publicada.
+     *
+     * <p>Permite evoluir a prova preservando intacta a versão publicada (que é
+     * imutável): a edição acontece numa cópia em rascunho.</p>
+     *
+     * @param simulationId identificador da prova
+     * @param versionNumber número da versão publicada a clonar
+     * @return os dados da nova versão em rascunho
+     */
     @PostMapping("/{simulationId}/versions/{versionNumber}/clone-draft")
     @Operation(
             summary = "Clona versao publicada para edicao",
@@ -259,6 +384,16 @@ public class SimulationAdminController {
     }
 
 
+    /**
+     * Publica uma versão da prova, tornando-a disponível para uso.
+     *
+     * <p>Só publica versões sem impedimentos (blockers). Não há como forçar a
+     * publicação de uma versão com problema bloqueante.</p>
+     *
+     * @param simulationId identificador da prova
+     * @param versionNumber número da versão a publicar
+     * @return o resultado da publicação
+     */
     @PostMapping("/{simulationId}/versions/{versionNumber}/publish")
     @Operation(
             summary = "Publica versão de simulação",
@@ -277,6 +412,17 @@ public class SimulationAdminController {
         return ResponseEntity.ok(simulationAdminService.publishVersion(simulationId, versionNumber));
     }
 
+    /**
+     * Faz um diagnóstico de prontidão da prova para a integração Gupy.
+     *
+     * <p>Verifica a configuração pública, o token de integração e a estrutura
+     * do teste, ajudando a identificar bloqueios antes de publicar. Funciona
+     * tanto para rascunhos quanto para versões publicadas.</p>
+     *
+     * @param simulationId identificador da prova
+     * @param versionNumber número da versão
+     * @return o diagnóstico com eventuais pendências de integração
+     */
     @GetMapping("/{simulationId}/versions/{versionNumber}/gupy-preflight")
     @Operation(
             summary = "Executa preflight Gupy",
@@ -296,6 +442,16 @@ public class SimulationAdminController {
         return ResponseEntity.ok(gupyPreflightService.getPreflight(simulationId, versionNumber));
     }
 
+    /**
+     * Mostra os indicadores de uma versão publicada (monitoramento).
+     *
+     * <p>Reúne números de execução, abandono e entrega de resultados para a
+     * equipe acompanhar o desempenho da prova no ar.</p>
+     *
+     * @param simulationId identificador da prova
+     * @param versionNumber número da versão
+     * @return os indicadores de acompanhamento da versão
+     */
     @GetMapping("/{simulationId}/versions/{versionNumber}/monitoring")
     @Operation(
             summary = "Monitora versao publicada",
@@ -314,6 +470,19 @@ public class SimulationAdminController {
         return ResponseEntity.ok(simulationMonitoringService.getMonitoring(simulationId, versionNumber));
     }
 
+    /**
+     * Compara candidatos entre si e contra o perfil ideal da vaga.
+     *
+     * <p>Mostra o referencial (benchmark) da vaga e o desempenho por
+     * competência de até 5 candidatos da mesma versão, lado a lado. Aceita o
+     * modo "às cegas" para reduzir viés ocultando a identificação.</p>
+     *
+     * @param simulationId identificador da prova
+     * @param versionNumber número da versão
+     * @param attemptIds os candidatos (participações) a comparar
+     * @param blind quando verdadeiro, oculta os dados que identificam os candidatos
+     * @return o comparativo de competências entre os candidatos selecionados
+     */
     @GetMapping("/{simulationId}/versions/{versionNumber}/talent-match")
     @Operation(
             summary = "Compara candidatos contra benchmark",
@@ -334,6 +503,15 @@ public class SimulationAdminController {
         return ResponseEntity.ok(talentMatchService.getTalentMatch(simulationId, versionNumber, attemptIds, blind));
     }
 
+    /**
+     * Exclui definitivamente uma prova e todas as suas versões.
+     *
+     * <p>Ação irreversível. Não é permitida se houver candidatos (tentativas)
+     * vinculados à prova, para preservar o histórico das avaliações.</p>
+     *
+     * @param simulationId identificador da prova a remover
+     * @return confirmação sem conteúdo
+     */
     @DeleteMapping("/{simulationId}")
     @Operation(
             summary = "Remove simulacao",

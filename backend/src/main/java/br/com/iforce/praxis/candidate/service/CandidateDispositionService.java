@@ -46,6 +46,18 @@ public class CandidateDispositionService {
         this.objectMapper = objectMapper;
     }
 
+    /**
+     * Registra a decisão humana final tomada sobre o candidato.
+     *
+     * <p>Fluxo do processo: confere se a participação existe na empresa
+     * atual, identifica quem está decidindo e grava na trilha de auditoria
+     * (que nunca é apagada) a decisão tomada, a justificativa e o momento.
+     * Assim, a responsabilidade fica registrada em nome de uma pessoa, e não
+     * "do algoritmo" — a pontuação é apenas apoio.</p>
+     *
+     * @param attemptId identificador da participação do candidato
+     * @param request a decisão tomada e a justificativa
+     */
     @Transactional
     public void register(String attemptId, RegisterDispositionRequest request) {
         String tenantId = currentTenantService.requiredTenantId();
@@ -69,6 +81,7 @@ public class CandidateDispositionService {
         );
     }
 
+    /** Limpa a justificativa informada (remove espaços e trata texto vazio). Uso interno. */
     private String normalizeReason(String reason) {
         if (reason == null) {
             return null;
@@ -77,6 +90,10 @@ public class CandidateDispositionService {
         return trimmed.isEmpty() ? null : trimmed;
     }
 
+    /**
+     * Monta o detalhamento (em JSON) da decisão que será guardado na trilha
+     * de auditoria: quem decidiu, qual decisão, justificativa e quando. Uso interno.
+     */
     private String buildMetadata(
             String attemptId,
             String userId,

@@ -71,6 +71,20 @@ public class EvidenceReportService {
         this.objectMapper = objectMapper;
     }
 
+    /**
+     * Monta o relatório de transparência de uma avaliação.
+     *
+     * <p>Fluxo do processo: localiza a participação do candidato na empresa
+     * atual e reúne, em um único documento, tudo o que comprova como o
+     * resultado foi obtido — a declaração de que a pontuação é determinística
+     * (sem IA), a fórmula usada, os pontos por competência, o caminho que o
+     * candidato percorreu, a trilha de auditoria e a decisão humana mais
+     * recente. Não recalcula nada: apenas consolida o que já está guardado,
+     * gerando uma peça para auditoria, defesa jurídica e transparência.</p>
+     *
+     * @param attemptId identificador da participação do candidato
+     * @return o relatório de transparência consolidado
+     */
     @Transactional(readOnly = true)
     public EvidenceReport build(String attemptId) {
         String tenantId = currentTenantService.requiredTenantId();
@@ -112,6 +126,7 @@ public class EvidenceReportService {
         );
     }
 
+    /** Descobre qual prova (e qual versão dela) foi aplicada nesta participação. Uso interno. */
     private Optional<PublishedSimulation> resolveSimulation(CandidateAttemptEntity attempt, String tenantId) {
         if (attempt.getSimulationVersionId() != null) {
             return simulationCatalogService.findByVersionId(attempt.getSimulationVersionId());
@@ -119,6 +134,7 @@ public class EvidenceReportService {
         return simulationCatalogService.findPublishedById(tenantId, attempt.getSimulationId());
     }
 
+    /** Monta a lista de pontos obtidos em cada competência avaliada. Uso interno. */
     private List<EvidenceReport.CompetencyEvidence> buildCompetencies(
             CandidateAttemptEntity attempt,
             PublishedSimulation simulation
@@ -226,6 +242,7 @@ public class EvidenceReportService {
                 .orElse(null);
     }
 
+    /** Encontra, na trilha de auditoria, a decisão humana mais recente sobre o candidato. Uso interno. */
     private EvidenceReport.HumanDecisionEvidence latestHumanDecision(List<AuditEventResponse> auditTrail) {
         return auditTrail.stream()
                 .filter(event -> event.eventType() == AuditEventType.HUMAN_DECISION)

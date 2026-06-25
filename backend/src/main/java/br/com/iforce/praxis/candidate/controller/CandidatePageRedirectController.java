@@ -13,6 +13,15 @@ import org.springframework.web.util.UriComponentsBuilder;
 
 import java.net.URI;
 
+/**
+ * Encaminha o candidato para a página correta da avaliação.
+ *
+ * <p>Na visão do processo, quando o candidato abre o link curto que recebeu
+ * (por e-mail ou WhatsApp), este componente o redireciona automaticamente
+ * para o endereço da página do candidato configurado para o ambiente. Serve
+ * para que o link enviado seja sempre simples e estável, independentemente
+ * de onde a tela do candidato está hospedada.</p>
+ */
 @RestController
 public class CandidatePageRedirectController {
 
@@ -22,6 +31,17 @@ public class CandidatePageRedirectController {
         this.praxisProperties = praxisProperties;
     }
 
+    /**
+     * Redireciona o acesso ao link do candidato para a página correta.
+     *
+     * <p>Recebe o token do candidato e devolve um redirecionamento para a
+     * página oficial da avaliação. Se o endereço de destino não estiver
+     * configurado, informa que a página está indisponível.</p>
+     *
+     * @param token identificador único do convite do candidato
+     * @param request a requisição recebida (usada para descobrir o domínio atual)
+     * @return um redirecionamento para a página do candidato
+     */
     @GetMapping("/candidato/{token}")
     public ResponseEntity<Void> redirectCandidatePage(
             @PathVariable String token,
@@ -53,6 +73,10 @@ public class CandidatePageRedirectController {
                 .build();
     }
 
+    /**
+     * Padroniza o endereço base removendo a barra final, para comparar e
+     * montar URLs de forma consistente. Uso interno.
+     */
     private String normalizeBaseUrl(String baseUrl) {
         if (baseUrl == null) {
             return "";

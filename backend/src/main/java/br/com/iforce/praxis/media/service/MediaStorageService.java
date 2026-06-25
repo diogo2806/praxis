@@ -64,6 +64,18 @@ public class MediaStorageService {
         this.properties = properties;
     }
 
+    /**
+     * Recebe, valida e armazena uma mídia (imagem ou áudio) de uma prova.
+     *
+     * <p>Fluxo do processo: confere se o armazenamento está configurado e se o
+     * arquivo é válido (não vazio e dentro do limite de 10MB), descobre o tipo
+     * real do conteúdo (imagem ou áudio) e o guarda em uma pasta separada por
+     * empresa — o que facilita a limpeza no encerramento do contrato e o
+     * controle de cota por plano. Devolve o endereço público do arquivo.</p>
+     *
+     * @param file a imagem ou áudio enviado
+     * @return o endereço público da mídia e seus dados (tipo e tamanho)
+     */
     public MediaUploadResponse upload(MultipartFile file) {
         if (!properties.isConfigured()) {
             throw new ResponseStatusException(

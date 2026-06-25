@@ -11,6 +11,15 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
+/**
+ * Calcula os indicadores de acompanhamento de uma versão de prova.
+ *
+ * <p>Na visão do processo, depois que a prova está no ar, a equipe precisa
+ * saber como ela está performando. Este componente conta quantos candidatos
+ * receberam a prova e em que situação estão (não iniciada, em andamento,
+ * concluída, abandonada, expirada, etc.) e calcula as taxas de conclusão e de
+ * desistência, alimentando a tela de monitoramento.</p>
+ */
 @Service
 public class SimulationMonitoringService {
 
@@ -28,6 +37,16 @@ public class SimulationMonitoringService {
         this.currentTenantService = currentTenantService;
     }
 
+    /**
+     * Reúne os números de acompanhamento de uma versão da prova.
+     *
+     * <p>Conta as participações por situação e calcula as taxas de conclusão
+     * e de desistência (abandono + expiração).</p>
+     *
+     * @param simulationId identificador da prova
+     * @param versionNumber número da versão
+     * @return os indicadores de execução da versão
+     */
     @Transactional(readOnly = true)
     public SimulationMonitoringResponse getMonitoring(String simulationId, int versionNumber) {
         String tenantId = currentTenantService.requiredTenantId();
@@ -57,11 +76,13 @@ public class SimulationMonitoringService {
         );
     }
 
+    /** Conta quantas participações daquela versão estão em uma dada situação. Uso interno. */
     private long countAttempts(Long simulationVersionId, AttemptStatus status) {
         return candidateAttemptRepository.countByTenantIdAndSimulationVersionIdAndStatus(
                 currentTenantService.requiredTenantId(), simulationVersionId, status);
     }
 
+    /** Calcula um percentual com duas casas, tratando o caso de total zero. Uso interno. */
     private double percent(long amount, long total) {
         if (total == 0) {
             return 0.0;

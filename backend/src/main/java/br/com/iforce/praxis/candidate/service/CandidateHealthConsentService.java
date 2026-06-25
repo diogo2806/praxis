@@ -39,6 +39,18 @@ public class CandidateHealthConsentService {
         this.objectMapper = objectMapper;
     }
 
+    /**
+     * Registra o consentimento de saúde dado pelo próprio participante.
+     *
+     * <p>Fluxo do processo: como o participante acessa por um link público
+     * (sem empresa no contexto), o sistema descobre a empresa a partir da
+     * participação e grava na trilha de auditoria o consentimento — incluindo
+     * a versão do aviso exibido e o momento. Isso atende às exigências da
+     * LGPD (arts. 11 e 14) antes de iniciar a atividade.</p>
+     *
+     * @param attemptId identificador da participação do candidato
+     * @param request dados do consentimento (versão do aviso, se é em nome de menor, etc.)
+     */
     @Transactional
     public void register(String attemptId, HealthConsentRequest request) {
         CandidateAttemptEntity attempt = candidateAttemptRepository.findById(attemptId)
@@ -55,6 +67,10 @@ public class CandidateHealthConsentService {
         );
     }
 
+    /**
+     * Monta o detalhamento (em JSON) do consentimento que será guardado na
+     * trilha de auditoria. Uso interno.
+     */
     private String buildMetadata(String attemptId, HealthConsentRequest request, Instant consentedAt) {
         Map<String, Object> payload = new LinkedHashMap<>();
         payload.put("attemptId", attemptId);

@@ -108,6 +108,20 @@ public class CandidateAttemptService {
         this.healthVerticalService = healthVerticalService;
     }
 
+    /**
+     * Cria (ou reaproveita) a participação de um candidato vinda da Gupy.
+     *
+     * <p>Fluxo do processo: confere se a empresa do pedido bate com o token,
+     * garante que a prova existe e está publicada e então cria a participação.
+     * Se aquele mesmo candidato (empresa + documento + prova) já tiver uma
+     * participação, ela é reaproveitada em vez de criar outra — evitando
+     * duplicidade mesmo que a Gupy chame mais de uma vez. Devolve o link de
+     * acesso do candidato e o identificador do resultado.</p>
+     *
+     * @param request dados do candidato e da prova
+     * @param tenantContext empresa identificada pelo token da integração
+     * @return o link de acesso do candidato e o identificador do resultado
+     */
     @Transactional
     public CreateCandidateResponse createOrReuse(
             CreateCandidateRequest request,
@@ -130,6 +144,18 @@ public class CandidateAttemptService {
         );
     }
 
+    /**
+     * Gera o link de avaliação para a empresa enviar diretamente ao candidato.
+     *
+     * <p>Fluxo do processo: valida que a prova existe e está publicada e cria
+     * a participação ainda "não iniciada", já com a configuração de tempo
+     * extra (acessibilidade) quando informada. Se já existir um link para o
+     * mesmo candidato e prova, ele é reaproveitado. Registra a criação na
+     * trilha de auditoria e devolve o link para envio por e-mail/WhatsApp.</p>
+     *
+     * @param request dados do candidato, da prova e de eventual tempo extra
+     * @return o link da página do candidato e o nome da prova
+     */
     @Transactional
     public CreateCandidateLinkResponse createCompanyLink(CreateCandidateLinkRequest request) {
         String tenantId = TenantSecurity.requiredTenant();
@@ -195,6 +221,15 @@ public class CandidateAttemptService {
         );
     }
 
+    /**
+     * Lista os links de avaliação já gerados pela empresa logada.
+     *
+     * <p>No modo "às cegas" (blind), o nome e o e-mail do candidato não são
+     * sequer enviados pelo servidor, reduzindo o viés na avaliação.</p>
+     *
+     * @param blind quando verdadeiro, oculta os dados que identificam o candidato
+     * @return os links/participações da empresa, do mais recente para o mais antigo
+     */
     @Transactional(readOnly = true)
     public List<CandidateLinkResponse> listCompanyLinks(boolean blind) {
         String tenantId = TenantSecurity.requiredTenant();
@@ -204,6 +239,14 @@ public class CandidateAttemptService {
                 .toList();
     }
 
+    /**
+     * Lista as provas que estão acontecendo agora (em andamento ou pausadas).
+     *
+     * <p>Alimenta a tela de monitoramento ao vivo, com o progresso de cada
+     * candidato e uma indicação de se ele está ativo no momento.</p>
+     *
+     * @return as participações ativas, com seu progresso atual
+     */
     @Transactional(readOnly = true)
     public List<CandidateAttemptMonitoringResponse> listLiveAttempts() {
         String tenantId = TenantSecurity.requiredTenant();
@@ -308,6 +351,17 @@ public class CandidateAttemptService {
         return candidateAttemptEntity;
     }
 
+    /**
+     * Carrega a etapa atual da prova para o candidato (tela do candidato).
+     *
+     * <p>Fluxo do processo: identifica a participação pelo link/token; se o
+     * prazo tiver vencido, marca como expirada; se ainda não tiver começado,
+     * inicia a prova. Devolve a etapa atual já sem expor gabarito ou pesos,
+     * junto com o progresso e a ação sugerida para a tela.</p>
+     *
+     * @param attemptToken token do link de acesso do candidato
+     * @return o estado atual da participação para exibir na tela
+     */
     @Transactional
     public ParticipacaoResponse findCandidateAttempt(String attemptToken) {
         CandidateAttemptEntity candidateAttemptEntity = findAttemptEntityByToken(attemptToken);
@@ -338,6 +392,19 @@ public class CandidateAttemptService {
         );
     }
 
+    /**
+     * Registra a resposta que o candidato deu na etapa atual e avança a prova.
+     *
+     * <p>Fluxo do processo: localiza a participação, atualiza o estado (expira
+     * se o prazo venceu), valida o tempo da etapa e confere se a resposta não
+     * é duplicada. Guarda a resposta, decide qual é a próxima etapa e, se for
+     * a última, finaliza a prova, calcula o resultado e dispara o envio para a
+     * Gupy. Tudo fica registrado na trilha de auditoria.</p>
+     *
+     * @param attemptToken token do link de acesso do candidato
+     * @param request a resposta escolhida (ou a marcação de tempo esgotado)
+     * @return a próxima etapa ou o desfecho da prova
+     */
     @Transactional(noRollbackFor = ResponseStatusException.class)
     public RegistrarRespostaResponse submitAnswer(String attemptToken, RegistrarRespostaRequest request) {
         Instant receivedAt = Instant.now();
@@ -406,9 +473,22 @@ public class CandidateAttemptService {
         );
     }
 
+    /** Agrupa uma participação do candidato com a respectiva prova aplicada. */
     public record AttemptWithSimulation(CandidateAttempt attempt, PublishedSimulation simulation) {
     }
 
+    /**
+     * Localiza a participação e a prova correspondentes a um resultado.
+     *
+     * <p>Confere que a empresa informada bate com o token e que o resultado
+     * realmente pertence a ela, evitando que uma empresa veja o resultado de
+     * outra. Uso interno e por {@link #findResult}.</p>
+     *
+     * @param resultId identificador do resultado
+     * @param companyId empresa que está consultando
+     * @param tenantContext empresa identificada pelo token da integração
+     * @return a participação encontrada junto com a prova aplicada
+     */
     @Transactional(readOnly = true)
     public AttemptWithSimulation findAttemptResult(
             String resultId,
@@ -432,6 +512,17 @@ public class CandidateAttemptService {
         return new AttemptWithSimulation(attempt, simulation);
     }
 
+    /**
+     * Monta o resultado de uma prova no formato esperado pela Gupy.
+     *
+     * <p>Recupera a participação e a prova e converte para o formato de
+     * resposta da integração, com pontuação e desempenho por competência.</p>
+     *
+     * @param resultId identificador do resultado
+     * @param companyId empresa que está consultando
+     * @param tenantContext empresa identificada pelo token da integração
+     * @return o resultado da prova pronto para a Gupy
+     */
     @Transactional(readOnly = true)
     public TestResultResponse findResult(
             String resultId,

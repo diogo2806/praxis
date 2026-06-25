@@ -12,6 +12,15 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
+/**
+ * Porta de entrada (API) para consultar a trilha de auditoria.
+ *
+ * <p>Na visão do processo, é por aqui que as telas administrativas pedem o
+ * histórico de tudo o que aconteceu com uma prova de candidato ou com uma
+ * versão de simulação. Serve para investigar problemas, comprovar
+ * conformidade e dar transparência sobre cada passo do fluxo. Apenas
+ * consulta — nunca altera o histórico.</p>
+ */
 @RestController
 @RequestMapping("/api/v1/audit")
 @Tag(name = "Audit", description = "Leitura da trilha cronologica de auditoria operacional.")
@@ -23,6 +32,13 @@ public class AuditEventController {
         this.auditEventService = auditEventService;
     }
 
+    /**
+     * Lista, em ordem cronológica, tudo o que aconteceu com a prova de um
+     * candidato (quando começou, respondeu, terminou, foi anonimizada, etc.).
+     *
+     * @param attemptId identificador da tentativa do candidato
+     * @return o histórico de eventos daquela tentativa
+     */
     @GetMapping("/candidate-attempts/{attemptId}")
     @Operation(
             summary = "Lista auditoria da tentativa",
@@ -32,6 +48,14 @@ public class AuditEventController {
         return ResponseEntity.ok(auditEventService.listCandidateAttemptEvents(attemptId));
     }
 
+    /**
+     * Lista o histórico de mudanças de uma versão específica de uma prova
+     * (criação, publicação e demais transições de estado daquela versão).
+     *
+     * @param simulationId identificador da simulação (prova)
+     * @param versionNumber número da versão consultada
+     * @return o histórico de eventos daquela versão
+     */
     @GetMapping("/simulations/{simulationId}/versions/{versionNumber}")
     @Operation(
             summary = "Lista auditoria da versao",

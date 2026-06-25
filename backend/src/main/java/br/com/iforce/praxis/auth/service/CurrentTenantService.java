@@ -64,6 +64,7 @@ public class CurrentTenantService {
         throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Sessão inválida ou expirada.");
     }
 
+    /** Guarda qual empresa (tenant) está vinculada à sessão autenticada. */
     public record AuthenticatedTenant(String tenantId) {
     }
 }

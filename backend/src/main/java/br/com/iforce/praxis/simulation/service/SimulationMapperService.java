@@ -21,9 +21,30 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
+/**
+ * Tradutor entre o formato de armazenamento da prova e os formatos de uso.
+ *
+ * <p>Na visão do processo, é o "tradutor" que converte a prova entre três
+ * mundos: como ela é guardada no banco, como é exibida na tela de autoria e
+ * como é entregue ao candidato/integrações já publicada. Também aplica o
+ * plano da avaliação (competências e pesos) ao montar ou editar uma prova.
+ * Não contém regra de negócio sensível: apenas organiza e converte os
+ * dados.</p>
+ */
 @Service
 public class SimulationMapperService {
 
+    /**
+     * Aplica o plano inicial a uma prova recém-criada.
+     *
+     * <p>Define a etapa inicial e cadastra as competências informadas,
+     * distribuindo o peso igualmente entre elas (cada competência começa com
+     * a mesma importância).</p>
+     *
+     * @param simulationVersionEntity a versão da prova a configurar
+     * @param rootNodeId a etapa por onde a prova começa
+     * @param competencies as competências avaliadas
+     */
     public void applyInitialBlueprint(SimulationVersionEntity simulationVersionEntity, String rootNodeId, List<String> competencies) {
         simulationVersionEntity.setRootNodeId(rootNodeId.trim());
         simulationVersionEntity.getCompetencies().clear();
@@ -39,6 +60,18 @@ public class SimulationMapperService {
         uniqueCompetencies.forEach(competency -> addCompetency(simulationVersionEntity, competency, weight));
     }
 
+    /**
+     * Atualiza o plano da avaliação de uma prova em edição.
+     *
+     * <p>Ajusta a etapa inicial e reconcilia a lista de competências:
+     * atualiza as que continuam, adiciona as novas e remove as que saíram —
+     * preservando o peso e a meta de cada uma. A reconciliação é feita "no
+     * lugar" para evitar conflitos no banco quando um nome de competência é
+     * mantido.</p>
+     *
+     * @param simulationVersionEntity a versão da prova a atualizar
+     * @param request o novo plano (etapa inicial, competências, pesos e metas)
+     */
     public void applyBlueprintUpdate(SimulationVersionEntity simulationVersionEntity, UpdateBlueprintRequest request) {
         simulationVersionEntity.setRootNodeId(request.rootNodeId().trim());
 
@@ -87,6 +120,16 @@ public class SimulationMapperService {
         return name == null ? "" : name.trim().toLowerCase(Locale.ROOT);
     }
 
+    /**
+     * Converte a prova armazenada no formato usado na execução (publicada).
+     *
+     * <p>É a forma como a prova é entregue ao candidato e às integrações:
+     * competências com pesos, etapas e respostas já organizadas. Uso interno
+     * por outros serviços ao aplicar a prova.</p>
+     *
+     * @param simulationVersionEntity a versão da prova armazenada
+     * @return a prova no formato de execução
+     */
     public PublishedSimulation toPublishedSimulation(SimulationVersionEntity simulationVersionEntity) {
         List<SimulationCompetencyEntity> sortedCompetencies = simulationVersionEntity.getCompetencies().stream()
                 .sorted(Comparator.comparing(SimulationCompetencyEntity::getName))
@@ -117,6 +160,16 @@ public class SimulationMapperService {
         );
     }
 
+    /**
+     * Converte a prova armazenada no formato detalhado da tela de autoria.
+     *
+     * <p>Inclui tudo o que o autor precisa ver e editar: dados gerais da
+     * prova, competências com pesos e metas, etapas, respostas e posições no
+     * editor visual.</p>
+     *
+     * @param simulationVersionEntity a versão da prova armazenada
+     * @return os detalhes completos da versão para a tela de autoria
+     */
     public SimulationVersionDetailResponse toVersionDetail(SimulationVersionEntity simulationVersionEntity) {
         List<CompetencyWeightDto> competencies = simulationVersionEntity.getCompetencies().stream()
                 .sorted(Comparator.comparing(SimulationCompetencyEntity::getName))

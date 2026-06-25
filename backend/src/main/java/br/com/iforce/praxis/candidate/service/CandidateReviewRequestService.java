@@ -39,6 +39,18 @@ public class CandidateReviewRequestService {
         this.objectMapper = objectMapper;
     }
 
+    /**
+     * Registra o pedido do candidato para que um humano revise o resultado.
+     *
+     * <p>Fluxo do processo: como o candidato acessa por um link público (sem
+     * empresa no contexto), o sistema descobre a empresa a partir da
+     * participação e grava o pedido na trilha de auditoria, de onde o
+     * recrutador o vê. É o direito de revisão por pessoa natural previsto na
+     * LGPD (art. 20).</p>
+     *
+     * @param attemptId identificador da participação do candidato
+     * @param request justificativa opcional do pedido (pode ser nulo)
+     */
     @Transactional
     public void register(String attemptId, ReviewRequest request) {
         CandidateAttemptEntity attempt = candidateAttemptRepository.findById(attemptId)
@@ -56,6 +68,7 @@ public class CandidateReviewRequestService {
         );
     }
 
+    /** Limpa a justificativa informada (remove espaços e trata texto vazio). Uso interno. */
     private String normalizeReason(String reason) {
         if (reason == null) {
             return null;
@@ -64,6 +77,10 @@ public class CandidateReviewRequestService {
         return trimmed.isEmpty() ? null : trimmed;
     }
 
+    /**
+     * Monta o detalhamento (em JSON) do pedido de revisão que será guardado
+     * na trilha de auditoria. Uso interno.
+     */
     private String buildMetadata(String attemptId, String reason, Instant requestedAt) {
         Map<String, Object> payload = new LinkedHashMap<>();
         payload.put("attemptId", attemptId);

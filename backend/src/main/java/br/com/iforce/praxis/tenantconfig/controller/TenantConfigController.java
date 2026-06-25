@@ -18,6 +18,15 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
+/**
+ * Porta de entrada (API) dos catálogos configuráveis por empresa.
+ *
+ * <p>Na visão do processo, é por aqui que a empresa personaliza as listas
+ * usadas nas telas de autoria de provas — por exemplo, o catálogo de
+ * competências e os limites de tempo. Quando a empresa não personaliza, o
+ * sistema usa valores padrão. Permite consultar e substituir esses
+ * catálogos.</p>
+ */
 @RestController
 @RequestMapping("/api/v1/tenant-config")
 @Tag(name = "Tenant Config", description = "Catalogos configuraveis por empresa usados nas telas de autoria.")
@@ -29,6 +38,14 @@ public class TenantConfigController {
         this.tenantConfigService = tenantConfigService;
     }
 
+    /**
+     * Carrega os catálogos configuráveis da empresa logada.
+     *
+     * <p>Traz as competências e os limites de tempo; tipos não personalizados
+     * vêm com os valores padrão.</p>
+     *
+     * @return os catálogos da empresa para as telas de autoria
+     */
     @GetMapping
     @Operation(
             summary = "Carrega catalogos do tenant",
@@ -38,6 +55,13 @@ public class TenantConfigController {
         return ResponseEntity.ok(tenantConfigService.getConfig());
     }
 
+    /**
+     * Personaliza um catálogo da empresa, substituindo a lista por inteiro.
+     *
+     * @param configType o tipo de catálogo (ex.: competências, limites de tempo)
+     * @param request a nova lista completa de opções
+     * @return a lista de opções resultante
+     */
     @PutMapping("/{configType}")
     @Operation(
             summary = "Customiza um catalogo do tenant",
