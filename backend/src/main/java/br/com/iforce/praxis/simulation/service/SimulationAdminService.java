@@ -157,7 +157,7 @@ public class SimulationAdminService {
         rootNodeEntity.setNodeId(versionEntity.getRootNodeId());
         rootNodeEntity.setTurnIndex(1);
         rootNodeEntity.setSpeaker("Cliente");
-        rootNodeEntity.setMessage(defaultIfBlank(request.criticalSituation(), "Descreva a situacao critica do primeiro turno."));
+        rootNodeEntity.setMessage(defaultIfBlank(request.criticalSituation(), "Descreva a situação crítica da primeira etapa."));
         rootNodeEntity.setTimeLimitSeconds(null);
         versionEntity.getNodes().add(rootNodeEntity);
 
@@ -168,7 +168,7 @@ public class SimulationAdminService {
                 savedSimulationEntity.getId(),
                 versionEntity.getVersionNumber(),
                 AuditEventType.SIMULATION_VERSION_DRAFT_CREATED,
-                "Simulação criada com versão inicial em rascunho.",
+                "Teste criado com versão inicial em rascunho.",
                 "{\"status\":\"draft\"}"
         );
 
@@ -298,7 +298,7 @@ public class SimulationAdminService {
                 simulationId,
                 versionNumber,
                 AuditEventType.SIMULATION_VERSION_BLUEPRINT_UPDATED,
-                "Plano da avaliação atualizado.",
+                "Plano do teste atualizado.",
                 "{\"rootNodeId\":\"" + escapeJson(savedVersionEntity.getRootNodeId())
                         + "\",\"competencyCount\":" + savedVersionEntity.getCompetencies().size() + "}"
         );
@@ -335,7 +335,7 @@ public class SimulationAdminService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "A fala da etapa e obrigatoria.");
         }
         if (isFinal && trimToNull(request.timeoutNextNodeId()) != null) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Etapas de encerramento nao podem ter destino de tempo.");
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Etapas de encerramento não podem ter uma etapa de destino para quando o tempo se esgota.");
         }
         nodeEntity.setMessage(message == null ? "" : message);
         nodeEntity.setTimeLimitSeconds(request.timeLimitSeconds());
@@ -408,7 +408,7 @@ public class SimulationAdminService {
         }
         if (request.timeoutNextNodeId() != null) {
             if (nodeEntity.isFinal() && trimToNull(request.timeoutNextNodeId()) != null) {
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Etapas de encerramento nao podem ter destino de tempo.");
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Etapas de encerramento não podem ter uma etapa de destino para quando o tempo se esgota.");
             }
             assertNodeExistsWhenProvided(versionEntity, request.timeoutNextNodeId());
             nodeEntity.setTimeoutNextNodeId(nodeEntity.isFinal() ? null : trimToNull(request.timeoutNextNodeId()));
@@ -486,7 +486,7 @@ public class SimulationAdminService {
         SimulationVersionEntity versionEntity = findAndAssertDraft(simulationId, versionNumber);
         SimulationNodeEntity nodeEntity = findNode(versionEntity, nodeId);
         if (nodeEntity.isFinal()) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "Etapas de encerramento nao aceitam respostas.");
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Etapas de encerramento não aceitam respostas.");
         }
         assertCanAddOption(nodeEntity);
         assertCompetencyScores(versionEntity, request.competencyLevels());
@@ -512,7 +512,7 @@ public class SimulationAdminService {
                 simulationId,
                 versionNumber,
                 AuditEventType.SIMULATION_OPTION_ADDED,
-                "Alternativa de simulação adicionada.",
+                "Resposta adicionada ao teste.",
                 "{\"nodeId\":\"" + escapeJson(nodeId) + "\",\"optionId\":\"" + escapeJson(optionId) + "\"}"
         );
 
@@ -577,7 +577,7 @@ public class SimulationAdminService {
                 simulationId,
                 versionNumber,
                 AuditEventType.SIMULATION_OPTION_UPDATED,
-                "Alternativa de simulação atualizada.",
+                "Resposta atualizada no teste.",
                 "{\"nodeId\":\"" + escapeJson(nodeId) + "\",\"optionId\":\"" + escapeJson(optionId) + "\"}"
         );
     }
@@ -605,7 +605,7 @@ public class SimulationAdminService {
                 simulationId,
                 versionNumber,
                 AuditEventType.SIMULATION_OPTION_DELETED,
-                "Alternativa de simulação removida.",
+                "Resposta removida do teste.",
                 "{\"nodeId\":\"" + escapeJson(nodeId) + "\",\"optionId\":\"" + escapeJson(optionId) + "\"}"
         );
     }
@@ -623,13 +623,13 @@ public class SimulationAdminService {
     public void deleteSimulation(String simulationId) {
         String tenantId = currentTenantService.requiredTenantId();
         SimulationEntity simulationEntity = simulationRepository.findByTenantIdAndId(tenantId, simulationId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Simulação não encontrada."));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Não encontramos este teste."));
 
         long candidateAttempts = candidateAttemptRepository.countByTenantIdAndSimulationId(tenantId, simulationId);
         if (candidateAttempts > 0) {
             throw new ResponseStatusException(
                     HttpStatus.CONFLICT,
-                    "Não é possível excluir a simulação porque existem tentativas de candidatos vinculadas a ela."
+                    "Não é possível excluir o teste porque existem tentativas de candidatos vinculadas a ele."
             );
         }
 
@@ -736,7 +736,7 @@ public class SimulationAdminService {
                 savedSimulationVersionEntity.getSimulation().getId(),
                 savedSimulationVersionEntity.getVersionNumber(),
                 AuditEventType.SIMULATION_VERSION_PUBLISHED,
-                "Versão de simulação publicada.",
+                "Versão do teste publicada.",
                 "{\"status\":\"" + savedSimulationVersionEntity.getStatus().getDescricao()
                         + "\",\"publishedAt\":\"" + savedSimulationVersionEntity.getPublishedAt()
                         + "\",\"warningCount\":" + validationResponse.warningCount() + "}"
@@ -922,7 +922,7 @@ public class SimulationAdminService {
                 .stream()
                 .filter(option -> Objects.equals(option.getOptionId(), optionId))
                 .findFirst()
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Alternativa não encontrada."));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Resposta não encontrada."));
     }
 
     private void assertCanAddOption(SimulationNodeEntity nodeEntity) {
@@ -990,7 +990,7 @@ public class SimulationAdminService {
         String tenantId = currentTenantService.requiredTenantId();
         return simulationVersionRepository
                 .findBySimulationTenantIdAndSimulationIdAndVersionNumber(tenantId, simulationId, versionNumber)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Versão de simulação não encontrada."));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Não encontramos esta versão do teste."));
     }
 
     private void archiveOtherPublishedVersions(SimulationVersionEntity targetVersion) {

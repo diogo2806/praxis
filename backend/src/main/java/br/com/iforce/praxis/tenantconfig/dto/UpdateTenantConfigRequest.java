@@ -15,7 +15,7 @@ public record UpdateTenantConfigRequest(
         List<OptionInput> options
 ) {
 
-    @Schema(description = "Opcao a persistir para o tenant.")
+    @Schema(description = "Opção a persistir para a empresa.")
     public record OptionInput(
             @NotBlank
             @Schema(example = "Pensamento Critico")

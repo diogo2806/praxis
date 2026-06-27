@@ -164,21 +164,21 @@ public class SimulationValidationService {
             issues.add(new ValidationIssueResponse(
                     ValidationIssueSeverity.BLOCKER,
                     node.getNodeId(),
-                    "Etapas de encerramento nao podem ter respostas."
+                    "Etapas de encerramento não podem ter respostas."
             ));
         }
         if (node.getTimeoutNextNodeId() != null) {
             issues.add(new ValidationIssueResponse(
                     ValidationIssueSeverity.BLOCKER,
                     node.getNodeId(),
-                    "Etapas de encerramento nao podem ter destino de tempo."
+                    "Etapas de encerramento não podem ter uma etapa de destino para quando o tempo se esgota."
             ));
         }
         if (node.getReportText() == null || node.getReportText().isBlank()) {
             issues.add(new ValidationIssueResponse(
                     ValidationIssueSeverity.BLOCKER,
                     node.getNodeId(),
-                    "Etapas de encerramento precisam ter texto de relatorio."
+                    "Etapas de encerramento precisam ter um texto de relatório."
             ));
         }
     }
@@ -436,9 +436,9 @@ public class SimulationValidationService {
                     issues.add(new ValidationIssueResponse(
                             ValidationIssueSeverity.BLOCKER,
                             terminalNode.getNodeId(),
-                            "Um caminho do teste nao pontua a competencia \""
+                            "Um caminho do teste não pontua a competência \""
                                     + competency.getName()
-                                    + "\". Todo caminho precisa oferecer pontuacao positiva para cada competencia configurada."
+                                    + "\". Todo caminho precisa dar pontuação positiva para cada competência configurada."
                     ));
                 }
             }

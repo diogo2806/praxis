@@ -44,7 +44,7 @@ public class CompanyProfileService {
     public CompanyProfileResponse getProfile() {
         String tenantId = currentTenantService.requiredTenantId();
         TenantEntity tenant = tenantRepository.findById(tenantId)
-                .orElseThrow(() -> new ResponseStatusException(NOT_FOUND, "Empresa nao encontrada."));
+                .orElseThrow(() -> new ResponseStatusException(NOT_FOUND, "Empresa não encontrada."));
 
         return new CompanyProfileResponse(
                 fallback(tenant.getTradeName(), tenant.getName()),

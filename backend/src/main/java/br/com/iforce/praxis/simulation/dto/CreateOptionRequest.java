@@ -35,11 +35,11 @@ public record CreateOptionRequest(
         String plainTextDescription,
 
         @Size(max = 1000)
-        @Schema(description = "URL publica de audio descritivo da alternativa.", nullable = true)
+        @Schema(description = "URL pública de áudio descritivo da resposta.", nullable = true)
         String audioDescriptionUrl,
 
         @Size(max = 1000)
-        @Schema(description = "URL pública da imagem ou áudio anexado à alternativa.", nullable = true)
+        @Schema(description = "URL pública da imagem ou áudio anexado à resposta.", nullable = true)
         String mediaUrl,
 
         @Schema(description = "Tipo da mídia anexada (IMAGE ou AUDIO).", nullable = true)

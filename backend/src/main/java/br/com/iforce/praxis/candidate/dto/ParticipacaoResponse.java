@@ -25,7 +25,7 @@ public record ParticipacaoResponse(
 
         @Schema(
                 example = "false",
-                description = "Quando verdadeiro, o tenant opera na vertical de saúde: o fluxo deve coletar "
+                description = "Quando verdadeiro, a empresa opera na vertical de saúde: o fluxo deve coletar "
                         + "consentimento do participante para tratamento de dado sensível (LGPD)."
         )
         boolean verticalSaude

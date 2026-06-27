@@ -93,7 +93,7 @@ class SimulationValidationServiceTest {
         assertThat(response.issues())
                 .anyMatch(issue -> issue.severity() == ValidationIssueSeverity.BLOCKER
                         && issue.nodeId().equals("fim-b")
-                        && issue.message().contains("nao pontua a competencia \"Resolucao\""));
+                        && issue.message().contains("não pontua a competência \"Resolucao\""));
     }
 
     @Test

@@ -175,21 +175,21 @@ public class AttemptStateMachine {
             case IN_PROGRESS -> "Participação concluída";
         };
         String reviewLine = scoreResult.humanReviewRequired()
-                ? "Resposta configurada como critica sinalizada para analise da equipe responsavel."
-                : "Sem bloqueio critico identificado nas respostas.";
+                ? "Resposta marcada como crítica e sinalizada para análise da equipe responsável."
+                : "Nenhum ponto crítico identificado nas respostas.";
         String responseTimeSignal = responseTimeSignalLabel(scoreResult.reliabilityLevel());
         String terminalReport = terminalReport(simulation, answersByNodeId);
 
         String result = "Resumo da participação\n\n"
-                + "Avaliação: " + simulation.name() + "\n\n"
+                + "Teste: " + simulation.name() + "\n\n"
                 + "Resultado em relação aos critérios: " + outcome + "\n\n"
                 + "Pontuação geral: " + scoreResult.score() + "/100\n\n"
                 + reviewLine + "\n\n"
-                + "Sinal técnico de tempo de resposta: " + responseTimeSignal + ".";
+                + "Observação sobre o tempo de resposta: " + responseTimeSignal + ".";
         if (terminalReport == null || terminalReport.isBlank()) {
             return result;
         }
-        return result + "\n\nRelatorio do caminho:\n" + terminalReport;
+        return result + "\n\nResumo do caminho percorrido:\n" + terminalReport;
     }
 
     private String terminalReport(PublishedSimulation simulation, Map<String, AttemptAnswer> answersByNodeId) {
@@ -227,7 +227,7 @@ public class AttemptStateMachine {
 
     private String responseTimeSignalLabel(ReliabilityLevel reliabilityLevel) {
         return switch (reliabilityLevel) {
-            case LOW_RELIABILITY -> "uma ou mais respostas foram concluidas abaixo do intervalo de referencia configurado";
+            case LOW_RELIABILITY -> "uma ou mais respostas foram concluídas abaixo do intervalo de referência configurado";
             case NORMAL -> "nenhum alerta identificado";
         };
     }

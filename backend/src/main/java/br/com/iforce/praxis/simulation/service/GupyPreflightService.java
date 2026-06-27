@@ -77,7 +77,7 @@ public class GupyPreflightService {
         String tenantId = currentTenantService.requiredTenantId();
         return simulationVersionRepository
                 .findBySimulationTenantIdAndSimulationIdAndVersionNumber(tenantId, simulationId, versionNumber)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Versão de simulação não encontrada."));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Não encontramos esta versão do teste."));
     }
 
     /**
@@ -129,10 +129,10 @@ public class GupyPreflightService {
         String tenantId = currentTenantService.requiredTenantId();
         return tenantRepository.findById(tenantId)
                 .filter(tenant -> !isBlank(tenant.getIntegrationTokenHash()))
-                .map(tenant -> ok(GupyPreflightCheckCode.INTEGRATION_TOKEN, "Token de integração configurado no tenant."))
+                .map(tenant -> ok(GupyPreflightCheckCode.INTEGRATION_TOKEN, "Token de integração configurado para a empresa."))
                 .orElseGet(() -> warning(
                         GupyPreflightCheckCode.INTEGRATION_TOKEN,
-                        "Token de integração Gupy não configurado no tenant. A simulação será publicada, mas o envio de resultados para a Gupy ficará indisponível até a integração ser configurada."
+                        "Token de integração Gupy não configurado para a empresa. O teste será publicado, mas o envio de resultados para a Gupy ficará indisponível até a integração ser configurada."
                 ));
     }
 

@@ -94,7 +94,7 @@ public class SimulationAdminController {
     @GetMapping
     @Operation(
             summary = "Lista simulacoes ativas",
-            description = "Retorna a versao mais recente de cada simulacao nao arquivada para alimentar o painel administrativo."
+            description = "Retorna a versão mais recente de cada teste não arquivado para alimentar o painel administrativo."
     )
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Simulacoes retornadas."),
@@ -115,7 +115,7 @@ public class SimulationAdminController {
     @PostMapping
     @Operation(
             summary = "Cria simulacao e versao inicial",
-            description = "Cria uma simulacao com versao v1 em rascunho e pesos explicitos por competencia."
+            description = "Cria um teste com versão v1 em rascunho e pesos explícitos por competência."
     )
     @ApiResponses({
             @ApiResponse(responseCode = "201", description = "Simulacao criada."),
@@ -162,11 +162,11 @@ public class SimulationAdminController {
     @GetMapping("/{simulationId}/versions/{versionNumber}")
     @Operation(
             summary = "Detalha versao de simulacao",
-            description = "Retorna plano da avaliacao, competencias, etapas e respostas da versao para telas de autoria."
+            description = "Retorna plano do teste, competências, etapas e respostas da versão para telas de autoria."
     )
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Versao retornada."),
-            @ApiResponse(responseCode = "404", description = "Versao nao encontrada.", content = @Content(examples = @ExampleObject(value = ERROR_EXAMPLE)))
+            @ApiResponse(responseCode = "404", description = "Versão não encontrada.", content = @Content(examples = @ExampleObject(value = ERROR_EXAMPLE)))
     })
     public ResponseEntity<SimulationVersionDetailResponse> getSimulationVersion(
             @PathVariable String simulationId,
@@ -189,13 +189,13 @@ public class SimulationAdminController {
     @PatchMapping("/{simulationId}/versions/{versionNumber}/blueprint")
     @Operation(
             summary = "Atualiza plano da avaliacao da versao",
-            description = "Atualiza rootNodeId, competencias e pesos de uma versao em rascunho."
+            description = "Atualiza rootNodeId, competências e pesos de uma versão em rascunho."
     )
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Plano da avaliacao atualizado."),
             @ApiResponse(responseCode = "400", description = "Dados invalidos.", content = @Content(examples = @ExampleObject(value = ERROR_EXAMPLE))),
             @ApiResponse(responseCode = "403", description = "Acesso negado.", content = @Content(examples = @ExampleObject(value = ERROR_EXAMPLE))),
-            @ApiResponse(responseCode = "409", description = "Versao nao pode ser editada neste estado.", content = @Content(examples = @ExampleObject(value = ERROR_EXAMPLE)))
+            @ApiResponse(responseCode = "409", description = "Versão não pode ser editada neste estado.", content = @Content(examples = @ExampleObject(value = ERROR_EXAMPLE)))
     })
     public ResponseEntity<SimulationSummaryResponse> updateBlueprint(
             @PathVariable String simulationId,
@@ -294,7 +294,7 @@ public class SimulationAdminController {
      * @return confirmação sem conteúdo
      */
     @PutMapping("/{simulationId}/versions/{versionNumber}/nodes/{nodeId}/options/{optionId}")
-    @Operation(summary = "Atualiza alternativa do rascunho")
+    @Operation(summary = "Atualiza resposta do rascunho")
     public ResponseEntity<Void> updateOption(
             @PathVariable String simulationId,
             @PathVariable int versionNumber,
@@ -316,7 +316,7 @@ public class SimulationAdminController {
      * @return confirmação sem conteúdo
      */
     @DeleteMapping("/{simulationId}/versions/{versionNumber}/nodes/{nodeId}/options/{optionId}")
-    @Operation(summary = "Remove alternativa do rascunho")
+    @Operation(summary = "Remove resposta do rascunho")
     public ResponseEntity<Void> deleteOption(
             @PathVariable String simulationId,
             @PathVariable int versionNumber,
@@ -374,7 +374,7 @@ public class SimulationAdminController {
             @ApiResponse(responseCode = "200", description = "Rascunho clonado."),
             @ApiResponse(responseCode = "400", description = "Parametro invalido.", content = @Content(examples = @ExampleObject(value = ERROR_EXAMPLE))),
             @ApiResponse(responseCode = "403", description = "Acesso negado.", content = @Content(examples = @ExampleObject(value = ERROR_EXAMPLE))),
-            @ApiResponse(responseCode = "409", description = "Versao nao pode ser clonada neste estado.", content = @Content(examples = @ExampleObject(value = ERROR_EXAMPLE)))
+            @ApiResponse(responseCode = "409", description = "Versão não pode ser clonada neste estado.", content = @Content(examples = @ExampleObject(value = ERROR_EXAMPLE)))
     })
     public ResponseEntity<CloneSimulationVersionResponse> clonePublishedVersionToDraft(
             @PathVariable String simulationId,
@@ -486,13 +486,13 @@ public class SimulationAdminController {
     @GetMapping("/{simulationId}/versions/{versionNumber}/talent-match")
     @Operation(
             summary = "Compara candidatos contra benchmark",
-            description = "Retorna benchmark da vaga e resultados por competencia de ate 5 tentativas da mesma versao."
+            description = "Retorna benchmark da vaga e resultados por competência de até 5 tentativas da mesma versão."
     )
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Comparativo retornado."),
             @ApiResponse(responseCode = "400", description = "Parametros invalidos.", content = @Content(examples = @ExampleObject(value = ERROR_EXAMPLE))),
             @ApiResponse(responseCode = "403", description = "Acesso negado a uma tentativa selecionada.", content = @Content(examples = @ExampleObject(value = ERROR_EXAMPLE))),
-            @ApiResponse(responseCode = "404", description = "Versao ou tentativa nao encontrada.", content = @Content(examples = @ExampleObject(value = ERROR_EXAMPLE)))
+            @ApiResponse(responseCode = "404", description = "Versão ou tentativa não encontrada.", content = @Content(examples = @ExampleObject(value = ERROR_EXAMPLE)))
     })
     public ResponseEntity<TalentMatchResponse> getTalentMatch(
             @PathVariable String simulationId,
@@ -520,7 +520,7 @@ public class SimulationAdminController {
     @ApiResponses({
             @ApiResponse(responseCode = "204", description = "Simulacao removida."),
             @ApiResponse(responseCode = "403", description = "Acesso negado.", content = @Content(examples = @ExampleObject(value = ERROR_EXAMPLE))),
-            @ApiResponse(responseCode = "404", description = "Simulacao nao encontrada.", content = @Content(examples = @ExampleObject(value = ERROR_EXAMPLE))),
+            @ApiResponse(responseCode = "404", description = "Teste não encontrado.", content = @Content(examples = @ExampleObject(value = ERROR_EXAMPLE))),
             @ApiResponse(responseCode = "409", description = "Simulacao possui tentativas de candidatos vinculadas.", content = @Content(examples = @ExampleObject(value = ERROR_EXAMPLE)))
     })
     public ResponseEntity<Void> deleteSimulation(@PathVariable String simulationId) {

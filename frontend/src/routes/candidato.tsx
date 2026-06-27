@@ -335,6 +335,40 @@ const LOAD_ERROR_MESSAGES: Record<number, string> = {
   409: "Este teste não está mais disponível.",
 };
 
+const ACCESSIBILITY_STORAGE_KEY = "praxis:candidate-accessibility";
+
+type CandidateAccessibilityPreferences = {
+  highContrast: boolean;
+  largeText: boolean;
+  dyslexiaFont: boolean;
+};
+
+const DEFAULT_ACCESSIBILITY_PREFERENCES: CandidateAccessibilityPreferences = {
+  highContrast: false,
+  largeText: false,
+  dyslexiaFont: false,
+};
+
+function loadAccessibilityPreferences(): CandidateAccessibilityPreferences {
+  if (typeof window === "undefined") {
+    return DEFAULT_ACCESSIBILITY_PREFERENCES;
+  }
+  try {
+    const stored = window.localStorage.getItem(ACCESSIBILITY_STORAGE_KEY);
+    if (!stored) {
+      return DEFAULT_ACCESSIBILITY_PREFERENCES;
+    }
+    const parsed = JSON.parse(stored) as Partial<CandidateAccessibilityPreferences>;
+    return {
+      highContrast: Boolean(parsed.highContrast),
+      largeText: Boolean(parsed.largeText),
+      dyslexiaFont: Boolean(parsed.dyslexiaFont),
+    };
+  } catch {
+    return DEFAULT_ACCESSIBILITY_PREFERENCES;
+  }
+}
+
 function friendlyApiErrorMessage(
   error: unknown,
   messagesByStatus: Record<number, string>,
@@ -438,13 +472,12 @@ function FocusedCandidateExperience({ token }: { token: string }) {
   const [liveAttempt, setLiveAttempt] = useState<CandidateAttemptResponse | null>(null);
   const [remaining, setRemaining] = useState(30);
   const [selectedOptionId, setSelectedOptionId] = useState<string | null>(null);
-  const [highContrast, setHighContrast] = useState(false);
-  const [largeText, setLargeText] = useState(false);
-  const [dyslexiaFont, setDyslexiaFont] = useState(false);
+  const [accessibilityPreferences, setAccessibilityPreferences] = useState(loadAccessibilityPreferences);
   const [submittingAnswer, setSubmittingAnswer] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [healthConsentGiven, setHealthConsentGiven] = useState(false);
   const stylesInjected = useRef(false);
+  const { highContrast, largeText, dyslexiaFont } = accessibilityPreferences;
 
   useEffect(() => {
     if (stylesInjected.current) return;
@@ -465,6 +498,10 @@ function FocusedCandidateExperience({ token }: { token: string }) {
       setLiveAttempt(attemptQuery.data);
     }
   }, [attemptQuery.data]);
+
+  useEffect(() => {
+    window.localStorage.setItem(ACCESSIBILITY_STORAGE_KEY, JSON.stringify(accessibilityPreferences));
+  }, [accessibilityPreferences]);
 
   const attempt = liveAttempt ?? attemptQuery.data;
   const currentNode = attempt?.etapaAtual ?? null;
@@ -595,7 +632,10 @@ function FocusedCandidateExperience({ token }: { token: string }) {
       <div className="cand-a11y">
         <button
           type="button"
-          onClick={() => setHighContrast((v) => !v)}
+          onClick={() => setAccessibilityPreferences((value) => ({
+            ...value,
+            highContrast: !value.highContrast,
+          }))}
           aria-pressed={highContrast}
           title="Alterna para alto contraste"
         >
@@ -603,7 +643,10 @@ function FocusedCandidateExperience({ token }: { token: string }) {
         </button>
         <button
           type="button"
-          onClick={() => setLargeText((v) => !v)}
+          onClick={() => setAccessibilityPreferences((value) => ({
+            ...value,
+            largeText: !value.largeText,
+          }))}
           aria-pressed={largeText}
           title="Aumenta o tamanho do texto"
         >
@@ -611,7 +654,10 @@ function FocusedCandidateExperience({ token }: { token: string }) {
         </button>
         <button
           type="button"
-          onClick={() => setDyslexiaFont((v) => !v)}
+          onClick={() => setAccessibilityPreferences((value) => ({
+            ...value,
+            dyslexiaFont: !value.dyslexiaFont,
+          }))}
           aria-pressed={dyslexiaFont}
           title="Troca para uma fonte mais fácil de ler"
         >

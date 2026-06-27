@@ -34,7 +34,7 @@ public class PrivacyController {
 
     public PrivacyController(
             @Value("${praxis.privacy-retention-days:180}") int retentionDays,
-            @Value("${praxis.privacy.controller-name:Controlador a ser informado pelo tenant}") String controllerName,
+            @Value("${praxis.privacy.controller-name:Controlador a ser informado pela empresa}") String controllerName,
             @Value("${praxis.privacy.service-email:}") String serviceEmail,
             @Value("${praxis.privacy.service-url:}") String serviceUrl,
             @Value("${praxis.privacy.dpo-contact:}") String dataProtectionOfficerContact,
@@ -70,7 +70,7 @@ public class PrivacyController {
                         ),
                         new PrivacyComplianceResponse.LegalBasisDto(
                                 "Finalidade e necessidade",
-                                "As informacoes exibidas refletem a configuracao informada pelo controlador e nao substituem sua avaliacao juridica."
+                                "As informações exibidas refletem a configuração informada pelo controlador e não substituem sua análise jurídica."
                         ),
                         new PrivacyComplianceResponse.LegalBasisDto(
                                 "Registro e salvaguardas",
@@ -104,7 +104,7 @@ public class PrivacyController {
         if (serviceEmail != null && !serviceEmail.isBlank()) {
             return serviceEmail;
         }
-        return "Canal de privacidade nao configurado para este tenant. Configure PRAXIS_PRIVACY_SERVICE_EMAIL ou PRAXIS_PRIVACY_SERVICE_URL antes de operar processos reais.";
+        return "Canal de privacidade não configurado para esta empresa. Configure PRAXIS_PRIVACY_SERVICE_EMAIL ou PRAXIS_PRIVACY_SERVICE_URL antes de operar processos reais.";
     }
 
     /** Trata texto em branco como ausência de valor (nulo). Uso interno. */
