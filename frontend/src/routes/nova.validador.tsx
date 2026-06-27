@@ -178,6 +178,7 @@ function ValidatorPage() {
   const warnings = validation?.warningCount ?? 0;
   const qualityScore = validation?.qualityScore ?? 0;
   const canPublish = Boolean(validation) && blockers === 0;
+  const footerBlockers = validationBlockers.slice(0, 3);
   const scoreTone = scoreQualityTone(qualityScore);
   const scoreWidth = Math.max(0, Math.min(qualityScore, 100));
   const refreshValidation = () => {
@@ -531,13 +532,25 @@ function ValidatorPage() {
           >
             ← Voltar: Cenário
           </Link>
-          <div className="flex flex-col items-start gap-2 sm:items-end">
+          <div className="flex max-w-3xl flex-col items-start gap-2 sm:items-end">
             {!canPublish && (
-              <p className="text-xs text-muted-foreground" aria-live="polite">
+              <div className="text-xs text-muted-foreground sm:text-right" aria-live="polite">
+                <p>
                 {validation
                   ? `Resolva ${blockers} bloqueio${blockers === 1 ? "" : "s"} para liberar a publicação.`
                   : "Carregando diagnóstico..."}
-              </p>
+                </p>
+                {footerBlockers.length > 0 && (
+                  <ul className="mt-1 space-y-0.5 text-left text-danger sm:text-right">
+                    {footerBlockers.map((issue) => (
+                      <li key={`${issue.nodeId ?? "global"}-${issue.message}`}>
+                        {issue.nodeId ? `${issue.nodeId}: ` : ""}
+                        {issue.message}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
             )}
             <button
               type="button"
