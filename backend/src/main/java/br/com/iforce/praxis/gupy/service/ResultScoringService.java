@@ -12,7 +12,6 @@ import br.com.iforce.praxis.gupy.model.ScenarioOption;
 import br.com.iforce.praxis.gupy.model.ScoreCalculationResult;
 import org.springframework.stereotype.Service;
 
-import java.text.Normalizer;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -35,7 +34,6 @@ import java.util.Map;
 @Service
 public class ResultScoringService {
 
-    private static final String POLICY_ADHERENCE_COMPETENCY = "aderencia a politica";
     private static final double FAST_RESPONSE_THRESHOLD_RATIO = 0.20;
     private static final double HIGH_SCORE_OPTION_RATIO = 0.80;
     private static final long MILLIS_PER_VISIBLE_WORD = 300L;
@@ -89,7 +87,16 @@ public class ResultScoringService {
             Map<String, AttemptAnswer> answersByNodeId,
             Instant firstTurnReceivedAt
     ) {
-        List<PathStep> path = walkPath(simulation, answersByNodeId, firstTurnReceivedAt);
+        return calculate(simulation, answersByNodeId, firstTurnReceivedAt, Map.of());
+    }
+
+    public ScoreCalculationResult calculate(
+            PublishedSimulation simulation,
+            Map<String, AttemptAnswer> answersByNodeId,
+            Instant firstTurnReceivedAt,
+            Map<String, Instant> servedAtByNodeId
+    ) {
+        List<PathStep> path = walkPath(simulation, answersByNodeId, firstTurnReceivedAt, servedAtByNodeId);
 
         boolean humanReviewRequired = path.stream()
                 .map(PathStep::pickedOption)
@@ -144,7 +151,7 @@ public class ResultScoringService {
             resultItems.add(new ResultItem(
                     competency,
                     (int) Math.round(entry.getValue() * 100),
-                    tierFor(competency)
+                    tierFor(simulation, competency)
             ));
         }
 
@@ -169,13 +176,14 @@ public class ResultScoringService {
         if (finalScore >= praxisProperties.recommendInterviewThreshold()) {
             return ResultDecision.RECOMMEND_INTERVIEW;
         }
-        return ResultDecision.IN_PROGRESS;
+        return ResultDecision.NO_RECOMMENDATION;
     }
 
     private List<PathStep> walkPath(
             PublishedSimulation simulation,
             Map<String, AttemptAnswer> answersByNodeId,
-            Instant firstTurnReceivedAt
+            Instant firstTurnReceivedAt,
+            Map<String, Instant> servedAtByNodeId
     ) {
         List<PathStep> path = new ArrayList<>();
         String currentNodeId = simulation.rootNodeId();
@@ -191,16 +199,17 @@ public class ResultScoringService {
                 break;
             }
 
+            Instant servedAt = servedAtByNodeId.getOrDefault(currentNodeId, currentTurnReceivedAt);
             if (answer.timedOut() || answer.optionId() == null) {
                 // Timeout do turno: nível 0 naquele nó e continuidade pela rota configurada.
-                path.add(new PathStep(currentNode, null, answer, currentTurnReceivedAt));
+                path.add(new PathStep(currentNode, null, answer, servedAt));
                 currentTurnReceivedAt = answer.answeredAt();
                 currentNodeId = currentNode.timeoutNextNodeId();
                 continue;
             }
 
             ScenarioOption pickedOption = findOption(currentNode, answer.optionId());
-            path.add(new PathStep(currentNode, pickedOption, answer, currentTurnReceivedAt));
+            path.add(new PathStep(currentNode, pickedOption, answer, servedAt));
             currentTurnReceivedAt = answer.answeredAt();
             currentNodeId = pickedOption.nextNodeId();
         }
@@ -222,17 +231,8 @@ public class ResultScoringService {
                 .orElseThrow(() -> new IllegalStateException("Estado interno inválido."));
     }
 
-    private ResultTier tierFor(String competencyName) {
-        if (POLICY_ADHERENCE_COMPETENCY.equals(normalize(competencyName))) {
-            return ResultTier.MINOR;
-        }
-        return ResultTier.MAJOR;
-    }
-
-    private String normalize(String value) {
-        return Normalizer.normalize(value, Normalizer.Form.NFD)
-                .replaceAll("\\p{M}", "")
-                .toLowerCase();
+    private ResultTier tierFor(PublishedSimulation simulation, String competency) {
+        return simulation.competencyTiers().getOrDefault(competency, ResultTier.MAJOR);
     }
 
     private boolean hasLowReliabilitySignal(List<PathStep> path, List<String> competencies) {
@@ -243,13 +243,13 @@ public class ResultScoringService {
     private boolean isSuspiciousFastCriticalAnswer(PathStep step, List<String> competencies) {
         if (step.pickedOption() == null
                 || step.answer() == null
-                || step.answer().answeredAt() == null
-                || step.turnReceivedAt() == null
+                || step.answer().receivedAt() == null
+                || step.servedAt() == null
                 || !isCriticalForReliability(step.node(), step.pickedOption(), competencies)) {
             return false;
         }
 
-        long elapsedMillis = Duration.between(step.turnReceivedAt(), step.answer().answeredAt()).toMillis();
+        long elapsedMillis = Duration.between(step.servedAt(), step.answer().receivedAt()).toMillis();
         if (elapsedMillis < 0) {
             return false;
         }
@@ -299,7 +299,7 @@ public class ResultScoringService {
             ScenarioNode node,
             ScenarioOption pickedOption,
             AttemptAnswer answer,
-            Instant turnReceivedAt
+            Instant servedAt
     ) {
 
         String auditNote() {

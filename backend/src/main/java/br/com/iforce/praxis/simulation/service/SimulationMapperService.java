@@ -1,6 +1,7 @@
 package br.com.iforce.praxis.simulation.service;
 
 import br.com.iforce.praxis.gupy.model.PublishedSimulation;
+import br.com.iforce.praxis.gupy.model.ResultTier;
 import br.com.iforce.praxis.gupy.model.ScenarioNode;
 import br.com.iforce.praxis.gupy.model.ScenarioOption;
 import br.com.iforce.praxis.simulation.dto.CompetencyWeightDto;
@@ -80,7 +81,8 @@ public class SimulationMapperService {
                 .map(competency -> new NormalizedCompetency(
                         competency.name().trim(),
                         competency.weight(),
-                        competency.normalizedTargetScore()
+                        competency.normalizedTargetScore(),
+                        competency.normalizedTier()
                 ))
                 .toList();
 
@@ -102,12 +104,14 @@ public class SimulationMapperService {
                 existing.setName(requested.name());
                 existing.setWeight(requested.weight());
                 existing.setTargetScore(requested.targetScore());
+                existing.setTier(requested.tier());
             } else {
                 addCompetency(
                         simulationVersionEntity,
                         requested.name(),
                         requested.weight(),
-                        requested.targetScore()
+                        requested.targetScore(),
+                        requested.tier()
                 );
             }
         }
@@ -142,6 +146,9 @@ public class SimulationMapperService {
         Map<String, Double> competencyWeights = new LinkedHashMap<>();
         sortedCompetencies.forEach(competency -> competencyWeights.put(competency.getName(), competency.getWeight()));
 
+        Map<String, ResultTier> competencyTiers = new LinkedHashMap<>();
+        sortedCompetencies.forEach(competency -> competencyTiers.put(competency.getName(), competency.getTier()));
+
         List<ScenarioNode> nodes = simulationVersionEntity.getNodes().stream()
                 .sorted(Comparator.comparingInt(SimulationNodeEntity::getTurnIndex))
                 .map(this::toScenarioNode)
@@ -155,6 +162,7 @@ public class SimulationMapperService {
                 simulationVersionEntity.getSimulation().getDescription(),
                 competencies,
                 competencyWeights,
+                competencyTiers,
                 simulationVersionEntity.getRootNodeId(),
                 nodes
         );
@@ -176,7 +184,8 @@ public class SimulationMapperService {
                 .map(competency -> new CompetencyWeightDto(
                         competency.getName(),
                         competency.getWeight(),
-                        competency.getTargetScore()
+                        competency.getTargetScore(),
+                        competency.getTier()
                 ))
                 .toList();
 
@@ -290,23 +299,25 @@ public class SimulationMapperService {
     }
 
     private void addCompetency(SimulationVersionEntity simulationVersionEntity, String name, double weight) {
-        addCompetency(simulationVersionEntity, name, weight, 70);
+        addCompetency(simulationVersionEntity, name, weight, 70, ResultTier.MAJOR);
     }
 
     private void addCompetency(
             SimulationVersionEntity simulationVersionEntity,
             String name,
             double weight,
-            int targetScore
+            int targetScore,
+            ResultTier tier
     ) {
         SimulationCompetencyEntity competencyEntity = new SimulationCompetencyEntity();
         competencyEntity.setSimulationVersion(simulationVersionEntity);
         competencyEntity.setName(name);
         competencyEntity.setWeight(weight);
         competencyEntity.setTargetScore(targetScore);
+        competencyEntity.setTier(tier);
         simulationVersionEntity.getCompetencies().add(competencyEntity);
     }
 
-    private record NormalizedCompetency(String name, double weight, int targetScore) {
+    private record NormalizedCompetency(String name, double weight, int targetScore, ResultTier tier) {
     }
 }

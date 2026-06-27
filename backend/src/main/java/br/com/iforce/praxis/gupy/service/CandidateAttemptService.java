@@ -183,8 +183,13 @@ public class CandidateAttemptService {
                             AttemptStatus.NOT_STARTED,
                             null,
                             publishedSimulation.competencies().stream()
-                                    .map(c -> new ResultItem(c, 0, ResultTier.MAJOR))
+                                    .map(c -> new ResultItem(
+                                            c,
+                                            0,
+                                            publishedSimulation.competencyTiers().getOrDefault(c, ResultTier.MAJOR)
+                                    ))
                                     .toList(),
+                            Map.of(),
                             Map.of(),
                             ResultDecision.IN_PROGRESS,
                             false,
@@ -379,6 +384,8 @@ public class CandidateAttemptService {
         ScenarioNode currentNode = attemptStateMachine.isTerminalBlocked(savedAttempt.status())
                 ? null
                 : findCurrentNode(savedAttempt, simulation).orElse(null);
+        savedAttempt = markNodeServed(savedAttempt, currentNode, Instant.now());
+        savedAttempt = persist(savedAttempt, candidateAttemptEntity);
 
         return new ParticipacaoResponse(
                 savedAttempt.id(),
@@ -462,6 +469,8 @@ public class CandidateAttemptService {
         ScenarioNode nextNode = savedAttempt.status() == AttemptStatus.COMPLETED
                 ? null
                 : findCurrentNode(savedAttempt, simulation).orElse(null);
+        savedAttempt = markNodeServed(savedAttempt, nextNode, Instant.now());
+        savedAttempt = persist(savedAttempt, candidateAttemptEntity);
 
         return new RegistrarRespostaResponse(
                 savedAttempt.id(),
@@ -691,6 +700,8 @@ public class CandidateAttemptService {
         ScenarioNode nextNode = savedAttempt.status() == AttemptStatus.COMPLETED
                 ? null
                 : findCurrentNode(savedAttempt, simulation).orElse(null);
+        savedAttempt = markNodeServed(savedAttempt, nextNode, Instant.now());
+        savedAttempt = persist(savedAttempt, candidateAttemptEntity);
 
         return Optional.of(new RegistrarRespostaResponse(
                 savedAttempt.id(),
@@ -717,14 +728,14 @@ public class CandidateAttemptService {
     ) {
         Instant answeredAt = trustedAnsweredAt(attempt, simulation, currentNode, request, receivedAt);
         if (request.tempoEsgotado()) {
-            return AttemptAnswer.timedOut(currentNode.id(), answeredAt);
+            return AttemptAnswer.timedOut(currentNode.id(), answeredAt, receivedAt);
         }
         if (request.respostaId() == null || request.respostaId().isBlank()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Escolha uma resposta antes de continuar.");
         }
         String internalOptionId = candidateAttemptMapper.resolveInternalOptionId(currentNode, request.respostaId());
         findOption(currentNode, internalOptionId);
-        return AttemptAnswer.answered(currentNode.id(), internalOptionId, answeredAt);
+        return AttemptAnswer.answered(currentNode.id(), internalOptionId, answeredAt, receivedAt);
     }
 
     private Instant trustedAnsweredAt(
@@ -801,7 +812,7 @@ public class CandidateAttemptService {
             ScenarioNode node = simulationCatalogService.findNode(simulation, currentNodeId)
                     .orElseThrow(() -> new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Ocorreu um erro interno."));
             if (node.id().equals(targetNode.id())) {
-                return currentStartedAt;
+                return attempt.servedAtByNodeId().getOrDefault(node.id(), currentStartedAt);
             }
 
             AttemptAnswer answer = attempt.answersByNodeId().get(node.id());
@@ -868,6 +879,18 @@ public class CandidateAttemptService {
         candidateAttemptMapper.applyDomainToEntity(attempt, candidateAttemptEntity);
         CandidateAttemptEntity saved = candidateAttemptRepository.save(candidateAttemptEntity);
         return candidateAttemptMapper.toDomain(saved);
+    }
+
+    private CandidateAttempt markNodeServed(CandidateAttempt attempt, ScenarioNode node, Instant servedAt) {
+        if (node == null || node.isFinal() || attempt.servedAtByNodeId().containsKey(node.id())) {
+            return attempt;
+        }
+
+        Map<String, Instant> servedAtByNodeId = new LinkedHashMap<>(attempt.servedAtByNodeId());
+        servedAtByNodeId.put(node.id(), servedAt);
+        return attempt.toBuilder()
+                .servedAtByNodeId(servedAtByNodeId)
+                .build();
     }
 
     private void publishResultReadyEvent(CandidateAttemptEntity candidateAttemptEntity) {

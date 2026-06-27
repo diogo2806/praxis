@@ -101,6 +101,7 @@ public class AttemptStateMachine {
                 attempt.score(),
                 attempt.results(),
                 attempt.answersByNodeId(),
+                attempt.servedAtByNodeId(),
                 attempt.decision(),
                 attempt.humanReviewRequired(),
                 attempt.reliabilityLevel(),
@@ -130,6 +131,7 @@ public class AttemptStateMachine {
                     attempt.score(),
                     attempt.results(),
                     answersByNodeId,
+                    attempt.servedAtByNodeId(),
                     ResultDecision.IN_PROGRESS,
                     attempt.humanReviewRequired(),
                     attempt.reliabilityLevel(),
@@ -139,13 +141,19 @@ public class AttemptStateMachine {
             );
         }
 
-        ScoreCalculationResult scoreResult = resultScoringService.calculate(simulation, answersByNodeId, attempt.startedAt());
+        ScoreCalculationResult scoreResult = resultScoringService.calculate(
+                simulation,
+                answersByNodeId,
+                attempt.startedAt(),
+                attempt.servedAtByNodeId()
+        );
         return copy(
                 attempt,
                 AttemptStatus.COMPLETED,
                 scoreResult.score(),
                 scoreResult.resultItems(),
                 answersByNodeId,
+                attempt.servedAtByNodeId(),
                 scoreResult.decision(),
                 scoreResult.humanReviewRequired(),
                 scoreResult.reliabilityLevel(),
@@ -163,6 +171,7 @@ public class AttemptStateMachine {
         String outcome = switch (scoreResult.decision()) {
             case RECOMMEND_INTERVIEW -> "Atingiu a referência configurada";
             case REVIEW_REQUIRED -> "Requer análise da equipe responsável";
+            case NO_RECOMMENDATION -> "Participação concluída";
             case IN_PROGRESS -> "Participação concluída";
         };
         String reviewLine = scoreResult.humanReviewRequired()
@@ -230,6 +239,7 @@ public class AttemptStateMachine {
                 attempt.score(),
                 attempt.results(),
                 attempt.answersByNodeId(),
+                attempt.servedAtByNodeId(),
                 attempt.decision(),
                 attempt.humanReviewRequired(),
                 attempt.reliabilityLevel(),
@@ -245,6 +255,7 @@ public class AttemptStateMachine {
             Integer score,
             List<ResultItem> results,
             Map<String, AttemptAnswer> answersByNodeId,
+            Map<String, Instant> servedAtByNodeId,
             ResultDecision decision,
             boolean humanReviewRequired,
             ReliabilityLevel reliabilityLevel,
@@ -267,6 +278,7 @@ public class AttemptStateMachine {
                 score,
                 results,
                 answersByNodeId,
+                servedAtByNodeId,
                 decision,
                 humanReviewRequired,
                 reliabilityLevel,

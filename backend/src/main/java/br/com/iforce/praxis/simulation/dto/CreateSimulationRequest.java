@@ -1,6 +1,5 @@
 package br.com.iforce.praxis.simulation.dto;
 
-import br.com.iforce.praxis.simulation.validation.SumWeightsEqualsOne;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
@@ -9,7 +8,6 @@ import jakarta.validation.constraints.Size;
 
 import java.util.List;
 
-@SumWeightsEqualsOne
 @Schema(description = "Dados para criar uma simulacao e sua versao inicial em rascunho.")
 public record CreateSimulationRequest(
         @NotBlank

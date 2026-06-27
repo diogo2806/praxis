@@ -11,6 +11,7 @@ public record PublishedSimulation(
         String description,
         List<String> competencies,
         Map<String, Double> competencyWeights,
+        Map<String, ResultTier> competencyTiers,
         String rootNodeId,
         List<ScenarioNode> nodes
 ) {

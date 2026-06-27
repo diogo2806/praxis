@@ -196,6 +196,7 @@ class EvidenceReportServiceTest {
                 "Descrição",
                 List.of("Comunicacao", "Resolucao"),
                 Map.of("Comunicacao", 0.6, "Resolucao", 0.4),
+                Map.of("Comunicacao", ResultTier.MAJOR, "Resolucao", ResultTier.MAJOR),
                 "n1",
                 List.of(n1, n2)
         );

@@ -486,7 +486,7 @@ function buildBlueprintDescription({
 
 function buildCompetencyWeights(
   competencies: string[],
-  existingCompetencies?: { name: string; weight: number }[],
+  existingCompetencies?: { name: string; weight: number; targetScore?: number | null; tier?: "major" | "minor" | null }[],
 ) {
   const uniqueCompetencies = [
     ...new Set(competencies.map((competency) => competency.trim())),
@@ -507,12 +507,17 @@ function buildCompetencyWeights(
       const existingCompetency = existingCompetencies.find(
         (competency) => normalizeLabel(competency.name) === normalizeLabel(name),
       );
-      return { name, weight: existingCompetency?.weight ?? 1 / uniqueCompetencies.length };
+      return {
+        name,
+        weight: existingCompetency?.weight ?? 1 / uniqueCompetencies.length,
+        targetScore: existingCompetency?.targetScore ?? null,
+        tier: existingCompetency?.tier ?? "major",
+      };
     });
   }
 
   const weight = uniqueCompetencies.length > 0 ? 1 / uniqueCompetencies.length : 1;
-  return uniqueCompetencies.map((name) => ({ name, weight }));
+  return uniqueCompetencies.map((name) => ({ name, weight, targetScore: null, tier: "major" as const }));
 }
 
 function parseBlueprintDescription(description: string) {

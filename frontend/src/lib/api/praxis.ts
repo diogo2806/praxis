@@ -20,6 +20,7 @@ export type ParticipacaoStatus =
   | "falhou";
 
 export type MediaType = "IMAGE" | "AUDIO";
+export type ResultTier = "major" | "minor";
 
 export interface MediaUploadResponse {
   url: string;
@@ -156,6 +157,7 @@ export interface UpdateBlueprintCompetencyRequest {
   name: string;
   weight: number;
   targetScore?: number | null;
+  tier?: ResultTier | null;
 }
 
 export interface UpdateBlueprintRequest {

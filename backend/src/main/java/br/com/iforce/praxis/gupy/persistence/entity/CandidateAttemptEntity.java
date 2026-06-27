@@ -102,5 +102,8 @@ public class CandidateAttemptEntity implements TenantAwareEntity {
     private Set<AttemptAnswerEntity> answers = new LinkedHashSet<>();
 
     @OneToMany(mappedBy = "candidateAttempt", cascade = CascadeType.ALL, orphanRemoval = true)
+    private Set<AttemptNodeServeEntity> nodeServes = new LinkedHashSet<>();
+
+    @OneToMany(mappedBy = "candidateAttempt", cascade = CascadeType.ALL, orphanRemoval = true)
     private Set<ResultItemEntity> resultItems = new LinkedHashSet<>();
 }

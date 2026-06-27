@@ -6,6 +6,7 @@ import br.com.iforce.praxis.gupy.model.PublishedSimulation;
 import br.com.iforce.praxis.gupy.model.ReliabilityLevel;
 import br.com.iforce.praxis.gupy.model.ResultDecision;
 import br.com.iforce.praxis.gupy.model.ResultItem;
+import br.com.iforce.praxis.gupy.model.ResultTier;
 import br.com.iforce.praxis.gupy.model.ScenarioNode;
 import br.com.iforce.praxis.gupy.model.ScenarioOption;
 import br.com.iforce.praxis.gupy.model.ScoreCalculationResult;
@@ -57,7 +58,7 @@ class ResultScoringServiceTest {
         assertThat(result.resultItems()).singleElement()
                 .extracting(ResultItem::name, ResultItem::score)
                 .containsExactly("Empatia", 50);
-        assertThat(result.decision()).isEqualTo(ResultDecision.IN_PROGRESS);
+        assertThat(result.decision()).isEqualTo(ResultDecision.NO_RECOMMENDATION);
     }
 
     @Test
@@ -74,6 +75,28 @@ class ResultScoringServiceTest {
                 simulation, Map.of("turno-1", AttemptAnswer.answered("turno-1", "opcao-empatica", T0)));
 
         assertThat(result.score()).isEqualTo(40);
+    }
+
+    @Test
+    void resultItemTierComesFromPublishedSimulationConfiguration() {
+        PublishedSimulation simulation = new PublishedSimulation(
+                12L, 1, "sim-single", "Single", "Descricao",
+                List.of("Empatia"),
+                Map.of("Empatia", 1.0),
+                Map.of("Empatia", ResultTier.MINOR),
+                "turno-1",
+                List.of(new ScenarioNode("turno-1", 1, "Cliente", "Mensagem", 30, List.of(
+                        option("opcao-alta", null, Map.of("Empatia", 100), false),
+                        option("opcao-baixa", null, Map.of("Empatia", 20), false)
+                )))
+        );
+
+        ScoreCalculationResult result = resultScoringService.calculate(
+                simulation, Map.of("turno-1", AttemptAnswer.answered("turno-1", "opcao-alta", T0)));
+
+        assertThat(result.resultItems()).singleElement()
+                .extracting(ResultItem::tier)
+                .isEqualTo(ResultTier.MINOR);
     }
 
     @Test
@@ -147,6 +170,30 @@ class ResultScoringServiceTest {
     }
 
     @Test
+    void fastAnswerUsesServerReceivedAtEvenWhenClientAnsweredAtClaimsPlausibleTime() {
+        PublishedSimulation simulation = singleNodeSimulation(
+                List.of("Empatia"),
+                Map.of("Empatia", 1.0),
+                option("opcao-alta", null, Map.of("Empatia", 100), true),
+                option("opcao-baixa", null, Map.of("Empatia", 20), false)
+        );
+
+        ScoreCalculationResult result = resultScoringService.calculate(
+                simulation,
+                Map.of("turno-1", AttemptAnswer.answered(
+                        "turno-1",
+                        "opcao-alta",
+                        T0.plusSeconds(20),
+                        T0.plusMillis(500)
+                )),
+                T0,
+                Map.of("turno-1", T0)
+        );
+
+        assertThat(result.reliabilityLevel()).isEqualTo(ReliabilityLevel.LOW_RELIABILITY);
+    }
+
+    @Test
     void test8_highScoringCriticalAnswerKeepsNormalReliabilityWhenTimeIsPlausible() {
         PublishedSimulation simulation = singleNodeSimulation(
                 List.of("Empatia"),
@@ -193,6 +240,7 @@ class ResultScoringServiceTest {
                 10L, 1, "sim-linear", "Linear", "Descricao",
                 List.of("Empatia", "Resolução"),
                 Map.of("Empatia", 0.5, "Resolução", 0.5),
+                Map.of("Empatia", ResultTier.MAJOR, "Resolução", ResultTier.MAJOR),
                 "turno-1",
                 nodes
         );
@@ -203,6 +251,7 @@ class ResultScoringServiceTest {
                 11L, 1, "sim-timeout", "Timeout", "Descricao",
                 List.of("Empatia"),
                 Map.of("Empatia", 1.0),
+                Map.of("Empatia", ResultTier.MAJOR),
                 "turno-1",
                 List.of(
                         new ScenarioNode("turno-1", 1, "Cliente", "M1", 30, List.of(
@@ -226,9 +275,18 @@ class ResultScoringServiceTest {
                 12L, 1, "sim-single", "Single", "Descricao",
                 competencies,
                 weights,
+                competencyTiers(competencies),
                 "turno-1",
                 List.of(new ScenarioNode("turno-1", 1, "Cliente", "Mensagem", 30, List.of(options)))
         );
+    }
+
+    private Map<String, ResultTier> competencyTiers(List<String> competencies) {
+        Map<String, ResultTier> tiers = new LinkedHashMap<>();
+        for (String competency : competencies) {
+            tiers.put(competency, ResultTier.MAJOR);
+        }
+        return tiers;
     }
 
     private ScenarioOption option(String id, String nextNodeId, Map<String, Integer> scores, boolean critical) {

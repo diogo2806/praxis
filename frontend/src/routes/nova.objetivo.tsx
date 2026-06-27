@@ -108,6 +108,7 @@ function Page() {
             name,
             weight: editedCompetencies.length > 0 ? 1 / editedCompetencies.length : 1,
             targetScore: existing?.targetScore ?? null,
+            tier: existing?.tier ?? "major",
           };
         })
       : version.blueprint.competencies;

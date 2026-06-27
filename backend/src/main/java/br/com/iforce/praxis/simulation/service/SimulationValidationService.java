@@ -20,7 +20,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.OptionalDouble;
 import java.util.Set;
 
 /**
@@ -75,6 +74,7 @@ public class SimulationValidationService {
             validateNode(node, nodesById, issues);
         }
 
+        validateCompetencyCoverage(simulationVersionEntity, issues);
         validateCompetencyWeights(simulationVersionEntity, issues);
         warnLargeGraph(simulationVersionEntity, issues);
 
@@ -82,7 +82,7 @@ public class SimulationValidationService {
             detectCycles(simulationVersionEntity.getRootNodeId(), nodesById, issues);
             validateReachability(simulationVersionEntity.getRootNodeId(), nodesById, issues);
             validateDepth(simulationVersionEntity.getRootNodeId(), nodesById, issues);
-            validatePathScoreBalance(simulationVersionEntity.getRootNodeId(), nodesById, simulationVersionEntity, issues);
+            validatePathCompetencyCoverage(simulationVersionEntity.getRootNodeId(), nodesById, simulationVersionEntity, issues);
         }
 
         long blockerCount = issues.stream()
@@ -245,6 +245,15 @@ public class SimulationValidationService {
             }
         }
 
+        if (option.getNextNodeId() == null) {
+            issues.add(new ValidationIssueResponse(
+                    ValidationIssueSeverity.BLOCKER,
+                    node.getNodeId(),
+                    "Toda resposta de uma etapa que não é de encerramento precisa apontar "
+                            + "para uma próxima etapa (inclusive a etapa de encerramento)."
+            ));
+        }
+
         if (option.getNextNodeId() != null && !nodesById.containsKey(option.getNextNodeId())) {
             issues.add(new ValidationIssueResponse(
                     ValidationIssueSeverity.BLOCKER,
@@ -300,6 +309,47 @@ public class SimulationValidationService {
         }
     }
 
+    private void validateCompetencyCoverage(
+            SimulationVersionEntity version,
+            List<ValidationIssueResponse> issues
+    ) {
+        Set<String> configured = new HashSet<>();
+        for (SimulationCompetencyEntity competency : version.getCompetencies()) {
+            configured.add(competency.getName());
+        }
+
+        Set<String> scored = new HashSet<>();
+        for (SimulationNodeEntity node : version.getNodes()) {
+            for (SimulationOptionEntity option : node.getOptions()) {
+                for (OptionCompetencyScoreEntity score : option.getCompetencyScores()) {
+                    String competencyName = score.getCompetencyName();
+                    if (!configured.contains(competencyName)) {
+                        issues.add(new ValidationIssueResponse(
+                                ValidationIssueSeverity.BLOCKER,
+                                node.getNodeId(),
+                                "Uma resposta pontua a competência \""
+                                        + competencyName
+                                        + "\", que não está configurada nesta prova."
+                        ));
+                    }
+                    scored.add(competencyName);
+                }
+            }
+        }
+
+        for (String competencyName : configured) {
+            if (!scored.contains(competencyName)) {
+                issues.add(new ValidationIssueResponse(
+                        ValidationIssueSeverity.BLOCKER,
+                        competencyName,
+                        "A competência \""
+                                + competencyName
+                                + "\" tem peso mas nenhuma resposta a pontua."
+                ));
+            }
+        }
+    }
+
     /**
      * Confere se os pesos das competências de uma prova são válidos.
      *
@@ -338,7 +388,16 @@ public class SimulationValidationService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Ao menos uma competência é obrigatória.");
         }
 
-        double sum = weights.stream().mapToDouble(weight -> weight == null ? 0.0 : weight).sum();
+        double sum = 0.0;
+        for (Double weight : weights) {
+            if (weight == null) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Peso de competência não pode ser nulo.");
+            }
+            if (weight < 0) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Peso de competência não pode ser negativo.");
+            }
+            sum += weight;
+        }
         if (Math.abs(sum - 1.0) > praxisProperties.competencyWeightTolerance()) {
             throw new ResponseStatusException(
                     HttpStatus.BAD_REQUEST,
@@ -360,7 +419,7 @@ public class SimulationValidationService {
         }
     }
 
-    private void validatePathScoreBalance(
+    private void validatePathCompetencyCoverage(
             String rootNodeId,
             Map<String, SimulationNodeEntity> nodesById,
             SimulationVersionEntity simulationVersionEntity,
@@ -368,33 +427,35 @@ public class SimulationValidationService {
     ) {
         List<List<SimulationNodeEntity>> paths = new ArrayList<>();
         collectTerminalNodePaths(rootNodeId, nodesById, new HashSet<>(), new ArrayList<>(), paths);
-        if (paths.size() < 2) {
-            return;
-        }
 
-        Map<String, Double> weightsByCompetency = new HashMap<>();
-        for (SimulationCompetencyEntity competency : simulationVersionEntity.getCompetencies()) {
-            weightsByCompetency.put(competency.getName(), competency.getWeight());
-        }
-
-        double referenceScore = calculateMaxPathScore(paths.getFirst(), weightsByCompetency);
-        for (int i = 1; i < paths.size(); i++) {
-            double pathScore = calculateMaxPathScore(paths.get(i), weightsByCompetency);
-            if (Math.abs(pathScore - referenceScore) > praxisProperties.competencyWeightTolerance()) {
-                SimulationNodeEntity terminalNode = paths.get(i).getLast();
-                issues.add(new ValidationIssueResponse(
-                        ValidationIssueSeverity.BLOCKER,
-                        terminalNode.getNodeId(),
-                        "Um caminho do teste permite pontuação máxima diferente (caminho "
-                                + (i + 1)
-                                + ": "
-                                + String.format("%.2f", pathScore)
-                                + ", referência: "
-                                + String.format("%.2f", referenceScore)
-                                + "). Revise a pontuação das respostas neste caminho."
-                ));
+        for (List<SimulationNodeEntity> path : paths) {
+            SimulationNodeEntity terminalNode = path.getLast();
+            for (SimulationCompetencyEntity competency : simulationVersionEntity.getCompetencies()) {
+                int maxForCompetency = calculateMaxPathScoreForCompetency(path, competency.getName());
+                if (maxForCompetency <= 0) {
+                    issues.add(new ValidationIssueResponse(
+                            ValidationIssueSeverity.BLOCKER,
+                            terminalNode.getNodeId(),
+                            "Um caminho do teste nao pontua a competencia \""
+                                    + competency.getName()
+                                    + "\". Todo caminho precisa oferecer pontuacao positiva para cada competencia configurada."
+                    ));
+                }
             }
         }
+    }
+
+    private int calculateMaxPathScoreForCompetency(List<SimulationNodeEntity> path, String competencyName) {
+        return path.stream()
+                .mapToInt(node -> node.getOptions().stream()
+                        .mapToInt(option -> option.getCompetencyScores().stream()
+                                .filter(score -> competencyName.equals(score.getCompetencyName()))
+                                .mapToInt(OptionCompetencyScoreEntity::getScore)
+                                .max()
+                                .orElse(0))
+                        .max()
+                        .orElse(0))
+                .sum();
     }
 
     private void collectTerminalNodePaths(
@@ -421,25 +482,6 @@ public class SimulationValidationService {
 
         currentPath.removeLast();
         visiting.remove(nodeId);
-    }
-
-    private double calculateMaxPathScore(List<SimulationNodeEntity> path, Map<String, Double> weightsByCompetency) {
-        return path.stream()
-                .mapToDouble(node -> calculateMaxNodeOptionScore(node, weightsByCompetency))
-                .sum();
-    }
-
-    private double calculateMaxNodeOptionScore(SimulationNodeEntity node, Map<String, Double> weightsByCompetency) {
-        OptionalDouble maxScore = node.getOptions().stream()
-                .mapToDouble(option -> calculateOptionWeightedScore(option, weightsByCompetency))
-                .max();
-        return maxScore.orElse(0.0);
-    }
-
-    private double calculateOptionWeightedScore(SimulationOptionEntity option, Map<String, Double> weightsByCompetency) {
-        return option.getCompetencyScores().stream()
-                .mapToDouble(score -> score.getScore() * weightsByCompetency.getOrDefault(score.getCompetencyName(), 0.0))
-                .sum();
     }
 
     private void validateDepth(

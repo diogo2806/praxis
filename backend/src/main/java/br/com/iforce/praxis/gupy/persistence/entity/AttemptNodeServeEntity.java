@@ -21,10 +21,10 @@ import java.time.Instant;
 @NoArgsConstructor
 @Entity
 @Table(
-        name = "attempt_answers",
-        uniqueConstraints = @UniqueConstraint(name = "uk_attempt_answer_node", columnNames = {"candidate_attempt_id", "node_id"})
+        name = "attempt_node_serves",
+        uniqueConstraints = @UniqueConstraint(name = "uk_attempt_node_serve", columnNames = {"candidate_attempt_id", "node_id"})
 )
-public class AttemptAnswerEntity {
+public class AttemptNodeServeEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -38,15 +38,6 @@ public class AttemptAnswerEntity {
     @Column(name = "node_id", nullable = false, length = 120)
     private String nodeId;
 
-    @Column(name = "option_id", length = 120)
-    private String optionId;
-
-    @Column(name = "timed_out", nullable = false)
-    private boolean timedOut;
-
-    @Column(name = "answered_at", nullable = false)
-    private Instant answeredAt;
-
-    @Column(name = "received_at", nullable = false)
-    private Instant receivedAt;
+    @Column(name = "served_at", nullable = false)
+    private Instant servedAt;
 }

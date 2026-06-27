@@ -1,6 +1,6 @@
 package br.com.iforce.praxis.simulation.dto;
 
-import br.com.iforce.praxis.simulation.validation.SumWeightsEqualsOne;
+import br.com.iforce.praxis.gupy.model.ResultTier;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.DecimalMax;
@@ -14,7 +14,6 @@ import jakarta.validation.constraints.Size;
 
 import java.util.List;
 
-@SumWeightsEqualsOne
 @Schema(description = "Dados para atualizar o plano estrutural de uma versao de simulacao.")
 public record UpdateBlueprintRequest(
         @NotBlank
@@ -51,10 +50,17 @@ public record UpdateBlueprintRequest(
             @Min(0)
             @Max(100)
             @Schema(example = "80", description = "Nota alvo da competencia para a vaga.")
-            Integer targetScore
+            Integer targetScore,
+
+            @Schema(example = "major", description = "Peso de severidade da competencia no resultado.")
+            ResultTier tier
     ) {
         public int normalizedTargetScore() {
             return targetScore == null ? 70 : targetScore;
+        }
+
+        public ResultTier normalizedTier() {
+            return tier == null ? ResultTier.MAJOR : tier;
         }
     }
 }

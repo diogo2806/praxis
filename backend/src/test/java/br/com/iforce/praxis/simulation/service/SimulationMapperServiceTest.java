@@ -1,5 +1,6 @@
 package br.com.iforce.praxis.simulation.service;
 
+import br.com.iforce.praxis.gupy.model.ResultTier;
 import br.com.iforce.praxis.simulation.dto.UpdateBlueprintRequest;
 import br.com.iforce.praxis.simulation.persistence.entity.SimulationCompetencyEntity;
 import br.com.iforce.praxis.simulation.persistence.entity.SimulationVersionEntity;
@@ -27,8 +28,8 @@ class SimulationMapperServiceTest {
         UpdateBlueprintRequest request = new UpdateBlueprintRequest(
                 "turno-1",
                 List.of(
-                        new UpdateBlueprintRequest.CompetencyRequest("Empatia", 0.6, 80),
-                        new UpdateBlueprintRequest.CompetencyRequest("Resolução", 0.4, 75)
+                        new UpdateBlueprintRequest.CompetencyRequest("Empatia", 0.6, 80, ResultTier.MINOR),
+                        new UpdateBlueprintRequest.CompetencyRequest("Resolução", 0.4, 75, ResultTier.MAJOR)
                 ),
                 null,
                 null
@@ -40,8 +41,10 @@ class SimulationMapperServiceTest {
         assertThat(version.getCompetencies()).containsExactlyInAnyOrder(empatia, resolucao);
         assertThat(empatia.getWeight()).isEqualTo(0.6);
         assertThat(empatia.getTargetScore()).isEqualTo(80);
+        assertThat(empatia.getTier()).isEqualTo(ResultTier.MINOR);
         assertThat(resolucao.getWeight()).isEqualTo(0.4);
         assertThat(resolucao.getTargetScore()).isEqualTo(75);
+        assertThat(resolucao.getTier()).isEqualTo(ResultTier.MAJOR);
     }
 
     @Test
@@ -53,7 +56,7 @@ class SimulationMapperServiceTest {
 
         UpdateBlueprintRequest request = new UpdateBlueprintRequest(
                 "turno-1",
-                List.of(new UpdateBlueprintRequest.CompetencyRequest("  empatia  ", 1.0, 90)),
+                List.of(new UpdateBlueprintRequest.CompetencyRequest("  empatia  ", 1.0, 90, ResultTier.MINOR)),
                 null,
                 null
         );
@@ -63,6 +66,7 @@ class SimulationMapperServiceTest {
         assertThat(version.getCompetencies()).containsExactly(empatia);
         assertThat(empatia.getName()).isEqualTo("empatia");
         assertThat(empatia.getTargetScore()).isEqualTo(90);
+        assertThat(empatia.getTier()).isEqualTo(ResultTier.MINOR);
     }
 
     @Test
@@ -77,8 +81,8 @@ class SimulationMapperServiceTest {
         UpdateBlueprintRequest request = new UpdateBlueprintRequest(
                 "turno-1",
                 List.of(
-                        new UpdateBlueprintRequest.CompetencyRequest("Empatia", 0.5, 70),
-                        new UpdateBlueprintRequest.CompetencyRequest("Comunicação", 0.5, 70)
+                        new UpdateBlueprintRequest.CompetencyRequest("Empatia", 0.5, 70, ResultTier.MAJOR),
+                        new UpdateBlueprintRequest.CompetencyRequest("Comunicação", 0.5, 70, ResultTier.MINOR)
                 ),
                 null,
                 null

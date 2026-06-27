@@ -13,6 +13,7 @@ import br.com.iforce.praxis.gupy.model.ResultItem;
 import br.com.iforce.praxis.gupy.model.ResultTier;
 import br.com.iforce.praxis.gupy.model.ScenarioNode;
 import br.com.iforce.praxis.gupy.persistence.entity.AttemptAnswerEntity;
+import br.com.iforce.praxis.gupy.persistence.entity.AttemptNodeServeEntity;
 import br.com.iforce.praxis.gupy.persistence.entity.CandidateAttemptEntity;
 import br.com.iforce.praxis.gupy.persistence.entity.ResultItemEntity;
 import org.springframework.stereotype.Component;
@@ -57,6 +58,7 @@ public class CandidateAttemptMapper {
                 null,
                 initialResultItems(publishedSimulation),
                 Map.of(),
+                Map.of(),
                 ResultDecision.IN_PROGRESS,
                 false,
                 ReliabilityLevel.NORMAL,
@@ -79,12 +81,12 @@ public class CandidateAttemptMapper {
 
     private List<ResultItem> initialResultItems(PublishedSimulation publishedSimulation) {
         return publishedSimulation.competencies().stream()
-                .map(competency -> new ResultItem(competency, 0, tierFor(competency)))
+                .map(competency -> new ResultItem(
+                        competency,
+                        0,
+                        publishedSimulation.competencyTiers().getOrDefault(competency, ResultTier.MAJOR)
+                ))
                 .toList();
-    }
-
-    private ResultTier tierFor(String competency) {
-        return "Aderência à política".equalsIgnoreCase(competency) ? ResultTier.MINOR : ResultTier.MAJOR;
     }
 
     public void applyDomainToEntity(CandidateAttempt attempt, CandidateAttemptEntity candidateAttemptEntity) {
@@ -132,8 +134,33 @@ public class CandidateAttemptMapper {
             attemptAnswerEntity.setOptionId(answer.optionId());
             attemptAnswerEntity.setTimedOut(answer.timedOut());
             attemptAnswerEntity.setAnsweredAt(answer.answeredAt());
+            attemptAnswerEntity.setReceivedAt(answer.receivedAt() == null ? answer.answeredAt() : answer.receivedAt());
         }
         candidateAttemptEntity.getAnswers().removeIf(answer -> !desiredAnswerNodeIds.contains(answer.getNodeId()));
+
+        Map<String, AttemptNodeServeEntity> existingServesByNodeId = new LinkedHashMap<>();
+        for (AttemptNodeServeEntity existingServe : candidateAttemptEntity.getNodeServes()) {
+            existingServesByNodeId.put(existingServe.getNodeId(), existingServe);
+        }
+
+        Set<String> desiredServeNodeIds = new HashSet<>();
+        for (Map.Entry<String, Instant> servedAt : attempt.servedAtByNodeId().entrySet()) {
+            desiredServeNodeIds.add(servedAt.getKey());
+            AttemptNodeServeEntity serveEntity = existingServesByNodeId.computeIfAbsent(
+                    servedAt.getKey(),
+                    ignored -> {
+                        AttemptNodeServeEntity newServe = new AttemptNodeServeEntity();
+                        newServe.setCandidateAttempt(candidateAttemptEntity);
+                        newServe.setNodeId(servedAt.getKey());
+                        candidateAttemptEntity.getNodeServes().add(newServe);
+                        return newServe;
+                    }
+            );
+            serveEntity.setCandidateAttempt(candidateAttemptEntity);
+            serveEntity.setNodeId(servedAt.getKey());
+            serveEntity.setServedAt(servedAt.getValue());
+        }
+        candidateAttemptEntity.getNodeServes().removeIf(serve -> !desiredServeNodeIds.contains(serve.getNodeId()));
 
         candidateAttemptEntity.getResultItems().clear();
         for (ResultItem resultItem : attempt.results()) {
@@ -152,8 +179,19 @@ public class CandidateAttemptMapper {
                 .sorted(Comparator.comparing(AttemptAnswerEntity::getAnsweredAt))
                 .forEach(answer -> answersByNodeId.put(
                         answer.getNodeId(),
-                        new AttemptAnswer(answer.getNodeId(), answer.getOptionId(), answer.isTimedOut(), answer.getAnsweredAt())
+                        new AttemptAnswer(
+                                answer.getNodeId(),
+                                answer.getOptionId(),
+                                answer.isTimedOut(),
+                                answer.getAnsweredAt(),
+                                answer.getReceivedAt() == null ? answer.getAnsweredAt() : answer.getReceivedAt()
+                        )
                 ));
+
+        Map<String, Instant> servedAtByNodeId = new LinkedHashMap<>();
+        candidateAttemptEntity.getNodeServes().stream()
+                .sorted(Comparator.comparing(AttemptNodeServeEntity::getServedAt))
+                .forEach(serve -> servedAtByNodeId.put(serve.getNodeId(), serve.getServedAt()));
 
         List<ResultItem> resultItems = candidateAttemptEntity.getResultItems().stream()
                 .sorted(Comparator.comparing(ResultItemEntity::getName))
@@ -179,6 +217,7 @@ public class CandidateAttemptMapper {
                 candidateAttemptEntity.getScore(),
                 resultItems,
                 answersByNodeId,
+                servedAtByNodeId,
                 candidateAttemptEntity.getDecision(),
                 candidateAttemptEntity.isHumanReviewRequired(),
                 candidateAttemptEntity.getReliabilityLevel() == null

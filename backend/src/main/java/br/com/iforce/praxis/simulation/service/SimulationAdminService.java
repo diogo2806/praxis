@@ -825,6 +825,7 @@ public class SimulationAdminService {
             competencyEntity.setName(competency.name().trim());
             competencyEntity.setWeight(competency.weight());
             competencyEntity.setTargetScore(competency.normalizedTargetScore());
+            competencyEntity.setTier(competency.normalizedTier());
             versionEntity.getCompetencies().add(competencyEntity);
         }
     }
@@ -1120,6 +1121,7 @@ public class SimulationAdminService {
             clonedCompetencyEntity.setName(sourceCompetencyEntity.getName());
             clonedCompetencyEntity.setWeight(sourceCompetencyEntity.getWeight());
             clonedCompetencyEntity.setTargetScore(sourceCompetencyEntity.getTargetScore());
+            clonedCompetencyEntity.setTier(sourceCompetencyEntity.getTier());
             clonedVersionEntity.getCompetencies().add(clonedCompetencyEntity);
         }
 

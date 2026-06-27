@@ -9,7 +9,8 @@ public enum ResultDecision implements DescribedEnum {
 
     RECOMMEND_INTERVIEW("recommendInterview"),
     REVIEW_REQUIRED("reviewRequired"),
-    IN_PROGRESS("inProgress");
+    IN_PROGRESS("inProgress"),
+    NO_RECOMMENDATION("noRecommendation");
 
     private final String descricao;
 

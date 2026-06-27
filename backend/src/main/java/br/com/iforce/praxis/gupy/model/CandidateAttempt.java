@@ -23,6 +23,7 @@ public record CandidateAttempt(
         Integer score,
         List<ResultItem> results,
         Map<String, AttemptAnswer> answersByNodeId,
+        Map<String, Instant> servedAtByNodeId,
         ResultDecision decision,
         boolean humanReviewRequired,
         ReliabilityLevel reliabilityLevel,
