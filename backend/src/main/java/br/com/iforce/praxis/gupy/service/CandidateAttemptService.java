@@ -245,12 +245,13 @@ public class CandidateAttemptService {
     }
 
     /**
-     * Lista as provas que estão acontecendo agora (em andamento ou pausadas).
+     * Lista as provas em monitoramento operacional.
      *
-     * <p>Alimenta a tela de monitoramento ao vivo, com o progresso de cada
-     * candidato e uma indicação de se ele está ativo no momento.</p>
+     * <p>Alimenta a tela de monitoramento, com o progresso de cada candidato,
+     * uma indicação de se ele está ativo no momento e as tentativas já
+     * concluídas.</p>
      *
-     * @return as participações ativas, com seu progresso atual
+     * @return as participações monitoradas, com seu progresso atual
      */
     @Transactional(readOnly = true)
     public List<CandidateAttemptMonitoringResponse> listLiveAttempts() {
@@ -258,8 +259,8 @@ public class CandidateAttemptService {
         Instant now = Instant.now();
         return candidateAttemptRepository.findByTenantIdAndStatusInOrderByCreatedAtDesc(
                         tenantId,
-                        List.of(AttemptStatus.IN_PROGRESS, AttemptStatus.PAUSED),
-                        PageRequest.of(0, 100)
+                        List.of(AttemptStatus.IN_PROGRESS, AttemptStatus.PAUSED, AttemptStatus.COMPLETED),
+                        PageRequest.of(0, 200)
                 )
                 .stream()
                 .map(entity -> toMonitoringResponse(entity, now))
@@ -290,6 +291,7 @@ public class CandidateAttemptService {
         ProgressoResponse progress = progressFor(attempt, simulation, currentNode);
         Instant lastSignalAt = lastSignalAt(entity);
         Instant startedAt = entity.getStartedAt() == null ? entity.getCreatedAt() : entity.getStartedAt();
+        Instant elapsedUntil = entity.getFinishedAt() == null ? now : entity.getFinishedAt();
 
         return new CandidateAttemptMonitoringResponse(
                 entity.getId(),
@@ -302,7 +304,7 @@ public class CandidateAttemptService {
                 progress.passoAtual(),
                 progress.passosEstimados(),
                 progress.percentual(),
-                Duration.between(startedAt, now).toSeconds(),
+                Duration.between(startedAt, elapsedUntil).toSeconds(),
                 lastSignalAt,
                 entity.getStatus() == AttemptStatus.IN_PROGRESS
                         && !lastSignalAt.isBefore(now.minus(Duration.ofMinutes(5)))

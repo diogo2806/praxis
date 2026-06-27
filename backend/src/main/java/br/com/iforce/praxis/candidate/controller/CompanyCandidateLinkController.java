@@ -72,17 +72,17 @@ public class CompanyCandidateLinkController {
     }
 
     /**
-     * Lista as provas que estão acontecendo agora (em andamento ou pausadas).
+     * Lista as provas em monitoramento operacional.
      *
-     * <p>Alimenta a tela de monitoramento ao vivo, mostrando o progresso de
-     * cada candidato em tempo real.</p>
+     * <p>Alimenta a tela de monitoramento, mostrando progresso de tentativas
+     * em andamento, pausadas e concluídas.</p>
      *
-     * @return as tentativas ativas com seu progresso
+     * @return as tentativas monitoradas com seu progresso
      */
     @GetMapping("/live-attempts")
     @Operation(
-            summary = "Lista tentativas em andamento",
-            description = "Retorna tentativas ativas ou pausadas com progresso operacional para a tela de monitoramento."
+            summary = "Lista tentativas monitoradas",
+            description = "Retorna tentativas ativas, pausadas ou concluídas com progresso operacional para a tela de monitoramento."
     )
     public ResponseEntity<List<CandidateAttemptMonitoringResponse>> listLiveAttempts() {
         return ResponseEntity.ok(candidateAttemptService.listLiveAttempts());

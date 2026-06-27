@@ -10,6 +10,7 @@ import {
   listLiveAttempts,
   listResultDeliveries,
   listSimulations,
+  type AttemptStatus,
   type CandidateLinkResponse,
   type SimulationSummaryResponse,
 } from "@/lib/api/praxis";
@@ -28,7 +29,7 @@ export const Route = createFileRoute("/monitoramento")({
   component: MonitoringPage,
 });
 
-type AttemptFilter = "todos" | "ativos" | "sem-sinal";
+type AttemptFilter = "todos" | "ativos" | "finalizadas" | "sem-sinal";
 
 function MonitoringPage() {
   const [revealed, setRevealed] = useState(false);
@@ -62,8 +63,10 @@ function MonitoringPage() {
   const failedDeliveries = deliveries.filter((delivery) => delivery.status === "dlq").length;
   const totals = buildTotals(candidateLinks);
   const filteredAttempts = liveAttempts.filter((attempt) => {
+    const openAttempt = attempt.status === "inProgress" || attempt.status === "paused";
     if (attemptFilter === "ativos" && !attempt.active) return false;
-    if (attemptFilter === "sem-sinal" && attempt.active) return false;
+    if (attemptFilter === "finalizadas" && attempt.status !== "completed") return false;
+    if (attemptFilter === "sem-sinal" && (!openAttempt || attempt.active)) return false;
     if (simulationFilter !== "todos" && attempt.simulationId !== simulationFilter) return false;
     return true;
   });
@@ -77,11 +80,11 @@ function MonitoringPage() {
               Monitoramento
             </div>
             <h1 className="mt-1 font-display text-3xl leading-tight text-foreground">
-              Central operacional ao vivo
+              Central operacional
             </h1>
             <p className="mt-3 text-sm leading-6 text-muted-foreground">
-              O que esta acontecendo agora: convites, tentativas em andamento e falhas operacionais
-              que a automacao nao conseguiu resolver sozinha.
+              Convites, tentativas em andamento, finalizadas e falhas operacionais que a automacao
+              nao conseguiu resolver sozinha.
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
@@ -150,11 +153,10 @@ function MonitoringPage() {
               <div>
                 <div className="flex items-center gap-2 text-sm font-semibold">
                   <span className="h-2 w-2 rounded-full bg-success" />
-                  Tentativas em andamento
+                  Tentativas monitoradas
                 </div>
                 <p className="mt-1 text-xs text-muted-foreground">
-                  {filteredAttempts.length} de {liveAttempts.length} participações em andamento
-                  ou pausadas
+                  {filteredAttempts.length} de {liveAttempts.length} participacoes acompanhadas
                 </p>
               </div>
               <div className="flex flex-wrap items-center gap-2">
@@ -174,11 +176,12 @@ function MonitoringPage() {
               </div>
             </div>
             <div className="overflow-x-auto">
-              <table className="w-full min-w-[680px] text-left text-sm">
+              <table className="w-full min-w-[760px] text-left text-sm">
                 <thead className="border-b border-border bg-muted/50 text-[11px] uppercase text-muted-foreground">
                   <tr>
                     <th className="px-4 py-3 font-medium">Participante</th>
-                    <th className="px-4 py-3 font-medium">Avaliação</th>
+                    <th className="px-4 py-3 font-medium">Avaliacao</th>
+                    <th className="px-4 py-3 font-medium">Status</th>
                     <th className="px-4 py-3 font-medium">Etapa</th>
                     <th className="px-4 py-3 font-medium">Tempo</th>
                     <th className="px-4 py-3 font-medium">Ultimo sinal</th>
@@ -193,6 +196,9 @@ function MonitoringPage() {
                       </td>
                       <td className="px-4 py-3 text-muted-foreground">
                         {attempt.simulationName} - v{attempt.versionNumber}
+                      </td>
+                      <td className="px-4 py-3">
+                        <StatusBadge status={attempt.status} active={attempt.active} />
                       </td>
                       <td className="px-4 py-3 text-muted-foreground">
                         {attempt.currentTurn}/{attempt.estimatedTurns}
@@ -226,10 +232,10 @@ function MonitoringPage() {
                   {filteredAttempts.length === 0 && (
                     <tr>
                       <td
-                        colSpan={6}
+                        colSpan={7}
                         className="px-4 py-8 text-center text-sm text-muted-foreground"
                       >
-                        Nenhuma tentativa em andamento no momento.
+                        Nenhuma tentativa encontrada para os filtros atuais.
                       </td>
                     </tr>
                   )}
@@ -272,6 +278,7 @@ function AttemptToggle({
   const items: Array<[AttemptFilter, string]> = [
     ["todos", "Todos"],
     ["ativos", "Ativos"],
+    ["finalizadas", "Finalizadas"],
     ["sem-sinal", "Sem sinal"],
   ];
   return (
@@ -293,6 +300,33 @@ function AttemptToggle({
       ))}
     </div>
   );
+}
+
+function StatusBadge({ status, active }: { status: AttemptStatus; active: boolean }) {
+  const label = attemptStatusLabel(status, active);
+  const tone =
+    status === "completed"
+      ? "border-success/30 bg-success/10 text-success"
+      : active
+        ? "border-primary/30 bg-primary/10 text-primary"
+        : "border-warning/30 bg-warning/10 text-warning";
+
+  return (
+    <span className={cn("inline-flex rounded-full border px-2 py-0.5 text-[11px]", tone)}>
+      {label}
+    </span>
+  );
+}
+
+function attemptStatusLabel(status: AttemptStatus, active: boolean) {
+  if (status === "completed") return "Finalizada";
+  if (status === "paused") return "Pausada";
+  if (status === "inProgress" && active) return "Ativa";
+  if (status === "inProgress") return "Sem sinal";
+  if (status === "abandoned") return "Abandonada";
+  if (status === "expired") return "Expirada";
+  if (status === "failed") return "Falhou";
+  return "Nao iniciada";
 }
 
 function MetricCard({
