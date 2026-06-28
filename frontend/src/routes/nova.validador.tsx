@@ -731,6 +731,8 @@ function InteractiveStepCard({
 }) {
   const [editingOptionId, setEditingOptionId] = useState<string | null>(null);
   const [optionDraft, setOptionDraft] = useState<OptionDraft | null>(null);
+  const nodeLabels = buildTurnStepLabels(version.nodes);
+  const nodeLabel = (nodeId: string) => nodeLabels.get(nodeId) ?? nodeId;
   const canEdit = isEditable || canCloneForEdit;
   const isRootNode = step.node.id === version.blueprint.rootNodeId;
   const timeoutTrace = step.node.timeoutNextNodeId
@@ -782,11 +784,11 @@ function InteractiveStepCard({
       <div className="mb-3 flex flex-wrap items-start justify-between gap-2 border-b border-border pb-3">
         <div>
           <div className="flex flex-wrap items-center gap-2 font-mono text-[11px] uppercase text-primary">
-            {step.node.id}
+            {nodeLabel(step.node.id)}
             {step.node.timeoutNextNodeId && (
               <span className="inline-flex items-center gap-1 rounded bg-warning/15 px-1.5 py-0.5 font-sans text-[10px] normal-case text-warning-foreground">
                 <Clock className="h-3 w-3" />
-                timeout: {step.node.timeoutNextNodeId}
+                timeout: {nodeLabel(step.node.timeoutNextNodeId)}
               </span>
             )}
           </div>
@@ -1149,6 +1151,8 @@ function NormalizedScoreMap({
   const [optionDraft, setOptionDraft] = useState<OptionDraft | null>(null);
   const title = version?.name ?? simulationId ?? "Teste";
   const flow = version ? buildInteractiveScoreFlow(version) : null;
+  const nodeLabels = version ? buildTurnStepLabels(version.nodes) : new Map<string, string>();
+  const nodeLabel = (nodeId: string) => nodeLabels.get(nodeId) ?? nodeId;
   const canEdit = isEditable || canCloneForEdit;
   const selectedFlowNode =
     selectedNodeId && flow ? flow.nodes.find((node) => node.id === selectedNodeId) : null;
@@ -1479,7 +1483,9 @@ function NormalizedScoreMap({
                 <div className="rounded-md border border-border bg-card p-3">
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
-                      <div className="font-mono text-xs text-primary">{selectedStep.node.id}</div>
+                      <div className="font-mono text-xs text-primary">
+                        {nodeLabel(selectedStep.node.id)}
+                      </div>
                       <p className="mt-1 line-clamp-5 text-sm leading-6">
                         {selectedStep.node.clientMessage || "Sem texto cadastrado."}
                       </p>
@@ -1684,7 +1690,7 @@ function NormalizedScoreMap({
                                       .filter((node) => node.id !== selectedStep.node.id)
                                       .map((node) => (
                                         <option key={node.id} value={node.id}>
-                                          {node.id}
+                                          {nodeLabel(node.id)}
                                         </option>
                                       ))}
                                   </select>
@@ -1842,6 +1848,24 @@ interface InteractiveScoreFlow {
   width: number;
 }
 
+function buildTurnStepLabels(nodes: SimulationVersionNodeResponse[]) {
+  const labels = new Map<string, string>();
+  const rowsByTurn = new Map<number, SimulationVersionNodeResponse[]>();
+  const orderedNodes = [...nodes].sort((a, b) => a.turnIndex - b.turnIndex || a.id.localeCompare(b.id));
+
+  orderedNodes.forEach((node) => {
+    rowsByTurn.set(node.turnIndex, [...(rowsByTurn.get(node.turnIndex) ?? []), node]);
+  });
+
+  rowsByTurn.forEach((turnNodes, turnIndex) => {
+    turnNodes.forEach((node, rowIndex) => {
+      labels.set(node.id, `${turnIndex}.${rowIndex}`);
+    });
+  });
+
+  return labels;
+}
+
 function buildInteractiveScoreFlow(version: SimulationVersionDetailResponse): InteractiveScoreFlow {
   const nodeWidth = 196;
   const nodeHeight = 118;
@@ -1851,6 +1875,8 @@ function buildInteractiveScoreFlow(version: SimulationVersionDetailResponse): In
   const startX = 36;
   const startY = 36;
   const nodesById = new Map(version.nodes.map((node) => [node.id, node]));
+  const nodeLabels = buildTurnStepLabels(version.nodes);
+  const nodeLabel = (nodeId: string) => nodeLabels.get(nodeId) ?? nodeId;
   const summariesById = new Map(
     buildStepScoreSummaries(version).map((summary) => [summary.node.id, summary]),
   );
@@ -1876,7 +1902,7 @@ function buildInteractiveScoreFlow(version: SimulationVersionDetailResponse): In
     return {
       id: node.id,
       kind: "step",
-      label: node.id,
+      label: nodeLabel(node.id),
       meta: `Etapa ${node.turnIndex}`,
       node,
       scoreLabel: `${formatScore(summary?.accumulatedScore ?? 0)} pts`,
@@ -1911,7 +1937,7 @@ function buildInteractiveScoreFlow(version: SimulationVersionDetailResponse): In
             id: endId,
             kind: "end",
             label: "FIM",
-            meta: `via ${node.id}/${option.id}`,
+            meta: `via ${nodeLabel(node.id)}/${option.id}`,
             scoreLabel: `+${formatScore(score)} pts`,
             sourceNodeId: node.id,
             title: option.auditNote || option.text || "Encerramento",
@@ -2136,6 +2162,8 @@ function scoreOption(
 
 function collectEndingTraces(version: SimulationVersionDetailResponse): EndingTrace[] {
   const nodesById = new Map(version.nodes.map((node) => [node.id, node]));
+  const nodeLabels = buildTurnStepLabels(version.nodes);
+  const nodeLabel = (nodeId: string) => nodeLabels.get(nodeId) ?? nodeId;
   const endings: EndingTrace[] = [];
   const maxDepth = version.nodes.length + 1;
 
@@ -2153,7 +2181,7 @@ function collectEndingTraces(version: SimulationVersionDetailResponse): EndingTr
       if (!option.nextNodeId) {
         endings.push({
           accumulatedScore: nextScore,
-          label: `Final via ${node.id}/${option.id}`,
+          label: `Final via ${nodeLabel(node.id)}/${option.id}`,
           nodeId: node.id,
           optionId: option.id,
           path: nextPath,

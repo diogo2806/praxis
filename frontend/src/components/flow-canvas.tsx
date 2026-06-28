@@ -8,7 +8,8 @@
  * mesmo nó → notas diferentes (boa vs ruim).
  *
  * Estrutura segue as LIGAÇÕES (nextNodeId / timeoutNextNodeId), nunca o nome do ID
- * (que no backend é "turno-N"). Rótulos 1, 1.1, 1.2.1 são derivados do fluxo.
+ * (que no backend é "turno-N"). Rótulos 1.0, 1.1, 2.0 são derivados do turno
+ * e da posição do card dentro daquele turno.
  *
  * No topo, um card de CONTEXTO resume o que foi preenchido nas etapas 1 (Teste) e
  * 2 (Cenário), lido do próprio `version`.
@@ -140,22 +141,23 @@ export default function FlowCanvas({
     }
     return acc;
   };
-  /* rótulos em árvore derivados do fluxo */
-  const treeLabel = useMemo(() => {
-    const lab: Record<string, string> = {};
-    const visit = (id: string | null | undefined, l: string) => {
-      if (!id || lab[id] != null) return;
-      lab[id] = l;
-      const n = nodeById[id]; if (!n) return;
-      let k = 0;
-      n.options.forEach((o) => { if (o.nextNodeId) { k++; visit(o.nextNodeId, `${l}.${k}`); } });
-      if (n.timeoutNextNodeId) { k++; visit(n.timeoutNextNodeId, `${l}.${k}`); }
-    };
-    if (rootId) visit(rootId, "1");
-    nodes.forEach((n) => { if (lab[n.id] == null) lab[n.id] = n.id; });
-    return lab;
-  }, [nodes, rootId, nodeById]);
-  const labelOf = (id: string) => treeLabel[id] ?? id;
+  const stepLabel = useMemo(() => {
+    const labels: Record<string, string> = {};
+    const rowsByTurn = new Map<number, NodeDto[]>();
+
+    nodes.forEach((node) => {
+      rowsByTurn.set(node.turnIndex, [...(rowsByTurn.get(node.turnIndex) ?? []), node]);
+    });
+
+    rowsByTurn.forEach((turnNodes, turnIndex) => {
+      turnNodes.forEach((node, rowIndex) => {
+        labels[node.id] = `${turnIndex}.${rowIndex}`;
+      });
+    });
+
+    return labels;
+  }, [nodes]);
+  const labelOf = (id: string) => stepLabel[id] ?? id;
 
   const forwardTargets = (curId: string) => {
     const anc = new Set(chainTo(curId).map((n) => n.id));
