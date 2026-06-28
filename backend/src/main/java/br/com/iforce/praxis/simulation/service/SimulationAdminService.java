@@ -356,7 +356,7 @@ public class SimulationAdminService {
                 simulationId,
                 versionNumber,
                 AuditEventType.SIMULATION_NODE_ADDED,
-                "Nó de simulação adicionado.",
+                "Etapa adicionada.",
                 "{\"nodeId\":\"" + escapeJson(nodeId) + "\"}"
         );
 
@@ -432,7 +432,7 @@ public class SimulationAdminService {
                 simulationId,
                 versionNumber,
                 AuditEventType.SIMULATION_NODE_UPDATED,
-                "Nó de simulação atualizado.",
+                "Etapa atualizada.",
                 "{\"nodeId\":\"" + escapeJson(nodeId) + "\"}"
         );
     }
@@ -462,7 +462,7 @@ public class SimulationAdminService {
                 simulationId,
                 versionNumber,
                 AuditEventType.SIMULATION_NODE_DELETED,
-                "Nó de simulação removido.",
+                "Etapa removida.",
                 "{\"nodeId\":\"" + escapeJson(nodeId) + "\"}"
         );
     }

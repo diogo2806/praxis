@@ -1,7 +1,7 @@
 ﻿import { useMemo, useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Eye, Globe, CircleHelp, Link2, X } from "lucide-react";
+import { Eye, Globe, CircleHelp, X } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
 import { StateBanner, StatusBadge } from "@/components/praxis-ui";
 import {
@@ -60,7 +60,7 @@ type MatrixItem = {
 const STATUS_OPTIONS = [
   "Todos os status",
   "Rascunho",
-  "Em validação",
+  "Em revisão",
   "Bloqueado",
   "Publicado",
 ] as const;
@@ -68,7 +68,7 @@ const STATUS_OPTIONS = [
 type StatusLabel = (typeof STATUS_OPTIONS)[number];
 
 const STATUS_TEXT: Record<SimulationSummaryResponse["status"], string> = {
-  draft: "Em validação",
+  draft: "Em revisão",
   published: "Publicado",
   archived: "Bloqueado",
 };
@@ -84,7 +84,7 @@ const mapSearchStatusToQuery = (status: string): SimulationSummaryResponse["stat
     ? "published"
     : status === "Bloqueado"
       ? "archived"
-      : status === "Em validação"
+      : status === "Em revisão"
         ? "draft"
         : null;
 
@@ -99,7 +99,7 @@ export const Route = createFileRoute("/compliance")({
           : undefined,
   }),
   head: () => ({
-    meta: [{ title: "Compliance dos testes - Praxis" }],
+    meta: [{ title: "Conformidade dos testes - Praxis" }],
   }),
   component: CompliancePage,
 });
@@ -289,7 +289,7 @@ function CompliancePage() {
                           </span>
                         </TableCell>
                         <TableCell className="px-4 py-2.5 text-sm text-muted-foreground">
-                          —
+                          Sem dado
                         </TableCell>
                         <TableCell className="px-4 py-2.5">{row.attemptsCreated}</TableCell>
                         <TableCell className="px-4 py-2.5 text-muted-foreground">
@@ -398,12 +398,18 @@ function ComplianceSheet({
             </div>
             <div className="mt-1.5">
               <div className="font-medium">
-                {validation?.publishable ? "Aprovador registrado" : "Sem aprovação final"}
+                {validation?.publishable ? "Pronto para publicar" : "Ainda não pode ser publicado"}
               </div>
               <div className="text-xs text-muted-foreground">
                 {validation
-                  ? `Status interno: ${validation.issues.length} validações processadas`
-                  : "Carregando validação..."}
+                  ? validation.issues.length === 0
+                    ? "Nenhuma pendência encontrada"
+                    : `${validation.issues.length} ${
+                        validation.issues.length === 1
+                          ? "pendência encontrada"
+                          : "pendências encontradas"
+                      }`
+                  : "Carregando verificação..."}
               </div>
             </div>
           </section>
@@ -438,15 +444,10 @@ function ComplianceSheet({
                 Resumo técnico
               </div>
               <div className="mt-1.5 text-muted-foreground">
-                Bloqueios em aberto: {validation.blockerCount}
+                {validation.blockerCount === 0
+                  ? "Nenhum bloqueio em aberto"
+                  : `Bloqueios em aberto: ${validation.blockerCount}`}
               </div>
-              <Link
-                to="/compliance"
-                search={{ simulationId: undefined, versionNumber: undefined }}
-                className="mt-2 inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
-              >
-                <Link2 className="h-3.5 w-3.5" /> Abrir trilha técnica
-              </Link>
             </section>
           ) : null}
         </div>
@@ -478,7 +479,7 @@ export function DossiePanel({
             <TableRow>
               <TableHead>Critério</TableHead>
               <TableHead>% da pontuação</TableHead>
-              <TableHead>Cobrado em</TableHead>
+              <TableHead>Avaliado em</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -492,9 +493,9 @@ export function DossiePanel({
                   </TableCell>
                   <TableCell
                     className="text-muted-foreground"
-                    title="Quantas etapas do teste cobram este critério"
+                    title="Em quantas etapas do teste este critério é avaliado"
                   >
-                    cobrado em {item.cobertura} etapas
+                    {item.cobertura === 1 ? "1 etapa" : `${item.cobertura} etapas`}
                   </TableCell>
                 </TableRow>
               );
@@ -509,9 +510,13 @@ export function DossiePanel({
             Caminhos possíveis
           </div>
           <div className="text-xs text-muted-foreground">
-            Faixa de corte: <span className="font-semibold text-foreground">≥ {cutoff}/100</span>
+            Nota de corte: <span className="font-semibold text-foreground">{cutoff}/100</span>
           </div>
         </div>
+        <p className="mb-2 text-xs text-muted-foreground">
+          Cada caminho é uma rota possível pelo teste. Os verdes alcançam a nota de corte; os
+          vermelhos ficam abaixo.
+        </p>
 
         <div className="space-y-2">
           {paths.length === 0 ? (
@@ -528,7 +533,9 @@ export function DossiePanel({
                   className="rounded-md border border-border bg-background px-3 py-2"
                 >
                   <div className="flex items-center justify-between gap-3">
-                    <span className="font-mono text-xs">{path.sequence}</span>
+                    <span className="text-xs text-muted-foreground">
+                      {path.steps.map((step) => `Etapa ${step.turnIndex}`).join(" → ")} → fim
+                    </span>
                     <span
                       className={`rounded-md px-2 py-0.5 text-xs font-semibold ${
                         isPass ? "bg-success/15 text-success" : "bg-danger/15 text-danger"
@@ -539,17 +546,20 @@ export function DossiePanel({
                   </div>
                   <div className="mt-2 grid grid-cols-3 gap-2 border-t border-border pt-2 text-xs">
                     {matrix.map((item) => {
-                      const gained = path.byCriteria[item.criterio] ?? 0;
+                      const gained = Math.round(path.byCriteria[item.criterio] ?? 0);
                       return (
                         <div key={item.criterio} className="flex flex-col">
                           <div className="truncate text-muted-foreground">{item.criterio}</div>
                           <div className="font-mono">
                             {gained}
-                            <span className="text-muted-foreground">/{item.peso * 10}</span>
+                            <span className="text-muted-foreground"> pts</span>
                           </div>
                         </div>
                       );
                     })}
+                    <p className="col-span-3 mt-1 text-[11px] text-muted-foreground">
+                      Os pontos por critério somam a nota do caminho, limitada a 100.
+                    </p>
                     <div className="col-span-3 text-right">
                       <button
                         type="button"
@@ -557,7 +567,7 @@ export function DossiePanel({
                         onClick={() => setSelectedPathIndex(isSelected ? null : index)}
                         className="rounded-md border border-border px-2 py-0.5 text-xs text-muted-foreground hover:bg-accent hover:text-foreground"
                       >
-                        {isSelected ? "Ocultar tentativa" : `Ver tentativa #${index + 1}`}
+                        {isSelected ? "Ocultar caminho" : `Ver caminho #${index + 1}`}
                       </button>
                     </div>
                   </div>
@@ -576,16 +586,14 @@ function PathAttemptDetails({ path }: { path: PathCandidate }) {
   return (
     <div className="mt-3 space-y-2 border-t border-border pt-3">
       <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-        Tentativa simulada
+        Passo a passo do caminho
       </div>
       {path.steps.map((step, index) => (
         <div key={`${step.nodeId}:${step.optionId}:${index}`} className="rounded-md bg-muted/40 p-2">
           <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
-            <span className="font-mono text-muted-foreground">
-              turno {step.turnIndex} · {step.nodeId} → {step.optionId}
-            </span>
+            <span className="text-muted-foreground">Etapa {step.turnIndex}</span>
             <span className="text-muted-foreground">
-              {step.nextNodeId ? `próximo: ${step.nextNodeId}` : "encerramento"}
+              {step.nextNodeId ? "leva à próxima etapa" : "encerra o teste"}
             </span>
           </div>
           <div className="mt-2 text-xs">
@@ -646,7 +654,7 @@ export function AuditoriaPanel({ events }: { events: AuditEventResponse[] }) {
                   <TableCell className="whitespace-nowrap px-3 py-2 text-xs">
                     {parseWho(event.metadata)}
                   </TableCell>
-                  <TableCell className="px-3 py-2">{event.message}</TableCell>
+                  <TableCell className="px-3 py-2">{formatAuditMessage(event.message)}</TableCell>
                 </TableRow>
               ))
             )}
@@ -794,6 +802,17 @@ function parseWho(metadata?: string | null) {
     return "Sistema";
   }
   return "Sistema";
+}
+
+function formatAuditMessage(message: string) {
+  return message
+    .replace("Nó de simulação adicionado.", "Etapa adicionada.")
+    .replace("Nó de simulação atualizado.", "Etapa atualizada.")
+    .replace("Nó de simulação removido.", "Etapa removida.")
+    .replaceAll("simulação", "teste")
+    .replaceAll("Simulação", "Teste")
+    .replaceAll("nó", "etapa")
+    .replaceAll("Nó", "Etapa");
 }
 
 function formatDate(value: string) {
