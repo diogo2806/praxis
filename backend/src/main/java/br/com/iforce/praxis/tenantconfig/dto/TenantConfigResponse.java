@@ -4,7 +4,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 
 import java.util.List;
 
-@Schema(description = "Catalogos configuraveis por tenant usados nas telas de autoria.")
+@Schema(description = "Catálogos configuráveis por empresa usados nas telas de autoria.")
 public record TenantConfigResponse(
         @Schema(description = "Competencias avaliaveis no plano da avaliacao.")
         List<ConfigOptionDto> competencies,

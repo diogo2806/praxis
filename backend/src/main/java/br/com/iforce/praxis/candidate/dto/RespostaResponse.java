@@ -3,7 +3,7 @@ package br.com.iforce.praxis.candidate.dto;
 import br.com.iforce.praxis.shared.model.MediaType;
 import io.swagger.v3.oas.annotations.media.Schema;
 
-@Schema(description = "Alternativa visivel ao candidato, sem gabarito, pesos ou marcadores internos.")
+@Schema(description = "Resposta visível ao candidato, sem gabarito, pesos ou marcadores internos.")
 public record RespostaResponse(
         @Schema(example = "A")
         String id,
@@ -14,16 +14,16 @@ public record RespostaResponse(
         @Schema(description = "Texto alternativo simplificado para leitores de tela.", nullable = true)
         String descricaoAcessivel,
 
-        @Schema(description = "URL publica de audio descritivo da alternativa.", nullable = true)
+        @Schema(description = "URL pública de áudio descritivo da resposta.", nullable = true)
         String audioDescricaoUrl,
 
-        @Schema(description = "URL publica da imagem ou audio da alternativa.", nullable = true)
+        @Schema(description = "URL pública da imagem ou áudio da resposta.", nullable = true)
         String midiaUrl,
 
         @Schema(description = "Tipo da midia (IMAGE ou AUDIO).", nullable = true)
         MediaType tipoMidia,
 
-        @Schema(description = "Proxima etapa publica quando esta alternativa e escolhida, sem expor pontuacao.", nullable = true)
+        @Schema(description = "Próxima etapa pública quando esta resposta é escolhida, sem expor pontuação.", nullable = true)
         String proximaEtapaId
 ) {
 }

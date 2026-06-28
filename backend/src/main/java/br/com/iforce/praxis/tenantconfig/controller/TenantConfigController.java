@@ -29,7 +29,7 @@ import java.util.List;
  */
 @RestController
 @RequestMapping("/api/v1/tenant-config")
-@Tag(name = "Tenant Config", description = "Catalogos configuraveis por empresa usados nas telas de autoria.")
+@Tag(name = "Configuração da empresa", description = "Catalogos configuraveis por empresa usados nas telas de autoria.")
 public class TenantConfigController {
 
     private final TenantConfigService tenantConfigService;
@@ -48,8 +48,8 @@ public class TenantConfigController {
      */
     @GetMapping
     @Operation(
-            summary = "Carrega catalogos do tenant",
-            description = "Retorna competencias e limites de tempo. Tipos nao customizados caem nos padroes embutidos."
+            summary = "Carrega catálogos da empresa",
+            description = "Retorna competências e limites de tempo. Tipos não customizados usam os padrões embutidos."
     )
     public ResponseEntity<TenantConfigResponse> getConfig() {
         return ResponseEntity.ok(tenantConfigService.getConfig());
@@ -64,7 +64,7 @@ public class TenantConfigController {
      */
     @PutMapping("/{configType}")
     @Operation(
-            summary = "Customiza um catalogo do tenant",
+            summary = "Customiza um catálogo da empresa",
             description = "Substitui integralmente a lista de opcoes de um tipo de configuracao para a empresa."
     )
     public ResponseEntity<List<ConfigOptionDto>> updateConfig(

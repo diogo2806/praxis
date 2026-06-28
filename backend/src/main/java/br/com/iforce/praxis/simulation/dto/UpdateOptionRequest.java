@@ -31,7 +31,7 @@ public record UpdateOptionRequest(
         String plainTextDescription,
 
         @Size(max = 1000)
-        @Schema(description = "URL publica de audio descritivo da alternativa. Envie string vazia para remover.", nullable = true)
+        @Schema(description = "URL pública de áudio descritivo da resposta. Envie string vazia para remover.", nullable = true)
         String audioDescriptionUrl,
 
         @Size(max = 1000)

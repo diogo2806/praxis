@@ -137,7 +137,7 @@ public class SimulationValidationService {
             issues.add(new ValidationIssueResponse(
                     ValidationIssueSeverity.BLOCKER,
                     node.getNodeId(),
-                    "Cada etapa precisa ter uma fala para o candidato."
+                    "Esta etapa está sem fala para o candidato. Abra a etapa e escreva a mensagem que será exibida antes das respostas."
             ));
         }
 
@@ -145,7 +145,9 @@ public class SimulationValidationService {
             issues.add(new ValidationIssueResponse(
                     ValidationIssueSeverity.BLOCKER,
                     node.getNodeId(),
-                    "Cada etapa precisa ter de 2 a 4 respostas."
+                    "Esta etapa tem "
+                            + node.getOptions().size()
+                            + " resposta(s). Adicione ou remova respostas para ficar entre 2 e 4 alternativas."
             ));
         }
 
@@ -164,21 +166,21 @@ public class SimulationValidationService {
             issues.add(new ValidationIssueResponse(
                     ValidationIssueSeverity.BLOCKER,
                     node.getNodeId(),
-                    "Etapas de encerramento nao podem ter respostas."
+                    "Esta etapa está marcada como encerramento, então não pode ter respostas. Remova as respostas ou transforme a etapa em uma etapa normal."
             ));
         }
         if (node.getTimeoutNextNodeId() != null) {
             issues.add(new ValidationIssueResponse(
                     ValidationIssueSeverity.BLOCKER,
                     node.getNodeId(),
-                    "Etapas de encerramento nao podem ter destino de tempo."
+                    "Esta etapa está marcada como encerramento, então não deve ter destino de tempo esgotado. Remova a ligação de timeout."
             ));
         }
         if (node.getReportText() == null || node.getReportText().isBlank()) {
             issues.add(new ValidationIssueResponse(
                     ValidationIssueSeverity.BLOCKER,
                     node.getNodeId(),
-                    "Etapas de encerramento precisam ter texto de relatorio."
+                    "Esta etapa de encerramento está sem texto de relatório. Preencha o resumo que a equipe responsável verá ao fim desse caminho."
             ));
         }
     }
@@ -196,7 +198,7 @@ public class SimulationValidationService {
                 issues.add(new ValidationIssueResponse(
                         ValidationIssueSeverity.BLOCKER,
                         node.getNodeId(),
-                        "Esta etapa continua o teste, então escolha para qual etapa ir caso o tempo se esgote."
+                        "Esta etapa continua o teste, mas não tem destino para tempo esgotado. No campo \"Tempo acaba\", escolha uma próxima etapa ou um encerramento."
                 ));
             }
             return;
@@ -207,7 +209,7 @@ public class SimulationValidationService {
             issues.add(new ValidationIssueResponse(
                     ValidationIssueSeverity.BLOCKER,
                     node.getNodeId(),
-                    "O caminho usado quando o tempo se esgota aponta para uma etapa que não existe."
+                    "O destino de tempo esgotado aponta para uma etapa que não existe. Escolha uma etapa existente no campo \"Tempo acaba\"."
             ));
             return;
         }
@@ -216,7 +218,7 @@ public class SimulationValidationService {
             issues.add(new ValidationIssueResponse(
                     ValidationIssueSeverity.BLOCKER,
                     node.getNodeId(),
-                    "Quando o tempo se esgota, o teste só pode seguir para uma etapa posterior."
+                    "O destino de tempo esgotado volta para esta etapa ou para uma etapa anterior. Altere para uma etapa posterior ou para um encerramento."
             ));
         }
     }
@@ -231,7 +233,7 @@ public class SimulationValidationService {
             issues.add(new ValidationIssueResponse(
                     ValidationIssueSeverity.BLOCKER,
                     node.getNodeId(),
-                    "Uma resposta está sem pontuação de competência."
+                    "Uma resposta está sem pontuação de competência. Abra a resposta e atribua notas de 0 a 100 para as competências configuradas."
             ));
         }
 
@@ -240,7 +242,7 @@ public class SimulationValidationService {
                 issues.add(new ValidationIssueResponse(
                         ValidationIssueSeverity.BLOCKER,
                         node.getNodeId(),
-                        "A pontuação de competência deve ficar entre 0 e 100."
+                        "Uma pontuação de competência está fora do intervalo permitido. Ajuste a nota da resposta para um valor entre 0 e 100."
                 ));
             }
         }
@@ -249,8 +251,7 @@ public class SimulationValidationService {
             issues.add(new ValidationIssueResponse(
                     ValidationIssueSeverity.BLOCKER,
                     node.getNodeId(),
-                    "Toda resposta de uma etapa que não é de encerramento precisa apontar "
-                            + "para uma próxima etapa (inclusive a etapa de encerramento)."
+                    "Uma resposta está sem destino. Escolha para onde ela leva: outra etapa posterior ou uma etapa de encerramento."
             ));
         }
 
@@ -258,7 +259,7 @@ public class SimulationValidationService {
             issues.add(new ValidationIssueResponse(
                     ValidationIssueSeverity.BLOCKER,
                     node.getNodeId(),
-                    "Uma resposta aponta para uma etapa que não existe."
+                    "Uma resposta aponta para uma etapa que não existe. Edite o destino da resposta e selecione uma etapa válida."
             ));
         }
 
@@ -268,7 +269,7 @@ public class SimulationValidationService {
                 issues.add(new ValidationIssueResponse(
                         ValidationIssueSeverity.BLOCKER,
                         node.getNodeId(),
-                        "As respostas só podem levar o candidato para etapas posteriores."
+                        "Uma resposta leva para esta etapa ou para uma etapa anterior. Altere o destino para uma etapa posterior ou para um encerramento."
                 ));
             }
         }
@@ -283,7 +284,7 @@ public class SimulationValidationService {
             issues.add(new ValidationIssueResponse(
                     ValidationIssueSeverity.BLOCKER,
                     simulationVersionEntity.getRootNodeId(),
-                    "O teste precisa ter pelo menos uma competência configurada."
+                    "O teste não tem competências configuradas. Volte ao passo Avaliação e adicione pelo menos uma competência com peso."
             ));
             return;
         }
@@ -294,7 +295,7 @@ public class SimulationValidationService {
                 issues.add(new ValidationIssueResponse(
                         ValidationIssueSeverity.BLOCKER,
                         competency.getName(),
-                        "O peso de uma competência não pode ser negativo."
+                        "Uma competência está com peso negativo. Volte ao passo Avaliação e ajuste o peso para zero ou mais."
                 ));
             }
             weightSum += competency.getWeight();
@@ -304,7 +305,9 @@ public class SimulationValidationService {
             issues.add(new ValidationIssueResponse(
                     ValidationIssueSeverity.BLOCKER,
                     simulationVersionEntity.getRootNodeId(),
-                    "Os pesos das competências precisam somar 100%. Soma atual: " + (weightSum * 100) + "%."
+                    "Os pesos das competências precisam somar 100%. Soma atual: "
+                            + (weightSum * 100)
+                            + "%. Volte ao passo Avaliação e ajuste os pesos."
             ));
         }
     }
@@ -329,7 +332,7 @@ public class SimulationValidationService {
                                 node.getNodeId(),
                                 "Uma resposta pontua a competência \""
                                         + competencyName
-                                        + "\", que não está configurada nesta prova."
+                                        + "\", mas ela não está configurada no teste. Adicione essa competência no passo Avaliação ou remova a pontuação dessa resposta."
                         ));
                     }
                     scored.add(competencyName);
@@ -344,7 +347,7 @@ public class SimulationValidationService {
                         competencyName,
                         "A competência \""
                                 + competencyName
-                                + "\" tem peso mas nenhuma resposta a pontua."
+                                + "\" tem peso, mas nenhuma resposta pontua essa competência. Inclua uma nota positiva para ela em pelo menos uma resposta."
                 ));
             }
         }
@@ -414,7 +417,7 @@ public class SimulationValidationService {
             issues.add(new ValidationIssueResponse(
                     ValidationIssueSeverity.WARNING,
                     simulationVersionEntity.getRootNodeId(),
-                    "Este teste tem muitas etapas. A validação pode demorar um pouco mais."
+                    "Este teste tem muitas etapas. A validação pode demorar um pouco mais; se estiver difícil revisar, divida o fluxo ou remova etapas redundantes."
             ));
         }
     }
@@ -436,9 +439,11 @@ public class SimulationValidationService {
                     issues.add(new ValidationIssueResponse(
                             ValidationIssueSeverity.BLOCKER,
                             terminalNode.getNodeId(),
-                            "Um caminho do teste nao pontua a competencia \""
+                            "O caminho que termina em "
+                                    + terminalNode.getNodeId()
+                                    + " não pontua a competência \""
                                     + competency.getName()
-                                    + "\". Todo caminho precisa oferecer pontuacao positiva para cada competencia configurada."
+                                    + "\". Em alguma resposta desse caminho, atribua uma nota maior que zero para essa competência."
                     ));
                 }
             }

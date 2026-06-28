@@ -297,11 +297,11 @@ public class OutboxProcessor {
     private PublishedSimulation getSimulation(CandidateAttemptEntity candidateAttemptEntity) {
         if (candidateAttemptEntity.getSimulationVersionId() != null) {
             return simulationCatalogService.findByVersionId(candidateAttemptEntity.getSimulationVersionId())
-                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Versão da simulação não encontrada."));
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Não encontramos esta versão do teste."));
         }
 
         return simulationCatalogService.findPublishedById(candidateAttemptEntity.getTenantId(), candidateAttemptEntity.getSimulationId())
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Simulação publicada não encontrada."));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Não encontramos o teste publicado."));
     }
 
     private JsonNode parsePayload(String payload) {

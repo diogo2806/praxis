@@ -13,7 +13,7 @@ public record RegistrarRespostaRequest(
 
         @JsonAlias("optionId")
         @Schema(example = "A", nullable = true,
-                description = "Alternativa escolhida. Obrigatoria quando tempoEsgotado=false; ignorada quando o tempo esgota.")
+                description = "Resposta escolhida. Obrigatória quando tempoEsgotado=false; ignorada quando o tempo se esgota.")
         String respostaId,
 
         @JsonAlias({"nodeNumber", "stepNumber"})

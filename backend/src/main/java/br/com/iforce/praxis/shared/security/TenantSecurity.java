@@ -12,7 +12,7 @@ public final class TenantSecurity {
     public static String requiredTenant() {
         String tenant = TenantContextHolder.get();
         if (tenant == null) {
-            throw new IllegalStateException("Tenant obrigatório não foi estabelecido no contexto");
+            throw new IllegalStateException("Empresa obrigatória não foi estabelecida no contexto");
         }
         return tenant;
     }

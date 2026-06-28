@@ -49,10 +49,10 @@ public record UpdateBlueprintRequest(
 
             @Min(0)
             @Max(100)
-            @Schema(example = "80", description = "Nota alvo da competencia para a vaga.")
+            @Schema(example = "80", description = "Nota alvo da competência para a vaga.")
             Integer targetScore,
 
-            @Schema(example = "major", description = "Peso de severidade da competencia no resultado.")
+            @Schema(example = "major", description = "Peso de severidade da competência no resultado.")
             ResultTier tier
     ) {
         public int normalizedTargetScore() {

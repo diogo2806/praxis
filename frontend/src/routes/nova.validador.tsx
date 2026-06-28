@@ -536,19 +536,22 @@ function ValidatorPage() {
             {!canPublish && (
               <div className="text-xs text-muted-foreground sm:text-right" aria-live="polite">
                 <p>
-                {validation
-                  ? `Resolva ${blockers} bloqueio${blockers === 1 ? "" : "s"} para liberar a publicação.`
-                  : "Carregando diagnóstico..."}
+                  {validation
+                    ? `Resolva ${blockers} bloqueio${blockers === 1 ? "" : "s"} para liberar a publicação.`
+                    : "Carregando diagnóstico..."}
                 </p>
                 {footerBlockers.length > 0 && (
-                  <ul className="mt-1 space-y-0.5 text-left text-danger sm:text-right">
-                    {footerBlockers.map((issue) => (
-                      <li key={`${issue.nodeId ?? "global"}-${issue.message}`}>
-                        {issue.nodeId ? `${issue.nodeId}: ` : ""}
-                        {issue.message}
-                      </li>
-                    ))}
-                  </ul>
+                  <div className="mt-1 text-left sm:text-right">
+                    <p className="font-medium text-foreground">Como resolver:</p>
+                    <ul className="mt-0.5 space-y-0.5 text-danger">
+                      {footerBlockers.map((issue) => (
+                        <li key={`${issue.nodeId ?? "global"}-${issue.message}`}>
+                          {issue.nodeId ? `${issue.nodeId}: ` : ""}
+                          {issue.message}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
                 )}
               </div>
             )}

@@ -106,7 +106,7 @@ public class IntegrationTokenAdminService {
         String normalizedProvider = normalizeProvider(provider);
         String tenantId = currentTenantService.requiredTenantId();
         TenantEntity tenant = tenantRepository.findById(tenantId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Tenant não encontrado."));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Não encontramos os dados da sua empresa."));
 
         String tokenValue = generateToken();
         integrationTokenRepository.deleteByTenantIdAndProvider(tenantId, normalizedProvider);

@@ -72,7 +72,7 @@ public class TalentMatchService {
         List<String> normalizedAttemptIds = normalizeAttemptIds(attemptIds);
         SimulationVersionEntity simulationVersionEntity = simulationVersionRepository
                 .findBySimulationTenantIdAndSimulationIdAndVersionNumber(tenantId, simulationId, versionNumber)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Versão de simulação não encontrada."));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Não encontramos esta versão do teste."));
 
         List<CandidateAttemptEntity> attempts = candidateAttemptRepository.findAllByIdInWithResultItems(normalizedAttemptIds);
         if (attempts.size() != normalizedAttemptIds.size()) {
@@ -90,7 +90,7 @@ public class TalentMatchService {
                         || !Objects.equals(attempt.getSimulationVersionId(), simulationVersionEntity.getId())
         );
         if (versionMismatch) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Todas as tentativas devem pertencer à mesma versão da simulação.");
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Todas as tentativas devem pertencer à mesma versão do teste.");
         }
 
         List<SimulationCompetencyEntity> competencies = simulationVersionEntity.getCompetencies().stream()

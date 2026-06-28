@@ -353,6 +353,35 @@ const landingStyles = `
   .pfoot{margin:2rem auto 0;font-size:0.86rem;color:var(--faint);display:flex;gap:0.55rem;align-items:flex-start;max-width:70ch}
   .pfoot svg{flex:none;width:1.05rem;height:1.05rem;margin-top:0.16rem;stroke:var(--success)}
 
+  /* Planos: linha "todos os recursos" */
+  .all-plans{display:inline-flex;align-items:center;gap:.55rem;justify-content:center;margin:1.4rem auto 0;padding:.55rem 1.05rem;border-radius:var(--r-pill);background:oklch(0.5 0.1 233 / 0.08);color:var(--primary-deep);font-size:.95rem;font-weight:600}
+  .all-plans svg{flex:none;width:1.1rem;height:1.1rem;stroke:var(--primary)}
+
+  /* Planos: seletor de ciclo */
+  .cycle{display:inline-flex;align-items:center;gap:.3rem;background:var(--surface);border:1px solid var(--line);border-radius:var(--r-pill);padding:5px;margin-top:1.4rem}
+  .cyc{font-family:var(--font-sans);font-size:.9rem;font-weight:600;color:var(--muted);background:transparent;border:0;cursor:pointer;padding:.45rem 1.1rem;border-radius:var(--r-pill);min-height:2.4rem;transition:background .18s ease,color .18s ease}
+  .cyc.on{background:var(--primary);color:#fff}
+  .cycle-hint{font-size:.8rem;color:var(--faint);margin-top:.6rem}
+  .cycle-cta{font-size:.95rem;color:var(--muted);text-align:center;margin-top:1.4rem}
+  .cycle-cta a{color:var(--primary);font-weight:600;border-bottom:1px solid color-mix(in oklab, var(--primary) 35%, transparent)}
+  .cycle-cta a:hover{color:var(--primary-deep)}
+
+  /* Planos: destaque por card */
+  #contratacao .plan .btn{margin-top:auto}
+  .plan .phi{display:flex;gap:.55rem;align-items:flex-start;margin-top:.9rem;font-size:.92rem;font-weight:600;color:var(--primary-deep)}
+  .plan .phi svg{flex:none;width:1.05rem;height:1.05rem;margin-top:.12rem;stroke:var(--primary)}
+
+  /* Planos: tabela de volume do Crescimento */
+  .tiers{width:100%;border-collapse:collapse;margin:1.2rem 0 .5rem}
+  .tiers th{font-family:var(--font-mono);font-weight:500;color:var(--faint);text-align:left;padding:.4rem .15rem;border-bottom:1px solid var(--line-soft);font-size:.64rem;text-transform:uppercase;letter-spacing:.1em}
+  .tiers th.r{text-align:right}
+  .tiers td{padding:.62rem .15rem;border-bottom:1px solid var(--line-soft);color:var(--muted);font-size:.92rem}
+  .tiers td:first-child{font-family:var(--font-mono);font-weight:600;color:var(--ink)}
+  .tiers td.u{text-align:right;white-space:nowrap;color:var(--faint)}
+  .tiers td.t{text-align:right;white-space:nowrap;font-family:var(--font-mono);font-weight:600;color:var(--ink)}
+  .tiers tr:last-child td{border-bottom:0}
+  .tier-note{font-size:.8rem;color:var(--faint);margin-top:.5rem;line-height:1.45}
+
   /* faq */
   .faq{margin:2.6rem auto 0;max-width:780px;border-top:1px solid var(--line)}
   .qa{border-bottom:1px solid var(--line)}
@@ -530,7 +559,7 @@ const landingMarkup = `<header class="nav" id="nav">
       <a class="link" href="#evidencia">Recursos</a>
       <a class="link" href="#aplicacoes">Onde se aplica</a>
       <a class="link" href="#governanca">Governança</a>
-      <a class="link" href="#contratacao">Contratação</a>
+      <a class="link" href="#contratacao">Planos</a>
     </nav>
     <div class="nav-cta">
       <a class="link" href="https://praxis.iforce.com.br/comecar">Entrar</a>
@@ -935,61 +964,74 @@ turno-3 ▸ <span class="ok">C</span>  +2 Comunicação
   <section class="sec" id="contratacao">
     <div class="wrap">
       <div class="sec-head">
-        <span class="eyebrow">Contratação</span>
-        <h2>Defina o formato conforme o volume e o escopo da operação.</h2>
-        <p class="lead">A proposta comercial é estruturada conforme o volume de participações, as necessidades de integração, governança e suporte.</p>
+        <span class="eyebrow">Planos</span>
+        <h2>Comece por avaliação. Cresça quando fizer sentido.</h2>
+        <p class="lead">Você paga por avaliação concluída, não por mês parado nem por assento. E a nota nunca é uma caixa-preta: cada resultado vem com o porquê registrado.</p>
+
+        <p class="all-plans">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"></path></svg>
+          Todos os recursos em todos os planos. Você escolhe só o volume.
+        </p>
+
+        <div class="cycle" role="group" aria-label="Ciclo de cobrança">
+          <button id="cycMonthly" class="cyc on" aria-pressed="true">Mensal</button>
+          <button id="cycAnnual" class="cyc" aria-pressed="false">Anual</button>
+        </div>
+        <p class="cycle-hint">O ciclo muda o total exibido no plano Crescimento.</p>
       </div>
 
       <div class="plans">
         <div class="plan">
-          <div class="pname">Conhecer a plataforma</div>
-          <div class="pfor">Para visualizar o fluxo e avaliar a aderência ao seu contexto.</div>
-          <div class="price consulta"><span class="amt">Demonstração</span></div>
-          <div class="psub">Apresentação da criação, aplicação e análise de uma avaliação.</div>
-          <a class="btn btn-ghost" href="mailto:contato@iforce.com.br?subject=Demonstra%C3%A7%C3%A3o%20da%20Pr%C3%A1xis">Solicitar demonstração</a>
-          <ul class="plist">
-            <li class="head">Fluxo apresentado</li>
-            <li>Criação de cenários e caminhos</li>
-            <li>Configuração de critérios e pesos</li>
-            <li>Participação por link</li>
-            <li>Indicadores e relatório de evidências</li>
-          </ul>
+          <div class="pname">Avulso</div>
+          <div class="pfor">Para pilotos e demanda pontual, sem nenhum compromisso.</div>
+          <div class="price"><span class="cur">R$</span><span class="amt">69,90</span><span class="per">/ avaliação</span></div>
+          <div class="psub">Cobramos só quando o candidato conclui. Sem mensalidade e sem mínimo.</div>
+          <p class="phi">
+            <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"></path></svg>
+            Pague exatamente por quem você avaliar
+          </p>
+          <a class="btn btn-ghost" href="/comecar">Começar</a>
         </div>
 
         <div class="plan feature">
-          <div class="pname">Uso recorrente</div>
-          <div class="pfor">Para equipes que pretendem aplicar avaliações com frequência.</div>
-          <div class="price consulta"><span class="amt">Sob proposta</span></div>
-          <div class="psub">Volume e condições comerciais definidos antes da contratação.</div>
-          <a class="btn btn-primary" href="mailto:contato@iforce.com.br?subject=Proposta%20comercial%20da%20Pr%C3%A1xis">Solicitar proposta <span class="btn-arrow">→</span></a>
-          <ul class="plist">
-            <li class="head">Escopo a definir</li>
-            <li>Volume de participações</li>
-            <li>Forma de operação</li>
-            <li>Necessidades de suporte</li>
-            <li>Condições comerciais e contratuais</li>
-          </ul>
+          <span class="ptag">Mais escolhido</span>
+          <div class="pname">Crescimento</div>
+          <div class="pfor">Para quem avalia com volume recorrente. Quanto mais avaliações por mês, menor o preço de cada uma.</div>
+
+          <table class="tiers" aria-label="Pacotes por volume">
+            <thead>
+              <tr><th>Avaliações/mês</th><th class="r">Cada</th><th class="r" id="thTotal">Total/mês</th></tr>
+            </thead>
+            <tbody>
+              <tr data-qty="30" data-unit="54.90"><td>30</td><td class="u">R$ 54,90</td><td class="t">R$ 1.647</td></tr>
+              <tr data-qty="60" data-unit="49.90"><td>60</td><td class="u">R$ 49,90</td><td class="t">R$ 2.994</td></tr>
+              <tr data-qty="100" data-unit="44.90"><td>100</td><td class="u">R$ 44,90</td><td class="t">R$ 4.490</td></tr>
+            </tbody>
+          </table>
+          <p class="tier-note" id="tierNote">As avaliações inclusas renovam a cada mês. Precisa de mais volume? Veja o Enterprise.</p>
+
+          <a class="btn btn-primary" href="#cta">Agendar demonstração <span class="btn-arrow">→</span></a>
         </div>
 
         <div class="plan">
-          <div class="pname">Integração e governança</div>
-          <div class="pfor">Para operações com requisitos técnicos ou jurídicos específicos.</div>
-          <div class="price consulta"><span class="amt">Escopo técnico</span></div>
-          <div class="psub">Viabilidade e responsabilidades validadas antes da proposta.</div>
-          <a class="btn btn-gold" href="mailto:contato@iforce.com.br?subject=Escopo%20corporativo%20da%20Pr%C3%A1xis">Falar com a equipe</a>
-          <ul class="plist">
-            <li class="head">Análise necessária</li>
-            <li>Compatibilidade da integração desejada</li>
-            <li>Requisitos de governança e privacidade</li>
-            <li>Volume e ambiente de operação</li>
-            <li>Responsabilidades previstas em contrato</li>
-          </ul>
+          <div class="pname">Enterprise</div>
+          <div class="pfor">Para grandes volumes e empresas com jurídico e TI no processo.</div>
+          <div class="price consulta"><span class="amt">Sob consulta</span></div>
+          <div class="psub">O menor preço por avaliação, definido pelo seu volume.</div>
+          <p class="phi">
+            <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"></path></svg>
+            Preço e contrato negociados com você
+          </p>
+          <a class="btn btn-gold" href="mailto:contato@iforce.com.br?subject=Plano%20Enterprise%20da%20Pr%C3%A1xis">Falar com vendas</a>
         </div>
       </div>
 
-      <p class="pfoot">
-        Valores, franquias, adicionais, integrações, níveis de atendimento e demais condições devem constar da proposta comercial e do contrato aplicáveis.
+      <p class="roi">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
+        <span>Uma contratação errada custa de dezenas de milhares de reais a um ano inteiro de salário. Uma avaliação na Práxis custa <b>R$ 69,90</b>, e deixa registrado o porquê de cada decisão.</span>
       </p>
+
+      <p class="cycle-cta">Na dúvida? Se quiser testar antes de pagar, <a href="mailto:contato@iforce.com.br?subject=Agendar%20uma%20POC%20da%20Pr%C3%A1xis">agende uma prova de conceito (POC)</a>.</p>
     </div>
   </section>
 
@@ -1041,7 +1083,7 @@ turno-3 ▸ <span class="ok">C</span>  +2 Comunicação
       <p class="lead">Conheça a criação de avaliações, a participação por link e a análise dos resultados em uma demonstração da Práxis.</p>
       <div class="hero-ctas">
         <a class="btn btn-primary" href="mailto:contato@iforce.com.br?subject=Demonstra%C3%A7%C3%A3o%20da%20Pr%C3%A1xis">Solicitar demonstração <span class="btn-arrow">→</span></a>
-        <a class="btn btn-ghost" href="#contratacao">Ver formas de contratação</a>
+        <a class="btn btn-ghost" href="#contratacao">Ver planos</a>
       </div>
     </div>
   </section>
@@ -1090,6 +1132,47 @@ function LandingPage() {
         anchor.addEventListener("click", closeMenu);
         cleanups.push(() => anchor.removeEventListener("click", closeMenu));
       });
+    }
+
+    const monthlyButton = document.getElementById("cycMonthly");
+    const annualButton = document.getElementById("cycAnnual");
+    const totalHeader = document.getElementById("thTotal");
+    const tierNote = document.getElementById("tierNote");
+    const tierRows = Array.from(document.querySelectorAll<HTMLTableRowElement>("#contratacao .tiers tbody tr"));
+
+    const formatBR = (value: number, decimals: number) => {
+      const parts = Number(value).toFixed(decimals).split(".");
+      parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+      return decimals ? parts[0] + "," + parts[1] : parts[0];
+    };
+
+    const applyCycle = (annual: boolean) => {
+      if (totalHeader) totalHeader.textContent = annual ? "Total/ano" : "Total/mês";
+      tierRows.forEach((row) => {
+        const qty = Number(row.dataset.qty);
+        const unit = Number(row.dataset.unit);
+        const total = unit * qty * (annual ? 12 : 1);
+        const totalCell = row.querySelector<HTMLElement>(".t");
+        if (totalCell) totalCell.textContent = "R$ " + formatBR(Math.round(total), 0);
+      });
+      if (tierNote) {
+        tierNote.textContent = annual
+          ? "Cobrança uma vez por ano. As avaliações inclusas renovam a cada mês."
+          : "As avaliações inclusas renovam a cada mês. Precisa de mais volume? Veja o Enterprise.";
+      }
+      monthlyButton?.classList.toggle("on", !annual);
+      annualButton?.classList.toggle("on", annual);
+      monthlyButton?.setAttribute("aria-pressed", String(!annual));
+      annualButton?.setAttribute("aria-pressed", String(annual));
+    };
+
+    if (monthlyButton && annualButton) {
+      const onMonthlyClick = () => applyCycle(false);
+      const onAnnualClick = () => applyCycle(true);
+      monthlyButton.addEventListener("click", onMonthlyClick);
+      annualButton.addEventListener("click", onAnnualClick);
+      cleanups.push(() => monthlyButton.removeEventListener("click", onMonthlyClick));
+      cleanups.push(() => annualButton.removeEventListener("click", onAnnualClick));
     }
 
     const reads: Record<

@@ -55,10 +55,10 @@ import java.util.Set;
 import java.util.UUID;
 
 /**
- * Orquestra o ciclo de vida da tentativa do candidato: idempot├¬ncia na cria├º├úo, persist├¬ncia,
- * disparo de entrega ├á Gupy e montagem das respostas REST. As transi├º├Áes de estado ficam em
- * {@link AttemptStateMachine}, o mapeamento entidadeÔåödom├¡nio em {@link CandidateAttemptMapper} e o
- * c├ílculo de score em {@link ResultScoringService}.
+ * Orquestra o ciclo de vida da tentativa do candidato: idempotência na criação, persistência,
+ * disparo de entrega à Gupy e montagem das respostas REST. As transições de estado ficam em
+ * {@link AttemptStateMachine}, o mapeamento entidade↔domínio em {@link CandidateAttemptMapper} e o
+ * cálculo de score em {@link ResultScoringService}.
  */
 @Service
 public class CandidateAttemptService {
@@ -131,7 +131,7 @@ public class CandidateAttemptService {
         String tenantId = tenantContext.tenantId();
 
         PublishedSimulation publishedSimulation = simulationCatalogService.findPublishedById(tenantId, request.testId())
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Teste publicado n├úo encontrado."));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Não encontramos o teste publicado."));
 
         String idempotencyKey = tenantId + "|" + tenantContext.companyId() + "|" + request.documentId() + "|" + request.testId();
         CandidateAttemptEntity candidateAttemptEntity = candidateAttemptRepository
@@ -162,7 +162,7 @@ public class CandidateAttemptService {
 
         PublishedSimulation publishedSimulation = simulationCatalogService
                 .findPublishedById(tenantId, request.simulationId())
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Simula├º├úo publicada n├úo encontrada."));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Não encontramos o teste publicado."));
 
         String idempotencyKey = tenantId + "|company|" + request.candidateEmail().trim() + "|" + request.simulationId();
 
@@ -195,7 +195,7 @@ public class CandidateAttemptService {
                             false,
                             ReliabilityLevel.NORMAL,
                             normalizeAccommodationMultiplier(request.accommodationTimeMultiplier()),
-                            "Resultado ainda n├úo finalizado.",
+                            "Resultado ainda não finalizado.",
                             Instant.now(),
                             null,
                             null
@@ -269,7 +269,7 @@ public class CandidateAttemptService {
 
     private CandidateLinkResponse toCandidateLinkResponse(CandidateAttemptEntity entity, boolean blind) {
         PublishedSimulation simulation = findSimulation(entity);
-        // Modo cego: o backend n├úo envia nome/e-mail (defesa em profundidade ÔÇö n├úo basta mascarar no cliente).
+        // Modo cego: o backend não envia nome/e-mail (defesa em profundidade — não basta mascarar no cliente).
         String candidateName = blind ? BlindMasking.maskedName(entity.getId()) : entity.getCandidateName();
         String candidateEmail = blind ? null : entity.getCandidateEmail();
         return new CandidateLinkResponse(
@@ -347,7 +347,7 @@ public class CandidateAttemptService {
                 tenantId,
                 candidateAttemptEntity.getId(),
                 AuditEventType.ATTEMPT_CREATED,
-                "Tentativa criada pela integra├º├úo Gupy.",
+                "Tentativa criada pela integração Gupy.",
                 auditMetadata.of(
                         "resultId", candidateAttemptEntity.getResultId(),
                         "testId", request.testId(),
@@ -421,7 +421,7 @@ public class CandidateAttemptService {
         String attemptId = resolveAttemptId(attemptToken);
         CandidateAttemptEntity candidateAttemptEntity = candidateAttemptRepository
                 .findByTenantIdAndIdForUpdate(tenantId, attemptId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Tentativa n├úo encontrada."));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Tentativa não encontrada."));
         CandidateAttempt originalAttempt = candidateAttemptMapper.toDomain(candidateAttemptEntity);
         AttemptStatus originalStatus = originalAttempt.status();
         CandidateAttempt attempt = attemptStateMachine.expireIfNeeded(originalAttempt);
@@ -446,10 +446,10 @@ public class CandidateAttemptService {
         }
 
         ScenarioNode currentNode = findCurrentNode(attempt, simulation)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.CONFLICT, "N├úo h├í etapa pendente para esta tentativa."));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.CONFLICT, "Não há etapa pendente para esta tentativa."));
         String etapaId = request.etapaId();
         if (etapaId != null && !etapaId.isBlank() && !currentNode.id().equals(etapaId)) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "A etapa informada n├úo ├® a etapa atual da participa├º├úo.");
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "A etapa informada não é a etapa atual da participação.");
         }
 
         AttemptAnswer answer = buildAnswer(attempt, simulation, currentNode, request, receivedAt);
@@ -507,15 +507,15 @@ public class CandidateAttemptService {
             IntegrationTenantContext tenantContext
     ) {
         if (companyId == null || companyId.isBlank()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "company_id ├® obrigat├│rio.");
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "company_id é obrigatório.");
         }
 
         assertCompanyMatchesToken(companyId, tenantContext);
         CandidateAttemptEntity candidateAttemptEntity = candidateAttemptRepository
                 .findByTenantIdAndResultId(tenantContext.tenantId(), resultId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Resultado de teste n├úo encontrado."));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Resultado de teste não encontrado."));
         if (!companyId.trim().equals(candidateAttemptEntity.getCompanyId())) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Resultado de teste n├úo encontrado.");
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Resultado de teste não encontrado.");
         }
 
         CandidateAttempt attempt = candidateAttemptMapper.toDomain(candidateAttemptEntity);
@@ -546,10 +546,10 @@ public class CandidateAttemptService {
 
     private void assertCompanyMatchesToken(String companyId, IntegrationTenantContext tenantContext) {
         if (companyId == null || companyId.isBlank()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "company_id ├® obrigat├│rio.");
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "company_id é obrigatório.");
         }
         if (!companyId.trim().equals(tenantContext.companyId())) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "company_id n├úo pertence ao token informado.");
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "company_id não pertence ao token informado.");
         }
     }
 
@@ -573,7 +573,7 @@ public class CandidateAttemptService {
                 ? existingAnswer.timedOut()
                 : !existingAnswer.timedOut() && internalOptionId != null && internalOptionId.equals(existingAnswer.optionId());
         if (!sameAnswer) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "Esta etapa j├í tem uma resposta final confirmada.");
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Esta etapa já tem uma resposta final confirmada.");
         }
 
         ScenarioNode currentNode = attempt.status() == AttemptStatus.COMPLETED
@@ -679,7 +679,7 @@ public class CandidateAttemptService {
         if (!isLastRecordedAnswer(attempt, existingAnswer)) {
             throw new ResponseStatusException(
                     HttpStatus.CONFLICT,
-                    "Esta etapa j├í direcionou etapas seguintes e n├úo pode mais ser conciliada."
+                    "Esta etapa já direcionou etapas seguintes e não pode mais ser conciliada."
             );
         }
 
@@ -754,10 +754,10 @@ public class CandidateAttemptService {
                 : (clientAnsweredAt == null ? receivedAt : clientAnsweredAt);
 
         if (answeredAt.isBefore(nodeStartedAt)) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "O hor├írio da resposta ├® anterior ao in├¡cio da etapa.");
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "O horário da resposta é anterior ao início da etapa.");
         }
         if (clientAnsweredAt != null && clientAnsweredAt.isAfter(receivedAt.plusSeconds(CLIENT_CLOCK_FUTURE_SKEW_SECONDS))) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "O hor├írio da resposta est├í no futuro.");
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "O horário da resposta está no futuro.");
         }
 
         Integer timeLimitSeconds = accommodatedTimeLimitSeconds(currentNode, attempt);
@@ -767,10 +767,10 @@ public class CandidateAttemptService {
 
         Instant frontendDeadline = nodeStartedAt.plusSeconds(timeLimitSeconds);
 
-        // Uma resposta por tempo esgotado acontece, por defini├º├úo, quando o limite da etapa ├®
+        // Uma resposta por tempo esgotado acontece, por definição, quando o limite da etapa é
         // atingido. Ela deve sempre seguir para a alternativa de timeout (timeoutNextNodeId) em
-        // vez de ser rejeitada por chegar no/ap├│s o limite -- caso contr├írio o candidato fica
-        // travado na etapa. Fixamos o hor├írio no limite da etapa quando ela j├í foi ultrapassada.
+        // vez de ser rejeitada por chegar no/após o limite -- caso contrário o candidato fica
+        // travado na etapa. Fixamos o horário no limite da etapa quando ela já foi ultrapassada.
         if (request.tempoEsgotado()) {
             return answeredAt.isAfter(frontendDeadline) ? frontendDeadline : answeredAt;
         }
@@ -787,12 +787,12 @@ public class CandidateAttemptService {
                     )
             );
             if (receivedAt.isAfter(trustedClientArrivalDeadline)) {
-                throw new ResponseStatusException(HttpStatus.CONFLICT, "Resposta chegou ap├│s a janela de toler├óncia da etapa.");
+                throw new ResponseStatusException(HttpStatus.CONFLICT, "Resposta chegou após a janela de tolerância da etapa.");
             }
             return answeredAt;
         }
         if (receivedAt.isAfter(serverArrivalDeadline)) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "Resposta chegou ap├│s a janela de toler├óncia da etapa.");
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Resposta chegou após a janela de tolerância da etapa.");
         }
         if (clientAnsweredAt == null && answeredAt.isAfter(serverArrivalDeadline)) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Tempo da etapa esgotado.");
@@ -851,7 +851,7 @@ public class CandidateAttemptService {
         return node.options().stream()
                 .filter(option -> option.id().equals(optionId))
                 .findFirst()
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Resposta inv├ílida para a etapa atual."));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Resposta inválida para a etapa atual."));
     }
 
     private void auditAnswerSubmission(String tenantId, String attemptId, AttemptAnswer answer, CandidateAttempt updatedAttempt) {
@@ -868,7 +868,7 @@ public class CandidateAttemptService {
                     tenantId,
                     attemptId,
                     AuditEventType.ATTEMPT_COMPLETED,
-                    "Tentativa finalizada com pontua├º├úo calculada.",
+                    "Tentativa finalizada com pontuação calculada.",
                     auditMetadata.of(
                             "score", updatedAttempt.score(),
                             "humanReviewRequired", updatedAttempt.humanReviewRequired()
@@ -934,7 +934,7 @@ public class CandidateAttemptService {
     private void publishAttemptEngagementEvent(CandidateAttempt attempt, String eventType, Instant occurredAt) {
         CandidateAttemptEntity candidateAttemptEntity = candidateAttemptRepository
                 .findByTenantIdAndId(attempt.tenantId(), attempt.id())
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Tentativa n├úo encontrada."));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Tentativa não encontrada."));
         if (candidateAttemptEntity.getResultWebhookUrl() == null || candidateAttemptEntity.getResultWebhookUrl().isBlank()) {
             return;
         }
@@ -976,33 +976,33 @@ public class CandidateAttemptService {
     private PublishedSimulation findSimulation(CandidateAttempt attempt) {
         if (attempt.simulationVersionId() != null) {
             return simulationCatalogService.findByVersionId(attempt.simulationVersionId())
-                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Vers├úo da simula├º├úo n├úo encontrada."));
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Não encontramos esta versão do teste."));
         }
 
         return simulationCatalogService.findPublishedById(attempt.tenantId(), attempt.simulationId())
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Simula├º├úo publicada n├úo encontrada."));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Não encontramos o teste publicado."));
     }
 
     private PublishedSimulation findSimulation(CandidateAttemptEntity candidateAttemptEntity) {
         if (candidateAttemptEntity.getSimulationVersionId() != null) {
             return simulationCatalogService.findByVersionId(candidateAttemptEntity.getSimulationVersionId())
-                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Vers├úo da simula├º├úo n├úo encontrada."));
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Não encontramos esta versão do teste."));
         }
 
         return simulationCatalogService.findPublishedById(candidateAttemptEntity.getTenantId(), candidateAttemptEntity.getSimulationId())
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Simula├º├úo publicada n├úo encontrada."));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Não encontramos o teste publicado."));
     }
 
     private CandidateAttemptEntity findAttemptEntityByToken(String attemptToken) {
         String tenantId = TenantSecurity.requiredTenant();
         String attemptId = resolveAttemptId(attemptToken);
         return candidateAttemptRepository.findByTenantIdAndId(tenantId, attemptId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Tentativa n├úo encontrada."));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Tentativa não encontrada."));
     }
 
     private String resolveAttemptId(String attemptToken) {
         if (attemptToken == null || attemptToken.isBlank()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Token da tentativa ├® obrigat├│rio.");
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Token da tentativa é obrigatório.");
         }
         try {
             return jwtService.parseCandidateAttemptToken(attemptToken).attemptId();
@@ -1012,7 +1012,7 @@ public class CandidateAttemptService {
             }
             throw new ResponseStatusException(
                     HttpStatus.UNAUTHORIZED,
-                    "Token da tentativa do candidato inv├ílido."
+                    "Token da tentativa do candidato inválido."
             );
         }
     }

@@ -23,7 +23,7 @@ import java.util.List;
  */
 @RestController
 @RequestMapping("/api/v1/audit")
-@Tag(name = "Audit", description = "Leitura da trilha cronologica de auditoria operacional.")
+@Tag(name = "Audit", description = "Leitura da trilha cronol?gica de auditoria operacional.")
 public class AuditEventController {
 
     private final AuditEventService auditEventService;
@@ -42,7 +42,7 @@ public class AuditEventController {
     @GetMapping("/candidate-attempts/{attemptId}")
     @Operation(
             summary = "Lista auditoria da tentativa",
-            description = "Retorna eventos append-only registrados para cria├º├úo, resposta e finaliza├º├úo da tentativa."
+            description = "Retorna eventos append-only registrados para criação, resposta e finalização da tentativa."
     )
     public ResponseEntity<List<AuditEventResponse>> listCandidateAttemptEvents(@PathVariable String attemptId) {
         return ResponseEntity.ok(auditEventService.listCandidateAttemptEvents(attemptId));
@@ -58,8 +58,8 @@ public class AuditEventController {
      */
     @GetMapping("/simulations/{simulationId}/versions/{versionNumber}")
     @Operation(
-            summary = "Lista auditoria da versao",
-            description = "Retorna eventos append-only registrados para transicoes de estado da versao da simulacao."
+            summary = "Lista auditoria da vers?o",
+            description = "Retorna eventos append-only registrados para transi??es de estado da vers?o do teste."
     )
     public ResponseEntity<List<AuditEventResponse>> listSimulationVersionEvents(
             @PathVariable String simulationId,
