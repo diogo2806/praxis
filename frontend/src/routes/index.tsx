@@ -4,7 +4,7 @@ import { createFileRoute } from "@tanstack/react-router";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Práxis — Avaliações por cenários estruturadas e rastreáveis" },
+      { title: "Práxis: Avaliações por cenários estruturadas e rastreáveis" },
       {
         name: "description",
         content:
@@ -308,7 +308,7 @@ const landingStyles = `
   .connect .cnote{margin-top:1.2rem;padding-top:1rem;border-top:1px solid var(--line-soft);font-size:0.84rem;color:var(--muted);display:flex;align-items:center;gap:0.5rem}
   .connect .cnote .pip{flex:none;width:0.5rem;height:0.5rem;border-radius:50%;background:var(--success);box-shadow:0 0 0 3px oklch(0.6 0.13 150 / 0.18)}
 
-  /* governance — dark band */
+  /* governance: dark band */
   .dark-band{background:var(--navy);color:var(--on-navy);position:relative;overflow:hidden}
   .dark-band::before{content:"";position:absolute;inset:0;background:radial-gradient(50% 40% at 85% 0%, oklch(0.76 0.13 80 / 0.10), transparent 70%);pointer-events:none}
   .dark-band h2,.dark-band h3{color:var(--on-navy)}
@@ -485,7 +485,7 @@ const landingStyles = `
   .sc-report .invisible-note{margin-top:0.75rem;font-size:0.74rem;color:var(--faint);display:flex;gap:0.45rem;align-items:flex-start}
   .sc-report .invisible-note svg{flex:none;width:0.95rem;height:0.95rem;margin-top:0.1rem;stroke:var(--faint)}
 
-  /* ===== Mapa da simulação — product mock (native canvas palette) ===== */
+  /* ===== Mapa da simulação: product mock (native canvas palette) ===== */
   .builder{margin-top:3rem}
   .builder .blead{display:flex;align-items:flex-start;gap:0.65rem;max-width:62ch;margin-bottom:1.4rem;color:var(--muted);font-size:1rem;line-height:1.55}
   .builder .blead svg{flex:none;width:1.25rem;height:1.25rem;margin-top:0.22rem;stroke:var(--gold-deep)}
@@ -614,7 +614,7 @@ const landingMarkup = `<header class="nav" id="nav">
           </div>
           <p class="sc-note" id="scNote">
             <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2 4 5v6c0 5 3.4 8.3 8 11 4.6-2.7 8-6 8-11V5z"/></svg>
-          <span>Exemplo demonstrativo — os critérios e pontos são configurados pela organização responsável.</span>
+          <span>Exemplo demonstrativo. Os critérios e os pontos são configurados pela organização responsável.</span>
           </p>
           <div class="sc-report" id="scReport" aria-live="polite">
             <div class="rh"><span class="rl">Leitura desta decisão</span><span class="tag" id="rTag"></span></div>
@@ -689,7 +689,7 @@ const landingMarkup = `<header class="nav" id="nav">
         </div>
       </div>
 
-      <!-- Mapa da simulação — product mock -->
+      <!-- Mapa da simulação: product mock -->
       <div class="builder">
         <p class="blead">
           <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
@@ -740,7 +740,7 @@ const landingMarkup = `<header class="nav" id="nav">
                   </div>
                   <div class="vxto">
                     <span class="tl"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 2h4M12 8v5l3 2M12 22a8 8 0 1 0 0-16 8 8 0 0 0 0 16z"/></svg> Tempo acaba</span>
-                    <span class="tsel">— defina —</span>
+                    <span class="tsel">definir</span>
                     <span class="add"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 6v12M6 12h12"/></svg></span>
                   </div>
                   <div class="vxfoot"><span class="fadd"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 6v12M6 12h12"/></svg> saída</span></div>
@@ -766,13 +766,13 @@ const landingMarkup = `<header class="nav" id="nav">
                     <div class="vxsec-l" style="padding:0 0 5px"><span>Saídas (respostas)</span></div>
                     <div class="vxorow">
                       <span class="otext">Sim, reiniciei mas não…</span>
-                      <span class="vxsel">— defina — <svg viewBox="0 0 24 24" fill="none" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></span>
+                      <span class="vxsel">definir <svg viewBox="0 0 24 24" fill="none" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></span>
                       <span class="vxbtn add"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 6v12M6 12h12"/></svg></span>
                     </div>
                   </div>
                   <div class="vxto">
                     <span class="tl"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 2h4M12 8v5l3 2M12 22a8 8 0 1 0 0-16 8 8 0 0 0 0 16z"/></svg> Tempo acaba</span>
-                    <span class="tsel">— defina —</span>
+                    <span class="tsel">definir</span>
                     <span class="add"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 6v12M6 12h12"/></svg></span>
                   </div>
                   <div class="vxfoot"><span class="fadd"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 6v12M6 12h12"/></svg> saída</span></div>
@@ -843,7 +843,7 @@ const landingMarkup = `<header class="nav" id="nav">
               <code>turno-1 ▸ <span class="ok">B</span>  +3 Comunicação · +2 Res. Conflitos
 turno-2 ▸ <span class="ok">A</span>  +2 Res. Conflitos · +1 Aderência
 turno-3 ▸ <span class="ok">C</span>  +2 Comunicação
-<span class="gold">———  nenhum erro crítico registrado</span></code>
+<span class="gold">sem erro crítico registrado</span></code>
             </div>
           </div>
         </aside>
@@ -936,7 +936,7 @@ turno-3 ▸ <span class="ok">C</span>  +2 Comunicação
         <div class="gov">
           <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2zM9 9h6M9 13h6M9 17h4"/></svg></span>
           <h3>Trilha protegida contra alteração</h3>
-          <p>Cada evento da tentativa fica registrado — criação, resposta, timeout e finalização — em trilha projetada para não ser alterada após o registro.</p>
+          <p>Cada evento da tentativa fica registrado (criação, resposta, timeout e finalização) em trilha projetada para não ser alterada após o registro.</p>
         </div>
         <div class="gov">
           <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 3v6c0 5-3.5 8-7 9-3.5-1-7-4-7-9V6z"/></svg></span>
@@ -985,7 +985,7 @@ turno-3 ▸ <span class="ok">C</span>  +2 Comunicação
           <div class="pname">Avulso</div>
           <div class="pfor">Para pilotos e demanda pontual, sem nenhum compromisso.</div>
           <div class="price"><span class="cur">R$</span><span class="amt">69,90</span><span class="per">/ avaliação</span></div>
-          <div class="psub">Cobramos só quando o candidato conclui. Sem mensalidade e sem mínimo.</div>
+          <div class="psub">Cobramos só quando o participante conclui. Sem mensalidade e sem mínimo.</div>
           <p class="phi">
             <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"></path></svg>
             Pague exatamente por quem você avaliar
@@ -1028,7 +1028,7 @@ turno-3 ▸ <span class="ok">C</span>  +2 Comunicação
 
       <p class="roi">
         <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
-        <span>Uma contratação errada custa de dezenas de milhares de reais a um ano inteiro de salário. Uma avaliação na Práxis custa <b>R$ 69,90</b>, e deixa registrado o porquê de cada decisão.</span>
+        <span>Uma decisão equivocada custa caro em qualquer área. Uma avaliação na Práxis custa <b>R$ 69,90</b>, e deixa registrado o porquê de cada decisão.</span>
       </p>
 
       <p class="cycle-cta">Na dúvida? Se quiser testar antes de pagar, <a href="mailto:contato@iforce.com.br?subject=Agendar%20uma%20POC%20da%20Pr%C3%A1xis">agende uma prova de conceito (POC)</a>.</p>
@@ -1053,7 +1053,7 @@ turno-3 ▸ <span class="ok">C</span>  +2 Comunicação
         </div>
         <div class="qa">
           <button aria-expanded="false"><span class="q">Como funciona a contratação?</span><span class="ic"></span></button>
-          <div class="ans"><p>O formato comercial é definido conforme o volume de participações e o escopo contratado. Valores, franquias, adicionais, suporte e integrações devem constar da proposta comercial aplicável.</p></div>
+          <div class="ans"><p>Há planos com preço aberto para uso avulso e para volumes recorrentes no Crescimento. Operações Enterprise, integrações, suporte específico e condições contratuais ficam sob consulta conforme volume e escopo.</p></div>
         </div>
         <div class="qa">
           <button aria-expanded="false"><span class="q">Quanto tempo leva para colocar no ar?</span><span class="ic"></span></button>
