@@ -30,6 +30,7 @@ import { Route as NovaGovernancaRouteImport } from './routes/nova.governanca'
 import { Route as NovaDialogoRouteImport } from './routes/nova.dialogo'
 import { Route as NovaCompetenciasRouteImport } from './routes/nova.competencias'
 import { Route as NovaBlueprintRouteImport } from './routes/nova.blueprint'
+import { Route as ConviteTokenRouteImport } from './routes/convite.$token'
 import { Route as ConfiguracoesPerfilRouteImport } from './routes/configuracoes.perfil'
 import { Route as ConfiguracoesIntegracoesRouteImport } from './routes/configuracoes.integracoes'
 import { Route as ConfiguracoesContaRouteImport } from './routes/configuracoes.conta'
@@ -142,6 +143,11 @@ const NovaBlueprintRoute = NovaBlueprintRouteImport.update({
   path: '/nova/blueprint',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ConviteTokenRoute = ConviteTokenRouteImport.update({
+  id: '/convite/$token',
+  path: '/convite/$token',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ConfiguracoesPerfilRoute = ConfiguracoesPerfilRouteImport.update({
   id: '/perfil',
   path: '/perfil',
@@ -189,6 +195,7 @@ export interface FileRoutesByFullPath {
   '/configuracoes/conta': typeof ConfiguracoesContaRoute
   '/configuracoes/integracoes': typeof ConfiguracoesIntegracoesRoute
   '/configuracoes/perfil': typeof ConfiguracoesPerfilRoute
+  '/convite/$token': typeof ConviteTokenRoute
   '/nova/blueprint': typeof NovaBlueprintRoute
   '/nova/competencias': typeof NovaCompetenciasRoute
   '/nova/dialogo': typeof NovaDialogoRoute
@@ -218,6 +225,7 @@ export interface FileRoutesByTo {
   '/configuracoes/conta': typeof ConfiguracoesContaRoute
   '/configuracoes/integracoes': typeof ConfiguracoesIntegracoesRoute
   '/configuracoes/perfil': typeof ConfiguracoesPerfilRoute
+  '/convite/$token': typeof ConviteTokenRoute
   '/nova/blueprint': typeof NovaBlueprintRoute
   '/nova/competencias': typeof NovaCompetenciasRoute
   '/nova/dialogo': typeof NovaDialogoRoute
@@ -248,6 +256,7 @@ export interface FileRoutesById {
   '/configuracoes/conta': typeof ConfiguracoesContaRoute
   '/configuracoes/integracoes': typeof ConfiguracoesIntegracoesRoute
   '/configuracoes/perfil': typeof ConfiguracoesPerfilRoute
+  '/convite/$token': typeof ConviteTokenRoute
   '/nova/blueprint': typeof NovaBlueprintRoute
   '/nova/competencias': typeof NovaCompetenciasRoute
   '/nova/dialogo': typeof NovaDialogoRoute
@@ -279,6 +288,7 @@ export interface FileRouteTypes {
     | '/configuracoes/conta'
     | '/configuracoes/integracoes'
     | '/configuracoes/perfil'
+    | '/convite/$token'
     | '/nova/blueprint'
     | '/nova/competencias'
     | '/nova/dialogo'
@@ -308,6 +318,7 @@ export interface FileRouteTypes {
     | '/configuracoes/conta'
     | '/configuracoes/integracoes'
     | '/configuracoes/perfil'
+    | '/convite/$token'
     | '/nova/blueprint'
     | '/nova/competencias'
     | '/nova/dialogo'
@@ -337,6 +348,7 @@ export interface FileRouteTypes {
     | '/configuracoes/conta'
     | '/configuracoes/integracoes'
     | '/configuracoes/perfil'
+    | '/convite/$token'
     | '/nova/blueprint'
     | '/nova/competencias'
     | '/nova/dialogo'
@@ -363,6 +375,7 @@ export interface RootRouteChildren {
   EnviarLinkRoute: typeof EnviarLinkRoute
   MonitoramentoRoute: typeof MonitoramentoRoute
   TalentMatchRoute: typeof TalentMatchRoute
+  ConviteTokenRoute: typeof ConviteTokenRoute
   NovaBlueprintRoute: typeof NovaBlueprintRoute
   NovaCompetenciasRoute: typeof NovaCompetenciasRoute
   NovaDialogoRoute: typeof NovaDialogoRoute
@@ -527,6 +540,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof NovaBlueprintRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/convite/$token': {
+      id: '/convite/$token'
+      path: '/convite/$token'
+      fullPath: '/convite/$token'
+      preLoaderRoute: typeof ConviteTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/configuracoes/perfil': {
       id: '/configuracoes/perfil'
       path: '/perfil'
@@ -611,6 +631,7 @@ const rootRouteChildren: RootRouteChildren = {
   EnviarLinkRoute: EnviarLinkRoute,
   MonitoramentoRoute: MonitoramentoRoute,
   TalentMatchRoute: TalentMatchRoute,
+  ConviteTokenRoute: ConviteTokenRoute,
   NovaBlueprintRoute: NovaBlueprintRoute,
   NovaCompetenciasRoute: NovaCompetenciasRoute,
   NovaDialogoRoute: NovaDialogoRoute,

@@ -39,3 +39,20 @@ export function useSession() {
 
   return session;
 }
+
+export type AuthenticatedSessionResponse = {
+  token: string;
+  tenantId: string;
+  name: string;
+  roles: string[];
+};
+
+export function saveAuthenticatedSession(response: AuthenticatedSessionResponse) {
+  if (typeof window === "undefined") return;
+
+  localStorage.setItem("praxis.token", response.token);
+  localStorage.setItem("praxis.tenantId", response.tenantId);
+  localStorage.setItem("praxis.workspaceName", response.tenantId);
+  localStorage.setItem("praxis.userName", response.name);
+  localStorage.setItem("praxis.userRole", response.roles.join(", "));
+}

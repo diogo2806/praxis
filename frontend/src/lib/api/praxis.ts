@@ -1317,3 +1317,25 @@ export function syncTenantBilling(tenantId: string, resourceType: string, resour
     { method: "POST", body: JSON.stringify({ resourceType, resourceId }) },
   );
 }
+
+
+export type AcceptInviteRequest = {
+  token: string;
+  newPassword: string;
+  confirmPassword: string;
+};
+
+export type LoginResponse = {
+  token: string;
+  userId: number;
+  tenantId: string;
+  name: string;
+  roles: string[];
+};
+
+export function acceptInvite(requestBody: AcceptInviteRequest) {
+  return request<LoginResponse>("/api/v1/auth/invite/accept", {
+    method: "POST",
+    body: JSON.stringify(requestBody),
+  });
+}
