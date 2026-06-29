@@ -323,6 +323,15 @@ public class AdminTenantService {
         UserEntity user = userRepository.findByIdAndTenantId(userId, tenantId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Usuário não encontrado."));
 
+        // Reenviar convite não pode rebaixar um usuário já ativo de volta para CONVIDADO:
+        // isso reabriria o login por senha conhecida durante a janela do convite.
+        if (user.getStatus() != UserStatus.CONVIDADO) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Só é possível reenviar convite para usuário que ainda está como CONVIDADO."
+            );
+        }
+
         String token = generateInviteToken(user);
         user.setStatus(UserStatus.CONVIDADO);
 
