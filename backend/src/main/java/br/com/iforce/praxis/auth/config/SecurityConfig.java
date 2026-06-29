@@ -55,6 +55,7 @@ public class SecurityConfig {
                                 "/test/**",
                                 "/recrutei/test",
                                 "/recrutei/test/**",
+                                "/api/v1/auth/invite/**",
                                 // Webhook do Mercado Pago (Parte B): público, validado por
                                 // assinatura no próprio handler, sem JWT de usuário.
                                 "/api/webhooks/mercado-pago/**"

@@ -1,5 +1,6 @@
 package br.com.iforce.praxis.auth.controller;
 
+import br.com.iforce.praxis.auth.dto.AcceptInviteRequest;
 import br.com.iforce.praxis.auth.dto.LoginRequest;
 import br.com.iforce.praxis.auth.dto.LoginResponse;
 import br.com.iforce.praxis.auth.service.AuthService;
@@ -36,5 +37,10 @@ public class AuthController {
     @PostMapping("/login")
     public ResponseEntity<LoginResponse> login(@Valid @RequestBody LoginRequest request) {
         return ResponseEntity.ok(authService.login(request));
+    }
+
+    @PostMapping("/invite/accept")
+    public ResponseEntity<LoginResponse> acceptInvite(@Valid @RequestBody AcceptInviteRequest request) {
+        return ResponseEntity.ok(authService.acceptInvite(request));
     }
 }

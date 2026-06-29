@@ -12,7 +12,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
-
+import br.com.iforce.praxis.auth.dto.AcceptInviteRequest;
 import java.time.Instant;
 
 /**
@@ -99,5 +99,63 @@ public class AuthService {
 
         return userRepository.findFirstByEmailAndTenantId(request.email(), request.tenantId())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Credenciais inválidas."));
+    }
+
+    @Transactional
+    public LoginResponse acceptInvite(AcceptInviteRequest request) {
+        if (!request.newPassword().equals(request.confirmPassword())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "A confirmação de senha não confere.");
+        }
+
+        UserEntity user = loadUserByInviteToken(request.token());
+
+        if (user.getInviteExpiresAt() == null || user.getInviteExpiresAt().isBefore(Instant.now())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Convite expirado.");
+        }
+
+        TenantEntity tenant = tenantRepository.findById(user.getTenantId())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.FORBIDDEN, "Cliente não encontrado."));
+
+        if (tenant.getStatus() != null && tenant.getStatus().blocksAccess()) {
+            throw new ResponseStatusException(
+                    HttpStatus.FORBIDDEN,
+                    "Cliente suspenso ou cancelado. Acesso bloqueado."
+            );
+        }
+
+        user.setPasswordHash(passwordEncoder.encode(request.newPassword()));
+        user.setStatus(UserStatus.ATIVO);
+
+        // Invalida o convite após uso.
+        user.setInviteTokenHash(null);
+        user.setInviteExpiresAt(null);
+
+        // Mantém invitedAt como histórico; atualiza último login porque já vamos devolver JWT.
+        user.setLastLoginAt(Instant.now());
+
+        String token = jwtService.generateToken(user.getId().toString(), user.getTenantId(), user.getRoles());
+
+        return new LoginResponse(
+                token,
+                user.getId(),
+                user.getTenantId(),
+                user.getName(),
+                user.getRoles()
+        );
+    }
+
+    private UserEntity loadUserByInviteToken(String token) {
+        if (token == null || token.isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Token de convite obrigatório.");
+        }
+
+        return userRepository.findByStatusAndInviteTokenHashIsNotNull(UserStatus.CONVIDADO).stream()
+                .filter(user -> user.getInviteTokenHash() != null)
+                .filter(user -> passwordEncoder.matches(token, user.getInviteTokenHash()))
+                .findFirst()
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.BAD_REQUEST,
+                        "Convite inválido ou já utilizado."
+                ));
     }
 }

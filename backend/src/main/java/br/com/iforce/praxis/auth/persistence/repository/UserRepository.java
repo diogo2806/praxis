@@ -4,7 +4,7 @@ import br.com.iforce.praxis.auth.persistence.entity.UserEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
-
+import br.com.iforce.praxis.admin.model.UserStatus;
 import java.util.List;
 import java.util.Optional;
 
@@ -22,4 +22,6 @@ public interface UserRepository extends JpaRepository<UserEntity, Long> {
     Optional<UserEntity> findByIdAndTenantId(Long id, String tenantId);
 
     boolean existsByTenantIdAndEmail(String tenantId, String email);
+
+    List<UserEntity> findByStatusAndInviteTokenHashIsNotNull(UserStatus status);
 }
