@@ -16,4 +16,10 @@ public interface UserRepository extends JpaRepository<UserEntity, Long> {
 
     @Query("select distinct u from UserEntity u join u.roles r where u.tenantId = :tenantId and r = :role")
     List<UserEntity> findByTenantIdAndRole(@Param("tenantId") String tenantId, @Param("role") String role);
+
+    List<UserEntity> findByTenantIdOrderByCreatedAtAsc(String tenantId);
+
+    Optional<UserEntity> findByIdAndTenantId(Long id, String tenantId);
+
+    boolean existsByTenantIdAndEmail(String tenantId, String email);
 }

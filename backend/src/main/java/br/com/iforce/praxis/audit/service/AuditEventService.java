@@ -33,6 +33,10 @@ public class AuditEventService {
     public static final String CANDIDATE_ATTEMPT_AGGREGATE = "CandidateAttempt";
     public static final String SIMULATION_AGGREGATE = "Simulation";
     public static final String SIMULATION_VERSION_AGGREGATE = "SimulationVersion";
+    public static final String TENANT_AGGREGATE = "Tenant";
+
+    /** Tenant técnico usado quando uma ação administrativa não tem cliente alvo. */
+    public static final String PLATFORM_TENANT_ID = "PLATFORM";
 
     private final AuditEventRepository auditEventRepository;
     private final CurrentTenantService currentTenantService;
@@ -40,6 +44,48 @@ public class AuditEventService {
     public AuditEventService(AuditEventRepository auditEventRepository, CurrentTenantService currentTenantService) {
         this.auditEventRepository = auditEventRepository;
         this.currentTenantService = currentTenantService;
+    }
+
+    /**
+     * Registra uma ação sensível executada por um operador ADMIN sobre um cliente (tenant).
+     *
+     * Diferente dos eventos operacionais, a ação administrativa precisa identificar
+     * explicitamente o ator (operador ADMIN) e o tenant alvo, já que o ADMIN não pertence
+     * ao fluxo normal de tenant. Para ações sem cliente alvo, use {@link #PLATFORM_TENANT_ID}.
+     *
+     * Este método DEVE ser chamado dentro de uma transação de banco de dados existente,
+     * garantindo que a ação e o registro de auditoria sejam aplicados juntos. A trilha é
+     * append-only: não há caminho para editar ou excluir o evento depois de gravado.
+     *
+     * @param actorUserId    ID do operador ADMIN que executou a ação
+     * @param targetTenantId tenant alvo; {@code null} é tratado como {@link #PLATFORM_TENANT_ID}
+     * @param eventType      tipo do evento administrativo
+     * @param message        descrição em português do que aconteceu
+     * @param metadata       informações adicionais em JSON (motivo, valores anteriores, etc.)
+     */
+    @Transactional(propagation = Propagation.MANDATORY)
+    public void auditAdminAction(
+            String actorUserId,
+            String targetTenantId,
+            AuditEventType eventType,
+            String message,
+            String metadata
+    ) {
+        String tenantId = (targetTenantId == null || targetTenantId.isBlank())
+                ? PLATFORM_TENANT_ID
+                : targetTenantId;
+
+        AuditEventEntity auditEventEntity = new AuditEventEntity();
+        auditEventEntity.setActorUserId(actorUserId);
+        auditEventEntity.setTenantId(tenantId);
+        auditEventEntity.setAggregateType(TENANT_AGGREGATE);
+        auditEventEntity.setAggregateId(tenantId);
+        auditEventEntity.setEventType(eventType);
+        auditEventEntity.setMessage(message);
+        auditEventEntity.setMetadata(metadata);
+        auditEventEntity.setCreatedAt(Instant.now());
+
+        auditEventRepository.save(auditEventEntity);
     }
 
     /**

@@ -19,6 +19,7 @@ import { Route as ComecarRouteImport } from './routes/comecar'
 import { Route as CandidatoRouteImport } from './routes/candidato'
 import { Route as AppRouteImport } from './routes/app'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AdminIndexRouteImport } from './routes/admin.index'
 import { Route as NovaValidadorRouteImport } from './routes/nova.validador'
 import { Route as NovaPilotoRouteImport } from './routes/nova.piloto'
 import { Route as NovaPersonagemRouteImport } from './routes/nova.personagem'
@@ -33,6 +34,8 @@ import { Route as ConfiguracoesPerfilRouteImport } from './routes/configuracoes.
 import { Route as ConfiguracoesIntegracoesRouteImport } from './routes/configuracoes.integracoes'
 import { Route as ConfiguracoesContaRouteImport } from './routes/configuracoes.conta'
 import { Route as CandidatoTokenRouteImport } from './routes/candidato.$token'
+import { Route as AdminTenantsIndexRouteImport } from './routes/admin.tenants.index'
+import { Route as AdminTenantsTenantIdRouteImport } from './routes/admin.tenants.$tenantId'
 
 const TalentMatchRoute = TalentMatchRouteImport.update({
   id: '/talent-match',
@@ -82,6 +85,11 @@ const AppRoute = AppRouteImport.update({
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminIndexRoute = AdminIndexRouteImport.update({
+  id: '/admin/',
+  path: '/admin/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const NovaValidadorRoute = NovaValidadorRouteImport.update({
@@ -155,6 +163,16 @@ const CandidatoTokenRoute = CandidatoTokenRouteImport.update({
   path: '/$token',
   getParentRoute: () => CandidatoRoute,
 } as any)
+const AdminTenantsIndexRoute = AdminTenantsIndexRouteImport.update({
+  id: '/admin/tenants/',
+  path: '/admin/tenants/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminTenantsTenantIdRoute = AdminTenantsTenantIdRouteImport.update({
+  id: '/admin/tenants/$tenantId',
+  path: '/admin/tenants/$tenantId',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -181,6 +199,9 @@ export interface FileRoutesByFullPath {
   '/nova/personagem': typeof NovaPersonagemRoute
   '/nova/piloto': typeof NovaPilotoRoute
   '/nova/validador': typeof NovaValidadorRoute
+  '/admin/': typeof AdminIndexRoute
+  '/admin/tenants/$tenantId': typeof AdminTenantsTenantIdRoute
+  '/admin/tenants/': typeof AdminTenantsIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -207,6 +228,9 @@ export interface FileRoutesByTo {
   '/nova/personagem': typeof NovaPersonagemRoute
   '/nova/piloto': typeof NovaPilotoRoute
   '/nova/validador': typeof NovaValidadorRoute
+  '/admin': typeof AdminIndexRoute
+  '/admin/tenants/$tenantId': typeof AdminTenantsTenantIdRoute
+  '/admin/tenants': typeof AdminTenantsIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -234,6 +258,9 @@ export interface FileRoutesById {
   '/nova/personagem': typeof NovaPersonagemRoute
   '/nova/piloto': typeof NovaPilotoRoute
   '/nova/validador': typeof NovaValidadorRoute
+  '/admin/': typeof AdminIndexRoute
+  '/admin/tenants/$tenantId': typeof AdminTenantsTenantIdRoute
+  '/admin/tenants/': typeof AdminTenantsIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -262,6 +289,9 @@ export interface FileRouteTypes {
     | '/nova/personagem'
     | '/nova/piloto'
     | '/nova/validador'
+    | '/admin/'
+    | '/admin/tenants/$tenantId'
+    | '/admin/tenants/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -288,6 +318,9 @@ export interface FileRouteTypes {
     | '/nova/personagem'
     | '/nova/piloto'
     | '/nova/validador'
+    | '/admin'
+    | '/admin/tenants/$tenantId'
+    | '/admin/tenants'
   id:
     | '__root__'
     | '/'
@@ -314,6 +347,9 @@ export interface FileRouteTypes {
     | '/nova/personagem'
     | '/nova/piloto'
     | '/nova/validador'
+    | '/admin/'
+    | '/admin/tenants/$tenantId'
+    | '/admin/tenants/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -337,6 +373,9 @@ export interface RootRouteChildren {
   NovaPersonagemRoute: typeof NovaPersonagemRoute
   NovaPilotoRoute: typeof NovaPilotoRoute
   NovaValidadorRoute: typeof NovaValidadorRoute
+  AdminIndexRoute: typeof AdminIndexRoute
+  AdminTenantsTenantIdRoute: typeof AdminTenantsTenantIdRoute
+  AdminTenantsIndexRoute: typeof AdminTenantsIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -409,6 +448,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/': {
+      id: '/admin/'
+      path: '/admin'
+      fullPath: '/admin/'
+      preLoaderRoute: typeof AdminIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/nova/validador': {
@@ -509,6 +555,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CandidatoTokenRouteImport
       parentRoute: typeof CandidatoRoute
     }
+    '/admin/tenants/': {
+      id: '/admin/tenants/'
+      path: '/admin/tenants'
+      fullPath: '/admin/tenants/'
+      preLoaderRoute: typeof AdminTenantsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/tenants/$tenantId': {
+      id: '/admin/tenants/$tenantId'
+      path: '/admin/tenants/$tenantId'
+      fullPath: '/admin/tenants/$tenantId'
+      preLoaderRoute: typeof AdminTenantsTenantIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -561,6 +621,9 @@ const rootRouteChildren: RootRouteChildren = {
   NovaPersonagemRoute: NovaPersonagemRoute,
   NovaPilotoRoute: NovaPilotoRoute,
   NovaValidadorRoute: NovaValidadorRoute,
+  AdminIndexRoute: AdminIndexRoute,
+  AdminTenantsTenantIdRoute: AdminTenantsTenantIdRoute,
+  AdminTenantsIndexRoute: AdminTenantsIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

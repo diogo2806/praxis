@@ -39,6 +39,51 @@ public interface CandidateAttemptRepository extends JpaRepository<CandidateAttem
 
     long countByTenantIdAndSimulationId(String tenantId, String simulationId);
 
+    // --- Contagem de uso para o painel administrativo (avaliações concluídas) ---
+
+    /** Total de tentativas concluídas de um tenant dentro do período informado. */
+    long countByTenantIdAndStatusAndFinishedAtBetween(
+            String tenantId,
+            AttemptStatus status,
+            Instant from,
+            Instant to
+    );
+
+    /** Total de tentativas concluídas de um tenant desde o instante informado. */
+    long countByTenantIdAndStatusAndFinishedAtAfter(String tenantId, AttemptStatus status, Instant after);
+
+    /** Total de tentativas concluídas de um tenant em toda a sua história. */
+    long countByTenantIdAndStatus(String tenantId, AttemptStatus status);
+
+    /** Total de tentativas concluídas na plataforma inteira dentro do período informado. */
+    long countByStatusAndFinishedAtBetween(AttemptStatus status, Instant from, Instant to);
+
+    /** Última conclusão de tentativa de um tenant, para a aba de uso. */
+    @Query("SELECT MAX(c.finishedAt) FROM CandidateAttemptEntity c WHERE c.tenantId = :tenantId AND c.status = :status")
+    Optional<Instant> findLastFinishedAt(
+            @Param("tenantId") String tenantId,
+            @Param("status") AttemptStatus status
+    );
+
+    /**
+     * Ranking de uso por tenant no período: cada linha é {@code [tenantId, total]} ordenado
+     * pela maior quantidade de tentativas concluídas. Usado no dashboard administrativo.
+     */
+    @Query("""
+            SELECT c.tenantId, COUNT(c)
+            FROM CandidateAttemptEntity c
+            WHERE c.status = :status
+              AND c.finishedAt BETWEEN :from AND :to
+            GROUP BY c.tenantId
+            ORDER BY COUNT(c) DESC
+            """)
+    List<Object[]> findTopUsageTenants(
+            @Param("status") AttemptStatus status,
+            @Param("from") Instant from,
+            @Param("to") Instant to,
+            Pageable pageable
+    );
+
     long countByTenantIdAndSimulationVersionId(String tenantId, Long simulationVersionId);
 
     long countByTenantIdAndSimulationVersionIdAndStatus(

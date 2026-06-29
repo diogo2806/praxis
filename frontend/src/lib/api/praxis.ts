@@ -504,6 +504,7 @@ export async function uploadMedia(file: File): Promise<MediaUploadResponse> {
 
 function isAdminPath(path: string) {
   return (
+    path.startsWith("/api/admin") ||
     path.startsWith("/api/v1/simulations") ||
     path.startsWith("/api/v1/tenant-config") ||
     path.startsWith("/api/v1/account") ||
@@ -1001,5 +1002,231 @@ export function getTalentMatch(
 
   return request<TalentMatchResponse>(
     `/api/v1/simulations/${encodeURIComponent(simulationId)}/versions/${versionNumber}/talent-match?${searchParams.toString()}`,
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Painel administrativo da plataforma (perfil ADMIN)
+// Cliente da plataforma = TenantEntity. Rotas sob /api/admin exigem papel ADMIN
+// e recebem o tenant alvo explicitamente.
+// ---------------------------------------------------------------------------
+
+export type CommercialPlanType = "AVULSO" | "PROFISSIONAL" | "ENTERPRISE";
+export type TenantStatus = "ATIVO" | "EM_TESTE" | "SUSPENSO" | "CANCELADO";
+export type AdminUserStatus = "ATIVO" | "CONVIDADO" | "BLOQUEADO";
+
+export interface TenantAdminSummary {
+  tenantId: string;
+  name: string;
+  tradeName: string | null;
+  taxId: string | null;
+  corporateEmail: string | null;
+  commercialPlanType: CommercialPlanType;
+  status: TenantStatus;
+  completedAttemptsInPeriod: number;
+  createdAt: string;
+}
+
+export interface AdminUser {
+  id: number;
+  name: string;
+  email: string;
+  roles: string[];
+  status: AdminUserStatus;
+  lastLoginAt: string | null;
+  createdAt: string | null;
+}
+
+export interface TenantAdminDetail {
+  tenantId: string;
+  name: string;
+  tradeName: string | null;
+  legalName: string | null;
+  taxId: string | null;
+  corporateEmail: string | null;
+  phone: string | null;
+  website: string | null;
+  healthVertical: boolean;
+  commercialPlanType: CommercialPlanType;
+  commercialCondition: string | null;
+  status: TenantStatus;
+  completedAttemptsInPeriod: number;
+  users: AdminUser[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateTenantAdminRequest {
+  name: string;
+  tradeName?: string | null;
+  legalName?: string | null;
+  taxId?: string | null;
+  corporateEmail?: string | null;
+  phone?: string | null;
+  website?: string | null;
+  healthVertical: boolean;
+  companyId?: string | null;
+  commercialPlanType: CommercialPlanType;
+  commercialCondition?: string | null;
+  initialStatus?: TenantStatus | null;
+  responsibleName: string;
+  responsibleEmail: string;
+  sendInvite: boolean;
+}
+
+export interface UpdateTenantAdminRequest {
+  name?: string | null;
+  tradeName?: string | null;
+  legalName?: string | null;
+  taxId?: string | null;
+  corporateEmail?: string | null;
+  phone?: string | null;
+  website?: string | null;
+  healthVertical?: boolean | null;
+  commercialPlanType?: CommercialPlanType | null;
+  commercialCondition?: string | null;
+}
+
+export interface CreateTenantAdminResponse {
+  tenant: TenantAdminDetail;
+  responsibleUserId: number;
+  inviteUrl: string | null;
+}
+
+export interface InviteUserAdminResponse {
+  user: AdminUser;
+  inviteUrl: string | null;
+}
+
+export interface TenantUsage {
+  tenantId: string;
+  periodStart: string;
+  periodEnd: string;
+  completedAttempts: number;
+  completedAttemptsLast7Days: number;
+  completedAttemptsLast30Days: number;
+  completedAttemptsAllTime: number;
+  lastCompletedAttemptAt: string | null;
+}
+
+export interface AdminAuditEvent {
+  id: number;
+  actorUserId: string | null;
+  tenantId: string;
+  aggregateType: string;
+  aggregateId: string;
+  eventType: string;
+  message: string;
+  metadata: string;
+  createdAt: string;
+}
+
+export interface AdminDashboard {
+  periodStart: string;
+  periodEnd: string;
+  totalTenants: number;
+  activeTenants: number;
+  trialTenants: number;
+  suspendedTenants: number;
+  canceledTenants: number;
+  totalCompletedAttempts: number;
+  topUsageTenants: { tenantId: string; name: string; completedAttempts: number }[];
+  recentTenants: TenantAdminSummary[];
+  attentionTenants: TenantAdminSummary[];
+}
+
+export function getAdminDashboard() {
+  return request<AdminDashboard>("/api/admin/dashboard");
+}
+
+export function listAdminTenants(filters?: {
+  search?: string;
+  status?: TenantStatus;
+  plan?: CommercialPlanType;
+}) {
+  const params = new URLSearchParams();
+  if (filters?.search) params.set("search", filters.search);
+  if (filters?.status) params.set("status", filters.status);
+  if (filters?.plan) params.set("plan", filters.plan);
+  const query = params.toString();
+  return request<TenantAdminSummary[]>(`/api/admin/tenants${query ? `?${query}` : ""}`);
+}
+
+export function createAdminTenant(body: CreateTenantAdminRequest) {
+  return request<CreateTenantAdminResponse>("/api/admin/tenants", {
+    method: "POST",
+    body: JSON.stringify(body),
+  });
+}
+
+export function getAdminTenant(tenantId: string) {
+  return request<TenantAdminDetail>(`/api/admin/tenants/${encodeURIComponent(tenantId)}`);
+}
+
+export function updateAdminTenant(tenantId: string, body: UpdateTenantAdminRequest) {
+  return request<TenantAdminDetail>(`/api/admin/tenants/${encodeURIComponent(tenantId)}`, {
+    method: "PATCH",
+    body: JSON.stringify(body),
+  });
+}
+
+export function suspendAdminTenant(tenantId: string, reason: string) {
+  return request<TenantAdminDetail>(`/api/admin/tenants/${encodeURIComponent(tenantId)}/suspend`, {
+    method: "POST",
+    body: JSON.stringify({ reason }),
+  });
+}
+
+export function reactivateAdminTenant(tenantId: string, reason: string, targetStatus?: TenantStatus) {
+  return request<TenantAdminDetail>(`/api/admin/tenants/${encodeURIComponent(tenantId)}/reactivate`, {
+    method: "POST",
+    body: JSON.stringify({ reason, targetStatus }),
+  });
+}
+
+export function cancelAdminTenant(tenantId: string, reason: string) {
+  return request<TenantAdminDetail>(`/api/admin/tenants/${encodeURIComponent(tenantId)}/cancel`, {
+    method: "POST",
+    body: JSON.stringify({ reason }),
+  });
+}
+
+export function getAdminTenantUsage(tenantId: string) {
+  return request<TenantUsage>(`/api/admin/tenants/${encodeURIComponent(tenantId)}/usage`);
+}
+
+export function getAdminTenantAudit(tenantId: string) {
+  return request<AdminAuditEvent[]>(`/api/admin/tenants/${encodeURIComponent(tenantId)}/audit`);
+}
+
+export function listAdminTenantUsers(tenantId: string) {
+  return request<AdminUser[]>(`/api/admin/tenants/${encodeURIComponent(tenantId)}/users`);
+}
+
+export function inviteAdminTenantUser(tenantId: string, body: { name: string; email: string }) {
+  return request<InviteUserAdminResponse>(
+    `/api/admin/tenants/${encodeURIComponent(tenantId)}/users/invite`,
+    { method: "POST", body: JSON.stringify(body) },
+  );
+}
+
+export function resendAdminTenantUserInvite(tenantId: string, userId: number) {
+  return request<InviteUserAdminResponse>(
+    `/api/admin/tenants/${encodeURIComponent(tenantId)}/users/${userId}/resend-invite`,
+    { method: "POST" },
+  );
+}
+
+export function blockAdminTenantUser(tenantId: string, userId: number) {
+  return request<AdminUser>(
+    `/api/admin/tenants/${encodeURIComponent(tenantId)}/users/${userId}/block`,
+    { method: "POST" },
+  );
+}
+
+export function unblockAdminTenantUser(tenantId: string, userId: number) {
+  return request<AdminUser>(
+    `/api/admin/tenants/${encodeURIComponent(tenantId)}/users/${userId}/unblock`,
+    { method: "POST" },
   );
 }
