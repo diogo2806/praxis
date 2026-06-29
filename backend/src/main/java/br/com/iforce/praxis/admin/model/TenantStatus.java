@@ -17,9 +17,19 @@ public enum TenantStatus {
     ATIVO,
     EM_TESTE,
     SUSPENSO,
-    CANCELADO;
+    CANCELADO,
+    // Status financeiros (Parte B — cobrança Mercado Pago).
+    PENDENTE_PAGAMENTO,
+    INADIMPLENTE,
+    SEM_CREDITO;
 
-    /** Indica se o status impede autenticação e consumo de APIs protegidas. */
+    /**
+     * Indica se o status impede autenticação e consumo de APIs protegidas.
+     *
+     * <p>Apenas SUSPENSO e CANCELADO bloqueiam o acesso geral. SEM_CREDITO e INADIMPLENTE
+     * não bloqueiam login/API: um cliente AVULSO sem crédito apenas não inicia nova avaliação,
+     * e um cliente inadimplente só é suspenso após a carência configurada.</p>
+     */
     public boolean blocksAccess() {
         return this == SUSPENSO || this == CANCELADO;
     }

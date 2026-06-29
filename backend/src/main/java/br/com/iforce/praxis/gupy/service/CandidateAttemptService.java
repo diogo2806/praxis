@@ -3,6 +3,7 @@ package br.com.iforce.praxis.gupy.service;
 import br.com.iforce.praxis.audit.model.AuditEventType;
 import br.com.iforce.praxis.audit.service.AuditEventService;
 import br.com.iforce.praxis.audit.service.AuditMetadata;
+import br.com.iforce.praxis.billing.service.CreditService;
 import br.com.iforce.praxis.candidate.dto.CandidateAttemptMonitoringResponse;
 import br.com.iforce.praxis.candidate.dto.CandidateLinkResponse;
 import br.com.iforce.praxis.candidate.service.BlindMasking;
@@ -81,6 +82,7 @@ public class CandidateAttemptService {
     private final AttemptStateMachine attemptStateMachine;
     private final GupyTestResultMapper gupyTestResultMapper;
     private final HealthVerticalService healthVerticalService;
+    private final CreditService creditService;
 
     public CandidateAttemptService(
             CandidateAttemptRepository candidateAttemptRepository,
@@ -93,7 +95,8 @@ public class CandidateAttemptService {
             CandidateAttemptMapper candidateAttemptMapper,
             AttemptStateMachine attemptStateMachine,
             GupyTestResultMapper gupyTestResultMapper,
-            HealthVerticalService healthVerticalService
+            HealthVerticalService healthVerticalService,
+            CreditService creditService
     ) {
         this.candidateAttemptRepository = candidateAttemptRepository;
         this.auditEventService = auditEventService;
@@ -106,6 +109,7 @@ public class CandidateAttemptService {
         this.attemptStateMachine = attemptStateMachine;
         this.gupyTestResultMapper = gupyTestResultMapper;
         this.healthVerticalService = healthVerticalService;
+        this.creditService = creditService;
     }
 
     /**
@@ -169,6 +173,8 @@ public class CandidateAttemptService {
         CandidateAttemptEntity entity = candidateAttemptRepository
                 .findByTenantIdAndIdempotencyKey(tenantId, idempotencyKey)
                 .orElseGet(() -> {
+                    // Plano AVULSO sem crédito não inicia nova avaliação (Parte B).
+                    creditService.assertCanStartNewAttempt(tenantId);
                     CandidateAttempt attempt = new CandidateAttempt(
                             "att_" + UUID.randomUUID().toString().replace("-", ""),
                             "res_" + UUID.randomUUID().toString().replace("-", ""),
@@ -325,6 +331,8 @@ public class CandidateAttemptService {
             CreateCandidateRequest request,
             PublishedSimulation publishedSimulation
     ) {
+        // Plano AVULSO sem crédito não inicia nova avaliação (Parte B).
+        creditService.assertCanStartNewAttempt(tenantId);
         try {
             return createAndAuditAttempt(tenantId, idempotencyKey, request, publishedSimulation);
         } catch (DataIntegrityViolationException exception) {
@@ -466,6 +474,8 @@ public class CandidateAttemptService {
         auditAnswerSubmission(candidateAttemptEntity.getTenantId(), candidateAttemptEntity.getId(), answer, savedAttempt);
         if (savedAttempt.status() == AttemptStatus.COMPLETED) {
             publishResultReadyEvent(candidateAttemptEntity);
+            // Plano AVULSO: cada avaliação concluída consome 1 crédito (idempotente por tentativa).
+            creditService.consumeOnCompletion(candidateAttemptEntity.getTenantId(), candidateAttemptEntity.getId());
         }
 
         ScenarioNode nextNode = savedAttempt.status() == AttemptStatus.COMPLETED
@@ -697,6 +707,8 @@ public class CandidateAttemptService {
         auditAnswerSubmission(candidateAttemptEntity.getTenantId(), candidateAttemptEntity.getId(), answer, savedAttempt);
         if (savedAttempt.status() == AttemptStatus.COMPLETED) {
             publishResultReadyEvent(candidateAttemptEntity);
+            // Plano AVULSO: cada avaliação concluída consome 1 crédito (idempotente por tentativa).
+            creditService.consumeOnCompletion(candidateAttemptEntity.getTenantId(), candidateAttemptEntity.getId());
         }
 
         ScenarioNode nextNode = savedAttempt.status() == AttemptStatus.COMPLETED

@@ -18,14 +18,19 @@ import { cn } from "@/lib/utils";
 import {
   blockAdminTenantUser,
   cancelAdminTenant,
+  createCreditCheckout,
+  createTenantSubscription,
   getAdminTenant,
   getAdminTenantAudit,
   getAdminTenantUsage,
+  getTenantBilling,
   inviteAdminTenantUser,
   listAdminTenantUsers,
+  listBillingPlans,
   reactivateAdminTenant,
   resendAdminTenantUserInvite,
   suspendAdminTenant,
+  syncTenantBilling,
   unblockAdminTenantUser,
   type TenantAdminDetail,
 } from "@/lib/api/praxis";
@@ -35,12 +40,21 @@ export const Route = createFileRoute("/admin/tenants/$tenantId")({
   component: AdminTenantDetailPage,
 });
 
-type Tab = "geral" | "uso" | "acessos" | "historico" | "auditoria";
+type Tab =
+  | "geral"
+  | "uso"
+  | "acessos"
+  | "assinatura"
+  | "pagamentos"
+  | "historico"
+  | "auditoria";
 
 const TABS: { id: Tab; label: string }[] = [
   { id: "geral", label: "Geral" },
   { id: "uso", label: "Uso" },
   { id: "acessos", label: "Acessos" },
+  { id: "assinatura", label: "Assinatura" },
+  { id: "pagamentos", label: "Pagamentos" },
   { id: "historico", label: "Histórico" },
   { id: "auditoria", label: "Auditoria" },
 ];
@@ -140,6 +154,8 @@ function AdminTenantDetailPage() {
         {tab === "geral" && <GeralTab tenant={tenant} />}
         {tab === "uso" && <UsoTab tenantId={tenantId} />}
         {tab === "acessos" && <AcessosTab tenantId={tenantId} />}
+        {tab === "assinatura" && <AssinaturaTab tenantId={tenantId} />}
+        {tab === "pagamentos" && <PagamentosTab tenantId={tenantId} />}
         {tab === "historico" && <AuditTab tenantId={tenantId} mode="historico" />}
         {tab === "auditoria" && <AuditTab tenantId={tenantId} mode="auditoria" />}
       </div>
@@ -460,6 +476,209 @@ function AuditTab({ tenantId, mode }: { tenantId: string; mode: "historico" | "a
           ))}
         </ol>
       )}
+    </div>
+  );
+}
+
+function formatBRL(cents: number): string {
+  return (cents / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+}
+
+function AssinaturaTab({ tenantId }: { tenantId: string }) {
+  const queryClient = useQueryClient();
+  const billingQuery = useQuery({
+    queryKey: ["admin-tenant-billing", tenantId],
+    queryFn: () => getTenantBilling(tenantId),
+  });
+  const plansQuery = useQuery({ queryKey: ["billing-plans"], queryFn: listBillingPlans });
+  const [planId, setPlanId] = useState<number | "">("");
+  const [link, setLink] = useState<string | null>(null);
+
+  const mutation = useMutation({
+    mutationFn: async () => {
+      if (planId === "") return null;
+      const plan = (plansQuery.data ?? []).find((p) => p.id === planId);
+      if (!plan) return null;
+      return plan.planType === "AVULSO"
+        ? createCreditCheckout(tenantId, plan.id)
+        : createTenantSubscription(tenantId, plan.id);
+    },
+    onSuccess: (result) => {
+      queryClient.invalidateQueries({ queryKey: ["admin-tenant-billing", tenantId] });
+      setLink(result?.initPoint ?? null);
+    },
+  });
+
+  if (billingQuery.isLoading) return <p className="text-slate-500">Carregando cobrança…</p>;
+  const billing = billingQuery.data;
+
+  return (
+    <div className="grid gap-6 lg:grid-cols-2">
+      <section className="rounded-xl border border-slate-200 bg-white p-5">
+        <h2 className="mb-3 font-semibold">Situação financeira</h2>
+        <Row label="Plano comercial" value={billing?.commercialPlanType} />
+        <Row label="Status" value={billing?.status} />
+        <Row label="Saldo de créditos (AVULSO)" value={String(billing?.creditBalance ?? 0)} />
+        {billing?.subscription ? (
+          <>
+            <Row label="Assinatura" value={billing.subscription.status} />
+            <Row
+              label="Próxima cobrança"
+              value={
+                billing.subscription.currentPeriodEnd
+                  ? new Date(billing.subscription.currentPeriodEnd).toLocaleDateString("pt-BR")
+                  : "—"
+              }
+            />
+            {billing.subscription.initPoint && (
+              <a
+                className="mt-2 inline-block text-sm text-primary hover:underline"
+                href={billing.subscription.initPoint}
+                target="_blank"
+                rel="noreferrer"
+              >
+                Link de pagamento da assinatura
+              </a>
+            )}
+          </>
+        ) : (
+          <p className="mt-2 text-sm text-slate-500">Sem assinatura ativa.</p>
+        )}
+      </section>
+
+      <section className="rounded-xl border border-slate-200 bg-white p-5">
+        <h2 className="mb-3 font-semibold">Gerar cobrança (Mercado Pago)</h2>
+        <p className="mb-3 text-xs text-slate-500">
+          Para AVULSO gera compra de créditos; para PROFISSIONAL cria a assinatura recorrente.
+          O pagamento só é confirmado por consulta ao Mercado Pago.
+        </p>
+        <Label className="text-xs text-slate-500">Plano</Label>
+        <select
+          value={planId}
+          onChange={(e) => setPlanId(e.target.value ? Number(e.target.value) : "")}
+          className="mb-3 block h-9 w-full rounded-md border border-input bg-background px-3 text-sm"
+        >
+          <option value="">Selecione…</option>
+          {(plansQuery.data ?? []).map((plan) => (
+            <option key={plan.id} value={plan.id}>
+              {plan.name} — {formatBRL(plan.priceCents)}
+              {plan.creditAmount ? ` (${plan.creditAmount} créditos)` : ""}
+            </option>
+          ))}
+        </select>
+        <Button disabled={planId === "" || mutation.isPending} onClick={() => mutation.mutate()}>
+          Gerar cobrança
+        </Button>
+        {mutation.isError && (
+          <p className="mt-2 text-sm text-rose-600">
+            Falha ao gerar a cobrança. Verifique se a integração Mercado Pago está habilitada.
+          </p>
+        )}
+        {link && (
+          <div className="mt-3">
+            <Label>Link de pagamento</Label>
+            <Input readOnly value={link} onFocus={(e) => e.target.select()} />
+          </div>
+        )}
+      </section>
+    </div>
+  );
+}
+
+function PagamentosTab({ tenantId }: { tenantId: string }) {
+  const queryClient = useQueryClient();
+  const billingQuery = useQuery({
+    queryKey: ["admin-tenant-billing", tenantId],
+    queryFn: () => getTenantBilling(tenantId),
+  });
+  const [resourceType, setResourceType] = useState("payment");
+  const [resourceId, setResourceId] = useState("");
+
+  const syncMutation = useMutation({
+    mutationFn: () => syncTenantBilling(tenantId, resourceType, resourceId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-tenant-billing", tenantId] });
+      setResourceId("");
+    },
+  });
+
+  const events = billingQuery.data?.events ?? [];
+
+  return (
+    <div className="space-y-6">
+      <section className="rounded-xl border border-slate-200 bg-white p-5">
+        <h2 className="mb-1 font-semibold">Sincronização manual</h2>
+        <p className="mb-3 text-xs text-slate-500">
+          Consulta o Mercado Pago e aplica o resultado. Nunca marca pagamento como aprovado sem consultar.
+        </p>
+        <div className="flex flex-wrap items-end gap-3">
+          <div>
+            <Label className="text-xs text-slate-500">Tipo</Label>
+            <select
+              value={resourceType}
+              onChange={(e) => setResourceType(e.target.value)}
+              className="block h-9 rounded-md border border-input bg-background px-3 text-sm"
+            >
+              <option value="payment">Pagamento</option>
+              <option value="preapproval">Assinatura</option>
+            </select>
+          </div>
+          <div className="flex-1 min-w-[200px]">
+            <Label className="text-xs text-slate-500">ID do recurso no Mercado Pago</Label>
+            <Input value={resourceId} onChange={(e) => setResourceId(e.target.value)} />
+          </div>
+          <Button disabled={!resourceId || syncMutation.isPending} onClick={() => syncMutation.mutate()}>
+            Sincronizar
+          </Button>
+        </div>
+        {syncMutation.isError && (
+          <p className="mt-2 text-sm text-rose-600">Falha ao sincronizar com o Mercado Pago.</p>
+        )}
+      </section>
+
+      <section className="overflow-hidden rounded-xl border border-slate-200 bg-white">
+        <div className="border-b border-slate-100 px-5 py-3">
+          <h2 className="font-semibold">Eventos financeiros</h2>
+          <p className="text-xs text-slate-500">Trilha append-only (somente leitura).</p>
+        </div>
+        <table className="w-full text-sm">
+          <thead className="bg-slate-50 text-left text-xs uppercase text-slate-500">
+            <tr>
+              <th className="px-4 py-3">Evento</th>
+              <th className="px-4 py-3">Recurso MP</th>
+              <th className="px-4 py-3">Status</th>
+              <th className="px-4 py-3">Valor</th>
+              <th className="px-4 py-3">Data</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-slate-100">
+            {events.length === 0 ? (
+              <tr>
+                <td colSpan={5} className="px-4 py-6 text-center text-slate-500">
+                  Nenhum evento financeiro.
+                </td>
+              </tr>
+            ) : (
+              events.map((event) => (
+                <tr key={event.id}>
+                  <td className="px-4 py-3 font-medium">{event.eventType}</td>
+                  <td className="px-4 py-3 text-slate-600">
+                    {event.mpResourceType}
+                    {event.mpResourceId ? ` · ${event.mpResourceId}` : ""}
+                  </td>
+                  <td className="px-4 py-3 text-slate-600">{event.mpStatus ?? "—"}</td>
+                  <td className="px-4 py-3 text-slate-600">
+                    {event.amountCents != null ? formatBRL(event.amountCents) : "—"}
+                  </td>
+                  <td className="px-4 py-3 text-slate-600">
+                    {new Date(event.createdAt).toLocaleString("pt-BR")}
+                  </td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </section>
     </div>
   );
 }

@@ -1230,3 +1230,90 @@ export function unblockAdminTenantUser(tenantId: string, userId: number) {
     { method: "POST" },
   );
 }
+
+// ---------------------------------------------------------------------------
+// Cobrança Mercado Pago (Parte B) — perfil ADMIN
+// ---------------------------------------------------------------------------
+
+export type SubscriptionStatus =
+  | "PENDING"
+  | "AUTHORIZED"
+  | "DELINQUENT"
+  | "PAUSED"
+  | "CANCELLED";
+
+export interface SubscriptionPlan {
+  id: number;
+  code: string;
+  name: string;
+  planType: CommercialPlanType;
+  priceCents: number;
+  currency: string;
+  creditAmount: number | null;
+}
+
+export interface BillingEvent {
+  id: number;
+  eventType: string;
+  mpResourceType: string | null;
+  mpResourceId: string | null;
+  mpStatus: string | null;
+  amountCents: number | null;
+  currency: string | null;
+  createdAt: string;
+}
+
+export interface TenantBillingOverview {
+  tenantId: string;
+  commercialPlanType: CommercialPlanType;
+  status: TenantStatus;
+  creditBalance: number;
+  subscription: {
+    id: number;
+    status: SubscriptionStatus;
+    mpPreapprovalId: string | null;
+    initPoint: string | null;
+    currentPeriodEnd: string | null;
+    lastPaymentAt: string | null;
+    graceUntil: string | null;
+  } | null;
+  events: BillingEvent[];
+}
+
+export interface CheckoutResult {
+  kind: string;
+  mpResourceId: string | null;
+  initPoint: string | null;
+  externalReference: string;
+}
+
+export function listBillingPlans() {
+  return request<SubscriptionPlan[]>("/api/admin/billing/plans");
+}
+
+export function getTenantBilling(tenantId: string) {
+  return request<TenantBillingOverview>(
+    `/api/admin/tenants/${encodeURIComponent(tenantId)}/billing`,
+  );
+}
+
+export function createCreditCheckout(tenantId: string, planId: number) {
+  return request<CheckoutResult>(
+    `/api/admin/tenants/${encodeURIComponent(tenantId)}/billing/credits/checkout?planId=${planId}`,
+    { method: "POST" },
+  );
+}
+
+export function createTenantSubscription(tenantId: string, planId: number) {
+  return request<CheckoutResult>(
+    `/api/admin/tenants/${encodeURIComponent(tenantId)}/billing/subscription?planId=${planId}`,
+    { method: "POST" },
+  );
+}
+
+export function syncTenantBilling(tenantId: string, resourceType: string, resourceId: string) {
+  return request<TenantBillingOverview>(
+    `/api/admin/tenants/${encodeURIComponent(tenantId)}/billing/sync`,
+    { method: "POST", body: JSON.stringify({ resourceType, resourceId }) },
+  );
+}
