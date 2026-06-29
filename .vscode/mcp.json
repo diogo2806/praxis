@@ -1,0 +1,9 @@
+{
+	"servers": {
+		"Magnific": {
+			"type": "http",
+			"url": "https://mcp.magnific.com"
+		}
+	},
+	"inputs": []
+}

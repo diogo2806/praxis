@@ -371,7 +371,7 @@ const landingStyles = `
   .plan .phi{display:flex;gap:.55rem;align-items:flex-start;margin-top:.9rem;font-size:.92rem;font-weight:600;color:var(--primary-deep)}
   .plan .phi svg{flex:none;width:1.05rem;height:1.05rem;margin-top:.12rem;stroke:var(--primary)}
 
-  /* Planos: tabela de volume do Crescimento */
+  /* Planos: tabela de volume do Profissional */
   .tiers{width:100%;border-collapse:collapse;margin:1.2rem 0 .5rem}
   .tiers th{font-family:var(--font-mono);font-weight:500;color:var(--faint);text-align:left;padding:.4rem .15rem;border-bottom:1px solid var(--line-soft);font-size:.64rem;text-transform:uppercase;letter-spacing:.1em}
   .tiers th.r{text-align:right}
@@ -977,7 +977,7 @@ turno-3 ▸ <span class="ok">C</span>  +2 Comunicação
           <button id="cycMonthly" class="cyc on" aria-pressed="true">Mensal</button>
           <button id="cycAnnual" class="cyc" aria-pressed="false">Anual</button>
         </div>
-        <p class="cycle-hint">O ciclo muda o total exibido no plano Crescimento.</p>
+        <p class="cycle-hint">O ciclo muda o total exibido no plano Profissional.</p>
       </div>
 
       <div class="plans">
@@ -995,7 +995,7 @@ turno-3 ▸ <span class="ok">C</span>  +2 Comunicação
 
         <div class="plan feature">
           <span class="ptag">Mais escolhido</span>
-          <div class="pname">Crescimento</div>
+          <div class="pname">Profissional</div>
           <div class="pfor">Para quem avalia com volume recorrente. Quanto mais avaliações por mês, menor o preço de cada uma.</div>
 
           <table class="tiers" aria-label="Pacotes por volume">
@@ -1053,7 +1053,7 @@ turno-3 ▸ <span class="ok">C</span>  +2 Comunicação
         </div>
         <div class="qa">
           <button aria-expanded="false"><span class="q">Como funciona a contratação?</span><span class="ic"></span></button>
-          <div class="ans"><p>Há planos com preço aberto para uso avulso e para volumes recorrentes no Crescimento. Operações Enterprise, integrações, suporte específico e condições contratuais ficam sob consulta conforme volume e escopo.</p></div>
+          <div class="ans"><p>Há planos com preço aberto para uso avulso e para volumes recorrentes no Profissional. Operações Enterprise, integrações, suporte específico e condições contratuais ficam sob consulta conforme volume e escopo.</p></div>
         </div>
         <div class="qa">
           <button aria-expanded="false"><span class="q">Quanto tempo leva para colocar no ar?</span><span class="ic"></span></button>
