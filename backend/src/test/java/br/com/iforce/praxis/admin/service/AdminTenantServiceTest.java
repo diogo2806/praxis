@@ -204,6 +204,43 @@ class AdminTenantServiceTest {
     }
 
     @Test
+    void resendInviteRefreshesTokenForInvitedUser() {
+        TenantEntity tenant = existingTenant("tnt_8", TenantStatus.ATIVO);
+        when(tenantRepository.findById("tnt_8")).thenReturn(Optional.of(tenant));
+        UserEntity user = new UserEntity();
+        user.setId(11L);
+        user.setTenantId("tnt_8");
+        user.setEmail("convidado@acme.com");
+        user.setStatus(UserStatus.CONVIDADO);
+        when(userRepository.findByIdAndTenantId(11L, "tnt_8")).thenReturn(Optional.of(user));
+
+        var response = service.resendInvite(ACTOR, "tnt_8", 11L);
+
+        assertThat(user.getStatus()).isEqualTo(UserStatus.CONVIDADO);
+        assertThat(user.getInviteTokenHash()).isNotNull();
+        assertThat(response.inviteUrl()).contains("/convite/");
+        verify(auditEventService).auditAdminAction(
+                eq(ACTOR), eq("tnt_8"), eq(AuditEventType.ADMIN_USER_INVITE_RESENT), anyString(), anyString());
+    }
+
+    @Test
+    void resendInviteRejectsUserThatIsNotInvited() {
+        TenantEntity tenant = existingTenant("tnt_9", TenantStatus.ATIVO);
+        when(tenantRepository.findById("tnt_9")).thenReturn(Optional.of(tenant));
+        UserEntity user = new UserEntity();
+        user.setId(12L);
+        user.setTenantId("tnt_9");
+        user.setEmail("ativo@acme.com");
+        user.setStatus(UserStatus.ATIVO);
+        when(userRepository.findByIdAndTenantId(12L, "tnt_9")).thenReturn(Optional.of(user));
+
+        assertThatThrownBy(() -> service.resendInvite(ACTOR, "tnt_9", 12L))
+                .isInstanceOf(ResponseStatusException.class);
+
+        assertThat(user.getInviteTokenHash()).isNull();
+    }
+
+    @Test
     void blockAndUnblockChangeUserStatus() {
         TenantEntity tenant = existingTenant("tnt_7", TenantStatus.ATIVO);
         when(tenantRepository.findById("tnt_7")).thenReturn(Optional.of(tenant));

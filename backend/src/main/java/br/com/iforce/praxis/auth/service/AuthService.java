@@ -69,6 +69,15 @@ public class AuthService {
                     HttpStatus.FORBIDDEN, "Cliente suspenso ou cancelado. Acesso bloqueado.");
         }
 
+        // Usuário ainda convidado não autentica por senha: o acesso só é liberado após
+        // aceitar o convite e definir a própria senha pelo link recebido.
+        if (user.getStatus() == UserStatus.CONVIDADO) {
+            throw new ResponseStatusException(
+                    HttpStatus.FORBIDDEN,
+                    "Convite pendente. Defina sua senha pelo link recebido."
+            );
+        }
+
         // Usuário bloqueado não autentica; o histórico permanece preservado.
         if (user.getStatus() == UserStatus.BLOQUEADO) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Usuário bloqueado.");
