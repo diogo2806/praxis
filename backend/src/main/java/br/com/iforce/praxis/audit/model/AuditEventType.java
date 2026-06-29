@@ -30,7 +30,19 @@ public enum AuditEventType implements DescribedEnum {
     SIMULATION_ARCHIVED("simulationArchived"),
     HUMAN_DECISION("humanDecision"),
     REVIEW_REQUESTED("reviewRequested"),
-    HEALTH_CONSENT_RECORDED("healthConsentRecorded");
+    HEALTH_CONSENT_RECORDED("healthConsentRecorded"),
+    ADMIN_TENANT_CREATED("adminTenantCreated"),
+    ADMIN_TENANT_UPDATED("adminTenantUpdated"),
+    ADMIN_TENANT_SUSPENDED("adminTenantSuspended"),
+    ADMIN_TENANT_REACTIVATED("adminTenantReactivated"),
+    ADMIN_TENANT_CANCELED("adminTenantCanceled"),
+    ADMIN_COMMERCIAL_PLAN_CHANGED("adminCommercialPlanChanged"),
+    ADMIN_COMMERCIAL_CONDITION_CHANGED("adminCommercialConditionChanged"),
+    ADMIN_USER_INVITED("adminUserInvited"),
+    ADMIN_USER_INVITE_RESENT("adminUserInviteResent"),
+    ADMIN_USER_BLOCKED("adminUserBlocked"),
+    ADMIN_USER_UNBLOCKED("adminUserUnblocked"),
+    ADMIN_USAGE_VIEWED("adminUsageViewed");
 
     private final String descricao;
 

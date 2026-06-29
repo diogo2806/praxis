@@ -1,12 +1,18 @@
 package br.com.iforce.praxis.auth.persistence.entity;
 
+import br.com.iforce.praxis.admin.model.CommercialPlanType;
+import br.com.iforce.praxis.admin.model.TenantStatus;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+
+import java.time.Instant;
 
 @Getter
 @Setter
@@ -53,4 +59,24 @@ public class TenantEntity {
      */
     @Column(name = "health_vertical", nullable = false)
     private boolean healthVertical;
+
+    /** Situação operacional do cliente controlada pelo painel ADMIN. */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status", nullable = false, length = 40)
+    private TenantStatus status = TenantStatus.EM_TESTE;
+
+    /** Rótulo comercial do cliente (AVULSO, PROFISSIONAL, ENTERPRISE). */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "commercial_plan_type", nullable = false, length = 40)
+    private CommercialPlanType commercialPlanType = CommercialPlanType.ENTERPRISE;
+
+    /** Condição comercial livre, relevante sobretudo para contratos ENTERPRISE. */
+    @Column(name = "commercial_condition", length = 2000)
+    private String commercialCondition;
+
+    @Column(name = "created_at", nullable = false, updatable = false)
+    private Instant createdAt;
+
+    @Column(name = "updated_at", nullable = false)
+    private Instant updatedAt;
 }

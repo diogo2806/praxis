@@ -31,6 +31,13 @@ public class AuditEventEntity implements TenantAwareEntity {
     @Column(name = "tenant_id", nullable = false, length = 120)
     private String tenantId;
 
+    /**
+     * Operador que executou a ação, quando aplicável. As ações do ADMIN registram o ID
+     * do usuário ADMIN explicitamente. Eventos operacionais antigos podem não ter ator.
+     */
+    @Column(name = "actor_user_id", length = 120)
+    private String actorUserId;
+
     @Column(name = "aggregate_type", nullable = false, length = 80)
     private String aggregateType;
 

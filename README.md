@@ -23,7 +23,6 @@ O sistema funciona como uma camada complementar a um ATS, hoje com integracao Gu
 - Nao usa LLM ou IA generativa para julgar candidato.
 - Nao substitui decisao humana em contexto sensivel.
 - Nao e um ATS completo; integra-se a um ATS.
-- Nao possui administracao global `ADMIN` implementada ainda.
 - Nao possui endpoint separado de "ativacao Gupy"; hoje existe preflight e publicacao.
 
 ## Modulos
@@ -41,6 +40,8 @@ Pacote base: `br.com.iforce.praxis`.
 Principais dominios:
 
 - `auth`: login, JWT, tenant e roles.
+- `admin`: painel administrativo da plataforma (perfil `ADMIN`) para cadastrar e governar clientes (tenants), acompanhar uso, suspender, reativar e cancelar, com auditoria append-only. Cliente = `TenantEntity`; nao existe `CustomerEntity`.
+- `billing`: cobranca Mercado Pago (Parte B). AVULSO por credito pre-pago (saldo + ledger append-only), PROFISSIONAL por assinatura recorrente, ENTERPRISE por contrato manual. Webhook publico com validacao de assinatura, idempotencia e consulta a API antes de aplicar mudanca financeira. Credenciais (`MP_ACCESS_TOKEN`, `MP_PUBLIC_KEY`, `MP_WEBHOOK_SECRET`) ficam apenas no backend, via variaveis de ambiente.
 - `simulation`: criacao, versoes, grafo, validacao, publicacao, monitoramento e Talent Match.
 - `candidate`: fluxo publico do candidato e links internos.
 - `gupy`: contrato externo `/test/**`, catalogo, tentativa e resultado.

@@ -1,13 +1,19 @@
 package br.com.iforce.praxis.auth.service;
 
+import br.com.iforce.praxis.admin.model.UserStatus;
 import br.com.iforce.praxis.auth.dto.LoginRequest;
 import br.com.iforce.praxis.auth.dto.LoginResponse;
+import br.com.iforce.praxis.auth.persistence.entity.TenantEntity;
 import br.com.iforce.praxis.auth.persistence.entity.UserEntity;
+import br.com.iforce.praxis.auth.persistence.repository.TenantRepository;
 import br.com.iforce.praxis.auth.persistence.repository.UserRepository;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
+
+import java.time.Instant;
 
 /**
  * Gerencia a autenticação de usuários no sistema.
@@ -21,11 +27,18 @@ import org.springframework.web.server.ResponseStatusException;
 public class AuthService {
 
     private final UserRepository userRepository;
+    private final TenantRepository tenantRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
 
-    public AuthService(UserRepository userRepository, PasswordEncoder passwordEncoder, JwtService jwtService) {
+    public AuthService(
+            UserRepository userRepository,
+            TenantRepository tenantRepository,
+            PasswordEncoder passwordEncoder,
+            JwtService jwtService
+    ) {
         this.userRepository = userRepository;
+        this.tenantRepository = tenantRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtService = jwtService;
     }
@@ -42,11 +55,26 @@ public class AuthService {
      * @return Dados do login bem-sucedido: token de acesso, ID do usuário, nome completo e permissões
      * @throws ResponseStatusException se o email/empresa não existem ou a senha está incorreta
      */
+    @Transactional
     public LoginResponse login(LoginRequest request) {
         UserEntity user = loadUser(request);
         if (!passwordEncoder.matches(request.password(), user.getPasswordHash())) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Credenciais inválidas.");
         }
+
+        // Cliente suspenso ou cancelado não pode autenticar (mesmo com credenciais válidas).
+        TenantEntity tenant = tenantRepository.findById(user.getTenantId()).orElse(null);
+        if (tenant != null && tenant.getStatus() != null && tenant.getStatus().blocksAccess()) {
+            throw new ResponseStatusException(
+                    HttpStatus.FORBIDDEN, "Cliente suspenso ou cancelado. Acesso bloqueado.");
+        }
+
+        // Usuário bloqueado não autentica; o histórico permanece preservado.
+        if (user.getStatus() == UserStatus.BLOQUEADO) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Usuário bloqueado.");
+        }
+
+        user.setLastLoginAt(Instant.now());
 
         String token = jwtService.generateToken(user.getId().toString(), user.getTenantId(), user.getRoles());
         return new LoginResponse(token, user.getId(), user.getTenantId(), user.getName(), user.getRoles());

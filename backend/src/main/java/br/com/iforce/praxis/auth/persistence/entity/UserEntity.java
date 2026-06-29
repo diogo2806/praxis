@@ -1,9 +1,12 @@
 package br.com.iforce.praxis.auth.persistence.entity;
 
+import br.com.iforce.praxis.admin.model.UserStatus;
 import jakarta.persistence.CollectionTable;
 import jakarta.persistence.Column;
 import jakarta.persistence.ElementCollection;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -15,6 +18,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.time.Instant;
 import java.util.LinkedHashSet;
 import java.util.Set;
 
@@ -49,4 +53,24 @@ public class UserEntity {
     @CollectionTable(name = "user_roles", joinColumns = @JoinColumn(name = "user_id"))
     @Column(name = "role", nullable = false, length = 80)
     private Set<String> roles = new LinkedHashSet<>();
+
+    /** Situação do usuário de acesso (ATIVO, CONVIDADO, BLOQUEADO). */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status", nullable = false, length = 40)
+    private UserStatus status = UserStatus.ATIVO;
+
+    @Column(name = "created_at", nullable = false, updatable = false)
+    private Instant createdAt;
+
+    @Column(name = "last_login_at")
+    private Instant lastLoginAt;
+
+    @Column(name = "invited_at")
+    private Instant invitedAt;
+
+    @Column(name = "invite_token_hash", length = 120)
+    private String inviteTokenHash;
+
+    @Column(name = "invite_expires_at")
+    private Instant inviteExpiresAt;
 }

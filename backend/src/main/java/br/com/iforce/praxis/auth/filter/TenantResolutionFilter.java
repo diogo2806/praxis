@@ -1,6 +1,7 @@
 package br.com.iforce.praxis.auth.filter;
 
 import br.com.iforce.praxis.auth.context.TenantContextHolder;
+import br.com.iforce.praxis.auth.persistence.repository.TenantRepository;
 import br.com.iforce.praxis.auth.service.CurrentTenantService;
 import br.com.iforce.praxis.auth.service.JwtService;
 import br.com.iforce.praxis.gupy.persistence.repository.CandidateAttemptRepository;
@@ -25,6 +26,7 @@ public class TenantResolutionFilter extends OncePerRequestFilter {
     private final CurrentTenantService currentTenantService;
     private final JwtService jwtService;
     private final CandidateAttemptRepository candidateAttemptRepository;
+    private final TenantRepository tenantRepository;
     private final boolean securityEnabled;
     private final String defaultTenantId;
 
@@ -32,12 +34,14 @@ public class TenantResolutionFilter extends OncePerRequestFilter {
             CurrentTenantService currentTenantService,
             JwtService jwtService,
             CandidateAttemptRepository candidateAttemptRepository,
+            TenantRepository tenantRepository,
             @Value("${praxis.security.enabled:true}") boolean securityEnabled,
             @Value("${praxis.default-tenant-id:tenant-1}") String defaultTenantId
     ) {
         this.currentTenantService = currentTenantService;
         this.jwtService = jwtService;
         this.candidateAttemptRepository = candidateAttemptRepository;
+        this.tenantRepository = tenantRepository;
         this.securityEnabled = securityEnabled;
         this.defaultTenantId = defaultTenantId;
     }
@@ -49,6 +53,13 @@ public class TenantResolutionFilter extends OncePerRequestFilter {
             FilterChain filterChain
     ) throws ServletException, IOException {
         try {
+            // O ADMIN opera sobre tenants escolhidos explicitamente na rota e o webhook externo
+            // não possui JWT de usuário: nenhum dos dois deve resolver/exigir tenant atual.
+            if (isTenantExemptRequest(request)) {
+                filterChain.doFilter(request, response);
+                return;
+            }
+
             Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
             if (isPublicCandidateRequest(request)) {
@@ -57,6 +68,12 @@ public class TenantResolutionFilter extends OncePerRequestFilter {
                     && authentication.isAuthenticated()
                     && !(authentication instanceof AnonymousAuthenticationToken))) {
                 String tenantId = currentTenantService.requiredTenantId();
+                if (isTenantBlocked(tenantId)) {
+                    response.sendError(
+                            HttpStatus.FORBIDDEN.value(),
+                            "Cliente suspenso ou cancelado. Acesso bloqueado.");
+                    return;
+                }
                 TenantContextHolder.set(tenantId);
             }
 
@@ -64,6 +81,25 @@ public class TenantResolutionFilter extends OncePerRequestFilter {
         } finally {
             TenantContextHolder.clear();
         }
+    }
+
+    /**
+     * Verifica se o tenant está suspenso ou cancelado. Um cliente nesse estado não pode consumir
+     * APIs protegidas, mesmo que já possua um token válido. Quando o tenant não existe no banco,
+     * a resolução é deixada para as camadas seguintes (não bloqueia aqui).
+     */
+    private boolean isTenantBlocked(String tenantId) {
+        if (tenantId == null || tenantId.isBlank()) {
+            return false;
+        }
+        return tenantRepository.findById(tenantId)
+                .map(tenant -> tenant.getStatus() != null && tenant.getStatus().blocksAccess())
+                .orElse(false);
+    }
+
+    private boolean isTenantExemptRequest(HttpServletRequest request) {
+        String uri = request.getRequestURI();
+        return uri.startsWith("/api/admin/") || uri.startsWith("/api/webhooks/mercado-pago");
     }
 
     private boolean isPublicCandidateRequest(HttpServletRequest request) {

@@ -54,8 +54,14 @@ public class SecurityConfig {
                                 "/test",
                                 "/test/**",
                                 "/recrutei/test",
-                                "/recrutei/test/**"
+                                "/recrutei/test/**",
+                                // Webhook do Mercado Pago (Parte B): público, validado por
+                                // assinatura no próprio handler, sem JWT de usuário.
+                                "/api/webhooks/mercado-pago/**"
                         ).permitAll()
+                        // Painel administrativo da plataforma: exige operador ADMIN e não
+                        // depende do tenant do usuário logado (tenant alvo vem na rota).
+                        .requestMatchers("/api/admin/**").hasRole("ADMIN")
                         .requestMatchers("/api/v1/account/**").hasRole("EMPRESA")
                         .requestMatchers("/api/v1/company-profile/**").hasRole("EMPRESA")
                         .requestMatchers("/api/v1/integrations/**").hasRole("EMPRESA")
