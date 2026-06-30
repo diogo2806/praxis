@@ -26,6 +26,9 @@ import br.com.iforce.praxis.journey.persistence.repository.AssessmentJourneyAtte
 import br.com.iforce.praxis.journey.persistence.repository.AssessmentJourneyRepository;
 import br.com.iforce.praxis.shared.integration.IntegrationTokenEntity;
 import br.com.iforce.praxis.shared.integration.IntegrationTokenRepository;
+import br.com.iforce.praxis.shared.integration.model.IntegrationProvider;
+import br.com.iforce.praxis.shared.integration.persistence.entity.TenantIntegrationEntity;
+import br.com.iforce.praxis.shared.integration.persistence.repository.TenantIntegrationRepository;
 import br.com.iforce.praxis.simulation.model.SimulationVersionStatus;
 import br.com.iforce.praxis.simulation.persistence.entity.SimulationEntity;
 import br.com.iforce.praxis.simulation.persistence.repository.SimulationRepository;
@@ -53,7 +56,7 @@ public class DashboardService {
     private static final List<ProviderDefinition> PROVIDERS = List.of(
             new ProviderDefinition("GUPY", "Gupy", "gupy", true),
             new ProviderDefinition("RECRUTEI", "Recrutei", "recrutei", true),
-            new ProviderDefinition("CUSTOM_API", "API personalizada", "custom_api", false)
+            new ProviderDefinition("CUSTOM_API", "API própria", "custom_api", true)
     );
 
     private final CurrentTenantService currentTenantService;
@@ -63,6 +66,7 @@ public class DashboardService {
     private final AssessmentJourneyAttemptRepository journeyAttemptRepository;
     private final CandidateAttemptRepository candidateAttemptRepository;
     private final IntegrationTokenRepository integrationTokenRepository;
+    private final TenantIntegrationRepository tenantIntegrationRepository;
     private final BillingService billingService;
 
     public DashboardService(
@@ -73,6 +77,7 @@ public class DashboardService {
             AssessmentJourneyAttemptRepository journeyAttemptRepository,
             CandidateAttemptRepository candidateAttemptRepository,
             IntegrationTokenRepository integrationTokenRepository,
+            TenantIntegrationRepository tenantIntegrationRepository,
             BillingService billingService
     ) {
         this.currentTenantService = currentTenantService;
@@ -82,6 +87,7 @@ public class DashboardService {
         this.journeyAttemptRepository = journeyAttemptRepository;
         this.candidateAttemptRepository = candidateAttemptRepository;
         this.integrationTokenRepository = integrationTokenRepository;
+        this.tenantIntegrationRepository = tenantIntegrationRepository;
         this.billingService = billingService;
     }
 
@@ -158,18 +164,23 @@ public class DashboardService {
                         (left, right) -> left,
                         LinkedHashMap::new
                 ));
+        Map<IntegrationProvider, TenantIntegrationEntity> tenantIntegrations = tenantIntegrationRepository
+                .findByTenantIdOrderByProviderAsc(tenantId)
+                .stream()
+                .collect(Collectors.toMap(TenantIntegrationEntity::getProvider, Function.identity()));
 
         return PROVIDERS.stream()
                 .map(provider -> {
+                    TenantIntegrationEntity integration = tenantIntegrations.get(IntegrationProvider.valueOf(provider.code()));
                     IntegrationTokenEntity token = tokens.get(provider.tokenProvider());
-                    IntegrationStatus status = token != null
-                            ? IntegrationStatus.CONECTADA
-                            : provider.configurable() ? IntegrationStatus.NAO_CONFIGURADA : IntegrationStatus.DESATIVADA;
+                    IntegrationStatus status = integration != null
+                            ? IntegrationStatus.valueOf(integration.getStatus().name())
+                            : token != null ? IntegrationStatus.CONECTADA : IntegrationStatus.NAO_CONFIGURADA;
                     return new IntegrationStatusItem(
                             provider.code(),
                             provider.name(),
                             status,
-                            null,
+                            integration == null ? null : integration.getLastSyncAt(),
                             status == IntegrationStatus.CONECTADA ? null : "CONFIGURAR"
                     );
                 })

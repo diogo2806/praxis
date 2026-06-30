@@ -37,6 +37,7 @@ public class AuditEventService {
     public static final String USER_AGGREGATE = "User";
     public static final String ASSESSMENT_JOURNEY_AGGREGATE = "AssessmentJourney";
     public static final String ASSESSMENT_JOURNEY_ATTEMPT_AGGREGATE = "AssessmentJourneyAttempt";
+    public static final String INTEGRATION_AGGREGATE = "Integration";
 
     /** Tenant técnico usado quando uma ação administrativa não tem cliente alvo. */
     public static final String PLATFORM_TENANT_ID = "PLATFORM";
@@ -356,6 +357,28 @@ public class AuditEventService {
         auditEventRepository.save(auditEventEntity);
     }
 
+    @Transactional(propagation = Propagation.MANDATORY)
+    public void appendIntegrationEvent(
+            String tenantId,
+            String actorUserId,
+            String provider,
+            AuditEventType eventType,
+            String message,
+            String metadata
+    ) {
+        AuditEventEntity auditEventEntity = new AuditEventEntity();
+        auditEventEntity.setTenantId(tenantId);
+        auditEventEntity.setActorUserId(actorUserId);
+        auditEventEntity.setAggregateType(INTEGRATION_AGGREGATE);
+        auditEventEntity.setAggregateId(provider);
+        auditEventEntity.setEventType(eventType);
+        auditEventEntity.setMessage(message);
+        auditEventEntity.setMetadata(metadata);
+        auditEventEntity.setCreatedAt(Instant.now());
+
+        auditEventRepository.save(auditEventEntity);
+    }
+
     /**
      * Recupera o histórico de auditoria de uma Jornada de Avaliação.
      *
@@ -420,6 +443,7 @@ public class AuditEventService {
             case USER_AGGREGATE -> "Usuário";
             case ASSESSMENT_JOURNEY_AGGREGATE -> "Jornada de avaliação";
             case ASSESSMENT_JOURNEY_ATTEMPT_AGGREGATE -> "Tentativa da jornada";
+            case INTEGRATION_AGGREGATE -> "Integração";
             default -> "Item";
         };
     }

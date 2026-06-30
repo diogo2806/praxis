@@ -8,6 +8,7 @@ import {
   Building2,
   ChevronDown,
   ClipboardCheck,
+  ClipboardList,
   HelpCircle,
   Home,
   KeyRound,
@@ -52,6 +53,12 @@ const getNav = (t: TranslationMap) =>
       label: t.common.monitoring,
       icon: BarChart3,
       desc: t.descriptions.monitoring,
+    },
+    {
+      to: "/results",
+      label: "Resultados",
+      icon: ClipboardList,
+      desc: "Resultados e decisões humanas",
     },
     {
       to: "/talent-match",
@@ -304,6 +311,7 @@ function SidebarContent({
 
 function pageLabel(pathname: string, t: TranslationMap) {
   if (pathname === "/monitoramento") return t.common.monitoring;
+  if (pathname === "/results" || pathname.startsWith("/results/")) return "Resultados";
   if (pathname === "/dashboard" || pathname === "/app") return t.common.dashboard;
   if (pathname.startsWith("/nova")) return t.common.createTest;
   if (pathname === "/talent-match") return t.common.talentMatch;
