@@ -41,6 +41,7 @@ import { Route as NovaDialogoRouteImport } from './routes/nova.dialogo'
 import { Route as NovaCompetenciasRouteImport } from './routes/nova.competencias'
 import { Route as NovaBlueprintRouteImport } from './routes/nova.blueprint'
 import { Route as JornadaAttemptIdRouteImport } from './routes/jornada.$attemptId'
+import { Route as IntegrationsProviderRouteImport } from './routes/integrations.$provider'
 import { Route as ConviteTokenRouteImport } from './routes/convite.$token'
 import { Route as ConfiguracoesPerfilRouteImport } from './routes/configuracoes.perfil'
 import { Route as ConfiguracoesIntegracoesRouteImport } from './routes/configuracoes.integracoes'
@@ -211,6 +212,11 @@ const JornadaAttemptIdRoute = JornadaAttemptIdRouteImport.update({
   path: '/jornada/$attemptId',
   getParentRoute: () => rootRouteImport,
 } as any)
+const IntegrationsProviderRoute = IntegrationsProviderRouteImport.update({
+  id: '/$provider',
+  path: '/$provider',
+  getParentRoute: () => IntegrationsRoute,
+} as any)
 const ConviteTokenRoute = ConviteTokenRouteImport.update({
   id: '/convite/$token',
   path: '/convite/$token',
@@ -269,7 +275,7 @@ export interface FileRoutesByFullPath {
   '/configuracoes': typeof ConfiguracoesRouteWithChildren
   '/dashboard': typeof DashboardRoute
   '/enviar-link': typeof EnviarLinkRoute
-  '/integrations': typeof IntegrationsRoute
+  '/integrations': typeof IntegrationsRouteWithChildren
   '/jornadas': typeof JornadasRoute
   '/monitoramento': typeof MonitoramentoRoute
   '/recuperar-senha': typeof RecuperarSenhaRoute
@@ -282,6 +288,7 @@ export interface FileRoutesByFullPath {
   '/configuracoes/integracoes': typeof ConfiguracoesIntegracoesRoute
   '/configuracoes/perfil': typeof ConfiguracoesPerfilRoute
   '/convite/$token': typeof ConviteTokenRoute
+  '/integrations/$provider': typeof IntegrationsProviderRoute
   '/jornada/$attemptId': typeof JornadaAttemptIdRoute
   '/nova/blueprint': typeof NovaBlueprintRoute
   '/nova/competencias': typeof NovaCompetenciasRoute
@@ -312,7 +319,7 @@ export interface FileRoutesByTo {
   '/configuracoes': typeof ConfiguracoesRouteWithChildren
   '/dashboard': typeof DashboardRoute
   '/enviar-link': typeof EnviarLinkRoute
-  '/integrations': typeof IntegrationsRoute
+  '/integrations': typeof IntegrationsRouteWithChildren
   '/jornadas': typeof JornadasRoute
   '/monitoramento': typeof MonitoramentoRoute
   '/recuperar-senha': typeof RecuperarSenhaRoute
@@ -325,6 +332,7 @@ export interface FileRoutesByTo {
   '/configuracoes/integracoes': typeof ConfiguracoesIntegracoesRoute
   '/configuracoes/perfil': typeof ConfiguracoesPerfilRoute
   '/convite/$token': typeof ConviteTokenRoute
+  '/integrations/$provider': typeof IntegrationsProviderRoute
   '/jornada/$attemptId': typeof JornadaAttemptIdRoute
   '/nova/blueprint': typeof NovaBlueprintRoute
   '/nova/competencias': typeof NovaCompetenciasRoute
@@ -356,7 +364,7 @@ export interface FileRoutesById {
   '/configuracoes': typeof ConfiguracoesRouteWithChildren
   '/dashboard': typeof DashboardRoute
   '/enviar-link': typeof EnviarLinkRoute
-  '/integrations': typeof IntegrationsRoute
+  '/integrations': typeof IntegrationsRouteWithChildren
   '/jornadas': typeof JornadasRoute
   '/monitoramento': typeof MonitoramentoRoute
   '/recuperar-senha': typeof RecuperarSenhaRoute
@@ -369,6 +377,7 @@ export interface FileRoutesById {
   '/configuracoes/integracoes': typeof ConfiguracoesIntegracoesRoute
   '/configuracoes/perfil': typeof ConfiguracoesPerfilRoute
   '/convite/$token': typeof ConviteTokenRoute
+  '/integrations/$provider': typeof IntegrationsProviderRoute
   '/jornada/$attemptId': typeof JornadaAttemptIdRoute
   '/nova/blueprint': typeof NovaBlueprintRoute
   '/nova/competencias': typeof NovaCompetenciasRoute
@@ -414,6 +423,7 @@ export interface FileRouteTypes {
     | '/configuracoes/integracoes'
     | '/configuracoes/perfil'
     | '/convite/$token'
+    | '/integrations/$provider'
     | '/jornada/$attemptId'
     | '/nova/blueprint'
     | '/nova/competencias'
@@ -457,6 +467,7 @@ export interface FileRouteTypes {
     | '/configuracoes/integracoes'
     | '/configuracoes/perfil'
     | '/convite/$token'
+    | '/integrations/$provider'
     | '/jornada/$attemptId'
     | '/nova/blueprint'
     | '/nova/competencias'
@@ -500,6 +511,7 @@ export interface FileRouteTypes {
     | '/configuracoes/integracoes'
     | '/configuracoes/perfil'
     | '/convite/$token'
+    | '/integrations/$provider'
     | '/jornada/$attemptId'
     | '/nova/blueprint'
     | '/nova/competencias'
@@ -531,7 +543,7 @@ export interface RootRouteChildren {
   ConfiguracoesRoute: typeof ConfiguracoesRouteWithChildren
   DashboardRoute: typeof DashboardRoute
   EnviarLinkRoute: typeof EnviarLinkRoute
-  IntegrationsRoute: typeof IntegrationsRoute
+  IntegrationsRoute: typeof IntegrationsRouteWithChildren
   JornadasRoute: typeof JornadasRoute
   MonitoramentoRoute: typeof MonitoramentoRoute
   RecuperarSenhaRoute: typeof RecuperarSenhaRoute
@@ -785,6 +797,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof JornadaAttemptIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/integrations/$provider': {
+      id: '/integrations/$provider'
+      path: '/$provider'
+      fullPath: '/integrations/$provider'
+      preLoaderRoute: typeof IntegrationsProviderRouteImport
+      parentRoute: typeof IntegrationsRoute
+    }
     '/convite/$token': {
       id: '/convite/$token'
       path: '/convite/$token'
@@ -879,6 +898,18 @@ const ConfiguracoesRouteWithChildren = ConfiguracoesRoute._addFileChildren(
   ConfiguracoesRouteChildren,
 )
 
+interface IntegrationsRouteChildren {
+  IntegrationsProviderRoute: typeof IntegrationsProviderRoute
+}
+
+const IntegrationsRouteChildren: IntegrationsRouteChildren = {
+  IntegrationsProviderRoute: IntegrationsProviderRoute,
+}
+
+const IntegrationsRouteWithChildren = IntegrationsRoute._addFileChildren(
+  IntegrationsRouteChildren,
+)
+
 interface ResultsRouteChildren {
   ResultsAttemptIdRoute: typeof ResultsAttemptIdRoute
 }
@@ -901,7 +932,7 @@ const rootRouteChildren: RootRouteChildren = {
   ConfiguracoesRoute: ConfiguracoesRouteWithChildren,
   DashboardRoute: DashboardRoute,
   EnviarLinkRoute: EnviarLinkRoute,
-  IntegrationsRoute: IntegrationsRoute,
+  IntegrationsRoute: IntegrationsRouteWithChildren,
   JornadasRoute: JornadasRoute,
   MonitoramentoRoute: MonitoramentoRoute,
   RecuperarSenhaRoute: RecuperarSenhaRoute,
