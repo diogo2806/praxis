@@ -122,6 +122,31 @@ export interface SimulationMonitoringResponse {
   dropOffRatePercent: number;
 }
 
+export type CalibrationFlag = "OK" | "FRACO" | "REVISAR";
+
+export interface OptionDiscriminationDto {
+  nodeId: string;
+  optionId: string;
+  optionLabel: string;
+  discriminationIndex: number;
+  difficultyIndex: number;
+  flag: CalibrationFlag;
+}
+
+export interface CompetencyCalibrationDto {
+  competencyName: string;
+  averageScore: number;
+  stdDeviation: number;
+}
+
+export interface CalibrationReportResponse {
+  sampleSize: number;
+  minimumSampleRequired: number;
+  sufficientSample: boolean;
+  items: OptionDiscriminationDto[];
+  competencies: CompetencyCalibrationDto[];
+}
+
 export interface SimulationSummaryResponse {
   id: string;
   name: string;
@@ -1564,6 +1589,12 @@ export function deleteSimulationOption(
 export function getSimulationMonitoring(simulationId: string, versionNumber: number) {
   return request<SimulationMonitoringResponse>(
     `/api/v1/simulations/${encodeURIComponent(simulationId)}/versions/${versionNumber}/monitoring`,
+  );
+}
+
+export function getCalibrationReport(simulationId: string, versionNumber: number) {
+  return request<CalibrationReportResponse>(
+    `/api/v1/simulations/${encodeURIComponent(simulationId)}/versions/${versionNumber}/calibration`,
   );
 }
 

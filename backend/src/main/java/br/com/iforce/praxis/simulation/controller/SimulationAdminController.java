@@ -1,5 +1,7 @@
 package br.com.iforce.praxis.simulation.controller;
 
+import br.com.iforce.praxis.simulation.dto.CalibrationReportResponse;
+
 import br.com.iforce.praxis.simulation.dto.CloneSimulationVersionResponse;
 
 import br.com.iforce.praxis.simulation.dto.CreateNodeRequest;
@@ -33,6 +35,8 @@ import br.com.iforce.praxis.simulation.dto.UpdateOptionRequest;
 import br.com.iforce.praxis.simulation.service.GupyPreflightService;
 
 import br.com.iforce.praxis.simulation.service.SimulationAdminService;
+
+import br.com.iforce.praxis.simulation.service.SimulationCalibrationService;
 
 import br.com.iforce.praxis.simulation.service.SimulationMonitoringService;
 
@@ -109,17 +113,20 @@ public class SimulationAdminController {
     private final SimulationMonitoringService simulationMonitoringService;
     private final GupyPreflightService gupyPreflightService;
     private final TalentMatchService talentMatchService;
+    private final SimulationCalibrationService simulationCalibrationService;
 
     public SimulationAdminController(
             SimulationAdminService simulationAdminService,
             SimulationMonitoringService simulationMonitoringService,
             GupyPreflightService gupyPreflightService,
-            TalentMatchService talentMatchService
+            TalentMatchService talentMatchService,
+            SimulationCalibrationService simulationCalibrationService
     ) {
         this.simulationAdminService = simulationAdminService;
         this.simulationMonitoringService = simulationMonitoringService;
         this.gupyPreflightService = gupyPreflightService;
         this.talentMatchService = talentMatchService;
+        this.simulationCalibrationService = simulationCalibrationService;
     }
 
     /**
@@ -391,6 +398,36 @@ public class SimulationAdminController {
             @PathVariable int versionNumber
     ) {
         return ResponseEntity.ok(simulationAdminService.validateVersion(simulationId, versionNumber));
+    }
+
+    /**
+     * Gera o relatório de calibração estatística de uma versão.
+     *
+     * <p>A partir das tentativas já concluídas, calcula índices de discriminação
+     * e dificuldade por opção e a distribuição das notas por competência,
+     * sinalizando o que está estatisticamente fraco ou invertido. Quando a
+     * amostra ainda é pequena, devolve apenas o aviso de amostra insuficiente.</p>
+     *
+     * @param simulationId identificador da prova
+     * @param versionNumber número da versão
+     * @return o relatório de calibração
+     */
+    @GetMapping("/{simulationId}/versions/{versionNumber}/calibration")
+    @Operation(
+            summary = "Calibração estatística da versão",
+            description = "Calcula discriminação/dificuldade por opção e a distribuição por competência a partir das tentativas concluídas."
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Calibracao calculada."),
+            @ApiResponse(responseCode = "400", description = "Parametro invalido.", content = @Content(examples = @ExampleObject(value = ERROR_EXAMPLE))),
+            @ApiResponse(responseCode = "403", description = "Acesso negado.", content = @Content(examples = @ExampleObject(value = ERROR_EXAMPLE))),
+            @ApiResponse(responseCode = "404", description = "Versão não encontrada.", content = @Content(examples = @ExampleObject(value = ERROR_EXAMPLE)))
+    })
+    public ResponseEntity<CalibrationReportResponse> getCalibrationReport(
+            @PathVariable String simulationId,
+            @PathVariable int versionNumber
+    ) {
+        return ResponseEntity.ok(simulationCalibrationService.getCalibrationReport(simulationId, versionNumber));
     }
 
     /**
