@@ -19,7 +19,12 @@
  */
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ChevronDown, Clock, Crosshair, Flag, Maximize2, Plus, Target, Timer, Trash2, User, Workflow, X, ZoomIn, ZoomOut } from "lucide-react";
-import type { SimulationVersionDetailResponse, UpdateNodeRequest, UpdateOptionRequest } from "@/lib/api/praxis";
+import type {
+  SimulationVersionDetailResponse,
+  UpdateNodeRequest,
+  UpdateOptionRequest,
+  ValidationIssueResponse,
+} from "@/lib/api/praxis";
 
 type Version = SimulationVersionDetailResponse;
 type NodeDto = Version["nodes"][number];
@@ -44,6 +49,8 @@ export interface FlowCanvasProps {
     link: { via: "option"; optionId: string } | { via: "timeout" },
     asEnd: boolean,
   ) => void;
+  /** Avisos/erros do validador, por nó — pintam a borda e exibem um indicador. */
+  validationIssues?: ValidationIssueResponse[];
 }
 
 /* ---- geometria fixa ---- */
@@ -74,7 +81,21 @@ const shortName = (s: string) => { const t = s.trim(); return t.length <= 4 ? t 
 export default function FlowCanvas({
   version, canEdit, selectedNodeId, onSelectNode,
   onUpdateNode, onEditOption, onAddOption, onDeleteOption, onDeleteStep, onCreateChild,
+  validationIssues,
 }: FlowCanvasProps) {
+  /* problemas do validador por nó: erro (blocker) tem prioridade sobre aviso */
+  const issuesByNode = useMemo(() => {
+    const map = new Map<string, { error: boolean; messages: string[] }>();
+    for (const issue of validationIssues ?? []) {
+      if (!issue.nodeId) continue;
+      const entry = map.get(issue.nodeId) ?? { error: false, messages: [] };
+      entry.error = entry.error || issue.severity === "blocker";
+      entry.messages.push(issue.message);
+      map.set(issue.nodeId, entry);
+    }
+    return map;
+  }, [validationIssues]);
+  const nodeIssue = (id: string) => issuesByNode.get(id) ?? null;
   const nodes = useMemo(
     () => [...version.nodes].sort((a, b) => a.turnIndex - b.turnIndex || a.id.localeCompare(b.id)),
     [version.nodes],
@@ -389,6 +410,8 @@ export default function FlowCanvas({
             {nodes.map((n) => {
               const p = posOf(n);
               const on = selectedNodeId === n.id;
+              const issue = nodeIssue(n.id);
+              const issueClass = issue ? (issue.error ? "vx-node-err" : "vx-node-warn") : "";
               if (isEnd(n)) {
                 const nota = pathScore(n.id);
                 const report = (n as { reportText?: string }).reportText ?? "";
@@ -407,11 +430,12 @@ export default function FlowCanvas({
                 });
               };
                 return (
-                  <div key={n.id} className={`vx-node vx-end ${on ? "vx-node-on" : ""}`} style={{ left: p.x, top: p.y, width: NODE_W }} onPointerDown={(e) => onNodeDown(e, n)}>
+                  <div key={n.id} className={`vx-node vx-end ${on ? "vx-node-on" : ""} ${issueClass}`} style={{ left: p.x, top: p.y, width: NODE_W }} onPointerDown={(e) => onNodeDown(e, n)}>
                     <span className="vx-port vx-port-in vx-port-end" />
                     <div className="vx-end-head">
                       <span className="vx-id vx-id-end"><Flag size={12} />{labelOf(n.id)}</span>
                       <span className="vx-badge vx-badge-final">encerramento</span>
+                      {issue && <span className={`vx-vbadge ${issue.error ? "vx-vbadge-err" : "vx-vbadge-warn"}`} title={issue.messages.join("\n")}>{issue.error ? "🔴" : "🟡"} {issue.messages.length}</span>}
                       {pending && <span className="vx-warn-mini" title="Falta o relatório"><Flag size={11} /></span>}
                       {canEdit && <button className="vx-end-del" onClick={() => onDeleteStep(n.id)} title="Remover encerramento"><Trash2 size={13} /></button>}
                     </div>
@@ -442,12 +466,13 @@ export default function FlowCanvas({
               const noTo = !n.timeoutNextNodeId;
               const fwd = forwardTargets(n.id);
               return (
-                <div key={n.id} className={`vx-node ${on ? "vx-node-on" : ""} ${isRoot ? "vx-node-root" : ""}`} style={{ left: p.x, top: p.y, width: NODE_W }} onPointerDown={(e) => onNodeDown(e, n)}>
+                <div key={n.id} className={`vx-node ${on ? "vx-node-on" : ""} ${isRoot ? "vx-node-root" : ""} ${issueClass}`} style={{ left: p.x, top: p.y, width: NODE_W }} onPointerDown={(e) => onNodeDown(e, n)}>
                   <span className="vx-port vx-port-in" />
                   <div className="vx-msg">
                     <div className="vx-msg-head">
                       <span className="vx-id">{isRoot ? <Crosshair size={12} /> : <Workflow size={12} />}{labelOf(n.id)}</span>
                       {isRoot && <span className="vx-badge">início</span>}
+                      {issue && <span className={`vx-vbadge ${issue.error ? "vx-vbadge-err" : "vx-vbadge-warn"}`} title={issue.messages.join("\n")}>{issue.error ? "🔴" : "🟡"} {issue.messages.length}</span>}
                       {noTo && <span className="vx-warn-mini" title="Falta a saída de tempo"><Timer size={11} /></span>}
                       <span className="vx-time"><Clock size={11} /> {n.timeLimitSeconds ?? "—"}s</span>
                     </div>
@@ -649,6 +674,11 @@ const CSS = `
 .vx-node{position:absolute;z-index:10;background:#fff;border:1px solid var(--border);border-radius:12px;box-shadow:0 2px 6px rgba(20,30,55,.06);cursor:grab;user-select:none}
 .vx-node:hover{box-shadow:0 6px 18px rgba(20,30,55,.12)}
 .vx-node-on{border-color:var(--primary);box-shadow:0 0 0 3px var(--primary-weak),0 8px 22px rgba(27,108,140,.16)}
+.vx-node-err{border-color:var(--danger);box-shadow:0 0 0 2px var(--danger-weak)}
+.vx-node-warn{border-color:var(--amber-line);box-shadow:0 0 0 2px var(--amber-weak)}
+.vx-vbadge{display:inline-flex;align-items:center;gap:3px;font-size:9.5px;font-weight:700;padding:1px 5px;border-radius:5px;border:1px solid}
+.vx-vbadge-err{color:var(--danger);background:var(--danger-weak);border-color:var(--danger)}
+.vx-vbadge-warn{color:var(--amber);background:var(--amber-weak);border-color:var(--amber-line)}
 .vx-node-root .vx-msg{border-top:3px solid var(--primary);border-radius:12px 12px 0 0}
 .vx-msg{height:${MSG_H}px;padding:8px 11px;border-bottom:1px solid var(--line)}
 .vx-msg-head{display:flex;align-items:center;gap:5px;height:18px}

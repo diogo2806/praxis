@@ -47,6 +47,7 @@ import {
   type SimulationVersionNodeResponse,
   type SimulationVersionOptionResponse,
   type SimulationValidationResponse,
+  type ValidationIssueResponse,
   type UpdateOptionRequest,
   updateSimulationNode,
   updateSimulationOption,
@@ -497,6 +498,7 @@ function ValidatorPage() {
           onUpdateNode={(nodeId, body) => updateNodeMutation.mutate({ nodeId, body })}
           selectedNodeId={selectedNodeId}
           simulationId={previewSimulationId}
+          validationIssues={validationIssues}
           version={previewVersion}
           versionNumber={previewVersionNumber}
         />
@@ -618,6 +620,7 @@ function ScoringModelPreview({
   onUpdateNode,
   selectedNodeId,
   simulationId,
+  validationIssues,
   version,
   versionNumber,
 }: {
@@ -641,6 +644,7 @@ function ScoringModelPreview({
   onUpdateNode: (nodeId: string, body: NodeUpdateBody) => void;
   selectedNodeId: string | null;
   simulationId?: string;
+  validationIssues?: ValidationIssueResponse[];
   version?: SimulationVersionDetailResponse;
   versionNumber?: number;
 }) {
@@ -686,6 +690,7 @@ function ScoringModelPreview({
         onSelectNode={onSelectNode}
         onUpdateNode={onUpdateNode}
         selectedNodeId={selectedNodeId}
+        validationIssues={validationIssues}
         version={version}
       />
     </section>

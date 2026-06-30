@@ -11,6 +11,7 @@ import {
   createSimulationOption,
   deleteSimulationNode,
   deleteSimulationOption,
+  getSimulationValidation,
   getSimulationVersion,
   listSimulations,
   updateSimulationNode,
@@ -20,6 +21,11 @@ import {
   type SimulationSummaryResponse,
   type SimulationVersionNodeResponse,
 } from "@/lib/api/praxis";
+import {
+  groupIssuesByNode,
+  ValidationBadge,
+  ValidationSummary,
+} from "@/components/simulation/validation-badge";
 import { canEditSimulationVersion, statusMeta } from "@/lib/simulation-meta";
 import { cn } from "@/lib/utils";
 import { defaultAnswerTimeLimitSeconds, useEmpresaConfig } from "@/lib/empresa-config";
@@ -71,6 +77,26 @@ function DialogEditor() {
     queryFn: () => getSimulationVersion(search.simulationId!, search.versionNumber!),
     enabled: hasContext,
   });
+  const validationQuery = useQuery({
+    queryKey: ["simulation-validation", search.simulationId, search.versionNumber],
+    queryFn: () => getSimulationValidation(search.simulationId!, search.versionNumber!),
+    enabled: hasContext,
+  });
+  const issuesByNode = useMemo(
+    () => groupIssuesByNode(validationQuery.data?.issues),
+    [validationQuery.data],
+  );
+  const versionUpdatedAt = versionQuery.dataUpdatedAt;
+  useEffect(() => {
+    if (!hasContext) return;
+    // Revalida ~800ms após cada edição (debounce), reusando a rota do validador.
+    const timer = setTimeout(() => {
+      void validationQuery.refetch();
+    }, 800);
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [versionUpdatedAt, hasContext]);
+
   const nodes = versionQuery.data?.nodes ?? [];
   const versionStatus = versionQuery.data?.status;
   const isEditable = versionStatus ? canEditSimulationVersion(versionStatus) : true;
@@ -263,7 +289,15 @@ function DialogEditor() {
             Ajuste as etapas e alternativas que serão avaliadas pelo validador.
           </p>
         </div>
-        {versionQuery.data && <StatusBadge status={versionQuery.data.status} />}
+        <div className="flex flex-col items-end gap-2">
+          {versionQuery.data && <StatusBadge status={versionQuery.data.status} />}
+          {versionQuery.data && validationQuery.data && (
+            <ValidationSummary
+              blockerCount={validationQuery.data.blockerCount}
+              warningCount={validationQuery.data.warningCount}
+            />
+          )}
+        </div>
       </div>
 
       {!hasContext ? (
@@ -350,7 +384,10 @@ function DialogEditor() {
                       selected?.id === node.id && "border-primary bg-primary/5",
                     )}
                   >
-                    <div className="font-medium">{node.id}</div>
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="font-medium">{node.id}</span>
+                      <ValidationBadge issues={issuesByNode.get(node.id) ?? []} />
+                    </div>
                     <div className="mt-1 line-clamp-2 text-xs text-muted-foreground">
                       {node.clientMessage}
                     </div>
