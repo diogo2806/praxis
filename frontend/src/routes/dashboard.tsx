@@ -16,8 +16,8 @@ import {
   Workflow,
 } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
-import { EmptyState, StateBanner, StatusBadge } from "@/components/praxis-ui";
-import { getDashboard, type DashboardActionSeverity, type DashboardResponse } from "@/lib/api/praxis";
+import { EmptyState, StateBanner } from "@/components/praxis-ui";
+import { getDashboard, type AttemptStatus, type AssessmentJourneyStatus, type DashboardActionSeverity, type DashboardResponse } from "@/lib/api/praxis";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/dashboard")({
@@ -284,7 +284,7 @@ function LatestResultsTable({ dashboard }: { dashboard: DashboardResponse }) {
                   <td className="px-4 py-3 font-medium">{result.candidateName}</td>
                   <td className="px-4 py-3 text-muted-foreground">{result.simulationOrJourneyName}</td>
                   <td className="px-4 py-3">
-                    <StatusBadge status={result.status} variant="status" />
+                    <AttemptStatusBadge status={result.status} />
                   </td>
                   <td className="px-4 py-3 text-muted-foreground">{formatDate(result.date)}</td>
                   <td className="px-4 py-3 tabular-nums">
@@ -332,7 +332,7 @@ function AssessmentJourneySummary({ dashboard }: { dashboard: DashboardResponse 
                 <tr key={journey.id} className="border-b border-border last:border-0">
                   <td className="px-4 py-3 font-medium">{journey.name}</td>
                   <td className="px-4 py-3">
-                    <StatusBadge status={journey.status} variant="status" />
+                    <JourneyStatusBadge status={journey.status} />
                   </td>
                   <td className="px-4 py-3 tabular-nums">
                     {journey.candidatesInProgress.toLocaleString("pt-BR")}
@@ -516,6 +516,40 @@ function planLabel(plan: string) {
     PROFISSIONAL: "Profissional",
     ENTERPRISE: "Enterprise",
   }[plan] ?? plan;
+}
+
+const attemptStatusMeta: Record<AttemptStatus, { label: string; cls: string }> = {
+  notStarted:  { label: "Não iniciada",  cls: "border-border bg-muted text-foreground" },
+  inProgress:  { label: "Em andamento",  cls: "border-primary/25 bg-primary/10 text-foreground" },
+  paused:      { label: "Pausada",       cls: "border-warning/35 bg-warning/15 text-warning-foreground" },
+  completed:   { label: "Concluída",     cls: "border-success/25 bg-success/10 text-foreground" },
+  abandoned:   { label: "Abandonada",    cls: "border-border bg-muted text-foreground" },
+  expired:     { label: "Expirada",      cls: "border-border bg-muted text-foreground" },
+  failed:      { label: "Falhou",        cls: "border-danger/25 bg-danger/10 text-foreground" },
+};
+
+function AttemptStatusBadge({ status }: { status: AttemptStatus }) {
+  const meta = attemptStatusMeta[status] ?? { label: status, cls: "border-border bg-muted text-foreground" };
+  return (
+    <span className={cn("inline-flex items-center gap-1.5 rounded-md border px-2 py-1 text-[11px] font-medium", meta.cls)}>
+      {meta.label}
+    </span>
+  );
+}
+
+const journeyStatusMeta: Record<AssessmentJourneyStatus, { label: string; cls: string }> = {
+  DRAFT:     { label: "Rascunho",  cls: "border-border bg-muted text-foreground" },
+  PUBLISHED: { label: "Publicada", cls: "border-success/25 bg-success/10 text-foreground" },
+  ARCHIVED:  { label: "Arquivada", cls: "border-border bg-muted text-foreground" },
+};
+
+function JourneyStatusBadge({ status }: { status: AssessmentJourneyStatus }) {
+  const meta = journeyStatusMeta[status] ?? { label: status, cls: "border-border bg-muted text-foreground" };
+  return (
+    <span className={cn("inline-flex items-center gap-1.5 rounded-md border px-2 py-1 text-[11px] font-medium", meta.cls)}>
+      {meta.label}
+    </span>
+  );
 }
 
 function formatDate(value: string) {
