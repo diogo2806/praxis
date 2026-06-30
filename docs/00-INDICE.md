@@ -16,6 +16,8 @@
 | Documento | Quando usar | Publico | Status |
 | --- | --- | --- | --- |
 | [README principal](../README.md) | Entender e rodar o sistema. | Todos | Atual |
+| [Operacao em producao](OPERACAO.md) | Operar, monitorar, auditar, atualizar e tratar incidentes. | DevOps, Operacao, Suporte, Admin | Atual |
+| [Implantacao do zero](IMPLANTACAO.md) | Instalar, configurar variaveis, deploy, SSL e checklist pos-deploy. | DevOps, Engenharia | Atual |
 | [Cadastro de cenarios para RH](cadastro_cenarios_rh.md) | Entender produto, limites e regras de cadastro. | RH, Produto, Compliance, Engenharia | Atual |
 | [Mapa Frontend-Backend](frontend-backend-map.md) | Ver rotas, APIs e lacunas UI/backend. | Frontend, Backend, QA | Atual |
 | [Integracao Gupy](INTEGRACAO-GUPY-PROVEDOR.md) | Homologar contrato `/test/**`. | Backend, Integracao, Gupy | Atual |
