@@ -24,4 +24,6 @@ public interface UserRepository extends JpaRepository<UserEntity, Long> {
     boolean existsByTenantIdAndEmail(String tenantId, String email);
 
     List<UserEntity> findByStatusAndInviteTokenHashIsNotNull(UserStatus status);
+
+    List<UserEntity> findByPasswordResetTokenHashIsNotNull();
 }
