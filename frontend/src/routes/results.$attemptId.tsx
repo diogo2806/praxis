@@ -3,10 +3,11 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft, CheckCircle2, FileText, Save } from "lucide-react";
 import { useState } from "react";
 import { AppShell } from "@/components/app-shell";
-import { StateBanner, StatusBadge } from "@/components/praxis-ui";
+import { StateBanner } from "@/components/praxis-ui";
 import {
   getResultDetail,
   registerResultDecision,
+  type AttemptStatus,
   type HumanDecision,
   type ResultDetailResponse,
 } from "@/lib/api/praxis";
@@ -103,7 +104,7 @@ function CandidateResultHeader({ result }: { result: ResultDetailResponse }) {
         <div>
           <dt className="text-xs uppercase text-muted-foreground">Status</dt>
           <dd className="mt-1">
-            <StatusBadge status={result.status} variant="status" />
+            <ResultStatusBadge status={result.status} />
           </dd>
         </div>
         <InfoLine label="Iniciado em" value={formatDate(result.startedAt)} />
@@ -266,6 +267,53 @@ function CompetencyScoreBadge({ level }: { level: string }) {
       {levelLabel(level)}
     </span>
   );
+}
+
+function ResultStatusBadge({ status }: { status: AttemptStatus }) {
+  const meta = resultStatusMeta(status);
+  return (
+    <span
+      className={`inline-flex items-center gap-1.5 rounded-md border px-2 py-1 text-[11px] font-medium ${meta.className}`}
+    >
+      <span className="h-1.5 w-1.5 rounded-full bg-current" />
+      {meta.label}
+    </span>
+  );
+}
+
+function resultStatusMeta(status: AttemptStatus) {
+  return (
+    {
+      notStarted: {
+        label: "Criado",
+        className: "border-border bg-muted text-foreground",
+      },
+      inProgress: {
+        label: "Em andamento",
+        className: "border-primary/25 bg-primary/10 text-foreground",
+      },
+      paused: {
+        label: "Pausado",
+        className: "border-warning/35 bg-warning/15 text-warning-foreground",
+      },
+      completed: {
+        label: "Concluído",
+        className: "border-success/25 bg-success/10 text-foreground",
+      },
+      abandoned: {
+        label: "Abandonado",
+        className: "border-danger/25 bg-danger/10 text-foreground",
+      },
+      expired: {
+        label: "Expirado",
+        className: "border-warning/35 bg-warning/15 text-warning-foreground",
+      },
+      failed: {
+        label: "Falhou",
+        className: "border-danger/25 bg-danger/10 text-foreground",
+      },
+    } satisfies Record<AttemptStatus, { label: string; className: string }>
+  )[status];
 }
 
 function InfoLine({ label, value }: { label: string; value: string }) {

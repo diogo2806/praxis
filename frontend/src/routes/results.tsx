@@ -1,9 +1,9 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, Outlet, useRouterState } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { BarChart3, CheckCircle2, Clock3, ExternalLink, RefreshCw, Search, TimerOff } from "lucide-react";
 import { useMemo, useState } from "react";
 import { AppShell } from "@/components/app-shell";
-import { EmptyState, StateBanner, StatusBadge } from "@/components/praxis-ui";
+import { EmptyState, StateBanner } from "@/components/praxis-ui";
 import {
   listResults,
   listSimulations,
@@ -36,6 +36,14 @@ const statusOptions: Array<{ value: AttemptStatus; label: string }> = [
 ];
 
 function ResultsPage() {
+  const isResultsIndex = useRouterState({
+    select: (state) => state.location.pathname === "/results",
+  });
+
+  return isResultsIndex ? <ResultsIndexPage /> : <Outlet />;
+}
+
+function ResultsIndexPage() {
   const [search, setSearch] = useState("");
   const [simulationId, setSimulationId] = useState("");
   const [status, setStatus] = useState<AttemptStatus | "">("");
@@ -314,7 +322,7 @@ function ResultsTable({ items }: { items: ResultListItemResponse[] }) {
                 </td>
                 <td className="px-4 py-3 text-muted-foreground">{item.simulationTitle}</td>
                 <td className="px-4 py-3">
-                  <StatusBadge status={item.status} variant="status" />
+                  <ResultStatusBadge status={item.status} />
                 </td>
                 <td className="px-4 py-3">{item.highlightCompetency ?? "-"}</td>
                 <td className="px-4 py-3 font-medium tabular-nums">
@@ -409,6 +417,53 @@ function ResultsErrorState({ onReload }: { onReload: () => void }) {
       Tente novamente.
     </StateBanner>
   );
+}
+
+function ResultStatusBadge({ status }: { status: AttemptStatus }) {
+  const meta = resultStatusMeta(status);
+  return (
+    <span
+      className={`inline-flex items-center gap-1.5 rounded-md border px-2 py-1 text-[11px] font-medium ${meta.className}`}
+    >
+      <span className="h-1.5 w-1.5 rounded-full bg-current" />
+      {meta.label}
+    </span>
+  );
+}
+
+function resultStatusMeta(status: AttemptStatus) {
+  return (
+    {
+      notStarted: {
+        label: "Criado",
+        className: "border-border bg-muted text-foreground",
+      },
+      inProgress: {
+        label: "Em andamento",
+        className: "border-primary/25 bg-primary/10 text-foreground",
+      },
+      paused: {
+        label: "Pausado",
+        className: "border-warning/35 bg-warning/15 text-warning-foreground",
+      },
+      completed: {
+        label: "Concluído",
+        className: "border-success/25 bg-success/10 text-foreground",
+      },
+      abandoned: {
+        label: "Abandonado",
+        className: "border-danger/25 bg-danger/10 text-foreground",
+      },
+      expired: {
+        label: "Expirado",
+        className: "border-warning/35 bg-warning/15 text-warning-foreground",
+      },
+      failed: {
+        label: "Falhou",
+        className: "border-danger/25 bg-danger/10 text-foreground",
+      },
+    } satisfies Record<AttemptStatus, { label: string; className: string }>
+  )[status];
 }
 
 function rangeForPeriod(period: string) {
