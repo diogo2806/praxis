@@ -791,8 +791,171 @@ export function rotateIntegrationToken(provider: IntegrationProvider) {
   );
 }
 
-export function getDashboard() {
-  return request<DashboardResponse>("/api/v1/dashboard");
+export async function getDashboard() {
+  try {
+    return await request<DashboardResponse>("/api/v1/dashboard");
+  } catch (error) {
+    if (error instanceof PraxisApiError && error.status === 404) {
+      return getDashboardFallback();
+    }
+    throw error;
+  }
+}
+
+async function getDashboardFallback(): Promise<DashboardResponse> {
+  const [
+    account,
+    companyProfile,
+    simulations,
+    journeys,
+    integrationTokens,
+    candidateLinks,
+  ] = await Promise.all([
+    getCurrentAccount(),
+    getCompanyProfile().catch(() => null),
+    listSimulations().catch(() => []),
+    listAssessmentJourneys().catch(() => []),
+    listIntegrationTokens().catch(() => []),
+    listCandidateLinks().catch(() => []),
+  ]);
+
+  const now = Date.now();
+  const last30Days = now - 30 * 24 * 60 * 60 * 1000;
+  const candidatesInProgress = candidateLinks.filter((link) =>
+    ["notStarted", "inProgress", "paused"].includes(link.status),
+  ).length;
+  const completedAttemptsLast30Days = candidateLinks.filter((link) => {
+    if (link.status !== "completed") return false;
+    const createdAt = new Date(link.createdAt).getTime();
+    return Number.isFinite(createdAt) && createdAt >= last30Days;
+  }).length;
+
+  return {
+    tenantId: account.tenantId,
+    tenantName: companyProfile?.tradeName ?? companyProfile?.legalName ?? account.name,
+    activeSimulations: simulations.filter(
+      (simulation) =>
+        simulation.status === "published" || simulation.livePublishedVersionNumber != null,
+    ).length,
+    assessmentJourneys: {
+      total: journeys.length,
+      published: journeys.filter((journey) => journey.status === "PUBLISHED").length,
+      draft: journeys.filter((journey) => journey.status === "DRAFT").length,
+    },
+    candidatesInProgress,
+    completedAttemptsLast30Days,
+    latestResults: candidateLinks.slice(0, 5).map((link) => ({
+      attemptId: link.attemptId,
+      candidateName: link.candidateName,
+      simulationOrJourneyName: link.simulationName,
+      status: link.status,
+      date: link.createdAt,
+      result: null,
+      actionLabel: link.status === "completed" ? "Ver detalhes" : "Acompanhar",
+      actionRoute: link.status === "completed" ? "/results" : "/candidate-links/new",
+    })),
+    journeys: journeys.slice(0, 5).map((journey) => ({
+      id: journey.id,
+      name: journey.name,
+      status: journey.status,
+      candidatesInProgress: 0,
+      actionLabel: journey.status === "DRAFT" ? "Continuar edição" : "Ver jornada",
+      actionRoute: "/assessment-journeys",
+    })),
+    integrations: integrationStatusesFromTokens(integrationTokens),
+    billing: {
+      plan: "ENTERPRISE",
+      status: "ATIVO",
+      creditBalance: 0,
+      usedInPeriod: completedAttemptsLast30Days,
+      subscriptionStatus: null,
+      nextRenewalAt: null,
+      commercialCondition: "Sob contrato",
+    },
+    recommendedActions: dashboardFallbackActions(
+      simulations.length,
+      journeys.filter((journey) => journey.status === "DRAFT").length,
+      integrationTokens,
+      completedAttemptsLast30Days,
+    ),
+  };
+}
+
+function integrationStatusesFromTokens(
+  tokens: IntegrationTokenResponse[],
+): DashboardIntegrationStatusItem[] {
+  const configured = new Set(tokens.filter((token) => token.configured).map((token) => token.provider));
+  return [
+    {
+      provider: "GUPY",
+      name: "Gupy",
+      status: configured.has("gupy") ? "CONECTADA" : "NAO_CONFIGURADA",
+      lastSyncAt: null,
+      action: configured.has("gupy") ? null : "CONFIGURAR",
+    },
+    {
+      provider: "RECRUTEI",
+      name: "Recrutei",
+      status: configured.has("recrutei") ? "CONECTADA" : "NAO_CONFIGURADA",
+      lastSyncAt: null,
+      action: configured.has("recrutei") ? null : "CONFIGURAR",
+    },
+    {
+      provider: "CUSTOM_API",
+      name: "API personalizada",
+      status: "DESATIVADA",
+      lastSyncAt: null,
+      action: "CONFIGURAR",
+    },
+  ];
+}
+
+function dashboardFallbackActions(
+  simulationCount: number,
+  draftJourneyCount: number,
+  integrationTokens: IntegrationTokenResponse[],
+  completedAttemptsLast30Days: number,
+): DashboardResponse["recommendedActions"] {
+  const actions: DashboardResponse["recommendedActions"] = [];
+  if (simulationCount === 0) {
+    actions.push({
+      type: "CREATE_FIRST_SIMULATION",
+      title: "Crie sua primeira avaliação",
+      description: "Você ainda não possui avaliações cadastradas para gerar links de candidatos.",
+      severity: "info",
+      buttonLabel: "Criar avaliação",
+      route: "/simulations/new",
+    });
+  }
+  if (draftJourneyCount > 0) {
+    actions.push({
+      type: "PUBLISH_DRAFT_JOURNEY",
+      title: `Você possui ${draftJourneyCount} jornada${draftJourneyCount === 1 ? "" : "s"} em rascunho`,
+      description: "Publique as jornadas prontas para permitir convites de candidatos.",
+      severity: "warning",
+      buttonLabel: "Publicar jornada",
+      route: "/assessment-journeys",
+    });
+  }
+  if (!integrationTokens.some((token) => token.configured)) {
+    actions.push({
+      type: "CONFIGURE_INTEGRATION",
+      title: "Configure integrações",
+      description: "Conecte provedores externos quando quiser automatizar convites e resultados.",
+      severity: "warning",
+      buttonLabel: "Configurar integração",
+      route: "/integrations",
+    });
+  }
+  actions.push({
+    type: "VIEW_RESULTS",
+    title: "Sua operação está ativa",
+    description: `${completedAttemptsLast30Days} avaliações concluídas nos últimos 30 dias.`,
+    severity: "success",
+    buttonLabel: "Ver resultados",
+    route: "/results",
+  });
+  return actions.slice(0, 4);
 }
 
 export interface ResultsListFilters {
