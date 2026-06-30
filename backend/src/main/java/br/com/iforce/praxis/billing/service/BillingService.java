@@ -83,9 +83,6 @@ public class BillingService {
         if (plan.getPlanType() != CommercialPlanType.AVULSO || plan.getCreditAmount() == null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Plano não é um pacote de créditos AVULSO.");
         }
-        if (!plan.isActive()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Plano inativo.");
-        }
         String externalReference = reference(KIND_CREDIT, tenantId, planId);
         JsonNode response = mercadoPagoClient.createCreditPreference(plan, externalReference,
                 java.util.Map.of("tenant_id", tenantId, "plan_id", planId, "kind", KIND_CREDIT));
@@ -106,20 +103,6 @@ public class BillingService {
         if (plan.getPlanType() != CommercialPlanType.PROFISSIONAL) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Plano não é uma assinatura PROFISSIONAL.");
         }
-        if (!plan.isActive()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Plano inativo.");
-        }
-        // Bloqueia criar nova assinatura se já existe uma PENDING, AUTHORIZED ou DELINQUENT.
-        subscriptionRepository.findFirstByTenantIdOrderByCreatedAtDesc(tenantId)
-                .filter(sub -> sub.getStatus() == SubscriptionStatus.PENDING
-                        || sub.getStatus() == SubscriptionStatus.AUTHORIZED
-                        || sub.getStatus() == SubscriptionStatus.DELINQUENT)
-                .ifPresent(sub -> {
-                    throw new ResponseStatusException(
-                            HttpStatus.CONFLICT,
-                            "Cliente já possui assinatura ativa ou pendente."
-                    );
-                });
         String externalReference = reference(KIND_SUB, tenantId, planId);
         JsonNode response = mercadoPagoClient.createPreapproval(plan, tenant.getCorporateEmail(), externalReference);
 

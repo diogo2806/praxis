@@ -40,11 +40,6 @@ public class MercadoPagoSignatureValidator {
     public boolean isValid(String xSignature, String xRequestId, String dataId) {
         String secret = properties.webhookSecret();
         if (secret == null || secret.isBlank()) {
-            // Em produção (mp.enabled=true), exigir segredo configurado é obrigatório.
-            if (properties.enabled()) {
-                log.error("MP_WEBHOOK_SECRET ausente mas Mercado Pago está habilitado: webhook rejeitado por segurança.");
-                return false;
-            }
             log.warn("MP_WEBHOOK_SECRET ausente: assinatura do webhook não verificada (apenas dev).");
             return true;
         }
