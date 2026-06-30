@@ -42,7 +42,9 @@ public enum AuditEventType implements DescribedEnum {
     ADMIN_USER_INVITE_RESENT("adminUserInviteResent"),
     ADMIN_USER_BLOCKED("adminUserBlocked"),
     ADMIN_USER_UNBLOCKED("adminUserUnblocked"),
-    ADMIN_USAGE_VIEWED("adminUsageViewed");
+    ADMIN_USAGE_VIEWED("adminUsageViewed"),
+    PASSWORD_RESET_REQUESTED("passwordResetRequested"),
+    PASSWORD_RESET_COMPLETED("passwordResetCompleted");
 
     private final String descricao;
 

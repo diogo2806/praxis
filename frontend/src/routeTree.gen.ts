@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as TalentMatchRouteImport } from './routes/talent-match'
+import { Route as RecuperarSenhaRouteImport } from './routes/recuperar-senha'
 import { Route as MonitoramentoRouteImport } from './routes/monitoramento'
 import { Route as EnviarLinkRouteImport } from './routes/enviar-link'
 import { Route as ConfiguracoesRouteImport } from './routes/configuracoes'
@@ -31,6 +32,7 @@ import { Route as NovaDialogoRouteImport } from './routes/nova.dialogo'
 import { Route as NovaCompetenciasRouteImport } from './routes/nova.competencias'
 import { Route as NovaBlueprintRouteImport } from './routes/nova.blueprint'
 import { Route as ConviteTokenRouteImport } from './routes/convite.$token'
+import { Route as ResetPasswordTokenRouteImport } from './routes/reset-password.$token'
 import { Route as ConfiguracoesPerfilRouteImport } from './routes/configuracoes.perfil'
 import { Route as ConfiguracoesIntegracoesRouteImport } from './routes/configuracoes.integracoes'
 import { Route as ConfiguracoesContaRouteImport } from './routes/configuracoes.conta'
@@ -41,6 +43,11 @@ import { Route as AdminTenantsTenantIdRouteImport } from './routes/admin.tenants
 const TalentMatchRoute = TalentMatchRouteImport.update({
   id: '/talent-match',
   path: '/talent-match',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RecuperarSenhaRoute = RecuperarSenhaRouteImport.update({
+  id: '/recuperar-senha',
+  path: '/recuperar-senha',
   getParentRoute: () => rootRouteImport,
 } as any)
 const MonitoramentoRoute = MonitoramentoRouteImport.update({
@@ -148,6 +155,11 @@ const ConviteTokenRoute = ConviteTokenRouteImport.update({
   path: '/convite/$token',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ResetPasswordTokenRoute = ResetPasswordTokenRouteImport.update({
+  id: '/reset-password/$token',
+  path: '/reset-password/$token',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ConfiguracoesPerfilRoute = ConfiguracoesPerfilRouteImport.update({
   id: '/perfil',
   path: '/perfil',
@@ -190,6 +202,7 @@ export interface FileRoutesByFullPath {
   '/configuracoes': typeof ConfiguracoesRouteWithChildren
   '/enviar-link': typeof EnviarLinkRoute
   '/monitoramento': typeof MonitoramentoRoute
+  '/recuperar-senha': typeof RecuperarSenhaRoute
   '/talent-match': typeof TalentMatchRoute
   '/candidato/$token': typeof CandidatoTokenRoute
   '/configuracoes/conta': typeof ConfiguracoesContaRoute
@@ -206,6 +219,7 @@ export interface FileRoutesByFullPath {
   '/nova/personagem': typeof NovaPersonagemRoute
   '/nova/piloto': typeof NovaPilotoRoute
   '/nova/validador': typeof NovaValidadorRoute
+  '/reset-password/$token': typeof ResetPasswordTokenRoute
   '/admin/': typeof AdminIndexRoute
   '/admin/tenants/$tenantId': typeof AdminTenantsTenantIdRoute
   '/admin/tenants/': typeof AdminTenantsIndexRoute
@@ -220,6 +234,7 @@ export interface FileRoutesByTo {
   '/configuracoes': typeof ConfiguracoesRouteWithChildren
   '/enviar-link': typeof EnviarLinkRoute
   '/monitoramento': typeof MonitoramentoRoute
+  '/recuperar-senha': typeof RecuperarSenhaRoute
   '/talent-match': typeof TalentMatchRoute
   '/candidato/$token': typeof CandidatoTokenRoute
   '/configuracoes/conta': typeof ConfiguracoesContaRoute
@@ -236,6 +251,7 @@ export interface FileRoutesByTo {
   '/nova/personagem': typeof NovaPersonagemRoute
   '/nova/piloto': typeof NovaPilotoRoute
   '/nova/validador': typeof NovaValidadorRoute
+  '/reset-password/$token': typeof ResetPasswordTokenRoute
   '/admin': typeof AdminIndexRoute
   '/admin/tenants/$tenantId': typeof AdminTenantsTenantIdRoute
   '/admin/tenants': typeof AdminTenantsIndexRoute
@@ -251,6 +267,7 @@ export interface FileRoutesById {
   '/configuracoes': typeof ConfiguracoesRouteWithChildren
   '/enviar-link': typeof EnviarLinkRoute
   '/monitoramento': typeof MonitoramentoRoute
+  '/recuperar-senha': typeof RecuperarSenhaRoute
   '/talent-match': typeof TalentMatchRoute
   '/candidato/$token': typeof CandidatoTokenRoute
   '/configuracoes/conta': typeof ConfiguracoesContaRoute
@@ -267,6 +284,7 @@ export interface FileRoutesById {
   '/nova/personagem': typeof NovaPersonagemRoute
   '/nova/piloto': typeof NovaPilotoRoute
   '/nova/validador': typeof NovaValidadorRoute
+  '/reset-password/$token': typeof ResetPasswordTokenRoute
   '/admin/': typeof AdminIndexRoute
   '/admin/tenants/$tenantId': typeof AdminTenantsTenantIdRoute
   '/admin/tenants/': typeof AdminTenantsIndexRoute
@@ -283,6 +301,7 @@ export interface FileRouteTypes {
     | '/configuracoes'
     | '/enviar-link'
     | '/monitoramento'
+    | '/recuperar-senha'
     | '/talent-match'
     | '/candidato/$token'
     | '/configuracoes/conta'
@@ -299,6 +318,7 @@ export interface FileRouteTypes {
     | '/nova/personagem'
     | '/nova/piloto'
     | '/nova/validador'
+    | '/reset-password/$token'
     | '/admin/'
     | '/admin/tenants/$tenantId'
     | '/admin/tenants/'
@@ -313,6 +333,7 @@ export interface FileRouteTypes {
     | '/configuracoes'
     | '/enviar-link'
     | '/monitoramento'
+    | '/recuperar-senha'
     | '/talent-match'
     | '/candidato/$token'
     | '/configuracoes/conta'
@@ -329,6 +350,7 @@ export interface FileRouteTypes {
     | '/nova/personagem'
     | '/nova/piloto'
     | '/nova/validador'
+    | '/reset-password/$token'
     | '/admin'
     | '/admin/tenants/$tenantId'
     | '/admin/tenants'
@@ -343,6 +365,7 @@ export interface FileRouteTypes {
     | '/configuracoes'
     | '/enviar-link'
     | '/monitoramento'
+    | '/recuperar-senha'
     | '/talent-match'
     | '/candidato/$token'
     | '/configuracoes/conta'
@@ -359,6 +382,7 @@ export interface FileRouteTypes {
     | '/nova/personagem'
     | '/nova/piloto'
     | '/nova/validador'
+    | '/reset-password/$token'
     | '/admin/'
     | '/admin/tenants/$tenantId'
     | '/admin/tenants/'
@@ -374,8 +398,10 @@ export interface RootRouteChildren {
   ConfiguracoesRoute: typeof ConfiguracoesRouteWithChildren
   EnviarLinkRoute: typeof EnviarLinkRoute
   MonitoramentoRoute: typeof MonitoramentoRoute
+  RecuperarSenhaRoute: typeof RecuperarSenhaRoute
   TalentMatchRoute: typeof TalentMatchRoute
   ConviteTokenRoute: typeof ConviteTokenRoute
+  ResetPasswordTokenRoute: typeof ResetPasswordTokenRoute
   NovaBlueprintRoute: typeof NovaBlueprintRoute
   NovaCompetenciasRoute: typeof NovaCompetenciasRoute
   NovaDialogoRoute: typeof NovaDialogoRoute
@@ -412,6 +438,13 @@ declare module '@tanstack/react-router' {
       path: '/enviar-link'
       fullPath: '/enviar-link'
       preLoaderRoute: typeof EnviarLinkRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/recuperar-senha': {
+      id: '/recuperar-senha'
+      path: '/recuperar-senha'
+      fullPath: '/recuperar-senha'
+      preLoaderRoute: typeof RecuperarSenhaRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/configuracoes': {
@@ -547,6 +580,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ConviteTokenRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/reset-password/$token': {
+      id: '/reset-password/$token'
+      path: '/reset-password/$token'
+      fullPath: '/reset-password/$token'
+      preLoaderRoute: typeof ResetPasswordTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/configuracoes/perfil': {
       id: '/configuracoes/perfil'
       path: '/perfil'
@@ -630,8 +670,10 @@ const rootRouteChildren: RootRouteChildren = {
   ConfiguracoesRoute: ConfiguracoesRouteWithChildren,
   EnviarLinkRoute: EnviarLinkRoute,
   MonitoramentoRoute: MonitoramentoRoute,
+  RecuperarSenhaRoute: RecuperarSenhaRoute,
   TalentMatchRoute: TalentMatchRoute,
   ConviteTokenRoute: ConviteTokenRoute,
+  ResetPasswordTokenRoute: ResetPasswordTokenRoute,
   NovaBlueprintRoute: NovaBlueprintRoute,
   NovaCompetenciasRoute: NovaCompetenciasRoute,
   NovaDialogoRoute: NovaDialogoRoute,

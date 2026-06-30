@@ -34,6 +34,7 @@ public class AuditEventService {
     public static final String SIMULATION_AGGREGATE = "Simulation";
     public static final String SIMULATION_VERSION_AGGREGATE = "SimulationVersion";
     public static final String TENANT_AGGREGATE = "Tenant";
+    public static final String USER_AGGREGATE = "User";
 
     /** Tenant técnico usado quando uma ação administrativa não tem cliente alvo. */
     public static final String PLATFORM_TENANT_ID = "PLATFORM";
@@ -80,6 +81,41 @@ public class AuditEventService {
         auditEventEntity.setTenantId(tenantId);
         auditEventEntity.setAggregateType(TENANT_AGGREGATE);
         auditEventEntity.setAggregateId(tenantId);
+        auditEventEntity.setEventType(eventType);
+        auditEventEntity.setMessage(message);
+        auditEventEntity.setMetadata(metadata);
+        auditEventEntity.setCreatedAt(Instant.now());
+
+        auditEventRepository.save(auditEventEntity);
+    }
+
+    /**
+     * Registra um evento no histórico de um usuário de acesso (ex.: recuperação de senha).
+     *
+     * <p>Diferente da ação administrativa, o ator é o próprio usuário e não há operador ADMIN
+     * envolvido. A trilha permanece append-only e preserva o isolamento por tenant. Nunca
+     * registre o token, a senha ou seus hashes nos metadados.</p>
+     *
+     * <p>Este método DEVE ser chamado dentro de uma transação de banco de dados existente.</p>
+     *
+     * @param tenantId  empresa (ou {@link #PLATFORM_TENANT_ID} para ADMIN) do usuário
+     * @param userId    identificador do usuário alvo do evento
+     * @param eventType tipo do evento (ex.: PASSWORD_RESET_REQUESTED, PASSWORD_RESET_COMPLETED)
+     * @param message   descrição em português do que aconteceu
+     * @param metadata  informações adicionais em JSON (horário, IP quando disponível, etc.)
+     */
+    @Transactional(propagation = Propagation.MANDATORY)
+    public void appendUserEvent(
+            String tenantId,
+            String userId,
+            AuditEventType eventType,
+            String message,
+            String metadata
+    ) {
+        AuditEventEntity auditEventEntity = new AuditEventEntity();
+        auditEventEntity.setTenantId(tenantId);
+        auditEventEntity.setAggregateType(USER_AGGREGATE);
+        auditEventEntity.setAggregateId(userId);
         auditEventEntity.setEventType(eventType);
         auditEventEntity.setMessage(message);
         auditEventEntity.setMetadata(metadata);
@@ -266,6 +302,7 @@ public class AuditEventService {
             case CANDIDATE_ATTEMPT_AGGREGATE -> "Tentativa do candidato";
             case SIMULATION_AGGREGATE -> "Simulação";
             case SIMULATION_VERSION_AGGREGATE -> "Versão da simulação";
+            case USER_AGGREGATE -> "Usuário";
             default -> "Item";
         };
     }

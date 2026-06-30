@@ -1339,3 +1339,47 @@ export function acceptInvite(requestBody: AcceptInviteRequest) {
     body: JSON.stringify(requestBody),
   });
 }
+
+export type ForgotPasswordRequest = {
+  // EMPRESA informa tenantId + email; ADMIN informa apenas email (tenant PLATFORM).
+  tenantId?: string;
+  email: string;
+};
+
+export type ResetPasswordTokenResponse = {
+  valid: boolean;
+  expiresAt: string;
+  userName: string;
+};
+
+export type ResetPasswordRequest = {
+  token: string;
+  newPassword: string;
+  confirmPassword: string;
+};
+
+/**
+ * Solicita o e-mail de recuperação de senha. A resposta é sempre a mesma, independentemente
+ * de a conta existir, para nunca revelar a existência de usuários, e-mails ou tenants.
+ */
+export function requestPasswordReset(requestBody: ForgotPasswordRequest) {
+  return request<{ message: string }>("/api/v1/auth/password/forgot", {
+    method: "POST",
+    body: JSON.stringify(requestBody),
+  });
+}
+
+/** Valida o token recebido no link antes de coletar a nova senha. */
+export function validatePasswordResetToken(token: string) {
+  return request<ResetPasswordTokenResponse>(
+    `/api/v1/auth/password/reset/${encodeURIComponent(token)}`,
+  );
+}
+
+/** Conclui a redefinição de senha a partir do token. */
+export function resetPassword(requestBody: ResetPasswordRequest) {
+  return request<{ message: string }>("/api/v1/auth/password/reset", {
+    method: "POST",
+    body: JSON.stringify(requestBody),
+  });
+}

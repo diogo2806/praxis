@@ -73,4 +73,18 @@ public class UserEntity {
 
     @Column(name = "invite_expires_at")
     private Instant inviteExpiresAt;
+
+    /** Hash BCrypt do token de recuperação de senha. O token puro nunca é persistido. */
+    @Column(name = "password_reset_token_hash", length = 120)
+    private String passwordResetTokenHash;
+
+    @Column(name = "password_reset_requested_at")
+    private Instant passwordResetRequestedAt;
+
+    @Column(name = "password_reset_expires_at")
+    private Instant passwordResetExpiresAt;
+
+    /** Momento da última redefinição concluída; mantido como histórico. */
+    @Column(name = "last_password_reset_at")
+    private Instant lastPasswordResetAt;
 }

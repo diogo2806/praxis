@@ -56,6 +56,9 @@ public class SecurityConfig {
                                 "/recrutei/test",
                                 "/recrutei/test/**",
                                 "/api/v1/auth/invite/**",
+                                // Recuperação de senha: público, sem JWT. Não revela a
+                                // existência de contas e é limitado por IP no controller.
+                                "/api/v1/auth/password/**",
                                 // Webhook do Mercado Pago (Parte B): público, validado por
                                 // assinatura no próprio handler, sem JWT de usuário.
                                 "/api/webhooks/mercado-pago/**"
