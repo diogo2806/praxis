@@ -100,6 +100,15 @@ public class BillingService {
     public CheckoutResponse createSubscription(String tenantId, Long planId) {
         TenantEntity tenant = requireTenant(tenantId);
         SubscriptionPlanEntity plan = requirePlan(planId);
+        subscriptionRepository.findFirstByTenantIdOrderByCreatedAtDesc(tenantId)
+                .filter(sub -> sub.getStatus() == SubscriptionStatus.PENDING
+                        || sub.getStatus() == SubscriptionStatus.AUTHORIZED
+                        || sub.getStatus() == SubscriptionStatus.DELINQUENT)
+                .ifPresent(sub -> {
+                    throw new ResponseStatusException(
+                            HttpStatus.CONFLICT,
+                            "Cliente já possui assinatura ativa, pendente ou inadimplente.");
+                });
         if (plan.getPlanType() != CommercialPlanType.PROFISSIONAL) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Plano não é uma assinatura PROFISSIONAL.");
         }
@@ -333,8 +342,12 @@ public class BillingService {
         if (planId == null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Plano não informado.");
         }
-        return planRepository.findById(planId)
+        SubscriptionPlanEntity plan = planRepository.findById(planId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Plano não encontrado."));
+        if (!plan.isActive()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Plano inativo.");
+        }
+        return plan;
     }
 
     private static String reference(String kind, String tenantId, Long planId) {

@@ -11,6 +11,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.Instant;
+import java.util.UUID;
 
 /**
  * Recebe e processa notificações do Mercado Pago.
@@ -55,7 +56,8 @@ public class MercadoPagoWebhookService {
             return;
         }
 
-        String notificationId = topic + ":" + dataId;
+        String notificationId = (xRequestId != null && !xRequestId.isBlank() ? xRequestId : UUID.randomUUID().toString())
+                + ":" + topic + ":" + dataId;
         if (receiptRepository.existsByNotificationId(notificationId)) {
             log.debug("Webhook {} já processado; ignorado (idempotência).", notificationId);
             return;
