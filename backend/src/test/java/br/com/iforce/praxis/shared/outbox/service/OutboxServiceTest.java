@@ -1,20 +1,33 @@
 package br.com.iforce.praxis.shared.outbox.service;
 
 import br.com.iforce.praxis.shared.outbox.persistence.entity.OutboxEventEntity;
+
 import br.com.iforce.praxis.shared.outbox.persistence.repository.OutboxEventRepository;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
+
 import org.junit.jupiter.api.BeforeEach;
+
 import org.junit.jupiter.api.Test;
+
 import org.junit.jupiter.api.extension.ExtendWith;
+
 import org.mockito.ArgumentCaptor;
+
 import org.mockito.Mock;
+
 import org.mockito.junit.jupiter.MockitoExtension;
+
 
 import java.util.Map;
 
+
 import static org.assertj.core.api.Assertions.assertThat;
+
 import static org.mockito.ArgumentMatchers.any;
+
 import static org.mockito.Mockito.verify;
+
 
 @ExtendWith(MockitoExtension.class)
 class OutboxServiceTest {
@@ -33,7 +46,7 @@ class OutboxServiceTest {
 
     @Test
     void shouldPublishEventWithPayload() {
-        String tenantId = "tenant-1";
+        String empresaId = "empresa-1";
         String eventType = "RESULT_READY";
         String aggregateType = "CandidateAttempt";
         String aggregateId = "att_123";
@@ -42,13 +55,13 @@ class OutboxServiceTest {
             "testResult", Map.of("score", 85)
         );
 
-        outboxService.publish(tenantId, eventType, aggregateType, aggregateId, payload);
+        outboxService.publish(empresaId, eventType, aggregateType, aggregateId, payload);
 
         ArgumentCaptor<OutboxEventEntity> captor = ArgumentCaptor.forClass(OutboxEventEntity.class);
         verify(outboxEventRepository).save(captor.capture());
 
         OutboxEventEntity savedEvent = captor.getValue();
-        assertThat(savedEvent.getTenantId()).isEqualTo(tenantId);
+        assertThat(savedEvent.getEmpresaId()).isEqualTo(empresaId);
         assertThat(savedEvent.getEventType()).isEqualTo(eventType);
         assertThat(savedEvent.getAggregateType()).isEqualTo(aggregateType);
         assertThat(savedEvent.getAggregateId()).isEqualTo(aggregateId);
@@ -61,10 +74,10 @@ class OutboxServiceTest {
 
     @Test
     void shouldSerializePayloadAsJson() {
-        String tenantId = "tenant-1";
+        String empresaId = "empresa-1";
         Map<String, String> payload = Map.of("key", "value");
 
-        outboxService.publish(tenantId, "TEST_EVENT", "TestAggregate", "agg_1", payload);
+        outboxService.publish(empresaId, "TEST_EVENT", "TestAggregate", "agg_1", payload);
 
         ArgumentCaptor<OutboxEventEntity> captor = ArgumentCaptor.forClass(OutboxEventEntity.class);
         verify(outboxEventRepository).save(captor.capture());
@@ -76,7 +89,7 @@ class OutboxServiceTest {
 
     @Test
     void shouldHandleComplexPayloadStructure() {
-        String tenantId = "tenant-1";
+        String empresaId = "empresa-1";
         Map<String, Object> payload = Map.of(
             "webhookUrl", "https://api.example.com/callback",
             "attemptId", "att_456",
@@ -86,7 +99,7 @@ class OutboxServiceTest {
             )
         );
 
-        outboxService.publish(tenantId, "RESULT_READY", "CandidateAttempt", "att_456", payload);
+        outboxService.publish(empresaId, "RESULT_READY", "CandidateAttempt", "att_456", payload);
 
         ArgumentCaptor<OutboxEventEntity> captor = ArgumentCaptor.forClass(OutboxEventEntity.class);
         verify(outboxEventRepository).save(captor.capture());

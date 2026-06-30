@@ -1,17 +1,25 @@
 package br.com.iforce.praxis.companyprofile.service;
 
-import br.com.iforce.praxis.auth.persistence.entity.TenantEntity;
-import br.com.iforce.praxis.auth.persistence.repository.TenantRepository;
-import br.com.iforce.praxis.auth.service.CurrentTenantService;
+import br.com.iforce.praxis.auth.persistence.entity.EmpresaEntity;
+
+import br.com.iforce.praxis.auth.persistence.repository.EmpresaRepository;
+
+import br.com.iforce.praxis.auth.service.CurrentEmpresaService;
+
 import br.com.iforce.praxis.companyprofile.dto.CompanyProfileResponse;
+
 import org.springframework.stereotype.Service;
+
 import org.springframework.transaction.annotation.Transactional;
+
 import org.springframework.web.server.ResponseStatusException;
+
 
 import static org.springframework.http.HttpStatus.NOT_FOUND;
 
+
 /**
- * Fornece os dados cadastrais da empresa (tenant) que está logada.
+ * Fornece os dados cadastrais da empresa (empresa) que está logada.
  *
  * <p>Na visão do processo, é aqui que o sistema busca as informações de
  * cadastro da própria empresa — nome, razão social, CNPJ, contato e site —
@@ -21,15 +29,15 @@ import static org.springframework.http.HttpStatus.NOT_FOUND;
 @Service
 public class CompanyProfileService {
 
-    private final CurrentTenantService currentTenantService;
-    private final TenantRepository tenantRepository;
+    private final CurrentEmpresaService currentEmpresaService;
+    private final EmpresaRepository empresaRepository;
 
     public CompanyProfileService(
-            CurrentTenantService currentTenantService,
-            TenantRepository tenantRepository
+            CurrentEmpresaService currentEmpresaService,
+            EmpresaRepository empresaRepository
     ) {
-        this.currentTenantService = currentTenantService;
-        this.tenantRepository = tenantRepository;
+        this.currentEmpresaService = currentEmpresaService;
+        this.empresaRepository = empresaRepository;
     }
 
     /**
@@ -42,17 +50,17 @@ public class CompanyProfileService {
      */
     @Transactional(readOnly = true)
     public CompanyProfileResponse getProfile() {
-        String tenantId = currentTenantService.requiredTenantId();
-        TenantEntity tenant = tenantRepository.findById(tenantId)
+        String empresaId = currentEmpresaService.requiredEmpresaId();
+        EmpresaEntity empresa = empresaRepository.findById(empresaId)
                 .orElseThrow(() -> new ResponseStatusException(NOT_FOUND, "Empresa não encontrada."));
 
         return new CompanyProfileResponse(
-                fallback(tenant.getTradeName(), tenant.getName()),
-                tenant.getLegalName(),
-                tenant.getTaxId(),
-                tenant.getCorporateEmail(),
-                tenant.getPhone(),
-                tenant.getWebsite()
+                fallback(empresa.getTradeName(), empresa.getName()),
+                empresa.getLegalName(),
+                empresa.getTaxId(),
+                empresa.getCorporateEmail(),
+                empresa.getPhone(),
+                empresa.getWebsite()
         );
     }
 

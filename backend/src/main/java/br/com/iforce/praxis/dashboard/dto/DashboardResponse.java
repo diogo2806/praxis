@@ -1,17 +1,24 @@
 package br.com.iforce.praxis.dashboard.dto;
 
 import br.com.iforce.praxis.admin.model.CommercialPlanType;
-import br.com.iforce.praxis.admin.model.TenantStatus;
+
+import br.com.iforce.praxis.admin.model.EmpresaStatus;
+
 import br.com.iforce.praxis.billing.model.SubscriptionStatus;
+
 import br.com.iforce.praxis.gupy.model.AttemptStatus;
+
 import br.com.iforce.praxis.journey.model.AssessmentJourneyStatus;
 
+
 import java.time.Instant;
+
 import java.util.List;
 
+
 public record DashboardResponse(
-        String tenantId,
-        String tenantName,
+        String empresaId,
+        String empresaName,
         long activeSimulations,
         AssessmentJourneysSummary assessmentJourneys,
         long candidatesInProgress,
@@ -67,7 +74,7 @@ public record DashboardResponse(
 
     public record BillingUsage(
             CommercialPlanType plan,
-            TenantStatus status,
+            EmpresaStatus status,
             int creditBalance,
             long usedInPeriod,
             SubscriptionStatus subscriptionStatus,

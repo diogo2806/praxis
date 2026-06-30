@@ -1,16 +1,25 @@
 package br.com.iforce.praxis.simulation.service;
 
 import br.com.iforce.praxis.gupy.model.ResultTier;
+
 import br.com.iforce.praxis.simulation.dto.UpdateBlueprintRequest;
+
 import br.com.iforce.praxis.simulation.persistence.entity.SimulationCompetencyEntity;
+
 import br.com.iforce.praxis.simulation.persistence.entity.SimulationVersionEntity;
+
 import org.junit.jupiter.api.Test;
 
+
 import java.util.List;
+
 import java.util.Map;
+
 import java.util.stream.Collectors;
 
+
 import static org.assertj.core.api.Assertions.assertThat;
+
 
 class SimulationMapperServiceTest {
 

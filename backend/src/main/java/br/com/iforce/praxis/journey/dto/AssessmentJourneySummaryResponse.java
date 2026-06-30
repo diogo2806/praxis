@@ -1,9 +1,12 @@
 package br.com.iforce.praxis.journey.dto;
 
 import br.com.iforce.praxis.journey.model.AssessmentJourneyStatus;
+
 import io.swagger.v3.oas.annotations.media.Schema;
 
+
 import java.time.Instant;
+
 
 @Schema(description = "Resumo de uma Jornada de Avaliação para listagem.")
 public record AssessmentJourneySummaryResponse(

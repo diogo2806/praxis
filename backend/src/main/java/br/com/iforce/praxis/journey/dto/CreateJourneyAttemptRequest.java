@@ -1,9 +1,13 @@
 package br.com.iforce.praxis.journey.dto;
 
 import io.swagger.v3.oas.annotations.media.Schema;
+
 import jakarta.validation.constraints.Email;
+
 import jakarta.validation.constraints.NotBlank;
+
 import jakarta.validation.constraints.Size;
+
 
 @Schema(description = "Cria a tentativa de uma jornada para um candidato.")
 public record CreateJourneyAttemptRequest(

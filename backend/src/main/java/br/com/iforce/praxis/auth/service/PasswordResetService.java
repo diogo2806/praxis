@@ -1,30 +1,54 @@
 package br.com.iforce.praxis.auth.service;
 
 import br.com.iforce.praxis.admin.model.UserStatus;
+
 import br.com.iforce.praxis.audit.model.AuditEventType;
+
 import br.com.iforce.praxis.audit.service.AuditEventService;
+
 import br.com.iforce.praxis.audit.service.AuditMetadata;
+
 import br.com.iforce.praxis.auth.dto.ForgotPasswordRequest;
+
 import br.com.iforce.praxis.auth.dto.ResetPasswordRequest;
+
 import br.com.iforce.praxis.auth.dto.ResetPasswordTokenResponse;
-import br.com.iforce.praxis.auth.persistence.entity.TenantEntity;
+
+import br.com.iforce.praxis.auth.persistence.entity.EmpresaEntity;
+
 import br.com.iforce.praxis.auth.persistence.entity.UserEntity;
-import br.com.iforce.praxis.auth.persistence.repository.TenantRepository;
+
+import br.com.iforce.praxis.auth.persistence.repository.EmpresaRepository;
+
 import br.com.iforce.praxis.auth.persistence.repository.UserRepository;
+
 import org.slf4j.Logger;
+
 import org.slf4j.LoggerFactory;
+
 import org.springframework.beans.factory.annotation.Value;
+
 import org.springframework.http.HttpStatus;
+
 import org.springframework.security.crypto.password.PasswordEncoder;
+
 import org.springframework.stereotype.Service;
+
 import org.springframework.transaction.annotation.Transactional;
+
 import org.springframework.web.server.ResponseStatusException;
 
+
 import java.security.SecureRandom;
+
 import java.time.Instant;
+
 import java.time.temporal.ChronoUnit;
+
 import java.util.Base64;
+
 import java.util.Optional;
+
 
 /**
  * Orquestra a recuperação de senha de usuários autenticáveis (EMPRESA e ADMIN).
@@ -35,11 +59,11 @@ import java.util.Optional;
  *
  * <p>Princípios de segurança aplicados:</p>
  * <ul>
- *   <li>A solicitação retorna sempre a mesma resposta, sem revelar se o usuário, e-mail ou tenant
+ *   <li>A solicitação retorna sempre a mesma resposta, sem revelar se o usuário, e-mail ou empresa
  *       existem.</li>
  *   <li>O token expira automaticamente (TTL configurável, padrão de 2 horas) e é invalidado após o
  *       uso, impedindo reutilização do mesmo link.</li>
- *   <li>Todo o fluxo respeita o isolamento por tenant (ADMIN usa o tenant técnico PLATFORM).</li>
+ *   <li>Todo o fluxo respeita o isolamento por empresa (ADMIN usa o empresa técnico PLATFORM).</li>
  *   <li>Solicitação e conclusão geram eventos de auditoria, sem nunca registrar token, senha ou
  *       hashes.</li>
  * </ul>
@@ -47,15 +71,15 @@ import java.util.Optional;
 @Service
 public class PasswordResetService {
 
-    /** Tenant técnico do operador ADMIN, assumido quando a solicitação não informa tenant. */
-    public static final String PLATFORM_TENANT_ID = "PLATFORM";
+    /** Empresa técnico do operador ADMIN, assumido quando a solicitação não informa empresa. */
+    public static final String PLATFORM_EMPRESA_ID = "PLATFORM";
 
     private static final Logger log = LoggerFactory.getLogger(PasswordResetService.class);
     private static final SecureRandom SECURE_RANDOM = new SecureRandom();
     private static final Base64.Encoder URL_ENCODER = Base64.getUrlEncoder().withoutPadding();
 
     private final UserRepository userRepository;
-    private final TenantRepository tenantRepository;
+    private final EmpresaRepository empresaRepository;
     private final PasswordEncoder passwordEncoder;
     private final AuditEventService auditEventService;
     private final AuditMetadata auditMetadata;
@@ -65,7 +89,7 @@ public class PasswordResetService {
 
     public PasswordResetService(
             UserRepository userRepository,
-            TenantRepository tenantRepository,
+            EmpresaRepository empresaRepository,
             PasswordEncoder passwordEncoder,
             AuditEventService auditEventService,
             AuditMetadata auditMetadata,
@@ -74,7 +98,7 @@ public class PasswordResetService {
             @Value("${praxis.auth.password-reset-ttl-hours:2}") int ttlHours
     ) {
         this.userRepository = userRepository;
-        this.tenantRepository = tenantRepository;
+        this.empresaRepository = empresaRepository;
         this.passwordEncoder = passwordEncoder;
         this.auditEventService = auditEventService;
         this.auditMetadata = auditMetadata;
@@ -86,26 +110,26 @@ public class PasswordResetService {
     /**
      * Processa a solicitação de recuperação de senha.
      *
-     * <p>Se houver um usuário ativo correspondente (respeitando o tenant), gera um token, grava o
+     * <p>Se houver um usuário ativo correspondente (respeitando o empresa), gera um token, grava o
      * hash, define a expiração, registra auditoria e envia o e-mail. Caso contrário, não faz nada.
      * Em ambos os casos a operação termina silenciosamente para que a resposta da API seja sempre
      * idêntica.</p>
      *
-     * @param request dados informados (e-mail e, para EMPRESA, o tenant)
+     * @param request dados informados (e-mail e, para EMPRESA, o empresa)
      * @param ip      IP de origem, quando disponível, apenas para auditoria
      */
     @Transactional
     public void requestReset(ForgotPasswordRequest request, String ip) {
-        String tenantId = resolveTenantId(request.tenantId());
+        String empresaId = resolveEmpresaId(request.empresaId());
         String email = request.email() == null ? "" : request.email().trim();
 
-        Optional<UserEntity> match = userRepository.findFirstByEmailAndTenantId(email, tenantId)
+        Optional<UserEntity> match = userRepository.findFirstByEmailAndEmpresaId(email, empresaId)
                 .filter(user -> user.getStatus() == UserStatus.ATIVO)
-                .filter(user -> !tenantBlocksAccess(user.getTenantId()));
+                .filter(user -> !empresaBlocksAccess(user.getEmpresaId()));
 
         if (match.isEmpty()) {
-            // Resposta uniforme: não revela usuário, e-mail ou tenant inexistente.
-            log.info("Solicitação de recuperação de senha sem correspondência ativa (tenant={}).", tenantId);
+            // Resposta uniforme: não revela usuário, e-mail ou empresa inexistente.
+            log.info("Solicitação de recuperação de senha sem correspondência ativa (empresa={}).", empresaId);
             return;
         }
 
@@ -114,13 +138,13 @@ public class PasswordResetService {
         userRepository.save(user);
 
         auditEventService.appendUserEvent(
-                user.getTenantId(),
+                user.getEmpresaId(),
                 String.valueOf(user.getId()),
                 AuditEventType.PASSWORD_RESET_REQUESTED,
                 "Recuperação de senha solicitada.",
                 auditMetadata.of(
                         "userId", user.getId(),
-                        "tenantId", user.getTenantId(),
+                        "empresaId", user.getEmpresaId(),
                         "requestedAt", String.valueOf(user.getPasswordResetRequestedAt()),
                         "ip", ip == null ? "" : ip
                 )
@@ -176,7 +200,7 @@ public class PasswordResetService {
             throw new ResponseStatusException(HttpStatus.GONE, "Token expirado.");
         }
 
-        if (tenantBlocksAccess(user.getTenantId())) {
+        if (empresaBlocksAccess(user.getEmpresaId())) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Cliente suspenso ou cancelado. Acesso bloqueado.");
         }
 
@@ -191,21 +215,21 @@ public class PasswordResetService {
         userRepository.save(user);
 
         auditEventService.appendUserEvent(
-                user.getTenantId(),
+                user.getEmpresaId(),
                 String.valueOf(user.getId()),
                 AuditEventType.PASSWORD_RESET_COMPLETED,
                 "Recuperação de senha concluída.",
                 auditMetadata.of(
                         "userId", user.getId(),
-                        "tenantId", user.getTenantId(),
+                        "empresaId", user.getEmpresaId(),
                         "completedAt", String.valueOf(now),
                         "ip", ip == null ? "" : ip
                 )
         );
     }
 
-    private String resolveTenantId(String requested) {
-        return (requested == null || requested.isBlank()) ? PLATFORM_TENANT_ID : requested.trim();
+    private String resolveEmpresaId(String requested) {
+        return (requested == null || requested.isBlank()) ? PLATFORM_EMPRESA_ID : requested.trim();
     }
 
     private String generateToken(UserEntity user) {
@@ -241,9 +265,9 @@ public class PasswordResetService {
         user.setPasswordResetExpiresAt(null);
     }
 
-    private boolean tenantBlocksAccess(String tenantId) {
-        TenantEntity tenant = tenantRepository.findById(tenantId).orElse(null);
-        return tenant != null && tenant.getStatus() != null && tenant.getStatus().blocksAccess();
+    private boolean empresaBlocksAccess(String empresaId) {
+        EmpresaEntity empresa = empresaRepository.findById(empresaId).orElse(null);
+        return empresa != null && empresa.getStatus() != null && empresa.getStatus().blocksAccess();
     }
 
     private String resetUrl(String token) {

@@ -1,24 +1,42 @@
 package br.com.iforce.praxis.gupy.service;
 
 import br.com.iforce.praxis.config.PraxisProperties;
+
 import br.com.iforce.praxis.gupy.dto.TestResultItemResponse;
+
 import br.com.iforce.praxis.gupy.dto.TestResultResponse;
+
 import br.com.iforce.praxis.gupy.model.AttemptAnswer;
+
 import br.com.iforce.praxis.gupy.model.AttemptStatus;
+
 import br.com.iforce.praxis.gupy.model.CandidateAttempt;
+
 import br.com.iforce.praxis.gupy.model.PublishedSimulation;
+
 import br.com.iforce.praxis.gupy.model.ReliabilityLevel;
+
 import br.com.iforce.praxis.gupy.model.ResultItem;
+
 import br.com.iforce.praxis.gupy.persistence.entity.AttemptAnswerEntity;
+
 import br.com.iforce.praxis.gupy.persistence.entity.CandidateAttemptEntity;
+
 import br.com.iforce.praxis.gupy.persistence.entity.ResultItemEntity;
+
 import org.springframework.stereotype.Component;
 
+
 import java.net.URLEncoder;
+
 import java.nio.charset.StandardCharsets;
+
 import java.time.Instant;
+
 import java.util.Comparator;
+
 import java.util.Map;
+
 
 @Component
 public class GupyTestResultMapper {

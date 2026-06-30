@@ -1,17 +1,22 @@
 package br.com.iforce.praxis.billing.dto;
 
 import br.com.iforce.praxis.admin.model.CommercialPlanType;
-import br.com.iforce.praxis.admin.model.TenantStatus;
+
+import br.com.iforce.praxis.admin.model.EmpresaStatus;
+
 import br.com.iforce.praxis.billing.model.SubscriptionStatus;
 
+
 import java.time.Instant;
+
 import java.util.List;
 
-/** Visão consolidada de cobrança exibida ao próprio cliente (tenant). */
+
+/** Visão consolidada de cobrança exibida ao próprio cliente (empresa). */
 public record ClientBillingResponse(
-        String tenantId,
+        String empresaId,
         CommercialPlanType plan,
-        TenantStatus tenantStatus,
+        EmpresaStatus empresaStatus,
         String financialStatus,
         int creditBalance,
         UsageSummary usage,

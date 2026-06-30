@@ -2,9 +2,13 @@ package br.com.iforce.praxis.shared.web;
 
 import org.springframework.http.HttpStatus;
 
+
 import java.util.Collections;
+
 import java.util.LinkedHashMap;
+
 import java.util.Map;
+
 
 /**
  * Exceção de negócio que carrega, além do status e da mensagem, um mapa de

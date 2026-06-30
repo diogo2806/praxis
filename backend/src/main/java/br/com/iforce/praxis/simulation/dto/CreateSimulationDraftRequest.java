@@ -1,11 +1,16 @@
 package br.com.iforce.praxis.simulation.dto;
 
 import io.swagger.v3.oas.annotations.media.Schema;
+
 import jakarta.validation.constraints.NotBlank;
+
 import jakarta.validation.constraints.NotEmpty;
+
 import jakarta.validation.constraints.Size;
 
+
 import java.util.List;
+
 
 @Schema(description = "Dados para criar uma simulacao em rascunho a partir do plano da avaliacao inicial.")
 public record CreateSimulationDraftRequest(

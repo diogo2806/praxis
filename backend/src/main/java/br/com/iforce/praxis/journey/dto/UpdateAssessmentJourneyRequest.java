@@ -1,7 +1,9 @@
 package br.com.iforce.praxis.journey.dto;
 
 import io.swagger.v3.oas.annotations.media.Schema;
+
 import jakarta.validation.constraints.Size;
+
 
 @Schema(description = "Atualiza os dados básicos de uma jornada em rascunho.")
 public record UpdateAssessmentJourneyRequest(

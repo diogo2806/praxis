@@ -39,15 +39,15 @@ Pacote base: `br.com.iforce.praxis`.
 
 Principais dominios:
 
-- `auth`: login, JWT, tenant e roles.
-- `admin`: painel administrativo da plataforma (perfil `ADMIN`) para cadastrar e governar clientes (tenants), acompanhar uso, suspender, reativar e cancelar, com auditoria append-only. Cliente = `TenantEntity`; nao existe `CustomerEntity`.
+- `auth`: login, JWT, empresa e roles.
+- `admin`: painel administrativo da plataforma (perfil `ADMIN`) para cadastrar e governar clientes (empresas), acompanhar uso, suspender, reativar e cancelar, com auditoria append-only. Cliente = `EmpresaEntity`; nao existe `CustomerEntity`.
 - `billing`: cobranca Mercado Pago (Parte B). AVULSO por credito pre-pago (saldo + ledger append-only), PROFISSIONAL por assinatura recorrente, ENTERPRISE por contrato manual. Webhook publico com validacao de assinatura, idempotencia e consulta a API antes de aplicar mudanca financeira. Credenciais (`MP_ACCESS_TOKEN`, `MP_PUBLIC_KEY`, `MP_WEBHOOK_SECRET`) ficam apenas no backend, via variaveis de ambiente.
 - `simulation`: criacao, versoes, grafo, validacao, publicacao, monitoramento e Talent Match.
 - `candidate`: fluxo publico do candidato e links internos.
 - `gupy`: contrato externo `/test/**`, catalogo, tentativa e resultado.
 - `shared.outbox`: entrega assincrona de eventos/resultados.
 - `audit`: trilha de eventos.
-- `tenantconfig`: catalogos configuraveis por tenant.
+- `empresaconfig`: catalogos configuraveis por empresa.
 - `media`: upload de imagem/audio para nos e alternativas.
 - `privacy`: informacoes de conformidade LGPD.
 - `notification`: alertas internos, inclusive DLQ.
@@ -61,7 +61,7 @@ Principais rotas:
 - `/app`: painel de simulacoes.
 - `/comecar`: entrada do fluxo de criacao.
 - `/nova/blueprint`: cria rascunho da avaliacao.
-- `/nova/competencias`: configura catalogos do tenant.
+- `/nova/competencias`: configura catalogos do empresa.
 - `/nova/objetivo`: ajusta plano, competencias e pesos.
 - `/nova/personagem`: define o primeiro turno/personagem.
 - `/nova/dialogo`: edita grafo, alternativas e midias.
@@ -137,7 +137,7 @@ flowchart LR
 | Preflight Gupy | `GET /api/v1/simulations/{id}/versions/{n}/gupy-preflight` |
 | Monitoramento | `GET /api/v1/simulations/{id}/versions/{n}/monitoring` |
 | Talent Match | `GET /api/v1/simulations/{id}/versions/{n}/talent-match?attemptIds=a,b` |
-| Tenant config | `GET /api/v1/tenant-config`, `PUT /api/v1/tenant-config/{configType}` |
+| Empresa config | `GET /api/v1/empresa-config`, `PUT /api/v1/empresa-config/{configType}` |
 | Midia | `POST /api/v1/media` |
 | Links de candidato | `GET/POST /api/v1/candidate-links` |
 | Tentativas ao vivo | `GET /api/v1/candidate-links/live-attempts` |
@@ -169,13 +169,13 @@ Observacao Gupy: o backend atual retorna `test_url` como URL de API em `/candida
 | Entrega outbox | `pending`, `retrying`, `sent`, `dlq` |
 | Validacao | `warning`, `blocker` |
 
-## Seguranca e tenant
+## Seguranca e empresa
 
 - `PRAXIS_SECURITY_ENABLED=true` exige JWT nas rotas internas.
-- `PRAXIS_SECURITY_ENABLED=false` libera rotas e usa `PRAXIS_DEFAULT_TENANT_ID`.
-- Rotas `/test/**` validam Bearer token de integracao comparando SHA-256 Base64URL do token com `tenants.integration_token_hash`.
+- `PRAXIS_SECURITY_ENABLED=false` libera rotas e usa `PRAXIS_DEFAULT_EMPRESA_ID`.
+- Rotas `/test/**` validam Bearer token de integracao comparando SHA-256 Base64URL do token com `empresas.integration_token_hash`.
 - Rotas internas exigem role `EMPRESA` quando a seguranca esta ativa.
-- O tenant e carregado no contexto e usado para isolar simulacoes, tentativas, auditoria e entregas.
+- O empresa e carregado no contexto e usado para isolar simulacoes, tentativas, auditoria e entregas.
 
 ## Variaveis de ambiente
 
@@ -186,8 +186,8 @@ Observacao Gupy: o backend atual retorna `test_url` como URL de API em `/candida
 | `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, `DB_PASS` | Conexao PostgreSQL. |
 | `DB_SCHEMA` | Schema usado por Flyway/JPA. |
 | `PRAXIS_SECURITY_ENABLED` | Liga/desliga seguranca interna. |
-| `PRAXIS_DEFAULT_TENANT_ID` | Tenant usado quando seguranca esta desligada. |
-| `PRAXIS_INTEGRATION_TOKEN` | Exigida no `docker-compose.yml`, mas o backend atual nao le essa env diretamente para autenticar Gupy. Para `/test/**`, configure `tenants.integration_token_hash` no banco. |
+| `PRAXIS_DEFAULT_EMPRESA_ID` | Empresa usado quando seguranca esta desligada. |
+| `PRAXIS_INTEGRATION_TOKEN` | Exigida no `docker-compose.yml`, mas o backend atual nao le essa env diretamente para autenticar Gupy. Para `/test/**`, configure `empresas.integration_token_hash` no banco. |
 | `PRAXIS_JWT_SECRET` | Segredo para JWT. |
 | `PRAXIS_PUBLIC_BASE_URL` | Base publica usada em links e resultados. |
 | `PRAXIS_CANDIDATE_PAGE_BASE_URL` | Base publica do fluxo do candidato. |
@@ -248,16 +248,16 @@ PRAXIS_JWT_SECRET=troque-este-segredo-com-tamanho-suficiente
 PRAXIS_SECURITY_ENABLED=true
 ```
 
-Observacao importante: `PRAXIS_INTEGRATION_TOKEN` e exigida pelo Compose, mas a autenticacao real da Gupy usa o hash salvo em `tenants.integration_token_hash`. Para ambiente local, gere o hash e atualize o tenant:
+Observacao importante: `PRAXIS_INTEGRATION_TOKEN` e exigida pelo Compose, mas a autenticacao real da Gupy usa o hash salvo em `empresas.integration_token_hash`. Para ambiente local, gere o hash e atualize o empresa:
 
 ```bash
 node -e "const crypto=require('crypto'); console.log(crypto.createHash('sha256').update('troque-este-token').digest('base64url'))"
 ```
 
 ```sql
-UPDATE tenants
+UPDATE empresas
 SET integration_token_hash = '<hash-gerado>'
-WHERE id = 'tenant-1';
+WHERE id = 'empresa-1';
 ```
 
 Suba:

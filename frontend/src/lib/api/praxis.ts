@@ -68,7 +68,7 @@ export interface CandidateAttemptResponse {
   acaoSugeridaFrontend?: "INICIAR" | "CONTINUAR_TESTE" | "VER_RESULTADOS";
   progresso: CandidateProgressResponse;
   etapaAtual: CandidateNodeResponse | null;
-  /** Quando verdadeiro, o tenant opera na vertical de saúde: o fluxo coleta consentimento (LGPD). */
+  /** Quando verdadeiro, o empresa opera na vertical de saúde: o fluxo coleta consentimento (LGPD). */
   verticalSaude?: boolean;
 }
 
@@ -497,7 +497,7 @@ export interface PrivacyComplianceResponse {
 
 export interface AccountResponse {
   id: number;
-  tenantId: string;
+  empresaId: string;
   name: string;
   email: string;
   roles: string[];
@@ -592,8 +592,8 @@ export interface ConfigureIntegrationRequest {
 }
 
 export interface DashboardResponse {
-  tenantId: string;
-  tenantName: string;
+  empresaId: string;
+  empresaName: string;
   activeSimulations: number;
   assessmentJourneys: {
     total: number;
@@ -623,7 +623,7 @@ export interface DashboardResponse {
   integrations: DashboardIntegrationStatusItem[];
   billing: {
     plan: CommercialPlanType;
-    status: TenantStatus;
+    status: EmpresaStatus;
     creditBalance: number;
     usedInPeriod: number;
     subscriptionStatus: SubscriptionStatus | null;
@@ -646,18 +646,18 @@ export interface DashboardResponse {
   }>;
 }
 
-export type TenantConfigType = "COMPETENCY" | "ANSWER_TIME_LIMIT";
+export type EmpresaConfigType = "COMPETENCY" | "ANSWER_TIME_LIMIT";
 
-export interface TenantConfigOption {
+export interface EmpresaConfigOption {
   value: string;
   label: string;
   locked: boolean;
   selectedByDefault: boolean;
 }
 
-export interface TenantConfig {
-  competencies: TenantConfigOption[];
-  answerTimeLimits: TenantConfigOption[];
+export interface EmpresaConfig {
+  competencies: EmpresaConfigOption[];
+  answerTimeLimits: EmpresaConfigOption[];
 }
 
 export class PraxisApiError extends Error {
@@ -749,7 +749,7 @@ function isAdminPath(path: string) {
     path.startsWith("/api/admin") ||
     path.startsWith("/api/v1/simulations") ||
     path.startsWith("/api/v1/dashboard") ||
-    path.startsWith("/api/v1/tenant-config") ||
+    path.startsWith("/api/v1/empresa-config") ||
     path.startsWith("/api/v1/account") ||
     path.startsWith("/api/v1/company-profile") ||
     path.startsWith("/api/v1/integrations") ||
@@ -765,12 +765,12 @@ function isAdminPath(path: string) {
   );
 }
 
-export function getTenantConfig() {
-  return request<TenantConfig>("/api/v1/tenant-config");
+export function getEmpresaConfig() {
+  return request<EmpresaConfig>("/api/v1/empresa-config");
 }
 
-export function updateTenantConfig(configType: TenantConfigType, options: TenantConfigOption[]) {
-  return request<TenantConfigOption[]>(`/api/v1/tenant-config/${configType}`, {
+export function updateEmpresaConfig(configType: EmpresaConfigType, options: EmpresaConfigOption[]) {
+  return request<EmpresaConfigOption[]>(`/api/v1/empresa-config/${configType}`, {
     method: "PUT",
     body: JSON.stringify({ options }),
   });
@@ -825,7 +825,7 @@ async function getDashboardFallback(): Promise<DashboardResponse> {
   ] = await Promise.all([
     getCurrentAccount().catch(() => ({
       id: 0,
-      tenantId: session.tenantId ?? "",
+      empresaId: session.empresaId ?? "",
       name: session.userName,
       email: "",
       roles: [] as string[],
@@ -849,8 +849,8 @@ async function getDashboardFallback(): Promise<DashboardResponse> {
   }).length;
 
   return {
-    tenantId: account.tenantId,
-    tenantName: companyProfile?.tradeName ?? companyProfile?.legalName ?? account.name,
+    empresaId: account.empresaId,
+    empresaName: companyProfile?.tradeName ?? companyProfile?.legalName ?? account.name,
     activeSimulations: simulations.filter(
       (simulation) =>
         simulation.status === "published" || simulation.livePublishedVersionNumber != null,
@@ -1869,22 +1869,22 @@ export function getTalentMatch(
 
 // ---------------------------------------------------------------------------
 // Painel administrativo da plataforma (perfil ADMIN)
-// Cliente da plataforma = TenantEntity. Rotas sob /api/admin exigem papel ADMIN
-// e recebem o tenant alvo explicitamente.
+// Cliente da plataforma = EmpresaEntity. Rotas sob /api/admin exigem papel ADMIN
+// e recebem o empresa alvo explicitamente.
 // ---------------------------------------------------------------------------
 
 export type CommercialPlanType = "AVULSO" | "PROFISSIONAL" | "ENTERPRISE";
-export type TenantStatus = "ATIVO" | "EM_TESTE" | "SUSPENSO" | "CANCELADO";
+export type EmpresaStatus = "ATIVO" | "EM_TESTE" | "SUSPENSO" | "CANCELADO";
 export type AdminUserStatus = "ATIVO" | "CONVIDADO" | "BLOQUEADO";
 
-export interface TenantAdminSummary {
-  tenantId: string;
+export interface EmpresaAdminSummary {
+  empresaId: string;
   name: string;
   tradeName: string | null;
   taxId: string | null;
   corporateEmail: string | null;
   commercialPlanType: CommercialPlanType;
-  status: TenantStatus;
+  status: EmpresaStatus;
   completedAttemptsInPeriod: number;
   createdAt: string;
 }
@@ -1899,8 +1899,8 @@ export interface AdminUser {
   createdAt: string | null;
 }
 
-export interface TenantAdminDetail {
-  tenantId: string;
+export interface EmpresaAdminDetail {
+  empresaId: string;
   name: string;
   tradeName: string | null;
   legalName: string | null;
@@ -1911,14 +1911,14 @@ export interface TenantAdminDetail {
   healthVertical: boolean;
   commercialPlanType: CommercialPlanType;
   commercialCondition: string | null;
-  status: TenantStatus;
+  status: EmpresaStatus;
   completedAttemptsInPeriod: number;
   users: AdminUser[];
   createdAt: string;
   updatedAt: string;
 }
 
-export interface CreateTenantAdminRequest {
+export interface CreateEmpresaAdminRequest {
   name: string;
   tradeName?: string | null;
   legalName?: string | null;
@@ -1930,13 +1930,13 @@ export interface CreateTenantAdminRequest {
   companyId?: string | null;
   commercialPlanType: CommercialPlanType;
   commercialCondition?: string | null;
-  initialStatus?: TenantStatus | null;
+  initialStatus?: EmpresaStatus | null;
   responsibleName: string;
   responsibleEmail: string;
   sendInvite: boolean;
 }
 
-export interface UpdateTenantAdminRequest {
+export interface UpdateEmpresaAdminRequest {
   name?: string | null;
   tradeName?: string | null;
   legalName?: string | null;
@@ -1949,8 +1949,8 @@ export interface UpdateTenantAdminRequest {
   commercialCondition?: string | null;
 }
 
-export interface CreateTenantAdminResponse {
-  tenant: TenantAdminDetail;
+export interface CreateEmpresaAdminResponse {
+  empresa: EmpresaAdminDetail;
   responsibleUserId: number;
   inviteUrl: string | null;
 }
@@ -1960,8 +1960,8 @@ export interface InviteUserAdminResponse {
   inviteUrl: string | null;
 }
 
-export interface TenantUsage {
-  tenantId: string;
+export interface EmpresaUsage {
+  empresaId: string;
   periodStart: string;
   periodEnd: string;
   completedAttempts: number;
@@ -1974,7 +1974,7 @@ export interface TenantUsage {
 export interface AdminAuditEvent {
   id: number;
   actorUserId: string | null;
-  tenantId: string;
+  empresaId: string;
   aggregateType: string;
   aggregateId: string;
   eventType: string;
@@ -1986,24 +1986,24 @@ export interface AdminAuditEvent {
 export interface AdminDashboard {
   periodStart: string;
   periodEnd: string;
-  totalTenants: number;
-  activeTenants: number;
-  trialTenants: number;
-  suspendedTenants: number;
-  canceledTenants: number;
+  totalEmpresas: number;
+  activeEmpresas: number;
+  trialEmpresas: number;
+  suspendedEmpresas: number;
+  canceledEmpresas: number;
   totalCompletedAttempts: number;
-  topUsageTenants: { tenantId: string; name: string; completedAttempts: number }[];
-  recentTenants: TenantAdminSummary[];
-  attentionTenants: TenantAdminSummary[];
+  topUsageEmpresas: { empresaId: string; name: string; completedAttempts: number }[];
+  recentEmpresas: EmpresaAdminSummary[];
+  attentionEmpresas: EmpresaAdminSummary[];
 }
 
 export function getAdminDashboard() {
   return request<AdminDashboard>("/api/admin/dashboard");
 }
 
-export function listAdminTenants(filters?: {
+export function listAdminEmpresas(filters?: {
   search?: string;
-  status?: TenantStatus;
+  status?: EmpresaStatus;
   plan?: CommercialPlanType;
 }) {
   const params = new URLSearchParams();
@@ -2011,41 +2011,41 @@ export function listAdminTenants(filters?: {
   if (filters?.status) params.set("status", filters.status);
   if (filters?.plan) params.set("plan", filters.plan);
   const query = params.toString();
-  return request<TenantAdminSummary[]>(`/api/admin/tenants${query ? `?${query}` : ""}`);
+  return request<EmpresaAdminSummary[]>(`/api/admin/empresas${query ? `?${query}` : ""}`);
 }
 
-export function createAdminTenant(body: CreateTenantAdminRequest) {
-  return request<CreateTenantAdminResponse>("/api/admin/tenants", {
+export function createAdminEmpresa(body: CreateEmpresaAdminRequest) {
+  return request<CreateEmpresaAdminResponse>("/api/admin/empresas", {
     method: "POST",
     body: JSON.stringify(body),
   });
 }
 
-export function getAdminTenant(tenantId: string) {
-  return request<TenantAdminDetail>(`/api/admin/tenants/${encodeURIComponent(tenantId)}`);
+export function getAdminEmpresa(empresaId: string) {
+  return request<EmpresaAdminDetail>(`/api/admin/empresas/${encodeURIComponent(empresaId)}`);
 }
 
-export function updateAdminTenant(tenantId: string, body: UpdateTenantAdminRequest) {
-  return request<TenantAdminDetail>(`/api/admin/tenants/${encodeURIComponent(tenantId)}`, {
+export function updateAdminEmpresa(empresaId: string, body: UpdateEmpresaAdminRequest) {
+  return request<EmpresaAdminDetail>(`/api/admin/empresas/${encodeURIComponent(empresaId)}`, {
     method: "PATCH",
     body: JSON.stringify(body),
   });
 }
 
-export function suspendAdminTenant(tenantId: string, reason: string) {
-  return request<TenantAdminDetail>(`/api/admin/tenants/${encodeURIComponent(tenantId)}/suspend`, {
+export function suspendAdminEmpresa(empresaId: string, reason: string) {
+  return request<EmpresaAdminDetail>(`/api/admin/empresas/${encodeURIComponent(empresaId)}/suspend`, {
     method: "POST",
     body: JSON.stringify({ reason }),
   });
 }
 
-export function reactivateAdminTenant(
-  tenantId: string,
+export function reactivateAdminEmpresa(
+  empresaId: string,
   reason: string,
-  targetStatus?: TenantStatus,
+  targetStatus?: EmpresaStatus,
 ) {
-  return request<TenantAdminDetail>(
-    `/api/admin/tenants/${encodeURIComponent(tenantId)}/reactivate`,
+  return request<EmpresaAdminDetail>(
+    `/api/admin/empresas/${encodeURIComponent(empresaId)}/reactivate`,
     {
       method: "POST",
       body: JSON.stringify({ reason, targetStatus }),
@@ -2053,49 +2053,49 @@ export function reactivateAdminTenant(
   );
 }
 
-export function cancelAdminTenant(tenantId: string, reason: string) {
-  return request<TenantAdminDetail>(`/api/admin/tenants/${encodeURIComponent(tenantId)}/cancel`, {
+export function cancelAdminEmpresa(empresaId: string, reason: string) {
+  return request<EmpresaAdminDetail>(`/api/admin/empresas/${encodeURIComponent(empresaId)}/cancel`, {
     method: "POST",
     body: JSON.stringify({ reason }),
   });
 }
 
-export function getAdminTenantUsage(tenantId: string) {
-  return request<TenantUsage>(`/api/admin/tenants/${encodeURIComponent(tenantId)}/usage`);
+export function getAdminEmpresaUsage(empresaId: string) {
+  return request<EmpresaUsage>(`/api/admin/empresas/${encodeURIComponent(empresaId)}/usage`);
 }
 
-export function getAdminTenantAudit(tenantId: string) {
-  return request<AdminAuditEvent[]>(`/api/admin/tenants/${encodeURIComponent(tenantId)}/audit`);
+export function getAdminEmpresaAudit(empresaId: string) {
+  return request<AdminAuditEvent[]>(`/api/admin/empresas/${encodeURIComponent(empresaId)}/audit`);
 }
 
-export function listAdminTenantUsers(tenantId: string) {
-  return request<AdminUser[]>(`/api/admin/tenants/${encodeURIComponent(tenantId)}/users`);
+export function listAdminEmpresaUsers(empresaId: string) {
+  return request<AdminUser[]>(`/api/admin/empresas/${encodeURIComponent(empresaId)}/users`);
 }
 
-export function inviteAdminTenantUser(tenantId: string, body: { name: string; email: string }) {
+export function inviteAdminEmpresaUser(empresaId: string, body: { name: string; email: string }) {
   return request<InviteUserAdminResponse>(
-    `/api/admin/tenants/${encodeURIComponent(tenantId)}/users/invite`,
+    `/api/admin/empresas/${encodeURIComponent(empresaId)}/users/invite`,
     { method: "POST", body: JSON.stringify(body) },
   );
 }
 
-export function resendAdminTenantUserInvite(tenantId: string, userId: number) {
+export function resendAdminEmpresaUserInvite(empresaId: string, userId: number) {
   return request<InviteUserAdminResponse>(
-    `/api/admin/tenants/${encodeURIComponent(tenantId)}/users/${userId}/resend-invite`,
+    `/api/admin/empresas/${encodeURIComponent(empresaId)}/users/${userId}/resend-invite`,
     { method: "POST" },
   );
 }
 
-export function blockAdminTenantUser(tenantId: string, userId: number) {
+export function blockAdminEmpresaUser(empresaId: string, userId: number) {
   return request<AdminUser>(
-    `/api/admin/tenants/${encodeURIComponent(tenantId)}/users/${userId}/block`,
+    `/api/admin/empresas/${encodeURIComponent(empresaId)}/users/${userId}/block`,
     { method: "POST" },
   );
 }
 
-export function unblockAdminTenantUser(tenantId: string, userId: number) {
+export function unblockAdminEmpresaUser(empresaId: string, userId: number) {
   return request<AdminUser>(
-    `/api/admin/tenants/${encodeURIComponent(tenantId)}/users/${userId}/unblock`,
+    `/api/admin/empresas/${encodeURIComponent(empresaId)}/users/${userId}/unblock`,
     { method: "POST" },
   );
 }
@@ -2173,10 +2173,10 @@ export interface BillingEvent {
   createdAt: string;
 }
 
-export interface TenantBillingOverview {
-  tenantId: string;
+export interface EmpresaBillingOverview {
+  empresaId: string;
   commercialPlanType: CommercialPlanType;
-  status: TenantStatus;
+  status: EmpresaStatus;
   creditBalance: number;
   subscription: {
     id: number;
@@ -2201,29 +2201,29 @@ export function listBillingPlans() {
   return request<SubscriptionPlan[]>("/api/admin/billing/plans");
 }
 
-export function getTenantBilling(tenantId: string) {
-  return request<TenantBillingOverview>(
-    `/api/admin/tenants/${encodeURIComponent(tenantId)}/billing`,
+export function getEmpresaBilling(empresaId: string) {
+  return request<EmpresaBillingOverview>(
+    `/api/admin/empresas/${encodeURIComponent(empresaId)}/billing`,
   );
 }
 
-export function createCreditCheckout(tenantId: string, planId: number) {
+export function createCreditCheckout(empresaId: string, planId: number) {
   return request<CheckoutResult>(
-    `/api/admin/tenants/${encodeURIComponent(tenantId)}/billing/credits/checkout?planId=${planId}`,
+    `/api/admin/empresas/${encodeURIComponent(empresaId)}/billing/credits/checkout?planId=${planId}`,
     { method: "POST" },
   );
 }
 
-export function createTenantSubscription(tenantId: string, planId: number) {
+export function createEmpresaSubscription(empresaId: string, planId: number) {
   return request<CheckoutResult>(
-    `/api/admin/tenants/${encodeURIComponent(tenantId)}/billing/subscription?planId=${planId}`,
+    `/api/admin/empresas/${encodeURIComponent(empresaId)}/billing/subscription?planId=${planId}`,
     { method: "POST" },
   );
 }
 
-export function syncTenantBilling(tenantId: string, resourceType: string, resourceId: string) {
-  return request<TenantBillingOverview>(
-    `/api/admin/tenants/${encodeURIComponent(tenantId)}/billing/sync`,
+export function syncEmpresaBilling(empresaId: string, resourceType: string, resourceId: string) {
+  return request<EmpresaBillingOverview>(
+    `/api/admin/empresas/${encodeURIComponent(empresaId)}/billing/sync`,
     { method: "POST", body: JSON.stringify({ resourceType, resourceId }) },
   );
 }
@@ -2260,9 +2260,9 @@ export interface ClientBillingSubscription {
 }
 
 export interface ClientBillingResponse {
-  tenantId: string;
+  empresaId: string;
   plan: CommercialPlanType;
-  tenantStatus: TenantStatus;
+  empresaStatus: EmpresaStatus;
   financialStatus: FinancialStatus;
   creditBalance: number;
   usage: ClientBillingUsage;
@@ -2284,7 +2284,7 @@ export type AcceptInviteRequest = {
 export type LoginResponse = {
   token: string;
   userId: number;
-  tenantId: string;
+  empresaId: string;
   name: string;
   roles: string[];
 };
@@ -2297,8 +2297,8 @@ export function acceptInvite(requestBody: AcceptInviteRequest) {
 }
 
 export type ForgotPasswordRequest = {
-  // EMPRESA informa tenantId + email; ADMIN informa apenas email (tenant PLATFORM).
-  tenantId?: string;
+  // EMPRESA informa empresaId + email; ADMIN informa apenas email (empresa PLATFORM).
+  empresaId?: string;
   email: string;
 };
 
@@ -2316,7 +2316,7 @@ export type ResetPasswordRequest = {
 
 /**
  * Solicita o e-mail de recuperação de senha. A resposta é sempre a mesma, independentemente
- * de a conta existir, para nunca revelar a existência de usuários, e-mails ou tenants.
+ * de a conta existir, para nunca revelar a existência de usuários, e-mails ou empresas.
  */
 export function requestPasswordReset(requestBody: ForgotPasswordRequest) {
   return request<{ message: string }>("/api/v1/auth/password/forgot", {

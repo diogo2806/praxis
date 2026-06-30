@@ -50,8 +50,8 @@
 | `/` | `frontend/src/routes/index.tsx` | Landing/entrada inicial; o painel operacional e `/app`. |
 | `/app` | `frontend/src/routes/app.tsx` | Painel principal com `GET /api/v1/simulations` e exclusao definitiva por `DELETE /api/v1/simulations/{id}`. |
 | `/comecar` | `frontend/src/routes/comecar.tsx` | Inicio do fluxo de criacao. |
-| `/nova/blueprint` | `frontend/src/routes/nova.blueprint.tsx` | Cria rascunho com `POST /api/v1/simulations/drafts`; usa catalogos de `GET /api/v1/tenant-config`. |
-| `/nova/competencias` | `frontend/src/routes/nova.competencias.tsx` | Configuracao de competencias do tenant via `GET/PUT /api/v1/tenant-config`. |
+| `/nova/blueprint` | `frontend/src/routes/nova.blueprint.tsx` | Cria rascunho com `POST /api/v1/simulations/drafts`; usa catalogos de `GET /api/v1/empresa-config`. |
+| `/nova/competencias` | `frontend/src/routes/nova.competencias.tsx` | Configuracao de competencias do empresa via `GET/PUT /api/v1/empresa-config`. |
 | `/nova/objetivo` | `frontend/src/routes/nova.objetivo.tsx` | Atualiza plano com `PATCH /api/v1/simulations/{id}/versions/{n}/blueprint`. |
 | `/nova/personagem` | `frontend/src/routes/nova.personagem.tsx` | Carrega versao e cria/atualiza o primeiro no por `POST/PUT /nodes`. |
 | `/nova/dialogo` | `frontend/src/routes/nova.dialogo.tsx` | Editor de grafo com CRUD de nos e alternativas; upload por `POST /api/v1/media`. |
@@ -76,7 +76,7 @@
 | --- | --- | --- |
 | Auth | `/api/v1/auth/login` | API de login e emissao de JWT. Nao ha rota `/login` dedicada no frontend atual. |
 | Simulacoes | `/api/v1/simulations` | Listagem, criacao, edicao de grafo, validacao, clone, publicacao, preflight, monitoramento, Talent Match e exclusao. |
-| Tenant config | `/api/v1/tenant-config` | Catalogos de competencias, senioridade, idiomas, usos de resultado e tempos de resposta. |
+| Empresa config | `/api/v1/empresa-config` | Catalogos de competencias, senioridade, idiomas, usos de resultado e tempos de resposta. |
 | Midia | `/api/v1/media` | Upload de imagem/audio para nos e alternativas. |
 | Links de candidato | `/api/v1/candidate-links` | Geracao e listagem de links internos de candidato. |
 | Candidato publico | `/candidate/attempts` | Estado da tentativa e envio de respostas. |
@@ -88,10 +88,10 @@
 
 ## Seguranca
 
-- `PRAXIS_SECURITY_ENABLED=false`: libera rotas e usa `PRAXIS_DEFAULT_TENANT_ID`.
+- `PRAXIS_SECURITY_ENABLED=false`: libera rotas e usa `PRAXIS_DEFAULT_EMPRESA_ID`.
 - `PRAXIS_SECURITY_ENABLED=true`: exige JWT nas rotas internas e valida role `EMPRESA`.
 - `/candidate/**`, `/candidato/**`, `/test/**`, `/api/v1/auth/login`, healthcheck e docs ficam permitidos pela configuracao Spring Security.
-- A integracao Gupy valida Bearer token em `GupyAuthService` por hash salvo em `tenants.integration_token_hash`.
+- A integracao Gupy valida Bearer token em `GupyAuthService` por hash salvo em `empresas.integration_token_hash`.
 
 ## Estados e entregas
 

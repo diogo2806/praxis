@@ -1,13 +1,20 @@
 package br.com.iforce.praxis.simulation.dto;
 
 import br.com.iforce.praxis.shared.model.MediaType;
+
 import io.swagger.v3.oas.annotations.media.Schema;
+
 import jakarta.validation.constraints.Max;
+
 import jakarta.validation.constraints.Min;
+
 import jakarta.validation.constraints.NotBlank;
+
 import jakarta.validation.constraints.Size;
 
+
 import java.util.Map;
+
 
 @Schema(description = "Dados para atualizar parcialmente uma resposta.")
 public record UpdateOptionRequest(

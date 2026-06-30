@@ -1,13 +1,20 @@
 package br.com.iforce.praxis.shared.integration;
 
 import br.com.iforce.praxis.shared.integration.model.IntegrationProvider;
+
 import br.com.iforce.praxis.shared.integration.model.IntegrationType;
+
 import org.springframework.http.HttpStatus;
+
 import org.springframework.web.server.ResponseStatusException;
 
+
 import java.util.Arrays;
+
 import java.util.List;
+
 import java.util.Locale;
+
 
 public final class IntegrationCatalog {
 

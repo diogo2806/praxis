@@ -1,20 +1,34 @@
 package br.com.iforce.praxis.shared.privacy.service;
 
 import br.com.iforce.praxis.audit.model.AuditEventType;
+
 import br.com.iforce.praxis.audit.service.AuditEventService;
+
 import br.com.iforce.praxis.gupy.model.AttemptStatus;
+
 import br.com.iforce.praxis.gupy.persistence.entity.CandidateAttemptEntity;
+
 import br.com.iforce.praxis.gupy.persistence.repository.CandidateAttemptRepository;
+
 import org.springframework.beans.factory.annotation.Autowired;
+
 import org.springframework.beans.factory.annotation.Value;
+
 import org.springframework.data.domain.PageRequest;
+
 import org.springframework.stereotype.Service;
+
 import org.springframework.transaction.annotation.Transactional;
 
+
 import java.time.Clock;
+
 import java.time.Instant;
+
 import java.time.temporal.ChronoUnit;
+
 import java.util.List;
+
 
 /**
  * Gerencia a política de retenção de dados e conformidade com LGPD (Lei Geral de Proteção de Dados).
@@ -76,14 +90,14 @@ public class PrivacyRetentionService {
      *
      * Processa em lotes de 100 registros para não sobrecarregar o banco de dados.
      *
-     * @param tenantId A empresa para a qual executar a anonimização
+     * @param empresaId A empresa para a qual executar a anonimização
      * @return Quantidade de candidatos que tiveram seus dados anonimizados
      */
     @Transactional
-    public int anonymizeExpiredAttemptsForTenant(String tenantId) {
+    public int anonymizeExpiredAttemptsForEmpresa(String empresaId) {
         Instant cutoff = Instant.now(clock).minus(retentionDays, ChronoUnit.DAYS);
-        List<CandidateAttemptEntity> candidates = candidateAttemptRepository.findRetentionCandidatesForTenant(
-                tenantId,
+        List<CandidateAttemptEntity> candidates = candidateAttemptRepository.findRetentionCandidatesForEmpresa(
+                empresaId,
                 CLOSED_STATUSES,
                 cutoff,
                 PageRequest.of(0, BATCH_SIZE)
@@ -118,7 +132,7 @@ public class PrivacyRetentionService {
         candidate.setAnonymizedAt(anonymizedAt);
 
         auditEventService.appendCandidateAttemptEvent(
-                candidate.getTenantId(),
+                candidate.getEmpresaId(),
                 attemptId,
                 AuditEventType.ATTEMPT_ANONYMIZED,
                 "Dados pessoais da tentativa anonimizados por politica de retencao.",

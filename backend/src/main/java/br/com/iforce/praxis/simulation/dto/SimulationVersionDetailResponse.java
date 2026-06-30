@@ -1,10 +1,14 @@
 package br.com.iforce.praxis.simulation.dto;
 
 import br.com.iforce.praxis.shared.model.MediaType;
+
 import br.com.iforce.praxis.simulation.model.SimulationVersionStatus;
 
+
 import java.util.List;
+
 import java.util.Map;
+
 
 public record SimulationVersionDetailResponse(
         String simulationId,

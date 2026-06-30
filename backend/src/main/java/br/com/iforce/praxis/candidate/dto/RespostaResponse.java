@@ -1,7 +1,9 @@
 package br.com.iforce.praxis.candidate.dto;
 
 import br.com.iforce.praxis.shared.model.MediaType;
+
 import io.swagger.v3.oas.annotations.media.Schema;
+
 
 @Schema(description = "Resposta visível ao candidato, sem gabarito, pesos ou marcadores internos.")
 public record RespostaResponse(

@@ -1,21 +1,36 @@
 package br.com.iforce.praxis.auth.filter;
 
-import br.com.iforce.praxis.auth.service.CurrentTenantService;
+import br.com.iforce.praxis.auth.service.CurrentEmpresaService;
+
 import br.com.iforce.praxis.auth.service.JwtService;
+
 import io.jsonwebtoken.Claims;
+
 import io.jsonwebtoken.JwtException;
+
 import jakarta.servlet.FilterChain;
+
 import jakarta.servlet.ServletException;
+
 import jakarta.servlet.http.HttpServletRequest;
+
 import jakarta.servlet.http.HttpServletResponse;
+
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
+
 import org.springframework.security.core.context.SecurityContextHolder;
+
 import org.springframework.stereotype.Component;
+
 import org.springframework.web.filter.OncePerRequestFilter;
 
+
 import java.io.IOException;
+
 import java.util.List;
+
 
 @Component
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
@@ -60,7 +75,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                     extractAuthorities(claims)
             );
             authentication.setDetails(
-                    new CurrentTenantService.AuthenticatedTenant(claims.get("tenant_id", String.class))
+                    new CurrentEmpresaService.AuthenticatedEmpresa(claims.get("empresa_id", String.class))
             );
             SecurityContextHolder.getContext().setAuthentication(authentication);
             filterChain.doFilter(request, response);

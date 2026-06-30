@@ -1,12 +1,18 @@
 package br.com.iforce.praxis.recrutei.dto;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+
 import io.swagger.v3.oas.annotations.media.Schema;
+
 import jakarta.validation.constraints.Email;
+
 import jakarta.validation.constraints.NotBlank;
 
+
 import java.math.BigDecimal;
+
 import java.net.URI;
+
 
 /**
  * Pedido da Recrutei para colocar um candidato em uma prova da Práxis.

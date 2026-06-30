@@ -1,12 +1,18 @@
 package br.com.iforce.praxis.simulation.persistence.repository;
 
 import br.com.iforce.praxis.simulation.model.SimulationVersionStatus;
+
 import br.com.iforce.praxis.simulation.persistence.entity.SimulationVersionEntity;
+
 import org.springframework.data.jpa.repository.EntityGraph;
+
 import org.springframework.data.jpa.repository.JpaRepository;
 
+
 import java.util.List;
+
 import java.util.Optional;
+
 
 public interface SimulationVersionRepository extends JpaRepository<SimulationVersionEntity, Long> {
 
@@ -60,8 +66,8 @@ public interface SimulationVersionRepository extends JpaRepository<SimulationVer
             "nodes.options",
             "nodes.options.competencyScores"
     })
-    Optional<SimulationVersionEntity> findBySimulationTenantIdAndSimulationIdAndVersionNumber(
-            String tenantId,
+    Optional<SimulationVersionEntity> findBySimulationEmpresaIdAndSimulationIdAndVersionNumber(
+            String empresaId,
             String simulationId,
             int versionNumber
     );
@@ -73,8 +79,8 @@ public interface SimulationVersionRepository extends JpaRepository<SimulationVer
             "nodes.options",
             "nodes.options.competencyScores"
     })
-    List<SimulationVersionEntity> findBySimulationTenantIdAndStatusOrderByPublishedAtDesc(
-            String tenantId,
+    List<SimulationVersionEntity> findBySimulationEmpresaIdAndStatusOrderByPublishedAtDesc(
+            String empresaId,
             SimulationVersionStatus status
     );
 
@@ -85,8 +91,8 @@ public interface SimulationVersionRepository extends JpaRepository<SimulationVer
             "nodes.options",
             "nodes.options.competencyScores"
     })
-    List<SimulationVersionEntity> findBySimulationTenantIdAndSimulationIdAndStatusOrderByPublishedAtDesc(
-            String tenantId,
+    List<SimulationVersionEntity> findBySimulationEmpresaIdAndSimulationIdAndStatusOrderByPublishedAtDesc(
+            String empresaId,
             String simulationId,
             SimulationVersionStatus status
     );

@@ -1,24 +1,42 @@
 package br.com.iforce.praxis.simulation.service;
 
-import br.com.iforce.praxis.auth.persistence.repository.TenantRepository;
+import br.com.iforce.praxis.auth.persistence.repository.EmpresaRepository;
+
 import br.com.iforce.praxis.config.PraxisProperties;
-import br.com.iforce.praxis.auth.service.CurrentTenantService;
+
+import br.com.iforce.praxis.auth.service.CurrentEmpresaService;
+
 import br.com.iforce.praxis.simulation.dto.GupyPreflightCheckResponse;
+
 import br.com.iforce.praxis.simulation.dto.GupyPreflightResponse;
+
 import br.com.iforce.praxis.simulation.dto.SimulationValidationResponse;
+
 import br.com.iforce.praxis.simulation.model.GupyPreflightCheckCode;
+
 import br.com.iforce.praxis.simulation.model.GupyPreflightCheckStatus;
+
 import br.com.iforce.praxis.simulation.model.SimulationVersionStatus;
+
 import br.com.iforce.praxis.simulation.persistence.entity.SimulationVersionEntity;
+
 import br.com.iforce.praxis.simulation.persistence.repository.SimulationVersionRepository;
+
 import org.springframework.http.HttpStatus;
+
 import org.springframework.stereotype.Service;
+
 import org.springframework.transaction.annotation.Transactional;
+
 import org.springframework.web.server.ResponseStatusException;
 
+
 import java.net.URI;
+
 import java.util.ArrayList;
+
 import java.util.List;
+
 
 /**
  * Faz a "checagem de prontidão" de uma prova para a integração com a Gupy.
@@ -36,21 +54,21 @@ public class GupyPreflightService {
     private final SimulationVersionRepository simulationVersionRepository;
     private final SimulationValidationService simulationValidationService;
     private final PraxisProperties praxisProperties;
-    private final CurrentTenantService currentTenantService;
-    private final TenantRepository tenantRepository;
+    private final CurrentEmpresaService currentEmpresaService;
+    private final EmpresaRepository empresaRepository;
 
     public GupyPreflightService(
             SimulationVersionRepository simulationVersionRepository,
             SimulationValidationService simulationValidationService,
             PraxisProperties praxisProperties,
-            CurrentTenantService currentTenantService,
-            TenantRepository tenantRepository
+            CurrentEmpresaService currentEmpresaService,
+            EmpresaRepository empresaRepository
     ) {
         this.simulationVersionRepository = simulationVersionRepository;
         this.simulationValidationService = simulationValidationService;
         this.praxisProperties = praxisProperties;
-        this.currentTenantService = currentTenantService;
-        this.tenantRepository = tenantRepository;
+        this.currentEmpresaService = currentEmpresaService;
+        this.empresaRepository = empresaRepository;
     }
 
     /**
@@ -74,9 +92,9 @@ public class GupyPreflightService {
     }
 
     private SimulationVersionEntity findVersion(String simulationId, int versionNumber) {
-        String tenantId = currentTenantService.requiredTenantId();
+        String empresaId = currentEmpresaService.requiredEmpresaId();
         return simulationVersionRepository
-                .findBySimulationTenantIdAndSimulationIdAndVersionNumber(tenantId, simulationId, versionNumber)
+                .findBySimulationEmpresaIdAndSimulationIdAndVersionNumber(empresaId, simulationId, versionNumber)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Não encontramos esta versão do teste."));
     }
 
@@ -126,10 +144,10 @@ public class GupyPreflightService {
     }
 
     private GupyPreflightCheckResponse validateIntegrationToken() {
-        String tenantId = currentTenantService.requiredTenantId();
-        return tenantRepository.findById(tenantId)
-                .filter(tenant -> !isBlank(tenant.getIntegrationTokenHash()))
-                .map(tenant -> ok(GupyPreflightCheckCode.INTEGRATION_TOKEN, "Token de integração configurado para a empresa."))
+        String empresaId = currentEmpresaService.requiredEmpresaId();
+        return empresaRepository.findById(empresaId)
+                .filter(empresa -> !isBlank(empresa.getIntegrationTokenHash()))
+                .map(empresa -> ok(GupyPreflightCheckCode.INTEGRATION_TOKEN, "Token de integração configurado para a empresa."))
                 .orElseGet(() -> warning(
                         GupyPreflightCheckCode.INTEGRATION_TOKEN,
                         "Token de integração Gupy não configurado para a empresa. O teste será publicado, mas o envio de resultados para a Gupy ficará indisponível até a integração ser configurada."

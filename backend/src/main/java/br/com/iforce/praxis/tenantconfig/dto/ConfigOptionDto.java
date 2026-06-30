@@ -2,6 +2,7 @@ package br.com.iforce.praxis.tenantconfig.dto;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 
+
 @Schema(description = "Opção configurável por empresa exibida no frontend.")
 public record ConfigOptionDto(
         @Schema(example = "Empatia", description = "Valor estavel usado pela aplicacao.")

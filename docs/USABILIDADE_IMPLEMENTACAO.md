@@ -70,7 +70,7 @@ Implementadas **4 prioridades** do relatório de usabilidade, focando em **acent
 **Novos termos:**
 - **"sjt"** — Teste de Julgamento Situacional (SJT)
 - **"determinisitco"** — Nota calculada por regras fixas
-- **"tenant"** — Sua empresa ou cliente
+- **"empresa"** — Sua empresa ou cliente
 - **"taxonomia"** — Catálogo de competências
 - **"workspace"** — Área de trabalho
 - **"score"** — Nota ou pontuação

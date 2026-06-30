@@ -1,33 +1,60 @@
 package br.com.iforce.praxis.candidate.service;
 
 import br.com.iforce.praxis.audit.dto.AuditEventResponse;
+
 import br.com.iforce.praxis.audit.model.AuditEventType;
+
 import br.com.iforce.praxis.audit.service.AuditEventService;
-import br.com.iforce.praxis.auth.service.CurrentTenantService;
+
+import br.com.iforce.praxis.auth.service.CurrentEmpresaService;
+
 import br.com.iforce.praxis.candidate.dto.EvidenceReport;
+
 import br.com.iforce.praxis.config.PraxisProperties;
+
 import br.com.iforce.praxis.gupy.model.PublishedSimulation;
+
 import br.com.iforce.praxis.gupy.model.ScenarioNode;
+
 import br.com.iforce.praxis.gupy.model.ScenarioOption;
+
 import br.com.iforce.praxis.gupy.persistence.entity.AttemptAnswerEntity;
+
 import br.com.iforce.praxis.gupy.persistence.entity.CandidateAttemptEntity;
+
 import br.com.iforce.praxis.gupy.persistence.entity.ResultItemEntity;
+
 import br.com.iforce.praxis.gupy.persistence.repository.CandidateAttemptRepository;
+
 import br.com.iforce.praxis.gupy.service.SimulationCatalogService;
+
 import com.fasterxml.jackson.databind.JsonNode;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
+
 import org.springframework.http.HttpStatus;
+
 import org.springframework.stereotype.Service;
+
 import org.springframework.transaction.annotation.Transactional;
+
 import org.springframework.web.server.ResponseStatusException;
 
+
 import java.time.Instant;
+
 import java.util.ArrayList;
+
 import java.util.Comparator;
+
 import java.util.LinkedHashMap;
+
 import java.util.List;
+
 import java.util.Map;
+
 import java.util.Optional;
+
 
 /**
  * Monta o relatório de transparência do scoring (REQ-L4). Não recalcula nem altera nada: apenas
@@ -51,7 +78,7 @@ public class EvidenceReportService {
     private final CandidateAttemptRepository candidateAttemptRepository;
     private final SimulationCatalogService simulationCatalogService;
     private final AuditEventService auditEventService;
-    private final CurrentTenantService currentTenantService;
+    private final CurrentEmpresaService currentEmpresaService;
     private final PraxisProperties praxisProperties;
     private final ObjectMapper objectMapper;
 
@@ -59,14 +86,14 @@ public class EvidenceReportService {
             CandidateAttemptRepository candidateAttemptRepository,
             SimulationCatalogService simulationCatalogService,
             AuditEventService auditEventService,
-            CurrentTenantService currentTenantService,
+            CurrentEmpresaService currentEmpresaService,
             PraxisProperties praxisProperties,
             ObjectMapper objectMapper
     ) {
         this.candidateAttemptRepository = candidateAttemptRepository;
         this.simulationCatalogService = simulationCatalogService;
         this.auditEventService = auditEventService;
-        this.currentTenantService = currentTenantService;
+        this.currentEmpresaService = currentEmpresaService;
         this.praxisProperties = praxisProperties;
         this.objectMapper = objectMapper;
     }
@@ -87,11 +114,11 @@ public class EvidenceReportService {
      */
     @Transactional(readOnly = true)
     public EvidenceReport build(String attemptId) {
-        String tenantId = currentTenantService.requiredTenantId();
-        CandidateAttemptEntity attempt = candidateAttemptRepository.findByTenantIdAndId(tenantId, attemptId)
+        String empresaId = currentEmpresaService.requiredEmpresaId();
+        CandidateAttemptEntity attempt = candidateAttemptRepository.findByEmpresaIdAndId(empresaId, attemptId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Tentativa não encontrada."));
 
-        PublishedSimulation simulation = resolveSimulation(attempt, tenantId).orElse(null);
+        PublishedSimulation simulation = resolveSimulation(attempt, empresaId).orElse(null);
         List<AuditEventResponse> auditTrail = auditEventService.listCandidateAttemptEvents(attemptId);
 
         EvidenceReport.ScoringDeclaration declaration = new EvidenceReport.ScoringDeclaration(
@@ -127,11 +154,11 @@ public class EvidenceReportService {
     }
 
     /** Descobre qual prova (e qual versão dela) foi aplicada nesta participação. Uso interno. */
-    private Optional<PublishedSimulation> resolveSimulation(CandidateAttemptEntity attempt, String tenantId) {
+    private Optional<PublishedSimulation> resolveSimulation(CandidateAttemptEntity attempt, String empresaId) {
         if (attempt.getSimulationVersionId() != null) {
             return simulationCatalogService.findByVersionId(attempt.getSimulationVersionId());
         }
-        return simulationCatalogService.findPublishedById(tenantId, attempt.getSimulationId());
+        return simulationCatalogService.findPublishedById(empresaId, attempt.getSimulationId());
     }
 
     /** Monta a lista de pontos obtidos em cada competência avaliada. Uso interno. */

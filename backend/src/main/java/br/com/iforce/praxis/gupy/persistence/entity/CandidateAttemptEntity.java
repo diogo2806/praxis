@@ -1,39 +1,58 @@
 package br.com.iforce.praxis.gupy.persistence.entity;
 
 import br.com.iforce.praxis.gupy.model.AttemptStatus;
+
 import br.com.iforce.praxis.gupy.model.ReliabilityLevel;
+
 import br.com.iforce.praxis.gupy.model.ResultDecision;
-import br.com.iforce.praxis.shared.jpa.TenantAwareEntity;
+
+import br.com.iforce.praxis.shared.jpa.EmpresaAwareEntity;
+
 import jakarta.persistence.CascadeType;
+
 import jakarta.persistence.Column;
+
 import jakarta.persistence.Entity;
+
 import jakarta.persistence.EnumType;
+
 import jakarta.persistence.Enumerated;
+
 import jakarta.persistence.Id;
+
 import jakarta.persistence.OneToMany;
+
 import jakarta.persistence.Table;
+
 import lombok.Getter;
+
 import lombok.NoArgsConstructor;
+
 import lombok.Setter;
 
+
 import java.time.Instant;
+
 import java.math.BigDecimal;
+
 import java.util.LinkedHashSet;
+
 import java.util.Set;
+
 
 @Getter
 @Setter
 @NoArgsConstructor
 @Entity
 @Table(name = "candidate_attempts")
-public class CandidateAttemptEntity implements TenantAwareEntity {
+public class CandidateAttemptEntity implements EmpresaAwareEntity {
 
     @Id
     @Column(name = "id", nullable = false, length = 80)
     private String id;
 
-    @Column(name = "tenant_id", nullable = false, length = 120)
-    private String tenantId;
+    @Column(name = "empresa_id", nullable = false, length = 120)
+    private String empresaId;
 
     @Column(name = "company_id", nullable = false, length = 120)
     private String companyId;

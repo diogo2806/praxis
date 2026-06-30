@@ -2,6 +2,7 @@ package br.com.iforce.praxis.shared.dto;
 
 import java.util.List;
 
+
 public record PrivacyComplianceResponse(
         List<LegalBasisDto> legalBases,
         int retentionDays,

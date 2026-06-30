@@ -1,9 +1,12 @@
 package br.com.iforce.praxis.candidate.dto;
 
 import br.com.iforce.praxis.gupy.model.AttemptStatus;
+
 import io.swagger.v3.oas.annotations.media.Schema;
 
+
 import java.time.Instant;
+
 
 @Schema(description = "Link de candidato gerado para uma tentativa de simulacao.")
 public record CandidateLinkResponse(

@@ -1,15 +1,25 @@
 package br.com.iforce.praxis.simulation.service;
 
 import br.com.iforce.praxis.gupy.model.AttemptStatus;
-import br.com.iforce.praxis.auth.service.CurrentTenantService;
+
+import br.com.iforce.praxis.auth.service.CurrentEmpresaService;
+
 import br.com.iforce.praxis.gupy.persistence.repository.CandidateAttemptRepository;
+
 import br.com.iforce.praxis.simulation.dto.SimulationMonitoringResponse;
+
 import br.com.iforce.praxis.simulation.persistence.entity.SimulationVersionEntity;
+
 import br.com.iforce.praxis.simulation.persistence.repository.SimulationVersionRepository;
+
 import org.springframework.http.HttpStatus;
+
 import org.springframework.stereotype.Service;
+
 import org.springframework.transaction.annotation.Transactional;
+
 import org.springframework.web.server.ResponseStatusException;
+
 
 /**
  * Calcula os indicadores de acompanhamento de uma versão de prova.
@@ -25,16 +35,16 @@ public class SimulationMonitoringService {
 
     private final SimulationVersionRepository simulationVersionRepository;
     private final CandidateAttemptRepository candidateAttemptRepository;
-    private final CurrentTenantService currentTenantService;
+    private final CurrentEmpresaService currentEmpresaService;
 
     public SimulationMonitoringService(
             SimulationVersionRepository simulationVersionRepository,
             CandidateAttemptRepository candidateAttemptRepository,
-            CurrentTenantService currentTenantService
+            CurrentEmpresaService currentEmpresaService
     ) {
         this.simulationVersionRepository = simulationVersionRepository;
         this.candidateAttemptRepository = candidateAttemptRepository;
-        this.currentTenantService = currentTenantService;
+        this.currentEmpresaService = currentEmpresaService;
     }
 
     /**
@@ -49,13 +59,13 @@ public class SimulationMonitoringService {
      */
     @Transactional(readOnly = true)
     public SimulationMonitoringResponse getMonitoring(String simulationId, int versionNumber) {
-        String tenantId = currentTenantService.requiredTenantId();
+        String empresaId = currentEmpresaService.requiredEmpresaId();
         SimulationVersionEntity simulationVersionEntity = simulationVersionRepository
-                .findBySimulationTenantIdAndSimulationIdAndVersionNumber(tenantId, simulationId, versionNumber)
+                .findBySimulationEmpresaIdAndSimulationIdAndVersionNumber(empresaId, simulationId, versionNumber)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Não encontramos esta versão do teste."));
 
         Long simulationVersionId = simulationVersionEntity.getId();
-        long attemptsCreated = candidateAttemptRepository.countByTenantIdAndSimulationVersionId(tenantId, simulationVersionId);
+        long attemptsCreated = candidateAttemptRepository.countByEmpresaIdAndSimulationVersionId(empresaId, simulationVersionId);
         long attemptsCompleted = countAttempts(simulationVersionId, AttemptStatus.COMPLETED);
         long attemptsAbandoned = countAttempts(simulationVersionId, AttemptStatus.ABANDONED);
         long attemptsExpired = countAttempts(simulationVersionId, AttemptStatus.EXPIRED);
@@ -78,8 +88,8 @@ public class SimulationMonitoringService {
 
     /** Conta quantas participações daquela versão estão em uma dada situação. Uso interno. */
     private long countAttempts(Long simulationVersionId, AttemptStatus status) {
-        return candidateAttemptRepository.countByTenantIdAndSimulationVersionIdAndStatus(
-                currentTenantService.requiredTenantId(), simulationVersionId, status);
+        return candidateAttemptRepository.countByEmpresaIdAndSimulationVersionIdAndStatus(
+                currentEmpresaService.requiredEmpresaId(), simulationVersionId, status);
     }
 
     /** Calcula um percentual com duas casas, tratando o caso de total zero. Uso interno. */

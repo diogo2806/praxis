@@ -22,7 +22,7 @@ import {
 } from "@/lib/api/praxis";
 import { canEditSimulationVersion, statusMeta } from "@/lib/simulation-meta";
 import { cn } from "@/lib/utils";
-import { defaultAnswerTimeLimitSeconds, useTenantConfig } from "@/lib/tenant-config";
+import { defaultAnswerTimeLimitSeconds, useEmpresaConfig } from "@/lib/empresa-config";
 
 export const Route = createFileRoute("/nova/dialogo")({
   validateSearch: (search: Record<string, unknown>) => ({
@@ -51,10 +51,10 @@ function DialogEditor() {
   const hasContext = Boolean(search.simulationId && search.versionNumber);
   const {
     config,
-    isLoading: tenantConfigLoading,
-    isError: tenantConfigError,
-    error: tenantConfigQueryError,
-  } = useTenantConfig();
+    isLoading: empresaConfigLoading,
+    isError: empresaConfigError,
+    error: empresaConfigQueryError,
+  } = useEmpresaConfig();
   const answerTimeLimits = config?.answerTimeLimits ?? [];
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [draftMessage, setDraftMessage] = useState("");
@@ -277,14 +277,14 @@ function DialogEditor() {
             />
           }
         />
-      ) : tenantConfigLoading || versionQuery.isLoading ? (
+      ) : empresaConfigLoading || versionQuery.isLoading ? (
         <StateBanner tone="info" title="Carregando fluxo da conversa">
           Buscando teste {search.simulationId} v{search.versionNumber}.
         </StateBanner>
-      ) : tenantConfigError ? (
+      ) : empresaConfigError ? (
         <StateBanner tone="danger" title="Não foi possível carregar a configuração">
-          {tenantConfigQueryError instanceof Error
-            ? tenantConfigQueryError.message
+          {empresaConfigQueryError instanceof Error
+            ? empresaConfigQueryError.message
             : "Verifique se o sistema está disponível antes de editar o fluxo."}
         </StateBanner>
       ) : versionQuery.isError ? (

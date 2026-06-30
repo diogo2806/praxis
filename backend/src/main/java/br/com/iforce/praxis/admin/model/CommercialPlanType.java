@@ -1,7 +1,7 @@
 package br.com.iforce.praxis.admin.model;
 
 /**
- * Rótulo comercial do cliente (tenant) no painel administrativo.
+ * Rótulo comercial do cliente (empresa) no painel administrativo.
  *
  * <p>Na Parte A do painel ADMIN este enum é apenas um rótulo comercial usado para
  * classificar o cliente. Na Parte B (cobrança Mercado Pago) cada plano ganha um

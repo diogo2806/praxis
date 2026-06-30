@@ -9,11 +9,11 @@ import {
   createSimulationDraft,
   getSimulationVersion,
   updateSimulationBlueprint,
-  updateTenantConfig,
-  type TenantConfigOption,
+  updateEmpresaConfig,
+  type EmpresaConfigOption,
 } from "@/lib/api/praxis";
 import { useLanguage } from "@/lib/language-context";
-import { useTenantConfig } from "@/lib/tenant-config";
+import { useEmpresaConfig } from "@/lib/empresa-config";
 import { getTranslations, type Language } from "@/lib/translations";
 
 export const Route = createFileRoute("/nova/blueprint")({
@@ -68,10 +68,10 @@ function Page() {
   const hasVersionContext = Boolean(search.simulationId && search.versionNumber);
   const {
     config,
-    isLoading: tenantConfigLoading,
-    isError: tenantConfigError,
-    error: tenantConfigQueryError,
-  } = useTenantConfig();
+    isLoading: empresaConfigLoading,
+    isError: empresaConfigError,
+    error: empresaConfigQueryError,
+  } = useEmpresaConfig();
   const competencies = config?.competencies ?? [];
   const [role, setRole] = useState("");
   const [criticalSituation, setCriticalSituation] = useState("");
@@ -110,7 +110,7 @@ function Page() {
   });
 
   useEffect(() => {
-    if (!versionQuery.data || tenantConfigLoading) {
+    if (!versionQuery.data || empresaConfigLoading) {
       return;
     }
 
@@ -126,7 +126,7 @@ function Page() {
       versionQuery.data.blueprint.competencies.map((competency) => competency.name),
     );
     setHydratedVersionKey(versionKey);
-  }, [hydratedVersionKey, tenantConfigLoading, versionQuery.data]);
+  }, [hydratedVersionKey, empresaConfigLoading, versionQuery.data]);
 
   const createDraftMutation = useMutation({
     mutationFn: () =>
@@ -188,14 +188,14 @@ function Page() {
         ...competencies,
         { value, label: value, locked: false, selectedByDefault: false, active: true },
       ];
-      return updateTenantConfig("COMPETENCY", nextCompetencies);
+      return updateEmpresaConfig("COMPETENCY", nextCompetencies);
     },
     onSuccess: async (_, value) => {
       setNewCompetency("");
       setSelectedCompetencies((current) =>
         current.includes(value) ? current : [...current, value],
       );
-      await queryClient.invalidateQueries({ queryKey: ["tenant-config"] });
+      await queryClient.invalidateQueries({ queryKey: ["empresa-config"] });
     },
   });
 
@@ -212,16 +212,16 @@ function Page() {
       <WizardStepper current="avaliacao" unlockedThrough={canGoNext ? "cenario" : "avaliacao"} />
       <ScreenStateStrip blockedReason={copy.blockedReason} />
 
-      {tenantConfigLoading && (
+      {empresaConfigLoading && (
         <StateBanner tone="info" title={copy.loadingConfigTitle}>
           {copy.loadingConfigBody}
         </StateBanner>
       )}
 
-      {tenantConfigError && (
+      {empresaConfigError && (
         <StateBanner tone="danger" title={copy.configErrorTitle}>
-          {tenantConfigQueryError instanceof Error
-            ? tenantConfigQueryError.message
+          {empresaConfigQueryError instanceof Error
+            ? empresaConfigQueryError.message
             : copy.configErrorFallback}
         </StateBanner>
       )}
@@ -341,7 +341,7 @@ function Page() {
                   placeholder="Buscar competÃªncia"
                   value={competencySearch}
                   onChange={(event) => setCompetencySearch(event.target.value)}
-                  disabled={tenantConfigLoading || addCompetencyMutation.isPending}
+                  disabled={empresaConfigLoading || addCompetencyMutation.isPending}
                 />
                 <div className="mt-1 text-xs text-muted-foreground">
                   {visibleCompetencies.length} de {competencies.length} disponÃ­veis
@@ -451,7 +451,7 @@ function Page() {
   );
 }
 
-function getDefaultOption(options: TenantConfigOption[]) {
+function getDefaultOption(options: EmpresaConfigOption[]) {
   return (
     options.find((option) => option.selectedByDefault && !option.locked) ??
     options.find((option) => !option.locked) ??

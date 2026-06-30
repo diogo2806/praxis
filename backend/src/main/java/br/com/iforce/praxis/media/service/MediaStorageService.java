@@ -1,29 +1,52 @@
 package br.com.iforce.praxis.media.service;
 
-import br.com.iforce.praxis.auth.context.TenantContextHolder;
+import br.com.iforce.praxis.auth.context.EmpresaContextHolder;
+
 import br.com.iforce.praxis.config.ObjectStorageProperties;
+
 import br.com.iforce.praxis.media.dto.MediaUploadResponse;
+
 import br.com.iforce.praxis.shared.model.MediaType;
+
 import org.apache.tika.Tika;
+
 import org.springframework.http.HttpStatus;
+
 import org.springframework.stereotype.Service;
+
 import org.springframework.web.multipart.MultipartFile;
+
 import org.springframework.web.server.ResponseStatusException;
+
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
+
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
+
 import software.amazon.awssdk.core.sync.RequestBody;
+
 import software.amazon.awssdk.regions.Region;
+
 import software.amazon.awssdk.services.s3.S3Client;
+
 import software.amazon.awssdk.services.s3.S3Configuration;
+
 import software.amazon.awssdk.services.s3.model.HeadBucketRequest;
+
 import software.amazon.awssdk.services.s3.model.NoSuchBucketException;
+
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 
+
 import java.io.IOException;
+
 import java.net.URI;
+
 import java.util.Locale;
+
 import java.util.Map;
+
 import java.util.UUID;
+
 
 /**
  * Faz upload das mídias (imagem/áudio) usadas no cadastro dos testes para o storage S3 compatível
@@ -95,10 +118,10 @@ public class MediaStorageService {
         MediaType mediaType = resolveMediaType(detectedContentType);
         String extension = extensionFor(mediaType, detectedContentType);
 
-        // Isola a mídia por tenant: permite limpeza no offboarding (deletar o prefixo
-        // media/{tenantId}/) e serve de base para cota/limite por plano.
-        String tenantId = TenantContextHolder.getRequired();
-        String key = "media/" + tenantId + "/" + UUID.randomUUID() + extension;
+        // Isola a mídia por empresa: permite limpeza no offboarding (deletar o prefixo
+        // media/{empresaId}/) e serve de base para cota/limite por plano.
+        String empresaId = EmpresaContextHolder.getRequired();
+        String key = "media/" + empresaId + "/" + UUID.randomUUID() + extension;
 
         ensureBucket();
         try {

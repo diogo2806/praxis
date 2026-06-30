@@ -2,7 +2,9 @@ package br.com.iforce.praxis.results.dto;
 
 import br.com.iforce.praxis.gupy.model.AttemptStatus;
 
+
 import java.time.Instant;
+
 
 public record ResultListItemResponse(
         String attemptId,

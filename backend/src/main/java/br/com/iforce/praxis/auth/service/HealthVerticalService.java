@@ -1,23 +1,25 @@
 package br.com.iforce.praxis.auth.service;
 
-import br.com.iforce.praxis.auth.persistence.repository.TenantRepository;
+import br.com.iforce.praxis.auth.persistence.repository.EmpresaRepository;
+
 import org.springframework.stereotype.Service;
 
+
 /**
- * Resolve se um tenant opera na vertical de saúde (uso educativo). A vertical muda o regime
+ * Resolve se um empresa opera na vertical de saúde (uso educativo). A vertical muda o regime
  * jurídico: exige aceite do termo de uso em saúde pelo recrutador antes de publicar e coleta de
  * consentimento do paciente no fluxo do candidato (LGPD, dado sensível — arts. 11 e 14).
  *
- * <p>Hoje a flag é definida no tenant (via configuração/migração). Tenants sem a flag mantêm o
+ * <p>Hoje a flag é definida no empresa (via configuração/migração). Empresas sem a flag mantêm o
  * comportamento atual.</p>
  */
 @Service
 public class HealthVerticalService {
 
-    private final TenantRepository tenantRepository;
+    private final EmpresaRepository empresaRepository;
 
-    public HealthVerticalService(TenantRepository tenantRepository) {
-        this.tenantRepository = tenantRepository;
+    public HealthVerticalService(EmpresaRepository empresaRepository) {
+        this.empresaRepository = empresaRepository;
     }
 
     /**
@@ -28,15 +30,15 @@ public class HealthVerticalService {
      * publicar e consentimento do participante para dados sensíveis. Empresas
      * sem essa marcação seguem o comportamento padrão.</p>
      *
-     * @param tenantId identificador da empresa
+     * @param empresaId identificador da empresa
      * @return {@code true} se a empresa está na vertical de saúde
      */
-    public boolean isHealthVertical(String tenantId) {
-        if (tenantId == null || tenantId.isBlank()) {
+    public boolean isHealthVertical(String empresaId) {
+        if (empresaId == null || empresaId.isBlank()) {
             return false;
         }
-        return tenantRepository.findById(tenantId)
-                .map(tenant -> tenant.isHealthVertical())
+        return empresaRepository.findById(empresaId)
+                .map(empresa -> empresa.isHealthVertical())
                 .orElse(false);
     }
 }

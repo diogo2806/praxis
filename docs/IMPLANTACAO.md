@@ -80,7 +80,7 @@ Fiel a `docker-compose.yml`, `backend/Dockerfile`, `backend/pom.xml`,
 
 > A variável `ADMIN_BOOTSTRAP_EMAIL`/`ADMIN_BOOTSTRAP_PASSWORD` do requisito corresponde a
 > `PRAXIS_ADMIN_BOOTSTRAP_EMAIL`/`PRAXIS_ADMIN_BOOTSTRAP_PASSWORD`. A Gupy não usa variável de
-> ambiente para autenticar: o token é validado contra `tenants.integration_token_hash` no banco.
+> ambiente para autenticar: o token é validado contra `empresas.integration_token_hash` no banco.
 
 ---
 
@@ -104,7 +104,7 @@ GRANT ALL ON SCHEMA public TO praxis;
   `.../postgresql` para SQL específico do PostgreSQL.
 - `spring.flyway.default-schema`/`schemas` usam `DB_SCHEMA` (padrão `public`).
 - Não é necessário criar tabelas manualmente: subir o backend aplica todo o schema, incluindo seeds
-  (ex.: `V16__seed_default_tenant`, `V44__seed_platform_tenant`).
+  (ex.: `V16__seed_default_empresa`, `V44__seed_platform_empresa`).
 - Conferir estado: `mvn -pl backend flyway:info` (ou logs de startup do backend).
 
 ---
@@ -175,13 +175,13 @@ Serviços resultantes:
 - PostgreSQL: rede interna do Compose, volume `postgres_data`.
 
 > O Compose exige `PRAXIS_INTEGRATION_TOKEN`, mas a autenticação real da Gupy usa o hash em
-> `tenants.integration_token_hash`. Gere e atualize o hash do tenant:
+> `empresas.integration_token_hash`. Gere e atualize o hash do empresa:
 >
 > ```bash
 > node -e "const c=require('crypto');console.log(c.createHash('sha256').update('troque-este-token').digest('base64url'))"
 > ```
 > ```sql
-> UPDATE tenants SET integration_token_hash = '<hash-gerado>' WHERE id = 'tenant-1';
+> UPDATE empresas SET integration_token_hash = '<hash-gerado>' WHERE id = 'empresa-1';
 > ```
 
 ### 17.3 Cloud / homologação / produção
@@ -231,13 +231,13 @@ server {
 | CORS | `WebConfig` libera origens de `PRAXIS_CORS_ALLOWED_ORIGINS`; defina o domínio do frontend em produção. |
 | Headers | `frameOptions(deny)` e `contentTypeOptions` ativos. CSRF desabilitado (API stateless). |
 | Roles | `ADMIN` para `/api/admin/**`; `EMPRESA` para `/api/v1/**` protegidas (`SecurityConfig`). |
-| Tenant | Isolamento por tenant via JWT/token; `SUSPENSO`/`CANCELADO` bloqueiam acesso. |
+| Empresa | Isolamento por empresa via JWT/token; `SUSPENSO`/`CANCELADO` bloqueiam acesso. |
 | Proteção de Webhook | `/api/webhooks/mercado-pago` valida assinatura `x-signature` (`MP_WEBHOOK_SECRET`), idempotência e consulta a API MP antes de aplicar mudança financeira. |
-| Tokens de integração (ATS) | Comparação por SHA-256 Base64URL contra `tenants.integration_token_hash`; o token em claro nunca é persistido. |
+| Tokens de integração (ATS) | Comparação por SHA-256 Base64URL contra `empresas.integration_token_hash`; o token em claro nunca é persistido. |
 | Secrets | `PRAXIS_JWT_SECRET`, `DB_PASS`, `MP_*`, `OBJECT_STORAGE_*` só por variável de ambiente/secret manager. Nunca commitar. |
 
 > **Importante:** `PRAXIS_SECURITY_ENABLED=false` libera todas as rotas e usa
-> `PRAXIS_DEFAULT_TENANT_ID`. Use **apenas em desenvolvimento**, nunca em produção.
+> `PRAXIS_DEFAULT_EMPRESA_ID`. Use **apenas em desenvolvimento**, nunca em produção.
 
 ---
 
@@ -245,11 +245,11 @@ server {
 
 - [ ] Banco criado e acessível (`DB_*` corretos).
 - [ ] Migrações executadas (Flyway `OK` nos logs / `flyway:info`).
-- [ ] Operador ADMIN bootstrap criado (`PRAXIS_ADMIN_BOOTSTRAP_EMAIL`/`_PASSWORD`; tenant `PLATFORM` existe).
+- [ ] Operador ADMIN bootstrap criado (`PRAXIS_ADMIN_BOOTSTRAP_EMAIL`/`_PASSWORD`; empresa `PLATFORM` existe).
 - [ ] Login funcionando (`POST /api/v1/auth/login`).
 - [ ] Upload de mídia funcionando (`POST /api/v1/media`) — se `OBJECT_STORAGE_*` configurado.
 - [ ] Mercado Pago conectado — se `MP_ENABLED=true` (webhook e `MP_*` válidos).
-- [ ] Gupy/Recrutei conectada — `integration_token_hash` do tenant configurado; `GET /test` responde.
+- [ ] Gupy/Recrutei conectada — `integration_token_hash` do empresa configurado; `GET /test` responde.
 - [ ] Health Check `UP` (`GET /actuator/health`).
 - [ ] Auditoria funcionando (ações geram eventos em `audit_events`).
 - [ ] Backup configurado (banco + storage) — ver [OPERACAO.md §8](OPERACAO.md#8-backup).

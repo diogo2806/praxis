@@ -23,7 +23,7 @@ export const Route = createFileRoute("/recuperar-senha")({
 
 function ForgotPasswordPage() {
   const [email, setEmail] = useState("");
-  const [tenantId, setTenantId] = useState("");
+  const [empresaId, setEmpresaId] = useState("");
 
   const canSubmit = email.trim().length > 0;
 
@@ -31,8 +31,8 @@ function ForgotPasswordPage() {
     mutationFn: () =>
       requestPasswordReset({
         email: email.trim(),
-        // Campo opcional: ADMIN deixa em branco (tenant PLATFORM).
-        tenantId: tenantId.trim() === "" ? undefined : tenantId.trim(),
+        // Campo opcional: ADMIN deixa em branco (empresa PLATFORM).
+        empresaId: empresaId.trim() === "" ? undefined : empresaId.trim(),
       }),
   });
 
@@ -90,13 +90,13 @@ function ForgotPasswordPage() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="tenantId">Empresa (opcional)</Label>
+                <Label htmlFor="empresaId">Empresa (opcional)</Label>
                 <Input
-                  id="tenantId"
+                  id="empresaId"
                   type="text"
                   autoComplete="organization"
-                  value={tenantId}
-                  onChange={(event) => setTenantId(event.target.value)}
+                  value={empresaId}
+                  onChange={(event) => setEmpresaId(event.target.value)}
                   disabled={mutation.isPending}
                 />
                 <p className="text-xs text-slate-500">

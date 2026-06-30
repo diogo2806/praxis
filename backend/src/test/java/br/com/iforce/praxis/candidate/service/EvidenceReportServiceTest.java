@@ -1,39 +1,71 @@
 package br.com.iforce.praxis.candidate.service;
 
 import br.com.iforce.praxis.audit.dto.AuditEventResponse;
+
 import br.com.iforce.praxis.audit.model.AuditEventType;
+
 import br.com.iforce.praxis.audit.service.AuditEventService;
-import br.com.iforce.praxis.auth.service.CurrentTenantService;
+
+import br.com.iforce.praxis.auth.service.CurrentEmpresaService;
+
 import br.com.iforce.praxis.candidate.dto.EvidenceReport;
+
 import br.com.iforce.praxis.config.PraxisProperties;
+
 import br.com.iforce.praxis.gupy.model.PublishedSimulation;
+
 import br.com.iforce.praxis.gupy.model.ReliabilityLevel;
+
 import br.com.iforce.praxis.gupy.model.ResultDecision;
+
 import br.com.iforce.praxis.gupy.model.ResultTier;
+
 import br.com.iforce.praxis.gupy.model.ScenarioNode;
+
 import br.com.iforce.praxis.gupy.model.ScenarioOption;
+
 import br.com.iforce.praxis.gupy.persistence.entity.AttemptAnswerEntity;
+
 import br.com.iforce.praxis.gupy.persistence.entity.CandidateAttemptEntity;
+
 import br.com.iforce.praxis.gupy.persistence.entity.ResultItemEntity;
+
 import br.com.iforce.praxis.gupy.persistence.repository.CandidateAttemptRepository;
+
 import br.com.iforce.praxis.gupy.service.SimulationCatalogService;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
+
 import org.junit.jupiter.api.BeforeEach;
+
 import org.junit.jupiter.api.Test;
+
 import org.junit.jupiter.api.extension.ExtendWith;
+
 import org.mockito.Mock;
+
 import org.mockito.junit.jupiter.MockitoExtension;
+
 import org.springframework.web.server.ResponseStatusException;
 
+
 import java.time.Instant;
+
 import java.util.List;
+
 import java.util.Map;
+
 import java.util.Optional;
 
+
 import static org.assertj.core.api.Assertions.assertThat;
+
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+
 import static org.mockito.Mockito.lenient;
+
 import static org.mockito.Mockito.when;
+
 
 @ExtendWith(MockitoExtension.class)
 class EvidenceReportServiceTest {
@@ -48,7 +80,7 @@ class EvidenceReportServiceTest {
     private AuditEventService auditEventService;
 
     @Mock
-    private CurrentTenantService currentTenantService;
+    private CurrentEmpresaService currentEmpresaService;
 
     @Mock
     private PraxisProperties praxisProperties;
@@ -61,17 +93,17 @@ class EvidenceReportServiceTest {
                 candidateAttemptRepository,
                 simulationCatalogService,
                 auditEventService,
-                currentTenantService,
+                currentEmpresaService,
                 praxisProperties,
                 new ObjectMapper()
         );
-        lenient().when(currentTenantService.requiredTenantId()).thenReturn("tenant-1");
+        lenient().when(currentEmpresaService.requiredEmpresaId()).thenReturn("empresa-1");
         lenient().when(praxisProperties.recommendInterviewThreshold()).thenReturn(70);
     }
 
     @Test
     void buildsReportWithDeclarationPathCompetenciesAndHumanDecision() {
-        when(candidateAttemptRepository.findByTenantIdAndId("tenant-1", "att_1"))
+        when(candidateAttemptRepository.findByEmpresaIdAndId("empresa-1", "att_1"))
                 .thenReturn(Optional.of(sampleAttempt()));
         when(simulationCatalogService.findByVersionId(100L)).thenReturn(Optional.of(sampleSimulation()));
         when(auditEventService.listCandidateAttemptEvents("att_1")).thenReturn(sampleAuditTrail());
@@ -111,7 +143,7 @@ class EvidenceReportServiceTest {
 
     @Test
     void reportWorksWhenSimulationVersionNoLongerResolvable() {
-        when(candidateAttemptRepository.findByTenantIdAndId("tenant-1", "att_1"))
+        when(candidateAttemptRepository.findByEmpresaIdAndId("empresa-1", "att_1"))
                 .thenReturn(Optional.of(sampleAttempt()));
         when(simulationCatalogService.findByVersionId(100L)).thenReturn(Optional.empty());
         when(auditEventService.listCandidateAttemptEvents("att_1")).thenReturn(List.of());
@@ -127,7 +159,7 @@ class EvidenceReportServiceTest {
 
     @Test
     void rejectsWhenAttemptNotFound() {
-        when(candidateAttemptRepository.findByTenantIdAndId("tenant-1", "ghost"))
+        when(candidateAttemptRepository.findByEmpresaIdAndId("empresa-1", "ghost"))
                 .thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> service.build("ghost"))
@@ -138,7 +170,7 @@ class EvidenceReportServiceTest {
     private CandidateAttemptEntity sampleAttempt() {
         CandidateAttemptEntity attempt = new CandidateAttemptEntity();
         attempt.setId("att_1");
-        attempt.setTenantId("tenant-1");
+        attempt.setEmpresaId("empresa-1");
         attempt.setSimulationId("sim-1");
         attempt.setSimulationVersionId(100L);
         attempt.setSimulationVersionNumber(2);

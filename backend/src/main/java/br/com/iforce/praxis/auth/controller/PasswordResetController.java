@@ -1,23 +1,40 @@
 package br.com.iforce.praxis.auth.controller;
 
 import br.com.iforce.praxis.auth.dto.ForgotPasswordRequest;
+
 import br.com.iforce.praxis.auth.dto.ResetPasswordRequest;
+
 import br.com.iforce.praxis.auth.dto.ResetPasswordTokenResponse;
+
 import br.com.iforce.praxis.auth.service.PasswordResetRateLimiter;
+
 import br.com.iforce.praxis.auth.service.PasswordResetService;
+
 import jakarta.servlet.http.HttpServletRequest;
+
 import jakarta.validation.Valid;
+
 import org.springframework.http.HttpStatus;
+
 import org.springframework.http.ResponseEntity;
+
 import org.springframework.web.bind.annotation.GetMapping;
+
 import org.springframework.web.bind.annotation.PathVariable;
+
 import org.springframework.web.bind.annotation.PostMapping;
+
 import org.springframework.web.bind.annotation.RequestBody;
+
 import org.springframework.web.bind.annotation.RequestMapping;
+
 import org.springframework.web.bind.annotation.RestController;
+
 import org.springframework.web.server.ResponseStatusException;
 
+
 import java.util.Map;
+
 
 /**
  * Porta de entrada (API) do fluxo público de recuperação de senha.
@@ -54,7 +71,7 @@ public class PasswordResetController {
     ) {
         String ip = clientIp(httpRequest);
         enforceRateLimit("forgot:ip:" + ip);
-        enforceRateLimit("forgot:user:" + request.tenantId() + "|" + request.email());
+        enforceRateLimit("forgot:user:" + request.empresaId() + "|" + request.email());
 
         passwordResetService.requestReset(request, ip);
         return ResponseEntity.ok(Map.of("message", UNIFORM_FORGOT_MESSAGE));

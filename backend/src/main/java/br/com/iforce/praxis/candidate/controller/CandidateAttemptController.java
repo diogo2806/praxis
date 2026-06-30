@@ -1,23 +1,41 @@
 package br.com.iforce.praxis.candidate.controller;
 
 import br.com.iforce.praxis.candidate.dto.HealthConsentRequest;
+
 import br.com.iforce.praxis.candidate.dto.ParticipacaoResponse;
+
 import br.com.iforce.praxis.candidate.dto.RegistrarRespostaRequest;
+
 import br.com.iforce.praxis.candidate.dto.RegistrarRespostaResponse;
+
 import br.com.iforce.praxis.candidate.dto.ReviewRequest;
+
 import br.com.iforce.praxis.candidate.service.CandidateHealthConsentService;
+
 import br.com.iforce.praxis.candidate.service.CandidateReviewRequestService;
+
 import br.com.iforce.praxis.gupy.service.CandidateAttemptService;
+
 import io.swagger.v3.oas.annotations.Operation;
+
 import io.swagger.v3.oas.annotations.tags.Tag;
+
 import jakarta.validation.Valid;
+
 import org.springframework.http.ResponseEntity;
+
 import org.springframework.web.bind.annotation.GetMapping;
+
 import org.springframework.web.bind.annotation.PathVariable;
+
 import org.springframework.web.bind.annotation.PostMapping;
+
 import org.springframework.web.bind.annotation.RequestBody;
+
 import org.springframework.web.bind.annotation.RequestMapping;
+
 import org.springframework.web.bind.annotation.RestController;
+
 
 /**
  * Porta de entrada (API) do fluxo público do candidato durante a avaliação.

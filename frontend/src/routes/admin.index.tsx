@@ -48,11 +48,11 @@ function AdminDashboardPage() {
       </p>
 
       <div className="mt-6 grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-6">
-        <Card label="Total de clientes" value={data.totalTenants} />
-        <Card label="Ativos" value={data.activeTenants} accent="text-emerald-600" />
-        <Card label="Em teste" value={data.trialTenants} accent="text-sky-600" />
-        <Card label="Suspensos" value={data.suspendedTenants} accent="text-amber-600" />
-        <Card label="Cancelados" value={data.canceledTenants} accent="text-rose-600" />
+        <Card label="Total de clientes" value={data.totalEmpresas} />
+        <Card label="Ativos" value={data.activeEmpresas} accent="text-emerald-600" />
+        <Card label="Em teste" value={data.trialEmpresas} accent="text-sky-600" />
+        <Card label="Suspensos" value={data.suspendedEmpresas} accent="text-amber-600" />
+        <Card label="Cancelados" value={data.canceledEmpresas} accent="text-rose-600" />
         <Card label="Uso no período" value={data.totalCompletedAttempts} accent="text-primary" />
       </div>
 
@@ -60,22 +60,22 @@ function AdminDashboardPage() {
         <section className="rounded-xl border border-slate-200 bg-white p-5">
           <h2 className="font-semibold">Clientes que exigem atenção</h2>
           <p className="mb-3 text-xs text-slate-500">Suspensos e cancelados recentemente.</p>
-          {data.attentionTenants.length === 0 ? (
+          {data.attentionEmpresas.length === 0 ? (
             <p className="text-sm text-slate-500">Nenhum cliente em alerta.</p>
           ) : (
             <ul className="divide-y divide-slate-100">
-              {data.attentionTenants.map((tenant) => (
-                <li key={tenant.tenantId} className="flex items-center justify-between py-2.5">
+              {data.attentionEmpresas.map((empresa) => (
+                <li key={empresa.empresaId} className="flex items-center justify-between py-2.5">
                   <Link
-                    to="/admin/tenants/$tenantId"
-                    params={{ tenantId: tenant.tenantId }}
+                    to="/admin/empresas/$empresaId"
+                    params={{ empresaId: empresa.empresaId }}
                     className="text-sm font-medium text-primary hover:underline"
                   >
-                    {tenant.name}
+                    {empresa.name}
                   </Link>
                   <div className="flex items-center gap-3">
-                    <span className="text-xs text-slate-500">{planLabel(tenant.commercialPlanType)}</span>
-                    <StatusBadge status={tenant.status} />
+                    <span className="text-xs text-slate-500">{planLabel(empresa.commercialPlanType)}</span>
+                    <StatusBadge status={empresa.status} />
                   </div>
                 </li>
               ))}
@@ -86,20 +86,20 @@ function AdminDashboardPage() {
         <section className="rounded-xl border border-slate-200 bg-white p-5">
           <h2 className="font-semibold">Clientes com maior uso</h2>
           <p className="mb-3 text-xs text-slate-500">Avaliações concluídas no período.</p>
-          {data.topUsageTenants.length === 0 ? (
+          {data.topUsageEmpresas.length === 0 ? (
             <p className="text-sm text-slate-500">Sem uso registrado no período.</p>
           ) : (
             <ul className="divide-y divide-slate-100">
-              {data.topUsageTenants.map((tenant) => (
-                <li key={tenant.tenantId} className="flex items-center justify-between py-2.5">
+              {data.topUsageEmpresas.map((empresa) => (
+                <li key={empresa.empresaId} className="flex items-center justify-between py-2.5">
                   <Link
-                    to="/admin/tenants/$tenantId"
-                    params={{ tenantId: tenant.tenantId }}
+                    to="/admin/empresas/$empresaId"
+                    params={{ empresaId: empresa.empresaId }}
                     className="text-sm font-medium text-primary hover:underline"
                   >
-                    {tenant.name}
+                    {empresa.name}
                   </Link>
-                  <span className="text-sm font-semibold">{tenant.completedAttempts}</span>
+                  <span className="text-sm font-semibold">{empresa.completedAttempts}</span>
                 </li>
               ))}
             </ul>
@@ -109,22 +109,22 @@ function AdminDashboardPage() {
 
       <section className="mt-6 rounded-xl border border-slate-200 bg-white p-5">
         <h2 className="font-semibold">Clientes criados recentemente</h2>
-        {data.recentTenants.length === 0 ? (
+        {data.recentEmpresas.length === 0 ? (
           <p className="mt-3 text-sm text-slate-500">Nenhum cliente cadastrado ainda.</p>
         ) : (
           <ul className="mt-3 divide-y divide-slate-100">
-            {data.recentTenants.map((tenant) => (
-              <li key={tenant.tenantId} className="flex items-center justify-between py-2.5">
+            {data.recentEmpresas.map((empresa) => (
+              <li key={empresa.empresaId} className="flex items-center justify-between py-2.5">
                 <Link
-                  to="/admin/tenants/$tenantId"
-                  params={{ tenantId: tenant.tenantId }}
+                  to="/admin/empresas/$empresaId"
+                  params={{ empresaId: empresa.empresaId }}
                   className="text-sm font-medium text-primary hover:underline"
                 >
-                  {tenant.name}
+                  {empresa.name}
                 </Link>
                 <div className="flex items-center gap-3 text-xs text-slate-500">
-                  <span>{planLabel(tenant.commercialPlanType)}</span>
-                  <StatusBadge status={tenant.status} />
+                  <span>{planLabel(empresa.commercialPlanType)}</span>
+                  <StatusBadge status={empresa.status} />
                 </div>
               </li>
             ))}

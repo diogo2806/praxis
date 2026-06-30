@@ -1,24 +1,42 @@
 package br.com.iforce.praxis.journey.controller;
 
 import br.com.iforce.praxis.audit.dto.AuditEventResponse;
+
 import br.com.iforce.praxis.audit.service.AuditEventService;
+
 import br.com.iforce.praxis.journey.dto.AssessmentJourneyAttemptResponse;
+
 import br.com.iforce.praxis.journey.dto.CreateJourneyAttemptRequest;
+
 import br.com.iforce.praxis.journey.dto.JourneyConsolidatedResultResponse;
+
 import br.com.iforce.praxis.journey.service.AssessmentJourneyAttemptService;
+
 import io.swagger.v3.oas.annotations.Operation;
+
 import io.swagger.v3.oas.annotations.tags.Tag;
+
 import jakarta.validation.Valid;
+
 import org.springframework.http.HttpStatus;
+
 import org.springframework.http.ResponseEntity;
+
 import org.springframework.web.bind.annotation.GetMapping;
+
 import org.springframework.web.bind.annotation.PathVariable;
+
 import org.springframework.web.bind.annotation.PostMapping;
+
 import org.springframework.web.bind.annotation.RequestBody;
+
 import org.springframework.web.bind.annotation.RequestMapping;
+
 import org.springframework.web.bind.annotation.RestController;
 
+
 import java.util.List;
+
 
 /**
  * Porta de entrada (API) da execução das Jornadas de Avaliação pelo candidato.
@@ -135,7 +153,7 @@ public class AssessmentJourneyAttemptController {
     @GetMapping("/{attemptId}/audit-events")
     @Operation(summary = "Trilha de auditoria da tentativa da jornada")
     public ResponseEntity<List<AuditEventResponse>> auditEvents(@PathVariable String attemptId) {
-        // Garante que a tentativa pertence ao tenant antes de expor sua trilha.
+        // Garante que a tentativa pertence ao empresa antes de expor sua trilha.
         attemptService.getAttempt(attemptId);
         return ResponseEntity.ok(auditEventService.listAssessmentJourneyAttemptEvents(attemptId));
     }

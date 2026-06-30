@@ -1,15 +1,24 @@
 package br.com.iforce.praxis.shared.notification.controller;
 
-import br.com.iforce.praxis.auth.service.CurrentTenantService;
+import br.com.iforce.praxis.auth.service.CurrentEmpresaService;
+
 import br.com.iforce.praxis.shared.notification.dto.InAppNotificationResponse;
+
 import br.com.iforce.praxis.shared.notification.persistence.entity.InAppNotificationEntity;
+
 import br.com.iforce.praxis.shared.notification.persistence.repository.InAppNotificationRepository;
+
 import org.springframework.http.ResponseEntity;
+
 import org.springframework.web.bind.annotation.GetMapping;
+
 import org.springframework.web.bind.annotation.RequestMapping;
+
 import org.springframework.web.bind.annotation.RestController;
 
+
 import java.util.List;
+
 
 /**
  * Porta de entrada (API) das notificações exibidas dentro do sistema.
@@ -22,14 +31,14 @@ import java.util.List;
 @RequestMapping("/api/v1/notifications")
 public class InAppNotificationController {
 
-    private final CurrentTenantService currentTenantService;
+    private final CurrentEmpresaService currentEmpresaService;
     private final InAppNotificationRepository notificationRepository;
 
     public InAppNotificationController(
-            CurrentTenantService currentTenantService,
+            CurrentEmpresaService currentEmpresaService,
             InAppNotificationRepository notificationRepository
     ) {
-        this.currentTenantService = currentTenantService;
+        this.currentEmpresaService = currentEmpresaService;
         this.notificationRepository = notificationRepository;
     }
 
@@ -40,8 +49,8 @@ public class InAppNotificationController {
      */
     @GetMapping
     public ResponseEntity<List<InAppNotificationResponse>> listNotifications() {
-        String tenantId = currentTenantService.requiredTenantId();
-        return ResponseEntity.ok(notificationRepository.findByTenantIdOrderByCreatedAtDesc(tenantId)
+        String empresaId = currentEmpresaService.requiredEmpresaId();
+        return ResponseEntity.ok(notificationRepository.findByEmpresaIdOrderByCreatedAtDesc(empresaId)
                 .stream()
                 .map(this::toResponse)
                 .toList());

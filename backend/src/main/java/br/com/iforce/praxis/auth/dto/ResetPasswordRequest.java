@@ -1,7 +1,9 @@
 package br.com.iforce.praxis.auth.dto;
 
 import jakarta.validation.constraints.NotBlank;
+
 import jakarta.validation.constraints.Size;
+
 
 /**
  * Confirmação da redefinição de senha a partir do token recebido por e-mail.

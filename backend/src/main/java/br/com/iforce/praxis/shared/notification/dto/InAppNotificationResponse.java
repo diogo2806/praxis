@@ -2,7 +2,9 @@ package br.com.iforce.praxis.shared.notification.dto;
 
 import br.com.iforce.praxis.shared.notification.model.InAppNotificationType;
 
+
 import java.time.Instant;
+
 
 public record InAppNotificationResponse(
         Long id,

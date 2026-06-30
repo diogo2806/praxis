@@ -1,7 +1,9 @@
 package br.com.iforce.praxis.billing.config;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
+
 import org.springframework.boot.context.properties.bind.ConstructorBinding;
+
 
 /**
  * Configuração do Mercado Pago. Todas as credenciais ficam apenas no backend e nunca são

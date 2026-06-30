@@ -1,22 +1,38 @@
 package br.com.iforce.praxis.journey.persistence.entity;
 
 import br.com.iforce.praxis.journey.model.AssessmentJourneyAttemptStatus;
-import br.com.iforce.praxis.shared.jpa.TenantAwareEntity;
+
+import br.com.iforce.praxis.shared.jpa.EmpresaAwareEntity;
+
 import jakarta.persistence.CascadeType;
+
 import jakarta.persistence.Column;
+
 import jakarta.persistence.Entity;
+
 import jakarta.persistence.EnumType;
+
 import jakarta.persistence.Enumerated;
+
 import jakarta.persistence.Id;
+
 import jakarta.persistence.OneToMany;
+
 import jakarta.persistence.Table;
+
 import lombok.Getter;
+
 import lombok.NoArgsConstructor;
+
 import lombok.Setter;
 
+
 import java.time.Instant;
+
 import java.util.LinkedHashSet;
+
 import java.util.Set;
+
 
 /**
  * Tentativa de um candidato em uma Jornada de Avaliação.
@@ -31,14 +47,14 @@ import java.util.Set;
 @NoArgsConstructor
 @Entity
 @Table(name = "assessment_journey_attempts")
-public class AssessmentJourneyAttemptEntity implements TenantAwareEntity {
+public class AssessmentJourneyAttemptEntity implements EmpresaAwareEntity {
 
     @Id
     @Column(name = "id", nullable = false, length = 80)
     private String id;
 
-    @Column(name = "tenant_id", nullable = false, length = 120)
-    private String tenantId;
+    @Column(name = "empresa_id", nullable = false, length = 120)
+    private String empresaId;
 
     @Column(name = "journey_id", nullable = false, length = 120)
     private String journeyId;

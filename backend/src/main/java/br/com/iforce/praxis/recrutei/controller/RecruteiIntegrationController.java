@@ -1,36 +1,66 @@
 package br.com.iforce.praxis.recrutei.controller;
 
 import br.com.iforce.praxis.gupy.dto.CreateCandidateRequest;
+
 import br.com.iforce.praxis.gupy.dto.CreateCandidateResponse;
+
 import br.com.iforce.praxis.gupy.service.CandidateAttemptService;
+
 import br.com.iforce.praxis.gupy.service.SimulationCatalogService;
+
 import br.com.iforce.praxis.recrutei.dto.RecruteiCreateCandidateRequest;
+
 import br.com.iforce.praxis.recrutei.dto.RecruteiCreateCandidateResponse;
+
 import br.com.iforce.praxis.recrutei.dto.RecruteiTestListResponse;
+
 import br.com.iforce.praxis.recrutei.dto.RecruteiTestResponse;
+
 import br.com.iforce.praxis.recrutei.dto.RecruteiTestResultResponse;
+
 import br.com.iforce.praxis.recrutei.service.RecruteiTestResultMapper;
+
 import br.com.iforce.praxis.shared.integration.IntegrationAuthService;
-import br.com.iforce.praxis.shared.integration.IntegrationTenantContext;
+
+import br.com.iforce.praxis.shared.integration.IntegrationEmpresaContext;
+
 import io.swagger.v3.oas.annotations.Operation;
+
 import io.swagger.v3.oas.annotations.media.Content;
+
 import io.swagger.v3.oas.annotations.media.ExampleObject;
+
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
+
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
+
 import io.swagger.v3.oas.annotations.tags.Tag;
+
 import jakarta.validation.Valid;
+
 import org.springframework.http.HttpStatus;
+
 import org.springframework.http.ResponseEntity;
+
 import org.springframework.web.bind.annotation.GetMapping;
+
 import org.springframework.web.bind.annotation.PathVariable;
+
 import org.springframework.web.bind.annotation.PostMapping;
+
 import org.springframework.web.bind.annotation.RequestBody;
+
 import org.springframework.web.bind.annotation.RequestHeader;
+
 import org.springframework.web.bind.annotation.RequestMapping;
+
 import org.springframework.web.bind.annotation.RequestParam;
+
 import org.springframework.web.bind.annotation.RestController;
 
+
 import java.util.List;
+
 
 /**
  * Porta de entrada (API) usada pela Recrutei para integrar com a Práxis.
@@ -103,13 +133,13 @@ public class RecruteiIntegrationController {
             @RequestParam(name = "offset", defaultValue = "0") int offset,
             @RequestParam(name = "limit", defaultValue = "50") int limit
     ) {
-        IntegrationTenantContext tenantContext = integrationAuthService.validateBearerToken(authorization, PROVIDER);
+        IntegrationEmpresaContext empresaContext = integrationAuthService.validateBearerToken(authorization, PROVIDER);
 
         int normalizedOffset = Math.max(offset, 0);
         int normalizedLimit = Math.min(Math.max(limit, 1), 400);
 
         List<RecruteiTestResponse> tests = simulationCatalogService
-                .findPublished(tenantContext.tenantId(), search, normalizedOffset, normalizedLimit).stream()
+                .findPublished(empresaContext.empresaId(), search, normalizedOffset, normalizedLimit).stream()
                 .map(simulation -> new RecruteiTestResponse(
                         simulation.id(),
                         simulation.name(),
@@ -119,7 +149,7 @@ public class RecruteiIntegrationController {
                 ))
                 .toList();
 
-        int total = simulationCatalogService.countPublished(tenantContext.tenantId(), search);
+        int total = simulationCatalogService.countPublished(empresaContext.empresaId(), search);
         return ResponseEntity.ok(new RecruteiTestListResponse(normalizedLimit, normalizedOffset, total, tests));
     }
 
@@ -146,7 +176,7 @@ public class RecruteiIntegrationController {
             @RequestHeader(name = "Authorization", required = false) String authorization,
             @Valid @RequestBody RecruteiCreateCandidateRequest request
     ) {
-        IntegrationTenantContext tenantContext = integrationAuthService.validateBearerToken(authorization, PROVIDER);
+        IntegrationEmpresaContext empresaContext = integrationAuthService.validateBearerToken(authorization, PROVIDER);
 
         CreateCandidateRequest gupyRequest = new CreateCandidateRequest(
                 request.companyId(),
@@ -160,7 +190,7 @@ public class RecruteiIntegrationController {
                 null
         );
 
-        CreateCandidateResponse response = candidateAttemptService.createOrReuse(gupyRequest, tenantContext);
+        CreateCandidateResponse response = candidateAttemptService.createOrReuse(gupyRequest, empresaContext);
 
         return ResponseEntity.status(HttpStatus.CREATED).body(
                 new RecruteiCreateCandidateResponse(
@@ -195,10 +225,10 @@ public class RecruteiIntegrationController {
             @PathVariable String resultId,
             @RequestParam(name = "company_id") String companyId
     ) {
-        IntegrationTenantContext tenantContext = integrationAuthService.validateBearerToken(authorization, PROVIDER);
+        IntegrationEmpresaContext empresaContext = integrationAuthService.validateBearerToken(authorization, PROVIDER);
 
         CandidateAttemptService.AttemptWithSimulation result =
-                candidateAttemptService.findAttemptResult(resultId, companyId, tenantContext);
+                candidateAttemptService.findAttemptResult(resultId, companyId, empresaContext);
 
         return ResponseEntity.ok(
                 recruteiTestResultMapper.toResponse(result.attempt(), result.simulation())
