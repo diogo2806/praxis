@@ -9,6 +9,7 @@ import {
   ChevronDown,
   ClipboardCheck,
   ClipboardList,
+  CreditCard,
   HelpCircle,
   Home,
   KeyRound,
@@ -77,6 +78,12 @@ const getNav = (t: TranslationMap) =>
 
 const getSecondary = (t: TranslationMap) =>
   [
+    {
+      to: "/billing",
+      label: "Plano",
+      icon: CreditCard,
+      desc: "Plano, uso e cobrança",
+    },
     {
       to: "/compliance",
       label: t.common.compliance,

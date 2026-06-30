@@ -760,7 +760,8 @@ function isAdminPath(path: string) {
     path.startsWith("/api/v1/terms") ||
     path.startsWith("/api/v1/assessment-journeys") ||
     path.startsWith("/api/v1/assessment-journey-attempts") ||
-    path.startsWith("/api/v1/candidate-links")
+    path.startsWith("/api/v1/candidate-links") ||
+    path.startsWith("/api/v1/billing")
   );
 }
 
@@ -2179,6 +2180,53 @@ export function syncTenantBilling(tenantId: string, resourceType: string, resour
     `/api/admin/tenants/${encodeURIComponent(tenantId)}/billing/sync`,
     { method: "POST", body: JSON.stringify({ resourceType, resourceId }) },
   );
+}
+
+// ---------------------------------------------------------------------------
+// Billing · Cliente (GET /api/v1/billing)
+// ---------------------------------------------------------------------------
+
+export type FinancialStatus =
+  | "REGULAR"
+  | "PENDENTE_PAGAMENTO"
+  | "INADIMPLENTE"
+  | "SEM_CREDITO"
+  | "CANCELADO";
+
+export type BillingAction =
+  | "BUY_CREDITS"
+  | "VIEW_HISTORY"
+  | "VIEW_SUBSCRIPTION"
+  | "UPDATE_PAYMENT"
+  | "CONTACT_SUPPORT";
+
+export interface ClientBillingUsage {
+  completedLast7Days: number;
+  completedLast30Days: number;
+  completedAllTime: number;
+}
+
+export interface ClientBillingSubscription {
+  status: SubscriptionStatus;
+  currentPeriodEnd: string | null;
+  lastPaymentAt: string | null;
+  graceUntil: string | null;
+}
+
+export interface ClientBillingResponse {
+  tenantId: string;
+  plan: CommercialPlanType;
+  tenantStatus: TenantStatus;
+  financialStatus: FinancialStatus;
+  creditBalance: number;
+  usage: ClientBillingUsage;
+  subscription: ClientBillingSubscription | null;
+  availableActions: BillingAction[];
+  events: BillingEvent[];
+}
+
+export function getClientBilling() {
+  return request<ClientBillingResponse>("/api/v1/billing");
 }
 
 export type AcceptInviteRequest = {
