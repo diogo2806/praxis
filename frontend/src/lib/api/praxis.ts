@@ -803,6 +803,7 @@ export async function getDashboard() {
 }
 
 async function getDashboardFallback(): Promise<DashboardResponse> {
+  const session = getSession();
   const [
     account,
     companyProfile,
@@ -811,7 +812,13 @@ async function getDashboardFallback(): Promise<DashboardResponse> {
     integrationTokens,
     candidateLinks,
   ] = await Promise.all([
-    getCurrentAccount(),
+    getCurrentAccount().catch(() => ({
+      id: 0,
+      tenantId: session.tenantId ?? "",
+      name: session.userName,
+      email: "",
+      roles: [] as string[],
+    })),
     getCompanyProfile().catch(() => null),
     listSimulations().catch(() => []),
     listAssessmentJourneys().catch(() => []),
