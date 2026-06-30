@@ -293,6 +293,8 @@ rg -n "api key antiga|callback de retorno" README.md docs frontend/src/routes/RE
 ## Documentacao
 
 - [Indice de documentacao](docs/00-INDICE.md)
+- [Documentacao operacional](docs/OPERACAO.md)
+- [Documentacao de implantacao](docs/IMPLANTACAO.md)
 - [Cadastro de cenarios para RH](docs/cadastro_cenarios_rh.md)
 - [Mapa Frontend-Backend](docs/frontend-backend-map.md)
 - [Integracao Gupy](docs/INTEGRACAO-GUPY-PROVEDOR.md)
