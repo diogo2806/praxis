@@ -1040,7 +1040,7 @@ export interface RegisterResultDecisionRequest {
   note?: string;
 }
 
-export function listResults(filters: ResultsListFilters = {}) {
+export async function listResults(filters: ResultsListFilters = {}) {
   const params = new URLSearchParams();
   if (filters.search) params.set("search", filters.search);
   if (filters.simulationId) params.set("simulationId", filters.simulationId);
@@ -1050,18 +1050,146 @@ export function listResults(filters: ResultsListFilters = {}) {
   if (filters.periodEnd) params.set("periodEnd", filters.periodEnd);
   params.set("page", String(filters.page ?? 0));
   params.set("size", String(filters.size ?? 20));
-  return request<ResultsPageResponse>(`/api/v1/results?${params.toString()}`);
+  try {
+    return await request<ResultsPageResponse>(`/api/v1/results?${params.toString()}`);
+  } catch (error) {
+    if (error instanceof PraxisApiError && error.status === 404) {
+      return listResultsFallback(filters);
+    }
+    throw error;
+  }
 }
 
-export function getResultDetail(attemptId: string) {
-  return request<ResultDetailResponse>(`/api/v1/results/${encodeURIComponent(attemptId)}`);
+export async function getResultDetail(attemptId: string) {
+  try {
+    return await request<ResultDetailResponse>(`/api/v1/results/${encodeURIComponent(attemptId)}`);
+  } catch (error) {
+    if (error instanceof PraxisApiError && error.status === 404) {
+      return getResultDetailFallback(attemptId);
+    }
+    throw error;
+  }
 }
 
-export function registerResultDecision(attemptId: string, body: RegisterResultDecisionRequest) {
-  return request<void>(`/api/v1/results/${encodeURIComponent(attemptId)}/decision`, {
-    method: "POST",
-    body: JSON.stringify(body),
+export async function registerResultDecision(attemptId: string, body: RegisterResultDecisionRequest) {
+  try {
+    return await request<void>(`/api/v1/results/${encodeURIComponent(attemptId)}/decision`, {
+      method: "POST",
+      body: JSON.stringify(body),
+    });
+  } catch (error) {
+    if (error instanceof PraxisApiError && error.status === 404) {
+      return registerCandidateDisposition(attemptId, {
+        decision: body.decision,
+        reason: body.note,
+      });
+    }
+    throw error;
+  }
+}
+
+async function listResultsFallback(filters: ResultsListFilters): Promise<ResultsPageResponse> {
+  const page = Math.max(filters.page ?? 0, 0);
+  const size = Math.max(filters.size ?? 20, 1);
+  const search = filters.search?.trim().toLowerCase();
+  const periodStart = filters.periodStart ? new Date(filters.periodStart).getTime() : null;
+  const periodEnd = filters.periodEnd ? new Date(filters.periodEnd).getTime() : null;
+  const allItems = (await listCandidateLinks()).filter((link) => {
+    if (search) {
+      const haystack = `${link.candidateName} ${link.candidateEmail ?? ""}`.toLowerCase();
+      if (!haystack.includes(search)) return false;
+    }
+    if (filters.simulationId && link.simulationId !== filters.simulationId) return false;
+    if (filters.status && link.status !== filters.status) return false;
+    if (filters.integrationProvider && filters.integrationProvider !== "MANUAL") return false;
+    const createdAt = new Date(link.createdAt).getTime();
+    if (periodStart != null && Number.isFinite(createdAt) && createdAt < periodStart) return false;
+    if (periodEnd != null && Number.isFinite(createdAt) && createdAt > periodEnd) return false;
+    return true;
   });
+  const items = allItems
+    .slice(page * size, page * size + size)
+    .map<ResultListItemResponse>((link) => ({
+      attemptId: link.attemptId,
+      candidateName: link.candidateName,
+      candidateEmail: link.candidateEmail ?? "",
+      simulationId: link.simulationId,
+      simulationTitle: link.simulationName,
+      status: link.status,
+      startedAt: null,
+      finishedAt: link.status === "completed" ? link.createdAt : null,
+      overallScore: null,
+      highlightCompetency: null,
+      integrationProvider: "MANUAL",
+    }));
+  const completed = allItems.filter((item) => item.status === "completed").length;
+  const inProgress = allItems.filter((item) =>
+    ["notStarted", "inProgress", "paused"].includes(item.status),
+  ).length;
+  const expired = allItems.filter((item) => item.status === "expired").length;
+
+  return {
+    items,
+    summary: { completed, inProgress, expired, averageScore: null },
+    page,
+    size,
+    totalItems: allItems.length,
+    totalPages: Math.ceil(allItems.length / size),
+  };
+}
+
+async function getResultDetailFallback(attemptId: string): Promise<ResultDetailResponse> {
+  const report = await getEvidenceReport(attemptId);
+  return {
+    attemptId: report.attemptId,
+    candidate: {
+      name: report.candidateName,
+      email: report.candidateEmail,
+      externalId: null,
+    },
+    simulation: {
+      id: report.simulationId,
+      title: report.simulationName ?? "Avaliação",
+      versionNumber: report.versionNumber,
+    },
+    status: report.finishedAt ? "completed" : "inProgress",
+    startedAt: report.startedAt,
+    finishedAt: report.finishedAt,
+    overallScore: report.generalScore,
+    competencies: report.competencies.map((competency) => ({
+      name: competency.name,
+      score: competency.score,
+      level: resultLevel(competency.score),
+      summary: competencySummary(competency.name, competency.score),
+    })),
+    answers: report.path.map((step) => ({
+      stepTitle: `Situação ${step.turnIndex}`,
+      question: step.prompt,
+      answer: step.timedOut ? "Tempo esgotado" : step.answeredOptionText,
+      score:
+        Object.keys(step.competencyPoints).length === 0
+          ? null
+          : Object.values(step.competencyPoints).reduce((sum, value) => sum + value, 0),
+    })),
+    humanDecision: {
+      status: report.humanDecision?.decision ?? null,
+      decidedBy: report.humanDecision?.decidedByUserId ?? null,
+      decidedAt: report.humanDecision?.decidedAt ?? null,
+      note: report.humanDecision?.reason ?? null,
+    },
+  };
+}
+
+function resultLevel(score: number) {
+  if (score >= 80) return "ALTO";
+  if (score >= 60) return "MEDIO";
+  return "BAIXO";
+}
+
+function competencySummary(name: string, score: number) {
+  if (score >= 80) return `Demonstrou forte aderência em ${name}.`;
+  if (score >= 60) return `Apresentou desempenho adequado, com espaço para aprofundar ${name}.`;
+  return `Requer atenção e análise humana cuidadosa em ${name}.`;
 }
 
 export function getIntegrationsStatus() {
