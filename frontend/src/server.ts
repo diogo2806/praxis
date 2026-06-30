@@ -63,7 +63,11 @@ function getBackendBaseUrl(): string {
 
 function shouldProxyToBackend(pathname: string): boolean {
   return (
-    pathname.startsWith("/api/v1/") || pathname === "/api/v1" || pathname.startsWith("/candidate/")
+    pathname.startsWith("/api/v1/") ||
+    pathname === "/api/v1" ||
+    pathname.startsWith("/api/admin/") ||
+    pathname === "/api/admin" ||
+    pathname.startsWith("/candidate/")
   );
 }
 
