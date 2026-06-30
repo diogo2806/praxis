@@ -1,23 +1,40 @@
 package br.com.iforce.praxis.shared.notification.service;
 
 import br.com.iforce.praxis.auth.persistence.entity.UserEntity;
+
 import br.com.iforce.praxis.auth.persistence.repository.UserRepository;
+
 import br.com.iforce.praxis.gupy.persistence.entity.CandidateAttemptEntity;
+
 import br.com.iforce.praxis.gupy.persistence.repository.CandidateAttemptRepository;
+
 import br.com.iforce.praxis.shared.notification.model.InAppNotificationType;
+
 import br.com.iforce.praxis.shared.notification.persistence.entity.InAppNotificationEntity;
+
 import br.com.iforce.praxis.shared.notification.persistence.repository.InAppNotificationRepository;
+
 import br.com.iforce.praxis.shared.outbox.persistence.entity.OutboxEventEntity;
+
 import com.fasterxml.jackson.databind.JsonNode;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
+
 import lombok.extern.slf4j.Slf4j;
+
 import org.springframework.stereotype.Service;
+
 import org.springframework.transaction.annotation.Propagation;
+
 import org.springframework.transaction.annotation.Transactional;
 
+
 import java.time.Instant;
+
 import java.util.List;
+
 import java.util.Optional;
+
 
 /**
  * Notifica administradores quando um resultado falha na entrega.
@@ -69,16 +86,16 @@ public class ResultDeliveryDlqAlertService {
      * @param event O evento que falhou em todas as tentativas de entrega
      */
     @Transactional(propagation = Propagation.MANDATORY)
-    public void alertTenantAdmins(OutboxEventEntity event) {
+    public void alertEmpresaAdmins(OutboxEventEntity event) {
         String attemptId = resolveAttemptId(event);
-        CandidateImpact impact = resolveCandidateImpact(event.getTenantId(), attemptId);
-        List<UserEntity> admins = userRepository.findByTenantIdAndRole(event.getTenantId(), ADMIN_ROLE);
+        CandidateImpact impact = resolveCandidateImpact(event.getEmpresaId(), attemptId);
+        List<UserEntity> admins = userRepository.findByEmpresaIdAndRole(event.getEmpresaId(), ADMIN_ROLE);
 
         if (admins.isEmpty()) {
             log.error(
-                    "Evento {} entrou em DLQ, mas nenhum administrador foi encontrado para tenant={}",
+                    "Evento {} entrou em DLQ, mas nenhum administrador foi encontrado para empresa={}",
                     event.getId(),
-                    event.getTenantId()
+                    event.getEmpresaId()
             );
             return;
         }
@@ -92,8 +109,8 @@ public class ResultDeliveryDlqAlertService {
     }
 
     private boolean alreadyNotified(OutboxEventEntity event, UserEntity admin) {
-        return inAppNotificationRepository.existsByTenantIdAndOutboxEventIdAndRecipientUserIdAndType(
-                event.getTenantId(),
+        return inAppNotificationRepository.existsByEmpresaIdAndOutboxEventIdAndRecipientUserIdAndType(
+                event.getEmpresaId(),
                 event.getId(),
                 admin.getId(),
                 InAppNotificationType.RESULT_DELIVERY_DLQ
@@ -102,7 +119,7 @@ public class ResultDeliveryDlqAlertService {
 
     private void createInAppNotification(OutboxEventEntity event, CandidateImpact impact, UserEntity admin) {
         InAppNotificationEntity notification = new InAppNotificationEntity();
-        notification.setTenantId(event.getTenantId());
+        notification.setEmpresaId(event.getEmpresaId());
         notification.setRecipientUserId(admin.getId());
         notification.setType(InAppNotificationType.RESULT_DELIVERY_DLQ);
         notification.setTitle("Resultado retido na integração com a Gupy");
@@ -122,8 +139,8 @@ public class ResultDeliveryDlqAlertService {
                 + ") falhou nas tentativas automaticas de envio para a Gupy e precisa de suporte.";
     }
 
-    private CandidateImpact resolveCandidateImpact(String tenantId, String attemptId) {
-        Optional<CandidateAttemptEntity> attempt = candidateAttemptRepository.findByTenantIdAndId(tenantId, attemptId);
+    private CandidateImpact resolveCandidateImpact(String empresaId, String attemptId) {
+        Optional<CandidateAttemptEntity> attempt = candidateAttemptRepository.findByEmpresaIdAndId(empresaId, attemptId);
         if (attempt.isEmpty()) {
             return new CandidateImpact(attemptId, "Candidato não localizado", "email-nao-localizado@praxis.local", "resultado-nao-localizado");
         }

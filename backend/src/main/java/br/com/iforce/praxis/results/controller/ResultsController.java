@@ -1,22 +1,38 @@
 package br.com.iforce.praxis.results.controller;
 
 import br.com.iforce.praxis.gupy.model.AttemptStatus;
+
 import br.com.iforce.praxis.results.dto.RegisterResultDecisionRequest;
+
 import br.com.iforce.praxis.results.dto.ResultDetailResponse;
+
 import br.com.iforce.praxis.results.dto.ResultsPageResponse;
+
 import br.com.iforce.praxis.results.service.ResultsService;
+
 import jakarta.validation.Valid;
+
 import org.springframework.format.annotation.DateTimeFormat;
+
 import org.springframework.http.ResponseEntity;
+
 import org.springframework.web.bind.annotation.GetMapping;
+
 import org.springframework.web.bind.annotation.PathVariable;
+
 import org.springframework.web.bind.annotation.PostMapping;
+
 import org.springframework.web.bind.annotation.RequestBody;
+
 import org.springframework.web.bind.annotation.RequestMapping;
+
 import org.springframework.web.bind.annotation.RequestParam;
+
 import org.springframework.web.bind.annotation.RestController;
 
+
 import java.time.Instant;
+
 
 @RestController
 @RequestMapping("/api/v1/results")

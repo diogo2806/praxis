@@ -1,21 +1,36 @@
 package br.com.iforce.praxis.candidate.service;
 
 import br.com.iforce.praxis.audit.model.AuditEventType;
+
 import br.com.iforce.praxis.audit.service.AuditEventService;
-import br.com.iforce.praxis.auth.service.CurrentTenantService;
+
+import br.com.iforce.praxis.auth.service.CurrentEmpresaService;
+
 import br.com.iforce.praxis.auth.service.CurrentUserService;
+
 import br.com.iforce.praxis.candidate.dto.RegisterDispositionRequest;
+
 import br.com.iforce.praxis.gupy.persistence.repository.CandidateAttemptRepository;
+
 import com.fasterxml.jackson.core.JsonProcessingException;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
+
 import org.springframework.http.HttpStatus;
+
 import org.springframework.stereotype.Service;
+
 import org.springframework.transaction.annotation.Transactional;
+
 import org.springframework.web.server.ResponseStatusException;
 
+
 import java.time.Instant;
+
 import java.util.LinkedHashMap;
+
 import java.util.Map;
+
 
 /**
  * Registra a decisão humana sobre um candidato (REQ-L1). É a defesa nº 1 contra a teoria de
@@ -28,20 +43,20 @@ public class CandidateDispositionService {
 
     private final CandidateAttemptRepository candidateAttemptRepository;
     private final AuditEventService auditEventService;
-    private final CurrentTenantService currentTenantService;
+    private final CurrentEmpresaService currentEmpresaService;
     private final CurrentUserService currentUserService;
     private final ObjectMapper objectMapper;
 
     public CandidateDispositionService(
             CandidateAttemptRepository candidateAttemptRepository,
             AuditEventService auditEventService,
-            CurrentTenantService currentTenantService,
+            CurrentEmpresaService currentEmpresaService,
             CurrentUserService currentUserService,
             ObjectMapper objectMapper
     ) {
         this.candidateAttemptRepository = candidateAttemptRepository;
         this.auditEventService = auditEventService;
-        this.currentTenantService = currentTenantService;
+        this.currentEmpresaService = currentEmpresaService;
         this.currentUserService = currentUserService;
         this.objectMapper = objectMapper;
     }
@@ -60,10 +75,10 @@ public class CandidateDispositionService {
      */
     @Transactional
     public void register(String attemptId, RegisterDispositionRequest request) {
-        String tenantId = currentTenantService.requiredTenantId();
+        String empresaId = currentEmpresaService.requiredEmpresaId();
         String userId = currentUserService.requiredUserId();
 
-        candidateAttemptRepository.findByTenantIdAndId(tenantId, attemptId)
+        candidateAttemptRepository.findByEmpresaIdAndId(empresaId, attemptId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Tentativa não encontrada."));
 
         Instant decidedAt = Instant.now();
@@ -73,7 +88,7 @@ public class CandidateDispositionService {
         String metadata = buildMetadata(attemptId, userId, request, reason, decidedAt);
 
         auditEventService.appendCandidateAttemptEvent(
-                tenantId,
+                empresaId,
                 attemptId,
                 AuditEventType.HUMAN_DECISION,
                 message,

@@ -1,7 +1,7 @@
--- Tenant scoping for core aggregates (multi-tenant isolation).
+-- Empresa scoping for core aggregates (multi-empresa isolation).
 -- Compatible with PostgreSQL (prod) and H2 in PostgreSQL mode (tests).
 
--- Per-tenant Gupy integration token (stored as hash).
+-- Per-empresa Gupy integration token (stored as hash).
 ALTER TABLE tenants
     ADD COLUMN integration_token_hash VARCHAR(120);
 

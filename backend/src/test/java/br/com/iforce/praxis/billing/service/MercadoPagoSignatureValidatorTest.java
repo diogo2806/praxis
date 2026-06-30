@@ -1,14 +1,21 @@
 package br.com.iforce.praxis.billing.service;
 
 import br.com.iforce.praxis.billing.config.MercadoPagoProperties;
+
 import org.junit.jupiter.api.Test;
 
+
 import javax.crypto.Mac;
+
 import javax.crypto.spec.SecretKeySpec;
+
 import java.nio.charset.StandardCharsets;
+
 import java.util.HexFormat;
 
+
 import static org.assertj.core.api.Assertions.assertThat;
+
 
 class MercadoPagoSignatureValidatorTest {
 

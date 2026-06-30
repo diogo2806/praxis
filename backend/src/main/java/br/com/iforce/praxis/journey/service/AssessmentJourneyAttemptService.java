@@ -1,42 +1,78 @@
 package br.com.iforce.praxis.journey.service;
 
 import br.com.iforce.praxis.audit.model.AuditEventType;
+
 import br.com.iforce.praxis.audit.service.AuditEventService;
+
 import br.com.iforce.praxis.audit.service.AuditMetadata;
-import br.com.iforce.praxis.auth.service.CurrentTenantService;
+
+import br.com.iforce.praxis.auth.service.CurrentEmpresaService;
+
 import br.com.iforce.praxis.candidate.dto.CreateCandidateLinkRequest;
+
 import br.com.iforce.praxis.candidate.dto.CreateCandidateLinkResponse;
+
 import br.com.iforce.praxis.gupy.model.PublishedSimulation;
+
 import br.com.iforce.praxis.gupy.persistence.entity.CandidateAttemptEntity;
+
 import br.com.iforce.praxis.gupy.persistence.entity.ResultItemEntity;
+
 import br.com.iforce.praxis.gupy.persistence.repository.CandidateAttemptRepository;
+
 import br.com.iforce.praxis.gupy.model.AttemptStatus;
+
 import br.com.iforce.praxis.gupy.service.CandidateAttemptService;
+
 import br.com.iforce.praxis.gupy.service.SimulationCatalogService;
+
 import br.com.iforce.praxis.journey.dto.AssessmentJourneyAttemptResponse;
+
 import br.com.iforce.praxis.journey.dto.CreateJourneyAttemptRequest;
+
 import br.com.iforce.praxis.journey.dto.JourneyAttemptStepResponse;
+
 import br.com.iforce.praxis.journey.dto.JourneyConsolidatedResultResponse;
+
 import br.com.iforce.praxis.journey.model.AssessmentJourneyAttemptStatus;
+
 import br.com.iforce.praxis.journey.model.AssessmentJourneyStatus;
+
 import br.com.iforce.praxis.journey.model.AssessmentJourneyStepStatus;
+
 import br.com.iforce.praxis.journey.persistence.entity.AssessmentJourneyAttemptEntity;
+
 import br.com.iforce.praxis.journey.persistence.entity.AssessmentJourneyAttemptStepEntity;
+
 import br.com.iforce.praxis.journey.persistence.entity.AssessmentJourneyEntity;
+
 import br.com.iforce.praxis.journey.persistence.entity.AssessmentJourneyStepEntity;
+
 import br.com.iforce.praxis.journey.persistence.repository.AssessmentJourneyAttemptRepository;
+
 import org.springframework.http.HttpStatus;
+
 import org.springframework.stereotype.Service;
+
 import org.springframework.transaction.annotation.Transactional;
+
 import org.springframework.web.server.ResponseStatusException;
 
+
 import java.time.Instant;
+
 import java.util.ArrayList;
+
 import java.util.Comparator;
+
 import java.util.LinkedHashMap;
+
 import java.util.List;
+
 import java.util.Map;
+
 import java.util.UUID;
+
 
 /**
  * Cérebro da execução das Jornadas de Avaliação pelo candidato.
@@ -55,7 +91,7 @@ public class AssessmentJourneyAttemptService {
     private final CandidateAttemptService candidateAttemptService;
     private final CandidateAttemptRepository candidateAttemptRepository;
     private final SimulationCatalogService simulationCatalogService;
-    private final CurrentTenantService currentTenantService;
+    private final CurrentEmpresaService currentEmpresaService;
     private final AuditEventService auditEventService;
     private final AuditMetadata auditMetadata;
 
@@ -65,7 +101,7 @@ public class AssessmentJourneyAttemptService {
             CandidateAttemptService candidateAttemptService,
             CandidateAttemptRepository candidateAttemptRepository,
             SimulationCatalogService simulationCatalogService,
-            CurrentTenantService currentTenantService,
+            CurrentEmpresaService currentEmpresaService,
             AuditEventService auditEventService,
             AuditMetadata auditMetadata
     ) {
@@ -74,7 +110,7 @@ public class AssessmentJourneyAttemptService {
         this.candidateAttemptService = candidateAttemptService;
         this.candidateAttemptRepository = candidateAttemptRepository;
         this.simulationCatalogService = simulationCatalogService;
-        this.currentTenantService = currentTenantService;
+        this.currentEmpresaService = currentEmpresaService;
         this.auditEventService = auditEventService;
         this.auditMetadata = auditMetadata;
     }
@@ -91,8 +127,8 @@ public class AssessmentJourneyAttemptService {
      */
     @Transactional
     public AssessmentJourneyAttemptResponse createAttempt(CreateJourneyAttemptRequest request) {
-        String tenantId = currentTenantService.requiredTenantId();
-        AssessmentJourneyEntity journey = journeyService.findJourneyForTenant(tenantId, request.journeyId())
+        String empresaId = currentEmpresaService.requiredEmpresaId();
+        AssessmentJourneyEntity journey = journeyService.findJourneyForEmpresa(empresaId, request.journeyId())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Jornada de avaliação não encontrada."));
 
         if (journey.getStatus() != AssessmentJourneyStatus.PUBLISHED) {
@@ -111,7 +147,7 @@ public class AssessmentJourneyAttemptService {
         Instant now = Instant.now();
         AssessmentJourneyAttemptEntity attempt = new AssessmentJourneyAttemptEntity();
         attempt.setId("jatt_" + UUID.randomUUID().toString().replace("-", ""));
-        attempt.setTenantId(tenantId);
+        attempt.setEmpresaId(empresaId);
         attempt.setJourneyId(journey.getId());
         attempt.setCandidateName(request.candidateName().trim());
         attempt.setCandidateEmail(request.candidateEmail().trim());
@@ -121,7 +157,7 @@ public class AssessmentJourneyAttemptService {
 
         for (AssessmentJourneyStepEntity sequenceStep : sequenceSteps) {
             AssessmentJourneyAttemptStepEntity attemptStep = new AssessmentJourneyAttemptStepEntity();
-            attemptStep.setTenantId(tenantId);
+            attemptStep.setEmpresaId(empresaId);
             attemptStep.setJourneyAttempt(attempt);
             attemptStep.setJourneyStepId(sequenceStep.getId());
             attemptStep.setSimulationId(sequenceStep.getSimulationId());
@@ -135,7 +171,7 @@ public class AssessmentJourneyAttemptService {
 
         AssessmentJourneyAttemptEntity saved = attemptRepository.save(attempt);
         auditEventService.appendAssessmentJourneyAttemptEvent(
-                tenantId,
+                empresaId,
                 saved.getId(),
                 AuditEventType.ASSESSMENT_JOURNEY_ATTEMPT_CREATED,
                 "Tentativa da jornada criada para o candidato.",
@@ -168,10 +204,10 @@ public class AssessmentJourneyAttemptService {
      */
     @Transactional(readOnly = true)
     public List<AssessmentJourneyAttemptResponse> listAttemptsByJourney(String journeyId) {
-        String tenantId = currentTenantService.requiredTenantId();
-        AssessmentJourneyEntity journey = journeyService.findJourneyForTenant(tenantId, journeyId)
+        String empresaId = currentEmpresaService.requiredEmpresaId();
+        AssessmentJourneyEntity journey = journeyService.findJourneyForEmpresa(empresaId, journeyId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Jornada de avaliação não encontrada."));
-        return attemptRepository.findByTenantIdAndJourneyIdOrderByCreatedAtDesc(tenantId, journeyId)
+        return attemptRepository.findByEmpresaIdAndJourneyIdOrderByCreatedAtDesc(empresaId, journeyId)
                 .stream()
                 .map(attempt -> toResponse(attempt, journey, Map.of()))
                 .toList();
@@ -193,7 +229,7 @@ public class AssessmentJourneyAttemptService {
             attempt.setStartedAt(Instant.now());
             attemptRepository.save(attempt);
             auditEventService.appendAssessmentJourneyAttemptEvent(
-                    attempt.getTenantId(),
+                    attempt.getEmpresaId(),
                     attempt.getId(),
                     AuditEventType.ASSESSMENT_JOURNEY_ATTEMPT_STARTED,
                     "Tentativa da jornada iniciada.",
@@ -225,7 +261,7 @@ public class AssessmentJourneyAttemptService {
             attempt.setStatus(AssessmentJourneyAttemptStatus.IN_PROGRESS);
             attempt.setStartedAt(now);
             auditEventService.appendAssessmentJourneyAttemptEvent(
-                    attempt.getTenantId(),
+                    attempt.getEmpresaId(),
                     attempt.getId(),
                     AuditEventType.ASSESSMENT_JOURNEY_ATTEMPT_STARTED,
                     "Tentativa da jornada iniciada.",
@@ -257,7 +293,7 @@ public class AssessmentJourneyAttemptService {
 
         if (firstStart) {
             auditEventService.appendAssessmentJourneyAttemptEvent(
-                    attempt.getTenantId(),
+                    attempt.getEmpresaId(),
                     attempt.getId(),
                     AuditEventType.ASSESSMENT_JOURNEY_STEP_STARTED,
                     "Etapa da jornada iniciada.",
@@ -299,7 +335,7 @@ public class AssessmentJourneyAttemptService {
         }
 
         CandidateAttemptEntity candidateAttempt = candidateAttemptRepository
-                .findByTenantIdAndId(attempt.getTenantId(), step.getCandidateAttemptId())
+                .findByEmpresaIdAndId(attempt.getEmpresaId(), step.getCandidateAttemptId())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Tentativa individual do teste não encontrada."));
         if (candidateAttempt.getStatus() != AttemptStatus.COMPLETED) {
             throw new ResponseStatusException(
@@ -316,7 +352,7 @@ public class AssessmentJourneyAttemptService {
             attempt.setStartedAt(attempt.getStartedAt() == null ? now : attempt.getStartedAt());
         }
         auditEventService.appendAssessmentJourneyAttemptEvent(
-                attempt.getTenantId(),
+                attempt.getEmpresaId(),
                 attempt.getId(),
                 AuditEventType.ASSESSMENT_JOURNEY_STEP_COMPLETED,
                 "Etapa da jornada concluída.",
@@ -331,7 +367,7 @@ public class AssessmentJourneyAttemptService {
             attempt.setStatus(AssessmentJourneyAttemptStatus.COMPLETED);
             attempt.setCompletedAt(now);
             auditEventService.appendAssessmentJourneyAttemptEvent(
-                    attempt.getTenantId(),
+                    attempt.getEmpresaId(),
                     attempt.getId(),
                     AuditEventType.ASSESSMENT_JOURNEY_ATTEMPT_COMPLETED,
                     "Tentativa da jornada concluída.",
@@ -359,7 +395,7 @@ public class AssessmentJourneyAttemptService {
         Map<String, String> nameCache = new LinkedHashMap<>();
 
         List<JourneyConsolidatedResultResponse.TestResult> tests = orderedSteps(attempt).stream()
-                .map(step -> toTestResult(attempt.getTenantId(), step, nameCache))
+                .map(step -> toTestResult(attempt.getEmpresaId(), step, nameCache))
                 .toList();
 
         return new JourneyConsolidatedResultResponse(
@@ -379,18 +415,18 @@ public class AssessmentJourneyAttemptService {
     // ----- helpers -----
 
     private JourneyConsolidatedResultResponse.TestResult toTestResult(
-            String tenantId,
+            String empresaId,
             AssessmentJourneyAttemptStepEntity step,
             Map<String, String> nameCache
     ) {
-        String simulationName = resolveSimulationName(tenantId, step.getSimulationId(), nameCache);
+        String simulationName = resolveSimulationName(empresaId, step.getSimulationId(), nameCache);
         AttemptStatus attemptStatus = null;
         Integer score = null;
         List<JourneyConsolidatedResultResponse.CompetencyResult> competencies = List.of();
 
         if (step.getCandidateAttemptId() != null) {
             CandidateAttemptEntity candidateAttempt = candidateAttemptRepository
-                    .findByTenantIdAndId(tenantId, step.getCandidateAttemptId())
+                    .findByEmpresaIdAndId(empresaId, step.getCandidateAttemptId())
                     .orElse(null);
             if (candidateAttempt != null) {
                 attemptStatus = candidateAttempt.getStatus();
@@ -450,8 +486,8 @@ public class AssessmentJourneyAttemptService {
     }
 
     private AssessmentJourneyAttemptEntity findAttempt(String attemptId) {
-        String tenantId = currentTenantService.requiredTenantId();
-        return attemptRepository.findByTenantIdAndId(tenantId, attemptId)
+        String empresaId = currentEmpresaService.requiredEmpresaId();
+        return attemptRepository.findByEmpresaIdAndId(empresaId, attemptId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Tentativa da jornada não encontrada."));
     }
 
@@ -463,7 +499,7 @@ public class AssessmentJourneyAttemptService {
     }
 
     private AssessmentJourneyEntity loadJourney(AssessmentJourneyAttemptEntity attempt) {
-        return journeyService.findJourneyForTenant(attempt.getTenantId(), attempt.getJourneyId()).orElse(null);
+        return journeyService.findJourneyForEmpresa(attempt.getEmpresaId(), attempt.getJourneyId()).orElse(null);
     }
 
     private List<AssessmentJourneyAttemptStepEntity> orderedSteps(AssessmentJourneyAttemptEntity attempt) {
@@ -498,9 +534,9 @@ public class AssessmentJourneyAttemptService {
         return normalized;
     }
 
-    private String resolveSimulationName(String tenantId, String simulationId, Map<String, String> nameCache) {
+    private String resolveSimulationName(String empresaId, String simulationId, Map<String, String> nameCache) {
         return nameCache.computeIfAbsent(simulationId, id ->
-                simulationCatalogService.findPublishedById(tenantId, id)
+                simulationCatalogService.findPublishedById(empresaId, id)
                         .map(PublishedSimulation::name)
                         .orElse(id));
     }
@@ -517,14 +553,14 @@ public class AssessmentJourneyAttemptService {
             if (step.getCandidateAttemptId() != null) {
                 candidateUrl = urlByAttemptId.get(step.getCandidateAttemptId());
                 if (candidateUrl == null) {
-                    candidateUrl = candidateAttemptService.candidatePageUrlFor(attempt.getTenantId(), step.getCandidateAttemptId());
+                    candidateUrl = candidateAttemptService.candidatePageUrlFor(attempt.getEmpresaId(), step.getCandidateAttemptId());
                 }
             }
             steps.add(new JourneyAttemptStepResponse(
                     step.getId(),
                     step.getJourneyStepId(),
                     step.getSimulationId(),
-                    resolveSimulationName(attempt.getTenantId(), step.getSimulationId(), nameCache),
+                    resolveSimulationName(attempt.getEmpresaId(), step.getSimulationId(), nameCache),
                     step.getSimulationVersionNumber(),
                     step.getOrderIndex(),
                     step.isRequired(),

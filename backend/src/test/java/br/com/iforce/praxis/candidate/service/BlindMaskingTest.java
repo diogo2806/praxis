@@ -2,7 +2,9 @@ package br.com.iforce.praxis.candidate.service;
 
 import org.junit.jupiter.api.Test;
 
+
 import static org.assertj.core.api.Assertions.assertThat;
+
 
 class BlindMaskingTest {
 

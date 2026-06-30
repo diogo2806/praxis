@@ -1,50 +1,68 @@
 package br.com.iforce.praxis.account.service;
 
 import br.com.iforce.praxis.account.dto.AccountResponse;
+
 import br.com.iforce.praxis.account.dto.ChangePasswordRequest;
+
 import br.com.iforce.praxis.auth.persistence.entity.UserEntity;
+
 import br.com.iforce.praxis.auth.persistence.repository.UserRepository;
-import br.com.iforce.praxis.auth.service.CurrentTenantService;
+
+import br.com.iforce.praxis.auth.service.CurrentEmpresaService;
+
 import br.com.iforce.praxis.auth.service.CurrentUserService;
+
 import org.junit.jupiter.api.Test;
+
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+
 import org.springframework.security.crypto.password.PasswordEncoder;
+
 import org.springframework.web.server.ResponseStatusException;
 
+
 import java.util.LinkedHashSet;
+
 import java.util.Optional;
+
 import java.util.Set;
 
+
 import static org.assertj.core.api.Assertions.assertThat;
+
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+
 import static org.mockito.ArgumentMatchers.any;
+
 import static org.mockito.Mockito.mock;
+
 import static org.mockito.Mockito.when;
+
 
 class AccountServiceTest {
 
     private final CurrentUserService currentUserService = mock(CurrentUserService.class);
-    private final CurrentTenantService currentTenantService = mock(CurrentTenantService.class);
+    private final CurrentEmpresaService currentEmpresaService = mock(CurrentEmpresaService.class);
     private final UserRepository userRepository = mock(UserRepository.class);
     private final PasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
     private final AccountService service = new AccountService(
             currentUserService,
-            currentTenantService,
+            currentEmpresaService,
             userRepository,
             passwordEncoder
     );
 
     @Test
-    void currentAccountReturnsAuthenticatedUserInsideTenant() {
+    void currentAccountReturnsAuthenticatedUserInsideEmpresa() {
         UserEntity user = user("old-password");
-        when(currentTenantService.requiredTenantId()).thenReturn("tenant-1");
+        when(currentEmpresaService.requiredEmpresaId()).thenReturn("empresa-1");
         when(currentUserService.requiredUserId()).thenReturn("42");
         when(userRepository.findById(42L)).thenReturn(Optional.of(user));
 
         AccountResponse response = service.currentAccount();
 
         assertThat(response.id()).isEqualTo(42L);
-        assertThat(response.tenantId()).isEqualTo("tenant-1");
+        assertThat(response.empresaId()).isEqualTo("empresa-1");
         assertThat(response.email()).isEqualTo("ana@example.com");
         assertThat(response.roles()).containsExactly("EMPRESA");
     }
@@ -52,7 +70,7 @@ class AccountServiceTest {
     @Test
     void changePasswordRejectsWrongCurrentPassword() {
         UserEntity user = user("old-password");
-        when(currentTenantService.requiredTenantId()).thenReturn("tenant-1");
+        when(currentEmpresaService.requiredEmpresaId()).thenReturn("empresa-1");
         when(currentUserService.requiredUserId()).thenReturn("42");
         when(userRepository.findById(42L)).thenReturn(Optional.of(user));
 
@@ -66,7 +84,7 @@ class AccountServiceTest {
     @Test
     void changePasswordStoresNewHash() {
         UserEntity user = user("old-password");
-        when(currentTenantService.requiredTenantId()).thenReturn("tenant-1");
+        when(currentEmpresaService.requiredEmpresaId()).thenReturn("empresa-1");
         when(currentUserService.requiredUserId()).thenReturn("42");
         when(userRepository.findById(42L)).thenReturn(Optional.of(user));
         when(userRepository.save(any(UserEntity.class))).thenAnswer(invocation -> invocation.getArgument(0));
@@ -80,7 +98,7 @@ class AccountServiceTest {
     private UserEntity user(String password) {
         UserEntity user = new UserEntity();
         user.setId(42L);
-        user.setTenantId("tenant-1");
+        user.setEmpresaId("empresa-1");
         user.setEmail("ana@example.com");
         user.setName("Ana");
         user.setPasswordHash(passwordEncoder.encode(password));

@@ -1,8 +1,11 @@
 package br.com.iforce.praxis.journey.dto;
 
 import io.swagger.v3.oas.annotations.media.Schema;
+
 import jakarta.validation.constraints.NotBlank;
+
 import jakarta.validation.constraints.Size;
+
 
 @Schema(description = "Pedido para criar uma Jornada de Avaliação em rascunho.")
 public record CreateAssessmentJourneyRequest(

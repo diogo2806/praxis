@@ -2,7 +2,9 @@ package br.com.iforce.praxis.billing.dto;
 
 import br.com.iforce.praxis.billing.model.BillingEventType;
 
+
 import java.time.Instant;
+
 
 /** Evento financeiro exibido no painel ADMIN (append-only, somente leitura). */
 public record BillingEventResponse(

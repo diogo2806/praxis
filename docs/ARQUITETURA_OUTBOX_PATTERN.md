@@ -21,7 +21,7 @@ flowchart TD
   F --> G["ResultWebhookClient envia POST"]
   G --> H["Marca SENT"]
   G -->|erro recuperavel| I["Marca RETRYING com backoff"]
-  G -->|4xx HTTP do destino ou max tentativas| J["Marca DLQ e notifica tenant"]
+  G -->|4xx HTTP do destino ou max tentativas| J["Marca DLQ e notifica empresa"]
 ```
 
 ## Eventos processados
@@ -57,13 +57,13 @@ Erros HTTP 4xx sao tratados como erro de contrato e vao para DLQ sem continuar t
 
 Erros de rede, DNS, URL invalida, parsing de payload ou falha inesperada entram no fluxo normal de retry ate o limite de tentativas, salvo quando a excecao for classificada como erro permanente pelo processador.
 
-Quando um evento vai para DLQ, `ResultDeliveryDlqAlertService` cria notificacao interna para administradores do tenant.
+Quando um evento vai para DLQ, `ResultDeliveryDlqAlertService` cria notificacao interna para administradores do empresa.
 
 ## Componentes
 
 | Classe | Responsabilidade |
 | --- | --- |
-| `OutboxEventEntity` | Entidade persistida com tenant, payload, status, tentativas e timestamps. |
+| `OutboxEventEntity` | Entidade persistida com empresa, payload, status, tentativas e timestamps. |
 | `OutboxService` | Cria eventos dentro da transacao de negocio. |
 | `OutboxProcessor` | Processa eventos prontos, aplica retry e DLQ. |
 | `OutboxScheduler` | Aciona processamento periodico. |
@@ -92,7 +92,7 @@ Filtros:
 Antes de adicionar outro provedor ATS, o projeto deve ter:
 
 1. contrato real de entrada e saida;
-2. modelo de autenticacao por tenant;
+2. modelo de autenticacao por empresa;
 3. payloads de sucesso e erro;
 4. politica de timeout, retry e DLQ;
 5. testes de integracao ou mock HTTP controlado.

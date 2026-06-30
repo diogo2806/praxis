@@ -1,26 +1,46 @@
 package br.com.iforce.praxis.simulation.service;
 
 import br.com.iforce.praxis.gupy.model.PublishedSimulation;
+
 import br.com.iforce.praxis.gupy.model.ResultTier;
+
 import br.com.iforce.praxis.gupy.model.ScenarioNode;
+
 import br.com.iforce.praxis.gupy.model.ScenarioOption;
+
 import br.com.iforce.praxis.simulation.dto.CompetencyWeightDto;
+
 import br.com.iforce.praxis.simulation.dto.SimulationVersionDetailResponse;
+
 import br.com.iforce.praxis.simulation.dto.UpdateBlueprintRequest;
+
 import br.com.iforce.praxis.simulation.persistence.entity.OptionCompetencyScoreEntity;
+
 import br.com.iforce.praxis.simulation.persistence.entity.SimulationCompetencyEntity;
+
 import br.com.iforce.praxis.simulation.persistence.entity.SimulationNodeEntity;
+
 import br.com.iforce.praxis.simulation.persistence.entity.SimulationOptionEntity;
+
 import br.com.iforce.praxis.simulation.persistence.entity.SimulationVersionEntity;
+
 import org.springframework.stereotype.Service;
 
+
 import java.util.Comparator;
+
 import java.util.LinkedHashMap;
+
 import java.util.LinkedHashSet;
+
 import java.util.List;
+
 import java.util.Locale;
+
 import java.util.Map;
+
 import java.util.Set;
+
 
 /**
  * Tradutor entre o formato de armazenamento da prova e os formatos de uso.

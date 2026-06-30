@@ -1,19 +1,32 @@
 package br.com.iforce.praxis.billing.persistence.entity;
 
 import br.com.iforce.praxis.admin.model.CommercialPlanType;
+
 import jakarta.persistence.Column;
+
 import jakarta.persistence.Entity;
+
 import jakarta.persistence.EnumType;
+
 import jakarta.persistence.Enumerated;
+
 import jakarta.persistence.GeneratedValue;
+
 import jakarta.persistence.GenerationType;
+
 import jakarta.persistence.Id;
+
 import jakarta.persistence.Table;
+
 import lombok.Getter;
+
 import lombok.NoArgsConstructor;
+
 import lombok.Setter;
 
+
 import java.time.Instant;
+
 
 /**
  * Plano real de cobrança da Parte B. Representa tanto pacotes de crédito (AVULSO, com

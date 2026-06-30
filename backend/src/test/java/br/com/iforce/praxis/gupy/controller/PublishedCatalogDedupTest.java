@@ -1,16 +1,26 @@
 package br.com.iforce.praxis.gupy.controller;
 
 import org.junit.jupiter.api.Test;
+
 import org.springframework.beans.factory.annotation.Autowired;
+
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+
 import org.springframework.boot.test.context.SpringBootTest;
+
 import org.springframework.test.context.jdbc.Sql;
+
 import org.springframework.test.web.servlet.MockMvc;
 
+
 import static org.hamcrest.Matchers.hasItem;
+
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
 
 /**
  * Mesmo que uma simulação tenha mais de uma versão PUBLISHED no banco, o catálogo Gupy deve
@@ -21,7 +31,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @Sql(scripts = {"/seed-simulation-fixture.sql", "/duplicate-published-version-fixtures.sql"})
 class PublishedCatalogDedupTest {
 
-    private static final String AUTHORIZATION = "Bearer tenant1-token";
+    private static final String AUTHORIZATION = "Bearer empresa1-token";
 
     @Autowired
     private MockMvc mockMvc;

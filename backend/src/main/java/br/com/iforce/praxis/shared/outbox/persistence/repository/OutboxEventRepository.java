@@ -1,14 +1,22 @@
 package br.com.iforce.praxis.shared.outbox.persistence.repository;
 
 import br.com.iforce.praxis.shared.outbox.persistence.entity.OutboxEventEntity;
+
 import org.springframework.data.jpa.repository.JpaRepository;
+
 import org.springframework.data.jpa.repository.Query;
+
 import org.springframework.data.repository.query.Param;
+
 import org.springframework.stereotype.Repository;
 
+
 import java.time.Instant;
+
 import java.util.List;
+
 import java.util.Optional;
+
 
 @Repository
 public interface OutboxEventRepository extends JpaRepository<OutboxEventEntity, Long> {
@@ -41,20 +49,20 @@ public interface OutboxEventRepository extends JpaRepository<OutboxEventEntity, 
     );
 
     /**
-     * Variante por tenant de {@link #claimReadyBatch}, usada no disparo manual de
-     * reprocessamento por um administrador do tenant.
+     * Variante por empresa de {@link #claimReadyBatch}, usada no disparo manual de
+     * reprocessamento por um administrador do empresa.
      */
     @Query(value = """
         SELECT * FROM outbox_events
-        WHERE tenant_id = :tenantId
+        WHERE empresa_id = :empresaId
           AND ((status IN (:statuses) AND next_attempt_at <= :now)
             OR (status = 'PROCESSING' AND last_attempt_at <= :stuckBefore))
         ORDER BY created_at ASC
         LIMIT :batchSize
         FOR UPDATE SKIP LOCKED
         """, nativeQuery = true)
-    List<OutboxEventEntity> claimReadyBatchForTenant(
-        @Param("tenantId") String tenantId,
+    List<OutboxEventEntity> claimReadyBatchForEmpresa(
+        @Param("empresaId") String empresaId,
         @Param("statuses") List<String> statuses,
         @Param("now") Instant now,
         @Param("stuckBefore") Instant stuckBefore,
@@ -66,19 +74,19 @@ public interface OutboxEventRepository extends JpaRepository<OutboxEventEntity, 
         Instant now
     );
 
-    List<OutboxEventEntity> findByTenantIdAndStatusInAndNextAttemptAtLessThanEqualOrderByCreatedAtAsc(
-        String tenantId,
+    List<OutboxEventEntity> findByEmpresaIdAndStatusInAndNextAttemptAtLessThanEqualOrderByCreatedAtAsc(
+        String empresaId,
         List<OutboxEventEntity.OutboxEventStatus> statuses,
         Instant now
     );
 
-    List<OutboxEventEntity> findByTenantIdAndEventTypeOrderByCreatedAtDesc(String tenantId, String eventType);
+    List<OutboxEventEntity> findByEmpresaIdAndEventTypeOrderByCreatedAtDesc(String empresaId, String eventType);
 
-    List<OutboxEventEntity> findByTenantIdAndEventTypeAndStatusOrderByCreatedAtDesc(
-        String tenantId,
+    List<OutboxEventEntity> findByEmpresaIdAndEventTypeAndStatusOrderByCreatedAtDesc(
+        String empresaId,
         String eventType,
         OutboxEventEntity.OutboxEventStatus status
     );
 
-    Optional<OutboxEventEntity> findByIdAndTenantId(Long id, String tenantId);
+    Optional<OutboxEventEntity> findByIdAndEmpresaId(Long id, String empresaId);
 }

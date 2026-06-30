@@ -48,8 +48,8 @@ import { Route as ConfiguracoesContaRouteImport } from './routes/configuracoes.c
 import { Route as CandidatoTokenRouteImport } from './routes/candidato.$token'
 import { Route as CandidateLinksNewRouteImport } from './routes/candidate-links/new'
 import { Route as AssessmentJourneysNewRouteImport } from './routes/assessment-journeys/new'
-import { Route as AdminTenantsIndexRouteImport } from './routes/admin.tenants.index'
-import { Route as AdminTenantsTenantIdRouteImport } from './routes/admin.tenants.$tenantId'
+import { Route as AdminEmpresasIndexRouteImport } from './routes/admin.empresas.index'
+import { Route as AdminEmpresasEmpresaIdRouteImport } from './routes/admin.empresas.$empresaId'
 
 const TalentMatchRoute = TalentMatchRouteImport.update({
   id: '/talent-match',
@@ -247,14 +247,14 @@ const AssessmentJourneysNewRoute = AssessmentJourneysNewRouteImport.update({
   path: '/assessment-journeys/new',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AdminTenantsIndexRoute = AdminTenantsIndexRouteImport.update({
-  id: '/admin/tenants/',
-  path: '/admin/tenants/',
+const AdminEmpresasIndexRoute = AdminEmpresasIndexRouteImport.update({
+  id: '/admin/empresas/',
+  path: '/admin/empresas/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AdminTenantsTenantIdRoute = AdminTenantsTenantIdRouteImport.update({
-  id: '/admin/tenants/$tenantId',
-  path: '/admin/tenants/$tenantId',
+const AdminEmpresasEmpresaIdRoute = AdminEmpresasEmpresaIdRouteImport.update({
+  id: '/admin/empresas/$empresaId',
+  path: '/admin/empresas/$empresaId',
   getParentRoute: () => rootRouteImport,
 } as any)
 
@@ -298,8 +298,8 @@ export interface FileRoutesByFullPath {
   '/simulations/new': typeof SimulationsNewRoute
   '/admin/': typeof AdminIndexRoute
   '/assessment-journeys/': typeof AssessmentJourneysIndexRoute
-  '/admin/tenants/$tenantId': typeof AdminTenantsTenantIdRoute
-  '/admin/tenants/': typeof AdminTenantsIndexRoute
+  '/admin/empresas/$empresaId': typeof AdminEmpresasEmpresaIdRoute
+  '/admin/empresas/': typeof AdminEmpresasIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -341,8 +341,8 @@ export interface FileRoutesByTo {
   '/simulations/new': typeof SimulationsNewRoute
   '/admin': typeof AdminIndexRoute
   '/assessment-journeys': typeof AssessmentJourneysIndexRoute
-  '/admin/tenants/$tenantId': typeof AdminTenantsTenantIdRoute
-  '/admin/tenants': typeof AdminTenantsIndexRoute
+  '/admin/empresas/$empresaId': typeof AdminEmpresasEmpresaIdRoute
+  '/admin/empresas': typeof AdminEmpresasIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -385,8 +385,8 @@ export interface FileRoutesById {
   '/simulations/new': typeof SimulationsNewRoute
   '/admin/': typeof AdminIndexRoute
   '/assessment-journeys/': typeof AssessmentJourneysIndexRoute
-  '/admin/tenants/$tenantId': typeof AdminTenantsTenantIdRoute
-  '/admin/tenants/': typeof AdminTenantsIndexRoute
+  '/admin/empresas/$empresaId': typeof AdminEmpresasEmpresaIdRoute
+  '/admin/empresas/': typeof AdminEmpresasIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -430,8 +430,8 @@ export interface FileRouteTypes {
     | '/simulations/new'
     | '/admin/'
     | '/assessment-journeys/'
-    | '/admin/tenants/$tenantId'
-    | '/admin/tenants/'
+    | '/admin/empresas/$empresaId'
+    | '/admin/empresas/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -473,8 +473,8 @@ export interface FileRouteTypes {
     | '/simulations/new'
     | '/admin'
     | '/assessment-journeys'
-    | '/admin/tenants/$tenantId'
-    | '/admin/tenants'
+    | '/admin/empresas/$empresaId'
+    | '/admin/empresas'
   id:
     | '__root__'
     | '/'
@@ -516,8 +516,8 @@ export interface FileRouteTypes {
     | '/simulations/new'
     | '/admin/'
     | '/assessment-journeys/'
-    | '/admin/tenants/$tenantId'
-    | '/admin/tenants/'
+    | '/admin/empresas/$empresaId'
+    | '/admin/empresas/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -555,8 +555,8 @@ export interface RootRouteChildren {
   SimulationsNewRoute: typeof SimulationsNewRoute
   AdminIndexRoute: typeof AdminIndexRoute
   AssessmentJourneysIndexRoute: typeof AssessmentJourneysIndexRoute
-  AdminTenantsTenantIdRoute: typeof AdminTenantsTenantIdRoute
-  AdminTenantsIndexRoute: typeof AdminTenantsIndexRoute
+  AdminEmpresasEmpresaIdRoute: typeof AdminEmpresasEmpresaIdRoute
+  AdminEmpresasIndexRoute: typeof AdminEmpresasIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -834,18 +834,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AssessmentJourneysNewRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/admin/tenants/': {
-      id: '/admin/tenants/'
-      path: '/admin/tenants'
-      fullPath: '/admin/tenants/'
-      preLoaderRoute: typeof AdminTenantsIndexRouteImport
+    '/admin/empresas/': {
+      id: '/admin/empresas/'
+      path: '/admin/empresas'
+      fullPath: '/admin/empresas/'
+      preLoaderRoute: typeof AdminEmpresasIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/admin/tenants/$tenantId': {
-      id: '/admin/tenants/$tenantId'
-      path: '/admin/tenants/$tenantId'
-      fullPath: '/admin/tenants/$tenantId'
-      preLoaderRoute: typeof AdminTenantsTenantIdRouteImport
+    '/admin/empresas/$empresaId': {
+      id: '/admin/empresas/$empresaId'
+      path: '/admin/empresas/$empresaId'
+      fullPath: '/admin/empresas/$empresaId'
+      preLoaderRoute: typeof AdminEmpresasEmpresaIdRouteImport
       parentRoute: typeof rootRouteImport
     }
   }
@@ -925,8 +925,8 @@ const rootRouteChildren: RootRouteChildren = {
   SimulationsNewRoute: SimulationsNewRoute,
   AdminIndexRoute: AdminIndexRoute,
   AssessmentJourneysIndexRoute: AssessmentJourneysIndexRoute,
-  AdminTenantsTenantIdRoute: AdminTenantsTenantIdRoute,
-  AdminTenantsIndexRoute: AdminTenantsIndexRoute,
+  AdminEmpresasEmpresaIdRoute: AdminEmpresasEmpresaIdRoute,
+  AdminEmpresasIndexRoute: AdminEmpresasIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

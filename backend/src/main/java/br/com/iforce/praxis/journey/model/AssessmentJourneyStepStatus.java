@@ -1,9 +1,13 @@
 package br.com.iforce.praxis.journey.model;
 
 import br.com.iforce.praxis.shared.model.DescribedEnum;
+
 import br.com.iforce.praxis.shared.model.DescribedEnums;
+
 import com.fasterxml.jackson.annotation.JsonCreator;
+
 import com.fasterxml.jackson.annotation.JsonValue;
+
 
 /**
  * Estados de cada etapa (teste) dentro da tentativa da jornada do candidato.

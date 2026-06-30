@@ -1,34 +1,62 @@
 package br.com.iforce.praxis.billing.service;
 
 import br.com.iforce.praxis.admin.model.CommercialPlanType;
-import br.com.iforce.praxis.admin.model.TenantStatus;
-import br.com.iforce.praxis.auth.persistence.entity.TenantEntity;
-import br.com.iforce.praxis.auth.persistence.repository.TenantRepository;
+
+import br.com.iforce.praxis.admin.model.EmpresaStatus;
+
+import br.com.iforce.praxis.auth.persistence.entity.EmpresaEntity;
+
+import br.com.iforce.praxis.auth.persistence.repository.EmpresaRepository;
+
 import br.com.iforce.praxis.billing.config.MercadoPagoProperties;
+
 import br.com.iforce.praxis.billing.dto.BillingEventResponse;
+
 import br.com.iforce.praxis.billing.dto.CheckoutResponse;
-import br.com.iforce.praxis.billing.dto.TenantBillingOverviewResponse;
+
+import br.com.iforce.praxis.billing.dto.EmpresaBillingOverviewResponse;
+
 import br.com.iforce.praxis.billing.model.BillingEventType;
+
 import br.com.iforce.praxis.billing.model.SubscriptionStatus;
+
 import br.com.iforce.praxis.billing.persistence.entity.SubscriptionPlanEntity;
-import br.com.iforce.praxis.billing.persistence.entity.TenantBillingEventEntity;
-import br.com.iforce.praxis.billing.persistence.entity.TenantSubscriptionEntity;
+
+import br.com.iforce.praxis.billing.persistence.entity.EmpresaBillingEventEntity;
+
+import br.com.iforce.praxis.billing.persistence.entity.EmpresaSubscriptionEntity;
+
 import br.com.iforce.praxis.billing.persistence.repository.SubscriptionPlanRepository;
-import br.com.iforce.praxis.billing.persistence.repository.TenantBillingEventRepository;
-import br.com.iforce.praxis.billing.persistence.repository.TenantSubscriptionRepository;
+
+import br.com.iforce.praxis.billing.persistence.repository.EmpresaBillingEventRepository;
+
+import br.com.iforce.praxis.billing.persistence.repository.EmpresaSubscriptionRepository;
+
 import com.fasterxml.jackson.databind.JsonNode;
+
 import org.slf4j.Logger;
+
 import org.slf4j.LoggerFactory;
+
 import org.springframework.data.domain.PageRequest;
+
 import org.springframework.http.HttpStatus;
+
 import org.springframework.stereotype.Service;
+
 import org.springframework.transaction.annotation.Transactional;
+
 import org.springframework.web.server.ResponseStatusException;
 
+
 import java.time.Instant;
+
 import java.time.temporal.ChronoUnit;
+
 import java.util.List;
+
 import java.util.UUID;
+
 
 /**
  * Orquestra a cobrança via Mercado Pago.
@@ -48,19 +76,19 @@ public class BillingService {
     private final MercadoPagoClient mercadoPagoClient;
     private final MercadoPagoProperties properties;
     private final SubscriptionPlanRepository planRepository;
-    private final TenantBillingEventRepository eventRepository;
-    private final TenantSubscriptionRepository subscriptionRepository;
+    private final EmpresaBillingEventRepository eventRepository;
+    private final EmpresaSubscriptionRepository subscriptionRepository;
     private final CreditService creditService;
-    private final TenantRepository tenantRepository;
+    private final EmpresaRepository empresaRepository;
 
     public BillingService(
             MercadoPagoClient mercadoPagoClient,
             MercadoPagoProperties properties,
             SubscriptionPlanRepository planRepository,
-            TenantBillingEventRepository eventRepository,
-            TenantSubscriptionRepository subscriptionRepository,
+            EmpresaBillingEventRepository eventRepository,
+            EmpresaSubscriptionRepository subscriptionRepository,
             CreditService creditService,
-            TenantRepository tenantRepository
+            EmpresaRepository empresaRepository
     ) {
         this.mercadoPagoClient = mercadoPagoClient;
         this.properties = properties;
@@ -68,7 +96,7 @@ public class BillingService {
         this.eventRepository = eventRepository;
         this.subscriptionRepository = subscriptionRepository;
         this.creditService = creditService;
-        this.tenantRepository = tenantRepository;
+        this.empresaRepository = empresaRepository;
     }
 
     // ------------------------------------------------------------------
@@ -77,19 +105,19 @@ public class BillingService {
 
     /** AVULSO: cria o checkout de compra de um pacote de créditos. */
     @Transactional
-    public CheckoutResponse createCreditCheckout(String tenantId, Long planId) {
-        requireTenant(tenantId);
+    public CheckoutResponse createCreditCheckout(String empresaId, Long planId) {
+        requireEmpresa(empresaId);
         SubscriptionPlanEntity plan = requirePlan(planId);
         if (plan.getPlanType() != CommercialPlanType.AVULSO || plan.getCreditAmount() == null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Plano não é um pacote de créditos AVULSO.");
         }
-        String externalReference = reference(KIND_CREDIT, tenantId, planId);
+        String externalReference = reference(KIND_CREDIT, empresaId, planId);
         JsonNode response = mercadoPagoClient.createCreditPreference(plan, externalReference,
-                java.util.Map.of("tenant_id", tenantId, "plan_id", planId, "kind", KIND_CREDIT));
+                java.util.Map.of("empresa_id", empresaId, "plan_id", planId, "kind", KIND_CREDIT));
 
         String preferenceId = text(response, "id");
         String initPoint = text(response, "init_point");
-        recordEvent(tenantId, BillingEventType.CREDIT_CHECKOUT_CREATED, "preference", preferenceId,
+        recordEvent(empresaId, BillingEventType.CREDIT_CHECKOUT_CREATED, "preference", preferenceId,
                 externalReference, "created", plan.getPriceCents(), plan.getCurrency(), null, response);
 
         return new CheckoutResponse(KIND_CREDIT, preferenceId, initPoint, externalReference);
@@ -97,10 +125,10 @@ public class BillingService {
 
     /** PROFISSIONAL: cria a assinatura recorrente no Mercado Pago. */
     @Transactional
-    public CheckoutResponse createSubscription(String tenantId, Long planId) {
-        TenantEntity tenant = requireTenant(tenantId);
+    public CheckoutResponse createSubscription(String empresaId, Long planId) {
+        EmpresaEntity empresa = requireEmpresa(empresaId);
         SubscriptionPlanEntity plan = requirePlan(planId);
-        subscriptionRepository.findFirstByTenantIdOrderByCreatedAtDesc(tenantId)
+        subscriptionRepository.findFirstByEmpresaIdOrderByCreatedAtDesc(empresaId)
                 .filter(sub -> sub.getStatus() == SubscriptionStatus.PENDING
                         || sub.getStatus() == SubscriptionStatus.AUTHORIZED
                         || sub.getStatus() == SubscriptionStatus.DELINQUENT)
@@ -112,14 +140,14 @@ public class BillingService {
         if (plan.getPlanType() != CommercialPlanType.PROFISSIONAL) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Plano não é uma assinatura PROFISSIONAL.");
         }
-        String externalReference = reference(KIND_SUB, tenantId, planId);
-        JsonNode response = mercadoPagoClient.createPreapproval(plan, tenant.getCorporateEmail(), externalReference);
+        String externalReference = reference(KIND_SUB, empresaId, planId);
+        JsonNode response = mercadoPagoClient.createPreapproval(plan, empresa.getCorporateEmail(), externalReference);
 
         String preapprovalId = text(response, "id");
         String initPoint = text(response, "init_point");
 
-        TenantSubscriptionEntity subscription = new TenantSubscriptionEntity();
-        subscription.setTenantId(tenantId);
+        EmpresaSubscriptionEntity subscription = new EmpresaSubscriptionEntity();
+        subscription.setEmpresaId(empresaId);
         subscription.setPlanId(planId);
         subscription.setMpPreapprovalId(preapprovalId);
         subscription.setStatus(SubscriptionStatus.PENDING);
@@ -128,12 +156,12 @@ public class BillingService {
         subscription.setUpdatedAt(Instant.now());
         subscriptionRepository.save(subscription);
 
-        recordEvent(tenantId, BillingEventType.SUBSCRIPTION_CREATED, "preapproval", preapprovalId,
+        recordEvent(empresaId, BillingEventType.SUBSCRIPTION_CREATED, "preapproval", preapprovalId,
                 externalReference, "pending", plan.getPriceCents(), plan.getCurrency(), null, response);
 
-        if (!tenant.getStatus().blocksAccess()) {
-            tenant.setStatus(TenantStatus.PENDENTE_PAGAMENTO);
-            tenant.setUpdatedAt(Instant.now());
+        if (!empresa.getStatus().blocksAccess()) {
+            empresa.setStatus(EmpresaStatus.PENDENTE_PAGAMENTO);
+            empresa.setUpdatedAt(Instant.now());
         }
         return new CheckoutResponse(KIND_SUB, preapprovalId, initPoint, externalReference);
     }
@@ -150,10 +178,10 @@ public class BillingService {
         Long amountCents = cents(payment);
         String[] ref = parseReference(externalReference);
         String kind = ref[0];
-        String tenantId = ref[1];
+        String empresaId = ref[1];
         Long planId = ref[2] == null ? null : Long.valueOf(ref[2]);
 
-        if (tenantId == null) {
+        if (empresaId == null) {
             log.warn("Pagamento {} sem external_reference atribuível; ignorado.", paymentId);
             return;
         }
@@ -164,35 +192,35 @@ public class BillingService {
                     return;
                 }
                 SubscriptionPlanEntity plan = requirePlan(planId);
-                TenantBillingEventEntity event = recordEvent(tenantId, BillingEventType.CREDIT_PURCHASE_APPROVED,
+                EmpresaBillingEventEntity event = recordEvent(empresaId, BillingEventType.CREDIT_PURCHASE_APPROVED,
                         "payment", paymentId, externalReference, status, amountCents, "BRL", requestId, payment);
-                creditService.addCredits(tenantId, plan.getCreditAmount(), event.getId(),
+                creditService.addCredits(empresaId, plan.getCreditAmount(), event.getId(),
                         "Compra de créditos confirmada (pagamento " + paymentId + ")");
             } else if (KIND_SUB.equals(kind)) {
                 if (eventRepository.existsByMpResourceIdAndEventType(paymentId, BillingEventType.SUBSCRIPTION_PAYMENT_APPROVED)) {
                     return;
                 }
-                recordEvent(tenantId, BillingEventType.SUBSCRIPTION_PAYMENT_APPROVED, "payment", paymentId,
+                recordEvent(empresaId, BillingEventType.SUBSCRIPTION_PAYMENT_APPROVED, "payment", paymentId,
                         externalReference, status, amountCents, "BRL", requestId, payment);
-                markSubscriptionPaid(tenantId);
+                markSubscriptionPaid(empresaId);
             }
         } else if ("rejected".equals(status) || "cancelled".equals(status)) {
             if (KIND_SUB.equals(kind)) {
-                recordEvent(tenantId, BillingEventType.SUBSCRIPTION_PAYMENT_REJECTED, "payment", paymentId,
+                recordEvent(empresaId, BillingEventType.SUBSCRIPTION_PAYMENT_REJECTED, "payment", paymentId,
                         externalReference, status, amountCents, "BRL", requestId, payment);
-                startDelinquency(tenantId);
+                startDelinquency(empresaId);
             } else {
-                recordEvent(tenantId, BillingEventType.PAYMENT_PENDING, "payment", paymentId,
+                recordEvent(empresaId, BillingEventType.PAYMENT_PENDING, "payment", paymentId,
                         externalReference, status, amountCents, "BRL", requestId, payment);
             }
         } else if ("refunded".equals(status)) {
-            recordEvent(tenantId, BillingEventType.PAYMENT_REFUNDED, "payment", paymentId,
+            recordEvent(empresaId, BillingEventType.PAYMENT_REFUNDED, "payment", paymentId,
                     externalReference, status, amountCents, "BRL", requestId, payment);
         } else if ("charged_back".equals(status)) {
-            recordEvent(tenantId, BillingEventType.PAYMENT_CHARGEBACK, "payment", paymentId,
+            recordEvent(empresaId, BillingEventType.PAYMENT_CHARGEBACK, "payment", paymentId,
                     externalReference, status, amountCents, "BRL", requestId, payment);
         } else {
-            recordEvent(tenantId, BillingEventType.PAYMENT_PENDING, "payment", paymentId,
+            recordEvent(empresaId, BillingEventType.PAYMENT_PENDING, "payment", paymentId,
                     externalReference, status, amountCents, "BRL", requestId, payment);
         }
     }
@@ -201,7 +229,7 @@ public class BillingService {
     public void processPreapprovalNotification(String preapprovalId, String requestId) {
         JsonNode preapproval = mercadoPagoClient.getPreapproval(preapprovalId);
         String status = text(preapproval, "status");
-        TenantSubscriptionEntity subscription = subscriptionRepository.findByMpPreapprovalId(preapprovalId)
+        EmpresaSubscriptionEntity subscription = subscriptionRepository.findByMpPreapprovalId(preapprovalId)
                 .orElse(null);
         if (subscription == null) {
             String[] ref = parseReference(text(preapproval, "external_reference"));
@@ -209,29 +237,29 @@ public class BillingService {
                 log.warn("Preapproval {} desconhecido e sem referência; ignorado.", preapprovalId);
                 return;
             }
-            subscription = subscriptionRepository.findFirstByTenantIdOrderByCreatedAtDesc(ref[1]).orElse(null);
+            subscription = subscriptionRepository.findFirstByEmpresaIdOrderByCreatedAtDesc(ref[1]).orElse(null);
             if (subscription == null) {
                 return;
             }
         }
-        String tenantId = subscription.getTenantId();
+        String empresaId = subscription.getEmpresaId();
 
         if ("authorized".equals(status)) {
             subscription.setStatus(SubscriptionStatus.AUTHORIZED);
             subscription.setGraceUntil(null);
             subscription.setUpdatedAt(Instant.now());
-            recordEvent(tenantId, BillingEventType.SUBSCRIPTION_AUTHORIZED, "preapproval", preapprovalId,
+            recordEvent(empresaId, BillingEventType.SUBSCRIPTION_AUTHORIZED, "preapproval", preapprovalId,
                     null, status, null, null, requestId, preapproval);
-            activateTenant(tenantId);
+            activateEmpresa(empresaId);
         } else if ("paused".equals(status)) {
             subscription.setStatus(SubscriptionStatus.PAUSED);
             subscription.setUpdatedAt(Instant.now());
-            recordEvent(tenantId, BillingEventType.PAYMENT_PENDING, "preapproval", preapprovalId,
+            recordEvent(empresaId, BillingEventType.PAYMENT_PENDING, "preapproval", preapprovalId,
                     null, status, null, null, requestId, preapproval);
         } else if ("cancelled".equals(status)) {
             subscription.setStatus(SubscriptionStatus.CANCELLED);
             subscription.setUpdatedAt(Instant.now());
-            recordEvent(tenantId, BillingEventType.SUBSCRIPTION_CANCELLED, "preapproval", preapprovalId,
+            recordEvent(empresaId, BillingEventType.SUBSCRIPTION_CANCELLED, "preapproval", preapprovalId,
                     null, status, null, null, requestId, preapproval);
         }
     }
@@ -253,73 +281,73 @@ public class BillingService {
     // ------------------------------------------------------------------
 
     @Transactional(readOnly = true)
-    public TenantBillingOverviewResponse overview(String tenantId) {
-        TenantEntity tenant = requireTenant(tenantId);
-        TenantSubscriptionEntity subscription = subscriptionRepository
-                .findFirstByTenantIdOrderByCreatedAtDesc(tenantId).orElse(null);
+    public EmpresaBillingOverviewResponse overview(String empresaId) {
+        EmpresaEntity empresa = requireEmpresa(empresaId);
+        EmpresaSubscriptionEntity subscription = subscriptionRepository
+                .findFirstByEmpresaIdOrderByCreatedAtDesc(empresaId).orElse(null);
         List<BillingEventResponse> events = eventRepository
-                .findByTenantIdOrderByCreatedAtDesc(tenantId, PageRequest.of(0, 100)).stream()
+                .findByEmpresaIdOrderByCreatedAtDesc(empresaId, PageRequest.of(0, 100)).stream()
                 .map(e -> new BillingEventResponse(e.getId(), e.getEventType(), e.getMpResourceType(),
                         e.getMpResourceId(), e.getMpStatus(), e.getAmountCents(), e.getCurrency(), e.getCreatedAt()))
                 .toList();
 
-        TenantBillingOverviewResponse.SubscriptionInfo subscriptionInfo = subscription == null ? null
-                : new TenantBillingOverviewResponse.SubscriptionInfo(
+        EmpresaBillingOverviewResponse.SubscriptionInfo subscriptionInfo = subscription == null ? null
+                : new EmpresaBillingOverviewResponse.SubscriptionInfo(
                 subscription.getId(), subscription.getStatus(), subscription.getMpPreapprovalId(),
                 subscription.getInitPoint(), subscription.getCurrentPeriodEnd(),
                 subscription.getLastPaymentAt(), subscription.getGraceUntil());
 
-        return new TenantBillingOverviewResponse(
-                tenantId, tenant.getCommercialPlanType(), tenant.getStatus(),
-                creditService.getBalance(tenantId), subscriptionInfo, events);
+        return new EmpresaBillingOverviewResponse(
+                empresaId, empresa.getCommercialPlanType(), empresa.getStatus(),
+                creditService.getBalance(empresaId), subscriptionInfo, events);
     }
 
     // ------------------------------------------------------------------
     // Internos
     // ------------------------------------------------------------------
 
-    private void markSubscriptionPaid(String tenantId) {
-        subscriptionRepository.findFirstByTenantIdOrderByCreatedAtDesc(tenantId).ifPresent(subscription -> {
+    private void markSubscriptionPaid(String empresaId) {
+        subscriptionRepository.findFirstByEmpresaIdOrderByCreatedAtDesc(empresaId).ifPresent(subscription -> {
             subscription.setStatus(SubscriptionStatus.AUTHORIZED);
             subscription.setLastPaymentAt(Instant.now());
             subscription.setCurrentPeriodEnd(Instant.now().plus(30, ChronoUnit.DAYS));
             subscription.setGraceUntil(null);
             subscription.setUpdatedAt(Instant.now());
         });
-        activateTenant(tenantId);
+        activateEmpresa(empresaId);
     }
 
-    private void startDelinquency(String tenantId) {
+    private void startDelinquency(String empresaId) {
         Instant graceUntil = Instant.now().plus(properties.gracePeriodDays(), ChronoUnit.DAYS);
-        subscriptionRepository.findFirstByTenantIdOrderByCreatedAtDesc(tenantId).ifPresent(subscription -> {
+        subscriptionRepository.findFirstByEmpresaIdOrderByCreatedAtDesc(empresaId).ifPresent(subscription -> {
             subscription.setStatus(SubscriptionStatus.DELINQUENT);
             subscription.setGraceUntil(graceUntil);
             subscription.setUpdatedAt(Instant.now());
         });
-        tenantRepository.findById(tenantId).ifPresent(tenant -> {
-            if (!tenant.getStatus().blocksAccess()) {
-                tenant.setStatus(TenantStatus.INADIMPLENTE);
-                tenant.setUpdatedAt(Instant.now());
+        empresaRepository.findById(empresaId).ifPresent(empresa -> {
+            if (!empresa.getStatus().blocksAccess()) {
+                empresa.setStatus(EmpresaStatus.INADIMPLENTE);
+                empresa.setUpdatedAt(Instant.now());
             }
         });
     }
 
-    private void activateTenant(String tenantId) {
-        tenantRepository.findById(tenantId).ifPresent(tenant -> {
-            if (tenant.getStatus() == TenantStatus.PENDENTE_PAGAMENTO
-                    || tenant.getStatus() == TenantStatus.INADIMPLENTE
-                    || tenant.getStatus() == TenantStatus.SEM_CREDITO) {
-                tenant.setStatus(TenantStatus.ATIVO);
-                tenant.setUpdatedAt(Instant.now());
+    private void activateEmpresa(String empresaId) {
+        empresaRepository.findById(empresaId).ifPresent(empresa -> {
+            if (empresa.getStatus() == EmpresaStatus.PENDENTE_PAGAMENTO
+                    || empresa.getStatus() == EmpresaStatus.INADIMPLENTE
+                    || empresa.getStatus() == EmpresaStatus.SEM_CREDITO) {
+                empresa.setStatus(EmpresaStatus.ATIVO);
+                empresa.setUpdatedAt(Instant.now());
             }
         });
     }
 
-    private TenantBillingEventEntity recordEvent(String tenantId, BillingEventType type, String resourceType,
+    private EmpresaBillingEventEntity recordEvent(String empresaId, BillingEventType type, String resourceType,
                                                  String resourceId, String externalReference, String mpStatus,
                                                  Long amountCents, String currency, String requestId, JsonNode raw) {
-        TenantBillingEventEntity event = new TenantBillingEventEntity();
-        event.setTenantId(tenantId);
+        EmpresaBillingEventEntity event = new EmpresaBillingEventEntity();
+        event.setEmpresaId(empresaId);
         event.setEventType(type);
         event.setMpResourceType(resourceType);
         event.setMpResourceId(resourceId);
@@ -333,8 +361,8 @@ public class BillingService {
         return eventRepository.save(event);
     }
 
-    private TenantEntity requireTenant(String tenantId) {
-        return tenantRepository.findById(tenantId)
+    private EmpresaEntity requireEmpresa(String empresaId) {
+        return empresaRepository.findById(empresaId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Cliente não encontrado."));
     }
 
@@ -350,11 +378,11 @@ public class BillingService {
         return plan;
     }
 
-    private static String reference(String kind, String tenantId, Long planId) {
-        return kind + ":" + tenantId + ":" + planId + ":" + UUID.randomUUID().toString().substring(0, 8);
+    private static String reference(String kind, String empresaId, Long planId) {
+        return kind + ":" + empresaId + ":" + planId + ":" + UUID.randomUUID().toString().substring(0, 8);
     }
 
-    /** Retorna {kind, tenantId, planId} a partir de "kind:tenantId:planId:nonce". */
+    /** Retorna {kind, empresaId, planId} a partir de "kind:empresaId:planId:nonce". */
     private static String[] parseReference(String externalReference) {
         if (externalReference == null) {
             return new String[]{null, null, null};

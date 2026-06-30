@@ -1,13 +1,20 @@
 package br.com.iforce.praxis.candidate.dto;
 
 import br.com.iforce.praxis.audit.dto.AuditEventResponse;
+
 import br.com.iforce.praxis.gupy.model.ReliabilityLevel;
+
 import br.com.iforce.praxis.gupy.model.ResultDecision;
+
 import io.swagger.v3.oas.annotations.media.Schema;
 
+
 import java.time.Instant;
+
 import java.util.List;
+
 import java.util.Map;
+
 
 /**
  * Relatório consolidado de transparência do scoring (REQ-L4). Documento legível por

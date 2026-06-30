@@ -1,14 +1,14 @@
--- Enforce tenant_id NOT NULL em todas as tabelas tenant-aware
+-- Enforce empresa_id NOT NULL em todas as tabelas empresa-aware
 ALTER TABLE candidate_attempts ALTER COLUMN tenant_id SET NOT NULL;
 ALTER TABLE result_deliveries ALTER COLUMN tenant_id SET NOT NULL;
 ALTER TABLE audit_events ALTER COLUMN tenant_id SET NOT NULL;
 
--- Criar índices compostos para idempotência (tenant_id + idempotency_key)
+-- Criar índices compostos para idempotência (empresa_id + idempotency_key)
 CREATE UNIQUE INDEX IF NOT EXISTS idx_candidate_attempts_tenant_idempotency
     ON candidate_attempts(tenant_id, idempotency_key)
     WHERE idempotency_key IS NOT NULL;
 
--- Criar índices para isolamento multi-tenant em queries críticas
+-- Criar índices para isolamento multi-empresa em queries críticas
 CREATE INDEX IF NOT EXISTS idx_candidate_attempts_tenant_simulation
     ON candidate_attempts(tenant_id, simulation_version_id);
 

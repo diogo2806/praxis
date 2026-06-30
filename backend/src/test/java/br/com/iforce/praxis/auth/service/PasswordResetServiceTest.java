@@ -1,45 +1,83 @@
 package br.com.iforce.praxis.auth.service;
 
-import br.com.iforce.praxis.admin.model.TenantStatus;
+import br.com.iforce.praxis.admin.model.EmpresaStatus;
+
 import br.com.iforce.praxis.admin.model.UserStatus;
+
 import br.com.iforce.praxis.audit.model.AuditEventType;
+
 import br.com.iforce.praxis.audit.service.AuditEventService;
+
 import br.com.iforce.praxis.audit.service.AuditMetadata;
+
 import br.com.iforce.praxis.auth.dto.ForgotPasswordRequest;
+
 import br.com.iforce.praxis.auth.dto.ResetPasswordRequest;
+
 import br.com.iforce.praxis.auth.dto.ResetPasswordTokenResponse;
-import br.com.iforce.praxis.auth.persistence.entity.TenantEntity;
+
+import br.com.iforce.praxis.auth.persistence.entity.EmpresaEntity;
+
 import br.com.iforce.praxis.auth.persistence.entity.UserEntity;
-import br.com.iforce.praxis.auth.persistence.repository.TenantRepository;
+
+import br.com.iforce.praxis.auth.persistence.repository.EmpresaRepository;
+
 import br.com.iforce.praxis.auth.persistence.repository.UserRepository;
+
 import org.junit.jupiter.api.BeforeEach;
+
 import org.junit.jupiter.api.Test;
+
 import org.junit.jupiter.api.extension.ExtendWith;
+
 import org.mockito.ArgumentCaptor;
+
 import org.mockito.Mock;
+
 import org.mockito.junit.jupiter.MockitoExtension;
+
 import org.springframework.http.HttpStatus;
+
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+
 import org.springframework.security.crypto.password.PasswordEncoder;
+
 import org.springframework.web.server.ResponseStatusException;
 
+
 import java.time.Instant;
+
 import java.time.temporal.ChronoUnit;
+
 import java.util.List;
+
 import java.util.Optional;
+
 import java.util.Set;
 
+
 import static org.assertj.core.api.Assertions.assertThat;
+
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+
 import static org.mockito.ArgumentMatchers.any;
+
 import static org.mockito.ArgumentMatchers.anyInt;
+
 import static org.mockito.ArgumentMatchers.anyString;
+
 import static org.mockito.ArgumentMatchers.eq;
+
 import static org.mockito.Mockito.never;
+
 import static org.mockito.Mockito.times;
+
 import static org.mockito.Mockito.verify;
+
 import static org.mockito.Mockito.verifyNoInteractions;
+
 import static org.mockito.Mockito.when;
+
 
 @ExtendWith(MockitoExtension.class)
 class PasswordResetServiceTest {
@@ -47,7 +85,7 @@ class PasswordResetServiceTest {
     @Mock
     private UserRepository userRepository;
     @Mock
-    private TenantRepository tenantRepository;
+    private EmpresaRepository empresaRepository;
     @Mock
     private AuditEventService auditEventService;
     @Mock
@@ -64,7 +102,7 @@ class PasswordResetServiceTest {
     private PasswordResetService service() {
         return new PasswordResetService(
                 userRepository,
-                tenantRepository,
+                empresaRepository,
                 passwordEncoder,
                 auditEventService,
                 auditMetadata,
@@ -77,7 +115,7 @@ class PasswordResetServiceTest {
     private UserEntity activeUser() {
         UserEntity user = new UserEntity();
         user.setId(7L);
-        user.setTenantId("empresa123");
+        user.setEmpresaId("empresa123");
         user.setEmail("usuario@empresa.com");
         user.setName("João");
         user.setRoles(Set.of("EMPRESA"));
@@ -86,11 +124,11 @@ class PasswordResetServiceTest {
         return user;
     }
 
-    private TenantEntity activeTenant(String id) {
-        TenantEntity tenant = new TenantEntity();
-        tenant.setId(id);
-        tenant.setStatus(TenantStatus.ATIVO);
-        return tenant;
+    private EmpresaEntity activeEmpresa(String id) {
+        EmpresaEntity empresa = new EmpresaEntity();
+        empresa.setId(id);
+        empresa.setStatus(EmpresaStatus.ATIVO);
+        return empresa;
     }
 
     // ------------------------------------------------------------------
@@ -100,9 +138,9 @@ class PasswordResetServiceTest {
     @Test
     void requestResetGeneratesTokenAndSendsEmailForActiveUser() {
         UserEntity user = activeUser();
-        when(userRepository.findFirstByEmailAndTenantId("usuario@empresa.com", "empresa123"))
+        when(userRepository.findFirstByEmailAndEmpresaId("usuario@empresa.com", "empresa123"))
                 .thenReturn(Optional.of(user));
-        when(tenantRepository.findById("empresa123")).thenReturn(Optional.of(activeTenant("empresa123")));
+        when(empresaRepository.findById("empresa123")).thenReturn(Optional.of(activeEmpresa("empresa123")));
 
         service().requestReset(new ForgotPasswordRequest("empresa123", "usuario@empresa.com"), "1.2.3.4");
 
@@ -116,13 +154,13 @@ class PasswordResetServiceTest {
     }
 
     @Test
-    void requestResetForAdminDefaultsToPlatformTenant() {
+    void requestResetForAdminDefaultsToPlatformEmpresa() {
         UserEntity admin = activeUser();
-        admin.setTenantId("PLATFORM");
+        admin.setEmpresaId("PLATFORM");
         admin.setRoles(Set.of("ADMIN"));
-        when(userRepository.findFirstByEmailAndTenantId("admin@praxis.com", "PLATFORM"))
+        when(userRepository.findFirstByEmailAndEmpresaId("admin@praxis.com", "PLATFORM"))
                 .thenReturn(Optional.of(admin));
-        when(tenantRepository.findById("PLATFORM")).thenReturn(Optional.of(activeTenant("PLATFORM")));
+        when(empresaRepository.findById("PLATFORM")).thenReturn(Optional.of(activeEmpresa("PLATFORM")));
 
         service().requestReset(new ForgotPasswordRequest(null, "admin@praxis.com"), null);
 
@@ -131,7 +169,7 @@ class PasswordResetServiceTest {
 
     @Test
     void requestResetIsSilentWhenUserMissing() {
-        when(userRepository.findFirstByEmailAndTenantId(anyString(), anyString()))
+        when(userRepository.findFirstByEmailAndEmpresaId(anyString(), anyString()))
                 .thenReturn(Optional.empty());
 
         service().requestReset(new ForgotPasswordRequest("empresa123", "ghost@empresa.com"), "1.2.3.4");
@@ -144,7 +182,7 @@ class PasswordResetServiceTest {
     void requestResetIsSilentForNonActiveUser() {
         UserEntity invited = activeUser();
         invited.setStatus(UserStatus.CONVIDADO);
-        when(userRepository.findFirstByEmailAndTenantId(anyString(), anyString()))
+        when(userRepository.findFirstByEmailAndEmpresaId(anyString(), anyString()))
                 .thenReturn(Optional.of(invited));
 
         service().requestReset(new ForgotPasswordRequest("empresa123", "usuario@empresa.com"), null);
@@ -204,7 +242,7 @@ class PasswordResetServiceTest {
         user.setPasswordResetTokenHash(passwordEncoder.encode(token));
         user.setPasswordResetExpiresAt(Instant.now().plus(1, ChronoUnit.HOURS));
         when(userRepository.findByPasswordResetTokenHashIsNotNull()).thenReturn(List.of(user));
-        when(tenantRepository.findById("empresa123")).thenReturn(Optional.of(activeTenant("empresa123")));
+        when(empresaRepository.findById("empresa123")).thenReturn(Optional.of(activeEmpresa("empresa123")));
 
         service().confirmReset(new ResetPasswordRequest(token, "novaSenha123", "novaSenha123"), "1.2.3.4");
 
@@ -232,7 +270,7 @@ class PasswordResetServiceTest {
         user.setPasswordResetTokenHash(passwordEncoder.encode(token));
         user.setPasswordResetExpiresAt(Instant.now().plus(1, ChronoUnit.HOURS));
         when(userRepository.findByPasswordResetTokenHashIsNotNull()).thenReturn(List.of(user));
-        when(tenantRepository.findById("empresa123")).thenReturn(Optional.of(activeTenant("empresa123")));
+        when(empresaRepository.findById("empresa123")).thenReturn(Optional.of(activeEmpresa("empresa123")));
 
         assertThatThrownBy(() -> service().confirmReset(
                 new ResetPasswordRequest(token, "senhaAntiga1", "senhaAntiga1"), null))
@@ -270,8 +308,8 @@ class PasswordResetServiceTest {
     @Test
     void requestResetNeverIncludesRawTokenInAuditMetadata() {
         UserEntity user = activeUser();
-        when(userRepository.findFirstByEmailAndTenantId(anyString(), anyString())).thenReturn(Optional.of(user));
-        when(tenantRepository.findById("empresa123")).thenReturn(Optional.of(activeTenant("empresa123")));
+        when(userRepository.findFirstByEmailAndEmpresaId(anyString(), anyString())).thenReturn(Optional.of(user));
+        when(empresaRepository.findById("empresa123")).thenReturn(Optional.of(activeEmpresa("empresa123")));
 
         service().requestReset(new ForgotPasswordRequest("empresa123", "usuario@empresa.com"), "1.2.3.4");
 

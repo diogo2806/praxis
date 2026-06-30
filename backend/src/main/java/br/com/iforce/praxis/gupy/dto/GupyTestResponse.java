@@ -2,6 +2,7 @@ package br.com.iforce.praxis.gupy.dto;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 
+
 @Schema(description = "Teste Praxis publicado e visivel para consumo pela Gupy.")
 public record GupyTestResponse(
         @Schema(example = "sim-atendimento-n2")

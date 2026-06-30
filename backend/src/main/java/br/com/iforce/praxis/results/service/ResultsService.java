@@ -1,50 +1,94 @@
 package br.com.iforce.praxis.results.service;
 
 import br.com.iforce.praxis.audit.dto.AuditEventResponse;
+
 import br.com.iforce.praxis.audit.model.AuditEventType;
-import br.com.iforce.praxis.auth.service.CurrentTenantService;
+
+import br.com.iforce.praxis.auth.service.CurrentEmpresaService;
+
 import br.com.iforce.praxis.candidate.dto.RegisterDispositionRequest;
+
 import br.com.iforce.praxis.candidate.service.CandidateDispositionService;
+
 import br.com.iforce.praxis.gupy.model.AttemptStatus;
+
 import br.com.iforce.praxis.gupy.model.PublishedSimulation;
+
 import br.com.iforce.praxis.gupy.model.ScenarioNode;
+
 import br.com.iforce.praxis.gupy.model.ScenarioOption;
+
 import br.com.iforce.praxis.gupy.persistence.entity.AttemptAnswerEntity;
+
 import br.com.iforce.praxis.gupy.persistence.entity.CandidateAttemptEntity;
+
 import br.com.iforce.praxis.gupy.persistence.entity.ResultItemEntity;
+
 import br.com.iforce.praxis.gupy.persistence.repository.CandidateAttemptRepository;
+
 import br.com.iforce.praxis.gupy.service.SimulationCatalogService;
+
 import br.com.iforce.praxis.results.dto.RegisterResultDecisionRequest;
+
 import br.com.iforce.praxis.results.dto.ResultDetailResponse;
+
 import br.com.iforce.praxis.results.dto.ResultListItemResponse;
+
 import br.com.iforce.praxis.results.dto.ResultsPageResponse;
+
 import br.com.iforce.praxis.results.dto.ResultsSummaryResponse;
+
 import br.com.iforce.praxis.simulation.persistence.entity.SimulationEntity;
+
 import br.com.iforce.praxis.simulation.persistence.repository.SimulationRepository;
+
 import br.com.iforce.praxis.audit.service.AuditEventService;
+
 import com.fasterxml.jackson.databind.JsonNode;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
+
 import jakarta.persistence.criteria.Expression;
+
 import jakarta.persistence.criteria.Predicate;
+
 import org.springframework.data.domain.Page;
+
 import org.springframework.data.domain.PageRequest;
+
 import org.springframework.data.domain.Sort;
+
 import org.springframework.data.jpa.domain.Specification;
+
 import org.springframework.http.HttpStatus;
+
 import org.springframework.stereotype.Service;
+
 import org.springframework.transaction.annotation.Transactional;
+
 import org.springframework.web.server.ResponseStatusException;
 
+
 import java.time.Instant;
+
 import java.util.ArrayList;
+
 import java.util.Comparator;
+
 import java.util.LinkedHashMap;
+
 import java.util.List;
+
 import java.util.Locale;
+
 import java.util.Map;
+
 import java.util.Optional;
+
 import java.util.function.Function;
+
 import java.util.stream.Collectors;
+
 
 @Service
 public class ResultsService {
@@ -56,7 +100,7 @@ public class ResultsService {
     private final SimulationCatalogService simulationCatalogService;
     private final AuditEventService auditEventService;
     private final CandidateDispositionService candidateDispositionService;
-    private final CurrentTenantService currentTenantService;
+    private final CurrentEmpresaService currentEmpresaService;
     private final ObjectMapper objectMapper;
 
     public ResultsService(
@@ -65,7 +109,7 @@ public class ResultsService {
             SimulationCatalogService simulationCatalogService,
             AuditEventService auditEventService,
             CandidateDispositionService candidateDispositionService,
-            CurrentTenantService currentTenantService,
+            CurrentEmpresaService currentEmpresaService,
             ObjectMapper objectMapper
     ) {
         this.candidateAttemptRepository = candidateAttemptRepository;
@@ -73,7 +117,7 @@ public class ResultsService {
         this.simulationCatalogService = simulationCatalogService;
         this.auditEventService = auditEventService;
         this.candidateDispositionService = candidateDispositionService;
-        this.currentTenantService = currentTenantService;
+        this.currentEmpresaService = currentEmpresaService;
         this.objectMapper = objectMapper;
     }
 
@@ -88,11 +132,11 @@ public class ResultsService {
             int page,
             int size
     ) {
-        String tenantId = currentTenantService.requiredTenantId();
+        String empresaId = currentEmpresaService.requiredEmpresaId();
         int safePage = Math.max(page, 0);
         int safeSize = Math.min(Math.max(size, 1), MAX_PAGE_SIZE);
         Specification<CandidateAttemptEntity> spec = buildSpec(
-                tenantId,
+                empresaId,
                 search,
                 simulationId,
                 status,
@@ -106,7 +150,7 @@ public class ResultsService {
                 PageRequest.of(safePage, safeSize, Sort.by(Sort.Direction.DESC, "createdAt"))
         );
         List<CandidateAttemptEntity> filtered = candidateAttemptRepository.findAll(spec);
-        Map<String, String> simulationTitles = simulationTitles(tenantId);
+        Map<String, String> simulationTitles = simulationTitles(empresaId);
 
         return new ResultsPageResponse(
                 resultPage.getContent().stream()
@@ -122,12 +166,12 @@ public class ResultsService {
 
     @Transactional(readOnly = true)
     public ResultDetailResponse get(String attemptId) {
-        String tenantId = currentTenantService.requiredTenantId();
-        CandidateAttemptEntity attempt = candidateAttemptRepository.findByTenantIdAndId(tenantId, attemptId)
+        String empresaId = currentEmpresaService.requiredEmpresaId();
+        CandidateAttemptEntity attempt = candidateAttemptRepository.findByEmpresaIdAndId(empresaId, attemptId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Resultado nÃ£o encontrado."));
-        PublishedSimulation simulation = resolveSimulation(attempt, tenantId).orElse(null);
+        PublishedSimulation simulation = resolveSimulation(attempt, empresaId).orElse(null);
         String simulationTitle = simulation == null
-                ? simulationRepository.findByTenantIdAndId(tenantId, attempt.getSimulationId())
+                ? simulationRepository.findByEmpresaIdAndId(empresaId, attempt.getSimulationId())
                         .map(SimulationEntity::getName)
                         .orElse("AvaliaÃ§Ã£o")
                 : simulation.name();
@@ -160,7 +204,7 @@ public class ResultsService {
     }
 
     private Specification<CandidateAttemptEntity> buildSpec(
-            String tenantId,
+            String empresaId,
             String search,
             String simulationId,
             AttemptStatus status,
@@ -170,7 +214,7 @@ public class ResultsService {
     ) {
         return (root, query, cb) -> {
             List<Predicate> predicates = new ArrayList<>();
-            predicates.add(cb.equal(root.get("tenantId"), tenantId));
+            predicates.add(cb.equal(root.get("empresaId"), empresaId));
             if (search != null && !search.isBlank()) {
                 String pattern = "%" + search.trim().toLowerCase(Locale.ROOT) + "%";
                 predicates.add(cb.or(
@@ -234,8 +278,8 @@ public class ResultsService {
         );
     }
 
-    private Map<String, String> simulationTitles(String tenantId) {
-        return simulationRepository.findByTenantIdOrderByCreatedAtDesc(tenantId).stream()
+    private Map<String, String> simulationTitles(String empresaId) {
+        return simulationRepository.findByEmpresaIdOrderByCreatedAtDesc(empresaId).stream()
                 .collect(Collectors.toMap(SimulationEntity::getId, SimulationEntity::getName, (left, right) -> left));
     }
 
@@ -324,11 +368,11 @@ public class ResultsService {
         );
     }
 
-    private Optional<PublishedSimulation> resolveSimulation(CandidateAttemptEntity attempt, String tenantId) {
+    private Optional<PublishedSimulation> resolveSimulation(CandidateAttemptEntity attempt, String empresaId) {
         if (attempt.getSimulationVersionId() != null) {
             return simulationCatalogService.findByVersionId(attempt.getSimulationVersionId());
         }
-        return simulationCatalogService.findPublishedById(tenantId, attempt.getSimulationId());
+        return simulationCatalogService.findPublishedById(empresaId, attempt.getSimulationId());
     }
 
     private ResultDetailResponse.HumanDecision latestHumanDecision(List<AuditEventResponse> auditTrail) {

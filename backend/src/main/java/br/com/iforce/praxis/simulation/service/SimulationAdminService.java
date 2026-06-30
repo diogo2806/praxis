@@ -1,57 +1,108 @@
 package br.com.iforce.praxis.simulation.service;
 
 import br.com.iforce.praxis.audit.model.AuditEventType;
+
 import br.com.iforce.praxis.audit.service.AuditEventService;
-import br.com.iforce.praxis.auth.service.CurrentTenantService;
+
+import br.com.iforce.praxis.auth.service.CurrentEmpresaService;
+
 import br.com.iforce.praxis.auth.service.HealthVerticalService;
+
 import br.com.iforce.praxis.term.service.TermAcceptanceService;
+
 import br.com.iforce.praxis.simulation.dto.CloneSimulationVersionResponse;
+
 import br.com.iforce.praxis.simulation.dto.CompetencyWeightDto;
+
 import br.com.iforce.praxis.simulation.dto.CreateNodeRequest;
+
 import br.com.iforce.praxis.simulation.dto.CreateOptionRequest;
+
 import br.com.iforce.praxis.simulation.dto.CreateSimulationDraftRequest;
+
 import br.com.iforce.praxis.simulation.dto.CreateSimulationRequest;
+
 import br.com.iforce.praxis.simulation.dto.GupyPreflightCheckResponse;
+
 import br.com.iforce.praxis.simulation.dto.GupyPreflightResponse;
+
 import br.com.iforce.praxis.simulation.dto.PublishSimulationResponse;
+
 import br.com.iforce.praxis.simulation.dto.SimulationSummaryResponse;
+
 import br.com.iforce.praxis.simulation.dto.SimulationValidationResponse;
+
 import br.com.iforce.praxis.simulation.dto.SimulationVersionDetailResponse;
+
 import br.com.iforce.praxis.simulation.dto.UpdateBlueprintRequest;
+
 import br.com.iforce.praxis.simulation.dto.UpdateNodeRequest;
+
 import br.com.iforce.praxis.simulation.dto.UpdateOptionRequest;
+
 import br.com.iforce.praxis.gupy.model.AttemptStatus;
+
 import br.com.iforce.praxis.gupy.persistence.repository.CandidateAttemptRepository;
+
 import br.com.iforce.praxis.shared.model.MediaType;
+
 import br.com.iforce.praxis.shared.web.ApiException;
+
 import br.com.iforce.praxis.simulation.model.GupyPreflightCheckStatus;
+
 import br.com.iforce.praxis.simulation.model.SimulationVersionStatus;
+
 import br.com.iforce.praxis.simulation.persistence.entity.OptionCompetencyScoreEntity;
+
 import br.com.iforce.praxis.simulation.persistence.entity.SimulationCompetencyEntity;
+
 import br.com.iforce.praxis.simulation.persistence.entity.SimulationEntity;
+
 import br.com.iforce.praxis.simulation.persistence.entity.SimulationNodeEntity;
+
 import br.com.iforce.praxis.simulation.persistence.entity.SimulationOptionEntity;
+
 import br.com.iforce.praxis.simulation.persistence.entity.SimulationVersionEntity;
+
 import br.com.iforce.praxis.simulation.persistence.repository.SimulationRepository;
+
 import br.com.iforce.praxis.simulation.persistence.repository.SimulationVersionRepository;
+
 import org.springframework.http.HttpStatus;
+
 import org.springframework.stereotype.Service;
+
 import org.springframework.transaction.annotation.Transactional;
+
 import org.springframework.web.server.ResponseStatusException;
 
+
 import java.text.Normalizer;
+
 import java.time.Instant;
+
 import java.util.Comparator;
+
 import java.util.LinkedHashMap;
+
 import java.util.LinkedHashSet;
+
 import java.util.List;
+
 import java.util.Locale;
+
 import java.util.Map;
+
 import java.util.Objects;
+
 import java.util.Optional;
+
 import java.util.Set;
+
 import java.util.UUID;
+
 import java.util.function.Consumer;
+
 
 /**
  * Cérebro da autoria e administração das provas (simulações).
@@ -75,7 +126,7 @@ public class SimulationAdminService {
     private final GupyPreflightService gupyPreflightService;
     private final SimulationMapperService simulationMapperService;
     private final AuditEventService auditEventService;
-    private final CurrentTenantService currentTenantService;
+    private final CurrentEmpresaService currentEmpresaService;
     private final HealthVerticalService healthVerticalService;
     private final TermAcceptanceService termAcceptanceService;
 
@@ -87,7 +138,7 @@ public class SimulationAdminService {
             GupyPreflightService gupyPreflightService,
             SimulationMapperService simulationMapperService,
             AuditEventService auditEventService,
-            CurrentTenantService currentTenantService,
+            CurrentEmpresaService currentEmpresaService,
             HealthVerticalService healthVerticalService,
             TermAcceptanceService termAcceptanceService
     ) {
@@ -98,7 +149,7 @@ public class SimulationAdminService {
         this.gupyPreflightService = gupyPreflightService;
         this.simulationMapperService = simulationMapperService;
         this.auditEventService = auditEventService;
-        this.currentTenantService = currentTenantService;
+        this.currentEmpresaService = currentEmpresaService;
         this.healthVerticalService = healthVerticalService;
         this.termAcceptanceService = termAcceptanceService;
     }
@@ -112,8 +163,8 @@ public class SimulationAdminService {
      */
     @Transactional(readOnly = true)
     public List<SimulationSummaryResponse> listActiveSimulations() {
-        return simulationRepository.findByTenantIdOrderByCreatedAtDesc(
-                        currentTenantService.requiredTenantId())
+        return simulationRepository.findByEmpresaIdOrderByCreatedAtDesc(
+                        currentEmpresaService.requiredEmpresaId())
                 .stream()
                 .map(this::toLatestVersionSummary)
                 .flatMap(List::stream)
@@ -136,7 +187,7 @@ public class SimulationAdminService {
         Instant createdAt = Instant.now();
         SimulationEntity simulationEntity = new SimulationEntity();
         simulationEntity.setId(generateSimulationId(request.name()));
-        simulationEntity.setTenantId(currentTenantService.requiredTenantId());
+        simulationEntity.setEmpresaId(currentEmpresaService.requiredEmpresaId());
         simulationEntity.setName(request.name().trim());
         simulationEntity.setDescription(createDescription(request));
         simulationEntity.setCriticalSituation(trimToNull(request.criticalSituation()));
@@ -164,7 +215,7 @@ public class SimulationAdminService {
         simulationEntity.getVersions().add(versionEntity);
         SimulationEntity savedSimulationEntity = simulationRepository.save(simulationEntity);
         auditEventService.appendSimulationVersionEvent(
-                savedSimulationEntity.getTenantId(),
+                savedSimulationEntity.getEmpresaId(),
                 savedSimulationEntity.getId(),
                 versionEntity.getVersionNumber(),
                 AuditEventType.SIMULATION_VERSION_DRAFT_CREATED,
@@ -202,7 +253,7 @@ public class SimulationAdminService {
         Instant createdAt = Instant.now();
         SimulationEntity simulationEntity = new SimulationEntity();
         simulationEntity.setId(generateSimulationId(request.name()));
-        simulationEntity.setTenantId(currentTenantService.requiredTenantId());
+        simulationEntity.setEmpresaId(currentEmpresaService.requiredEmpresaId());
         simulationEntity.setName(request.name().trim());
         simulationEntity.setDescription(truncateDescription(request.description().trim()));
         simulationEntity.setCriticalSituation(trimToNull(request.criticalSituation()));
@@ -221,7 +272,7 @@ public class SimulationAdminService {
         simulationEntity.getVersions().add(versionEntity);
         SimulationEntity savedSimulationEntity = simulationRepository.save(simulationEntity);
         auditEventService.appendSimulationVersionEvent(
-                savedSimulationEntity.getTenantId(),
+                savedSimulationEntity.getEmpresaId(),
                 savedSimulationEntity.getId(),
                 versionEntity.getVersionNumber(),
                 AuditEventType.SIMULATION_VERSION_DRAFT_CREATED,
@@ -294,7 +345,7 @@ public class SimulationAdminService {
         SimulationVersionEntity savedVersionEntity = simulationVersionRepository.save(versionEntity);
 
         auditEventService.appendSimulationVersionEvent(
-                savedVersionEntity.getSimulation().getTenantId(),
+                savedVersionEntity.getSimulation().getEmpresaId(),
                 simulationId,
                 versionNumber,
                 AuditEventType.SIMULATION_VERSION_BLUEPRINT_UPDATED,
@@ -352,7 +403,7 @@ public class SimulationAdminService {
 
         simulationVersionRepository.save(versionEntity);
         auditEventService.appendSimulationVersionEvent(
-                versionEntity.getSimulation().getTenantId(),
+                versionEntity.getSimulation().getEmpresaId(),
                 simulationId,
                 versionNumber,
                 AuditEventType.SIMULATION_NODE_ADDED,
@@ -428,7 +479,7 @@ public class SimulationAdminService {
 
         simulationVersionRepository.save(versionEntity);
         auditEventService.appendSimulationVersionEvent(
-                versionEntity.getSimulation().getTenantId(),
+                versionEntity.getSimulation().getEmpresaId(),
                 simulationId,
                 versionNumber,
                 AuditEventType.SIMULATION_NODE_UPDATED,
@@ -458,7 +509,7 @@ public class SimulationAdminService {
         versionEntity.getNodes().remove(nodeEntity);
         simulationVersionRepository.save(versionEntity);
         auditEventService.appendSimulationVersionEvent(
-                versionEntity.getSimulation().getTenantId(),
+                versionEntity.getSimulation().getEmpresaId(),
                 simulationId,
                 versionNumber,
                 AuditEventType.SIMULATION_NODE_DELETED,
@@ -508,7 +559,7 @@ public class SimulationAdminService {
 
         simulationVersionRepository.save(versionEntity);
         auditEventService.appendSimulationVersionEvent(
-                versionEntity.getSimulation().getTenantId(),
+                versionEntity.getSimulation().getEmpresaId(),
                 simulationId,
                 versionNumber,
                 AuditEventType.SIMULATION_OPTION_ADDED,
@@ -573,7 +624,7 @@ public class SimulationAdminService {
 
         simulationVersionRepository.save(versionEntity);
         auditEventService.appendSimulationVersionEvent(
-                versionEntity.getSimulation().getTenantId(),
+                versionEntity.getSimulation().getEmpresaId(),
                 simulationId,
                 versionNumber,
                 AuditEventType.SIMULATION_OPTION_UPDATED,
@@ -601,7 +652,7 @@ public class SimulationAdminService {
         nodeEntity.getOptions().remove(optionEntity);
         simulationVersionRepository.save(versionEntity);
         auditEventService.appendSimulationVersionEvent(
-                versionEntity.getSimulation().getTenantId(),
+                versionEntity.getSimulation().getEmpresaId(),
                 simulationId,
                 versionNumber,
                 AuditEventType.SIMULATION_OPTION_DELETED,
@@ -621,11 +672,11 @@ public class SimulationAdminService {
      */
     @Transactional
     public void deleteSimulation(String simulationId) {
-        String tenantId = currentTenantService.requiredTenantId();
-        SimulationEntity simulationEntity = simulationRepository.findByTenantIdAndId(tenantId, simulationId)
+        String empresaId = currentEmpresaService.requiredEmpresaId();
+        SimulationEntity simulationEntity = simulationRepository.findByEmpresaIdAndId(empresaId, simulationId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Não encontramos este teste."));
 
-        long candidateAttempts = candidateAttemptRepository.countByTenantIdAndSimulationId(tenantId, simulationId);
+        long candidateAttempts = candidateAttemptRepository.countByEmpresaIdAndSimulationId(empresaId, simulationId);
         if (candidateAttempts > 0) {
             throw new ResponseStatusException(
                     HttpStatus.CONFLICT,
@@ -660,7 +711,7 @@ public class SimulationAdminService {
         SimulationVersionEntity clonedVersionEntity = cloneVersion(sourceVersionEntity, newVersionNumber);
         SimulationVersionEntity savedClonedVersionEntity = simulationVersionRepository.save(clonedVersionEntity);
         auditEventService.appendSimulationVersionEvent(
-                savedClonedVersionEntity.getSimulation().getTenantId(),
+                savedClonedVersionEntity.getSimulation().getEmpresaId(),
                 savedClonedVersionEntity.getSimulation().getId(),
                 savedClonedVersionEntity.getVersionNumber(),
                 AuditEventType.SIMULATION_VERSION_CLONED,
@@ -717,7 +768,7 @@ public class SimulationAdminService {
             throw new ApiException(HttpStatus.CONFLICT, "Preflight Gupy bloqueou a publicação.", blockers);
         }
 
-        if (healthVerticalService.isHealthVertical(simulationVersionEntity.getSimulation().getTenantId())
+        if (healthVerticalService.isHealthVertical(simulationVersionEntity.getSimulation().getEmpresaId())
                 && !termAcceptanceService.isHealthUseAcceptedByCurrentUser()) {
             throw new ResponseStatusException(
                     HttpStatus.CONFLICT,
@@ -732,7 +783,7 @@ public class SimulationAdminService {
         simulationVersionEntity.setPublishedAt(publishedAt);
         SimulationVersionEntity savedSimulationVersionEntity = simulationVersionRepository.save(simulationVersionEntity);
         auditEventService.appendSimulationVersionEvent(
-                savedSimulationVersionEntity.getSimulation().getTenantId(),
+                savedSimulationVersionEntity.getSimulation().getEmpresaId(),
                 savedSimulationVersionEntity.getSimulation().getId(),
                 savedSimulationVersionEntity.getVersionNumber(),
                 AuditEventType.SIMULATION_VERSION_PUBLISHED,
@@ -987,19 +1038,19 @@ public class SimulationAdminService {
     }
 
     private SimulationVersionEntity findVersion(String simulationId, int versionNumber) {
-        String tenantId = currentTenantService.requiredTenantId();
+        String empresaId = currentEmpresaService.requiredEmpresaId();
         return simulationVersionRepository
-                .findBySimulationTenantIdAndSimulationIdAndVersionNumber(tenantId, simulationId, versionNumber)
+                .findBySimulationEmpresaIdAndSimulationIdAndVersionNumber(empresaId, simulationId, versionNumber)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Não encontramos esta versão do teste."));
     }
 
     private void archiveOtherPublishedVersions(SimulationVersionEntity targetVersion) {
-        String tenantId = targetVersion.getSimulation().getTenantId();
+        String empresaId = targetVersion.getSimulation().getEmpresaId();
         String simulationId = targetVersion.getSimulation().getId();
 
         simulationVersionRepository
-                .findBySimulationTenantIdAndSimulationIdAndStatusOrderByPublishedAtDesc(
-                        tenantId,
+                .findBySimulationEmpresaIdAndSimulationIdAndStatusOrderByPublishedAtDesc(
+                        empresaId,
                         simulationId,
                         SimulationVersionStatus.PUBLISHED
                 )
@@ -1020,10 +1071,10 @@ public class SimulationAdminService {
             SimulationEntity simulationEntity,
             SimulationVersionEntity versionEntity
     ) {
-        String tenantId = currentTenantService.requiredTenantId();
-        long attemptsCreated = candidateAttemptRepository.countByTenantIdAndSimulationVersionId(tenantId, versionEntity.getId());
-        long attemptsCompleted = candidateAttemptRepository.countByTenantIdAndSimulationVersionIdAndStatus(
-                tenantId,
+        String empresaId = currentEmpresaService.requiredEmpresaId();
+        long attemptsCreated = candidateAttemptRepository.countByEmpresaIdAndSimulationVersionId(empresaId, versionEntity.getId());
+        long attemptsCompleted = candidateAttemptRepository.countByEmpresaIdAndSimulationVersionIdAndStatus(
+                empresaId,
                 versionEntity.getId(),
                 AttemptStatus.COMPLETED
         );

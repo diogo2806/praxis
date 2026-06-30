@@ -1,11 +1,17 @@
 package br.com.iforce.praxis.dashboard.controller;
 
 import br.com.iforce.praxis.dashboard.dto.DashboardResponse;
+
 import br.com.iforce.praxis.dashboard.service.DashboardService;
+
 import org.springframework.http.ResponseEntity;
+
 import org.springframework.web.bind.annotation.GetMapping;
+
 import org.springframework.web.bind.annotation.RequestMapping;
+
 import org.springframework.web.bind.annotation.RestController;
+
 
 @RestController
 @RequestMapping("/api/v1/dashboard")

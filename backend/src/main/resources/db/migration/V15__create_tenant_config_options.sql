@@ -1,6 +1,6 @@
--- Catalogos configuraveis por tenant (competencias, senioridade, checklist de
+-- Catalogos configuraveis por empresa (competencias, senioridade, checklist de
 -- linguagem, usos do resultado e limites de tempo de resposta).
--- Quando um tenant nao possui linhas para um tipo, o backend devolve os padroes
+-- Quando um empresa nao possui linhas para um tipo, o backend devolve os padroes
 -- embutidos, preservando o comportamento atual sem necessidade de seed.
 -- Compativel com PostgreSQL (prod) e H2 em modo PostgreSQL (testes).
 

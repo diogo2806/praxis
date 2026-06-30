@@ -1,25 +1,44 @@
 package br.com.iforce.praxis.shared.integration;
 
-import br.com.iforce.praxis.auth.persistence.entity.TenantEntity;
-import br.com.iforce.praxis.auth.persistence.repository.TenantRepository;
-import br.com.iforce.praxis.auth.service.CurrentTenantService;
+import br.com.iforce.praxis.auth.persistence.entity.EmpresaEntity;
+
+import br.com.iforce.praxis.auth.persistence.repository.EmpresaRepository;
+
+import br.com.iforce.praxis.auth.service.CurrentEmpresaService;
+
 import br.com.iforce.praxis.shared.integration.dto.IntegrationTokenResponse;
+
 import br.com.iforce.praxis.shared.integration.dto.RotateIntegrationTokenResponse;
+
 import org.springframework.http.HttpStatus;
+
 import org.springframework.stereotype.Service;
+
 import org.springframework.transaction.annotation.Transactional;
+
 import org.springframework.web.server.ResponseStatusException;
 
+
 import java.nio.charset.StandardCharsets;
+
 import java.security.MessageDigest;
+
 import java.security.NoSuchAlgorithmException;
+
 import java.security.SecureRandom;
+
 import java.time.Instant;
+
 import java.util.Base64;
+
 import java.util.List;
+
 import java.util.Map;
+
 import java.util.Set;
+
 import java.util.stream.Collectors;
+
 
 /**
  * Gerencia os tokens de segurança para integração com sistemas externos.
@@ -41,17 +60,17 @@ public class IntegrationTokenAdminService {
     private static final int TOKEN_BYTES = 32;
 
     private final SecureRandom secureRandom = new SecureRandom();
-    private final CurrentTenantService currentTenantService;
-    private final TenantRepository tenantRepository;
+    private final CurrentEmpresaService currentEmpresaService;
+    private final EmpresaRepository empresaRepository;
     private final IntegrationTokenRepository integrationTokenRepository;
 
     public IntegrationTokenAdminService(
-            CurrentTenantService currentTenantService,
-            TenantRepository tenantRepository,
+            CurrentEmpresaService currentEmpresaService,
+            EmpresaRepository empresaRepository,
             IntegrationTokenRepository integrationTokenRepository
     ) {
-        this.currentTenantService = currentTenantService;
-        this.tenantRepository = tenantRepository;
+        this.currentEmpresaService = currentEmpresaService;
+        this.empresaRepository = empresaRepository;
         this.integrationTokenRepository = integrationTokenRepository;
     }
 
@@ -69,9 +88,9 @@ public class IntegrationTokenAdminService {
      */
     @Transactional(readOnly = true)
     public List<IntegrationTokenResponse> listTokens() {
-        String tenantId = currentTenantService.requiredTenantId();
+        String empresaId = currentEmpresaService.requiredEmpresaId();
         Map<String, IntegrationTokenEntity> existing = integrationTokenRepository
-                .findByTenantIdOrderByProviderAsc(tenantId)
+                .findByEmpresaIdOrderByProviderAsc(empresaId)
                 .stream()
                 .collect(Collectors.toMap(IntegrationTokenEntity::getProvider, token -> token, (left, right) -> left));
 
@@ -104,16 +123,16 @@ public class IntegrationTokenAdminService {
     @Transactional
     public RotateIntegrationTokenResponse rotateToken(String provider) {
         String normalizedProvider = normalizeProvider(provider);
-        String tenantId = currentTenantService.requiredTenantId();
-        TenantEntity tenant = tenantRepository.findById(tenantId)
+        String empresaId = currentEmpresaService.requiredEmpresaId();
+        EmpresaEntity empresa = empresaRepository.findById(empresaId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Não encontramos os dados da sua empresa."));
 
         String tokenValue = generateToken();
-        integrationTokenRepository.deleteByTenantIdAndProvider(tenantId, normalizedProvider);
+        integrationTokenRepository.deleteByEmpresaIdAndProvider(empresaId, normalizedProvider);
         integrationTokenRepository.flush();
 
         IntegrationTokenEntity entity = new IntegrationTokenEntity();
-        entity.setTenant(tenant);
+        entity.setEmpresa(empresa);
         entity.setProvider(normalizedProvider);
         entity.setTokenHash(sha256(tokenValue));
         entity.setCreatedAt(Instant.now());
@@ -140,8 +159,8 @@ public class IntegrationTokenAdminService {
     @Transactional
     public void revokeToken(String provider) {
         String normalizedProvider = normalizeProvider(provider);
-        String tenantId = currentTenantService.requiredTenantId();
-        integrationTokenRepository.deleteByTenantIdAndProvider(tenantId, normalizedProvider);
+        String empresaId = currentEmpresaService.requiredEmpresaId();
+        integrationTokenRepository.deleteByEmpresaIdAndProvider(empresaId, normalizedProvider);
     }
 
     /**

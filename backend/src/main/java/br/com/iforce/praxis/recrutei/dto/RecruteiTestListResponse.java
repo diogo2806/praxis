@@ -2,7 +2,9 @@ package br.com.iforce.praxis.recrutei.dto;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 
+
 import java.util.List;
+
 
 /**
  * Uma página da lista de provas publicadas, no formato da Recrutei.

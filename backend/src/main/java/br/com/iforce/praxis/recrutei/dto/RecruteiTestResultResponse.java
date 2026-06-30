@@ -1,9 +1,12 @@
 package br.com.iforce.praxis.recrutei.dto;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+
 import io.swagger.v3.oas.annotations.media.Schema;
 
+
 import java.util.List;
+
 
 /**
  * O resultado completo de uma prova, no formato esperado pela Recrutei.

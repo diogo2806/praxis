@@ -1,9 +1,13 @@
 package br.com.iforce.praxis.audit.model;
 
 import br.com.iforce.praxis.shared.model.DescribedEnum;
+
 import br.com.iforce.praxis.shared.model.DescribedEnums;
+
 import com.fasterxml.jackson.annotation.JsonCreator;
+
 import com.fasterxml.jackson.annotation.JsonValue;
+
 
 /**
  * Disposição registrada por uma pessoa sobre um candidato. É o evento que materializa o

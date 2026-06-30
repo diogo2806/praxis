@@ -1,9 +1,13 @@
 package br.com.iforce.praxis.audit.model;
 
 import br.com.iforce.praxis.shared.model.DescribedEnum;
+
 import br.com.iforce.praxis.shared.model.DescribedEnums;
+
 import com.fasterxml.jackson.annotation.JsonCreator;
+
 import com.fasterxml.jackson.annotation.JsonValue;
+
 
 public enum AuditEventType implements DescribedEnum {
 
@@ -31,11 +35,11 @@ public enum AuditEventType implements DescribedEnum {
     HUMAN_DECISION("humanDecision"),
     REVIEW_REQUESTED("reviewRequested"),
     HEALTH_CONSENT_RECORDED("healthConsentRecorded"),
-    ADMIN_TENANT_CREATED("adminTenantCreated"),
-    ADMIN_TENANT_UPDATED("adminTenantUpdated"),
-    ADMIN_TENANT_SUSPENDED("adminTenantSuspended"),
-    ADMIN_TENANT_REACTIVATED("adminTenantReactivated"),
-    ADMIN_TENANT_CANCELED("adminTenantCanceled"),
+    ADMIN_EMPRESA_CREATED("adminEmpresaCreated"),
+    ADMIN_EMPRESA_UPDATED("adminEmpresaUpdated"),
+    ADMIN_EMPRESA_SUSPENDED("adminEmpresaSuspended"),
+    ADMIN_EMPRESA_REACTIVATED("adminEmpresaReactivated"),
+    ADMIN_EMPRESA_CANCELED("adminEmpresaCanceled"),
     ADMIN_COMMERCIAL_PLAN_CHANGED("adminCommercialPlanChanged"),
     ADMIN_COMMERCIAL_CONDITION_CHANGED("adminCommercialConditionChanged"),
     ADMIN_USER_INVITED("adminUserInvited"),

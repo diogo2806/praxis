@@ -158,7 +158,7 @@ function DashboardHeader({
       <div>
         <div className="text-xs uppercase text-muted-foreground">Práxis / Dashboard</div>
         <h1 className="mt-1 text-3xl font-semibold text-foreground">
-          Olá, {dashboard.tenantName}
+          Olá, {dashboard.empresaName}
         </h1>
         <p className="mt-1 flex items-center gap-2 text-sm text-muted-foreground">
           <CalendarClock className="h-4 w-4" />

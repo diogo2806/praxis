@@ -2,6 +2,7 @@ package br.com.iforce.praxis.recrutei.dto;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 
+
 /**
  * Uma prova publicada, apresentada à Recrutei como item de catálogo.
  *

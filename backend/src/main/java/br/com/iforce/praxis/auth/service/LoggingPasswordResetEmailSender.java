@@ -1,8 +1,11 @@
 package br.com.iforce.praxis.auth.service;
 
 import org.slf4j.Logger;
+
 import org.slf4j.LoggerFactory;
+
 import org.springframework.stereotype.Component;
+
 
 /**
  * Implementação padrão do envio de e-mail de recuperação de senha.

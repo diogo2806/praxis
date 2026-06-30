@@ -1,61 +1,91 @@
 package br.com.iforce.praxis.shared.integration;
 
 import br.com.iforce.praxis.audit.model.AuditEventType;
+
 import br.com.iforce.praxis.audit.service.AuditEventService;
-import br.com.iforce.praxis.auth.persistence.entity.TenantEntity;
-import br.com.iforce.praxis.auth.persistence.repository.TenantRepository;
-import br.com.iforce.praxis.auth.service.CurrentTenantService;
+
+import br.com.iforce.praxis.auth.persistence.entity.EmpresaEntity;
+
+import br.com.iforce.praxis.auth.persistence.repository.EmpresaRepository;
+
+import br.com.iforce.praxis.auth.service.CurrentEmpresaService;
+
 import br.com.iforce.praxis.auth.service.CurrentUserService;
+
 import br.com.iforce.praxis.shared.integration.dto.ConfigureIntegrationRequest;
+
 import br.com.iforce.praxis.shared.integration.dto.GenerateIntegrationTokenResponse;
+
 import br.com.iforce.praxis.shared.integration.dto.IntegrationResponse;
+
 import br.com.iforce.praxis.shared.integration.model.IntegrationAction;
+
 import br.com.iforce.praxis.shared.integration.model.IntegrationProvider;
+
 import br.com.iforce.praxis.shared.integration.model.IntegrationStatus;
-import br.com.iforce.praxis.shared.integration.persistence.entity.TenantIntegrationEntity;
-import br.com.iforce.praxis.shared.integration.persistence.repository.TenantIntegrationRepository;
+
+import br.com.iforce.praxis.shared.integration.persistence.entity.EmpresaIntegrationEntity;
+
+import br.com.iforce.praxis.shared.integration.persistence.repository.EmpresaIntegrationRepository;
+
 import com.fasterxml.jackson.core.JsonProcessingException;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
+
 import org.springframework.http.HttpStatus;
+
 import org.springframework.stereotype.Service;
+
 import org.springframework.transaction.annotation.Transactional;
+
 import org.springframework.web.server.ResponseStatusException;
 
+
 import java.nio.charset.StandardCharsets;
+
 import java.security.MessageDigest;
+
 import java.security.NoSuchAlgorithmException;
+
 import java.time.Instant;
+
 import java.util.Base64;
+
 import java.util.LinkedHashMap;
+
 import java.util.List;
+
 import java.util.Map;
+
 import java.util.function.Function;
+
 import java.util.stream.Collectors;
+
 
 @Service
 public class IntegrationManagementService {
 
-    private final CurrentTenantService currentTenantService;
+    private final CurrentEmpresaService currentEmpresaService;
     private final CurrentUserService currentUserService;
-    private final TenantRepository tenantRepository;
-    private final TenantIntegrationRepository tenantIntegrationRepository;
+    private final EmpresaRepository empresaRepository;
+    private final EmpresaIntegrationRepository empresaIntegrationRepository;
     private final IntegrationTokenAdminService integrationTokenAdminService;
     private final AuditEventService auditEventService;
     private final ObjectMapper objectMapper;
 
     public IntegrationManagementService(
-            CurrentTenantService currentTenantService,
+            CurrentEmpresaService currentEmpresaService,
             CurrentUserService currentUserService,
-            TenantRepository tenantRepository,
-            TenantIntegrationRepository tenantIntegrationRepository,
+            EmpresaRepository empresaRepository,
+            EmpresaIntegrationRepository empresaIntegrationRepository,
             IntegrationTokenAdminService integrationTokenAdminService,
             AuditEventService auditEventService,
             ObjectMapper objectMapper
     ) {
-        this.currentTenantService = currentTenantService;
+        this.currentEmpresaService = currentEmpresaService;
         this.currentUserService = currentUserService;
-        this.tenantRepository = tenantRepository;
-        this.tenantIntegrationRepository = tenantIntegrationRepository;
+        this.empresaRepository = empresaRepository;
+        this.empresaIntegrationRepository = empresaIntegrationRepository;
         this.integrationTokenAdminService = integrationTokenAdminService;
         this.auditEventService = auditEventService;
         this.objectMapper = objectMapper;
@@ -63,11 +93,11 @@ public class IntegrationManagementService {
 
     @Transactional(readOnly = true)
     public List<IntegrationResponse> listIntegrations() {
-        String tenantId = currentTenantService.requiredTenantId();
-        Map<IntegrationProvider, TenantIntegrationEntity> configured = tenantIntegrationRepository
-                .findByTenantIdOrderByProviderAsc(tenantId)
+        String empresaId = currentEmpresaService.requiredEmpresaId();
+        Map<IntegrationProvider, EmpresaIntegrationEntity> configured = empresaIntegrationRepository
+                .findByEmpresaIdOrderByProviderAsc(empresaId)
                 .stream()
-                .collect(Collectors.toMap(TenantIntegrationEntity::getProvider, Function.identity()));
+                .collect(Collectors.toMap(EmpresaIntegrationEntity::getProvider, Function.identity()));
 
         return IntegrationCatalog.definitions().stream()
                 .map(definition -> toResponse(definition, configured.get(definition.provider())))
@@ -76,17 +106,17 @@ public class IntegrationManagementService {
 
     @Transactional
     public IntegrationResponse configure(String provider, ConfigureIntegrationRequest request) {
-        String tenantId = currentTenantService.requiredTenantId();
+        String empresaId = currentEmpresaService.requiredEmpresaId();
         String actorUserId = currentUserService.requiredUserId();
         IntegrationCatalog.Definition definition = IntegrationCatalog.requireDefinition(provider);
-        TenantEntity tenant = tenantRepository.findById(tenantId)
+        EmpresaEntity empresa = empresaRepository.findById(empresaId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Cliente nao encontrado."));
 
-        TenantIntegrationEntity entity = tenantIntegrationRepository
-                .findFirstByTenantIdAndProvider(tenantId, definition.provider())
+        EmpresaIntegrationEntity entity = empresaIntegrationRepository
+                .findFirstByEmpresaIdAndProvider(empresaId, definition.provider())
                 .orElseGet(() -> {
-                    TenantIntegrationEntity created = new TenantIntegrationEntity();
-                    created.setTenant(tenant);
+                    EmpresaIntegrationEntity created = new EmpresaIntegrationEntity();
+                    created.setEmpresa(empresa);
                     created.setProvider(definition.provider());
                     created.setType(definition.type());
                     created.setCreatedAt(Instant.now());
@@ -115,9 +145,9 @@ public class IntegrationManagementService {
         entity.setLastErrorMessage(null);
         entity.setUpdatedAt(now);
 
-        TenantIntegrationEntity saved = tenantIntegrationRepository.save(entity);
+        EmpresaIntegrationEntity saved = empresaIntegrationRepository.save(entity);
         appendAudit(
-                tenantId,
+                empresaId,
                 actorUserId,
                 definition.provider(),
                 previousStatus,
@@ -134,10 +164,10 @@ public class IntegrationManagementService {
 
     @Transactional
     public IntegrationResponse disconnect(String provider) {
-        String tenantId = currentTenantService.requiredTenantId();
+        String empresaId = currentEmpresaService.requiredEmpresaId();
         String actorUserId = currentUserService.requiredUserId();
         IntegrationCatalog.Definition definition = IntegrationCatalog.requireDefinition(provider);
-        TenantIntegrationEntity entity = requireIntegration(tenantId, definition.provider());
+        EmpresaIntegrationEntity entity = requireIntegration(empresaId, definition.provider());
         IntegrationStatus previousStatus = entity.getStatus();
         Instant now = Instant.now();
 
@@ -148,10 +178,10 @@ public class IntegrationManagementService {
         entity.setDisabledAt(now);
         entity.setUpdatedAt(now);
         entity.setLastErrorMessage(null);
-        TenantIntegrationEntity saved = tenantIntegrationRepository.save(entity);
+        EmpresaIntegrationEntity saved = empresaIntegrationRepository.save(entity);
 
         appendAudit(
-                tenantId,
+                empresaId,
                 actorUserId,
                 definition.provider(),
                 previousStatus,
@@ -164,20 +194,20 @@ public class IntegrationManagementService {
 
     @Transactional(readOnly = true)
     public IntegrationResponse getIntegration(String provider) {
-        String tenantId = currentTenantService.requiredTenantId();
+        String empresaId = currentEmpresaService.requiredEmpresaId();
         IntegrationCatalog.Definition definition = IntegrationCatalog.requireDefinition(provider);
-        TenantIntegrationEntity entity = tenantIntegrationRepository
-                .findFirstByTenantIdAndProvider(tenantId, definition.provider())
+        EmpresaIntegrationEntity entity = empresaIntegrationRepository
+                .findFirstByEmpresaIdAndProvider(empresaId, definition.provider())
                 .orElse(null);
         return toResponse(definition, entity);
     }
 
     @Transactional
     public IntegrationResponse reactivate(String provider) {
-        String tenantId = currentTenantService.requiredTenantId();
+        String empresaId = currentEmpresaService.requiredEmpresaId();
         String actorUserId = currentUserService.requiredUserId();
         IntegrationCatalog.Definition definition = IntegrationCatalog.requireDefinition(provider);
-        TenantIntegrationEntity entity = requireIntegration(tenantId, definition.provider());
+        EmpresaIntegrationEntity entity = requireIntegration(empresaId, definition.provider());
 
         if (entity.getStatus() != IntegrationStatus.DESATIVADA) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Integração não está desativada.");
@@ -194,19 +224,19 @@ public class IntegrationManagementService {
         entity.setDisabledAt(null);
         entity.setLastErrorMessage(null);
         entity.setUpdatedAt(now);
-        TenantIntegrationEntity saved = tenantIntegrationRepository.save(entity);
+        EmpresaIntegrationEntity saved = empresaIntegrationRepository.save(entity);
 
-        appendAudit(tenantId, actorUserId, definition.provider(), previousStatus, saved.getStatus(),
+        appendAudit(empresaId, actorUserId, definition.provider(), previousStatus, saved.getStatus(),
                 AuditEventType.INTEGRATION_REACTIVATED, null);
         return toResponse(definition, saved);
     }
 
     @Transactional
     public IntegrationResponse sync(String provider) {
-        String tenantId = currentTenantService.requiredTenantId();
+        String empresaId = currentEmpresaService.requiredEmpresaId();
         String actorUserId = currentUserService.requiredUserId();
         IntegrationCatalog.Definition definition = IntegrationCatalog.requireDefinition(provider);
-        TenantIntegrationEntity entity = requireIntegration(tenantId, definition.provider());
+        EmpresaIntegrationEntity entity = requireIntegration(empresaId, definition.provider());
 
         if (!definition.supportsManualSync()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Este provedor nao suporta sincronizacao manual.");
@@ -217,7 +247,7 @@ public class IntegrationManagementService {
 
         IntegrationStatus previousStatus = entity.getStatus();
         appendAudit(
-                tenantId,
+                empresaId,
                 actorUserId,
                 definition.provider(),
                 previousStatus,
@@ -230,10 +260,10 @@ public class IntegrationManagementService {
         entity.setStatus(IntegrationStatus.CONECTADA);
         entity.setLastErrorMessage(null);
         entity.setUpdatedAt(Instant.now());
-        TenantIntegrationEntity saved = tenantIntegrationRepository.save(entity);
+        EmpresaIntegrationEntity saved = empresaIntegrationRepository.save(entity);
 
         appendAudit(
-                tenantId,
+                empresaId,
                 actorUserId,
                 definition.provider(),
                 previousStatus,
@@ -246,17 +276,17 @@ public class IntegrationManagementService {
 
     @Transactional
     public GenerateIntegrationTokenResponse generateToken(String provider) {
-        String tenantId = currentTenantService.requiredTenantId();
+        String empresaId = currentEmpresaService.requiredEmpresaId();
         String actorUserId = currentUserService.requiredUserId();
         IntegrationCatalog.Definition definition = IntegrationCatalog.requireDefinition(provider);
-        TenantEntity tenant = tenantRepository.findById(tenantId)
+        EmpresaEntity empresa = empresaRepository.findById(empresaId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Cliente nao encontrado."));
 
-        TenantIntegrationEntity entity = tenantIntegrationRepository
-                .findFirstByTenantIdAndProvider(tenantId, definition.provider())
+        EmpresaIntegrationEntity entity = empresaIntegrationRepository
+                .findFirstByEmpresaIdAndProvider(empresaId, definition.provider())
                 .orElseGet(() -> {
-                    TenantIntegrationEntity created = new TenantIntegrationEntity();
-                    created.setTenant(tenant);
+                    EmpresaIntegrationEntity created = new EmpresaIntegrationEntity();
+                    created.setEmpresa(empresa);
                     created.setProvider(definition.provider());
                     created.setType(definition.type());
                     created.setStatus(IntegrationStatus.PENDENTE);
@@ -273,20 +303,20 @@ public class IntegrationManagementService {
         entity.setTokenPreview(preview);
         entity.setConfiguredAt(entity.getConfiguredAt() != null ? entity.getConfiguredAt() : now);
         entity.setUpdatedAt(now);
-        tenantIntegrationRepository.save(entity);
+        empresaIntegrationRepository.save(entity);
 
         AuditEventType auditType = isRotation ? AuditEventType.INTEGRATION_TOKEN_ROTATED : AuditEventType.INTEGRATION_TOKEN_CREATED;
-        appendAudit(tenantId, actorUserId, definition.provider(), entity.getStatus(), entity.getStatus(), auditType, null);
+        appendAudit(empresaId, actorUserId, definition.provider(), entity.getStatus(), entity.getStatus(), auditType, null);
 
         return new GenerateIntegrationTokenResponse(definition.provider().name(), rawToken, preview, now);
     }
 
     @Transactional
     public void revokeProviderToken(String provider) {
-        String tenantId = currentTenantService.requiredTenantId();
+        String empresaId = currentEmpresaService.requiredEmpresaId();
         String actorUserId = currentUserService.requiredUserId();
         IntegrationCatalog.Definition definition = IntegrationCatalog.requireDefinition(provider);
-        TenantIntegrationEntity entity = requireIntegration(tenantId, definition.provider());
+        EmpresaIntegrationEntity entity = requireIntegration(empresaId, definition.provider());
         IntegrationStatus previousStatus = entity.getStatus();
         Instant now = Instant.now();
 
@@ -296,14 +326,14 @@ public class IntegrationManagementService {
         entity.setStatus(IntegrationStatus.DESATIVADA);
         entity.setDisabledAt(now);
         entity.setUpdatedAt(now);
-        tenantIntegrationRepository.save(entity);
+        empresaIntegrationRepository.save(entity);
 
-        appendAudit(tenantId, actorUserId, definition.provider(), previousStatus, IntegrationStatus.DESATIVADA,
+        appendAudit(empresaId, actorUserId, definition.provider(), previousStatus, IntegrationStatus.DESATIVADA,
                 AuditEventType.INTEGRATION_TOKEN_REVOKED, null);
     }
 
-    private TenantIntegrationEntity requireIntegration(String tenantId, IntegrationProvider provider) {
-        return tenantIntegrationRepository.findFirstByTenantIdAndProvider(tenantId, provider)
+    private EmpresaIntegrationEntity requireIntegration(String empresaId, IntegrationProvider provider) {
+        return empresaIntegrationRepository.findFirstByEmpresaIdAndProvider(empresaId, provider)
                 .orElseThrow(() -> new ResponseStatusException(
                         HttpStatus.NOT_FOUND,
                         "Integracao ainda nao configurada para este cliente."
@@ -312,7 +342,7 @@ public class IntegrationManagementService {
 
     private IntegrationResponse toResponse(
             IntegrationCatalog.Definition definition,
-            TenantIntegrationEntity entity
+            EmpresaIntegrationEntity entity
     ) {
         IntegrationStatus status = entity == null ? IntegrationStatus.NAO_CONFIGURADA : entity.getStatus();
         return new IntegrationResponse(
@@ -386,7 +416,7 @@ public class IntegrationManagementService {
     }
 
     private void appendAudit(
-            String tenantId,
+            String empresaId,
             String actorUserId,
             IntegrationProvider provider,
             IntegrationStatus previousStatus,
@@ -395,7 +425,7 @@ public class IntegrationManagementService {
             String error
     ) {
         auditEventService.appendIntegrationEvent(
-                tenantId,
+                empresaId,
                 actorUserId,
                 provider.name(),
                 eventType,
@@ -411,7 +441,7 @@ public class IntegrationManagementService {
             String error
     ) {
         Map<String, Object> metadata = new LinkedHashMap<>();
-        metadata.put("tenantId", currentTenantService.requiredTenantId());
+        metadata.put("empresaId", currentEmpresaService.requiredEmpresaId());
         metadata.put("provider", provider.name());
         metadata.put("statusAnterior", previousStatus.name());
         metadata.put("statusNovo", nextStatus.name());

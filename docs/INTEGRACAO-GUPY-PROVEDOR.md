@@ -25,8 +25,8 @@ O backend nao valida esse token diretamente por uma variavel `PRAXIS_INTEGRATION
 
 1. `GupyAuthService` calcula SHA-256 do token recebido.
 2. O hash e codificado em Base64URL sem padding.
-3. O hash precisa existir em `tenants.integration_token_hash`.
-4. O tenant e o `company_id` sao resolvidos a partir desse registro.
+3. O hash precisa existir em `empresas.integration_token_hash`.
+4. O empresa e o `company_id` sao resolvidos a partir desse registro.
 
 Para configurar localmente:
 
@@ -35,16 +35,16 @@ node -e "const crypto=require('crypto'); console.log(crypto.createHash('sha256')
 ```
 
 ```sql
-UPDATE tenants
+UPDATE empresas
 SET integration_token_hash = '<hash-gerado>'
-WHERE id = 'tenant-1';
+WHERE id = 'empresa-1';
 ```
 
 ## Endpoints
 
 | Metodo | Endpoint | Descricao |
 | --- | --- | --- |
-| `GET` | `/test` | Lista simulacoes publicadas do tenant do token. |
+| `GET` | `/test` | Lista simulacoes publicadas do empresa do token. |
 | `POST` | `/test/candidate` | Cria ou reutiliza tentativa idempotente. |
 | `GET` | `/test/result/{resultId}?company_id={companyId}` | Consulta resultado final escopado por empresa. |
 
@@ -136,8 +136,8 @@ Authorization: Bearer <token>
 O backend valida:
 
 - Bearer token;
-- tenant associado ao hash do token;
-- `company_id` compativel com o tenant;
+- empresa associado ao hash do token;
+- `company_id` compativel com o empresa;
 - existencia do resultado.
 
 ## Fluxo atual
@@ -214,7 +214,7 @@ Nao documentar como implementado:
 ## Checklist de homologacao
 
 - [ ] Definir URL publica real do backend.
-- [ ] Configurar hash do token em `tenants.integration_token_hash`.
+- [ ] Configurar hash do token em `empresas.integration_token_hash`.
 - [ ] Validar `GET /test` com `total_tests` e `payload`.
 - [ ] Validar `POST /test/candidate` com body snake_case.
 - [ ] Verificar se `test_url` atende a expectativa da Gupy para browser/API.

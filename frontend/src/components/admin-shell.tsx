@@ -14,7 +14,7 @@ export function AdminShell({ children }: { children: ReactNode }) {
 
   const navItems = [
     { to: "/admin", label: "Dashboard", icon: LayoutDashboard, exact: true },
-    { to: "/admin/tenants", label: "Clientes", icon: Building2, exact: false },
+    { to: "/admin/empresas", label: "Clientes", icon: Building2, exact: false },
   ];
 
   return (

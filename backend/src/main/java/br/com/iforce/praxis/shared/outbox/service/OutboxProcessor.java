@@ -1,31 +1,56 @@
 package br.com.iforce.praxis.shared.outbox.service;
 
 import br.com.iforce.praxis.gupy.delivery.service.ResultWebhookClient;
+
 import br.com.iforce.praxis.gupy.delivery.service.GupyOutboundUrlValidator;
+
 import br.com.iforce.praxis.gupy.dto.TestResultResponse;
+
 import br.com.iforce.praxis.gupy.model.PublishedSimulation;
+
 import br.com.iforce.praxis.gupy.persistence.entity.CandidateAttemptEntity;
+
 import br.com.iforce.praxis.gupy.persistence.repository.CandidateAttemptRepository;
+
 import br.com.iforce.praxis.gupy.service.GupyTestResultMapper;
+
 import br.com.iforce.praxis.gupy.service.SimulationCatalogService;
+
 import br.com.iforce.praxis.shared.notification.service.ResultDeliveryDlqAlertService;
+
 import br.com.iforce.praxis.shared.outbox.persistence.entity.OutboxEventEntity;
+
 import br.com.iforce.praxis.shared.outbox.persistence.repository.OutboxEventRepository;
+
 import com.fasterxml.jackson.databind.DeserializationFeature;
+
 import com.fasterxml.jackson.databind.JsonNode;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
+
 import lombok.extern.slf4j.Slf4j;
+
 import org.springframework.http.HttpStatus;
+
 import org.springframework.stereotype.Component;
+
 import org.springframework.transaction.PlatformTransactionManager;
+
 import org.springframework.transaction.support.TransactionTemplate;
+
 import org.springframework.web.client.RestClientResponseException;
+
 import org.springframework.web.server.ResponseStatusException;
 
+
 import java.util.List;
+
 import java.util.Optional;
+
 import java.time.Duration;
+
 import java.time.Instant;
+
 
 /**
  * Processa e entrega eventos armazenados na fila do outbox.
@@ -119,11 +144,11 @@ public class OutboxProcessor {
      * da empresa informada. Usado quando se quer reprocessar eventos de uma
      * empresa em particular ou disparar processamento sob demanda.
      *
-     * @param tenantId A empresa cujos eventos serão processados
+     * @param empresaId A empresa cujos eventos serão processados
      * @return Quantidade de eventos que foram processados
      */
-    public int processReadyEventsForTenant(String tenantId) {
-        List<Long> claimedIds = claimBatchForTenant(tenantId);
+    public int processReadyEventsForEmpresa(String empresaId) {
+        List<Long> claimedIds = claimBatchForEmpresa(empresaId);
         for (Long id : claimedIds) {
             deliverAndFinalize(id);
         }
@@ -140,11 +165,11 @@ public class OutboxProcessor {
      * Se o evento já foi entregue com sucesso, ignora o reprocessamento.
      *
      * @param eventId ID do evento a reprocessar
-     * @param tenantId A empresa que o evento pertence (para isolamento de dados)
+     * @param empresaId A empresa que o evento pertence (para isolamento de dados)
      */
-    public void reprocessEvent(Long eventId, String tenantId) {
+    public void reprocessEvent(Long eventId, String empresaId) {
         Long claimedId = txTemplate.execute(status -> {
-            OutboxEventEntity event = outboxEventRepository.findByIdAndTenantId(eventId, tenantId)
+            OutboxEventEntity event = outboxEventRepository.findByIdAndEmpresaId(eventId, empresaId)
                     .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Evento de entrega não encontrado."));
             if (event.getStatus() == OutboxEventEntity.OutboxEventStatus.SENT) {
                 return null;
@@ -172,11 +197,11 @@ public class OutboxProcessor {
         });
     }
 
-    /** TX CURTA por tenant: trava e marca PROCESSING. */
-    private List<Long> claimBatchForTenant(String tenantId) {
+    /** TX CURTA por empresa: trava e marca PROCESSING. */
+    private List<Long> claimBatchForEmpresa(String empresaId) {
         return txTemplate.execute(status -> {
-            List<OutboxEventEntity> batch = outboxEventRepository.claimReadyBatchForTenant(
-                tenantId,
+            List<OutboxEventEntity> batch = outboxEventRepository.claimReadyBatchForEmpresa(
+                empresaId,
                 readyStatuses(),
                 Instant.now(),
                 stuckBefore(),
@@ -251,7 +276,7 @@ public class OutboxProcessor {
         if (testResult == null) {
             // Migrated event: need to fetch test result from database
             String attemptId = payload.get("attemptId").asText();
-            testResult = fetchTestResult(attemptId, event.getTenantId());
+            testResult = fetchTestResult(attemptId, event.getEmpresaId());
         }
 
         outboundUrlValidator.validate(webhookUrl);
@@ -273,8 +298,8 @@ public class OutboxProcessor {
         resultWebhookClient.postPayload(webhookUrl, eventPayload);
     }
 
-    private TestResultResponse fetchTestResult(String attemptId, String tenantId) {
-        Optional<CandidateAttemptEntity> attempt = candidateAttemptRepository.findByTenantIdAndId(tenantId, attemptId);
+    private TestResultResponse fetchTestResult(String attemptId, String empresaId) {
+        Optional<CandidateAttemptEntity> attempt = candidateAttemptRepository.findByEmpresaIdAndId(empresaId, attemptId);
         if (attempt.isEmpty()) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Item não encontrado.");
         }
@@ -300,7 +325,7 @@ public class OutboxProcessor {
                     .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Não encontramos esta versão do teste."));
         }
 
-        return simulationCatalogService.findPublishedById(candidateAttemptEntity.getTenantId(), candidateAttemptEntity.getSimulationId())
+        return simulationCatalogService.findPublishedById(candidateAttemptEntity.getEmpresaId(), candidateAttemptEntity.getSimulationId())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Não encontramos o teste publicado."));
     }
 
@@ -324,7 +349,7 @@ public class OutboxProcessor {
             event.setStatus(OutboxEventEntity.OutboxEventStatus.DLQ);
             event.setNextAttemptAt(null);
             log.error("Evento {} movido para DLQ após {} tentativas", event.getId(), event.getAttempts());
-            dlqAlertService.alertTenantAdmins(event);
+            dlqAlertService.alertEmpresaAdmins(event);
             return;
         }
 

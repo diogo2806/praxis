@@ -1,9 +1,12 @@
 package br.com.iforce.praxis.audit.dto;
 
 import br.com.iforce.praxis.audit.model.AuditEventType;
+
 import io.swagger.v3.oas.annotations.media.Schema;
 
+
 import java.time.Instant;
+
 
 @Schema(description = "Evento de auditoria operacional registrado em trilha cronologica.")
 public record AuditEventResponse(

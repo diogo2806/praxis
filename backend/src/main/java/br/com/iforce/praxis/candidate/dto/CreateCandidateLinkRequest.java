@@ -1,10 +1,14 @@
 package br.com.iforce.praxis.candidate.dto;
 
 import io.swagger.v3.oas.annotations.media.Schema;
+
 import jakarta.validation.constraints.Email;
+
 import jakarta.validation.constraints.NotBlank;
 
+
 import java.math.BigDecimal;
+
 
 @Schema(description = "Pedido da empresa para gerar link de simulacao para um candidato.")
 public record CreateCandidateLinkRequest(

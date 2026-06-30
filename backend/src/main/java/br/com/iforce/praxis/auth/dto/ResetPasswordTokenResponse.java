@@ -2,6 +2,7 @@ package br.com.iforce.praxis.auth.dto;
 
 import java.time.Instant;
 
+
 /**
  * Resposta da validação de um token de recuperação de senha.
  *

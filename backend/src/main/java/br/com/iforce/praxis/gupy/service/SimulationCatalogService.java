@@ -1,18 +1,30 @@
 package br.com.iforce.praxis.gupy.service;
 
 import br.com.iforce.praxis.gupy.model.PublishedSimulation;
+
 import br.com.iforce.praxis.gupy.model.ScenarioNode;
+
 import br.com.iforce.praxis.simulation.model.SimulationVersionStatus;
+
 import br.com.iforce.praxis.simulation.persistence.repository.SimulationVersionRepository;
+
 import br.com.iforce.praxis.simulation.service.SimulationMapperService;
+
 import org.springframework.stereotype.Service;
+
 import org.springframework.transaction.annotation.Transactional;
 
+
 import java.util.LinkedHashMap;
+
 import java.util.List;
+
 import java.util.Locale;
+
 import java.util.Map;
+
 import java.util.Optional;
+
 
 /**
  * Catálogo de consulta das provas (simulações) publicadas de cada empresa.
@@ -38,16 +50,16 @@ public class SimulationCatalogService {
     }
 
     /**
-     * Lista as simulações publicadas do tenant, com no máximo uma versão por simulação
+     * Lista as simulações publicadas do empresa, com no máximo uma versão por simulação
      * (a publicada mais recente), evitando duplicidade quando há histórico de versões publicadas.
      */
     @Transactional(readOnly = true)
-    public List<PublishedSimulation> findPublished(String tenantId) {
+    public List<PublishedSimulation> findPublished(String empresaId) {
         Map<String, PublishedSimulation> latestBySimulationId = new LinkedHashMap<>();
 
         simulationVersionRepository
-                .findBySimulationTenantIdAndStatusOrderByPublishedAtDesc(
-                        tenantId,
+                .findBySimulationEmpresaIdAndStatusOrderByPublishedAtDesc(
+                        empresaId,
                         SimulationVersionStatus.PUBLISHED
                 )
                 .stream()
@@ -62,18 +74,18 @@ public class SimulationCatalogService {
      *
      * <p>A busca considera o identificador, o nome e a descrição da prova.</p>
      *
-     * @param tenantId empresa dona das provas
+     * @param empresaId empresa dona das provas
      * @param searchString texto opcional de busca
      * @param offset a partir de qual posição começar (paginação)
      * @param limit quantas provas trazer
      * @return a página de provas publicadas que atendem ao filtro
      */
     @Transactional(readOnly = true)
-    public List<PublishedSimulation> findPublished(String tenantId, String searchString, int offset, int limit) {
+    public List<PublishedSimulation> findPublished(String empresaId, String searchString, int offset, int limit) {
         int normalizedOffset = Math.max(offset, 0);
         int normalizedLimit = Math.max(limit, 1);
 
-        return filteredPublished(tenantId, searchString).stream()
+        return filteredPublished(empresaId, searchString).stream()
                 .skip(normalizedOffset)
                 .limit(normalizedLimit)
                 .toList();
@@ -84,27 +96,27 @@ public class SimulationCatalogService {
      *
      * <p>Usado para informar o total ao paginar a listagem.</p>
      *
-     * @param tenantId empresa dona das provas
+     * @param empresaId empresa dona das provas
      * @param searchString texto opcional de busca
      * @return o total de provas publicadas que atendem ao filtro
      */
     @Transactional(readOnly = true)
-    public int countPublished(String tenantId, String searchString) {
-        return filteredPublished(tenantId, searchString).size();
+    public int countPublished(String empresaId, String searchString) {
+        return filteredPublished(empresaId, searchString).size();
     }
 
     /**
      * Localiza uma prova publicada pela sua versão publicada mais recente.
      *
-     * @param tenantId empresa dona da prova
+     * @param empresaId empresa dona da prova
      * @param simulationId identificador da prova
      * @return a prova publicada, se existir
      */
     @Transactional(readOnly = true)
-    public Optional<PublishedSimulation> findPublishedById(String tenantId, String simulationId) {
+    public Optional<PublishedSimulation> findPublishedById(String empresaId, String simulationId) {
         return simulationVersionRepository
-                .findBySimulationTenantIdAndSimulationIdAndStatusOrderByPublishedAtDesc(
-                        tenantId,
+                .findBySimulationEmpresaIdAndSimulationIdAndStatusOrderByPublishedAtDesc(
+                        empresaId,
                         simulationId,
                         SimulationVersionStatus.PUBLISHED
                 )
@@ -141,9 +153,9 @@ public class SimulationCatalogService {
                 .findFirst();
     }
 
-    private List<PublishedSimulation> filteredPublished(String tenantId, String searchString) {
+    private List<PublishedSimulation> filteredPublished(String empresaId, String searchString) {
         String normalizedSearch = normalize(searchString);
-        return findPublished(tenantId).stream()
+        return findPublished(empresaId).stream()
                 .filter(simulation -> normalizedSearch.isBlank()
                         || normalize(simulation.id()).contains(normalizedSearch)
                         || normalize(simulation.name()).contains(normalizedSearch)

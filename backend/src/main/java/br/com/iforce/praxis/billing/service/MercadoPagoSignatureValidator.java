@@ -1,14 +1,22 @@
 package br.com.iforce.praxis.billing.service;
 
 import br.com.iforce.praxis.billing.config.MercadoPagoProperties;
+
 import org.slf4j.Logger;
+
 import org.slf4j.LoggerFactory;
+
 import org.springframework.stereotype.Component;
 
+
 import javax.crypto.Mac;
+
 import javax.crypto.spec.SecretKeySpec;
+
 import java.nio.charset.StandardCharsets;
+
 import java.util.HexFormat;
+
 
 /**
  * Valida a assinatura {@code x-signature} dos webhooks do Mercado Pago.

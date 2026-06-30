@@ -1,19 +1,25 @@
 package br.com.iforce.praxis.auth.service;
 
 import org.springframework.beans.factory.annotation.Value;
+
 import org.springframework.stereotype.Component;
 
+
 import java.time.Duration;
+
 import java.time.Instant;
+
 import java.util.Map;
+
 import java.util.concurrent.ConcurrentHashMap;
+
 
 /**
  * Limitador de tentativas em memória para o fluxo de recuperação de senha.
  *
  * <p>Protege os endpoints públicos contra abuso (varredura de e-mails e força bruta de tokens)
  * aplicando uma janela fixa de contagem por chave — tipicamente o IP de origem ou a identidade do
- * usuário ({@code tenant|email}). O bloqueio nunca revela se uma conta existe: a contagem é feita
+ * usuário ({@code empresa|email}). O bloqueio nunca revela se uma conta existe: a contagem é feita
  * sobre o que foi enviado, não sobre o resultado da busca.</p>
  *
  * <p>A contagem é propositalmente simples e local ao processo; para múltiplas instâncias, troque por
@@ -37,7 +43,7 @@ public class PasswordResetRateLimiter {
     /**
      * Registra mais uma tentativa para a chave e indica se ela está dentro do limite.
      *
-     * @param key identificador da origem (IP ou {@code tenant|email})
+     * @param key identificador da origem (IP ou {@code empresa|email})
      * @return {@code true} se a tentativa é permitida; {@code false} se o limite foi excedido
      */
     public boolean tryAcquire(String key) {

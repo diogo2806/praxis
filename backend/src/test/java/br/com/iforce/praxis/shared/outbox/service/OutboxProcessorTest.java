@@ -1,31 +1,55 @@
 package br.com.iforce.praxis.shared.outbox.service;
 
 import br.com.iforce.praxis.gupy.delivery.service.GupyOutboundUrlValidator;
+
 import br.com.iforce.praxis.gupy.delivery.service.ResultWebhookClient;
+
 import br.com.iforce.praxis.gupy.dto.TestResultResponse;
+
 import br.com.iforce.praxis.gupy.model.PublishedSimulation;
+
 import br.com.iforce.praxis.gupy.persistence.entity.CandidateAttemptEntity;
+
 import br.com.iforce.praxis.gupy.persistence.repository.CandidateAttemptRepository;
+
 import br.com.iforce.praxis.gupy.service.GupyTestResultMapper;
+
 import br.com.iforce.praxis.gupy.service.SimulationCatalogService;
+
 import br.com.iforce.praxis.shared.notification.service.ResultDeliveryDlqAlertService;
+
 import br.com.iforce.praxis.shared.outbox.persistence.entity.OutboxEventEntity;
+
 import br.com.iforce.praxis.shared.outbox.persistence.repository.OutboxEventRepository;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
+
 import org.junit.jupiter.api.BeforeEach;
+
 import org.junit.jupiter.api.Test;
+
 import org.junit.jupiter.api.extension.ExtendWith;
+
 import org.mockito.ArgumentCaptor;
+
 import org.mockito.Mock;
+
 import org.mockito.junit.jupiter.MockitoExtension;
+
 import org.springframework.transaction.PlatformTransactionManager;
+
 import org.springframework.web.client.RestClientResponseException;
 
+
 import java.time.Instant;
+
 import java.util.List;
+
 import java.util.Optional;
 
+
 import static org.assertj.core.api.Assertions.assertThat;
+
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
@@ -124,7 +148,7 @@ class OutboxProcessorTest {
 
         assertThat(event.getStatus()).isEqualTo(OutboxEventEntity.OutboxEventStatus.DLQ);
         assertThat(event.getNextAttemptAt()).isNull();
-        verify(dlqAlertService).alertTenantAdmins(event);
+        verify(dlqAlertService).alertEmpresaAdmins(event);
     }
 
     @Test
@@ -139,7 +163,7 @@ class OutboxProcessorTest {
 
         assertThat(event.getStatus()).isEqualTo(OutboxEventEntity.OutboxEventStatus.DLQ);
         assertThat(event.getNextAttemptAt()).isNull();
-        verify(dlqAlertService).alertTenantAdmins(event);
+        verify(dlqAlertService).alertEmpresaAdmins(event);
     }
 
     @Test
@@ -173,7 +197,7 @@ class OutboxProcessorTest {
     void shouldFetchTestResultForMigratedEvent() {
         OutboxEventEntity event = new OutboxEventEntity();
         event.setId(2L);
-        event.setTenantId("tenant-1");
+        event.setEmpresaId("empresa-1");
         event.setEventType("RESULT_READY");
         event.setAggregateType("CandidateAttempt");
         event.setAggregateId("att_123");
@@ -188,7 +212,7 @@ class OutboxProcessorTest {
         TestResultResponse testResult = mock(TestResultResponse.class);
 
         givenClaimed(event);
-        when(candidateAttemptRepository.findByTenantIdAndId("tenant-1", "att_123"))
+        when(candidateAttemptRepository.findByEmpresaIdAndId("empresa-1", "att_123"))
             .thenReturn(Optional.of(attempt));
         when(simulationCatalogService.findByVersionId(100L))
             .thenReturn(Optional.of(simulation));
@@ -206,7 +230,7 @@ class OutboxProcessorTest {
     void shouldPostAttemptEngagementEventPayload() {
         OutboxEventEntity event = new OutboxEventEntity();
         event.setId(3L);
-        event.setTenantId("tenant-1");
+        event.setEmpresaId("empresa-1");
         event.setEventType("ATTEMPT_STARTED");
         event.setAggregateType("CandidateAttempt");
         event.setAggregateId("att_123");
@@ -260,7 +284,7 @@ class OutboxProcessorTest {
     private OutboxEventEntity createPendingEvent() {
         OutboxEventEntity event = new OutboxEventEntity();
         event.setId(1L);
-        event.setTenantId("tenant-1");
+        event.setEmpresaId("empresa-1");
         event.setEventType("RESULT_READY");
         event.setAggregateType("CandidateAttempt");
         event.setAggregateId("att_123");

@@ -19,7 +19,7 @@ em `backend/src/main/resources/db/migration` e a `backend/src/main/resources/app
 
 ### 2.1 Visão geral
 
-O Práxis é uma plataforma multi-tenant de avaliação comportamental determinística. RH/Empresa cria
+O Práxis é uma plataforma multi-empresa de avaliação comportamental determinística. RH/Empresa cria
 simulações situacionais, publica versões imutáveis e aplica em candidatos por link interno ou por
 integração com ATS (Gupy, Recrutei). O score é calculado de forma determinística por alternativa
 escolhida, competência e peso — não há IA julgando candidato.
@@ -45,16 +45,16 @@ Pacote base `br.com.iforce.praxis`:
 
 | Módulo | Responsabilidade |
 | --- | --- |
-| `auth` | Login, JWT, tenant e roles. |
+| `auth` | Login, JWT, empresa e roles. |
 | `account` | Conta do próprio usuário (`/me`, troca de senha). |
-| `admin` | Painel da plataforma (role `ADMIN`): cadastro e governança de tenants, usuários, uso e auditoria. |
+| `admin` | Painel da plataforma (role `ADMIN`): cadastro e governança de empresas, usuários, uso e auditoria. |
 | `billing` | Cobrança Mercado Pago (Parte B); webhook público, ledger e planos. Desligado por padrão. |
 | `simulation` | Criação, versões, grafo, validação, publicação, monitoramento e Talent Match. |
 | `candidate` | Fluxo público do candidato e links internos. |
 | `gupy` | Contrato externo `/test/**` (provedor de testes da Gupy). |
 | `recrutei` | Contrato externo `/recrutei/test/**` (provedor de testes da Recrutei). |
-| `companyprofile` | Perfil da empresa do tenant. |
-| `tenantconfig` | Catálogos configuráveis por tenant. |
+| `companyprofile` | Perfil da empresa do empresa. |
+| `empresaconfig` | Catálogos configuráveis por empresa. |
 | `media` | Upload de imagem/áudio para nós e alternativas (Object Storage). |
 | `term` | Aceite de termos. |
 | `audit` | Trilha de eventos append-only. |
@@ -63,19 +63,19 @@ Pacote base `br.com.iforce.praxis`:
 ### 2.3 Fluxo de requisições
 
 1. O frontend (SSR/proxy) ou o ATS chama o backend em `http://<host>:8080` (sem context path; raiz `/`).
-2. `JwtAuthenticationFilter` resolve autenticação e tenant antes das regras do Spring Security.
+2. `JwtAuthenticationFilter` resolve autenticação e empresa antes das regras do Spring Security.
 3. O `SecurityConfig` decide rota pública × protegida e qual role é exigida.
-4. O contexto de tenant isola simulações, tentativas, auditoria, mídia e entregas.
+4. O contexto de empresa isola simulações, tentativas, auditoria, mídia e entregas.
 5. Escritas relevantes geram evento de auditoria append-only; resultados externos vão ao outbox.
 
 ### 2.4 Autenticação
 
 - **Usuários internos (ADMIN, EMPRESA):** `POST /api/v1/auth/login` retorna JWT (assinado com
-  `PRAXIS_JWT_SECRET`, expiração `PRAXIS_JWT_EXPIRATION_HOURS`, padrão 8h). O token carrega tenant e roles.
+  `PRAXIS_JWT_SECRET`, expiração `PRAXIS_JWT_EXPIRATION_HOURS`, padrão 8h). O token carrega empresa e roles.
 - **Convite:** `POST /api/v1/auth/invite/accept` cria a senha e ativa o usuário convidado.
 - **Candidato:** sem usuário; usa token de tentativa (`attemptToken`) em rotas `/candidate/**`.
 - **Integração ATS (`/test/**`, `/recrutei/test/**`):** Bearer token de integração; o backend compara
-  o SHA-256 Base64URL do token com `tenants.integration_token_hash` (Gupy) ou o hash da Recrutei.
+  o SHA-256 Base64URL do token com `empresas.integration_token_hash` (Gupy) ou o hash da Recrutei.
 - **Webhook Mercado Pago (`/api/webhooks/mercado-pago/**`):** público, validado por assinatura
   `x-signature` no próprio handler, sem JWT.
 
@@ -86,21 +86,21 @@ sequenceDiagram
   participant API as Backend
   U->>FE: credenciais
   FE->>API: POST /api/v1/auth/login
-  API->>API: valida BCrypt + status do usuário/tenant
-  API-->>FE: JWT (tenant + roles)
+  API->>API: valida BCrypt + status do usuário/empresa
+  API-->>FE: JWT (empresa + roles)
   FE->>API: chamadas com Authorization: Bearer <jwt>
-  API->>API: JwtAuthenticationFilter resolve tenant/roles
-  API-->>FE: resposta isolada por tenant
+  API->>API: JwtAuthenticationFilter resolve empresa/roles
+  API-->>FE: resposta isolada por empresa
 ```
 
-### 2.5 Multi-tenant
+### 2.5 Multi-empresa
 
-- Cada cliente é um `TenantEntity` (não existe `CustomerEntity`). Cliente = tenant.
-- O tenant técnico `PLATFORM` hospeda os operadores `ADMIN`.
-- Com `PRAXIS_SECURITY_ENABLED=true`, o tenant vem do JWT (interno) ou do token de integração (ATS).
-- Com `PRAXIS_SECURITY_ENABLED=false`, todas as rotas ficam liberadas e o tenant usado é
-  `PRAXIS_DEFAULT_TENANT_ID` (padrão `tenant-1`). **Use `false` apenas em desenvolvimento.**
-- `TenantStatus.SUSPENSO` e `CANCELADO` bloqueiam autenticação e APIs protegidas; `SEM_CREDITO` e
+- Cada cliente é um `EmpresaEntity` (não existe `CustomerEntity`). Cliente = empresa.
+- O empresa técnico `PLATFORM` hospeda os operadores `ADMIN`.
+- Com `PRAXIS_SECURITY_ENABLED=true`, o empresa vem do JWT (interno) ou do token de integração (ATS).
+- Com `PRAXIS_SECURITY_ENABLED=false`, todas as rotas ficam liberadas e o empresa usado é
+  `PRAXIS_DEFAULT_EMPRESA_ID` (padrão `empresa-1`). **Use `false` apenas em desenvolvimento.**
+- `EmpresaStatus.SUSPENSO` e `CANCELADO` bloqueiam autenticação e APIs protegidas; `SEM_CREDITO` e
   `INADIMPLENTE` não bloqueiam login/API.
 
 ### 2.6 Integrações externas
@@ -227,7 +227,7 @@ Para cada uma: finalidade, se é obrigatória, valor padrão e exemplo.
 | `praxis.public-base-url` | `PRAXIS_PUBLIC_BASE_URL` | Base pública usada em links e resultados | Sim (prod) | `http://localhost:8080` | `https://app.praxis.com.br` |
 | `praxis.candidate-page-base-url` | `PRAXIS_CANDIDATE_PAGE_BASE_URL` | Base pública do fluxo do candidato | Não | herda `public-base-url` | `https://app.praxis.com.br` |
 | `praxis.security.enabled` | `PRAXIS_SECURITY_ENABLED` | Liga/desliga segurança interna (JWT) | Não | `true` | `true` |
-| `praxis.default-tenant-id` | `PRAXIS_DEFAULT_TENANT_ID` | Tenant usado quando segurança está desligada | Não | `tenant-1` | `tenant-1` |
+| `praxis.default-empresa-id` | `PRAXIS_DEFAULT_EMPRESA_ID` | Empresa usado quando segurança está desligada | Não | `empresa-1` | `empresa-1` |
 | `praxis.jwt-secret` | `PRAXIS_JWT_SECRET` | Segredo de assinatura do JWT | Sim | — (sem padrão) | string longa e aleatória |
 | `praxis.jwt-expiration-hours` | `PRAXIS_JWT_EXPIRATION_HOURS` | Validade do JWT em horas | Não | `8` | `8` |
 | `praxis.cors.allowed-origins` | `PRAXIS_CORS_ALLOWED_ORIGINS` | Origens liberadas no CORS (lista por vírgula) | Não | localhost dev | `https://app.praxis.com.br` |
@@ -243,11 +243,11 @@ Para cada uma: finalidade, se é obrigatória, valor padrão e exemplo.
 | Propriedade | Env | Finalidade | Obrigatória | Padrão | Exemplo |
 | --- | --- | --- | --- | --- | --- |
 | `praxis.admin.invite-ttl-hours` | `PRAXIS_ADMIN_INVITE_TTL_HOURS` | TTL do convite emitido pelo ADMIN | Não | `168` | `72` |
-| `praxis.admin.bootstrap.email` | `PRAXIS_ADMIN_BOOTSTRAP_EMAIL` | E-mail do operador ADMIN inicial (tenant PLATFORM) | Não (recomendado no 1º deploy) | vazio | `admin@praxis.com.br` |
+| `praxis.admin.bootstrap.email` | `PRAXIS_ADMIN_BOOTSTRAP_EMAIL` | E-mail do operador ADMIN inicial (empresa PLATFORM) | Não (recomendado no 1º deploy) | vazio | `admin@praxis.com.br` |
 | `praxis.admin.bootstrap.password` | `PRAXIS_ADMIN_BOOTSTRAP_PASSWORD` | Senha do operador ADMIN inicial | Não (par com email) | vazio | senha forte |
 | `praxis.admin.bootstrap.name` | `PRAXIS_ADMIN_BOOTSTRAP_NAME` | Nome do operador ADMIN inicial | Não | `Operador da plataforma` | `Operação Práxis` |
 
-O bootstrap é **idempotente**: só cria o ADMIN se email e senha estiverem preenchidos, o tenant
+O bootstrap é **idempotente**: só cria o ADMIN se email e senha estiverem preenchidos, o empresa
 `PLATFORM` existir e ainda não houver usuário com aquele e-mail. As credenciais ficam **apenas** em
 variáveis de ambiente.
 
@@ -302,30 +302,30 @@ variáveis de ambiente.
 O backend tem dois papéis (`roles`) reais no `SecurityConfig`: `ADMIN` e `EMPRESA`. O candidato não
 é usuário (acessa por token de tentativa).
 
-### ADMIN (operador da plataforma — tenant `PLATFORM`)
+### ADMIN (operador da plataforma — empresa `PLATFORM`)
 
 Painel em `/api/admin/**`. Pode:
 
-- Criar clientes (tenants) — `POST /api/admin/tenants`.
-- Atualizar dados/condições comerciais — `PATCH /api/admin/tenants/{tenantId}`.
-- Suspender — `POST /api/admin/tenants/{tenantId}/suspend`.
-- Reativar — `POST /api/admin/tenants/{tenantId}/reactivate`.
-- Cancelar — `POST /api/admin/tenants/{tenantId}/cancel`.
-- Consultar uso — `GET /api/admin/tenants/{tenantId}/usage` e `GET /api/admin/dashboard`.
-- Visualizar auditoria — `GET /api/admin/audit`, `GET /api/admin/tenants/{tenantId}/audit`.
-- Gerir usuários do tenant — convidar, reenviar convite, bloquear, desbloquear
-  (`/api/admin/tenants/{tenantId}/users/**`).
-- Gerir billing do tenant (Parte B) — `/api/admin/tenants/{tenantId}/billing/**`.
+- Criar clientes (empresas) — `POST /api/admin/empresas`.
+- Atualizar dados/condições comerciais — `PATCH /api/admin/empresas/{empresaId}`.
+- Suspender — `POST /api/admin/empresas/{empresaId}/suspend`.
+- Reativar — `POST /api/admin/empresas/{empresaId}/reactivate`.
+- Cancelar — `POST /api/admin/empresas/{empresaId}/cancel`.
+- Consultar uso — `GET /api/admin/empresas/{empresaId}/usage` e `GET /api/admin/dashboard`.
+- Visualizar auditoria — `GET /api/admin/audit`, `GET /api/admin/empresas/{empresaId}/audit`.
+- Gerir usuários do empresa — convidar, reenviar convite, bloquear, desbloquear
+  (`/api/admin/empresas/{empresaId}/users/**`).
+- Gerir billing do empresa (Parte B) — `/api/admin/empresas/{empresaId}/billing/**`.
 
-### EMPRESA (administra o próprio tenant)
+### EMPRESA (administra o próprio empresa)
 
 Rotas `/api/v1/**`. Pode:
 
-- Administrar o próprio tenant (`/api/v1/tenant-config/**`, `/api/v1/company-profile/**`).
+- Administrar o próprio empresa (`/api/v1/empresa-config/**`, `/api/v1/company-profile/**`).
 - Criar e publicar avaliações (`/api/v1/simulations/**`).
 - Gerir a própria conta (`/api/v1/account/me`, troca de senha).
 - Criar links e convidar candidatos (`/api/v1/candidate-links/**`).
-- Consultar resultados, monitoramento, Talent Match e auditoria do tenant (`/api/v1/audit/**`).
+- Consultar resultados, monitoramento, Talent Match e auditoria do empresa (`/api/v1/audit/**`).
 - Operar entregas/DLQ (`/api/v1/gupy/result-deliveries/**`, `/api/v1/notifications/**`).
 
 ### Estados do usuário (`UserStatus`)
@@ -339,9 +339,9 @@ convite e criar senha.
 
 ### 6.1 Cadastro de cliente
 
-1. ADMIN cria o tenant (`POST /api/admin/tenants`) → estado inicial `EM_TESTE`/`ATIVO`.
-2. Cria o responsável (usuário EMPRESA) do tenant.
-3. Envia o convite (`/api/admin/tenants/{tenantId}/users/invite`) com TTL `praxis.admin.invite-ttl-hours`.
+1. ADMIN cria o empresa (`POST /api/admin/empresas`) → estado inicial `EM_TESTE`/`ATIVO`.
+2. Cria o responsável (usuário EMPRESA) do empresa.
+3. Envia o convite (`/api/admin/empresas/{empresaId}/users/invite`) com TTL `praxis.admin.invite-ttl-hours`.
 4. Cliente aceita o convite (`POST /api/v1/auth/invite/accept`) e cria a senha.
 5. Primeiro login (`POST /api/v1/auth/login`).
 
@@ -352,7 +352,7 @@ Criar (ADMIN) → Enviar (e-mail/link com token + TTL) → Aceitar (/auth/invite
 → Criar senha → Primeiro acesso (status passa de CONVIDADO para ATIVO)
 ```
 
-Reenvio: `POST /api/admin/tenants/{tenantId}/users/{userId}/resend-invite` (gera novo TTL).
+Reenvio: `POST /api/admin/empresas/{empresaId}/users/{userId}/resend-invite` (gera novo TTL).
 
 ### 6.3 Recuperação de senha
 
@@ -371,8 +371,8 @@ o job `MP_DELINQUENCY_CRON` aplica a carência de inadimplência.
 ### 6.5 Suspensão
 
 ```text
-Suspender (POST /tenants/{id}/suspend, com motivo) → Status = SUSPENSO (bloqueia login e API)
-→ Evento de auditoria ADMIN_TENANT_SUSPENDED → Reativação (POST /tenants/{id}/reactivate)
+Suspender (POST /empresas/{id}/suspend, com motivo) → Status = SUSPENSO (bloqueia login e API)
+→ Evento de auditoria ADMIN_EMPRESA_SUSPENDED → Reativação (POST /empresas/{id}/reactivate)
 ```
 
 Motivos comuns: inadimplência confirmada, violação de termos, solicitação do cliente.
@@ -380,8 +380,8 @@ Motivos comuns: inadimplência confirmada, violação de termos, solicitação d
 ### 6.6 Cancelamento
 
 ```text
-Cancelar (POST /tenants/{id}/cancel, com motivo) → Status = CANCELADO (sem acesso ativo)
-→ Dados/histórico preservados → Evento de auditoria ADMIN_TENANT_CANCELED
+Cancelar (POST /empresas/{id}/cancel, com motivo) → Status = CANCELADO (sem acesso ativo)
+→ Dados/histórico preservados → Evento de auditoria ADMIN_EMPRESA_CANCELED
 ```
 
 O cancelamento **preserva os dados** (não há exclusão física) e registra auditoria.
@@ -393,15 +393,15 @@ O cancelamento **preserva os dados** (não há exclusão física) e registra aud
 - **Quais eventos:** ciclo de simulação (rascunho, blueprint, nós, alternativas, submissão, aprovação,
   clone, publicação, arquivamento), tentativa (criada, iniciada, abandonada, expirada, resposta,
   concluída, anonimizada), decisão humana, consentimento de saúde e ações administrativas
-  (`ADMIN_TENANT_CREATED/UPDATED/SUSPENDED/REACTIVATED/CANCELED`,
+  (`ADMIN_EMPRESA_CREATED/UPDATED/SUSPENDED/REACTIVATED/CANCELED`,
   `ADMIN_USER_INVITED/INVITE_RESENT/BLOCKED/UNBLOCKED`, `ADMIN_USAGE_VIEWED`, mudanças de plano).
   Ver `audit/model/AuditEventType.java`.
-- **Onde ficam:** tabela `audit_events` (`AuditEventEntity`), isolada por tenant, com ator registrado.
+- **Onde ficam:** tabela `audit_events` (`AuditEventEntity`), isolada por empresa, com ator registrado.
 - **Como consultar:**
   - EMPRESA: `GET /api/v1/audit/simulations/{id}/versions/{n}` e
     `GET /api/v1/audit/candidate-attempts/{attemptId}`.
   - ADMIN: `GET /api/admin/audit` e `GET /api/admin/audit/{eventId}`.
-- **Como interpretar:** cada evento traz tipo, ator, tenant, alvo e timestamp; use para reconstruir a
+- **Como interpretar:** cada evento traz tipo, ator, empresa, alvo e timestamp; use para reconstruir a
   linha do tempo de uma versão, tentativa ou ação administrativa.
 
 **A auditoria é append-only: não existe edição nem exclusão de eventos.** Correções são feitas por
@@ -442,7 +442,7 @@ O backend usa SLF4J/Logback (padrão Spring Boot), saída em stdout (amigável a
 | Webhook | `MercadoPagoWebhookController/Service` | Assinatura, idempotência, payload |
 | Integração | `gupy`, `recrutei`, `shared.outbox` | Tentativas, entregas, retry, DLQ |
 
-**Níveis:** `INFO` (operação normal), `WARN` (degradação recuperável, ex.: tenant PLATFORM ausente no
+**Níveis:** `INFO` (operação normal), `WARN` (degradação recuperável, ex.: empresa PLATFORM ausente no
 bootstrap), `ERROR` (falha que exige ação). Ajuste por `logging.level.<pacote>` (ex.:
 `LOGGING_LEVEL_BR_COM_IFORCE_PRAXIS=DEBUG`). **Nunca** logue segredos ou PII de candidato.
 

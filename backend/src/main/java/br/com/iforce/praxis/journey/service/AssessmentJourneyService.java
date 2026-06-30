@@ -1,38 +1,70 @@
 package br.com.iforce.praxis.journey.service;
 
 import br.com.iforce.praxis.audit.model.AuditEventType;
+
 import br.com.iforce.praxis.audit.service.AuditEventService;
+
 import br.com.iforce.praxis.audit.service.AuditMetadata;
-import br.com.iforce.praxis.auth.service.CurrentTenantService;
+
+import br.com.iforce.praxis.auth.service.CurrentEmpresaService;
+
 import br.com.iforce.praxis.auth.service.CurrentUserService;
+
 import br.com.iforce.praxis.gupy.model.PublishedSimulation;
+
 import br.com.iforce.praxis.gupy.service.SimulationCatalogService;
+
 import br.com.iforce.praxis.journey.dto.AddJourneyStepRequest;
+
 import br.com.iforce.praxis.journey.dto.AssessmentJourneyDetailResponse;
+
 import br.com.iforce.praxis.journey.dto.AssessmentJourneySummaryResponse;
+
 import br.com.iforce.praxis.journey.dto.CreateAssessmentJourneyRequest;
+
 import br.com.iforce.praxis.journey.dto.JourneyStepResponse;
+
 import br.com.iforce.praxis.journey.dto.UpdateAssessmentJourneyRequest;
+
 import br.com.iforce.praxis.journey.dto.UpdateJourneyStepRequest;
+
 import br.com.iforce.praxis.journey.model.AssessmentJourneyStatus;
+
 import br.com.iforce.praxis.journey.persistence.entity.AssessmentJourneyEntity;
+
 import br.com.iforce.praxis.journey.persistence.entity.AssessmentJourneyStepEntity;
+
 import br.com.iforce.praxis.journey.persistence.repository.AssessmentJourneyRepository;
+
 import org.springframework.http.HttpStatus;
+
 import org.springframework.stereotype.Service;
+
 import org.springframework.transaction.annotation.Transactional;
+
 import org.springframework.web.server.ResponseStatusException;
 
+
 import java.text.Normalizer;
+
 import java.time.Instant;
+
 import java.util.ArrayList;
+
 import java.util.Comparator;
+
 import java.util.LinkedHashMap;
+
 import java.util.List;
+
 import java.util.Locale;
+
 import java.util.Map;
+
 import java.util.Optional;
+
 import java.util.UUID;
+
 
 /**
  * Cérebro da autoria das Jornadas de Avaliação.
@@ -50,7 +82,7 @@ public class AssessmentJourneyService {
 
     private final AssessmentJourneyRepository journeyRepository;
     private final SimulationCatalogService simulationCatalogService;
-    private final CurrentTenantService currentTenantService;
+    private final CurrentEmpresaService currentEmpresaService;
     private final CurrentUserService currentUserService;
     private final AuditEventService auditEventService;
     private final AuditMetadata auditMetadata;
@@ -58,14 +90,14 @@ public class AssessmentJourneyService {
     public AssessmentJourneyService(
             AssessmentJourneyRepository journeyRepository,
             SimulationCatalogService simulationCatalogService,
-            CurrentTenantService currentTenantService,
+            CurrentEmpresaService currentEmpresaService,
             CurrentUserService currentUserService,
             AuditEventService auditEventService,
             AuditMetadata auditMetadata
     ) {
         this.journeyRepository = journeyRepository;
         this.simulationCatalogService = simulationCatalogService;
-        this.currentTenantService = currentTenantService;
+        this.currentEmpresaService = currentEmpresaService;
         this.currentUserService = currentUserService;
         this.auditEventService = auditEventService;
         this.auditMetadata = auditMetadata;
@@ -79,12 +111,12 @@ public class AssessmentJourneyService {
      */
     @Transactional
     public AssessmentJourneyDetailResponse createJourney(CreateAssessmentJourneyRequest request) {
-        String tenantId = currentTenantService.requiredTenantId();
+        String empresaId = currentEmpresaService.requiredEmpresaId();
         Instant now = Instant.now();
 
         AssessmentJourneyEntity journey = new AssessmentJourneyEntity();
         journey.setId(generateJourneyId(request.name()));
-        journey.setTenantId(tenantId);
+        journey.setEmpresaId(empresaId);
         journey.setName(request.name().trim());
         journey.setDescription(trimToNull(request.description()));
         journey.setStatus(AssessmentJourneyStatus.DRAFT);
@@ -93,7 +125,7 @@ public class AssessmentJourneyService {
 
         AssessmentJourneyEntity saved = journeyRepository.save(journey);
         auditEventService.appendAssessmentJourneyEvent(
-                tenantId,
+                empresaId,
                 currentUserService.requiredUserId(),
                 saved.getId(),
                 AuditEventType.ASSESSMENT_JOURNEY_CREATED,
@@ -105,14 +137,14 @@ public class AssessmentJourneyService {
     }
 
     /**
-     * Lista as jornadas do tenant, da mais recente para a mais antiga.
+     * Lista as jornadas do empresa, da mais recente para a mais antiga.
      *
      * @return o resumo de cada jornada
      */
     @Transactional(readOnly = true)
     public List<AssessmentJourneySummaryResponse> listJourneys() {
-        String tenantId = currentTenantService.requiredTenantId();
-        return journeyRepository.findByTenantIdOrderByCreatedAtDesc(tenantId)
+        String empresaId = currentEmpresaService.requiredEmpresaId();
+        return journeyRepository.findByEmpresaIdOrderByCreatedAtDesc(empresaId)
                 .stream()
                 .map(this::toSummaryResponse)
                 .toList();
@@ -154,7 +186,7 @@ public class AssessmentJourneyService {
 
         AssessmentJourneyEntity saved = journeyRepository.save(journey);
         auditEventService.appendAssessmentJourneyEvent(
-                saved.getTenantId(),
+                saved.getEmpresaId(),
                 currentUserService.requiredUserId(),
                 saved.getId(),
                 AuditEventType.ASSESSMENT_JOURNEY_UPDATED,
@@ -179,9 +211,9 @@ public class AssessmentJourneyService {
         AssessmentJourneyEntity journey = findJourney(journeyId);
         assertDraft(journey);
 
-        String tenantId = journey.getTenantId();
+        String empresaId = journey.getEmpresaId();
         PublishedSimulation simulation = simulationCatalogService
-                .findPublishedById(tenantId, request.simulationId())
+                .findPublishedById(empresaId, request.simulationId())
                 .orElseThrow(() -> new ResponseStatusException(
                         HttpStatus.CONFLICT,
                         "Só é possível adicionar uma simulação publicada à jornada."
@@ -192,7 +224,7 @@ public class AssessmentJourneyService {
         boolean required = request.required() == null || request.required();
 
         AssessmentJourneyStepEntity step = new AssessmentJourneyStepEntity();
-        step.setTenantId(tenantId);
+        step.setEmpresaId(empresaId);
         step.setJourney(journey);
         step.setSimulationId(simulation.id());
         step.setSimulationVersionNumber(simulation.versionNumber());
@@ -205,7 +237,7 @@ public class AssessmentJourneyService {
 
         journeyRepository.save(journey);
         auditEventService.appendAssessmentJourneyEvent(
-                tenantId,
+                empresaId,
                 currentUserService.requiredUserId(),
                 journeyId,
                 AuditEventType.ASSESSMENT_JOURNEY_UPDATED,
@@ -263,7 +295,7 @@ public class AssessmentJourneyService {
 
         journeyRepository.save(journey);
         auditEventService.appendAssessmentJourneyEvent(
-                journey.getTenantId(),
+                journey.getEmpresaId(),
                 currentUserService.requiredUserId(),
                 journeyId,
                 AuditEventType.ASSESSMENT_JOURNEY_UPDATED,
@@ -294,7 +326,7 @@ public class AssessmentJourneyService {
         journey.setUpdatedAt(Instant.now());
         journeyRepository.save(journey);
         auditEventService.appendAssessmentJourneyEvent(
-                journey.getTenantId(),
+                journey.getEmpresaId(),
                 currentUserService.requiredUserId(),
                 journeyId,
                 AuditEventType.ASSESSMENT_JOURNEY_UPDATED,
@@ -328,7 +360,7 @@ public class AssessmentJourneyService {
 
         AssessmentJourneyEntity saved = journeyRepository.save(journey);
         auditEventService.appendAssessmentJourneyEvent(
-                saved.getTenantId(),
+                saved.getEmpresaId(),
                 currentUserService.requiredUserId(),
                 saved.getId(),
                 AuditEventType.ASSESSMENT_JOURNEY_PUBLISHED,
@@ -358,7 +390,7 @@ public class AssessmentJourneyService {
         journey.setUpdatedAt(Instant.now());
         AssessmentJourneyEntity saved = journeyRepository.save(journey);
         auditEventService.appendAssessmentJourneyEvent(
-                saved.getTenantId(),
+                saved.getEmpresaId(),
                 currentUserService.requiredUserId(),
                 saved.getId(),
                 AuditEventType.ASSESSMENT_JOURNEY_ARCHIVED,
@@ -388,9 +420,9 @@ public class AssessmentJourneyService {
             assertUniqueOrderIndices(entry.getKey(), steps);
         }
 
-        String tenantId = journey.getTenantId();
+        String empresaId = journey.getEmpresaId();
         for (AssessmentJourneyStepEntity step : journey.getSteps()) {
-            if (simulationCatalogService.findPublishedById(tenantId, step.getSimulationId()).isEmpty()) {
+            if (simulationCatalogService.findPublishedById(empresaId, step.getSimulationId()).isEmpty()) {
                 throw new ResponseStatusException(
                         HttpStatus.CONFLICT,
                         "O teste '" + step.getSimulationId() + "' não possui versão publicada."
@@ -427,8 +459,8 @@ public class AssessmentJourneyService {
     // ----- helpers de leitura / mapeamento -----
 
     private AssessmentJourneyEntity findJourney(String journeyId) {
-        String tenantId = currentTenantService.requiredTenantId();
-        return journeyRepository.findByTenantIdAndId(tenantId, journeyId)
+        String empresaId = currentEmpresaService.requiredEmpresaId();
+        return journeyRepository.findByEmpresaIdAndId(empresaId, journeyId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Jornada de avaliação não encontrada."));
     }
 
@@ -511,7 +543,7 @@ public class AssessmentJourneyService {
         List<AssessmentJourneyDetailResponse.SequenceResponse> sequences = new ArrayList<>();
         stepsBySequence(journey).forEach((sequenceKey, steps) -> {
             List<JourneyStepResponse> stepResponses = steps.stream()
-                    .map(step -> toStepResponse(journey.getTenantId(), step, nameCache))
+                    .map(step -> toStepResponse(journey.getEmpresaId(), step, nameCache))
                     .toList();
             sequences.add(new AssessmentJourneyDetailResponse.SequenceResponse(sequenceKey, stepResponses));
         });
@@ -528,9 +560,9 @@ public class AssessmentJourneyService {
         );
     }
 
-    private JourneyStepResponse toStepResponse(String tenantId, AssessmentJourneyStepEntity step, Map<String, String> nameCache) {
+    private JourneyStepResponse toStepResponse(String empresaId, AssessmentJourneyStepEntity step, Map<String, String> nameCache) {
         String simulationName = nameCache.computeIfAbsent(step.getSimulationId(), id ->
-                simulationCatalogService.findPublishedById(tenantId, id)
+                simulationCatalogService.findPublishedById(empresaId, id)
                         .map(PublishedSimulation::name)
                         .orElse(id));
         return new JourneyStepResponse(
@@ -566,9 +598,9 @@ public class AssessmentJourneyService {
         return value == null || value.isBlank() ? null : value.trim();
     }
 
-    /** Acesso interno para a camada de tentativas localizar a jornada do tenant. */
+    /** Acesso interno para a camada de tentativas localizar a jornada do empresa. */
     @Transactional(readOnly = true)
-    public Optional<AssessmentJourneyEntity> findJourneyForTenant(String tenantId, String journeyId) {
-        return journeyRepository.findByTenantIdAndId(tenantId, journeyId);
+    public Optional<AssessmentJourneyEntity> findJourneyForEmpresa(String empresaId, String journeyId) {
+        return journeyRepository.findByEmpresaIdAndId(empresaId, journeyId);
     }
 }

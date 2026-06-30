@@ -1,6 +1,6 @@
--- Tenant técnico reservado para a própria plataforma. Não representa um cliente real;
--- é o tenant ao qual os operadores ADMIN ficam vinculados (UserEntity.tenantId = 'PLATFORM').
--- Ações administrativas sem cliente alvo usam este tenant na trilha de auditoria.
+-- Empresa técnico reservado para a própria plataforma. Não representa um cliente real;
+-- é o empresa ao qual os operadores ADMIN ficam vinculados (UserEntity.empresaId = 'PLATFORM').
+-- Ações administrativas sem cliente alvo usam este empresa na trilha de auditoria.
 
 INSERT INTO tenants (
     id, name, company_id, health_vertical,

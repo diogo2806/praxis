@@ -1,29 +1,51 @@
 package br.com.iforce.praxis.simulation.service;
 
-import br.com.iforce.praxis.auth.persistence.entity.TenantEntity;
-import br.com.iforce.praxis.auth.persistence.repository.TenantRepository;
-import br.com.iforce.praxis.auth.service.CurrentTenantService;
+import br.com.iforce.praxis.auth.persistence.entity.EmpresaEntity;
+
+import br.com.iforce.praxis.auth.persistence.repository.EmpresaRepository;
+
+import br.com.iforce.praxis.auth.service.CurrentEmpresaService;
+
 import br.com.iforce.praxis.config.PraxisProperties;
+
 import br.com.iforce.praxis.simulation.dto.GupyPreflightCheckResponse;
+
 import br.com.iforce.praxis.simulation.dto.GupyPreflightResponse;
+
 import br.com.iforce.praxis.simulation.dto.SimulationValidationResponse;
+
 import br.com.iforce.praxis.simulation.model.GupyPreflightCheckCode;
+
 import br.com.iforce.praxis.simulation.model.GupyPreflightCheckStatus;
+
 import br.com.iforce.praxis.simulation.model.SimulationVersionStatus;
+
 import br.com.iforce.praxis.simulation.persistence.entity.SimulationEntity;
+
 import br.com.iforce.praxis.simulation.persistence.entity.SimulationVersionEntity;
+
 import br.com.iforce.praxis.simulation.persistence.repository.SimulationVersionRepository;
+
 import org.junit.jupiter.api.Test;
+
 import org.springframework.web.server.ResponseStatusException;
 
+
 import java.util.List;
+
 import java.util.Optional;
 
+
 import static org.assertj.core.api.Assertions.assertThat;
+
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+
 import static org.mockito.ArgumentMatchers.any;
+
 import static org.mockito.Mockito.mock;
+
 import static org.mockito.Mockito.when;
+
 
 class GupyPreflightServiceTest {
 
@@ -32,21 +54,21 @@ class GupyPreflightServiceTest {
     private final PraxisProperties praxisProperties = new PraxisProperties(
             "http://localhost:8080", 168, 24, 70, 15, 0.001
     );
-    private final CurrentTenantService currentTenantService = mock(CurrentTenantService.class);
-    private final TenantRepository tenantRepository = mock(TenantRepository.class);
+    private final CurrentEmpresaService currentEmpresaService = mock(CurrentEmpresaService.class);
+    private final EmpresaRepository empresaRepository = mock(EmpresaRepository.class);
 
     private final GupyPreflightService service = new GupyPreflightService(
             simulationVersionRepository,
             simulationValidationService,
             praxisProperties,
-            currentTenantService,
-            tenantRepository
+            currentEmpresaService,
+            empresaRepository
     );
 
     @Test
     void integrationTokenIsWarningNotBlockerWhenNotConfigured() {
         SimulationVersionEntity version = version(SimulationVersionStatus.DRAFT);
-        stubTenant(null);
+        stubEmpresa(null);
         stubPublishableValidation(version);
 
         GupyPreflightResponse response = service.evaluate(version);
@@ -61,7 +83,7 @@ class GupyPreflightServiceTest {
     @Test
     void evaluateStaysBlockedWhenSimulationHasBlockers() {
         SimulationVersionEntity version = version(SimulationVersionStatus.DRAFT);
-        stubTenant("hash-presente");
+        stubEmpresa("hash-presente");
         when(simulationValidationService.validate(version))
                 .thenReturn(new SimulationValidationResponse("sim-1", 1, false, 1, 0, 50, List.of()));
 
@@ -75,11 +97,11 @@ class GupyPreflightServiceTest {
     @Test
     void getPreflightRunsOnDraftVersions() {
         SimulationVersionEntity version = version(SimulationVersionStatus.DRAFT);
-        when(currentTenantService.requiredTenantId()).thenReturn("tenant-1");
+        when(currentEmpresaService.requiredEmpresaId()).thenReturn("empresa-1");
         when(simulationVersionRepository
-                .findBySimulationTenantIdAndSimulationIdAndVersionNumber("tenant-1", "sim-1", 1))
+                .findBySimulationEmpresaIdAndSimulationIdAndVersionNumber("empresa-1", "sim-1", 1))
                 .thenReturn(Optional.of(version));
-        stubTenant("hash-presente");
+        stubEmpresa("hash-presente");
         stubPublishableValidation(version);
 
         GupyPreflightResponse response = service.getPreflight("sim-1", 1);
@@ -91,9 +113,9 @@ class GupyPreflightServiceTest {
     @Test
     void getPreflightRejectsArchivedVersions() {
         SimulationVersionEntity version = version(SimulationVersionStatus.ARCHIVED);
-        when(currentTenantService.requiredTenantId()).thenReturn("tenant-1");
+        when(currentEmpresaService.requiredEmpresaId()).thenReturn("empresa-1");
         when(simulationVersionRepository
-                .findBySimulationTenantIdAndSimulationIdAndVersionNumber("tenant-1", "sim-1", 1))
+                .findBySimulationEmpresaIdAndSimulationIdAndVersionNumber("empresa-1", "sim-1", 1))
                 .thenReturn(Optional.of(version));
 
         assertThatThrownBy(() -> service.getPreflight("sim-1", 1))
@@ -111,11 +133,11 @@ class GupyPreflightServiceTest {
         return version;
     }
 
-    private void stubTenant(String integrationTokenHash) {
-        when(currentTenantService.requiredTenantId()).thenReturn("tenant-1");
-        TenantEntity tenant = mock(TenantEntity.class);
-        when(tenant.getIntegrationTokenHash()).thenReturn(integrationTokenHash);
-        when(tenantRepository.findById("tenant-1")).thenReturn(Optional.of(tenant));
+    private void stubEmpresa(String integrationTokenHash) {
+        when(currentEmpresaService.requiredEmpresaId()).thenReturn("empresa-1");
+        EmpresaEntity empresa = mock(EmpresaEntity.class);
+        when(empresa.getIntegrationTokenHash()).thenReturn(integrationTokenHash);
+        when(empresaRepository.findById("empresa-1")).thenReturn(Optional.of(empresa));
     }
 
     private void stubPublishableValidation(SimulationVersionEntity version) {

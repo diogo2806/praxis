@@ -51,7 +51,7 @@ export const glossario = {
   sjt: "Teste de Julgamento Situacional (SJT) — teste que mostra como alguém decide diante de situações reais do trabalho.",
   determinisitco:
     "Nota calculada por regras fixas, sempre igual: as mesmas respostas geram sempre a mesma pontuação.",
-  tenant: "Sua empresa ou cliente — espaço isolado onde você cria e gerencia testes.",
+  empresa: "Sua empresa ou cliente — espaço isolado onde você cria e gerencia testes.",
   taxonomia: "Catálogo de competências da sua empresa — lista de habilidades que você mede.",
   workspace: "Área de trabalho: seu espaço pessoal para criar e gerenciar testes.",
   score: "Nota ou pontuação — resultado numérico do teste.",

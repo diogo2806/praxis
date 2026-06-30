@@ -1,24 +1,42 @@
 package br.com.iforce.praxis.candidate.controller;
 
 import br.com.iforce.praxis.auth.service.JwtService;
+
 import br.com.iforce.praxis.gupy.persistence.entity.CandidateAttemptEntity;
+
 import br.com.iforce.praxis.gupy.persistence.repository.CandidateAttemptRepository;
+
 import com.jayway.jsonpath.JsonPath;
+
 import org.junit.jupiter.api.Test;
+
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+
 import org.springframework.boot.test.context.SpringBootTest;
+
 import org.springframework.http.MediaType;
+
 import org.springframework.jdbc.core.JdbcTemplate;
+
 import org.springframework.test.context.jdbc.Sql;
+
 import org.springframework.test.web.servlet.MockMvc;
+
 import org.springframework.beans.factory.annotation.Autowired;
+
 import org.springframework.test.web.servlet.MvcResult;
 
+
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
+
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
 
 @SpringBootTest(properties = {
         "praxis.security.enabled=true",
@@ -29,7 +47,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @Sql(scripts = "/seed-simulation-fixture.sql")
 class CandidateAttemptSecurityEnabledTest {
 
-    private static final String AUTHORIZATION = "Bearer tenant1-token";
+    private static final String AUTHORIZATION = "Bearer empresa1-token";
 
     @Autowired
     private MockMvc mockMvc;
@@ -74,7 +92,7 @@ class CandidateAttemptSecurityEnabledTest {
     }
 
     @Test
-    void legacyCandidateAttemptIdResolvesTenantFromAttemptWhenSecurityIsEnabled() throws Exception {
+    void legacyCandidateAttemptIdResolvesEmpresaFromAttemptWhenSecurityIsEnabled() throws Exception {
         MvcResult createResult = mockMvc.perform(post("/test/candidate")
                         .header("Authorization", AUTHORIZATION)
                         .contentType(MediaType.APPLICATION_JSON)
@@ -97,11 +115,11 @@ class CandidateAttemptSecurityEnabledTest {
         String publicToken = testUrl.substring(testUrl.lastIndexOf('/') + 1);
         String attemptId = jwtService.parseCandidateAttemptToken(publicToken).attemptId();
         jdbcTemplate.update("""
-                INSERT INTO tenants (id, name, company_id)
-                VALUES ('tenant-legacy-link', 'Tenant Legacy Link', 'empresa-legacy-link')
+                INSERT INTO empresas (id, name, company_id)
+                VALUES ('empresa-legacy-link', 'Empresa Legacy Link', 'empresa-legacy-link')
                 """);
         CandidateAttemptEntity attempt = candidateAttemptRepository.findById(attemptId).orElseThrow();
-        attempt.setTenantId("tenant-legacy-link");
+        attempt.setEmpresaId("empresa-legacy-link");
         candidateAttemptRepository.save(attempt);
 
         mockMvc.perform(get("/candidate/attempts/" + attemptId))

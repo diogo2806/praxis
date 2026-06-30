@@ -1,13 +1,19 @@
 package br.com.iforce.praxis.media.service;
 
 import br.com.iforce.praxis.config.ObjectStorageProperties;
+
 import org.junit.jupiter.api.Test;
+
 import org.springframework.mock.web.MockMultipartFile;
+
 import org.springframework.web.server.ResponseStatusException;
+
 
 import java.nio.charset.StandardCharsets;
 
+
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+
 
 class MediaStorageServiceTest {
 

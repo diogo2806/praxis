@@ -1,8 +1,8 @@
--- Campos comerciais do cliente (tenant) usados pelo painel administrativo (Parte A).
+-- Campos comerciais do cliente (empresa) usados pelo painel administrativo (Parte A).
 -- status: situação operacional (ATIVO, EM_TESTE, SUSPENSO, CANCELADO).
 -- commercial_plan_type: rótulo comercial (AVULSO, PROFISSIONAL, ENTERPRISE).
 -- commercial_condition: condição comercial livre, relevante sobretudo no ENTERPRISE.
--- Tenants existentes assumem ATIVO/ENTERPRISE para preservar o acesso atual.
+-- Empresas existentes assumem ATIVO/ENTERPRISE para preservar o acesso atual.
 
 ALTER TABLE tenants ADD COLUMN IF NOT EXISTS status VARCHAR(40) NOT NULL DEFAULT 'ATIVO';
 ALTER TABLE tenants ADD COLUMN IF NOT EXISTS commercial_plan_type VARCHAR(40) NOT NULL DEFAULT 'ENTERPRISE';

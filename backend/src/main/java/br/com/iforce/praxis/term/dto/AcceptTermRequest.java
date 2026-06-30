@@ -1,7 +1,9 @@
 package br.com.iforce.praxis.term.dto;
 
 import io.swagger.v3.oas.annotations.media.Schema;
+
 import jakarta.validation.constraints.NotBlank;
+
 
 @Schema(description = "Aceite do termo: a versão deve ser a corrente exibida ao usuário.")
 public record AcceptTermRequest(

@@ -1,23 +1,40 @@
 package br.com.iforce.praxis.gupy.service;
 
 import br.com.iforce.praxis.config.PraxisProperties;
+
 import br.com.iforce.praxis.gupy.model.AttemptAnswer;
+
 import br.com.iforce.praxis.gupy.model.PublishedSimulation;
+
 import br.com.iforce.praxis.gupy.model.ReliabilityLevel;
+
 import br.com.iforce.praxis.gupy.model.ResultDecision;
+
 import br.com.iforce.praxis.gupy.model.ResultItem;
+
 import br.com.iforce.praxis.gupy.model.ResultTier;
+
 import br.com.iforce.praxis.gupy.model.ScenarioNode;
+
 import br.com.iforce.praxis.gupy.model.ScenarioOption;
+
 import br.com.iforce.praxis.gupy.model.ScoreCalculationResult;
+
 import org.springframework.stereotype.Service;
 
+
 import java.time.Duration;
+
 import java.time.Instant;
+
 import java.util.ArrayList;
+
 import java.util.LinkedHashMap;
+
 import java.util.List;
+
 import java.util.Map;
+
 
 /**
  * Cálculo determinístico do score, normalizado pelo caminho percorrido e ponderado pelo peso de

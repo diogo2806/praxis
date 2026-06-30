@@ -1,16 +1,26 @@
 package br.com.iforce.praxis.auth.service;
 
 import io.jsonwebtoken.Claims;
+
 import io.jsonwebtoken.Jwts;
+
 import io.jsonwebtoken.security.Keys;
+
 import org.springframework.beans.factory.annotation.Value;
+
 import org.springframework.stereotype.Service;
 
+
 import javax.crypto.SecretKey;
+
 import java.nio.charset.StandardCharsets;
+
 import java.time.Instant;
+
 import java.util.Date;
+
 import java.util.Set;
+
 
 /**
  * Cria e valida tokens de segurança (JWT).
@@ -18,7 +28,7 @@ import java.util.Set;
  * JWT (JSON Web Token) é um padrão de token assinado digitalmente que prova
  * a identidade de um usuário. O token contém:
  * - Quem é o usuário (ID)
- * - Qual empresa ele pertence (tenant)
+ * - Qual empresa ele pertence (empresa)
  * - Quais permissões tem (roles)
  * - Quando expira (TTL)
  *
@@ -61,15 +71,15 @@ public class JwtService {
      * o usuário precisa fazer login novamente.
      *
      * @param userId ID único do usuário
-     * @param tenantId ID da empresa do usuário
+     * @param empresaId ID da empresa do usuário
      * @param roles Conjunto de permissões (ex: ADMIN, RECRUITER)
      * @return Token JWT assinado que pode ser enviado em requisições
      */
-    public String generateToken(String userId, String tenantId, Set<String> roles) {
+    public String generateToken(String userId, String empresaId, Set<String> roles) {
         Instant now = Instant.now();
         return Jwts.builder()
                 .subject(userId)
-                .claim("tenant_id", tenantId)
+                .claim("empresa_id", empresaId)
                 .claim("roles", roles)
                 .issuedAt(Date.from(now))
                 .expiration(Date.from(now.plusSeconds(expirationHours * 60L * 60L)))
@@ -86,17 +96,17 @@ public class JwtService {
      * O tempo de validade é passado como parâmetro para que seja flexível:
      * uma prova de 1 hora recebe um token de 1 hora, uma de 2 horas recebe 2 horas.
      *
-     * @param tenantId ID da empresa
+     * @param empresaId ID da empresa
      * @param attemptId ID da tentativa da prova
      * @param ttlHours Tempo de validade do token em horas
      * @return Token JWT para usar durante a prova
      */
-    public String generateCandidateAttemptToken(String tenantId, String attemptId, int ttlHours) {
+    public String generateCandidateAttemptToken(String empresaId, String attemptId, int ttlHours) {
         Instant now = Instant.now();
         return Jwts.builder()
                 .subject(attemptId)
                 .claim("typ", CANDIDATE_ATTEMPT_TOKEN_TYPE)
-                .claim("tenant_id", tenantId)
+                .claim("empresa_id", empresaId)
                 .claim("attempt_id", attemptId)
                 .issuedAt(Date.from(now))
                 .expiration(Date.from(now.plusSeconds(ttlHours * 60L * 60L)))
@@ -119,12 +129,12 @@ public class JwtService {
         if (!CANDIDATE_ATTEMPT_TOKEN_TYPE.equals(claims.get("typ", String.class))) {
             throw new IllegalArgumentException("Token público de candidato inválido.");
         }
-        String tenantId = claims.get("tenant_id", String.class);
+        String empresaId = claims.get("empresa_id", String.class);
         String attemptId = claims.get("attempt_id", String.class);
-        if (tenantId == null || tenantId.isBlank() || attemptId == null || attemptId.isBlank()) {
+        if (empresaId == null || empresaId.isBlank() || attemptId == null || attemptId.isBlank()) {
             throw new IllegalArgumentException("Token publico de candidato incompleto.");
         }
-        return new CandidateAttemptToken(tenantId, attemptId);
+        return new CandidateAttemptToken(empresaId, attemptId);
     }
 
     /**
@@ -146,6 +156,6 @@ public class JwtService {
     }
 
     /** Dados extraídos do link do candidato: a empresa e a participação a que ele dá acesso. */
-    public record CandidateAttemptToken(String tenantId, String attemptId) {
+    public record CandidateAttemptToken(String empresaId, String attemptId) {
     }
 }

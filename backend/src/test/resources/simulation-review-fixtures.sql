@@ -4,17 +4,17 @@ WHERE aggregate_id IN ('sim-publish-gate:v1', 'sim-review-flow:v1', 'sim-clone-s
 DELETE FROM simulations
 WHERE id IN ('sim-publish-gate', 'sim-review-flow', 'sim-clone-source');
 
-INSERT INTO tenants (id, name, company_id)
-SELECT 'tenant-1', 'Acme S.A.', 'empresa-123'
+INSERT INTO empresas (id, name, company_id)
+SELECT 'empresa-1', 'Acme S.A.', 'empresa-123'
 WHERE NOT EXISTS (
-    SELECT 1 FROM tenants WHERE id = 'tenant-1'
+    SELECT 1 FROM empresas WHERE id = 'empresa-1'
 );
 
-INSERT INTO simulations (id, tenant_id, name, description, created_at)
+INSERT INTO simulations (id, empresa_id, name, description, created_at)
 VALUES
-    ('sim-publish-gate', 'tenant-1', 'Publish Gate', 'Fixture para testar bloqueio de publicacao sem aprovacao.', CURRENT_TIMESTAMP),
-    ('sim-review-flow', 'tenant-1', 'Review Flow', 'Fixture para testar fluxo de revisao e aprovacao.', CURRENT_TIMESTAMP),
-    ('sim-clone-source', 'tenant-1', 'Clone Source', 'Fixture para testar clone de versao publicada.', CURRENT_TIMESTAMP);
+    ('sim-publish-gate', 'empresa-1', 'Publish Gate', 'Fixture para testar bloqueio de publicacao sem aprovacao.', CURRENT_TIMESTAMP),
+    ('sim-review-flow', 'empresa-1', 'Review Flow', 'Fixture para testar fluxo de revisao e aprovacao.', CURRENT_TIMESTAMP),
+    ('sim-clone-source', 'empresa-1', 'Clone Source', 'Fixture para testar clone de versao publicada.', CURRENT_TIMESTAMP);
 
 INSERT INTO simulation_versions (
     id,

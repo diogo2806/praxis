@@ -1,18 +1,30 @@
 package br.com.iforce.praxis.admin.service;
 
 import br.com.iforce.praxis.admin.dto.AdminAuditEventResponse;
+
 import br.com.iforce.praxis.audit.model.AuditEventType;
+
 import br.com.iforce.praxis.audit.persistence.entity.AuditEventEntity;
+
 import br.com.iforce.praxis.audit.persistence.repository.AuditEventRepository;
+
 import br.com.iforce.praxis.audit.service.AuditEventService;
+
 import br.com.iforce.praxis.audit.service.AuditMetadata;
+
 import org.springframework.data.domain.PageRequest;
+
 import org.springframework.http.HttpStatus;
+
 import org.springframework.stereotype.Service;
+
 import org.springframework.transaction.annotation.Transactional;
+
 import org.springframework.web.server.ResponseStatusException;
 
+
 import java.util.List;
+
 
 /**
  * Leitura da trilha de auditoria pelo painel ADMIN. A trilha é append-only: este serviço
@@ -36,9 +48,9 @@ public class AdminAuditService {
     }
 
     @Transactional(readOnly = true)
-    public List<AdminAuditEventResponse> listForTenant(String tenantId, int limit) {
+    public List<AdminAuditEventResponse> listForEmpresa(String empresaId, int limit) {
         return auditEventRepository
-                .findByTenantIdOrderByCreatedAtDesc(tenantId, PageRequest.of(0, limit)).stream()
+                .findByEmpresaIdOrderByCreatedAtDesc(empresaId, PageRequest.of(0, limit)).stream()
                 .map(AdminAuditService::toResponse)
                 .toList();
     }
@@ -61,18 +73,18 @@ public class AdminAuditService {
 
     /** Registra que o ADMIN consultou o uso de um cliente (evento obrigatório). */
     @Transactional
-    public void recordUsageViewed(String actorUserId, String tenantId) {
+    public void recordUsageViewed(String actorUserId, String empresaId) {
         auditEventService.auditAdminAction(
-                actorUserId, tenantId, AuditEventType.ADMIN_USAGE_VIEWED,
+                actorUserId, empresaId, AuditEventType.ADMIN_USAGE_VIEWED,
                 "Uso do cliente consultado.",
-                auditMetadata.of("tenantId", tenantId));
+                auditMetadata.of("empresaId", empresaId));
     }
 
     private static AdminAuditEventResponse toResponse(AuditEventEntity entity) {
         return new AdminAuditEventResponse(
                 entity.getId(),
                 entity.getActorUserId(),
-                entity.getTenantId(),
+                entity.getEmpresaId(),
                 entity.getAggregateType(),
                 entity.getAggregateId(),
                 entity.getEventType(),

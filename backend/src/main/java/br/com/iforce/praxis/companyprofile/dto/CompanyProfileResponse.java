@@ -2,6 +2,7 @@ package br.com.iforce.praxis.companyprofile.dto;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 
+
 @Schema(description = "Perfil cadastral da empresa visivel para o cliente.")
 public record CompanyProfileResponse(
         @Schema(description = "Nome fantasia exibido para a empresa.")

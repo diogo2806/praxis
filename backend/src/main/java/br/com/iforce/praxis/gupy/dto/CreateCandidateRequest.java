@@ -1,12 +1,18 @@
 package br.com.iforce.praxis.gupy.dto;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+
 import io.swagger.v3.oas.annotations.media.Schema;
+
 import jakarta.validation.constraints.Email;
+
 import jakarta.validation.constraints.NotBlank;
 
+
 import java.math.BigDecimal;
+
 import java.net.URI;
+
 
 @Schema(description = "Pedido da Gupy para registrar um candidato em um teste Práxis.")
 public record CreateCandidateRequest(
