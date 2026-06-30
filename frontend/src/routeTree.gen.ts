@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as TeamRouteImport } from './routes/team'
 import { Route as TalentMatchRouteImport } from './routes/talent-match'
 import { Route as ResultsRouteImport } from './routes/results'
 import { Route as RecuperarSenhaRouteImport } from './routes/recuperar-senha'
@@ -31,6 +32,7 @@ import { Route as SimulationsNewRouteImport } from './routes/simulations/new'
 import { Route as ResultsAttemptIdRouteImport } from './routes/results.$attemptId'
 import { Route as ResetPasswordTokenRouteImport } from './routes/reset-password.$token'
 import { Route as NovaValidadorRouteImport } from './routes/nova.validador'
+import { Route as NovaRapidoRouteImport } from './routes/nova.rapido'
 import { Route as NovaPilotoRouteImport } from './routes/nova.piloto'
 import { Route as NovaPersonagemRouteImport } from './routes/nova.personagem'
 import { Route as NovaObjetivoRouteImport } from './routes/nova.objetivo'
@@ -41,6 +43,7 @@ import { Route as NovaDialogoRouteImport } from './routes/nova.dialogo'
 import { Route as NovaCompetenciasRouteImport } from './routes/nova.competencias'
 import { Route as NovaBlueprintRouteImport } from './routes/nova.blueprint'
 import { Route as JornadaAttemptIdRouteImport } from './routes/jornada.$attemptId'
+import { Route as IntegrationsProviderRouteImport } from './routes/integrations.$provider'
 import { Route as ConviteTokenRouteImport } from './routes/convite.$token'
 import { Route as ConfiguracoesPerfilRouteImport } from './routes/configuracoes.perfil'
 import { Route as ConfiguracoesIntegracoesRouteImport } from './routes/configuracoes.integracoes'
@@ -51,6 +54,11 @@ import { Route as AssessmentJourneysNewRouteImport } from './routes/assessment-j
 import { Route as AdminEmpresasIndexRouteImport } from './routes/admin.empresas.index'
 import { Route as AdminEmpresasEmpresaIdRouteImport } from './routes/admin.empresas.$empresaId'
 
+const TeamRoute = TeamRouteImport.update({
+  id: '/team',
+  path: '/team',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const TalentMatchRoute = TalentMatchRouteImport.update({
   id: '/talent-match',
   path: '/talent-match',
@@ -161,6 +169,11 @@ const NovaValidadorRoute = NovaValidadorRouteImport.update({
   path: '/nova/validador',
   getParentRoute: () => rootRouteImport,
 } as any)
+const NovaRapidoRoute = NovaRapidoRouteImport.update({
+  id: '/nova/rapido',
+  path: '/nova/rapido',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const NovaPilotoRoute = NovaPilotoRouteImport.update({
   id: '/nova/piloto',
   path: '/nova/piloto',
@@ -210,6 +223,11 @@ const JornadaAttemptIdRoute = JornadaAttemptIdRouteImport.update({
   id: '/jornada/$attemptId',
   path: '/jornada/$attemptId',
   getParentRoute: () => rootRouteImport,
+} as any)
+const IntegrationsProviderRoute = IntegrationsProviderRouteImport.update({
+  id: '/$provider',
+  path: '/$provider',
+  getParentRoute: () => IntegrationsRoute,
 } as any)
 const ConviteTokenRoute = ConviteTokenRouteImport.update({
   id: '/convite/$token',
@@ -269,12 +287,13 @@ export interface FileRoutesByFullPath {
   '/configuracoes': typeof ConfiguracoesRouteWithChildren
   '/dashboard': typeof DashboardRoute
   '/enviar-link': typeof EnviarLinkRoute
-  '/integrations': typeof IntegrationsRoute
+  '/integrations': typeof IntegrationsRouteWithChildren
   '/jornadas': typeof JornadasRoute
   '/monitoramento': typeof MonitoramentoRoute
   '/recuperar-senha': typeof RecuperarSenhaRoute
   '/results': typeof ResultsRouteWithChildren
   '/talent-match': typeof TalentMatchRoute
+  '/team': typeof TeamRoute
   '/assessment-journeys/new': typeof AssessmentJourneysNewRoute
   '/candidate-links/new': typeof CandidateLinksNewRoute
   '/candidato/$token': typeof CandidatoTokenRoute
@@ -282,6 +301,7 @@ export interface FileRoutesByFullPath {
   '/configuracoes/integracoes': typeof ConfiguracoesIntegracoesRoute
   '/configuracoes/perfil': typeof ConfiguracoesPerfilRoute
   '/convite/$token': typeof ConviteTokenRoute
+  '/integrations/$provider': typeof IntegrationsProviderRoute
   '/jornada/$attemptId': typeof JornadaAttemptIdRoute
   '/nova/blueprint': typeof NovaBlueprintRoute
   '/nova/competencias': typeof NovaCompetenciasRoute
@@ -292,6 +312,7 @@ export interface FileRoutesByFullPath {
   '/nova/objetivo': typeof NovaObjetivoRoute
   '/nova/personagem': typeof NovaPersonagemRoute
   '/nova/piloto': typeof NovaPilotoRoute
+  '/nova/rapido': typeof NovaRapidoRoute
   '/nova/validador': typeof NovaValidadorRoute
   '/reset-password/$token': typeof ResetPasswordTokenRoute
   '/results/$attemptId': typeof ResultsAttemptIdRoute
@@ -312,12 +333,13 @@ export interface FileRoutesByTo {
   '/configuracoes': typeof ConfiguracoesRouteWithChildren
   '/dashboard': typeof DashboardRoute
   '/enviar-link': typeof EnviarLinkRoute
-  '/integrations': typeof IntegrationsRoute
+  '/integrations': typeof IntegrationsRouteWithChildren
   '/jornadas': typeof JornadasRoute
   '/monitoramento': typeof MonitoramentoRoute
   '/recuperar-senha': typeof RecuperarSenhaRoute
   '/results': typeof ResultsRouteWithChildren
   '/talent-match': typeof TalentMatchRoute
+  '/team': typeof TeamRoute
   '/assessment-journeys/new': typeof AssessmentJourneysNewRoute
   '/candidate-links/new': typeof CandidateLinksNewRoute
   '/candidato/$token': typeof CandidatoTokenRoute
@@ -325,6 +347,7 @@ export interface FileRoutesByTo {
   '/configuracoes/integracoes': typeof ConfiguracoesIntegracoesRoute
   '/configuracoes/perfil': typeof ConfiguracoesPerfilRoute
   '/convite/$token': typeof ConviteTokenRoute
+  '/integrations/$provider': typeof IntegrationsProviderRoute
   '/jornada/$attemptId': typeof JornadaAttemptIdRoute
   '/nova/blueprint': typeof NovaBlueprintRoute
   '/nova/competencias': typeof NovaCompetenciasRoute
@@ -335,6 +358,7 @@ export interface FileRoutesByTo {
   '/nova/objetivo': typeof NovaObjetivoRoute
   '/nova/personagem': typeof NovaPersonagemRoute
   '/nova/piloto': typeof NovaPilotoRoute
+  '/nova/rapido': typeof NovaRapidoRoute
   '/nova/validador': typeof NovaValidadorRoute
   '/reset-password/$token': typeof ResetPasswordTokenRoute
   '/results/$attemptId': typeof ResultsAttemptIdRoute
@@ -356,12 +380,13 @@ export interface FileRoutesById {
   '/configuracoes': typeof ConfiguracoesRouteWithChildren
   '/dashboard': typeof DashboardRoute
   '/enviar-link': typeof EnviarLinkRoute
-  '/integrations': typeof IntegrationsRoute
+  '/integrations': typeof IntegrationsRouteWithChildren
   '/jornadas': typeof JornadasRoute
   '/monitoramento': typeof MonitoramentoRoute
   '/recuperar-senha': typeof RecuperarSenhaRoute
   '/results': typeof ResultsRouteWithChildren
   '/talent-match': typeof TalentMatchRoute
+  '/team': typeof TeamRoute
   '/assessment-journeys/new': typeof AssessmentJourneysNewRoute
   '/candidate-links/new': typeof CandidateLinksNewRoute
   '/candidato/$token': typeof CandidatoTokenRoute
@@ -369,6 +394,7 @@ export interface FileRoutesById {
   '/configuracoes/integracoes': typeof ConfiguracoesIntegracoesRoute
   '/configuracoes/perfil': typeof ConfiguracoesPerfilRoute
   '/convite/$token': typeof ConviteTokenRoute
+  '/integrations/$provider': typeof IntegrationsProviderRoute
   '/jornada/$attemptId': typeof JornadaAttemptIdRoute
   '/nova/blueprint': typeof NovaBlueprintRoute
   '/nova/competencias': typeof NovaCompetenciasRoute
@@ -379,6 +405,7 @@ export interface FileRoutesById {
   '/nova/objetivo': typeof NovaObjetivoRoute
   '/nova/personagem': typeof NovaPersonagemRoute
   '/nova/piloto': typeof NovaPilotoRoute
+  '/nova/rapido': typeof NovaRapidoRoute
   '/nova/validador': typeof NovaValidadorRoute
   '/reset-password/$token': typeof ResetPasswordTokenRoute
   '/results/$attemptId': typeof ResultsAttemptIdRoute
@@ -407,6 +434,7 @@ export interface FileRouteTypes {
     | '/recuperar-senha'
     | '/results'
     | '/talent-match'
+    | '/team'
     | '/assessment-journeys/new'
     | '/candidate-links/new'
     | '/candidato/$token'
@@ -414,6 +442,7 @@ export interface FileRouteTypes {
     | '/configuracoes/integracoes'
     | '/configuracoes/perfil'
     | '/convite/$token'
+    | '/integrations/$provider'
     | '/jornada/$attemptId'
     | '/nova/blueprint'
     | '/nova/competencias'
@@ -424,6 +453,7 @@ export interface FileRouteTypes {
     | '/nova/objetivo'
     | '/nova/personagem'
     | '/nova/piloto'
+    | '/nova/rapido'
     | '/nova/validador'
     | '/reset-password/$token'
     | '/results/$attemptId'
@@ -450,6 +480,7 @@ export interface FileRouteTypes {
     | '/recuperar-senha'
     | '/results'
     | '/talent-match'
+    | '/team'
     | '/assessment-journeys/new'
     | '/candidate-links/new'
     | '/candidato/$token'
@@ -457,6 +488,7 @@ export interface FileRouteTypes {
     | '/configuracoes/integracoes'
     | '/configuracoes/perfil'
     | '/convite/$token'
+    | '/integrations/$provider'
     | '/jornada/$attemptId'
     | '/nova/blueprint'
     | '/nova/competencias'
@@ -467,6 +499,7 @@ export interface FileRouteTypes {
     | '/nova/objetivo'
     | '/nova/personagem'
     | '/nova/piloto'
+    | '/nova/rapido'
     | '/nova/validador'
     | '/reset-password/$token'
     | '/results/$attemptId'
@@ -493,6 +526,7 @@ export interface FileRouteTypes {
     | '/recuperar-senha'
     | '/results'
     | '/talent-match'
+    | '/team'
     | '/assessment-journeys/new'
     | '/candidate-links/new'
     | '/candidato/$token'
@@ -500,6 +534,7 @@ export interface FileRouteTypes {
     | '/configuracoes/integracoes'
     | '/configuracoes/perfil'
     | '/convite/$token'
+    | '/integrations/$provider'
     | '/jornada/$attemptId'
     | '/nova/blueprint'
     | '/nova/competencias'
@@ -510,6 +545,7 @@ export interface FileRouteTypes {
     | '/nova/objetivo'
     | '/nova/personagem'
     | '/nova/piloto'
+    | '/nova/rapido'
     | '/nova/validador'
     | '/reset-password/$token'
     | '/results/$attemptId'
@@ -531,12 +567,13 @@ export interface RootRouteChildren {
   ConfiguracoesRoute: typeof ConfiguracoesRouteWithChildren
   DashboardRoute: typeof DashboardRoute
   EnviarLinkRoute: typeof EnviarLinkRoute
-  IntegrationsRoute: typeof IntegrationsRoute
+  IntegrationsRoute: typeof IntegrationsRouteWithChildren
   JornadasRoute: typeof JornadasRoute
   MonitoramentoRoute: typeof MonitoramentoRoute
   RecuperarSenhaRoute: typeof RecuperarSenhaRoute
   ResultsRoute: typeof ResultsRouteWithChildren
   TalentMatchRoute: typeof TalentMatchRoute
+  TeamRoute: typeof TeamRoute
   AssessmentJourneysNewRoute: typeof AssessmentJourneysNewRoute
   CandidateLinksNewRoute: typeof CandidateLinksNewRoute
   ConviteTokenRoute: typeof ConviteTokenRoute
@@ -550,6 +587,7 @@ export interface RootRouteChildren {
   NovaObjetivoRoute: typeof NovaObjetivoRoute
   NovaPersonagemRoute: typeof NovaPersonagemRoute
   NovaPilotoRoute: typeof NovaPilotoRoute
+  NovaRapidoRoute: typeof NovaRapidoRoute
   NovaValidadorRoute: typeof NovaValidadorRoute
   ResetPasswordTokenRoute: typeof ResetPasswordTokenRoute
   SimulationsNewRoute: typeof SimulationsNewRoute
@@ -561,6 +599,13 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/team': {
+      id: '/team'
+      path: '/team'
+      fullPath: '/team'
+      preLoaderRoute: typeof TeamRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/talent-match': {
       id: '/talent-match'
       path: '/talent-match'
@@ -715,6 +760,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof NovaValidadorRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/nova/rapido': {
+      id: '/nova/rapido'
+      path: '/nova/rapido'
+      fullPath: '/nova/rapido'
+      preLoaderRoute: typeof NovaRapidoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/nova/piloto': {
       id: '/nova/piloto'
       path: '/nova/piloto'
@@ -784,6 +836,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/jornada/$attemptId'
       preLoaderRoute: typeof JornadaAttemptIdRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/integrations/$provider': {
+      id: '/integrations/$provider'
+      path: '/$provider'
+      fullPath: '/integrations/$provider'
+      preLoaderRoute: typeof IntegrationsProviderRouteImport
+      parentRoute: typeof IntegrationsRoute
     }
     '/convite/$token': {
       id: '/convite/$token'
@@ -879,6 +938,18 @@ const ConfiguracoesRouteWithChildren = ConfiguracoesRoute._addFileChildren(
   ConfiguracoesRouteChildren,
 )
 
+interface IntegrationsRouteChildren {
+  IntegrationsProviderRoute: typeof IntegrationsProviderRoute
+}
+
+const IntegrationsRouteChildren: IntegrationsRouteChildren = {
+  IntegrationsProviderRoute: IntegrationsProviderRoute,
+}
+
+const IntegrationsRouteWithChildren = IntegrationsRoute._addFileChildren(
+  IntegrationsRouteChildren,
+)
+
 interface ResultsRouteChildren {
   ResultsAttemptIdRoute: typeof ResultsAttemptIdRoute
 }
@@ -901,12 +972,13 @@ const rootRouteChildren: RootRouteChildren = {
   ConfiguracoesRoute: ConfiguracoesRouteWithChildren,
   DashboardRoute: DashboardRoute,
   EnviarLinkRoute: EnviarLinkRoute,
-  IntegrationsRoute: IntegrationsRoute,
+  IntegrationsRoute: IntegrationsRouteWithChildren,
   JornadasRoute: JornadasRoute,
   MonitoramentoRoute: MonitoramentoRoute,
   RecuperarSenhaRoute: RecuperarSenhaRoute,
   ResultsRoute: ResultsRouteWithChildren,
   TalentMatchRoute: TalentMatchRoute,
+  TeamRoute: TeamRoute,
   AssessmentJourneysNewRoute: AssessmentJourneysNewRoute,
   CandidateLinksNewRoute: CandidateLinksNewRoute,
   ConviteTokenRoute: ConviteTokenRoute,
@@ -920,6 +992,7 @@ const rootRouteChildren: RootRouteChildren = {
   NovaObjetivoRoute: NovaObjetivoRoute,
   NovaPersonagemRoute: NovaPersonagemRoute,
   NovaPilotoRoute: NovaPilotoRoute,
+  NovaRapidoRoute: NovaRapidoRoute,
   NovaValidadorRoute: NovaValidadorRoute,
   ResetPasswordTokenRoute: ResetPasswordTokenRoute,
   SimulationsNewRoute: SimulationsNewRoute,
@@ -931,13 +1004,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}

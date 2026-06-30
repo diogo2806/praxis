@@ -16,6 +16,12 @@ import br.com.iforce.praxis.simulation.dto.GupyPreflightResponse;
 
 import br.com.iforce.praxis.simulation.dto.PublishSimulationResponse;
 
+import br.com.iforce.praxis.simulation.dto.QuickStartCreatedResponse;
+
+import br.com.iforce.praxis.simulation.dto.QuickStartRequest;
+
+import br.com.iforce.praxis.simulation.dto.QuickStartTemplateSummaryResponse;
+
 import br.com.iforce.praxis.simulation.dto.SimulationMonitoringResponse;
 
 import br.com.iforce.praxis.simulation.dto.SimulationSummaryResponse;
@@ -37,6 +43,8 @@ import br.com.iforce.praxis.simulation.service.GupyPreflightService;
 import br.com.iforce.praxis.simulation.service.SimulationAdminService;
 
 import br.com.iforce.praxis.simulation.service.SimulationCalibrationService;
+
+import br.com.iforce.praxis.simulation.service.SimulationQuickStartService;
 
 import br.com.iforce.praxis.simulation.service.SimulationMonitoringService;
 
@@ -114,19 +122,22 @@ public class SimulationAdminController {
     private final GupyPreflightService gupyPreflightService;
     private final TalentMatchService talentMatchService;
     private final SimulationCalibrationService simulationCalibrationService;
+    private final SimulationQuickStartService simulationQuickStartService;
 
     public SimulationAdminController(
             SimulationAdminService simulationAdminService,
             SimulationMonitoringService simulationMonitoringService,
             GupyPreflightService gupyPreflightService,
             TalentMatchService talentMatchService,
-            SimulationCalibrationService simulationCalibrationService
+            SimulationCalibrationService simulationCalibrationService,
+            SimulationQuickStartService simulationQuickStartService
     ) {
         this.simulationAdminService = simulationAdminService;
         this.simulationMonitoringService = simulationMonitoringService;
         this.gupyPreflightService = gupyPreflightService;
         this.talentMatchService = talentMatchService;
         this.simulationCalibrationService = simulationCalibrationService;
+        this.simulationQuickStartService = simulationQuickStartService;
     }
 
     /**
@@ -193,6 +204,46 @@ public class SimulationAdminController {
             @Valid @RequestBody CreateSimulationDraftRequest request
     ) {
         return ResponseEntity.ok(simulationAdminService.createDraftSimulation(request));
+    }
+
+    /**
+     * Lista os modelos prontos do "começar rápido".
+     *
+     * @return os resumos de cada modelo disponível por categoria
+     */
+    @GetMapping("/quick-start/templates")
+    @Operation(
+            summary = "Lista modelos prontos",
+            description = "Retorna os modelos do começar rápido (categoria, título, descrição e número de cenários)."
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Modelos retornados."),
+            @ApiResponse(responseCode = "403", description = "Acesso negado.", content = @Content(examples = @ExampleObject(value = ERROR_EXAMPLE)))
+    })
+    public ResponseEntity<List<QuickStartTemplateSummaryResponse>> listQuickStartTemplates() {
+        return ResponseEntity.ok(simulationQuickStartService.listTemplates());
+    }
+
+    /**
+     * Cria uma simulação em rascunho a partir de um modelo pronto.
+     *
+     * @param request a categoria do modelo a usar
+     * @return o identificador, a versão criada e a rota de destino
+     */
+    @PostMapping("/quick-start")
+    @Operation(
+            summary = "Cria rascunho a partir de modelo pronto",
+            description = "Gera uma simulação completa em rascunho (competências, etapas, respostas e pesos) a partir de um modelo por categoria."
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "201", description = "Rascunho criado."),
+            @ApiResponse(responseCode = "400", description = "Categoria invalida.", content = @Content(examples = @ExampleObject(value = ERROR_EXAMPLE))),
+            @ApiResponse(responseCode = "403", description = "Acesso negado.", content = @Content(examples = @ExampleObject(value = ERROR_EXAMPLE)))
+    })
+    public ResponseEntity<QuickStartCreatedResponse> createFromQuickStart(
+            @Valid @RequestBody QuickStartRequest request
+    ) {
+        return ResponseEntity.status(201).body(simulationQuickStartService.createFromTemplate(request.category()));
     }
 
     /**

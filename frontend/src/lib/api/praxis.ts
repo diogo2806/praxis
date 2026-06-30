@@ -1481,6 +1481,37 @@ export function createSimulationDraft(body: CreateSimulationDraftRequest) {
   });
 }
 
+export type QuickStartCategory =
+  | "ATENDIMENTO"
+  | "LIDERANCA"
+  | "VENDAS"
+  | "COMPLIANCE"
+  | "ONBOARDING";
+
+export interface QuickStartTemplateSummaryResponse {
+  category: QuickStartCategory;
+  title: string;
+  description: string;
+  nodeCount: number;
+}
+
+export interface QuickStartCreatedResponse {
+  simulationId: string;
+  versionNumber: number;
+  redirectTo: string;
+}
+
+export function getQuickStartTemplates() {
+  return request<QuickStartTemplateSummaryResponse[]>("/api/v1/simulations/quick-start/templates");
+}
+
+export function createFromQuickStart(category: QuickStartCategory) {
+  return request<QuickStartCreatedResponse>("/api/v1/simulations/quick-start", {
+    method: "POST",
+    body: JSON.stringify({ category }),
+  });
+}
+
 export function getSimulationVersion(simulationId: string, versionNumber: number) {
   return request<SimulationVersionDetailResponse>(
     `/api/v1/simulations/${encodeURIComponent(simulationId)}/versions/${versionNumber}`,

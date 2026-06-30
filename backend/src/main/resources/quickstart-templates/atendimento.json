@@ -1,0 +1,61 @@
+{
+  "category": "ATENDIMENTO",
+  "title": "Atendimento sob pressão",
+  "description": "Cenários prontos de escalonamento e SLA com cliente irritado.",
+  "name": "Atendimento sob pressão",
+  "criticalSituation": "Cliente furioso por atraso na entrega cobra solução imediata enquanto o prazo de SLA se esgota.",
+  "resultUse": "Triagem de atendimento ao cliente",
+  "rootNodeId": "turno-1",
+  "competencies": [
+    { "name": "Resolução de Conflitos", "weight": 0.6, "targetScore": 70, "tier": "major" },
+    { "name": "Aderência à Política", "weight": 0.4, "targetScore": 70, "tier": "major" }
+  ],
+  "nodes": [
+    {
+      "nodeId": "turno-1",
+      "turnIndex": 1,
+      "speaker": "Cliente",
+      "message": "Já é a terceira vez que ligo! Meu pedido está atrasado e ninguém resolve. Quero uma solução agora.",
+      "timeLimitSeconds": 90,
+      "timeoutNextNodeId": "turno-2",
+      "options": [
+        { "optionId": "opcao-1", "text": "Reconhecer o problema, pedir desculpas e confirmar o novo prazo com o cliente.", "nextNodeId": "turno-2", "auditNote": "Acolhe e assume responsabilidade.", "competencyScores": { "Resolução de Conflitos": 90, "Aderência à Política": 70 } },
+        { "optionId": "opcao-2", "text": "Explicar a política de prazos antes de tratar a frustração do cliente.", "nextNodeId": "turno-2", "auditNote": "Foca na regra, não na pessoa.", "competencyScores": { "Resolução de Conflitos": 40, "Aderência à Política": 80 } },
+        { "optionId": "opcao-3", "text": "Encaminhar direto para o supervisor sem tentar resolver.", "nextNodeId": "turno-2", "critical": true, "auditNote": "Escalonamento precoce.", "competencyScores": { "Resolução de Conflitos": 15, "Aderência à Política": 30 } }
+      ]
+    },
+    {
+      "nodeId": "turno-2",
+      "turnIndex": 2,
+      "speaker": "Cliente",
+      "message": "Tudo bem, mas eu quero um desconto pelo transtorno. Vocês cobrem isso?",
+      "timeLimitSeconds": 90,
+      "timeoutNextNodeId": "turno-3",
+      "options": [
+        { "optionId": "opcao-1", "text": "Oferecer a compensação prevista na política e registrar o caso.", "nextNodeId": "turno-3", "auditNote": "Compensa dentro da regra.", "competencyScores": { "Resolução de Conflitos": 80, "Aderência à Política": 90 } },
+        { "optionId": "opcao-2", "text": "Prometer um desconto maior do que o permitido para acalmar o cliente.", "nextNodeId": "turno-3", "critical": true, "auditNote": "Excede a alçada.", "competencyScores": { "Resolução de Conflitos": 50, "Aderência à Política": 10 } },
+        { "optionId": "opcao-3", "text": "Negar qualquer compensação sem explicar alternativas.", "nextNodeId": "turno-3", "auditNote": "Fecha sem acolher.", "competencyScores": { "Resolução de Conflitos": 20, "Aderência à Política": 60 } }
+      ]
+    },
+    {
+      "nodeId": "turno-3",
+      "turnIndex": 3,
+      "speaker": "Cliente",
+      "message": "Ok. Como vou saber que dessa vez vai ser cumprido?",
+      "timeLimitSeconds": 90,
+      "timeoutNextNodeId": "fim",
+      "options": [
+        { "optionId": "opcao-1", "text": "Combinar um retorno proativo e enviar o protocolo por escrito.", "nextNodeId": "fim", "auditNote": "Fecha com compromisso verificável.", "competencyScores": { "Resolução de Conflitos": 90, "Aderência à Política": 80 } },
+        { "optionId": "opcao-2", "text": "Garantir verbalmente que vai resolver, sem registro.", "nextNodeId": "fim", "auditNote": "Promessa sem rastro.", "competencyScores": { "Resolução de Conflitos": 45, "Aderência à Política": 30 } }
+      ]
+    },
+    {
+      "nodeId": "fim",
+      "turnIndex": 99,
+      "speaker": "Sistema",
+      "message": "Atendimento encerrado.",
+      "isFinal": true,
+      "reportText": "Resumo do atendimento para revisão da equipe de qualidade."
+    }
+  ]
+}
