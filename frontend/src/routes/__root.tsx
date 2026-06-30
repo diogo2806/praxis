@@ -123,36 +123,38 @@ function RootShell({ children }: { children: ReactNode }) {
   const { runtimeConfig } = Route.useLoaderData();
 
   return (
-    <html lang="pt-BR">
-      <head>
-        <HeadContent />
-        {/* Must run before the app bundle so getRuntimeConfig() sees it. */}
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `window.__PRAXIS_CONFIG__=${JSON.stringify(runtimeConfig)};
-            (function() {
-              const lang = localStorage.getItem('praxis-language') || 'pt-BR';
-              document.documentElement.lang = lang;
-            })();`,
-          }}
-        />
-      </head>
-      <body>
-        {children}
-        <Scripts />
-        <div
-          dangerouslySetInnerHTML={{
-            __html: `<div vw class="enabled"><div vw-access-button class="active"></div><div vw-plugin-wrapper><div class="vw-plugin-top-wrapper"></div></div></div>`,
-          }}
-        />
-        <script src="https://vlibras.gov.br/app/vlibras-plugin.js" defer />
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `document.addEventListener('DOMContentLoaded', function() { if (window.VLibras) new window.VLibras.Widget('https://vlibras.gov.br/app'); });`,
-          }}
-        />
-      </body>
-    </html>
+    <LanguageProvider>
+      <html lang="pt-BR">
+        <head>
+          <HeadContent />
+          {/* Must run before the app bundle so getRuntimeConfig() sees it. */}
+          <script
+            dangerouslySetInnerHTML={{
+              __html: `window.__PRAXIS_CONFIG__=${JSON.stringify(runtimeConfig)};
+              (function() {
+                const lang = localStorage.getItem('praxis-language') || 'pt-BR';
+                document.documentElement.lang = lang;
+              })();`,
+            }}
+          />
+        </head>
+        <body>
+          {children}
+          <Scripts />
+          <div
+            dangerouslySetInnerHTML={{
+              __html: `<div vw class="enabled"><div vw-access-button class="active"></div><div vw-plugin-wrapper><div class="vw-plugin-top-wrapper"></div></div></div>`,
+            }}
+          />
+          <script src="https://vlibras.gov.br/app/vlibras-plugin.js" defer />
+          <script
+            dangerouslySetInnerHTML={{
+              __html: `document.addEventListener('DOMContentLoaded', function() { if (window.VLibras) new window.VLibras.Widget('https://vlibras.gov.br/app'); });`,
+            }}
+          />
+        </body>
+      </html>
+    </LanguageProvider>
   );
 }
 
@@ -160,10 +162,8 @@ function RootComponent() {
   const { queryClient } = Route.useRouteContext();
 
   return (
-    <LanguageProvider>
-      <QueryClientProvider client={queryClient}>
-        <Outlet />
-      </QueryClientProvider>
-    </LanguageProvider>
+    <QueryClientProvider client={queryClient}>
+      <Outlet />
+    </QueryClientProvider>
   );
 }
