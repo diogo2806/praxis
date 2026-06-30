@@ -63,7 +63,11 @@ public enum AuditEventType implements DescribedEnum {
     INTEGRATION_SYNC_FAILED("integrationSyncFailed"),
     INTEGRATION_TOKEN_CREATED("integrationTokenCreated"),
     INTEGRATION_TOKEN_ROTATED("integrationTokenRotated"),
-    INTEGRATION_TOKEN_REVOKED("integrationTokenRevoked");
+    INTEGRATION_TOKEN_REVOKED("integrationTokenRevoked"),
+    TEAM_USER_INVITED("teamUserInvited"),
+    TEAM_USER_INVITE_RESENT("teamUserInviteResent"),
+    TEAM_USER_BLOCKED("teamUserBlocked"),
+    TEAM_USER_UNBLOCKED("teamUserUnblocked");
 
     private final String descricao;
 
