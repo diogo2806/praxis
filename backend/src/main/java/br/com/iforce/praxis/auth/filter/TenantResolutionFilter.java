@@ -67,7 +67,14 @@ public class TenantResolutionFilter extends OncePerRequestFilter {
             Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
             if (isPublicCandidateRequest(request)) {
-                TenantContextHolder.set(resolvePublicCandidateTenant(request));
+                String publicTenantId = resolvePublicCandidateTenant(request);
+                if (isTenantBlocked(publicTenantId)) {
+                    response.sendError(
+                            HttpStatus.FORBIDDEN.value(),
+                            "Cliente suspenso ou cancelado. Acesso bloqueado.");
+                    return;
+                }
+                TenantContextHolder.set(publicTenantId);
             } else if (!securityEnabled || (authentication != null
                     && authentication.isAuthenticated()
                     && !(authentication instanceof AnonymousAuthenticationToken))) {
