@@ -71,7 +71,7 @@ const startActions = [
     icon: BarChart3,
     title: "Ver o painel",
     text: "Veja as avaliações e participações que já existem.",
-    to: "/app" as const,
+    to: "/dashboard" as const,
     primary: false,
   },
   {

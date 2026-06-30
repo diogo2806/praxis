@@ -47,7 +47,7 @@ function InviteAcceptPage() {
       }),
     onSuccess: async (response) => {
       saveAuthenticatedSession(response);
-      await navigate({ to: "/app" });
+      await navigate({ to: "/dashboard" });
     },
   });
 

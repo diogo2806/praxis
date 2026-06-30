@@ -529,6 +529,113 @@ export interface RotateIntegrationTokenResponse extends IntegrationTokenResponse
   token: string;
 }
 
+export type DashboardIntegrationStatus =
+  | "CONECTADA"
+  | "PENDENTE"
+  | "ERRO"
+  | "DESATIVADA"
+  | "NAO_CONFIGURADA";
+
+export type DashboardActionSeverity = "info" | "warning" | "success" | "danger";
+
+export interface DashboardIntegrationStatusItem {
+  provider: string;
+  name: string;
+  status: DashboardIntegrationStatus;
+  lastSyncAt: string | null;
+  action: string | null;
+}
+
+export type IntegrationCenterProvider = "GUPY" | "RECRUTEI" | "CUSTOM_API";
+export type IntegrationCenterType = "ATS" | "API" | "WEBHOOK" | "CUSTOM";
+export type IntegrationCenterStatus =
+  | "CONECTADA"
+  | "PENDENTE"
+  | "ERRO"
+  | "DESATIVADA"
+  | "NAO_CONFIGURADA";
+export type IntegrationCenterAction =
+  | "CONFIGURE"
+  | "VIEW"
+  | "DISCONNECT"
+  | "SYNC"
+  | "VIEW_ERROR"
+  | "RETRY"
+  | "EDIT"
+  | "REACTIVATE";
+
+export interface IntegrationCenterItem {
+  provider: IntegrationCenterProvider;
+  name: string;
+  description: string;
+  type: IntegrationCenterType;
+  status: IntegrationCenterStatus;
+  lastSyncAt: string | null;
+  configuredAt: string | null;
+  errorMessage: string | null;
+  availableActions: IntegrationCenterAction[];
+}
+
+export interface ConfigureIntegrationRequest {
+  credentials: Record<string, unknown>;
+  settings: Record<string, unknown>;
+}
+
+export interface DashboardResponse {
+  tenantId: string;
+  tenantName: string;
+  activeSimulations: number;
+  assessmentJourneys: {
+    total: number;
+    published: number;
+    draft: number;
+  };
+  candidatesInProgress: number;
+  completedAttemptsLast30Days: number;
+  latestResults: Array<{
+    attemptId: string;
+    candidateName: string;
+    simulationOrJourneyName: string;
+    status: AttemptStatus;
+    date: string;
+    result: number | null;
+    actionLabel: string;
+    actionRoute: string;
+  }>;
+  journeys: Array<{
+    id: string;
+    name: string;
+    status: AssessmentJourneyStatus;
+    candidatesInProgress: number;
+    actionLabel: string;
+    actionRoute: string;
+  }>;
+  integrations: DashboardIntegrationStatusItem[];
+  billing: {
+    plan: CommercialPlanType;
+    status: TenantStatus;
+    creditBalance: number;
+    usedInPeriod: number;
+    subscriptionStatus: SubscriptionStatus | null;
+    nextRenewalAt: string | null;
+    commercialCondition: string | null;
+  };
+  recommendedActions: Array<{
+    type:
+      | "CREATE_FIRST_SIMULATION"
+      | "CREATE_FIRST_JOURNEY"
+      | "CONFIGURE_INTEGRATION"
+      | "PUBLISH_DRAFT_JOURNEY"
+      | "BUY_CREDITS"
+      | "VIEW_RESULTS";
+    title: string;
+    description: string;
+    severity: DashboardActionSeverity;
+    buttonLabel: string;
+    route: string;
+  }>;
+}
+
 export type TenantConfigType = "COMPETENCY" | "ANSWER_TIME_LIMIT";
 
 export interface TenantConfigOption {
@@ -631,11 +738,13 @@ function isAdminPath(path: string) {
   return (
     path.startsWith("/api/admin") ||
     path.startsWith("/api/v1/simulations") ||
+    path.startsWith("/api/v1/dashboard") ||
     path.startsWith("/api/v1/tenant-config") ||
     path.startsWith("/api/v1/account") ||
     path.startsWith("/api/v1/company-profile") ||
     path.startsWith("/api/v1/integrations") ||
     path.startsWith("/api/v1/gupy/result-deliveries") ||
+    path.startsWith("/api/v1/results") ||
     path.startsWith("/api/v1/notifications") ||
     path.startsWith("/api/v1/audit") ||
     path.startsWith("/api/v1/terms") ||
@@ -682,10 +791,155 @@ export function rotateIntegrationToken(provider: IntegrationProvider) {
   );
 }
 
+export function getDashboard() {
+  return request<DashboardResponse>("/api/v1/dashboard");
+}
+
+export interface ResultsListFilters {
+  search?: string;
+  simulationId?: string;
+  status?: AttemptStatus;
+  integrationProvider?: string;
+  periodStart?: string;
+  periodEnd?: string;
+  page?: number;
+  size?: number;
+}
+
+export interface ResultListItemResponse {
+  attemptId: string;
+  candidateName: string;
+  candidateEmail: string;
+  simulationId: string;
+  simulationTitle: string;
+  status: AttemptStatus;
+  startedAt: string | null;
+  finishedAt: string | null;
+  overallScore: number | null;
+  highlightCompetency: string | null;
+  integrationProvider: string | null;
+}
+
+export interface ResultsSummaryResponse {
+  completed: number;
+  inProgress: number;
+  expired: number;
+  averageScore: number | null;
+}
+
+export interface ResultsPageResponse {
+  items: ResultListItemResponse[];
+  summary: ResultsSummaryResponse;
+  page: number;
+  size: number;
+  totalItems: number;
+  totalPages: number;
+}
+
+export interface ResultDetailResponse {
+  attemptId: string;
+  candidate: {
+    name: string;
+    email: string;
+    externalId: string | null;
+  };
+  simulation: {
+    id: string;
+    title: string;
+    versionNumber: number | null;
+  };
+  status: AttemptStatus;
+  startedAt: string | null;
+  finishedAt: string | null;
+  overallScore: number | null;
+  competencies: Array<{
+    name: string;
+    score: number;
+    level: "ALTO" | "MEDIO" | "BAIXO" | string;
+    summary: string;
+  }>;
+  answers: Array<{
+    stepTitle: string;
+    question: string;
+    answer: string | null;
+    score: number | null;
+  }>;
+  humanDecision: {
+    status: string | null;
+    decidedBy: string | null;
+    decidedAt: string | null;
+    note: string | null;
+  };
+}
+
+export interface RegisterResultDecisionRequest {
+  decision: HumanDecision;
+  note?: string;
+}
+
+export function listResults(filters: ResultsListFilters = {}) {
+  const params = new URLSearchParams();
+  if (filters.search) params.set("search", filters.search);
+  if (filters.simulationId) params.set("simulationId", filters.simulationId);
+  if (filters.status) params.set("status", filters.status);
+  if (filters.integrationProvider) params.set("integrationProvider", filters.integrationProvider);
+  if (filters.periodStart) params.set("periodStart", filters.periodStart);
+  if (filters.periodEnd) params.set("periodEnd", filters.periodEnd);
+  params.set("page", String(filters.page ?? 0));
+  params.set("size", String(filters.size ?? 20));
+  return request<ResultsPageResponse>(`/api/v1/results?${params.toString()}`);
+}
+
+export function getResultDetail(attemptId: string) {
+  return request<ResultDetailResponse>(`/api/v1/results/${encodeURIComponent(attemptId)}`);
+}
+
+export function registerResultDecision(attemptId: string, body: RegisterResultDecisionRequest) {
+  return request<void>(`/api/v1/results/${encodeURIComponent(attemptId)}/decision`, {
+    method: "POST",
+    body: JSON.stringify(body),
+  });
+}
+
+export function getIntegrationsStatus() {
+  return request<DashboardIntegrationStatusItem[]>("/api/v1/integrations/status");
+}
+
 export function deleteIntegrationToken(provider: IntegrationProvider) {
   return request<void>(`/api/v1/integrations/tokens/${encodeURIComponent(provider)}`, {
     method: "DELETE",
   });
+}
+
+export function listIntegrations() {
+  return request<IntegrationCenterItem[]>("/api/v1/integrations");
+}
+
+export function configureIntegration(
+  provider: IntegrationCenterProvider,
+  body: ConfigureIntegrationRequest,
+) {
+  return request<IntegrationCenterItem>(
+    `/api/v1/integrations/${encodeURIComponent(provider)}/configure`,
+    {
+      method: "POST",
+      body: JSON.stringify(body),
+    },
+  );
+}
+
+export function disconnectIntegration(provider: IntegrationCenterProvider) {
+  return request<IntegrationCenterItem>(
+    `/api/v1/integrations/${encodeURIComponent(provider)}/disconnect`,
+    { method: "POST" },
+  );
+}
+
+export function syncIntegration(provider: IntegrationCenterProvider) {
+  return request<IntegrationCenterItem>(
+    `/api/v1/integrations/${encodeURIComponent(provider)}/sync`,
+    { method: "POST" },
+  );
 }
 
 export function getCandidateAttempt(attemptId: string) {

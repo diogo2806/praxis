@@ -8,13 +8,14 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.repository.query.Param;
 
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 
-public interface CandidateAttemptRepository extends JpaRepository<CandidateAttemptEntity, String> {
+public interface CandidateAttemptRepository extends JpaRepository<CandidateAttemptEntity, String>, JpaSpecificationExecutor<CandidateAttemptEntity> {
 
     @EntityGraph(attributePaths = {"answers", "resultItems"})
     Optional<CandidateAttemptEntity> findByTenantIdAndIdempotencyKey(String tenantId, String idempotencyKey);
@@ -54,6 +55,8 @@ public interface CandidateAttemptRepository extends JpaRepository<CandidateAttem
 
     /** Total de tentativas concluídas de um tenant em toda a sua história. */
     long countByTenantIdAndStatus(String tenantId, AttemptStatus status);
+
+    long countByTenantIdAndStatusIn(String tenantId, List<AttemptStatus> statuses);
 
     /** Total de tentativas concluídas na plataforma inteira dentro do período informado. */
     long countByStatusAndFinishedAtBetween(AttemptStatus status, Instant from, Instant to);

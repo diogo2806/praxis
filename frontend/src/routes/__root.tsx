@@ -31,7 +31,7 @@ function NotFoundComponent() {
         <p className="mt-2 text-sm text-muted-foreground">{t.common.pageNotFoundDesc}</p>
         <div className="mt-6">
           <Link
-            to="/app"
+            to="/dashboard"
             className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
           >
             {t.common.backToPanel}
@@ -68,7 +68,7 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
             {t.common.tryAgain}
           </button>
           <a
-            href="/app"
+            href="/dashboard"
             className="inline-flex items-center justify-center rounded-md border border-input bg-background px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-accent"
           >
             {t.common.backToPanel}
