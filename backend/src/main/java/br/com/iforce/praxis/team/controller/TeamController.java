@@ -1,6 +1,6 @@
 package br.com.iforce.praxis.team.controller;
 
-import br.com.iforce.praxis.auth.service.CurrentTenantService;
+import br.com.iforce.praxis.auth.service.CurrentEmpresaService;
 import br.com.iforce.praxis.auth.service.CurrentUserService;
 import br.com.iforce.praxis.team.dto.InviteTeamUserRequest;
 import br.com.iforce.praxis.team.dto.InviteTeamUserResponse;
@@ -31,30 +31,30 @@ import java.util.List;
 public class TeamController {
 
     private final TeamService teamService;
-    private final CurrentTenantService currentTenantService;
+    private final CurrentEmpresaService currentEmpresaService;
     private final CurrentUserService currentUserService;
 
     public TeamController(
             TeamService teamService,
-            CurrentTenantService currentTenantService,
+            CurrentEmpresaService currentEmpresaService,
             CurrentUserService currentUserService
     ) {
         this.teamService = teamService;
-        this.currentTenantService = currentTenantService;
+        this.currentEmpresaService = currentEmpresaService;
         this.currentUserService = currentUserService;
     }
 
     @GetMapping
     @Operation(summary = "Lista usuários da equipe")
     public ResponseEntity<List<TeamUserResponse>> list() {
-        String tenantId = currentTenantService.requiredTenantId();
+        String tenantId = currentEmpresaService.requiredEmpresaId();
         return ResponseEntity.ok(teamService.listUsers(tenantId));
     }
 
     @PostMapping("/invite")
     @Operation(summary = "Convida novo usuário EMPRESA")
     public ResponseEntity<InviteTeamUserResponse> invite(@Valid @RequestBody InviteTeamUserRequest request) {
-        String tenantId = currentTenantService.requiredTenantId();
+        String tenantId = currentEmpresaService.requiredEmpresaId();
         String actorUserId = currentUserService.requiredUserId();
         return ResponseEntity.ok(teamService.inviteUser(actorUserId, tenantId, request));
     }
@@ -62,7 +62,7 @@ public class TeamController {
     @PostMapping("/{userId}/resend-invite")
     @Operation(summary = "Reenvia convite pendente")
     public ResponseEntity<InviteTeamUserResponse> resendInvite(@PathVariable Long userId) {
-        String tenantId = currentTenantService.requiredTenantId();
+        String tenantId = currentEmpresaService.requiredEmpresaId();
         String actorUserId = currentUserService.requiredUserId();
         return ResponseEntity.ok(teamService.resendInvite(actorUserId, tenantId, userId));
     }
@@ -70,7 +70,7 @@ public class TeamController {
     @PostMapping("/{userId}/block")
     @Operation(summary = "Bloqueia usuário")
     public ResponseEntity<TeamUserResponse> block(@PathVariable Long userId) {
-        String tenantId = currentTenantService.requiredTenantId();
+        String tenantId = currentEmpresaService.requiredEmpresaId();
         String actorUserId = currentUserService.requiredUserId();
         return ResponseEntity.ok(teamService.blockUser(actorUserId, tenantId, userId));
     }
@@ -78,7 +78,7 @@ public class TeamController {
     @PostMapping("/{userId}/unblock")
     @Operation(summary = "Desbloqueia usuário")
     public ResponseEntity<TeamUserResponse> unblock(@PathVariable Long userId) {
-        String tenantId = currentTenantService.requiredTenantId();
+        String tenantId = currentEmpresaService.requiredEmpresaId();
         String actorUserId = currentUserService.requiredUserId();
         return ResponseEntity.ok(teamService.unblockUser(actorUserId, tenantId, userId));
     }
