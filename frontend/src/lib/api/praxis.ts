@@ -2101,6 +2101,52 @@ export function unblockAdminTenantUser(tenantId: string, userId: number) {
 }
 
 // ---------------------------------------------------------------------------
+// Equipe — gerenciamento de usuários pelo próprio cliente
+// ---------------------------------------------------------------------------
+
+export type TeamUserStatus = "ATIVO" | "CONVIDADO" | "BLOQUEADO";
+
+export interface TeamUser {
+  id: number;
+  name: string;
+  email: string;
+  roles: string[];
+  status: TeamUserStatus;
+  lastLoginAt: string | null;
+  createdAt: string | null;
+}
+
+export interface InviteTeamUserResponse {
+  user: TeamUser;
+  inviteUrl: string;
+}
+
+export function listTeamUsers() {
+  return request<TeamUser[]>("/api/v1/team");
+}
+
+export function inviteTeamUser(body: { name: string; email: string }) {
+  return request<InviteTeamUserResponse>("/api/v1/team/invite", {
+    method: "POST",
+    body: JSON.stringify(body),
+  });
+}
+
+export function resendTeamUserInvite(userId: number) {
+  return request<InviteTeamUserResponse>(`/api/v1/team/${userId}/resend-invite`, {
+    method: "POST",
+  });
+}
+
+export function blockTeamUser(userId: number) {
+  return request<TeamUser>(`/api/v1/team/${userId}/block`, { method: "POST" });
+}
+
+export function unblockTeamUser(userId: number) {
+  return request<TeamUser>(`/api/v1/team/${userId}/unblock`, { method: "POST" });
+}
+
+// ---------------------------------------------------------------------------
 // Cobrança Mercado Pago (Parte B) — perfil ADMIN
 // ---------------------------------------------------------------------------
 

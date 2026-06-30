@@ -20,6 +20,7 @@ import {
   Sparkles,
   Target,
   UserRound,
+  Users,
   Workflow,
 } from "lucide-react";
 import { GlobalErrorFlow, GlobalProductStateBar, StateBanner } from "@/components/praxis-ui";
@@ -113,6 +114,12 @@ const getSettingsNav = (t: TranslationMap) =>
       desc: "Conexões externas",
     },
     {
+      to: "/team",
+      label: "Minha equipe",
+      icon: Users,
+      desc: "Gerencie os usuários da sua empresa",
+    },
+    {
       to: "/competencias",
       label: t.common.competencies,
       icon: Settings,
@@ -146,6 +153,7 @@ function SidebarContent({
   const settingsNav = getSettingsNav(t);
   const settingsActive =
     pathname === "/competencias" ||
+    pathname === "/team" ||
     pathname === "/configuracoes" ||
     pathname.startsWith("/configuracoes/");
   const [settingsOpen, setSettingsOpen] = useState(settingsActive);
@@ -331,6 +339,7 @@ function pageLabel(pathname: string, t: TranslationMap) {
   if (pathname === "/configuracoes/integracoes") return "Integrações";
   if (pathname === "/competencias") return t.common.competencies;
   if (pathname === "/comecar") return t.common.startHere;
+  if (pathname === "/team") return "Minha equipe";
   return t.common.workspace;
 }
 
