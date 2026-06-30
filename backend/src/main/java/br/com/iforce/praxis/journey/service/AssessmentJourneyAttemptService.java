@@ -525,6 +525,7 @@ public class AssessmentJourneyAttemptService {
                     step.getJourneyStepId(),
                     step.getSimulationId(),
                     resolveSimulationName(attempt.getTenantId(), step.getSimulationId(), nameCache),
+                    step.getSimulationVersionNumber(),
                     step.getOrderIndex(),
                     step.isRequired(),
                     step.getStatus(),

@@ -18,6 +18,7 @@ import {
   Sparkles,
   Target,
   UserRound,
+  Workflow,
 } from "lucide-react";
 import { GlobalErrorFlow, GlobalProductStateBar, StateBanner } from "@/components/praxis-ui";
 import { LanguageSelector } from "@/components/language-selector";
@@ -57,6 +58,12 @@ const getNav = (t: TranslationMap) =>
       label: t.common.talentMatch,
       icon: Target,
       desc: t.descriptions.talentMatch,
+    },
+    {
+      to: "/jornadas",
+      label: "Jornadas",
+      icon: Workflow,
+      desc: "Sequencias de testes publicados",
     },
     { to: "/enviar-link", label: t.common.sendLink, icon: Link2, desc: t.descriptions.sendLink },
   ] as const;
@@ -124,7 +131,9 @@ function SidebarContent({
 }) {
   const settingsNav = getSettingsNav(t);
   const settingsActive =
-    pathname === "/competencias" || pathname === "/configuracoes" || pathname.startsWith("/configuracoes/");
+    pathname === "/competencias" ||
+    pathname === "/configuracoes" ||
+    pathname.startsWith("/configuracoes/");
   const [settingsOpen, setSettingsOpen] = useState(settingsActive);
 
   useEffect(() => {
@@ -219,7 +228,10 @@ function SidebarContent({
           <Settings className="h-4 w-4 shrink-0 text-muted-foreground" />
           <span className="min-w-0 flex-1">{t.common.settings}</span>
           <ChevronDown
-            className={cn("h-4 w-4 shrink-0 text-muted-foreground transition-transform", settingsOpen && "rotate-180")}
+            className={cn(
+              "h-4 w-4 shrink-0 text-muted-foreground transition-transform",
+              settingsOpen && "rotate-180",
+            )}
           />
         </button>
         {settingsOpen && (
@@ -295,6 +307,7 @@ function pageLabel(pathname: string, t: TranslationMap) {
   if (pathname === "/app") return t.common.dashboard;
   if (pathname.startsWith("/nova")) return t.common.createTest;
   if (pathname === "/talent-match") return t.common.talentMatch;
+  if (pathname === "/jornadas") return "Jornadas";
   if (pathname === "/enviar-link") return t.common.sendLink;
   if (pathname === "/compliance") return t.common.compliance;
   if (pathname === "/configuracoes" || pathname === "/configuracoes/perfil")

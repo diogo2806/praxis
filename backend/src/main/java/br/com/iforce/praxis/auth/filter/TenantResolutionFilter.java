@@ -5,6 +5,7 @@ import br.com.iforce.praxis.auth.persistence.repository.TenantRepository;
 import br.com.iforce.praxis.auth.service.CurrentTenantService;
 import br.com.iforce.praxis.auth.service.JwtService;
 import br.com.iforce.praxis.gupy.persistence.repository.CandidateAttemptRepository;
+import br.com.iforce.praxis.journey.persistence.repository.AssessmentJourneyAttemptRepository;
 import io.jsonwebtoken.JwtException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -26,6 +27,7 @@ public class TenantResolutionFilter extends OncePerRequestFilter {
     private final CurrentTenantService currentTenantService;
     private final JwtService jwtService;
     private final CandidateAttemptRepository candidateAttemptRepository;
+    private final AssessmentJourneyAttemptRepository assessmentJourneyAttemptRepository;
     private final TenantRepository tenantRepository;
     private final boolean securityEnabled;
     private final String defaultTenantId;
@@ -34,6 +36,7 @@ public class TenantResolutionFilter extends OncePerRequestFilter {
             CurrentTenantService currentTenantService,
             JwtService jwtService,
             CandidateAttemptRepository candidateAttemptRepository,
+            AssessmentJourneyAttemptRepository assessmentJourneyAttemptRepository,
             TenantRepository tenantRepository,
             @Value("${praxis.security.enabled:true}") boolean securityEnabled,
             @Value("${praxis.default-tenant-id:tenant-1}") String defaultTenantId
@@ -41,6 +44,7 @@ public class TenantResolutionFilter extends OncePerRequestFilter {
         this.currentTenantService = currentTenantService;
         this.jwtService = jwtService;
         this.candidateAttemptRepository = candidateAttemptRepository;
+        this.assessmentJourneyAttemptRepository = assessmentJourneyAttemptRepository;
         this.tenantRepository = tenantRepository;
         this.securityEnabled = securityEnabled;
         this.defaultTenantId = defaultTenantId;
@@ -111,6 +115,16 @@ public class TenantResolutionFilter extends OncePerRequestFilter {
             return defaultTenantId;
         }
 
+        if (request.getRequestURI().startsWith("/candidate/journey-attempts/")) {
+            String journeyAttemptId = extractJourneyAttemptId(request);
+            if (journeyAttemptId == null || journeyAttemptId.isBlank()) {
+                return defaultTenantId;
+            }
+            return assessmentJourneyAttemptRepository.findById(journeyAttemptId)
+                    .map(journeyAttempt -> journeyAttempt.getTenantId())
+                    .orElse(defaultTenantId);
+        }
+
         String token = extractCandidateAttemptToken(request);
         if (token == null || token.isBlank()) {
             return defaultTenantId;
@@ -137,6 +151,17 @@ public class TenantResolutionFilter extends OncePerRequestFilter {
     private String extractCandidateAttemptToken(HttpServletRequest request) {
         String uri = request.getRequestURI();
         String prefix = "/candidate/attempts/";
+        if (!uri.startsWith(prefix)) {
+            return null;
+        }
+        String remaining = uri.substring(prefix.length());
+        int nextSlash = remaining.indexOf('/');
+        return nextSlash >= 0 ? remaining.substring(0, nextSlash) : remaining;
+    }
+
+    private String extractJourneyAttemptId(HttpServletRequest request) {
+        String uri = request.getRequestURI();
+        String prefix = "/candidate/journey-attempts/";
         if (!uri.startsWith(prefix)) {
             return null;
         }

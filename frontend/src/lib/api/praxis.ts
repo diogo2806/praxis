@@ -311,12 +311,139 @@ export interface AuditEventResponse {
   id: number;
   aggregateType: string;
   aggregateId: string;
-  eventType: AuditEventType;
+  eventType: AuditEventType | string;
   message: string;
   metadata: string | null;
   createdAt: string;
 }
 
+export type AssessmentJourneyStatus = "DRAFT" | "PUBLISHED" | "ARCHIVED";
+export type AssessmentJourneyAttemptStatus =
+  | "CREATED"
+  | "IN_PROGRESS"
+  | "COMPLETED"
+  | "EXPIRED"
+  | "ABANDONED";
+export type AssessmentJourneyStepStatus = "PENDING" | "IN_PROGRESS" | "COMPLETED" | "SKIPPED";
+
+export interface JourneyStepResponse {
+  id: number;
+  simulationId: string;
+  simulationName: string;
+  simulationVersionNumber: number;
+  sequenceKey: string;
+  orderIndex: number;
+  required: boolean;
+}
+
+export interface AssessmentJourneySequenceResponse {
+  sequenceKey: string;
+  steps: JourneyStepResponse[];
+}
+
+export interface AssessmentJourneySummaryResponse {
+  id: string;
+  name: string;
+  description: string | null;
+  status: AssessmentJourneyStatus;
+  stepCount: number;
+  sequenceCount: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface AssessmentJourneyDetailResponse {
+  id: string;
+  name: string;
+  description: string | null;
+  status: AssessmentJourneyStatus;
+  createdAt: string;
+  updatedAt: string;
+  publishedAt: string | null;
+  sequences: AssessmentJourneySequenceResponse[];
+}
+
+export interface CreateAssessmentJourneyRequest {
+  name: string;
+  description?: string | null;
+}
+
+export interface UpdateAssessmentJourneyRequest {
+  name?: string | null;
+  description?: string | null;
+}
+
+export interface AddJourneyStepRequest {
+  simulationId: string;
+  sequenceKey?: string | null;
+  orderIndex?: number | null;
+  required?: boolean | null;
+}
+
+export interface UpdateJourneyStepRequest {
+  sequenceKey?: string | null;
+  orderIndex?: number | null;
+  required?: boolean | null;
+}
+
+export interface JourneyAttemptStepResponse {
+  id: number;
+  journeyStepId: number;
+  simulationId: string;
+  simulationName: string;
+  simulationVersionNumber: number;
+  orderIndex: number;
+  required: boolean;
+  status: AssessmentJourneyStepStatus;
+  candidateAttemptId: string | null;
+  candidateUrl: string | null;
+  startedAt: string | null;
+  completedAt: string | null;
+}
+
+export interface AssessmentJourneyAttemptResponse {
+  id: string;
+  journeyId: string;
+  journeyName: string;
+  candidateName: string;
+  candidateEmail: string;
+  sequenceKey: string;
+  status: AssessmentJourneyAttemptStatus;
+  startedAt: string | null;
+  completedAt: string | null;
+  createdAt: string;
+  steps: JourneyAttemptStepResponse[];
+}
+
+export interface CreateJourneyAttemptRequest {
+  journeyId: string;
+  candidateName: string;
+  candidateEmail: string;
+  sequenceKey?: string | null;
+}
+
+export interface JourneyConsolidatedResultResponse {
+  journeyAttemptId: string;
+  journeyId: string;
+  journeyName: string;
+  candidateName: string;
+  candidateEmail: string;
+  sequenceKey: string;
+  status: AssessmentJourneyAttemptStatus;
+  startedAt: string | null;
+  completedAt: string | null;
+  tests: Array<{
+    simulationId: string;
+    simulationName: string;
+    simulationVersionNumber: number;
+    required: boolean;
+    stepStatus: AssessmentJourneyStepStatus;
+    candidateAttemptId: string | null;
+    attemptStatus: AttemptStatus | null;
+    score: number | null;
+    competencies: Array<{ name: string; score: number }>;
+  }>;
+}
 
 export interface CloneSimulationVersionResponse {
   simulationId: string;
@@ -402,9 +529,7 @@ export interface RotateIntegrationTokenResponse extends IntegrationTokenResponse
   token: string;
 }
 
-export type TenantConfigType =
-  | "COMPETENCY"
-  | "ANSWER_TIME_LIMIT";
+export type TenantConfigType = "COMPETENCY" | "ANSWER_TIME_LIMIT";
 
 export interface TenantConfigOption {
   value: string;
@@ -514,6 +639,8 @@ function isAdminPath(path: string) {
     path.startsWith("/api/v1/notifications") ||
     path.startsWith("/api/v1/audit") ||
     path.startsWith("/api/v1/terms") ||
+    path.startsWith("/api/v1/assessment-journeys") ||
+    path.startsWith("/api/v1/assessment-journey-attempts") ||
     path.startsWith("/api/v1/candidate-links")
   );
 }
@@ -579,11 +706,152 @@ export function listSimulations() {
   return request<SimulationSummaryResponse[]>("/api/v1/simulations");
 }
 
-export function deleteSimulation(simulationId: string) {
+export function listAssessmentJourneys() {
+  return request<AssessmentJourneySummaryResponse[]>("/api/v1/assessment-journeys");
+}
+
+export function createAssessmentJourney(body: CreateAssessmentJourneyRequest) {
+  return request<AssessmentJourneyDetailResponse>("/api/v1/assessment-journeys", {
+    method: "POST",
+    body: JSON.stringify(body),
+  });
+}
+
+export function getAssessmentJourney(journeyId: string) {
+  return request<AssessmentJourneyDetailResponse>(
+    `/api/v1/assessment-journeys/${encodeURIComponent(journeyId)}`,
+  );
+}
+
+export function updateAssessmentJourney(journeyId: string, body: UpdateAssessmentJourneyRequest) {
+  return request<AssessmentJourneyDetailResponse>(
+    `/api/v1/assessment-journeys/${encodeURIComponent(journeyId)}`,
+    { method: "PATCH", body: JSON.stringify(body) },
+  );
+}
+
+export function addAssessmentJourneyStep(journeyId: string, body: AddJourneyStepRequest) {
+  return request<AssessmentJourneyDetailResponse>(
+    `/api/v1/assessment-journeys/${encodeURIComponent(journeyId)}/steps`,
+    { method: "POST", body: JSON.stringify(body) },
+  );
+}
+
+export function updateAssessmentJourneyStep(
+  journeyId: string,
+  stepId: number,
+  body: UpdateJourneyStepRequest,
+) {
+  return request<AssessmentJourneyDetailResponse>(
+    `/api/v1/assessment-journeys/${encodeURIComponent(journeyId)}/steps/${stepId}`,
+    { method: "PATCH", body: JSON.stringify(body) },
+  );
+}
+
+export function deleteAssessmentJourneyStep(journeyId: string, stepId: number) {
   return request<void>(
-    `/api/v1/simulations/${encodeURIComponent(simulationId)}`,
+    `/api/v1/assessment-journeys/${encodeURIComponent(journeyId)}/steps/${stepId}`,
     { method: "DELETE" },
   );
+}
+
+export function publishAssessmentJourney(journeyId: string) {
+  return request<AssessmentJourneyDetailResponse>(
+    `/api/v1/assessment-journeys/${encodeURIComponent(journeyId)}/publish`,
+    { method: "POST" },
+  );
+}
+
+export function archiveAssessmentJourney(journeyId: string) {
+  return request<AssessmentJourneyDetailResponse>(
+    `/api/v1/assessment-journeys/${encodeURIComponent(journeyId)}/archive`,
+    { method: "POST" },
+  );
+}
+
+export function listAssessmentJourneyAttempts(journeyId: string) {
+  return request<AssessmentJourneyAttemptResponse[]>(
+    `/api/v1/assessment-journeys/${encodeURIComponent(journeyId)}/attempts`,
+  );
+}
+
+export function createAssessmentJourneyAttempt(body: CreateJourneyAttemptRequest) {
+  return request<AssessmentJourneyAttemptResponse>("/api/v1/assessment-journey-attempts", {
+    method: "POST",
+    body: JSON.stringify(body),
+  });
+}
+
+export function getAssessmentJourneyAttempt(attemptId: string) {
+  return request<AssessmentJourneyAttemptResponse>(
+    `/api/v1/assessment-journey-attempts/${encodeURIComponent(attemptId)}`,
+  );
+}
+
+export function startAssessmentJourneyAttempt(attemptId: string) {
+  return request<AssessmentJourneyAttemptResponse>(
+    `/api/v1/assessment-journey-attempts/${encodeURIComponent(attemptId)}/start`,
+    { method: "POST" },
+  );
+}
+
+export function startAssessmentJourneyAttemptStep(attemptId: string, stepId: number) {
+  return request<AssessmentJourneyAttemptResponse>(
+    `/api/v1/assessment-journey-attempts/${encodeURIComponent(attemptId)}/steps/${stepId}/start`,
+    { method: "POST" },
+  );
+}
+
+export function completeAssessmentJourneyAttemptStep(attemptId: string, stepId: number) {
+  return request<AssessmentJourneyAttemptResponse>(
+    `/api/v1/assessment-journey-attempts/${encodeURIComponent(attemptId)}/steps/${stepId}/complete`,
+    { method: "POST" },
+  );
+}
+
+export function getAssessmentJourneyResult(attemptId: string) {
+  return request<JourneyConsolidatedResultResponse>(
+    `/api/v1/assessment-journey-attempts/${encodeURIComponent(attemptId)}/result`,
+  );
+}
+
+export function getPublicAssessmentJourneyAttempt(attemptId: string) {
+  return request<AssessmentJourneyAttemptResponse>(
+    `/candidate/journey-attempts/${encodeURIComponent(attemptId)}`,
+  );
+}
+
+export function startPublicAssessmentJourneyAttempt(attemptId: string) {
+  return request<AssessmentJourneyAttemptResponse>(
+    `/candidate/journey-attempts/${encodeURIComponent(attemptId)}/start`,
+    { method: "POST" },
+  );
+}
+
+export function startPublicAssessmentJourneyAttemptStep(attemptId: string, stepId: number) {
+  return request<AssessmentJourneyAttemptResponse>(
+    `/candidate/journey-attempts/${encodeURIComponent(attemptId)}/steps/${stepId}/start`,
+    { method: "POST" },
+  );
+}
+
+export function completePublicAssessmentJourneyAttemptStep(attemptId: string, stepId: number) {
+  return request<AssessmentJourneyAttemptResponse>(
+    `/candidate/journey-attempts/${encodeURIComponent(attemptId)}/steps/${stepId}/complete`,
+    { method: "POST" },
+  );
+}
+
+export function getPublicAssessmentJourneyResult(attemptId: string) {
+  return request<JourneyConsolidatedResultResponse>(
+    `/candidate/journey-attempts/${encodeURIComponent(attemptId)}/result`,
+  );
+}
+
+export function deleteSimulation(simulationId: string) {
+  return request<void>(`/api/v1/simulations/${encodeURIComponent(simulationId)}`, {
+    method: "DELETE",
+  });
 }
 
 export function createSimulationDraft(body: CreateSimulationDraftRequest) {
@@ -733,7 +1001,6 @@ export function cloneSimulationVersionToDraft(simulationId: string, versionNumbe
     { method: "POST" },
   );
 }
-
 
 export function publishSimulationVersion(simulationId: string, versionNumber: number) {
   return request<PublishSimulationResponse>(
@@ -1177,11 +1444,18 @@ export function suspendAdminTenant(tenantId: string, reason: string) {
   });
 }
 
-export function reactivateAdminTenant(tenantId: string, reason: string, targetStatus?: TenantStatus) {
-  return request<TenantAdminDetail>(`/api/admin/tenants/${encodeURIComponent(tenantId)}/reactivate`, {
-    method: "POST",
-    body: JSON.stringify({ reason, targetStatus }),
-  });
+export function reactivateAdminTenant(
+  tenantId: string,
+  reason: string,
+  targetStatus?: TenantStatus,
+) {
+  return request<TenantAdminDetail>(
+    `/api/admin/tenants/${encodeURIComponent(tenantId)}/reactivate`,
+    {
+      method: "POST",
+      body: JSON.stringify({ reason, targetStatus }),
+    },
+  );
 }
 
 export function cancelAdminTenant(tenantId: string, reason: string) {
@@ -1235,12 +1509,7 @@ export function unblockAdminTenantUser(tenantId: string, userId: number) {
 // Cobrança Mercado Pago (Parte B) — perfil ADMIN
 // ---------------------------------------------------------------------------
 
-export type SubscriptionStatus =
-  | "PENDING"
-  | "AUTHORIZED"
-  | "DELINQUENT"
-  | "PAUSED"
-  | "CANCELLED";
+export type SubscriptionStatus = "PENDING" | "AUTHORIZED" | "DELINQUENT" | "PAUSED" | "CANCELLED";
 
 export interface SubscriptionPlan {
   id: number;
@@ -1317,7 +1586,6 @@ export function syncTenantBilling(tenantId: string, resourceType: string, resour
     { method: "POST", body: JSON.stringify({ resourceType, resourceId }) },
   );
 }
-
 
 export type AcceptInviteRequest = {
   token: string;

@@ -19,6 +19,9 @@ public record JourneyAttemptStepResponse(
         @Schema(example = "Teste de Atendimento")
         String simulationName,
 
+        @Schema(example = "3")
+        int simulationVersionNumber,
+
         @Schema(example = "0")
         int orderIndex,
 

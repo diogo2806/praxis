@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as TalentMatchRouteImport } from './routes/talent-match'
 import { Route as RecuperarSenhaRouteImport } from './routes/recuperar-senha'
 import { Route as MonitoramentoRouteImport } from './routes/monitoramento'
+import { Route as JornadasRouteImport } from './routes/jornadas'
 import { Route as EnviarLinkRouteImport } from './routes/enviar-link'
 import { Route as ConfiguracoesRouteImport } from './routes/configuracoes'
 import { Route as ComplianceRouteImport } from './routes/compliance'
@@ -21,6 +22,7 @@ import { Route as CandidatoRouteImport } from './routes/candidato'
 import { Route as AppRouteImport } from './routes/app'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AdminIndexRouteImport } from './routes/admin.index'
+import { Route as ResetPasswordTokenRouteImport } from './routes/reset-password.$token'
 import { Route as NovaValidadorRouteImport } from './routes/nova.validador'
 import { Route as NovaPilotoRouteImport } from './routes/nova.piloto'
 import { Route as NovaPersonagemRouteImport } from './routes/nova.personagem'
@@ -31,8 +33,8 @@ import { Route as NovaGovernancaRouteImport } from './routes/nova.governanca'
 import { Route as NovaDialogoRouteImport } from './routes/nova.dialogo'
 import { Route as NovaCompetenciasRouteImport } from './routes/nova.competencias'
 import { Route as NovaBlueprintRouteImport } from './routes/nova.blueprint'
+import { Route as JornadaAttemptIdRouteImport } from './routes/jornada.$attemptId'
 import { Route as ConviteTokenRouteImport } from './routes/convite.$token'
-import { Route as ResetPasswordTokenRouteImport } from './routes/reset-password.$token'
 import { Route as ConfiguracoesPerfilRouteImport } from './routes/configuracoes.perfil'
 import { Route as ConfiguracoesIntegracoesRouteImport } from './routes/configuracoes.integracoes'
 import { Route as ConfiguracoesContaRouteImport } from './routes/configuracoes.conta'
@@ -53,6 +55,11 @@ const RecuperarSenhaRoute = RecuperarSenhaRouteImport.update({
 const MonitoramentoRoute = MonitoramentoRouteImport.update({
   id: '/monitoramento',
   path: '/monitoramento',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const JornadasRoute = JornadasRouteImport.update({
+  id: '/jornadas',
+  path: '/jornadas',
   getParentRoute: () => rootRouteImport,
 } as any)
 const EnviarLinkRoute = EnviarLinkRouteImport.update({
@@ -98,6 +105,11 @@ const IndexRoute = IndexRouteImport.update({
 const AdminIndexRoute = AdminIndexRouteImport.update({
   id: '/admin/',
   path: '/admin/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ResetPasswordTokenRoute = ResetPasswordTokenRouteImport.update({
+  id: '/reset-password/$token',
+  path: '/reset-password/$token',
   getParentRoute: () => rootRouteImport,
 } as any)
 const NovaValidadorRoute = NovaValidadorRouteImport.update({
@@ -150,14 +162,14 @@ const NovaBlueprintRoute = NovaBlueprintRouteImport.update({
   path: '/nova/blueprint',
   getParentRoute: () => rootRouteImport,
 } as any)
+const JornadaAttemptIdRoute = JornadaAttemptIdRouteImport.update({
+  id: '/jornada/$attemptId',
+  path: '/jornada/$attemptId',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ConviteTokenRoute = ConviteTokenRouteImport.update({
   id: '/convite/$token',
   path: '/convite/$token',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ResetPasswordTokenRoute = ResetPasswordTokenRouteImport.update({
-  id: '/reset-password/$token',
-  path: '/reset-password/$token',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ConfiguracoesPerfilRoute = ConfiguracoesPerfilRouteImport.update({
@@ -201,6 +213,7 @@ export interface FileRoutesByFullPath {
   '/compliance': typeof ComplianceRoute
   '/configuracoes': typeof ConfiguracoesRouteWithChildren
   '/enviar-link': typeof EnviarLinkRoute
+  '/jornadas': typeof JornadasRoute
   '/monitoramento': typeof MonitoramentoRoute
   '/recuperar-senha': typeof RecuperarSenhaRoute
   '/talent-match': typeof TalentMatchRoute
@@ -209,6 +222,7 @@ export interface FileRoutesByFullPath {
   '/configuracoes/integracoes': typeof ConfiguracoesIntegracoesRoute
   '/configuracoes/perfil': typeof ConfiguracoesPerfilRoute
   '/convite/$token': typeof ConviteTokenRoute
+  '/jornada/$attemptId': typeof JornadaAttemptIdRoute
   '/nova/blueprint': typeof NovaBlueprintRoute
   '/nova/competencias': typeof NovaCompetenciasRoute
   '/nova/dialogo': typeof NovaDialogoRoute
@@ -233,6 +247,7 @@ export interface FileRoutesByTo {
   '/compliance': typeof ComplianceRoute
   '/configuracoes': typeof ConfiguracoesRouteWithChildren
   '/enviar-link': typeof EnviarLinkRoute
+  '/jornadas': typeof JornadasRoute
   '/monitoramento': typeof MonitoramentoRoute
   '/recuperar-senha': typeof RecuperarSenhaRoute
   '/talent-match': typeof TalentMatchRoute
@@ -241,6 +256,7 @@ export interface FileRoutesByTo {
   '/configuracoes/integracoes': typeof ConfiguracoesIntegracoesRoute
   '/configuracoes/perfil': typeof ConfiguracoesPerfilRoute
   '/convite/$token': typeof ConviteTokenRoute
+  '/jornada/$attemptId': typeof JornadaAttemptIdRoute
   '/nova/blueprint': typeof NovaBlueprintRoute
   '/nova/competencias': typeof NovaCompetenciasRoute
   '/nova/dialogo': typeof NovaDialogoRoute
@@ -266,6 +282,7 @@ export interface FileRoutesById {
   '/compliance': typeof ComplianceRoute
   '/configuracoes': typeof ConfiguracoesRouteWithChildren
   '/enviar-link': typeof EnviarLinkRoute
+  '/jornadas': typeof JornadasRoute
   '/monitoramento': typeof MonitoramentoRoute
   '/recuperar-senha': typeof RecuperarSenhaRoute
   '/talent-match': typeof TalentMatchRoute
@@ -274,6 +291,7 @@ export interface FileRoutesById {
   '/configuracoes/integracoes': typeof ConfiguracoesIntegracoesRoute
   '/configuracoes/perfil': typeof ConfiguracoesPerfilRoute
   '/convite/$token': typeof ConviteTokenRoute
+  '/jornada/$attemptId': typeof JornadaAttemptIdRoute
   '/nova/blueprint': typeof NovaBlueprintRoute
   '/nova/competencias': typeof NovaCompetenciasRoute
   '/nova/dialogo': typeof NovaDialogoRoute
@@ -300,6 +318,7 @@ export interface FileRouteTypes {
     | '/compliance'
     | '/configuracoes'
     | '/enviar-link'
+    | '/jornadas'
     | '/monitoramento'
     | '/recuperar-senha'
     | '/talent-match'
@@ -308,6 +327,7 @@ export interface FileRouteTypes {
     | '/configuracoes/integracoes'
     | '/configuracoes/perfil'
     | '/convite/$token'
+    | '/jornada/$attemptId'
     | '/nova/blueprint'
     | '/nova/competencias'
     | '/nova/dialogo'
@@ -332,6 +352,7 @@ export interface FileRouteTypes {
     | '/compliance'
     | '/configuracoes'
     | '/enviar-link'
+    | '/jornadas'
     | '/monitoramento'
     | '/recuperar-senha'
     | '/talent-match'
@@ -340,6 +361,7 @@ export interface FileRouteTypes {
     | '/configuracoes/integracoes'
     | '/configuracoes/perfil'
     | '/convite/$token'
+    | '/jornada/$attemptId'
     | '/nova/blueprint'
     | '/nova/competencias'
     | '/nova/dialogo'
@@ -364,6 +386,7 @@ export interface FileRouteTypes {
     | '/compliance'
     | '/configuracoes'
     | '/enviar-link'
+    | '/jornadas'
     | '/monitoramento'
     | '/recuperar-senha'
     | '/talent-match'
@@ -372,6 +395,7 @@ export interface FileRouteTypes {
     | '/configuracoes/integracoes'
     | '/configuracoes/perfil'
     | '/convite/$token'
+    | '/jornada/$attemptId'
     | '/nova/blueprint'
     | '/nova/competencias'
     | '/nova/dialogo'
@@ -397,11 +421,12 @@ export interface RootRouteChildren {
   ComplianceRoute: typeof ComplianceRoute
   ConfiguracoesRoute: typeof ConfiguracoesRouteWithChildren
   EnviarLinkRoute: typeof EnviarLinkRoute
+  JornadasRoute: typeof JornadasRoute
   MonitoramentoRoute: typeof MonitoramentoRoute
   RecuperarSenhaRoute: typeof RecuperarSenhaRoute
   TalentMatchRoute: typeof TalentMatchRoute
   ConviteTokenRoute: typeof ConviteTokenRoute
-  ResetPasswordTokenRoute: typeof ResetPasswordTokenRoute
+  JornadaAttemptIdRoute: typeof JornadaAttemptIdRoute
   NovaBlueprintRoute: typeof NovaBlueprintRoute
   NovaCompetenciasRoute: typeof NovaCompetenciasRoute
   NovaDialogoRoute: typeof NovaDialogoRoute
@@ -412,6 +437,7 @@ export interface RootRouteChildren {
   NovaPersonagemRoute: typeof NovaPersonagemRoute
   NovaPilotoRoute: typeof NovaPilotoRoute
   NovaValidadorRoute: typeof NovaValidadorRoute
+  ResetPasswordTokenRoute: typeof ResetPasswordTokenRoute
   AdminIndexRoute: typeof AdminIndexRoute
   AdminTenantsTenantIdRoute: typeof AdminTenantsTenantIdRoute
   AdminTenantsIndexRoute: typeof AdminTenantsIndexRoute
@@ -426,6 +452,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof TalentMatchRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/recuperar-senha': {
+      id: '/recuperar-senha'
+      path: '/recuperar-senha'
+      fullPath: '/recuperar-senha'
+      preLoaderRoute: typeof RecuperarSenhaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/monitoramento': {
       id: '/monitoramento'
       path: '/monitoramento'
@@ -433,18 +466,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof MonitoramentoRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/jornadas': {
+      id: '/jornadas'
+      path: '/jornadas'
+      fullPath: '/jornadas'
+      preLoaderRoute: typeof JornadasRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/enviar-link': {
       id: '/enviar-link'
       path: '/enviar-link'
       fullPath: '/enviar-link'
       preLoaderRoute: typeof EnviarLinkRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/recuperar-senha': {
-      id: '/recuperar-senha'
-      path: '/recuperar-senha'
-      fullPath: '/recuperar-senha'
-      preLoaderRoute: typeof RecuperarSenhaRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/configuracoes': {
@@ -501,6 +534,13 @@ declare module '@tanstack/react-router' {
       path: '/admin'
       fullPath: '/admin/'
       preLoaderRoute: typeof AdminIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/reset-password/$token': {
+      id: '/reset-password/$token'
+      path: '/reset-password/$token'
+      fullPath: '/reset-password/$token'
+      preLoaderRoute: typeof ResetPasswordTokenRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/nova/validador': {
@@ -573,18 +613,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof NovaBlueprintRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/jornada/$attemptId': {
+      id: '/jornada/$attemptId'
+      path: '/jornada/$attemptId'
+      fullPath: '/jornada/$attemptId'
+      preLoaderRoute: typeof JornadaAttemptIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/convite/$token': {
       id: '/convite/$token'
       path: '/convite/$token'
       fullPath: '/convite/$token'
       preLoaderRoute: typeof ConviteTokenRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/reset-password/$token': {
-      id: '/reset-password/$token'
-      path: '/reset-password/$token'
-      fullPath: '/reset-password/$token'
-      preLoaderRoute: typeof ResetPasswordTokenRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/configuracoes/perfil': {
@@ -669,11 +709,12 @@ const rootRouteChildren: RootRouteChildren = {
   ComplianceRoute: ComplianceRoute,
   ConfiguracoesRoute: ConfiguracoesRouteWithChildren,
   EnviarLinkRoute: EnviarLinkRoute,
+  JornadasRoute: JornadasRoute,
   MonitoramentoRoute: MonitoramentoRoute,
   RecuperarSenhaRoute: RecuperarSenhaRoute,
   TalentMatchRoute: TalentMatchRoute,
   ConviteTokenRoute: ConviteTokenRoute,
-  ResetPasswordTokenRoute: ResetPasswordTokenRoute,
+  JornadaAttemptIdRoute: JornadaAttemptIdRoute,
   NovaBlueprintRoute: NovaBlueprintRoute,
   NovaCompetenciasRoute: NovaCompetenciasRoute,
   NovaDialogoRoute: NovaDialogoRoute,
@@ -684,6 +725,7 @@ const rootRouteChildren: RootRouteChildren = {
   NovaPersonagemRoute: NovaPersonagemRoute,
   NovaPilotoRoute: NovaPilotoRoute,
   NovaValidadorRoute: NovaValidadorRoute,
+  ResetPasswordTokenRoute: ResetPasswordTokenRoute,
   AdminIndexRoute: AdminIndexRoute,
   AdminTenantsTenantIdRoute: AdminTenantsTenantIdRoute,
   AdminTenantsIndexRoute: AdminTenantsIndexRoute,

@@ -234,6 +234,8 @@ public class AssessmentJourneyService {
         AssessmentJourneyEntity journey = findJourney(journeyId);
         assertDraft(journey);
         AssessmentJourneyStepEntity step = findStep(journey, stepId);
+        String previousSequenceKey = step.getSequenceKey();
+        int previousOrderIndex = step.getOrderIndex();
 
         if (request.sequenceKey() != null) {
             step.setSequenceKey(normalizeSequenceKey(request.sequenceKey()));
@@ -242,6 +244,15 @@ public class AssessmentJourneyService {
             if (request.orderIndex() < 0) {
                 throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "A ordem do teste não pode ser negativa.");
             }
+            journey.getSteps().stream()
+                    .filter(other -> other != step)
+                    .filter(other -> other.getSequenceKey().equals(step.getSequenceKey()))
+                    .filter(other -> other.getOrderIndex() == request.orderIndex())
+                    .findFirst()
+                    .ifPresent(other -> {
+                        other.setSequenceKey(previousSequenceKey);
+                        other.setOrderIndex(previousOrderIndex);
+                    });
             step.setOrderIndex(request.orderIndex());
         }
         if (request.required() != null) {
