@@ -62,20 +62,20 @@ public class TeamService {
 
     @Transactional(readOnly = true)
     public List<TeamUserResponse> listUsers(String tenantId) {
-        return userRepository.findByTenantIdOrderByCreatedAtAsc(tenantId).stream()
+        return userRepository.findByEmpresaIdOrderByCreatedAtAsc(tenantId).stream()
                 .map(TeamService::toResponse)
                 .toList();
     }
 
     @Transactional
     public InviteTeamUserResponse inviteUser(String actorUserId, String tenantId, InviteTeamUserRequest request) {
-        if (userRepository.existsByTenantIdAndEmail(tenantId, request.email())) {
+        if (userRepository.existsByEmpresaIdAndEmail(tenantId, request.email())) {
             throw new ResponseStatusException(
                     HttpStatus.CONFLICT, "Já existe um usuário com este e-mail nesta empresa.");
         }
 
         UserEntity user = new UserEntity();
-        user.setTenantId(tenantId);
+        user.setEmpresaId(tenantId);
         user.setName(request.name().trim());
         user.setEmail(request.email().trim());
         user.setRoles(Set.of(EMPRESA_ROLE));
@@ -151,7 +151,7 @@ public class TeamService {
     }
 
     private UserEntity requireTenantUser(String tenantId, Long userId) {
-        return userRepository.findByIdAndTenantId(userId, tenantId)
+        return userRepository.findByIdAndEmpresaId(userId, tenantId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Usuário não encontrado."));
     }
 
