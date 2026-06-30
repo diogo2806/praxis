@@ -1,11 +1,13 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import {
   AlertCircle,
   CheckCircle2,
   CloudOff,
+  ExternalLink,
   Eye,
+  Key,
   PlugZap,
   RefreshCw,
   Settings,
@@ -38,9 +40,12 @@ import { Label } from "@/components/ui/label";
 import {
   configureIntegration,
   disconnectIntegration,
+  generateIntegrationToken,
   listIntegrations,
+  reactivateIntegration,
   syncIntegration,
   type ConfigureIntegrationRequest,
+  type GenerateIntegrationTokenResponse,
   type IntegrationCenterAction,
   type IntegrationCenterItem,
   type IntegrationCenterProvider,
@@ -67,6 +72,14 @@ type ConfigureFormState = {
   settingsJson: string;
 };
 
+const PROVIDER_SLUG: Record<IntegrationCenterProvider, string> = {
+  GUPY: "gupy",
+  RECRUTEI: "recrutei",
+  CUSTOM_API: "custom-api",
+};
+
+const CUSTOM_API_DOCS_URL = "/docs/integracao-api-propria";
+
 const statusLabel: Record<IntegrationCenterStatus, string> = {
   CONECTADA: "Conectada",
   PENDENTE: "Pendente",
@@ -79,20 +92,25 @@ function IntegrationsPage() {
   const queryClient = useQueryClient();
   const [configuring, setConfiguring] = useState<IntegrationCenterItem | null>(null);
   const [disconnecting, setDisconnecting] = useState<IntegrationCenterItem | null>(null);
+  const [generatedToken, setGeneratedToken] = useState<GenerateIntegrationTokenResponse | null>(null);
 
   const integrationsQuery = useQuery({
     queryKey: ["integrations"],
     queryFn: listIntegrations,
   });
 
+  const invalidate = async () => {
+    await queryClient.invalidateQueries({ queryKey: ["integrations"] });
+    await queryClient.invalidateQueries({ queryKey: ["integration-tokens"] });
+    await queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+  };
+
   const configureMutation = useMutation({
     mutationFn: ({ provider, body }: { provider: IntegrationCenterProvider; body: ConfigureIntegrationRequest }) =>
       configureIntegration(provider, body),
     onSuccess: async () => {
       setConfiguring(null);
-      await queryClient.invalidateQueries({ queryKey: ["integrations"] });
-      await queryClient.invalidateQueries({ queryKey: ["integration-tokens"] });
-      await queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+      await invalidate();
     },
   });
 
@@ -100,24 +118,37 @@ function IntegrationsPage() {
     mutationFn: disconnectIntegration,
     onSuccess: async () => {
       setDisconnecting(null);
-      await queryClient.invalidateQueries({ queryKey: ["integrations"] });
-      await queryClient.invalidateQueries({ queryKey: ["integration-tokens"] });
-      await queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+      await invalidate();
     },
   });
 
   const syncMutation = useMutation({
     mutationFn: syncIntegration,
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ["integrations"] });
-      await queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+    onSuccess: invalidate,
+  });
+
+  const reactivateMutation = useMutation({
+    mutationFn: reactivateIntegration,
+    onSuccess: invalidate,
+  });
+
+  const generateTokenMutation = useMutation({
+    mutationFn: generateIntegrationToken,
+    onSuccess: async (data) => {
+      setGeneratedToken(data);
+      await invalidate();
     },
   });
 
   const integrations = integrationsQuery.data ?? [];
   const configuredCount = integrations.filter((integration) => integration.status !== "NAO_CONFIGURADA").length;
   const hasOnlyUnconfigured = integrations.length > 0 && configuredCount === 0;
-  const actionError = configureMutation.error ?? disconnectMutation.error ?? syncMutation.error;
+  const actionError =
+    configureMutation.error ??
+    disconnectMutation.error ??
+    syncMutation.error ??
+    reactivateMutation.error ??
+    generateTokenMutation.error;
 
   return (
     <AppShell>
@@ -167,12 +198,19 @@ function IntegrationsPage() {
                 key={integration.provider}
                 integration={integration}
                 pendingAction={
-                  configureMutation.isPending || disconnectMutation.isPending || syncMutation.isPending
+                  configureMutation.isPending ||
+                  disconnectMutation.isPending ||
+                  syncMutation.isPending ||
+                  reactivateMutation.isPending ||
+                  generateTokenMutation.isPending
                 }
                 syncing={syncMutation.isPending && syncMutation.variables === integration.provider}
+                reactivating={reactivateMutation.isPending && reactivateMutation.variables === integration.provider}
                 onConfigure={() => setConfiguring(integration)}
                 onDisconnect={() => setDisconnecting(integration)}
                 onSync={() => syncMutation.mutate(integration.provider)}
+                onReactivate={() => reactivateMutation.mutate(integration.provider)}
+                onGenerateToken={() => generateTokenMutation.mutate(integration.provider)}
               />
             ))}
           </section>
@@ -192,6 +230,10 @@ function IntegrationsPage() {
         onOpenChange={(open) => !open && setDisconnecting(null)}
         onConfirm={(provider) => disconnectMutation.mutate(provider)}
       />
+      <GeneratedTokenModal
+        tokenResponse={generatedToken}
+        onClose={() => setGeneratedToken(null)}
+      />
     </AppShell>
   );
 }
@@ -200,16 +242,22 @@ function IntegrationCard({
   integration,
   pendingAction,
   syncing,
+  reactivating,
   onConfigure,
   onDisconnect,
   onSync,
+  onReactivate,
+  onGenerateToken,
 }: {
   integration: IntegrationCenterItem;
   pendingAction: boolean;
   syncing: boolean;
+  reactivating: boolean;
   onConfigure: () => void;
   onDisconnect: () => void;
   onSync: () => void;
+  onReactivate: () => void;
+  onGenerateToken: () => void;
 }) {
   return (
     <article className="rounded-md border border-border bg-card p-5">
@@ -226,9 +274,12 @@ function IntegrationCard({
             integration={integration}
             pendingAction={pendingAction}
             syncing={syncing}
+            reactivating={reactivating}
             onConfigure={onConfigure}
             onDisconnect={onDisconnect}
             onSync={onSync}
+            onReactivate={onReactivate}
+            onGenerateToken={onGenerateToken}
           />
         </div>
       </div>
@@ -258,37 +309,52 @@ function CardActions({
   integration,
   pendingAction,
   syncing,
+  reactivating,
   onConfigure,
   onDisconnect,
   onSync,
+  onReactivate,
+  onGenerateToken,
 }: {
   integration: IntegrationCenterItem;
   pendingAction: boolean;
   syncing: boolean;
+  reactivating: boolean;
   onConfigure: () => void;
   onDisconnect: () => void;
   onSync: () => void;
+  onReactivate: () => void;
+  onGenerateToken: () => void;
 }) {
   const hasAction = (action: IntegrationCenterAction) => integration.availableActions.includes(action);
+  const slug = PROVIDER_SLUG[integration.provider];
 
   return (
     <>
-      {(hasAction("CONFIGURE") || hasAction("EDIT") || hasAction("REACTIVATE")) && (
+      {hasAction("CONFIGURE") && (
         <Button type="button" size="sm" onClick={onConfigure} disabled={pendingAction}>
           <Settings className="h-4 w-4" />
-          {integration.status === "PENDENTE"
-            ? "Continuar configuração"
-            : integration.status === "DESATIVADA"
-              ? "Reativar"
-              : integration.status === "ERRO"
-                ? "Editar configuração"
-                : "Configurar"}
+          {integration.status === "PENDENTE" ? "Continuar configuração" : "Configurar"}
+        </Button>
+      )}
+      {hasAction("EDIT") && (
+        <Button type="button" size="sm" onClick={onConfigure} disabled={pendingAction}>
+          <Settings className="h-4 w-4" />
+          Editar configuração
+        </Button>
+      )}
+      {hasAction("REACTIVATE") && (
+        <Button type="button" size="sm" onClick={onReactivate} disabled={pendingAction}>
+          <PlugZap className="h-4 w-4" />
+          {reactivating ? "Reativando" : "Reativar"}
         </Button>
       )}
       {hasAction("VIEW") && (
-        <Button type="button" size="sm" variant="outline" onClick={onConfigure} disabled={pendingAction}>
-          <Eye className="h-4 w-4" />
-          Ver configuração
+        <Button type="button" size="sm" variant="outline" asChild>
+          <Link to="/integrations/$provider" params={{ provider: slug }}>
+            <Eye className="h-4 w-4" />
+            Ver configuração
+          </Link>
         </Button>
       )}
       {hasAction("SYNC") && (
@@ -301,15 +367,31 @@ function CardActions({
         </Button>
       )}
       {hasAction("VIEW_ERROR") && integration.errorMessage && (
-        <Button type="button" size="sm" variant="outline" onClick={() => window.alert(integration.errorMessage ?? "")}>
-          <AlertCircle className="h-4 w-4" />
-          Ver erro
+        <Button type="button" size="sm" variant="outline" asChild>
+          <Link to="/integrations/$provider" params={{ provider: slug }}>
+            <AlertCircle className="h-4 w-4" />
+            Ver erro
+          </Link>
         </Button>
       )}
       {hasAction("DISCONNECT") && (
         <Button type="button" size="sm" variant="outline" onClick={onDisconnect} disabled={pendingAction}>
           <Unplug className="h-4 w-4" />
           Desconectar
+        </Button>
+      )}
+      {hasAction("VIEW_DOCS") && (
+        <Button type="button" size="sm" variant="outline" asChild>
+          <a href={CUSTOM_API_DOCS_URL} target="_blank" rel="noopener noreferrer">
+            <ExternalLink className="h-4 w-4" />
+            Ver documentação
+          </a>
+        </Button>
+      )}
+      {hasAction("GENERATE_TOKEN") && (
+        <Button type="button" size="sm" onClick={onGenerateToken} disabled={pendingAction}>
+          <Key className="h-4 w-4" />
+          Gerar token
         </Button>
       )}
     </>
@@ -478,6 +560,49 @@ function IntegrationDisconnectDialog({
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>
+  );
+}
+
+function GeneratedTokenModal({
+  tokenResponse,
+  onClose,
+}: {
+  tokenResponse: GenerateIntegrationTokenResponse | null;
+  onClose: () => void;
+}) {
+  const [copied, setCopied] = useState(false);
+
+  async function copyToken() {
+    if (!tokenResponse) return;
+    await navigator.clipboard.writeText(tokenResponse.token);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  }
+
+  return (
+    <Dialog open={Boolean(tokenResponse)} onOpenChange={(open) => !open && onClose()}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Token gerado</DialogTitle>
+          <DialogDescription>
+            Copie o token agora. Por segurança, ele não será exibido novamente após fechar esta janela.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="grid gap-3">
+          <code className="rounded-md border border-input bg-muted px-3 py-2 font-mono text-xs break-all select-all">
+            {tokenResponse?.token}
+          </code>
+          <Button type="button" variant="outline" onClick={copyToken}>
+            {copied ? "Copiado!" : "Copiar token"}
+          </Button>
+        </div>
+        <DialogFooter>
+          <Button type="button" onClick={onClose}>
+            Fechar
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
 

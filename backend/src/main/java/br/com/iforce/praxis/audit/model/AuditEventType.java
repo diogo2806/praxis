@@ -60,7 +60,10 @@ public enum AuditEventType implements DescribedEnum {
     INTEGRATION_REACTIVATED("integrationReactivated"),
     INTEGRATION_SYNC_STARTED("integrationSyncStarted"),
     INTEGRATION_SYNC_COMPLETED("integrationSyncCompleted"),
-    INTEGRATION_SYNC_FAILED("integrationSyncFailed");
+    INTEGRATION_SYNC_FAILED("integrationSyncFailed"),
+    INTEGRATION_TOKEN_CREATED("integrationTokenCreated"),
+    INTEGRATION_TOKEN_ROTATED("integrationTokenRotated"),
+    INTEGRATION_TOKEN_REVOKED("integrationTokenRevoked");
 
     private final String descricao;
 

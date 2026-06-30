@@ -7,6 +7,7 @@ import br.com.iforce.praxis.auth.persistence.repository.TenantRepository;
 import br.com.iforce.praxis.auth.service.CurrentTenantService;
 import br.com.iforce.praxis.auth.service.CurrentUserService;
 import br.com.iforce.praxis.shared.integration.dto.ConfigureIntegrationRequest;
+import br.com.iforce.praxis.shared.integration.dto.GenerateIntegrationTokenResponse;
 import br.com.iforce.praxis.shared.integration.dto.IntegrationResponse;
 import br.com.iforce.praxis.shared.integration.model.IntegrationAction;
 import br.com.iforce.praxis.shared.integration.model.IntegrationProvider;
@@ -99,7 +100,9 @@ public class IntegrationManagementService {
 
         validateConfigureRequest(definition, request);
         if (usesAccessToken(definition.provider())) {
-            entity.setCredentialsHash(sha256(integrationTokenAdminService.rotateToken(definition.tokenProvider()).token()));
+            String newToken = integrationTokenAdminService.rotateToken(definition.tokenProvider()).token();
+            entity.setCredentialsHash(sha256(newToken));
+            entity.setTokenPreview(buildTokenPreview(newToken));
         } else {
             entity.setCredentialsHash(hashJson(request == null ? null : request.credentials()));
         }
@@ -159,6 +162,45 @@ public class IntegrationManagementService {
         return toResponse(definition, saved);
     }
 
+    @Transactional(readOnly = true)
+    public IntegrationResponse getIntegration(String provider) {
+        String tenantId = currentTenantService.requiredTenantId();
+        IntegrationCatalog.Definition definition = IntegrationCatalog.requireDefinition(provider);
+        TenantIntegrationEntity entity = tenantIntegrationRepository
+                .findFirstByTenantIdAndProvider(tenantId, definition.provider())
+                .orElse(null);
+        return toResponse(definition, entity);
+    }
+
+    @Transactional
+    public IntegrationResponse reactivate(String provider) {
+        String tenantId = currentTenantService.requiredTenantId();
+        String actorUserId = currentUserService.requiredUserId();
+        IntegrationCatalog.Definition definition = IntegrationCatalog.requireDefinition(provider);
+        TenantIntegrationEntity entity = requireIntegration(tenantId, definition.provider());
+
+        if (entity.getStatus() != IntegrationStatus.DESATIVADA) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Integração não está desativada.");
+        }
+        IntegrationStatus previousStatus = entity.getStatus();
+        Instant now = Instant.now();
+
+        if (usesAccessToken(definition.provider())) {
+            String newToken = integrationTokenAdminService.rotateToken(definition.tokenProvider()).token();
+            entity.setCredentialsHash(sha256(newToken));
+            entity.setTokenPreview(buildTokenPreview(newToken));
+        }
+        entity.setStatus(IntegrationStatus.CONECTADA);
+        entity.setDisabledAt(null);
+        entity.setLastErrorMessage(null);
+        entity.setUpdatedAt(now);
+        TenantIntegrationEntity saved = tenantIntegrationRepository.save(entity);
+
+        appendAudit(tenantId, actorUserId, definition.provider(), previousStatus, saved.getStatus(),
+                AuditEventType.INTEGRATION_REACTIVATED, null);
+        return toResponse(definition, saved);
+    }
+
     @Transactional
     public IntegrationResponse sync(String provider) {
         String tenantId = currentTenantService.requiredTenantId();
@@ -202,6 +244,64 @@ public class IntegrationManagementService {
         return toResponse(definition, saved);
     }
 
+    @Transactional
+    public GenerateIntegrationTokenResponse generateToken(String provider) {
+        String tenantId = currentTenantService.requiredTenantId();
+        String actorUserId = currentUserService.requiredUserId();
+        IntegrationCatalog.Definition definition = IntegrationCatalog.requireDefinition(provider);
+        TenantEntity tenant = tenantRepository.findById(tenantId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Cliente nao encontrado."));
+
+        TenantIntegrationEntity entity = tenantIntegrationRepository
+                .findFirstByTenantIdAndProvider(tenantId, definition.provider())
+                .orElseGet(() -> {
+                    TenantIntegrationEntity created = new TenantIntegrationEntity();
+                    created.setTenant(tenant);
+                    created.setProvider(definition.provider());
+                    created.setType(definition.type());
+                    created.setStatus(IntegrationStatus.PENDENTE);
+                    created.setCreatedAt(Instant.now());
+                    return created;
+                });
+
+        boolean isRotation = entity.getCredentialsHash() != null;
+        String rawToken = integrationTokenAdminService.rotateToken(definition.tokenProvider()).token();
+        String preview = buildTokenPreview(rawToken);
+        Instant now = Instant.now();
+
+        entity.setCredentialsHash(sha256(rawToken));
+        entity.setTokenPreview(preview);
+        entity.setConfiguredAt(entity.getConfiguredAt() != null ? entity.getConfiguredAt() : now);
+        entity.setUpdatedAt(now);
+        tenantIntegrationRepository.save(entity);
+
+        AuditEventType auditType = isRotation ? AuditEventType.INTEGRATION_TOKEN_ROTATED : AuditEventType.INTEGRATION_TOKEN_CREATED;
+        appendAudit(tenantId, actorUserId, definition.provider(), entity.getStatus(), entity.getStatus(), auditType, null);
+
+        return new GenerateIntegrationTokenResponse(definition.provider().name(), rawToken, preview, now);
+    }
+
+    @Transactional
+    public void revokeProviderToken(String provider) {
+        String tenantId = currentTenantService.requiredTenantId();
+        String actorUserId = currentUserService.requiredUserId();
+        IntegrationCatalog.Definition definition = IntegrationCatalog.requireDefinition(provider);
+        TenantIntegrationEntity entity = requireIntegration(tenantId, definition.provider());
+        IntegrationStatus previousStatus = entity.getStatus();
+        Instant now = Instant.now();
+
+        integrationTokenAdminService.revokeToken(definition.tokenProvider());
+        entity.setCredentialsHash(null);
+        entity.setTokenPreview(null);
+        entity.setStatus(IntegrationStatus.DESATIVADA);
+        entity.setDisabledAt(now);
+        entity.setUpdatedAt(now);
+        tenantIntegrationRepository.save(entity);
+
+        appendAudit(tenantId, actorUserId, definition.provider(), previousStatus, IntegrationStatus.DESATIVADA,
+                AuditEventType.INTEGRATION_TOKEN_REVOKED, null);
+    }
+
     private TenantIntegrationEntity requireIntegration(String tenantId, IntegrationProvider provider) {
         return tenantIntegrationRepository.findFirstByTenantIdAndProvider(tenantId, provider)
                 .orElseThrow(() -> new ResponseStatusException(
@@ -224,13 +324,21 @@ public class IntegrationManagementService {
                 entity == null ? null : entity.getLastSyncAt(),
                 entity == null ? null : entity.getConfiguredAt(),
                 entity == null ? null : entity.getLastErrorMessage(),
-                actionsFor(status, definition.supportsManualSync())
+                entity == null ? null : entity.getTokenPreview(),
+                actionsFor(status, definition.provider(), definition.supportsManualSync())
         );
     }
 
-    private static List<IntegrationAction> actionsFor(IntegrationStatus status, boolean supportsManualSync) {
+    private static List<IntegrationAction> actionsFor(
+            IntegrationStatus status,
+            IntegrationProvider provider,
+            boolean supportsManualSync
+    ) {
+        boolean isCustomApi = provider == IntegrationProvider.CUSTOM_API;
         return switch (status) {
-            case NAO_CONFIGURADA -> List.of(IntegrationAction.CONFIGURE);
+            case NAO_CONFIGURADA -> isCustomApi
+                    ? List.of(IntegrationAction.VIEW_DOCS, IntegrationAction.GENERATE_TOKEN)
+                    : List.of(IntegrationAction.CONFIGURE);
             case PENDENTE -> List.of(IntegrationAction.CONFIGURE);
             case CONECTADA -> supportsManualSync
                     ? List.of(IntegrationAction.VIEW, IntegrationAction.SYNC, IntegrationAction.DISCONNECT)
@@ -316,6 +424,11 @@ public class IntegrationManagementService {
         } catch (JsonProcessingException exception) {
             return "{\"provider\":\"" + provider.name() + "\"}";
         }
+    }
+
+    private static String buildTokenPreview(String token) {
+        if (token == null || token.length() <= 8) return "****";
+        return token.substring(0, 8) + "****";
     }
 
     private static String sha256(String value) {
