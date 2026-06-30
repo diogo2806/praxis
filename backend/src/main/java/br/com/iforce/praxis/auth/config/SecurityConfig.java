@@ -63,7 +63,7 @@ public class SecurityConfig {
                         // Painel administrativo da plataforma: exige operador ADMIN e não
                         // depende do tenant do usuário logado (tenant alvo vem na rota).
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
-                        .requestMatchers("/api/v1/account/**").hasRole("EMPRESA")
+                        .requestMatchers("/api/v1/account/**").hasAnyRole("EMPRESA", "ADMIN")
                         .requestMatchers("/api/v1/company-profile/**").hasRole("EMPRESA")
                         .requestMatchers("/api/v1/integrations/**").hasRole("EMPRESA")
                         .requestMatchers("/api/v1/simulations/**").hasRole("EMPRESA")

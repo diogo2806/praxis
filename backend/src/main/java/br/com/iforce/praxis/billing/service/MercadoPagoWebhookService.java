@@ -55,7 +55,9 @@ public class MercadoPagoWebhookService {
             return;
         }
 
-        String notificationId = topic + ":" + dataId;
+        // Idempotência por xRequestId (único por requisição HTTP) + topic + dataId.
+        // Assim notificações legítimas do mesmo recurso (ex: pending → approved) não são ignoradas.
+        String notificationId = xRequestId + ":" + topic + ":" + dataId;
         if (receiptRepository.existsByNotificationId(notificationId)) {
             log.debug("Webhook {} já processado; ignorado (idempotência).", notificationId);
             return;
