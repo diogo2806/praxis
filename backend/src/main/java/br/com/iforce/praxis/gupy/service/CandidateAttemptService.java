@@ -494,6 +494,25 @@ public class CandidateAttemptService {
         );
     }
 
+    /**
+     * Resolve o link público (página do candidato) de uma tentativa já existente.
+     *
+     * <p>Usado pela camada de Jornada de Avaliação para reaproveitar o mesmo
+     * mecanismo de link das tentativas individuais sem duplicar a lógica de
+     * geração de token.</p>
+     *
+     * @param tenantId empresa dona da tentativa
+     * @param attemptId identificador da tentativa individual
+     * @return a URL da página do candidato
+     */
+    @Transactional(readOnly = true)
+    public String candidatePageUrlFor(String tenantId, String attemptId) {
+        CandidateAttemptEntity candidateAttemptEntity = candidateAttemptRepository
+                .findByTenantIdAndId(tenantId, attemptId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Tentativa não encontrada."));
+        return candidatePageUrl(candidateAttemptEntity);
+    }
+
     /** Agrupa uma participação do candidato com a respectiva prova aplicada. */
     public record AttemptWithSimulation(CandidateAttempt attempt, PublishedSimulation simulation) {
     }

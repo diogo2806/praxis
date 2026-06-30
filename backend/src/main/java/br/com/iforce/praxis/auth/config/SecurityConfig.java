@@ -70,6 +70,8 @@ public class SecurityConfig {
                         .requestMatchers("/api/v1/company-profile/**").hasRole("EMPRESA")
                         .requestMatchers("/api/v1/integrations/**").hasRole("EMPRESA")
                         .requestMatchers("/api/v1/simulations/**").hasRole("EMPRESA")
+                        .requestMatchers("/api/v1/assessment-journeys/**").hasRole("EMPRESA")
+                        .requestMatchers("/api/v1/assessment-journey-attempts/**").hasRole("EMPRESA")
                         .requestMatchers("/api/v1/media/**").hasRole("EMPRESA")
                         .requestMatchers("/api/v1/tenant-config/**").hasRole("EMPRESA")
                         .requestMatchers("/api/v1/gupy/result-deliveries/**").hasRole("EMPRESA")
