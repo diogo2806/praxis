@@ -8,5 +8,7 @@ public enum IntegrationAction {
     VIEW_ERROR,
     RETRY,
     EDIT,
-    REACTIVATE
+    REACTIVATE,
+    VIEW_DOCS,
+    GENERATE_TOKEN
 }

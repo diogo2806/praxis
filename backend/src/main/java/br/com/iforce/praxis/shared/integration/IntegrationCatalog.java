@@ -15,7 +15,7 @@ public final class IntegrationCatalog {
             new Definition(
                     IntegrationProvider.GUPY,
                     "Gupy",
-                    "Integração com ATS Gupy.",
+                    "Receba candidatos e envie resultados automaticamente.",
                     IntegrationType.ATS,
                     "gupy",
                     true
@@ -23,7 +23,7 @@ public final class IntegrationCatalog {
             new Definition(
                     IntegrationProvider.RECRUTEI,
                     "Recrutei",
-                    "Integração com ATS Recrutei.",
+                    "Conecte o Práxis ao Recrutei para automatizar avaliações.",
                     IntegrationType.ATS,
                     "recrutei",
                     true
@@ -31,10 +31,10 @@ public final class IntegrationCatalog {
             new Definition(
                     IntegrationProvider.CUSTOM_API,
                     "API própria",
-                    "Integração para sistemas internos ou ATS personalizados.",
+                    "Use esta opção para conectar sistemas internos ao Práxis.",
                     IntegrationType.API,
                     "custom_api",
-                    true
+                    false
             )
     );
 

@@ -57,6 +57,9 @@ public class TenantIntegrationEntity {
     @Column(name = "credentials_encrypted")
     private String credentialsEncrypted;
 
+    @Column(name = "token_preview", length = 40)
+    private String tokenPreview;
+
     @Column(name = "settings_json")
     private String settingsJson;
 

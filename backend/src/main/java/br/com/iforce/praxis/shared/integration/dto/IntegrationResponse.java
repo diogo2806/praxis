@@ -17,6 +17,7 @@ public record IntegrationResponse(
         Instant lastSyncAt,
         Instant configuredAt,
         String errorMessage,
+        String tokenPreview,
         List<IntegrationAction> availableActions
 ) {
 }

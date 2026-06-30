@@ -562,7 +562,9 @@ export type IntegrationCenterAction =
   | "VIEW_ERROR"
   | "RETRY"
   | "EDIT"
-  | "REACTIVATE";
+  | "REACTIVATE"
+  | "VIEW_DOCS"
+  | "GENERATE_TOKEN";
 
 export interface IntegrationCenterItem {
   provider: IntegrationCenterProvider;
@@ -573,7 +575,15 @@ export interface IntegrationCenterItem {
   lastSyncAt: string | null;
   configuredAt: string | null;
   errorMessage: string | null;
+  tokenPreview: string | null;
   availableActions: IntegrationCenterAction[];
+}
+
+export interface GenerateIntegrationTokenResponse {
+  provider: string;
+  token: string;
+  tokenPreview: string;
+  createdAt: string;
 }
 
 export interface ConfigureIntegrationRequest {
@@ -1237,6 +1247,38 @@ export function syncIntegration(provider: IntegrationCenterProvider) {
   return request<IntegrationCenterItem>(
     `/api/v1/integrations/${encodeURIComponent(provider)}/sync`,
     { method: "POST" },
+  );
+}
+
+export function getIntegration(provider: IntegrationCenterProvider) {
+  return request<IntegrationCenterItem>(`/api/v1/integrations/${encodeURIComponent(provider)}`);
+}
+
+export function reactivateIntegration(provider: IntegrationCenterProvider) {
+  return request<IntegrationCenterItem>(
+    `/api/v1/integrations/${encodeURIComponent(provider)}/reactivate`,
+    { method: "POST" },
+  );
+}
+
+export function generateIntegrationToken(provider: IntegrationCenterProvider) {
+  return request<GenerateIntegrationTokenResponse>(
+    `/api/v1/integrations/${encodeURIComponent(provider)}/tokens`,
+    { method: "POST" },
+  );
+}
+
+export function rotateIntegrationProviderToken(provider: IntegrationCenterProvider) {
+  return request<GenerateIntegrationTokenResponse>(
+    `/api/v1/integrations/${encodeURIComponent(provider)}/tokens/rotate`,
+    { method: "POST" },
+  );
+}
+
+export function revokeIntegrationProviderToken(provider: IntegrationCenterProvider) {
+  return request<void>(
+    `/api/v1/integrations/${encodeURIComponent(provider)}/tokens`,
+    { method: "DELETE" },
   );
 }
 
