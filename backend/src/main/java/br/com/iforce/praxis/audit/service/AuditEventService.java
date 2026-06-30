@@ -35,6 +35,8 @@ public class AuditEventService {
     public static final String SIMULATION_VERSION_AGGREGATE = "SimulationVersion";
     public static final String TENANT_AGGREGATE = "Tenant";
     public static final String USER_AGGREGATE = "User";
+    public static final String ASSESSMENT_JOURNEY_AGGREGATE = "AssessmentJourney";
+    public static final String ASSESSMENT_JOURNEY_ATTEMPT_AGGREGATE = "AssessmentJourneyAttempt";
 
     /** Tenant técnico usado quando uma ação administrativa não tem cliente alvo. */
     public static final String PLATFORM_TENANT_ID = "PLATFORM";
@@ -281,6 +283,119 @@ public class AuditEventService {
                 .toList();
     }
 
+    /**
+     * Registra um evento no histórico de uma Jornada de Avaliação.
+     *
+     * <p>Cada criação, atualização, publicação ou arquivamento da jornada fica
+     * registrada de forma append-only, preservando o tenant, o ator (quando
+     * houver), a jornada e os metadados relevantes.</p>
+     *
+     * <p>Este método DEVE ser chamado dentro de uma transação de banco existente.</p>
+     *
+     * @param tenantId empresa dona da jornada
+     * @param actorUserId usuário ator que executou a ação, quando houver
+     * @param journeyId identificador da jornada
+     * @param eventType tipo de evento (ex.: CREATED, PUBLISHED, ARCHIVED)
+     * @param message descrição em português do que aconteceu
+     * @param metadata informações adicionais em JSON
+     */
+    @Transactional(propagation = Propagation.MANDATORY)
+    public void appendAssessmentJourneyEvent(
+            String tenantId,
+            String actorUserId,
+            String journeyId,
+            AuditEventType eventType,
+            String message,
+            String metadata
+    ) {
+        AuditEventEntity auditEventEntity = new AuditEventEntity();
+        auditEventEntity.setTenantId(tenantId);
+        auditEventEntity.setActorUserId(actorUserId);
+        auditEventEntity.setAggregateType(ASSESSMENT_JOURNEY_AGGREGATE);
+        auditEventEntity.setAggregateId(journeyId);
+        auditEventEntity.setEventType(eventType);
+        auditEventEntity.setMessage(message);
+        auditEventEntity.setMetadata(metadata);
+        auditEventEntity.setCreatedAt(Instant.now());
+
+        auditEventRepository.save(auditEventEntity);
+    }
+
+    /**
+     * Registra um evento no histórico da tentativa de um candidato em uma jornada.
+     *
+     * <p>Cobre o ciclo da tentativa da jornada (criada, iniciada, etapas
+     * iniciadas/concluídas e conclusão), de forma append-only, preservando o
+     * tenant, a tentativa da jornada e os metadados relevantes.</p>
+     *
+     * <p>Este método DEVE ser chamado dentro de uma transação de banco existente.</p>
+     *
+     * @param tenantId empresa dona da jornada
+     * @param journeyAttemptId identificador da tentativa da jornada
+     * @param eventType tipo de evento (ex.: ATTEMPT_CREATED, STEP_COMPLETED)
+     * @param message descrição em português do que aconteceu
+     * @param metadata informações adicionais em JSON
+     */
+    @Transactional(propagation = Propagation.MANDATORY)
+    public void appendAssessmentJourneyAttemptEvent(
+            String tenantId,
+            String journeyAttemptId,
+            AuditEventType eventType,
+            String message,
+            String metadata
+    ) {
+        AuditEventEntity auditEventEntity = new AuditEventEntity();
+        auditEventEntity.setTenantId(tenantId);
+        auditEventEntity.setAggregateType(ASSESSMENT_JOURNEY_ATTEMPT_AGGREGATE);
+        auditEventEntity.setAggregateId(journeyAttemptId);
+        auditEventEntity.setEventType(eventType);
+        auditEventEntity.setMessage(message);
+        auditEventEntity.setMetadata(metadata);
+        auditEventEntity.setCreatedAt(Instant.now());
+
+        auditEventRepository.save(auditEventEntity);
+    }
+
+    /**
+     * Recupera o histórico de auditoria de uma Jornada de Avaliação.
+     *
+     * @param journeyId identificador da jornada
+     * @return os eventos da jornada ordenados por data (do mais antigo ao mais recente)
+     */
+    @Transactional(readOnly = true)
+    public List<AuditEventResponse> listAssessmentJourneyEvents(String journeyId) {
+        String tenantId = currentTenantService.requiredTenantId();
+        return auditEventRepository
+                .findByTenantIdAndAggregateTypeAndAggregateIdOrderByCreatedAtAsc(
+                        tenantId,
+                        ASSESSMENT_JOURNEY_AGGREGATE,
+                        journeyId
+                )
+                .stream()
+                .map(this::toResponse)
+                .toList();
+    }
+
+    /**
+     * Recupera o histórico de auditoria da tentativa de um candidato em uma jornada.
+     *
+     * @param journeyAttemptId identificador da tentativa da jornada
+     * @return os eventos da tentativa ordenados por data
+     */
+    @Transactional(readOnly = true)
+    public List<AuditEventResponse> listAssessmentJourneyAttemptEvents(String journeyAttemptId) {
+        String tenantId = currentTenantService.requiredTenantId();
+        return auditEventRepository
+                .findByTenantIdAndAggregateTypeAndAggregateIdOrderByCreatedAtAsc(
+                        tenantId,
+                        ASSESSMENT_JOURNEY_ATTEMPT_AGGREGATE,
+                        journeyAttemptId
+                )
+                .stream()
+                .map(this::toResponse)
+                .toList();
+    }
+
     private String simulationVersionAggregateId(String simulationId, int versionNumber) {
         return simulationId + ":v" + versionNumber;
     }
@@ -303,6 +418,8 @@ public class AuditEventService {
             case SIMULATION_AGGREGATE -> "Simulação";
             case SIMULATION_VERSION_AGGREGATE -> "Versão da simulação";
             case USER_AGGREGATE -> "Usuário";
+            case ASSESSMENT_JOURNEY_AGGREGATE -> "Jornada de avaliação";
+            case ASSESSMENT_JOURNEY_ATTEMPT_AGGREGATE -> "Tentativa da jornada";
             default -> "Item";
         };
     }

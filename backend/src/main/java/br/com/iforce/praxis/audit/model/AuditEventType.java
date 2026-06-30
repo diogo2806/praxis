@@ -44,7 +44,16 @@ public enum AuditEventType implements DescribedEnum {
     ADMIN_USER_UNBLOCKED("adminUserUnblocked"),
     ADMIN_USAGE_VIEWED("adminUsageViewed"),
     PASSWORD_RESET_REQUESTED("passwordResetRequested"),
-    PASSWORD_RESET_COMPLETED("passwordResetCompleted");
+    PASSWORD_RESET_COMPLETED("passwordResetCompleted"),
+    ASSESSMENT_JOURNEY_CREATED("assessmentJourneyCreated"),
+    ASSESSMENT_JOURNEY_UPDATED("assessmentJourneyUpdated"),
+    ASSESSMENT_JOURNEY_PUBLISHED("assessmentJourneyPublished"),
+    ASSESSMENT_JOURNEY_ARCHIVED("assessmentJourneyArchived"),
+    ASSESSMENT_JOURNEY_ATTEMPT_CREATED("assessmentJourneyAttemptCreated"),
+    ASSESSMENT_JOURNEY_ATTEMPT_STARTED("assessmentJourneyAttemptStarted"),
+    ASSESSMENT_JOURNEY_STEP_STARTED("assessmentJourneyStepStarted"),
+    ASSESSMENT_JOURNEY_STEP_COMPLETED("assessmentJourneyStepCompleted"),
+    ASSESSMENT_JOURNEY_ATTEMPT_COMPLETED("assessmentJourneyAttemptCompleted");
 
     private final String descricao;
 
