@@ -2584,6 +2584,10 @@ export function listMarketplaceOrders() {
   return request<MarketplaceOrderResponse[]>("/api/v1/marketplace/orders");
 }
 
+export function getMarketplaceOrder(id: number | string) {
+  return request<MarketplaceOrderResponse>(`/api/v1/marketplace/orders/${encodeURIComponent(String(id))}`);
+}
+
 export function registerMarketplaceProfessional(body: RegisterProfessionalRequest) {
   return request<RegisterProfessionalResponse>("/api/v1/marketplace/professionals/register", {
     method: "POST",
