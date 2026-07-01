@@ -1,21 +1,33 @@
 package br.com.iforce.praxis.billing.controller;
 
 import br.com.iforce.praxis.billing.service.MercadoPagoWebhookService;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
+
 import io.swagger.v3.oas.annotations.Operation;
+
 import io.swagger.v3.oas.annotations.tags.Tag;
+
 import org.springframework.http.ResponseEntity;
+
 import org.springframework.web.bind.annotation.PostMapping;
+
 import org.springframework.web.bind.annotation.RequestBody;
+
 import org.springframework.web.bind.annotation.RequestHeader;
+
 import org.springframework.web.bind.annotation.RequestMapping;
+
 import org.springframework.web.bind.annotation.RequestParam;
+
 import org.springframework.web.bind.annotation.RestController;
+
 
 import java.util.Map;
 
+
 /**
- * Webhook público do Mercado Pago. Não exige JWT e está fora do {@code TenantResolutionFilter}.
+ * Webhook público do Mercado Pago. Não exige JWT e está fora do {@code EmpresaResolutionFilter}.
  * A autenticidade é garantida pela validação da assinatura {@code x-signature}.
  */
 @RestController

@@ -1,10 +1,14 @@
 package db.migration;
 
 import org.flywaydb.core.api.migration.BaseJavaMigration;
+
 import org.flywaydb.core.api.migration.Context;
 
+
 import java.sql.Statement;
+
 import java.util.Locale;
+
 
 public class V13_1__protect_audit_events_append_only extends BaseJavaMigration {
 

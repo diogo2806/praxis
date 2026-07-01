@@ -32,7 +32,7 @@ Promessa defensavel:
 | Gupy | `GET /test`, `POST /test/candidate`, `GET /test/result/{resultId}`. |
 | Entrega assincrona | Outbox com status `pending`, `retrying`, `sent`, `dlq`. |
 | Monitoramento | Indicadores de tentativas e entregas por simulacao/versao. |
-| Tenant config | Catalogos configuraveis por tenant. |
+| Empresa config | Catalogos configuraveis por empresa. |
 | Talent Match | Comparacao de ate 5 tentativas contra benchmark da versao. |
 | LGPD | Politica operacional com indicacoes de bases legais, retencao e canal de revisao. |
 
@@ -59,7 +59,7 @@ Estes itens podem existir como visao de produto, mas nao devem ser descritos com
 2. **Alternativas plausiveis:** se a resposta correta e obvia, a simulacao nao mede competencia.
 3. **Versao imutavel:** candidato sempre responde a versao que estava publicada quando a tentativa foi criada.
 4. **Evidencia antes da decisao:** o score apoia triagem e entrevista; nao deve ser a unica base de decisao sensivel.
-5. **Tenant isolado:** dados de uma empresa nao devem aparecer para outra.
+5. **Empresa isolado:** dados de uma empresa nao devem aparecer para outra.
 6. **Explicabilidade:** todo resultado precisa ser rastreavel ate escolhas, competencias e pesos.
 7. **Acessibilidade:** tempo e midia precisam ter alternativas acessiveis.
 
@@ -134,7 +134,7 @@ Antes de publicar uma simulacao, RH deve confirmar:
 | Painel | `/app` | Lista simulacoes, status, metricas e acoes. |
 | Começar | `/comecar` | Entrada para criar nova avaliacao. |
 | Blueprint | `/nova/blueprint` | Cria rascunho com nome, descricao, situacao critica e competencias. |
-| Competencias | `/nova/competencias` | Configura catalogos do tenant. |
+| Competencias | `/nova/competencias` | Configura catalogos do empresa. |
 | Objetivo | `/nova/objetivo` | Ajusta plano da avaliacao, pesos e uso do resultado. |
 | Personagem | `/nova/personagem` | Define primeiro no/personagem e midias acessiveis. |
 | Dialogo | `/nova/dialogo` | Edita grafo, alternativas, score e ramificacoes. |
@@ -157,7 +157,7 @@ Simulation
   id
   name
   description
-  tenantId
+  empresaId
 
 SimulationVersion
   simulationId
@@ -424,7 +424,7 @@ Roadmap para uso enterprise:
 - Workflow formal de revisao e aprovacao.
 - Tela de maturidade da simulacao.
 - Relatorios de calibracao com amostra de colaboradores.
-- Politica LGPD configuravel por tenant/vaga.
+- Politica LGPD configuravel por empresa/vaga.
 - Revisao formal de candidato.
 
 ### P2

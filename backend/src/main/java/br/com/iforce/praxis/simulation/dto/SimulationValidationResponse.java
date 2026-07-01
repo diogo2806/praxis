@@ -2,7 +2,9 @@ package br.com.iforce.praxis.simulation.dto;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 
+
 import java.util.List;
+
 
 @Schema(description = "Resultado da validação estrutural antes da publicação.")
 public record SimulationValidationResponse(

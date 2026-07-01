@@ -1,10 +1,14 @@
 package br.com.iforce.praxis.gupy.dto;
 
 import br.com.iforce.praxis.gupy.model.ReliabilityLevel;
+
 import io.swagger.v3.oas.annotations.media.Schema;
 
+
 import java.util.List;
+
 import java.util.Map;
+
 
 @Schema(description = "Corpo exato esperado pela Gupy no /test/result/{resultId}")
 public record TestResultResponse(

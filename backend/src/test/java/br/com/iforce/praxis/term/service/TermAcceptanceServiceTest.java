@@ -1,31 +1,55 @@
 package br.com.iforce.praxis.term.service;
 
-import br.com.iforce.praxis.auth.service.CurrentTenantService;
+import br.com.iforce.praxis.auth.service.CurrentEmpresaService;
+
 import br.com.iforce.praxis.auth.service.CurrentUserService;
+
 import br.com.iforce.praxis.term.dto.AcceptTermRequest;
+
 import br.com.iforce.praxis.term.dto.TermAcceptanceStatusResponse;
+
 import br.com.iforce.praxis.term.model.HealthUseTerm;
+
 import br.com.iforce.praxis.term.model.ResponsibilityTerm;
+
 import br.com.iforce.praxis.term.persistence.entity.TermAcceptanceEntity;
+
 import br.com.iforce.praxis.term.persistence.repository.TermAcceptanceRepository;
+
 import org.junit.jupiter.api.BeforeEach;
+
 import org.junit.jupiter.api.Test;
+
 import org.junit.jupiter.api.extension.ExtendWith;
+
 import org.mockito.ArgumentCaptor;
+
 import org.mockito.Mock;
+
 import org.mockito.junit.jupiter.MockitoExtension;
+
 import org.springframework.web.server.ResponseStatusException;
 
+
 import java.time.Instant;
+
 import java.util.Optional;
 
+
 import static org.assertj.core.api.Assertions.assertThat;
+
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+
 import static org.mockito.ArgumentMatchers.any;
+
 import static org.mockito.Mockito.lenient;
+
 import static org.mockito.Mockito.never;
+
 import static org.mockito.Mockito.verify;
+
 import static org.mockito.Mockito.when;
+
 
 @ExtendWith(MockitoExtension.class)
 class TermAcceptanceServiceTest {
@@ -34,7 +58,7 @@ class TermAcceptanceServiceTest {
     private TermAcceptanceRepository termAcceptanceRepository;
 
     @Mock
-    private CurrentTenantService currentTenantService;
+    private CurrentEmpresaService currentEmpresaService;
 
     @Mock
     private CurrentUserService currentUserService;
@@ -43,8 +67,8 @@ class TermAcceptanceServiceTest {
 
     @BeforeEach
     void setUp() {
-        service = new TermAcceptanceService(termAcceptanceRepository, currentTenantService, currentUserService);
-        lenient().when(currentTenantService.requiredTenantId()).thenReturn("tenant-1");
+        service = new TermAcceptanceService(termAcceptanceRepository, currentEmpresaService, currentUserService);
+        lenient().when(currentEmpresaService.requiredEmpresaId()).thenReturn("empresa-1");
         lenient().when(currentUserService.requiredUserId()).thenReturn("42");
     }
 
@@ -56,8 +80,8 @@ class TermAcceptanceServiceTest {
 
     @Test
     void statusIsNotAcceptedWhenNoRecord() {
-        when(termAcceptanceRepository.findFirstByTenantIdAndUserIdAndTermTypeOrderByAcceptedAtDesc(
-                "tenant-1", "42", ResponsibilityTerm.TYPE)).thenReturn(Optional.empty());
+        when(termAcceptanceRepository.findFirstByEmpresaIdAndUserIdAndTermTypeOrderByAcceptedAtDesc(
+                "empresa-1", "42", ResponsibilityTerm.TYPE)).thenReturn(Optional.empty());
 
         TermAcceptanceStatusResponse status = service.responsibilityStatus();
 
@@ -69,8 +93,8 @@ class TermAcceptanceServiceTest {
     @Test
     void statusRequiresReacceptWhenOnlyOldVersionAccepted() {
         TermAcceptanceEntity old = acceptanceWithVersion("2020-01-01");
-        when(termAcceptanceRepository.findFirstByTenantIdAndUserIdAndTermTypeOrderByAcceptedAtDesc(
-                "tenant-1", "42", ResponsibilityTerm.TYPE)).thenReturn(Optional.of(old));
+        when(termAcceptanceRepository.findFirstByEmpresaIdAndUserIdAndTermTypeOrderByAcceptedAtDesc(
+                "empresa-1", "42", ResponsibilityTerm.TYPE)).thenReturn(Optional.of(old));
 
         TermAcceptanceStatusResponse status = service.responsibilityStatus();
 
@@ -85,7 +109,7 @@ class TermAcceptanceServiceTest {
         ArgumentCaptor<TermAcceptanceEntity> captor = ArgumentCaptor.forClass(TermAcceptanceEntity.class);
         verify(termAcceptanceRepository).save(captor.capture());
         TermAcceptanceEntity saved = captor.getValue();
-        assertThat(saved.getTenantId()).isEqualTo("tenant-1");
+        assertThat(saved.getEmpresaId()).isEqualTo("empresa-1");
         assertThat(saved.getUserId()).isEqualTo("42");
         assertThat(saved.getTermType()).isEqualTo(ResponsibilityTerm.TYPE);
         assertThat(saved.getTermVersion()).isEqualTo(ResponsibilityTerm.VERSION);
@@ -112,8 +136,8 @@ class TermAcceptanceServiceTest {
 
     @Test
     void healthUseNotAcceptedByCurrentUserWhenNoRecord() {
-        when(termAcceptanceRepository.findFirstByTenantIdAndUserIdAndTermTypeOrderByAcceptedAtDesc(
-                "tenant-1", "42", HealthUseTerm.TYPE)).thenReturn(Optional.empty());
+        when(termAcceptanceRepository.findFirstByEmpresaIdAndUserIdAndTermTypeOrderByAcceptedAtDesc(
+                "empresa-1", "42", HealthUseTerm.TYPE)).thenReturn(Optional.empty());
 
         assertThat(service.isHealthUseAcceptedByCurrentUser()).isFalse();
     }
@@ -121,13 +145,13 @@ class TermAcceptanceServiceTest {
     @Test
     void healthUseAcceptedByCurrentUserWhenCurrentVersionRecorded() {
         TermAcceptanceEntity current = new TermAcceptanceEntity();
-        current.setTenantId("tenant-1");
+        current.setEmpresaId("empresa-1");
         current.setUserId("42");
         current.setTermType(HealthUseTerm.TYPE);
         current.setTermVersion(HealthUseTerm.VERSION);
         current.setAcceptedAt(Instant.now());
-        when(termAcceptanceRepository.findFirstByTenantIdAndUserIdAndTermTypeOrderByAcceptedAtDesc(
-                "tenant-1", "42", HealthUseTerm.TYPE)).thenReturn(Optional.of(current));
+        when(termAcceptanceRepository.findFirstByEmpresaIdAndUserIdAndTermTypeOrderByAcceptedAtDesc(
+                "empresa-1", "42", HealthUseTerm.TYPE)).thenReturn(Optional.of(current));
 
         assertThat(service.isHealthUseAcceptedByCurrentUser()).isTrue();
     }
@@ -144,7 +168,7 @@ class TermAcceptanceServiceTest {
 
     private TermAcceptanceEntity acceptanceWithVersion(String version) {
         TermAcceptanceEntity entity = new TermAcceptanceEntity();
-        entity.setTenantId("tenant-1");
+        entity.setEmpresaId("empresa-1");
         entity.setUserId("42");
         entity.setTermType(ResponsibilityTerm.TYPE);
         entity.setTermVersion(version);

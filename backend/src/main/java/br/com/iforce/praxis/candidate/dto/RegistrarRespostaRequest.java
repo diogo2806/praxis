@@ -1,9 +1,12 @@
 package br.com.iforce.praxis.candidate.dto;
 
 import com.fasterxml.jackson.annotation.JsonAlias;
+
 import io.swagger.v3.oas.annotations.media.Schema;
 
+
 import java.time.Instant;
+
 
 @Schema(description = "Resposta escolhida pelo candidato na etapa atual.")
 public record RegistrarRespostaRequest(

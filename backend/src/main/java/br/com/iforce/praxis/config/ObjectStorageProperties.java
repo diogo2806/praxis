@@ -2,6 +2,7 @@ package br.com.iforce.praxis.config;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
+
 /**
  * Configuração do armazenamento de objetos (MinIO / S3 compatível) usado para mídias dos testes.
  * Quando {@link #endpoint()} está em branco o upload de mídia fica desabilitado.

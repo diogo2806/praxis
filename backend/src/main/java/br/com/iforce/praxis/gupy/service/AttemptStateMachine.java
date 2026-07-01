@@ -1,24 +1,42 @@
 package br.com.iforce.praxis.gupy.service;
 
 import br.com.iforce.praxis.audit.model.AuditEventType;
+
 import br.com.iforce.praxis.audit.service.AuditEventService;
+
 import br.com.iforce.praxis.audit.service.AuditMetadata;
+
 import br.com.iforce.praxis.config.PraxisProperties;
+
 import br.com.iforce.praxis.gupy.model.AttemptAnswer;
+
 import br.com.iforce.praxis.gupy.model.AttemptStatus;
+
 import br.com.iforce.praxis.gupy.model.CandidateAttempt;
+
 import br.com.iforce.praxis.gupy.model.PublishedSimulation;
+
 import br.com.iforce.praxis.gupy.model.ReliabilityLevel;
+
 import br.com.iforce.praxis.gupy.model.ResultDecision;
+
 import br.com.iforce.praxis.gupy.model.ResultItem;
+
 import br.com.iforce.praxis.gupy.model.ScenarioNode;
+
 import br.com.iforce.praxis.gupy.model.ScenarioOption;
+
 import br.com.iforce.praxis.gupy.model.ScoreCalculationResult;
+
 import org.springframework.stereotype.Service;
 
+
 import java.time.Instant;
+
 import java.util.List;
+
 import java.util.Map;
+
 
 /**
  * Máquina de estados da {@link CandidateAttempt}. Concentra as transições
@@ -56,7 +74,7 @@ public class AttemptStateMachine {
         if (attempt.status() == AttemptStatus.NOT_STARTED
                 && attempt.createdAt().plusSeconds(praxisProperties.attemptLinkTtlHours() * 3600L).isBefore(now)) {
             auditEventService.appendCandidateAttemptEvent(
-                    attempt.tenantId(),
+                    attempt.empresaId(),
                     attempt.id(),
                     AuditEventType.ATTEMPT_EXPIRED,
                     "Link da tentativa expirou antes do início.",
@@ -69,7 +87,7 @@ public class AttemptStateMachine {
                 && attempt.startedAt() != null
                 && attempt.startedAt().plusSeconds(praxisProperties.attemptSessionTtlHours() * 3600L).isBefore(now)) {
             auditEventService.appendCandidateAttemptEvent(
-                    attempt.tenantId(),
+                    attempt.empresaId(),
                     attempt.id(),
                     AuditEventType.ATTEMPT_ABANDONED,
                     "Sessão da tentativa expirou sem conclusão.",
@@ -88,7 +106,7 @@ public class AttemptStateMachine {
 
         Instant startedAt = Instant.now();
         auditEventService.appendCandidateAttemptEvent(
-                attempt.tenantId(),
+                attempt.empresaId(),
                 attempt.id(),
                 AuditEventType.ATTEMPT_STARTED,
                 "Tentativa iniciada pela pessoa participante.",
@@ -266,7 +284,7 @@ public class AttemptStateMachine {
         return new CandidateAttempt(
                 attempt.id(),
                 attempt.resultId(),
-                attempt.tenantId(),
+                attempt.empresaId(),
                 attempt.companyId(),
                 attempt.simulationId(),
                 attempt.simulationVersionId(),

@@ -1,21 +1,36 @@
 package br.com.iforce.praxis.billing.service;
 
-import br.com.iforce.praxis.admin.model.TenantStatus;
+import br.com.iforce.praxis.admin.model.EmpresaStatus;
+
 import br.com.iforce.praxis.audit.model.AuditEventType;
+
 import br.com.iforce.praxis.audit.service.AuditEventService;
+
 import br.com.iforce.praxis.audit.service.AuditMetadata;
-import br.com.iforce.praxis.auth.persistence.repository.TenantRepository;
+
+import br.com.iforce.praxis.auth.persistence.repository.EmpresaRepository;
+
 import br.com.iforce.praxis.billing.model.SubscriptionStatus;
-import br.com.iforce.praxis.billing.persistence.entity.TenantSubscriptionEntity;
-import br.com.iforce.praxis.billing.persistence.repository.TenantSubscriptionRepository;
+
+import br.com.iforce.praxis.billing.persistence.entity.EmpresaSubscriptionEntity;
+
+import br.com.iforce.praxis.billing.persistence.repository.EmpresaSubscriptionRepository;
+
 import org.slf4j.Logger;
+
 import org.slf4j.LoggerFactory;
+
 import org.springframework.scheduling.annotation.Scheduled;
+
 import org.springframework.stereotype.Service;
+
 import org.springframework.transaction.annotation.Transactional;
 
+
 import java.time.Instant;
+
 import java.util.List;
+
 
 /**
  * Suspende automaticamente clientes PROFISSIONAL cuja inadimplência ultrapassou a carência
@@ -28,19 +43,19 @@ public class DelinquencyService {
     private static final Logger log = LoggerFactory.getLogger(DelinquencyService.class);
     private static final String SYSTEM_ACTOR = "SYSTEM";
 
-    private final TenantSubscriptionRepository subscriptionRepository;
-    private final TenantRepository tenantRepository;
+    private final EmpresaSubscriptionRepository subscriptionRepository;
+    private final EmpresaRepository empresaRepository;
     private final AuditEventService auditEventService;
     private final AuditMetadata auditMetadata;
 
     public DelinquencyService(
-            TenantSubscriptionRepository subscriptionRepository,
-            TenantRepository tenantRepository,
+            EmpresaSubscriptionRepository subscriptionRepository,
+            EmpresaRepository empresaRepository,
             AuditEventService auditEventService,
             AuditMetadata auditMetadata
     ) {
         this.subscriptionRepository = subscriptionRepository;
-        this.tenantRepository = tenantRepository;
+        this.empresaRepository = empresaRepository;
         this.auditEventService = auditEventService;
         this.auditMetadata = auditMetadata;
     }
@@ -55,23 +70,23 @@ public class DelinquencyService {
     /** Núcleo testável: suspende inadimplentes cuja carência venceu antes de {@code moment}. */
     @Transactional
     public int suspendDelinquentPastGrace(Instant moment) {
-        List<TenantSubscriptionEntity> expired = subscriptionRepository
+        List<EmpresaSubscriptionEntity> expired = subscriptionRepository
                 .findByStatusAndGraceUntilBefore(SubscriptionStatus.DELINQUENT, moment);
         int suspended = 0;
-        for (TenantSubscriptionEntity subscription : expired) {
-            String tenantId = subscription.getTenantId();
-            boolean changed = tenantRepository.findById(tenantId).map(tenant -> {
-                if (tenant.getStatus().blocksAccess()) {
+        for (EmpresaSubscriptionEntity subscription : expired) {
+            String empresaId = subscription.getEmpresaId();
+            boolean changed = empresaRepository.findById(empresaId).map(empresa -> {
+                if (empresa.getStatus().blocksAccess()) {
                     return false;
                 }
-                tenant.setStatus(TenantStatus.SUSPENSO);
-                tenant.setUpdatedAt(Instant.now());
+                empresa.setStatus(EmpresaStatus.SUSPENSO);
+                empresa.setUpdatedAt(Instant.now());
                 return true;
             }).orElse(false);
 
             if (changed) {
-                auditEventService.auditAdminAction(SYSTEM_ACTOR, tenantId,
-                        AuditEventType.ADMIN_TENANT_SUSPENDED,
+                auditEventService.auditAdminAction(SYSTEM_ACTOR, empresaId,
+                        AuditEventType.ADMIN_EMPRESA_SUSPENDED,
                         "Cliente suspenso automaticamente após carência de inadimplência.",
                         auditMetadata.of("reason", "Inadimplência após carência",
                                 "graceUntil", String.valueOf(subscription.getGraceUntil())));

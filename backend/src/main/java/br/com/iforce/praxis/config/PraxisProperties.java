@@ -1,7 +1,9 @@
 package br.com.iforce.praxis.config;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
+
 import org.springframework.boot.context.properties.bind.ConstructorBinding;
+
 
 @ConfigurationProperties(prefix = "praxis")
 public record PraxisProperties(

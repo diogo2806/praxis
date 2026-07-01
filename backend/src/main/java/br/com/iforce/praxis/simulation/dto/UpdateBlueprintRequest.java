@@ -1,18 +1,30 @@
 package br.com.iforce.praxis.simulation.dto;
 
 import br.com.iforce.praxis.gupy.model.ResultTier;
+
 import io.swagger.v3.oas.annotations.media.Schema;
+
 import jakarta.validation.Valid;
+
 import jakarta.validation.constraints.DecimalMax;
+
 import jakarta.validation.constraints.DecimalMin;
+
 import jakarta.validation.constraints.Max;
+
 import jakarta.validation.constraints.Min;
+
 import jakarta.validation.constraints.NotBlank;
+
 import jakarta.validation.constraints.NotEmpty;
+
 import jakarta.validation.constraints.NotNull;
+
 import jakarta.validation.constraints.Size;
 
+
 import java.util.List;
+
 
 @Schema(description = "Dados para atualizar o plano estrutural de uma versao de simulacao.")
 public record UpdateBlueprintRequest(

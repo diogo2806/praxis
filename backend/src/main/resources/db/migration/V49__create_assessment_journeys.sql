@@ -1,7 +1,7 @@
 -- Jornada de Avaliação — agrupa simulações publicadas em sequências de execução.
 -- Camada de orquestração acima de simulations/simulation_versions: não substitui
 -- nenhuma entidade existente, apenas reaproveita testes já publicados.
--- Multi-tenant: toda tabela carrega tenant_id e os índices garantem isolamento.
+-- Multi-empresa: toda tabela carrega empresa_id e os índices garantem isolamento.
 
 CREATE TABLE IF NOT EXISTS assessment_journeys (
     id VARCHAR(120) PRIMARY KEY,

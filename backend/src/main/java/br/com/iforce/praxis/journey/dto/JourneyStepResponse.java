@@ -2,6 +2,7 @@ package br.com.iforce.praxis.journey.dto;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 
+
 @Schema(description = "Teste (simulação publicada) dentro de uma jornada.")
 public record JourneyStepResponse(
         @Schema(example = "10")

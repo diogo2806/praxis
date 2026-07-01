@@ -1,39 +1,64 @@
 package br.com.iforce.praxis.candidate.controller;
 
 import br.com.iforce.praxis.auth.service.JwtService;
+
 import br.com.iforce.praxis.gupy.persistence.entity.CandidateAttemptEntity;
+
 import br.com.iforce.praxis.gupy.persistence.repository.CandidateAttemptRepository;
+
 import br.com.iforce.praxis.gupy.model.AttemptStatus;
+
 import br.com.iforce.praxis.shared.outbox.persistence.entity.OutboxEventEntity;
+
 import br.com.iforce.praxis.shared.outbox.persistence.repository.OutboxEventRepository;
+
 import com.jayway.jsonpath.JsonPath;
+
 import org.junit.jupiter.api.Test;
+
 import org.springframework.beans.factory.annotation.Autowired;
+
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+
 import org.springframework.boot.test.context.SpringBootTest;
+
 import org.springframework.http.MediaType;
+
 import org.springframework.test.context.jdbc.Sql;
+
 import org.springframework.test.web.servlet.MockMvc;
+
 import org.springframework.test.web.servlet.MvcResult;
 
+
 import java.time.Duration;
+
 import java.time.Instant;
+
 import java.time.temporal.ChronoUnit;
+
 import java.util.List;
 
+
 import static org.assertj.core.api.Assertions.assertThat;
+
 import static org.hamcrest.Matchers.startsWith;
+
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
 
 @SpringBootTest
 @AutoConfigureMockMvc
 @Sql(scripts = "/seed-simulation-fixture.sql")
 class CandidateAttemptControllerTest {
 
-    private static final String AUTHORIZATION = "Bearer tenant1-token";
+    private static final String AUTHORIZATION = "Bearer empresa1-token";
 
     @Autowired
     private MockMvc mockMvc;
@@ -94,7 +119,7 @@ class CandidateAttemptControllerTest {
         assertThat(candidateAttemptEntity.getFinishedAt()).isNull();
 
         List<OutboxEventEntity> startedEvents = outboxEventRepository
-                .findByTenantIdAndEventTypeOrderByCreatedAtDesc("tenant-1", "ATTEMPT_STARTED");
+                .findByEmpresaIdAndEventTypeOrderByCreatedAtDesc("empresa-1", "ATTEMPT_STARTED");
         assertThat(startedEvents).hasSize(1);
         assertThat(startedEvents.getFirst().getAggregateId()).isEqualTo(attemptId);
         assertThat(startedEvents.getFirst().getStatus()).isEqualTo(OutboxEventEntity.OutboxEventStatus.PENDING);
@@ -307,7 +332,7 @@ class CandidateAttemptControllerTest {
                 .andExpect(jsonPath("$.status").value("concluida"))
                 .andExpect(jsonPath("$.finalizado").value(true));
 
-        CandidateAttemptEntity candidateAttemptEntity = candidateAttemptRepository.findByTenantIdAndId("tenant-1", attemptId)
+        CandidateAttemptEntity candidateAttemptEntity = candidateAttemptRepository.findByEmpresaIdAndId("empresa-1", attemptId)
                 .orElseThrow();
         assertThat(candidateAttemptEntity.getAnswers()).hasSize(1);
         assertThat(Duration.between(
@@ -336,7 +361,7 @@ class CandidateAttemptControllerTest {
                 .andExpect(jsonPath("$.status").value("concluida"))
                 .andExpect(jsonPath("$.finalizado").value(true));
 
-        CandidateAttemptEntity candidateAttemptEntity = candidateAttemptRepository.findByTenantIdAndId("tenant-1", attemptId)
+        CandidateAttemptEntity candidateAttemptEntity = candidateAttemptRepository.findByEmpresaIdAndId("empresa-1", attemptId)
                 .orElseThrow();
         assertThat(candidateAttemptEntity.getAnswers()).hasSize(1);
         assertThat(Duration.between(
@@ -384,7 +409,7 @@ class CandidateAttemptControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("concluida"));
 
-        CandidateAttemptEntity candidateAttemptEntity = candidateAttemptRepository.findByTenantIdAndId("tenant-1", attemptId)
+        CandidateAttemptEntity candidateAttemptEntity = candidateAttemptRepository.findByEmpresaIdAndId("empresa-1", attemptId)
                 .orElseThrow();
         assertThat(candidateAttemptEntity.getAnswers()).hasSize(1);
         assertThat(candidateAttemptEntity.getAnswers().iterator().next().isTimedOut()).isTrue();
@@ -577,7 +602,7 @@ class CandidateAttemptControllerTest {
         assertThat(abandonedAttemptEntity.getFinishedAt()).isNotNull();
 
         List<OutboxEventEntity> abandonedEvents = outboxEventRepository
-                .findByTenantIdAndEventTypeOrderByCreatedAtDesc("tenant-1", "ATTEMPT_ABANDONED");
+                .findByEmpresaIdAndEventTypeOrderByCreatedAtDesc("empresa-1", "ATTEMPT_ABANDONED");
         assertThat(abandonedEvents).hasSize(1);
         assertThat(abandonedEvents.getFirst().getAggregateId()).isEqualTo(attemptId);
         assertThat(abandonedEvents.getFirst().getStatus()).isEqualTo(OutboxEventEntity.OutboxEventStatus.PENDING);

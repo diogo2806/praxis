@@ -1,20 +1,34 @@
 package br.com.iforce.praxis.admin.service;
 
 import br.com.iforce.praxis.admin.dto.AdminDashboardResponse;
-import br.com.iforce.praxis.admin.dto.TenantAdminSummaryResponse;
-import br.com.iforce.praxis.admin.model.TenantStatus;
-import br.com.iforce.praxis.auth.persistence.entity.TenantEntity;
-import br.com.iforce.praxis.auth.persistence.repository.TenantRepository;
+
+import br.com.iforce.praxis.admin.dto.EmpresaAdminSummaryResponse;
+
+import br.com.iforce.praxis.admin.model.EmpresaStatus;
+
+import br.com.iforce.praxis.auth.persistence.entity.EmpresaEntity;
+
+import br.com.iforce.praxis.auth.persistence.repository.EmpresaRepository;
+
 import br.com.iforce.praxis.gupy.model.AttemptStatus;
+
 import br.com.iforce.praxis.gupy.persistence.repository.CandidateAttemptRepository;
+
 import org.springframework.beans.factory.annotation.Value;
+
 import org.springframework.data.domain.PageRequest;
+
 import org.springframework.stereotype.Service;
+
 import org.springframework.transaction.annotation.Transactional;
 
+
 import java.time.Instant;
+
 import java.time.temporal.ChronoUnit;
+
 import java.util.List;
+
 
 /**
  * Consolida os indicadores do dashboard administrativo (rota {@code /admin}): contagem de
@@ -27,18 +41,18 @@ public class AdminDashboardService {
     private static final int TOP_USAGE_LIMIT = 5;
     private static final int RECENT_LIMIT = 5;
 
-    private final TenantRepository tenantRepository;
+    private final EmpresaRepository empresaRepository;
     private final CandidateAttemptRepository candidateAttemptRepository;
     private final AdminUsageService adminUsageService;
     private final int usagePeriodDays;
 
     public AdminDashboardService(
-            TenantRepository tenantRepository,
+            EmpresaRepository empresaRepository,
             CandidateAttemptRepository candidateAttemptRepository,
             AdminUsageService adminUsageService,
             @Value("${praxis.admin.usage-period-days:30}") int usagePeriodDays
     ) {
-        this.tenantRepository = tenantRepository;
+        this.empresaRepository = empresaRepository;
         this.candidateAttemptRepository = candidateAttemptRepository;
         this.adminUsageService = adminUsageService;
         this.usagePeriodDays = usagePeriodDays;
@@ -52,38 +66,38 @@ public class AdminDashboardService {
         long totalCompleted = candidateAttemptRepository.countByStatusAndFinishedAtBetween(
                 AttemptStatus.COMPLETED, start, end);
 
-        List<AdminDashboardResponse.TopUsageTenant> topUsage = candidateAttemptRepository
-                .findTopUsageTenants(AttemptStatus.COMPLETED, start, end, PageRequest.of(0, TOP_USAGE_LIMIT))
+        List<AdminDashboardResponse.TopUsageEmpresa> topUsage = candidateAttemptRepository
+                .findTopUsageEmpresas(AttemptStatus.COMPLETED, start, end, PageRequest.of(0, TOP_USAGE_LIMIT))
                 .stream()
                 .filter(row -> !"PLATFORM".equals((String) row[0]))
                 .map(row -> {
-                    String tenantId = (String) row[0];
+                    String empresaId = (String) row[0];
                     long count = ((Number) row[1]).longValue();
-                    String name = tenantRepository.findById(tenantId)
-                            .map(TenantEntity::getName)
-                            .orElse(tenantId);
-                    return new AdminDashboardResponse.TopUsageTenant(tenantId, name, count);
+                    String name = empresaRepository.findById(empresaId)
+                            .map(EmpresaEntity::getName)
+                            .orElse(empresaId);
+                    return new AdminDashboardResponse.TopUsageEmpresa(empresaId, name, count);
                 })
                 .toList();
 
-        List<TenantAdminSummaryResponse> recent = tenantRepository
+        List<EmpresaAdminSummaryResponse> recent = empresaRepository
                 .findRecentClients(PageRequest.of(0, RECENT_LIMIT)).stream()
-                .map(tenant -> toSummary(tenant, start, end))
+                .map(empresa -> toSummary(empresa, start, end))
                 .toList();
 
-        List<TenantAdminSummaryResponse> attention = tenantRepository
-                .findByStatuses(List.of(TenantStatus.SUSPENSO, TenantStatus.CANCELADO)).stream()
-                .map(tenant -> toSummary(tenant, start, end))
+        List<EmpresaAdminSummaryResponse> attention = empresaRepository
+                .findByStatuses(List.of(EmpresaStatus.SUSPENSO, EmpresaStatus.CANCELADO)).stream()
+                .map(empresa -> toSummary(empresa, start, end))
                 .toList();
 
         return new AdminDashboardResponse(
                 start,
                 end,
-                tenantRepository.countClients(),
-                tenantRepository.countClientsByStatus(TenantStatus.ATIVO),
-                tenantRepository.countClientsByStatus(TenantStatus.EM_TESTE),
-                tenantRepository.countClientsByStatus(TenantStatus.SUSPENSO),
-                tenantRepository.countClientsByStatus(TenantStatus.CANCELADO),
+                empresaRepository.countClients(),
+                empresaRepository.countClientsByStatus(EmpresaStatus.ATIVO),
+                empresaRepository.countClientsByStatus(EmpresaStatus.EM_TESTE),
+                empresaRepository.countClientsByStatus(EmpresaStatus.SUSPENSO),
+                empresaRepository.countClientsByStatus(EmpresaStatus.CANCELADO),
                 totalCompleted,
                 topUsage,
                 recent,
@@ -91,17 +105,17 @@ public class AdminDashboardService {
         );
     }
 
-    private TenantAdminSummaryResponse toSummary(TenantEntity tenant, Instant start, Instant end) {
-        return new TenantAdminSummaryResponse(
-                tenant.getId(),
-                tenant.getName(),
-                tenant.getTradeName(),
-                tenant.getTaxId(),
-                tenant.getCorporateEmail(),
-                tenant.getCommercialPlanType(),
-                tenant.getStatus(),
-                adminUsageService.countCompletedInPeriod(tenant.getId(), start, end),
-                tenant.getCreatedAt()
+    private EmpresaAdminSummaryResponse toSummary(EmpresaEntity empresa, Instant start, Instant end) {
+        return new EmpresaAdminSummaryResponse(
+                empresa.getId(),
+                empresa.getName(),
+                empresa.getTradeName(),
+                empresa.getTaxId(),
+                empresa.getCorporateEmail(),
+                empresa.getCommercialPlanType(),
+                empresa.getStatus(),
+                adminUsageService.countCompletedInPeriod(empresa.getId(), start, end),
+                empresa.getCreatedAt()
         );
     }
 }

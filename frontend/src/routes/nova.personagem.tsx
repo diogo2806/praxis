@@ -13,7 +13,7 @@ import {
   type SimulationSummaryResponse,
 } from "@/lib/api/praxis";
 import { canEditSimulationVersion, statusMeta } from "@/lib/simulation-meta";
-import { defaultAnswerTimeLimitSeconds, useTenantConfig } from "@/lib/tenant-config";
+import { defaultAnswerTimeLimitSeconds, useEmpresaConfig } from "@/lib/empresa-config";
 
 export const Route = createFileRoute("/nova/personagem")({
   validateSearch: (search: Record<string, unknown>) => ({
@@ -40,10 +40,10 @@ function Page() {
   const queryClient = useQueryClient();
   const {
     config,
-    isLoading: tenantConfigLoading,
-    isError: tenantConfigError,
-    error: tenantConfigQueryError,
-  } = useTenantConfig();
+    isLoading: empresaConfigLoading,
+    isError: empresaConfigError,
+    error: empresaConfigQueryError,
+  } = useEmpresaConfig();
   const hasDraftContext = Boolean(search.simulationId && search.versionNumber);
   const [name, setName] = useState("");
   const [emotion, setEmotion] = useState("");
@@ -156,14 +156,14 @@ function Page() {
             />
           }
         />
-      ) : tenantConfigLoading || versionQuery.isLoading ? (
+      ) : empresaConfigLoading || versionQuery.isLoading ? (
         <StateBanner tone="info" title="Carregando fluxo da conversa">
           Buscando a primeira etapa do teste {search.simulationId} v{search.versionNumber}.
         </StateBanner>
-      ) : tenantConfigError ? (
+      ) : empresaConfigError ? (
         <StateBanner tone="danger" title="Não foi possível carregar a configuração">
-          {tenantConfigQueryError instanceof Error
-            ? tenantConfigQueryError.message
+          {empresaConfigQueryError instanceof Error
+            ? empresaConfigQueryError.message
             : "Verifique se o sistema está disponível antes de continuar."}
         </StateBanner>
       ) : versionQuery.isError ? (

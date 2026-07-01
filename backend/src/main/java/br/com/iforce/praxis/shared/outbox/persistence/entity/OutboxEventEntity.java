@@ -1,20 +1,34 @@
 package br.com.iforce.praxis.shared.outbox.persistence.entity;
 
-import br.com.iforce.praxis.shared.jpa.TenantAwareEntity;
+import br.com.iforce.praxis.shared.jpa.EmpresaAwareEntity;
+
 import jakarta.persistence.Column;
+
 import jakarta.persistence.Entity;
+
 import jakarta.persistence.EnumType;
+
 import jakarta.persistence.Enumerated;
+
 import jakarta.persistence.GeneratedValue;
+
 import jakarta.persistence.GenerationType;
+
 import jakarta.persistence.Id;
+
 import jakarta.persistence.Index;
+
 import jakarta.persistence.Table;
+
 import lombok.Getter;
+
 import lombok.NoArgsConstructor;
+
 import lombok.Setter;
 
+
 import java.time.Instant;
+
 
 @Getter
 @Setter
@@ -22,17 +36,17 @@ import java.time.Instant;
 @Entity
 @Table(
     name = "outbox_events",
-    indexes = @Index(name = "idx_outbox_pending", columnList = "status,next_attempt_at,tenant_id")
+    indexes = @Index(name = "idx_outbox_pending", columnList = "status,next_attempt_at,empresa_id")
 )
-public class OutboxEventEntity implements TenantAwareEntity {
+public class OutboxEventEntity implements EmpresaAwareEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id", nullable = false)
     private Long id;
 
-    @Column(name = "tenant_id", nullable = false, length = 120)
-    private String tenantId;
+    @Column(name = "empresa_id", nullable = false, length = 120)
+    private String empresaId;
 
     @Column(name = "event_type", nullable = false, length = 80)
     private String eventType;

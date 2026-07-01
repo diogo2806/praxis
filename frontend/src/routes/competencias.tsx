@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { getTenantConfig, updateTenantConfig, type TenantConfigOption } from "@/lib/api/praxis";
+import { getEmpresaConfig, updateEmpresaConfig, type EmpresaConfigOption } from "@/lib/api/praxis";
 
 export const Route = createFileRoute("/competencias")({
   head: () => ({
@@ -29,7 +29,7 @@ export const Route = createFileRoute("/competencias")({
   component: CompetenciasManagement,
 });
 
-type EditingOption = TenantConfigOption & { originalValue: string };
+type EditingOption = EmpresaConfigOption & { originalValue: string };
 
 function CompetenciasManagement() {
   const queryClient = useQueryClient();
@@ -39,17 +39,17 @@ function CompetenciasManagement() {
   const [searchTerm, setSearchTerm] = useState("");
   const [pendingDeleteOption, setPendingDeleteOption] = useState<EditingOption | null>(null);
 
-  const tenantConfigQuery = useQuery({
-    queryKey: ["tenant-config"],
-    queryFn: getTenantConfig,
+  const empresaConfigQuery = useQuery({
+    queryKey: ["empresa-config"],
+    queryFn: getEmpresaConfig,
   });
 
-  const competencias = tenantConfigQuery.data?.competencies || [];
+  const competencias = empresaConfigQuery.data?.competencies || [];
 
   const saveCatalogMutation = useMutation({
-    mutationFn: (options: TenantConfigOption[]) => updateTenantConfig("COMPETENCY", options),
+    mutationFn: (options: EmpresaConfigOption[]) => updateEmpresaConfig("COMPETENCY", options),
     onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ["tenant-config"] });
+      await queryClient.invalidateQueries({ queryKey: ["empresa-config"] });
       setNewCompetencia("");
       setEditingOption(null);
       setIsDialogOpen(false);
@@ -69,7 +69,7 @@ function CompetenciasManagement() {
     setIsDialogOpen(true);
   };
 
-  const handleOpenEditDialog = (option: TenantConfigOption) => {
+  const handleOpenEditDialog = (option: EmpresaConfigOption) => {
     setEditingOption({
       ...option,
       originalValue: option.value,
@@ -113,7 +113,7 @@ function CompetenciasManagement() {
     saveCatalogMutation.mutate(competencias.filter((competencia) => competencia.value !== value));
   };
 
-  const requestDelete = (option: TenantConfigOption) => {
+  const requestDelete = (option: EmpresaConfigOption) => {
     setPendingDeleteOption({ ...option, originalValue: option.value });
   };
 
@@ -123,7 +123,7 @@ function CompetenciasManagement() {
     setPendingDeleteOption(null);
   };
 
-  if (tenantConfigQuery.isLoading) {
+  if (empresaConfigQuery.isLoading) {
     return (
       <AppShell>
         <div className="mb-6">
@@ -136,15 +136,15 @@ function CompetenciasManagement() {
     );
   }
 
-  if (tenantConfigQuery.isError) {
+  if (empresaConfigQuery.isError) {
     return (
       <AppShell>
         <div className="mb-6">
           <h1 className="text-3xl font-semibold">Gerenciar Competências</h1>
         </div>
         <StateBanner tone="danger" title="Erro ao carregar competências">
-          {tenantConfigQuery.error instanceof Error
-            ? tenantConfigQuery.error.message
+          {empresaConfigQuery.error instanceof Error
+            ? empresaConfigQuery.error.message
             : "Não foi possível carregar as competências. Tente novamente."}
         </StateBanner>
       </AppShell>

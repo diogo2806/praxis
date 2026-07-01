@@ -1,10 +1,14 @@
 package db.migration;
 
 import org.flywaydb.core.api.migration.BaseJavaMigration;
+
 import org.flywaydb.core.api.migration.Context;
 
+
 import java.sql.Statement;
+
 import java.util.Locale;
+
 
 /**
  * Reforça, no banco, a natureza append-only dos eventos financeiros e do ledger de créditos.
@@ -31,7 +35,7 @@ public class V47_1__protect_billing_events_append_only extends BaseJavaMigration
                     END;
                     $$ LANGUAGE plpgsql
                     """);
-            for (String table : new String[]{"tenant_billing_events", "tenant_credit_ledger"}) {
+            for (String table : new String[]{"empresa_billing_events", "empresa_credit_ledger"}) {
                 statement.execute("DROP TRIGGER IF EXISTS trg_prevent_" + table + "_update ON " + table);
                 statement.execute(
                         "CREATE TRIGGER trg_prevent_" + table + "_update "

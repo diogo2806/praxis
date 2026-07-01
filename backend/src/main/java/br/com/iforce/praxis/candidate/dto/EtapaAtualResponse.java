@@ -1,9 +1,12 @@
 package br.com.iforce.praxis.candidate.dto;
 
 import br.com.iforce.praxis.shared.model.MediaType;
+
 import io.swagger.v3.oas.annotations.media.Schema;
 
+
 import java.util.List;
+
 
 @Schema(description = "Situacao atual da avaliacao vista pelo candidato.")
 public record EtapaAtualResponse(

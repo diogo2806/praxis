@@ -1,9 +1,13 @@
 package br.com.iforce.praxis.audit.model;
 
 import br.com.iforce.praxis.shared.model.DescribedEnum;
+
 import br.com.iforce.praxis.shared.model.DescribedEnums;
+
 import com.fasterxml.jackson.annotation.JsonCreator;
+
 import com.fasterxml.jackson.annotation.JsonValue;
+
 
 public enum AuditEventType implements DescribedEnum {
 
@@ -31,11 +35,11 @@ public enum AuditEventType implements DescribedEnum {
     HUMAN_DECISION("humanDecision"),
     REVIEW_REQUESTED("reviewRequested"),
     HEALTH_CONSENT_RECORDED("healthConsentRecorded"),
-    ADMIN_TENANT_CREATED("adminTenantCreated"),
-    ADMIN_TENANT_UPDATED("adminTenantUpdated"),
-    ADMIN_TENANT_SUSPENDED("adminTenantSuspended"),
-    ADMIN_TENANT_REACTIVATED("adminTenantReactivated"),
-    ADMIN_TENANT_CANCELED("adminTenantCanceled"),
+    ADMIN_EMPRESA_CREATED("adminEmpresaCreated"),
+    ADMIN_EMPRESA_UPDATED("adminEmpresaUpdated"),
+    ADMIN_EMPRESA_SUSPENDED("adminEmpresaSuspended"),
+    ADMIN_EMPRESA_REACTIVATED("adminEmpresaReactivated"),
+    ADMIN_EMPRESA_CANCELED("adminEmpresaCanceled"),
     ADMIN_COMMERCIAL_PLAN_CHANGED("adminCommercialPlanChanged"),
     ADMIN_COMMERCIAL_CONDITION_CHANGED("adminCommercialConditionChanged"),
     ADMIN_USER_INVITED("adminUserInvited"),
@@ -63,7 +67,18 @@ public enum AuditEventType implements DescribedEnum {
     INTEGRATION_SYNC_FAILED("integrationSyncFailed"),
     INTEGRATION_TOKEN_CREATED("integrationTokenCreated"),
     INTEGRATION_TOKEN_ROTATED("integrationTokenRotated"),
-    INTEGRATION_TOKEN_REVOKED("integrationTokenRevoked");
+    INTEGRATION_TOKEN_REVOKED("integrationTokenRevoked"),
+    TEAM_USER_INVITED("teamUserInvited"),
+    TEAM_USER_INVITE_RESENT("teamUserInviteResent"),
+    TEAM_USER_BLOCKED("teamUserBlocked"),
+    TEAM_USER_UNBLOCKED("teamUserUnblocked"),
+    MARKETPLACE_PROFESSIONAL_APPROVED("marketplaceProfessionalApproved"),
+    MARKETPLACE_PROFESSIONAL_REJECTED("marketplaceProfessionalRejected"),
+    MARKETPLACE_PROFESSIONAL_SUSPENDED("marketplaceProfessionalSuspended"),
+    MARKETPLACE_LISTING_APPROVED("marketplaceListingApproved"),
+    MARKETPLACE_LISTING_REJECTED("marketplaceListingRejected"),
+    MARKETPLACE_LISTING_SUSPENDED("marketplaceListingSuspended"),
+    MARKETPLACE_PROFESSIONAL_ANONYMIZED("marketplaceProfessionalAnonymized");
 
     private final String descricao;
 

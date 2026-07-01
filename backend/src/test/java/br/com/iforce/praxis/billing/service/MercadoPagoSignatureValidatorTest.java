@@ -1,21 +1,42 @@
 package br.com.iforce.praxis.billing.service;
 
 import br.com.iforce.praxis.billing.config.MercadoPagoProperties;
+
 import org.junit.jupiter.api.Test;
 
+
 import javax.crypto.Mac;
+
 import javax.crypto.spec.SecretKeySpec;
+
 import java.nio.charset.StandardCharsets;
+
 import java.util.HexFormat;
 
+
 import static org.assertj.core.api.Assertions.assertThat;
+
 
 class MercadoPagoSignatureValidatorTest {
 
     private static final String SECRET = "webhook-secret-de-teste";
 
     private MercadoPagoProperties properties(String secret) {
-        return new MercadoPagoProperties(true, null, "token", "pub", secret, 7, null, null);
+        return new MercadoPagoProperties(
+                true,
+                null,
+                null,
+                "token",
+                "pub",
+                secret,
+                null,
+                null,
+                null,
+                null,
+                7,
+                null,
+                null
+        );
     }
 
     private String signature(String ts, String dataId, String requestId) throws Exception {
@@ -46,8 +67,22 @@ class MercadoPagoSignatureValidatorTest {
     }
 
     @Test
-    void acceptsInDevWhenSecretBlank() {
-        var validator = new MercadoPagoSignatureValidator(properties(""));
+    void acceptsInDevWhenSecretBlankAndMpDisabled() {
+        var validator = new MercadoPagoSignatureValidator(new MercadoPagoProperties(
+                false,
+                null,
+                null,
+                "token",
+                "pub",
+                "",
+                null,
+                null,
+                null,
+                null,
+                7,
+                null,
+                null
+        ));
         assertThat(validator.isValid(null, null, null)).isTrue();
     }
 }

@@ -1,15 +1,19 @@
 package br.com.iforce.praxis.journey.model;
 
 import br.com.iforce.praxis.shared.model.DescribedEnum;
+
 import br.com.iforce.praxis.shared.model.DescribedEnums;
+
 import com.fasterxml.jackson.annotation.JsonCreator;
+
 import com.fasterxml.jackson.annotation.JsonValue;
+
 
 /**
  * Estados de uma Jornada de Avaliação.
  *
  * <ul>
- *     <li>{@code DRAFT}: rascunho editável pelo tenant dono.</li>
+ *     <li>{@code DRAFT}: rascunho editável pelo empresa dono.</li>
  *     <li>{@code PUBLISHED}: composição estável, pode gerar links de candidatos.</li>
  *     <li>{@code ARCHIVED}: não gera novos links, mas preserva o histórico.</li>
  * </ul>

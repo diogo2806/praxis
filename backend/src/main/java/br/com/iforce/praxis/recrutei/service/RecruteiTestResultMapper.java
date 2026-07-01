@@ -1,18 +1,30 @@
 package br.com.iforce.praxis.recrutei.service;
 
 import br.com.iforce.praxis.config.PraxisProperties;
+
 import br.com.iforce.praxis.gupy.model.AttemptStatus;
+
 import br.com.iforce.praxis.gupy.model.CandidateAttempt;
+
 import br.com.iforce.praxis.gupy.model.PublishedSimulation;
+
 import br.com.iforce.praxis.gupy.model.ResultItem;
+
 import br.com.iforce.praxis.recrutei.dto.RecruteiTestResultItemResponse;
+
 import br.com.iforce.praxis.recrutei.dto.RecruteiTestResultResponse;
+
 import org.springframework.stereotype.Component;
 
+
 import java.net.URLEncoder;
+
 import java.nio.charset.StandardCharsets;
+
 import java.time.Instant;
+
 import java.util.Comparator;
+
 
 /**
  * Tradutor do resultado de uma prova para o "idioma" da Recrutei.

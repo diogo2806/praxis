@@ -28,7 +28,7 @@ import {
   type SimulationVersionOptionResponse,
 } from "@/lib/api/praxis";
 import { canEditSimulationVersion } from "@/lib/simulation-meta";
-import { defaultAnswerTimeLimitSeconds, useTenantConfig } from "@/lib/tenant-config";
+import { defaultAnswerTimeLimitSeconds, useEmpresaConfig } from "@/lib/empresa-config";
 import { cn } from "@/lib/utils";
 
 type CanvasPoint = { x: number; y: number };
@@ -72,7 +72,7 @@ function Page() {
   const search = Route.useSearch();
   const queryClient = useQueryClient();
   const hasContext = Boolean(search.simulationId && search.versionNumber);
-  const tenantConfig = useTenantConfig();
+  const empresaConfig = useEmpresaConfig();
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [newNodeText, setNewNodeText] = useState("");
   const [newOptionText, setNewOptionText] = useState("");
@@ -116,12 +116,12 @@ function Page() {
 
   const addNodeMutation = useMutation({
     mutationFn: () => {
-      if (!tenantConfig.config) {
+      if (!empresaConfig.config) {
         throw new Error("A configuração da empresa ainda não foi carregada.");
       }
       return createSimulationNode(search.simulationId!, search.versionNumber!, {
         clientMessage: newNodeText.trim(),
-        timeLimitSeconds: defaultAnswerTimeLimitSeconds(tenantConfig.config),
+        timeLimitSeconds: defaultAnswerTimeLimitSeconds(empresaConfig.config),
       });
     },
     onSuccess: async (nodeId) => {
@@ -211,14 +211,14 @@ function Page() {
             />
           }
         />
-      ) : versionQuery.isLoading || tenantConfig.isLoading ? (
+      ) : versionQuery.isLoading || empresaConfig.isLoading ? (
         <StateBanner tone="info" title="Carregando mapa">
           Buscando o fluxo da conversa do teste {search.simulationId} v{search.versionNumber}.
         </StateBanner>
-      ) : versionQuery.isError || tenantConfig.isError ? (
+      ) : versionQuery.isError || empresaConfig.isError ? (
         <StateBanner tone="danger" title="Não foi possível carregar o mapa">
-          {(versionQuery.error ?? tenantConfig.error) instanceof Error
-            ? (versionQuery.error ?? tenantConfig.error)?.message
+          {(versionQuery.error ?? empresaConfig.error) instanceof Error
+            ? (versionQuery.error ?? empresaConfig.error)?.message
             : "Verifique sua conexão e tente novamente."}
         </StateBanner>
       ) : version ? (

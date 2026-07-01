@@ -1,27 +1,48 @@
 package br.com.iforce.praxis.simulation.service;
 
-import br.com.iforce.praxis.auth.service.CurrentTenantService;
+import br.com.iforce.praxis.auth.service.CurrentEmpresaService;
+
 import br.com.iforce.praxis.candidate.service.BlindMasking;
+
 import br.com.iforce.praxis.gupy.persistence.entity.CandidateAttemptEntity;
+
 import br.com.iforce.praxis.gupy.persistence.entity.ResultItemEntity;
+
 import br.com.iforce.praxis.gupy.persistence.repository.CandidateAttemptRepository;
+
 import br.com.iforce.praxis.simulation.dto.CandidateRadarDto;
+
 import br.com.iforce.praxis.simulation.dto.CompetencyBenchmarkDto;
+
 import br.com.iforce.praxis.simulation.dto.CompetencyScoreDto;
+
 import br.com.iforce.praxis.simulation.dto.TalentMatchResponse;
+
 import br.com.iforce.praxis.simulation.persistence.entity.SimulationCompetencyEntity;
+
 import br.com.iforce.praxis.simulation.persistence.entity.SimulationVersionEntity;
+
 import br.com.iforce.praxis.simulation.persistence.repository.SimulationVersionRepository;
+
 import org.springframework.http.HttpStatus;
+
 import org.springframework.stereotype.Service;
+
 import org.springframework.transaction.annotation.Transactional;
+
 import org.springframework.web.server.ResponseStatusException;
 
+
 import java.util.Comparator;
+
 import java.util.LinkedHashMap;
+
 import java.util.List;
+
 import java.util.Map;
+
 import java.util.Objects;
+
 
 /**
  * Compara candidatos entre si e contra o perfil ideal da vaga (talent match).
@@ -40,16 +61,16 @@ public class TalentMatchService {
 
     private final SimulationVersionRepository simulationVersionRepository;
     private final CandidateAttemptRepository candidateAttemptRepository;
-    private final CurrentTenantService currentTenantService;
+    private final CurrentEmpresaService currentEmpresaService;
 
     public TalentMatchService(
             SimulationVersionRepository simulationVersionRepository,
             CandidateAttemptRepository candidateAttemptRepository,
-            CurrentTenantService currentTenantService
+            CurrentEmpresaService currentEmpresaService
     ) {
         this.simulationVersionRepository = simulationVersionRepository;
         this.candidateAttemptRepository = candidateAttemptRepository;
-        this.currentTenantService = currentTenantService;
+        this.currentEmpresaService = currentEmpresaService;
     }
 
     /**
@@ -68,10 +89,10 @@ public class TalentMatchService {
      */
     @Transactional(readOnly = true)
     public TalentMatchResponse getTalentMatch(String simulationId, int versionNumber, List<String> attemptIds, boolean blind) {
-        String tenantId = currentTenantService.requiredTenantId();
+        String empresaId = currentEmpresaService.requiredEmpresaId();
         List<String> normalizedAttemptIds = normalizeAttemptIds(attemptIds);
         SimulationVersionEntity simulationVersionEntity = simulationVersionRepository
-                .findBySimulationTenantIdAndSimulationIdAndVersionNumber(tenantId, simulationId, versionNumber)
+                .findBySimulationEmpresaIdAndSimulationIdAndVersionNumber(empresaId, simulationId, versionNumber)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Não encontramos esta versão do teste."));
 
         List<CandidateAttemptEntity> attempts = candidateAttemptRepository.findAllByIdInWithResultItems(normalizedAttemptIds);
@@ -79,8 +100,8 @@ public class TalentMatchService {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Uma ou mais tentativas não foram encontradas.");
         }
 
-        boolean crossTenant = attempts.stream().anyMatch(attempt -> !Objects.equals(attempt.getTenantId(), tenantId));
-        if (crossTenant) {
+        boolean crossEmpresa = attempts.stream().anyMatch(attempt -> !Objects.equals(attempt.getEmpresaId(), empresaId));
+        if (crossEmpresa) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Você não tem acesso a uma ou mais tentativas selecionadas.");
         }
 

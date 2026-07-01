@@ -2,7 +2,9 @@ package br.com.iforce.praxis.gupy.model;
 
 import br.com.iforce.praxis.shared.model.MediaType;
 
+
 import java.util.List;
+
 
 public record ScenarioNode(
         String id,

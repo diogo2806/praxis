@@ -1,12 +1,18 @@
 package br.com.iforce.praxis.journey.dto;
 
 import br.com.iforce.praxis.gupy.model.AttemptStatus;
+
 import br.com.iforce.praxis.journey.model.AssessmentJourneyAttemptStatus;
+
 import br.com.iforce.praxis.journey.model.AssessmentJourneyStepStatus;
+
 import io.swagger.v3.oas.annotations.media.Schema;
 
+
 import java.time.Instant;
+
 import java.util.List;
+
 
 /**
  * Visão consolidada do candidato em uma jornada: status geral e o resultado de

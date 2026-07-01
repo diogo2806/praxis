@@ -1,7 +1,9 @@
 package br.com.iforce.praxis.billing.config;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
+
 import org.springframework.boot.context.properties.bind.ConstructorBinding;
+
 
 /**
  * Configuração do Mercado Pago. Todas as credenciais ficam apenas no backend e nunca são
@@ -12,9 +14,14 @@ import org.springframework.boot.context.properties.bind.ConstructorBinding;
 public record MercadoPagoProperties(
         boolean enabled,
         String baseUrl,
+        String authorizationUrl,
         String accessToken,
         String publicKey,
         String webhookSecret,
+        String clientId,
+        String clientSecret,
+        String connectRedirectUri,
+        String marketplaceId,
         int gracePeriodDays,
         String backUrl,
         String notificationUrl
@@ -24,6 +31,12 @@ public record MercadoPagoProperties(
     public MercadoPagoProperties {
         if (baseUrl == null || baseUrl.isBlank()) {
             baseUrl = "https://api.mercadopago.com";
+        }
+        if (authorizationUrl == null || authorizationUrl.isBlank()) {
+            authorizationUrl = "https://auth.mercadopago.com.br/authorization";
+        }
+        if (marketplaceId == null || marketplaceId.isBlank()) {
+            marketplaceId = "praxis";
         }
         if (gracePeriodDays <= 0) {
             gracePeriodDays = 7;

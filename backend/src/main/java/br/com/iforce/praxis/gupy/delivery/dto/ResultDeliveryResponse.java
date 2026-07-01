@@ -1,9 +1,12 @@
 package br.com.iforce.praxis.gupy.delivery.dto;
 
 import br.com.iforce.praxis.gupy.delivery.model.ResultDeliveryStatus;
+
 import io.swagger.v3.oas.annotations.media.Schema;
 
+
 import java.time.Instant;
+
 
 @Schema(description = "Estado de entrega assíncrona do resultado para a Gupy.")
 public record ResultDeliveryResponse(

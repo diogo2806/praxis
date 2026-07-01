@@ -1,7 +1,9 @@
 package br.com.iforce.praxis.recrutei.dto;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+
 import io.swagger.v3.oas.annotations.media.Schema;
+
 
 /**
  * Resposta devolvida à Recrutei após inscrever o candidato na prova.

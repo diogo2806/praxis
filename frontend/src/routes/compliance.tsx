@@ -1,9 +1,18 @@
-﻿import { useMemo, useState } from "react";
+import { Fragment, useEffect, useMemo, useState, type ReactNode } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Eye, Globe, CircleHelp, X } from "lucide-react";
+import {
+  Eye,
+  Globe,
+  CircleHelp,
+  Info,
+  ShieldCheck,
+  ShieldAlert,
+  Gauge,
+  AlertTriangle,
+} from "lucide-react";
 import { AppShell } from "@/components/app-shell";
-import { StateBanner, StatusBadge } from "@/components/praxis-ui";
+import { StateBanner } from "@/components/praxis-ui";
 import {
   Table,
   TableBody,
@@ -12,7 +21,13 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Sheet, SheetClose, SheetContent, SheetTitle } from "@/components/ui/sheet";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { useLanguage } from "@/lib/language-context";
 import { useQuery } from "@tanstack/react-query";
 import {
@@ -25,9 +40,11 @@ import {
   type SimulationSummaryResponse,
   type SimulationValidationResponse,
   type SimulationVersionDetailResponse,
+  type ValidationIssueResponse,
 } from "@/lib/api/praxis";
 
 const CORTA = 60;
+const PAGE_SIZE = 8;
 
 type ComplianceRow = SimulationSummaryResponse & {
   completionRate: number;
@@ -111,12 +128,14 @@ function CompliancePage() {
   const hasContext = Boolean(search.simulationId && search.versionNumber);
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState<StatusLabel>("Todos os status");
+  const [page, setPage] = useState(0);
 
   const simulationsQuery = useQuery({
     queryKey: ["simulations"],
     queryFn: listSimulations,
   });
-  const privacyQuery = useQuery({
+  // Mantém o resumo de privacidade pré-carregado para a aba de conformidade.
+  useQuery({
     queryKey: ["privacy-compliance"],
     queryFn: getPrivacyCompliance,
   });
@@ -163,6 +182,17 @@ function CompliancePage() {
       });
   }, [simulationsQuery.data, query, status]);
 
+  // Reinicia a paginação quando os filtros mudam para não ficar em uma página vazia.
+  useEffect(() => {
+    setPage(0);
+  }, [query, status]);
+
+  const totalPages = Math.max(1, Math.ceil(rows.length / PAGE_SIZE));
+  const safePage = Math.min(page, totalPages - 1);
+  const from = safePage * PAGE_SIZE;
+  const to = Math.min(rows.length, from + PAGE_SIZE);
+  const pageRows = rows.slice(from, to);
+
   const activeRow = useMemo(() => {
     if (!hasContext) return null;
     return (
@@ -172,13 +202,13 @@ function CompliancePage() {
     );
   }, [hasContext, rows, search.simulationId, search.versionNumber]);
 
-  const closeDrawer = () =>
+  const closeDialog = () =>
     navigate({ to: "/compliance", search: { simulationId: undefined, versionNumber: undefined } });
 
   return (
     <AppShell>
       <div className="mx-auto max-w-6xl px-2 py-8 sm:px-6">
-        <div className="mb-6">
+        <div className="mb-5">
           <div className="text-[11px] font-semibold uppercase tracking-wider text-primary">
             {t.common.compliance}
           </div>
@@ -189,9 +219,30 @@ function CompliancePage() {
           </p>
         </div>
 
+        <div className="mb-6 flex items-start gap-3 rounded-xl border border-primary/25 bg-primary/5 p-4 text-sm">
+          <Info className="mt-0.5 h-4 w-4 shrink-0 text-primary" aria-hidden />
+          <div className="text-muted-foreground">
+            <span className="font-medium text-foreground">O que é esta tela?</span> Aqui você
+            acompanha se cada versão de teste está pronta para ir ao ar com segurança. Use a busca e
+            o filtro de status para encontrar uma versão e clique em{" "}
+            <span className="font-medium text-foreground">Detalhes</span> para abrir um resumo
+            completo — com pendências, critérios de avaliação, caminhos possíveis e o histórico de
+            alterações.
+          </div>
+        </div>
+
         <section className="rounded-xl border border-border bg-card">
           <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border px-4 py-3">
-            <div className="text-sm font-semibold">Versões</div>
+            <div>
+              <div className="text-sm font-semibold">Versões</div>
+              <div className="text-xs text-muted-foreground">
+                {rows.length === 0
+                  ? "Nenhuma versão para os filtros atuais"
+                  : `${rows.length} ${rows.length === 1 ? "versão" : "versões"} listada${
+                      rows.length === 1 ? "" : "s"
+                    }`}
+              </div>
+            </div>
             <div className="flex items-center gap-2">
               <input
                 value={query}
@@ -249,7 +300,7 @@ function CompliancePage() {
                     </TableCell>
                   </TableRow>
                 ) : (
-                  rows.map((row) => {
+                  pageRows.map((row) => {
                     const completionTone: "published" | "draft" | "archived" =
                       row.completionRate >= CORTA
                         ? "published"
@@ -312,10 +363,21 @@ function CompliancePage() {
               </TableBody>
             </Table>
           </div>
+
+          {rows.length > 0 ? (
+            <TablePager
+              from={from}
+              to={to}
+              total={rows.length}
+              page={safePage}
+              totalPages={totalPages}
+              onPage={setPage}
+            />
+          ) : null}
         </section>
       </div>
 
-      <ComplianceSheet
+      <ComplianceDialog
         open={hasContext}
         row={activeRow}
         version={versionQuery.data ?? null}
@@ -332,7 +394,7 @@ function CompliancePage() {
                 ? auditQuery.error.message
                 : undefined
         }
-        onClose={closeDrawer}
+        onClose={closeDialog}
       />
 
       <div className="fixed bottom-3 right-3 flex items-center gap-2">
@@ -347,7 +409,7 @@ function CompliancePage() {
   );
 }
 
-function ComplianceSheet({
+function ComplianceDialog({
   open,
   row,
   version,
@@ -370,120 +432,320 @@ function ComplianceSheet({
 }) {
   const versionTitle = row ? `${row.name} · v${row.versionNumber}` : "Versão";
 
-  if (!open) return null;
-
   return (
-    <Sheet open={open} onOpenChange={(value) => !value && onClose()}>
-      <SheetContent className="w-full max-w-xl overflow-y-auto p-0">
-        <SheetTitle className="sr-only">Detalhes da versão</SheetTitle>
-
-        <div className="flex items-start justify-between border-b border-border px-5 py-4">
-          <div>
-            <div className="text-[11px] uppercase tracking-wider text-muted-foreground">
-              {versionTitle}
-            </div>
-            <div className="font-serif text-xl">Detalhes da versão</div>
+    <Dialog open={open} onOpenChange={(value) => !value && onClose()}>
+      <DialogContent className="max-h-[88vh] w-[calc(100vw-1.5rem)] max-w-3xl gap-0 overflow-y-auto p-0">
+        <DialogHeader className="space-y-1 border-b border-border px-5 py-4 text-left">
+          <div className="text-[11px] uppercase tracking-wider text-muted-foreground">
+            {versionTitle}
           </div>
-          <SheetClose asChild>
-            <button className="rounded-md p-1 hover:bg-accent" aria-label="Fechar">
-              <X className="h-4 w-4" />
-            </button>
-          </SheetClose>
-        </div>
+          <DialogTitle className="font-serif text-xl">Detalhes da versão</DialogTitle>
+          <DialogDescription>
+            Um resumo claro do que esta versão avalia, o que falta para publicar e o histórico de
+            alterações.
+          </DialogDescription>
+        </DialogHeader>
 
         <div className="space-y-8 p-5">
-          <section className="rounded-lg border border-border bg-background p-3 text-sm">
-            <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-              Aprovação / publicação
-            </div>
-            <div className="mt-1.5">
-              <div className="font-medium">
-                {validation?.publishable ? "Pronto para publicar" : "Ainda não pode ser publicado"}
-              </div>
-              <div className="text-xs text-muted-foreground">
-                {validation
-                  ? validation.issues.length === 0
-                    ? "Nenhuma pendência encontrada"
-                    : `${validation.issues.length} ${
-                        validation.issues.length === 1
-                          ? "pendência encontrada"
-                          : "pendências encontradas"
-                      }`
-                  : "Carregando verificação..."}
-              </div>
-            </div>
-          </section>
-
-          <section className="space-y-2">
-            <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-              Confiabilidade do resultado
-            </div>
-            {loading || !version ? (
-              <div className="rounded-md border border-border bg-card p-4 text-sm text-muted-foreground">
-                Carregando análise da versão...
-              </div>
-            ) : hasError ? (
-              <StateBanner tone="danger" title="Falha ao abrir dados de confiabilidade">
-                {errorMessage}
-              </StateBanner>
-            ) : (
-              <DossiePanel version={version} cutoff={CORTA} />
-            )}
-          </section>
-
-          <section>
-            <div className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-              Trilha de auditoria
-            </div>
-            <AuditoriaPanel events={auditEvents} />
-          </section>
-
-          {validation ? (
-            <section className="rounded-lg border border-border bg-background p-3 text-sm">
-              <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                Resumo técnico
-              </div>
-              <div className="mt-1.5 text-muted-foreground">
-                {validation.blockerCount === 0
-                  ? "Nenhum bloqueio em aberto"
-                  : `Bloqueios em aberto: ${validation.blockerCount}`}
-              </div>
-            </section>
+          {hasError ? (
+            <StateBanner tone="danger" title="Falha ao carregar os detalhes da versão">
+              {errorMessage ?? "Tente novamente em alguns instantes."}
+            </StateBanner>
           ) : null}
+
+          <ResumoConformidade validation={validation} loading={loading} />
+
+          <DialogSection
+            title="Pendências a resolver"
+            description="Itens encontrados na verificação automática. Bloqueios impedem a publicação; avisos são recomendações que valem a pena revisar."
+          >
+            <IssuesPanel validation={validation} version={version} loading={loading} />
+          </DialogSection>
+
+          <DialogSection
+            title="Como esta versão é avaliada"
+            description="Cada critério tem um peso na nota final. Quanto maior o peso, mais ele influencia o resultado do candidato."
+          >
+            {loading || !version ? (
+              <PanelSkeleton label="Carregando critérios de avaliação..." />
+            ) : (
+              <CriteriosPanel version={version} />
+            )}
+          </DialogSection>
+
+          <DialogSection
+            title="Caminhos possíveis"
+            description={`Cada caminho é uma rota que o candidato pode seguir no teste. Caminhos verdes alcançam a nota de corte (${CORTA}/100); os vermelhos ficam abaixo.`}
+          >
+            {loading || !version ? (
+              <PanelSkeleton label="Mapeando caminhos do teste..." />
+            ) : (
+              <CaminhosPanel version={version} cutoff={CORTA} />
+            )}
+          </DialogSection>
+
+          <DialogSection
+            title="Trilha de auditoria"
+            description="Histórico de quem alterou o quê e quando, para rastreabilidade e conformidade."
+          >
+            <AuditoriaPanel events={auditEvents} loading={loading} />
+          </DialogSection>
         </div>
-      </SheetContent>
-    </Sheet>
+      </DialogContent>
+    </Dialog>
   );
 }
 
-export function DossiePanel({
-  version,
-  cutoff,
+function DialogSection({
+  title,
+  description,
+  children,
 }: {
-  version: SimulationVersionDetailResponse;
-  cutoff: number;
+  title: string;
+  description: string;
+  children: ReactNode;
 }) {
-  const [selectedPathIndex, setSelectedPathIndex] = useState<number | null>(null);
-  const matrix = useMemo(() => buildMatrix(version), [version]);
-  const paths = useMemo(() => buildPaths(version, matrix), [version, matrix]);
-  const totalWeight = matrix.reduce((sum, item) => sum + item.peso, 0);
+  return (
+    <section className="space-y-2">
+      <div>
+        <h3 className="text-sm font-semibold">{title}</h3>
+        <p className="mt-0.5 text-xs text-muted-foreground">{description}</p>
+      </div>
+      {children}
+    </section>
+  );
+}
+
+function PanelSkeleton({ label }: { label: string }) {
+  return (
+    <div className="rounded-md border border-border bg-card p-4 text-sm text-muted-foreground">
+      {label}
+    </div>
+  );
+}
+
+function ResumoConformidade({
+  validation,
+  loading,
+}: {
+  validation: SimulationValidationResponse | null;
+  loading: boolean;
+}) {
+  if (loading || !validation) {
+    return <PanelSkeleton label="Carregando resumo de conformidade..." />;
+  }
+
+  const cards = [
+    {
+      label: "Pode publicar?",
+      value: validation.publishable ? "Sim, pronto" : "Ainda não",
+      hint: validation.publishable
+        ? "Nenhum bloqueio em aberto. A versão pode ir ao ar."
+        : "Há bloqueios que precisam ser resolvidos antes de publicar.",
+      Icon: validation.publishable ? ShieldCheck : ShieldAlert,
+      tone: validation.publishable ? "ok" : "danger",
+    },
+    {
+      label: "Bloqueios",
+      value: String(validation.blockerCount),
+      hint: "Problemas que impedem a publicação até serem corrigidos.",
+      Icon: ShieldAlert,
+      tone: validation.blockerCount > 0 ? "danger" : "ok",
+    },
+    {
+      label: "Avisos",
+      value: String(validation.warningCount),
+      hint: "Recomendações de melhoria. Não impedem a publicação.",
+      Icon: AlertTriangle,
+      tone: validation.warningCount > 0 ? "warn" : "ok",
+    },
+    {
+      label: "Qualidade",
+      value: `${Math.round(validation.qualityScore)}/100`,
+      hint: "Índice geral de qualidade calculado a partir das verificações.",
+      Icon: Gauge,
+      tone: validation.qualityScore >= CORTA ? "ok" : "warn",
+    },
+  ] as const;
+
+  const toneClass: Record<string, string> = {
+    ok: "border-success/30 bg-success/5",
+    warn: "border-warning/30 bg-warning/5",
+    danger: "border-danger/30 bg-danger/5",
+  };
+  const iconClass: Record<string, string> = {
+    ok: "text-success",
+    warn: "text-warning",
+    danger: "text-danger",
+  };
 
   return (
-    <div className="space-y-5 text-sm">
-      <div className="rounded-lg border border-border bg-background">
-        <div className="px-3 py-2 text-xs font-semibold uppercase text-muted-foreground">
-          Como esta versão é avaliada
+    <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+      {cards.map((card) => (
+        <div
+          key={card.label}
+          title={card.hint}
+          className={`rounded-lg border p-3 ${toneClass[card.tone]}`}
+        >
+          <div className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+            <card.Icon className={`h-3.5 w-3.5 ${iconClass[card.tone]}`} aria-hidden />
+            {card.label}
+          </div>
+          <div className="mt-1.5 text-lg font-semibold">{card.value}</div>
+          <p className="mt-0.5 text-[11px] leading-snug text-muted-foreground">{card.hint}</p>
         </div>
+      ))}
+    </div>
+  );
+}
+
+const ISSUE_FILTERS = ["Todas", "Bloqueios", "Avisos"] as const;
+type IssueFilter = (typeof ISSUE_FILTERS)[number];
+
+function IssuesPanel({
+  validation,
+  version,
+  loading,
+}: {
+  validation: SimulationValidationResponse | null;
+  version: SimulationVersionDetailResponse | null;
+  loading: boolean;
+}) {
+  const [filter, setFilter] = useState<IssueFilter>("Todas");
+  const [page, setPage] = useState(0);
+
+  const nodeLabelById = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const node of version?.nodes ?? []) {
+      map.set(node.id, `Etapa ${node.turnIndex}`);
+    }
+    return map;
+  }, [version]);
+
+  const issues = useMemo<ValidationIssueResponse[]>(() => {
+    const all = validation?.issues ?? [];
+    if (filter === "Bloqueios") return all.filter((issue) => issue.severity === "blocker");
+    if (filter === "Avisos") return all.filter((issue) => issue.severity === "warning");
+    return all;
+  }, [validation, filter]);
+
+  useEffect(() => {
+    setPage(0);
+  }, [filter, validation]);
+
+  const perPage = 5;
+  const totalPages = Math.max(1, Math.ceil(issues.length / perPage));
+  const safePage = Math.min(page, totalPages - 1);
+  const from = safePage * perPage;
+  const to = Math.min(issues.length, from + perPage);
+  const visible = issues.slice(from, to);
+
+  if (loading || !validation) {
+    return <PanelSkeleton label="Carregando pendências..." />;
+  }
+
+  if ((validation.issues ?? []).length === 0) {
+    return (
+      <StateBanner tone="ok" title="Nenhuma pendência encontrada">
+        Esta versão passou em todas as verificações automáticas.
+      </StateBanner>
+    );
+  }
+
+  return (
+    <div className="rounded-lg border border-border">
+      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border px-3 py-2">
+        <div className="text-xs text-muted-foreground">
+          {validation.blockerCount} bloqueio(s) · {validation.warningCount} aviso(s)
+        </div>
+        <select
+          value={filter}
+          onChange={(event) => setFilter(event.target.value as IssueFilter)}
+          className="rounded-md border border-border bg-background px-2 py-1 text-xs"
+          aria-label="Filtrar pendências"
+        >
+          {ISSUE_FILTERS.map((option) => (
+            <option key={option}>{option}</option>
+          ))}
+        </select>
+      </div>
+
+      <div className="overflow-x-auto">
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Critério</TableHead>
-              <TableHead>% da pontuação</TableHead>
-              <TableHead>Avaliado em</TableHead>
+              <TableHead className="w-28">Tipo</TableHead>
+              <TableHead>O que precisa de atenção</TableHead>
+              <TableHead className="w-28">Onde</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {matrix.map((item) => {
+            {visible.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={3} className="px-3 py-3 text-sm text-muted-foreground">
+                  Nenhuma pendência para este filtro.
+                </TableCell>
+              </TableRow>
+            ) : (
+              visible.map((issue, index) => (
+                <TableRow key={`${issue.severity}-${issue.nodeId ?? "geral"}-${from + index}`}>
+                  <TableCell className="px-3 py-2">
+                    <span
+                      className={`inline-flex items-center rounded-md border px-2 py-0.5 text-[11px] font-medium ${
+                        issue.severity === "blocker"
+                          ? "border-danger/30 bg-danger/15 text-danger"
+                          : "border-warning/30 bg-warning/15 text-warning-foreground"
+                      }`}
+                    >
+                      {issue.severity === "blocker" ? "Bloqueio" : "Aviso"}
+                    </span>
+                  </TableCell>
+                  <TableCell className="px-3 py-2 text-sm">{issue.message}</TableCell>
+                  <TableCell className="px-3 py-2 text-xs text-muted-foreground">
+                    {issue.nodeId ? (nodeLabelById.get(issue.nodeId) ?? "Etapa") : "Geral"}
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
+          </TableBody>
+        </Table>
+      </div>
+
+      <TablePager
+        from={from}
+        to={to}
+        total={issues.length}
+        page={safePage}
+        totalPages={totalPages}
+        onPage={setPage}
+      />
+    </div>
+  );
+}
+
+function CriteriosPanel({ version }: { version: SimulationVersionDetailResponse }) {
+  const matrix = useMemo(() => buildMatrix(version), [version]);
+  const totalWeight = matrix.reduce((sum, item) => sum + item.peso, 0);
+
+  return (
+    <div className="overflow-x-auto rounded-lg border border-border bg-background">
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Critério</TableHead>
+            <TableHead>% da pontuação</TableHead>
+            <TableHead>Avaliado em</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {matrix.length === 0 ? (
+            <TableRow>
+              <TableCell colSpan={3} className="px-3 py-3 text-sm text-muted-foreground">
+                Nenhum critério configurado.
+              </TableCell>
+            </TableRow>
+          ) : (
+            matrix.map((item) => {
               const percentual = totalWeight > 0 ? Math.round((item.peso / totalWeight) * 100) : 0;
               return (
                 <TableRow key={item.criterio}>
@@ -499,97 +761,186 @@ export function DossiePanel({
                   </TableCell>
                 </TableRow>
               );
-            })}
+            })
+          )}
+        </TableBody>
+      </Table>
+    </div>
+  );
+}
+
+const PATH_FILTERS = ["Todos", "Aprovados", "Reprovados"] as const;
+type PathFilter = (typeof PATH_FILTERS)[number];
+
+function CaminhosPanel({
+  version,
+  cutoff,
+}: {
+  version: SimulationVersionDetailResponse;
+  cutoff: number;
+}) {
+  const [filter, setFilter] = useState<PathFilter>("Todos");
+  const [page, setPage] = useState(0);
+  const [expanded, setExpanded] = useState<string | null>(null);
+
+  const matrix = useMemo(() => buildMatrix(version), [version]);
+  const allPaths = useMemo(() => buildPaths(version, matrix), [version, matrix]);
+
+  const paths = useMemo(() => {
+    if (filter === "Aprovados") return allPaths.filter((path) => path.total >= cutoff);
+    if (filter === "Reprovados") return allPaths.filter((path) => path.total < cutoff);
+    return allPaths;
+  }, [allPaths, filter, cutoff]);
+
+  useEffect(() => {
+    setPage(0);
+    setExpanded(null);
+  }, [filter]);
+
+  const perPage = 5;
+  const totalPages = Math.max(1, Math.ceil(paths.length / perPage));
+  const safePage = Math.min(page, totalPages - 1);
+  const from = safePage * perPage;
+  const to = Math.min(paths.length, from + perPage);
+  const visible = paths.slice(from, to);
+
+  if (allPaths.length === 0) {
+    return <PanelSkeleton label="Sem caminhos mapeados para esta versão." />;
+  }
+
+  return (
+    <div className="rounded-lg border border-border">
+      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border px-3 py-2">
+        <div className="text-xs text-muted-foreground">
+          {allPaths.length} caminho(s) · nota de corte{" "}
+          <span className="font-semibold text-foreground">{cutoff}/100</span>
+        </div>
+        <select
+          value={filter}
+          onChange={(event) => setFilter(event.target.value as PathFilter)}
+          className="rounded-md border border-border bg-background px-2 py-1 text-xs"
+          aria-label="Filtrar caminhos"
+        >
+          {PATH_FILTERS.map((option) => (
+            <option key={option}>{option}</option>
+          ))}
+        </select>
+      </div>
+
+      <div className="overflow-x-auto">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Caminho</TableHead>
+              <TableHead className="w-32">Resultado</TableHead>
+              <TableHead className="w-24">Nota</TableHead>
+              <TableHead className="w-28 text-right">Detalhe</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {visible.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={4} className="px-3 py-3 text-sm text-muted-foreground">
+                  Nenhum caminho para este filtro.
+                </TableCell>
+              </TableRow>
+            ) : (
+              visible.map((path, index) => {
+                const isPass = path.total >= cutoff;
+                const globalIndex = from + index;
+                const isExpanded = expanded === path.sequence;
+                return (
+                  <Fragment key={path.sequence}>
+                    <TableRow>
+                      <TableCell className="px-3 py-2 text-xs text-muted-foreground">
+                        {path.steps.map((step) => `Etapa ${step.turnIndex}`).join(" → ")} → fim
+                      </TableCell>
+                      <TableCell className="px-3 py-2">
+                        <span
+                          className={`inline-flex items-center rounded-md px-2 py-0.5 text-[11px] font-medium ${
+                            isPass ? "bg-success/15 text-success" : "bg-danger/15 text-danger"
+                          }`}
+                        >
+                          {isPass ? "Aprovado" : "Reprovado"}
+                        </span>
+                      </TableCell>
+                      <TableCell className="px-3 py-2 font-mono text-xs font-semibold">
+                        {path.total}/100
+                      </TableCell>
+                      <TableCell className="px-3 py-2 text-right">
+                        <button
+                          type="button"
+                          aria-expanded={isExpanded}
+                          onClick={() => setExpanded(isExpanded ? null : path.sequence)}
+                          className="rounded-md border border-border px-2 py-0.5 text-xs text-muted-foreground hover:bg-accent hover:text-foreground"
+                        >
+                          {isExpanded ? "Ocultar" : `Caminho #${globalIndex + 1}`}
+                        </button>
+                      </TableCell>
+                    </TableRow>
+                    {isExpanded ? (
+                      <TableRow>
+                        <TableCell colSpan={4} className="bg-muted/30 px-3 py-3">
+                          <PathBreakdown path={path} matrix={matrix} />
+                        </TableCell>
+                      </TableRow>
+                    ) : null}
+                  </Fragment>
+                );
+              })
+            )}
           </TableBody>
         </Table>
       </div>
 
-      <div>
-        <div className="mb-2 flex items-center justify-between">
-          <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-            Caminhos possíveis
-          </div>
-          <div className="text-xs text-muted-foreground">
-            Nota de corte: <span className="font-semibold text-foreground">{cutoff}/100</span>
-          </div>
-        </div>
-        <p className="mb-2 text-xs text-muted-foreground">
-          Cada caminho é uma rota possível pelo teste. Os verdes alcançam a nota de corte; os
-          vermelhos ficam abaixo.
-        </p>
+      <TablePager
+        from={from}
+        to={to}
+        total={paths.length}
+        page={safePage}
+        totalPages={totalPages}
+        onPage={setPage}
+      />
+    </div>
+  );
+}
 
-        <div className="space-y-2">
-          {paths.length === 0 ? (
-            <div className="rounded-md border border-border bg-card p-3 text-sm text-muted-foreground">
-              Sem caminhos mapeados.
+function PathBreakdown({ path, matrix }: { path: PathCandidate; matrix: MatrixItem[] }) {
+  return (
+    <div className="space-y-3">
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+        {matrix.map((item) => {
+          const gained = Math.round(path.byCriteria[item.criterio] ?? 0);
+          return (
+            <div key={item.criterio} className="rounded-md border border-border bg-background p-2">
+              <div className="truncate text-[11px] text-muted-foreground">{item.criterio}</div>
+              <div className="font-mono text-sm">
+                {gained}
+                <span className="text-muted-foreground"> pts</span>
+              </div>
             </div>
-          ) : (
-            paths.map((path, index) => {
-              const isPass = path.total >= cutoff;
-              const isSelected = selectedPathIndex === index;
-              return (
-                <div
-                  key={path.sequence}
-                  className="rounded-md border border-border bg-background px-3 py-2"
-                >
-                  <div className="flex items-center justify-between gap-3">
-                    <span className="text-xs text-muted-foreground">
-                      {path.steps.map((step) => `Etapa ${step.turnIndex}`).join(" → ")} → fim
-                    </span>
-                    <span
-                      className={`rounded-md px-2 py-0.5 text-xs font-semibold ${
-                        isPass ? "bg-success/15 text-success" : "bg-danger/15 text-danger"
-                      }`}
-                    >
-                      {path.total}/100
-                    </span>
-                  </div>
-                  <div className="mt-2 grid grid-cols-3 gap-2 border-t border-border pt-2 text-xs">
-                    {matrix.map((item) => {
-                      const gained = Math.round(path.byCriteria[item.criterio] ?? 0);
-                      return (
-                        <div key={item.criterio} className="flex flex-col">
-                          <div className="truncate text-muted-foreground">{item.criterio}</div>
-                          <div className="font-mono">
-                            {gained}
-                            <span className="text-muted-foreground"> pts</span>
-                          </div>
-                        </div>
-                      );
-                    })}
-                    <p className="col-span-3 mt-1 text-[11px] text-muted-foreground">
-                      Os pontos por critério somam a nota do caminho, limitada a 100.
-                    </p>
-                    <div className="col-span-3 text-right">
-                      <button
-                        type="button"
-                        aria-expanded={isSelected}
-                        onClick={() => setSelectedPathIndex(isSelected ? null : index)}
-                        className="rounded-md border border-border px-2 py-0.5 text-xs text-muted-foreground hover:bg-accent hover:text-foreground"
-                      >
-                        {isSelected ? "Ocultar caminho" : `Ver caminho #${index + 1}`}
-                      </button>
-                    </div>
-                  </div>
-                  {isSelected ? <PathAttemptDetails path={path} /> : null}
-                </div>
-              );
-            })
-          )}
-        </div>
+          );
+        })}
       </div>
+      <p className="text-[11px] text-muted-foreground">
+        Os pontos por critério somam a nota do caminho, limitada a 100.
+      </p>
+      <PathAttemptDetails path={path} />
     </div>
   );
 }
 
 function PathAttemptDetails({ path }: { path: PathCandidate }) {
   return (
-    <div className="mt-3 space-y-2 border-t border-border pt-3">
-      <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+    <div className="space-y-2 border-t border-border pt-3">
+      <div className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
         Passo a passo do caminho
       </div>
       {path.steps.map((step, index) => (
-        <div key={`${step.nodeId}:${step.optionId}:${index}`} className="rounded-md bg-muted/40 p-2">
+        <div
+          key={`${step.nodeId}:${step.optionId}:${index}`}
+          className="rounded-md bg-background p-2"
+        >
           <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
             <span className="text-muted-foreground">Etapa {step.turnIndex}</span>
             <span className="text-muted-foreground">
@@ -619,17 +970,28 @@ function PathAttemptDetails({ path }: { path: PathCandidate }) {
   );
 }
 
-export function AuditoriaPanel({ events }: { events: AuditEventResponse[] }) {
+export function AuditoriaPanel({
+  events,
+  loading,
+}: {
+  events: AuditEventResponse[];
+  loading?: boolean;
+}) {
   const [page, setPage] = useState(0);
-  const perPage = 4;
+  const perPage = 5;
   const totalPages = Math.max(1, Math.ceil(events.length / perPage));
-  const from = page * perPage;
+  const safePage = Math.min(page, totalPages - 1);
+  const from = safePage * perPage;
   const to = Math.min(events.length, from + perPage);
   const visible = events.slice(from, to);
 
+  if (loading) {
+    return <PanelSkeleton label="Carregando trilha de auditoria..." />;
+  }
+
   return (
-    <div className="space-y-2 rounded-md border border-border">
-      <div className="overflow-x-auto rounded-lg border border-border bg-background">
+    <div className="rounded-lg border border-border">
+      <div className="overflow-x-auto">
         <Table>
           <TableHeader>
             <TableRow>
@@ -641,7 +1003,7 @@ export function AuditoriaPanel({ events }: { events: AuditEventResponse[] }) {
           <TableBody>
             {visible.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={3} className="text-sm text-muted-foreground">
+                <TableCell colSpan={3} className="px-3 py-3 text-sm text-muted-foreground">
                   Nenhum evento de auditoria.
                 </TableCell>
               </TableRow>
@@ -662,13 +1024,45 @@ export function AuditoriaPanel({ events }: { events: AuditEventResponse[] }) {
         </Table>
       </div>
 
-      <div className="flex items-center justify-between border-t border-border px-3 py-2 text-xs text-muted-foreground">
-        <span>{events.length === 0 ? "0-0 de 0" : `${from + 1}-${to} de ${events.length}`}</span>
+      <TablePager
+        from={from}
+        to={to}
+        total={events.length}
+        page={safePage}
+        totalPages={totalPages}
+        onPage={setPage}
+      />
+    </div>
+  );
+}
+
+function TablePager({
+  from,
+  to,
+  total,
+  page,
+  totalPages,
+  onPage,
+}: {
+  from: number;
+  to: number;
+  total: number;
+  page: number;
+  totalPages: number;
+  onPage: (page: number) => void;
+}) {
+  return (
+    <div className="flex items-center justify-between border-t border-border px-3 py-2 text-xs text-muted-foreground">
+      <span>{total === 0 ? "0–0 de 0" : `${from + 1}–${to} de ${total}`}</span>
+      <div className="flex items-center gap-2">
+        <span className="hidden sm:inline">
+          Página {page + 1} de {totalPages}
+        </span>
         <div className="flex gap-1">
           <button
             type="button"
             className="rounded-md border border-border px-2 py-1 hover:bg-accent disabled:cursor-not-allowed disabled:opacity-40"
-            onClick={() => setPage((value) => Math.max(0, value - 1))}
+            onClick={() => onPage(Math.max(0, page - 1))}
             disabled={page === 0}
           >
             Anterior
@@ -676,7 +1070,7 @@ export function AuditoriaPanel({ events }: { events: AuditEventResponse[] }) {
           <button
             type="button"
             className="rounded-md border border-border px-2 py-1 hover:bg-accent disabled:cursor-not-allowed disabled:opacity-40"
-            onClick={() => setPage((value) => Math.min(totalPages - 1, value + 1))}
+            onClick={() => onPage(Math.min(totalPages - 1, page + 1))}
             disabled={page >= totalPages - 1}
           >
             Próxima

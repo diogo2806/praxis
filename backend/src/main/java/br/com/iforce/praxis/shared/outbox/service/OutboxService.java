@@ -1,13 +1,20 @@
 package br.com.iforce.praxis.shared.outbox.service;
 
 import br.com.iforce.praxis.shared.outbox.persistence.entity.OutboxEventEntity;
+
 import br.com.iforce.praxis.shared.outbox.persistence.repository.OutboxEventRepository;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
+
 import org.springframework.stereotype.Service;
+
 import org.springframework.transaction.annotation.Propagation;
+
 import org.springframework.transaction.annotation.Transactional;
 
+
 import java.time.Instant;
+
 
 /**
  * Gerencia a fila de eventos para entrega assíncrona.
@@ -42,16 +49,16 @@ public class OutboxService {
      * Isso garante que se algo der errado após publicar o evento, o banco inteiro
      * volta atrás (rollback), evitando inconsistências.
      *
-     * @param tenantId A empresa que gerou o evento
+     * @param empresaId A empresa que gerou o evento
      * @param eventType Tipo de evento (ex: ATTEMPT_COMPLETED, RESULT_PROCESSED)
      * @param aggregateType Entidade afetada (ex: CANDIDATE_ATTEMPT, INTEGRATION_RESULT)
      * @param aggregateId ID único do registro afetado
      * @param payload Dados completos do evento em formato JSON
      */
     @Transactional(propagation = Propagation.MANDATORY)
-    public void publish(String tenantId, String eventType, String aggregateType, String aggregateId, Object payload) {
+    public void publish(String empresaId, String eventType, String aggregateType, String aggregateId, Object payload) {
         OutboxEventEntity event = new OutboxEventEntity();
-        event.setTenantId(tenantId);
+        event.setEmpresaId(empresaId);
         event.setEventType(eventType);
         event.setAggregateType(aggregateType);
         event.setAggregateId(aggregateId);

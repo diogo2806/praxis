@@ -1,11 +1,16 @@
 package br.com.iforce.praxis.audit.service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
+
 import org.springframework.stereotype.Component;
 
+
 import java.util.LinkedHashMap;
+
 import java.util.Map;
+
 
 @Component
 public class AuditMetadata {

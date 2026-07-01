@@ -1,23 +1,40 @@
 package br.com.iforce.praxis.journey.persistence.entity;
 
 import br.com.iforce.praxis.journey.model.AssessmentJourneyStepStatus;
-import br.com.iforce.praxis.shared.jpa.TenantAwareEntity;
+
+import br.com.iforce.praxis.shared.jpa.EmpresaAwareEntity;
+
 import jakarta.persistence.Column;
+
 import jakarta.persistence.Entity;
+
 import jakarta.persistence.EnumType;
+
 import jakarta.persistence.Enumerated;
+
 import jakarta.persistence.FetchType;
+
 import jakarta.persistence.GeneratedValue;
+
 import jakarta.persistence.GenerationType;
+
 import jakarta.persistence.Id;
+
 import jakarta.persistence.JoinColumn;
+
 import jakarta.persistence.ManyToOne;
+
 import jakarta.persistence.Table;
+
 import lombok.Getter;
+
 import lombok.NoArgsConstructor;
+
 import lombok.Setter;
 
+
 import java.time.Instant;
+
 
 /**
  * Relaciona a tentativa da jornada com a tentativa individual de cada teste.
@@ -31,15 +48,15 @@ import java.time.Instant;
 @NoArgsConstructor
 @Entity
 @Table(name = "assessment_journey_attempt_steps")
-public class AssessmentJourneyAttemptStepEntity implements TenantAwareEntity {
+public class AssessmentJourneyAttemptStepEntity implements EmpresaAwareEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id", nullable = false)
     private Long id;
 
-    @Column(name = "tenant_id", nullable = false, length = 120)
-    private String tenantId;
+    @Column(name = "empresa_id", nullable = false, length = 120)
+    private String empresaId;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "journey_attempt_id", nullable = false)

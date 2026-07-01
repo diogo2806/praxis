@@ -1,19 +1,33 @@
 package br.com.iforce.praxis.auth.service;
 
 import br.com.iforce.praxis.admin.model.UserStatus;
+
 import br.com.iforce.praxis.auth.dto.LoginRequest;
+
 import br.com.iforce.praxis.auth.dto.LoginResponse;
-import br.com.iforce.praxis.auth.persistence.entity.TenantEntity;
+
+import br.com.iforce.praxis.auth.persistence.entity.EmpresaEntity;
+
 import br.com.iforce.praxis.auth.persistence.entity.UserEntity;
-import br.com.iforce.praxis.auth.persistence.repository.TenantRepository;
+
+import br.com.iforce.praxis.auth.persistence.repository.EmpresaRepository;
+
 import br.com.iforce.praxis.auth.persistence.repository.UserRepository;
+
 import org.springframework.http.HttpStatus;
+
 import org.springframework.security.crypto.password.PasswordEncoder;
+
 import org.springframework.stereotype.Service;
+
 import org.springframework.transaction.annotation.Transactional;
+
 import org.springframework.web.server.ResponseStatusException;
+
 import br.com.iforce.praxis.auth.dto.AcceptInviteRequest;
+
 import java.time.Instant;
+
 
 /**
  * Gerencia a autenticação de usuários no sistema.
@@ -27,18 +41,18 @@ import java.time.Instant;
 public class AuthService {
 
     private final UserRepository userRepository;
-    private final TenantRepository tenantRepository;
+    private final EmpresaRepository empresaRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
 
     public AuthService(
             UserRepository userRepository,
-            TenantRepository tenantRepository,
+            EmpresaRepository empresaRepository,
             PasswordEncoder passwordEncoder,
             JwtService jwtService
     ) {
         this.userRepository = userRepository;
-        this.tenantRepository = tenantRepository;
+        this.empresaRepository = empresaRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtService = jwtService;
     }
@@ -63,8 +77,8 @@ public class AuthService {
         }
 
         // Cliente suspenso ou cancelado não pode autenticar (mesmo com credenciais válidas).
-        TenantEntity tenant = tenantRepository.findById(user.getTenantId()).orElse(null);
-        if (tenant != null && tenant.getStatus() != null && tenant.getStatus().blocksAccess()) {
+        EmpresaEntity empresa = empresaRepository.findById(user.getEmpresaId()).orElse(null);
+        if (empresa != null && empresa.getStatus() != null && empresa.getStatus().blocksAccess()) {
             throw new ResponseStatusException(
                     HttpStatus.FORBIDDEN, "Cliente suspenso ou cancelado. Acesso bloqueado.");
         }
@@ -85,8 +99,8 @@ public class AuthService {
 
         user.setLastLoginAt(Instant.now());
 
-        String token = jwtService.generateToken(user.getId().toString(), user.getTenantId(), user.getRoles());
-        return new LoginResponse(token, user.getId(), user.getTenantId(), user.getName(), user.getRoles());
+        String token = jwtService.generateToken(user.getId().toString(), user.getEmpresaId(), user.getRoles());
+        return new LoginResponse(token, user.getId(), user.getEmpresaId(), user.getName(), user.getRoles());
     }
 
     /**
@@ -102,11 +116,11 @@ public class AuthService {
      * @throws ResponseStatusException se a empresa não foi informada ou o usuário não existe
      */
     private UserEntity loadUser(LoginRequest request) {
-        if (request.tenantId() == null || request.tenantId().isBlank()) {
+        if (request.empresaId() == null || request.empresaId().isBlank()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Informe a empresa.");
         }
 
-        return userRepository.findFirstByEmailAndTenantId(request.email(), request.tenantId())
+        return userRepository.findFirstByEmailAndEmpresaId(request.email(), request.empresaId())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Credenciais inválidas."));
     }
 
@@ -122,10 +136,10 @@ public class AuthService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Convite expirado.");
         }
 
-        TenantEntity tenant = tenantRepository.findById(user.getTenantId())
+        EmpresaEntity empresa = empresaRepository.findById(user.getEmpresaId())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.FORBIDDEN, "Cliente não encontrado."));
 
-        if (tenant.getStatus() != null && tenant.getStatus().blocksAccess()) {
+        if (empresa.getStatus() != null && empresa.getStatus().blocksAccess()) {
             throw new ResponseStatusException(
                     HttpStatus.FORBIDDEN,
                     "Cliente suspenso ou cancelado. Acesso bloqueado."
@@ -142,12 +156,12 @@ public class AuthService {
         // Mantém invitedAt como histórico; atualiza último login porque já vamos devolver JWT.
         user.setLastLoginAt(Instant.now());
 
-        String token = jwtService.generateToken(user.getId().toString(), user.getTenantId(), user.getRoles());
+        String token = jwtService.generateToken(user.getId().toString(), user.getEmpresaId(), user.getRoles());
 
         return new LoginResponse(
                 token,
                 user.getId(),
-                user.getTenantId(),
+                user.getEmpresaId(),
                 user.getName(),
                 user.getRoles()
         );

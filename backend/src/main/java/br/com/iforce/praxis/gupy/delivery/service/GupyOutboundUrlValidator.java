@@ -1,13 +1,20 @@
 package br.com.iforce.praxis.gupy.delivery.service;
 
 import org.springframework.beans.factory.annotation.Value;
+
 import org.springframework.stereotype.Component;
 
+
 import java.net.Inet6Address;
+
 import java.net.InetAddress;
+
 import java.net.URI;
+
 import java.net.UnknownHostException;
+
 import java.util.Locale;
+
 
 @Component
 public class GupyOutboundUrlValidator {

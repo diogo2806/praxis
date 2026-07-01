@@ -2,7 +2,7 @@ package br.com.iforce.praxis.term.model;
 
 /**
  * Termo de uso na vertical de saúde, aceito pelo recrutador/administrador antes de publicar uma
- * avaliação quando o tenant opera nessa vertical (Minuta C — uso educativo, LGPD dado sensível).
+ * avaliação quando o empresa opera nessa vertical (Minuta C — uso educativo, LGPD dado sensível).
  *
  * <p>É um termo-resumo exibido no produto, complementar ao {@link ResponsibilityTerm}. Os termos
  * contratuais vinculantes (Termos de Uso/DPA) são tratados à parte com advogado; ao mudar este

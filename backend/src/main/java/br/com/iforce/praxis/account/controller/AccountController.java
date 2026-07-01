@@ -1,15 +1,25 @@
 package br.com.iforce.praxis.account.controller;
 
 import br.com.iforce.praxis.account.dto.AccountResponse;
+
 import br.com.iforce.praxis.account.dto.ChangePasswordRequest;
+
 import br.com.iforce.praxis.account.service.AccountService;
+
 import jakarta.validation.Valid;
+
 import org.springframework.http.ResponseEntity;
+
 import org.springframework.web.bind.annotation.GetMapping;
+
 import org.springframework.web.bind.annotation.PostMapping;
+
 import org.springframework.web.bind.annotation.RequestBody;
+
 import org.springframework.web.bind.annotation.RequestMapping;
+
 import org.springframework.web.bind.annotation.RestController;
+
 
 /**
  * Porta de entrada (API) das ações de "Minha conta".

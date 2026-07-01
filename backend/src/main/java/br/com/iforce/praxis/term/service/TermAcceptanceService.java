@@ -1,21 +1,36 @@
 package br.com.iforce.praxis.term.service;
 
-import br.com.iforce.praxis.auth.service.CurrentTenantService;
+import br.com.iforce.praxis.auth.service.CurrentEmpresaService;
+
 import br.com.iforce.praxis.auth.service.CurrentUserService;
+
 import br.com.iforce.praxis.term.dto.AcceptTermRequest;
+
 import br.com.iforce.praxis.term.dto.TermAcceptanceStatusResponse;
+
 import br.com.iforce.praxis.term.dto.TermResponse;
+
 import br.com.iforce.praxis.term.model.HealthUseTerm;
+
 import br.com.iforce.praxis.term.model.ResponsibilityTerm;
+
 import br.com.iforce.praxis.term.persistence.entity.TermAcceptanceEntity;
+
 import br.com.iforce.praxis.term.persistence.repository.TermAcceptanceRepository;
+
 import org.springframework.http.HttpStatus;
+
 import org.springframework.stereotype.Service;
+
 import org.springframework.transaction.annotation.Transactional;
+
 import org.springframework.web.server.ResponseStatusException;
 
+
 import java.time.Instant;
+
 import java.util.Optional;
+
 
 /**
  * Termos aceitos pelo recrutador: termo de responsabilidade (REQ-L5) e termo de uso em saúde
@@ -35,16 +50,16 @@ public class TermAcceptanceService {
             new TermDescriptor(HealthUseTerm.TYPE, HealthUseTerm.VERSION, HealthUseTerm.TEXT);
 
     private final TermAcceptanceRepository termAcceptanceRepository;
-    private final CurrentTenantService currentTenantService;
+    private final CurrentEmpresaService currentEmpresaService;
     private final CurrentUserService currentUserService;
 
     public TermAcceptanceService(
             TermAcceptanceRepository termAcceptanceRepository,
-            CurrentTenantService currentTenantService,
+            CurrentEmpresaService currentEmpresaService,
             CurrentUserService currentUserService
     ) {
         this.termAcceptanceRepository = termAcceptanceRepository;
-        this.currentTenantService = currentTenantService;
+        this.currentEmpresaService = currentEmpresaService;
         this.currentUserService = currentUserService;
     }
 
@@ -119,13 +134,13 @@ public class TermAcceptanceService {
 
     /**
      * Indica se o usuário atual aceitou a versão corrente do termo de uso em saúde. Usado como
-     * trava de publicação quando o tenant opera na vertical de saúde.
+     * trava de publicação quando o empresa opera na vertical de saúde.
      */
     @Transactional(readOnly = true)
     public boolean isHealthUseAcceptedByCurrentUser() {
-        String tenantId = currentTenantService.requiredTenantId();
+        String empresaId = currentEmpresaService.requiredEmpresaId();
         String userId = currentUserService.requiredUserId();
-        return latestAcceptance(HEALTH_USE, tenantId, userId)
+        return latestAcceptance(HEALTH_USE, empresaId, userId)
                 .map(entity -> HEALTH_USE.version().equals(entity.getTermVersion()))
                 .orElse(false);
     }
@@ -135,9 +150,9 @@ public class TermAcceptanceService {
     }
 
     private TermAcceptanceStatusResponse statusFor(TermDescriptor descriptor) {
-        String tenantId = currentTenantService.requiredTenantId();
+        String empresaId = currentEmpresaService.requiredEmpresaId();
         String userId = currentUserService.requiredUserId();
-        return toStatus(descriptor, latestAcceptance(descriptor, tenantId, userId));
+        return toStatus(descriptor, latestAcceptance(descriptor, empresaId, userId));
     }
 
     private TermAcceptanceStatusResponse accept(TermDescriptor descriptor, AcceptTermRequest request) {
@@ -147,11 +162,11 @@ public class TermAcceptanceService {
                     "A versão do termo mudou. Recarregue e aceite a versão atual."
             );
         }
-        String tenantId = currentTenantService.requiredTenantId();
+        String empresaId = currentEmpresaService.requiredEmpresaId();
         String userId = currentUserService.requiredUserId();
 
         TermAcceptanceEntity acceptance = new TermAcceptanceEntity();
-        acceptance.setTenantId(tenantId);
+        acceptance.setEmpresaId(empresaId);
         acceptance.setUserId(userId);
         acceptance.setTermType(descriptor.type());
         acceptance.setTermVersion(descriptor.version());
@@ -162,10 +177,10 @@ public class TermAcceptanceService {
     }
 
     private Optional<TermAcceptanceEntity> latestAcceptance(
-            TermDescriptor descriptor, String tenantId, String userId) {
+            TermDescriptor descriptor, String empresaId, String userId) {
         return termAcceptanceRepository
-                .findFirstByTenantIdAndUserIdAndTermTypeOrderByAcceptedAtDesc(
-                        tenantId, userId, descriptor.type());
+                .findFirstByEmpresaIdAndUserIdAndTermTypeOrderByAcceptedAtDesc(
+                        empresaId, userId, descriptor.type());
     }
 
     private TermAcceptanceStatusResponse toStatus(

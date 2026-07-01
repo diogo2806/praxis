@@ -13,27 +13,27 @@ WHERE simulation_id IN ('sim-atendimento-caos', 'sim-timeout-fallback');
 DELETE FROM simulations
 WHERE id IN ('sim-atendimento-caos', 'sim-timeout-fallback');
 
-INSERT INTO tenants (id, name, company_id, integration_token_hash)
-SELECT 'tenant-1', 'Acme S.A.', 'empresa-123', 'mIpDNk36Ser0rI9x2CntfUygEZ8TN-9xe3Ux_VOl6xE'
+INSERT INTO empresas (id, name, company_id, integration_token_hash)
+SELECT 'empresa-1', 'Acme S.A.', 'empresa-123', 'mIpDNk36Ser0rI9x2CntfUygEZ8TN-9xe3Ux_VOl6xE'
 WHERE NOT EXISTS (
-    SELECT 1 FROM tenants WHERE id = 'tenant-1'
+    SELECT 1 FROM empresas WHERE id = 'empresa-1'
 );
 
-UPDATE tenants
+UPDATE empresas
 SET integration_token_hash = 'mIpDNk36Ser0rI9x2CntfUygEZ8TN-9xe3Ux_VOl6xE'
-WHERE id = 'tenant-1';
+WHERE id = 'empresa-1';
 
 DELETE FROM integration_tokens
-WHERE tenant_id = 'tenant-1'
+WHERE empresa_id = 'empresa-1'
   AND provider = 'gupy';
 
-INSERT INTO integration_tokens (tenant_id, provider, token_hash)
-VALUES ('tenant-1', 'gupy', 'mIpDNk36Ser0rI9x2CntfUygEZ8TN-9xe3Ux_VOl6xE');
+INSERT INTO integration_tokens (empresa_id, provider, token_hash)
+VALUES ('empresa-1', 'gupy', 'mIpDNk36Ser0rI9x2CntfUygEZ8TN-9xe3Ux_VOl6xE');
 
-INSERT INTO simulations (id, tenant_id, name, description, created_at)
+INSERT INTO simulations (id, empresa_id, name, description, created_at)
 VALUES (
     'sim-atendimento-caos',
-    'tenant-1',
+    'empresa-1',
     'Cenario Seed de Teste',
     'Avaliacao situacional deterministica para priorizacao, comunicacao e decisao em contexto.',
     CURRENT_TIMESTAMP
@@ -133,10 +133,10 @@ VALUES
     (3, 'Resolucao de conflito', 78),
     (3, 'Aderencia a politica', 92);
 
-INSERT INTO simulations (id, tenant_id, name, description, created_at)
+INSERT INTO simulations (id, empresa_id, name, description, created_at)
 VALUES (
     'sim-timeout-fallback',
-    'tenant-1',
+    'empresa-1',
     'Cenario Timeout com Fallback',
     'Avaliacao com dois turnos e rota de timeout obrigatoria.',
     CURRENT_TIMESTAMP

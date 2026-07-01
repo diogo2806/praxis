@@ -2,6 +2,7 @@ package br.com.iforce.praxis.recrutei.dto;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 
+
 /**
  * O resultado de uma única competência dentro do boletim da prova.
  *

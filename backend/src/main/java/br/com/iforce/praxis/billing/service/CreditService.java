@@ -1,50 +1,64 @@
 package br.com.iforce.praxis.billing.service;
 
 import br.com.iforce.praxis.admin.model.CommercialPlanType;
-import br.com.iforce.praxis.admin.model.TenantStatus;
-import br.com.iforce.praxis.auth.persistence.entity.TenantEntity;
-import br.com.iforce.praxis.auth.persistence.repository.TenantRepository;
+
+import br.com.iforce.praxis.admin.model.EmpresaStatus;
+
+import br.com.iforce.praxis.auth.persistence.entity.EmpresaEntity;
+
+import br.com.iforce.praxis.auth.persistence.repository.EmpresaRepository;
+
 import br.com.iforce.praxis.billing.model.CreditLedgerReason;
-import br.com.iforce.praxis.billing.persistence.entity.TenantCreditBalanceEntity;
-import br.com.iforce.praxis.billing.persistence.entity.TenantCreditLedgerEntity;
-import br.com.iforce.praxis.billing.persistence.repository.TenantCreditBalanceRepository;
-import br.com.iforce.praxis.billing.persistence.repository.TenantCreditLedgerRepository;
+
+import br.com.iforce.praxis.billing.persistence.entity.EmpresaCreditBalanceEntity;
+
+import br.com.iforce.praxis.billing.persistence.entity.EmpresaCreditLedgerEntity;
+
+import br.com.iforce.praxis.billing.persistence.repository.EmpresaCreditBalanceRepository;
+
+import br.com.iforce.praxis.billing.persistence.repository.EmpresaCreditLedgerRepository;
+
 import org.springframework.http.HttpStatus;
+
 import org.springframework.stereotype.Service;
+
 import org.springframework.transaction.annotation.Transactional;
+
 import org.springframework.web.server.ResponseStatusException;
 
+
 import java.time.Instant;
+
 
 /**
  * Saldo e ledger de créditos do plano AVULSO.
  *
  * <p>Invariante central: o saldo NUNCA é alterado sem um lançamento correspondente no ledger
- * ({@code tenant_credit_ledger}). Compras somam créditos; cada avaliação concluída consome 1
+ * ({@code empresa_credit_ledger}). Compras somam créditos; cada avaliação concluída consome 1
  * crédito, de forma idempotente por tentativa. Sem crédito, o cliente não inicia nova avaliação
  * e fica em {@code SEM_CREDITO} (distinto de {@code INADIMPLENTE}).</p>
  */
 @Service
 public class CreditService {
 
-    private final TenantCreditBalanceRepository balanceRepository;
-    private final TenantCreditLedgerRepository ledgerRepository;
-    private final TenantRepository tenantRepository;
+    private final EmpresaCreditBalanceRepository balanceRepository;
+    private final EmpresaCreditLedgerRepository ledgerRepository;
+    private final EmpresaRepository empresaRepository;
 
     public CreditService(
-            TenantCreditBalanceRepository balanceRepository,
-            TenantCreditLedgerRepository ledgerRepository,
-            TenantRepository tenantRepository
+            EmpresaCreditBalanceRepository balanceRepository,
+            EmpresaCreditLedgerRepository ledgerRepository,
+            EmpresaRepository empresaRepository
     ) {
         this.balanceRepository = balanceRepository;
         this.ledgerRepository = ledgerRepository;
-        this.tenantRepository = tenantRepository;
+        this.empresaRepository = empresaRepository;
     }
 
     @Transactional(readOnly = true)
-    public int getBalance(String tenantId) {
-        return balanceRepository.findById(tenantId)
-                .map(TenantCreditBalanceEntity::getBalance)
+    public int getBalance(String empresaId) {
+        return balanceRepository.findById(empresaId)
+                .map(EmpresaCreditBalanceEntity::getBalance)
                 .orElse(0);
     }
 
@@ -53,18 +67,18 @@ public class CreditService {
      * ou pendente de pagamento. Gera lançamento no ledger.
      */
     @Transactional
-    public int addCredits(String tenantId, int amount, Long billingEventId, String note) {
+    public int addCredits(String empresaId, int amount, Long billingEventId, String note) {
         if (amount <= 0) {
             throw new IllegalArgumentException("Quantidade de créditos deve ser positiva.");
         }
-        TenantCreditBalanceEntity balance = lockOrCreateBalance(tenantId);
+        EmpresaCreditBalanceEntity balance = lockOrCreateBalance(empresaId);
         balance.setBalance(balance.getBalance() + amount);
         balance.setUpdatedAt(Instant.now());
 
-        appendLedger(tenantId, amount, CreditLedgerReason.PURCHASE, balance.getBalance(), null,
+        appendLedger(empresaId, amount, CreditLedgerReason.PURCHASE, balance.getBalance(), null,
                 billingEventId, note);
 
-        reactivateIfRecovered(tenantId, balance.getBalance());
+        reactivateIfRecovered(empresaId, balance.getBalance());
         return balance.getBalance();
     }
 
@@ -73,57 +87,57 @@ public class CreditService {
      * Aplica-se apenas a clientes AVULSO. Ao zerar, o cliente passa a {@code SEM_CREDITO}.
      */
     @Transactional
-    public void consumeOnCompletion(String tenantId, String attemptId) {
-        TenantEntity tenant = tenantRepository.findById(tenantId).orElse(null);
-        if (tenant == null || tenant.getCommercialPlanType() != CommercialPlanType.AVULSO) {
+    public void consumeOnCompletion(String empresaId, String attemptId) {
+        EmpresaEntity empresa = empresaRepository.findById(empresaId).orElse(null);
+        if (empresa == null || empresa.getCommercialPlanType() != CommercialPlanType.AVULSO) {
             return;
         }
         if (ledgerRepository.existsByAttemptIdAndReason(attemptId, CreditLedgerReason.CONSUMPTION)) {
             return;
         }
-        TenantCreditBalanceEntity balance = lockOrCreateBalance(tenantId);
+        EmpresaCreditBalanceEntity balance = lockOrCreateBalance(empresaId);
         if (balance.getBalance() <= 0) {
             // Sem saldo para debitar: garante a marcação SEM_CREDITO e não cria saldo negativo.
-            markOutOfCredit(tenant);
+            markOutOfCredit(empresa);
             return;
         }
         balance.setBalance(balance.getBalance() - 1);
         balance.setUpdatedAt(Instant.now());
-        appendLedger(tenantId, -1, CreditLedgerReason.CONSUMPTION, balance.getBalance(), attemptId,
+        appendLedger(empresaId, -1, CreditLedgerReason.CONSUMPTION, balance.getBalance(), attemptId,
                 null, "Consumo por avaliação concluída");
 
         if (balance.getBalance() <= 0) {
-            markOutOfCredit(tenant);
+            markOutOfCredit(empresa);
         }
     }
 
     /** Bloqueia o início de nova avaliação quando um cliente AVULSO está sem crédito. */
     @Transactional(readOnly = true)
-    public void assertCanStartNewAttempt(String tenantId) {
-        TenantEntity tenant = tenantRepository.findById(tenantId).orElse(null);
-        if (tenant == null || tenant.getCommercialPlanType() != CommercialPlanType.AVULSO) {
+    public void assertCanStartNewAttempt(String empresaId) {
+        EmpresaEntity empresa = empresaRepository.findById(empresaId).orElse(null);
+        if (empresa == null || empresa.getCommercialPlanType() != CommercialPlanType.AVULSO) {
             return;
         }
-        if (getBalance(tenantId) <= 0) {
+        if (getBalance(empresaId) <= 0) {
             throw new ResponseStatusException(
                     HttpStatus.PAYMENT_REQUIRED, "Cliente sem créditos disponíveis para iniciar nova avaliação.");
         }
     }
 
-    private TenantCreditBalanceEntity lockOrCreateBalance(String tenantId) {
-        return balanceRepository.findByTenantIdForUpdate(tenantId).orElseGet(() -> {
-            TenantCreditBalanceEntity created = new TenantCreditBalanceEntity();
-            created.setTenantId(tenantId);
+    private EmpresaCreditBalanceEntity lockOrCreateBalance(String empresaId) {
+        return balanceRepository.findByEmpresaIdForUpdate(empresaId).orElseGet(() -> {
+            EmpresaCreditBalanceEntity created = new EmpresaCreditBalanceEntity();
+            created.setEmpresaId(empresaId);
             created.setBalance(0);
             created.setUpdatedAt(Instant.now());
             return balanceRepository.save(created);
         });
     }
 
-    private void appendLedger(String tenantId, int delta, CreditLedgerReason reason, int balanceAfter,
+    private void appendLedger(String empresaId, int delta, CreditLedgerReason reason, int balanceAfter,
                               String attemptId, Long billingEventId, String note) {
-        TenantCreditLedgerEntity entry = new TenantCreditLedgerEntity();
-        entry.setTenantId(tenantId);
+        EmpresaCreditLedgerEntity entry = new EmpresaCreditLedgerEntity();
+        entry.setEmpresaId(empresaId);
         entry.setDelta(delta);
         entry.setReason(reason);
         entry.setBalanceAfter(balanceAfter);
@@ -134,23 +148,23 @@ public class CreditService {
         ledgerRepository.save(entry);
     }
 
-    private void reactivateIfRecovered(String tenantId, int balance) {
+    private void reactivateIfRecovered(String empresaId, int balance) {
         if (balance <= 0) {
             return;
         }
-        tenantRepository.findById(tenantId).ifPresent(tenant -> {
-            if (tenant.getStatus() == TenantStatus.SEM_CREDITO
-                    || tenant.getStatus() == TenantStatus.PENDENTE_PAGAMENTO) {
-                tenant.setStatus(TenantStatus.ATIVO);
-                tenant.setUpdatedAt(Instant.now());
+        empresaRepository.findById(empresaId).ifPresent(empresa -> {
+            if (empresa.getStatus() == EmpresaStatus.SEM_CREDITO
+                    || empresa.getStatus() == EmpresaStatus.PENDENTE_PAGAMENTO) {
+                empresa.setStatus(EmpresaStatus.ATIVO);
+                empresa.setUpdatedAt(Instant.now());
             }
         });
     }
 
-    private void markOutOfCredit(TenantEntity tenant) {
-        if (tenant.getStatus() == TenantStatus.ATIVO || tenant.getStatus() == TenantStatus.EM_TESTE) {
-            tenant.setStatus(TenantStatus.SEM_CREDITO);
-            tenant.setUpdatedAt(Instant.now());
+    private void markOutOfCredit(EmpresaEntity empresa) {
+        if (empresa.getStatus() == EmpresaStatus.ATIVO || empresa.getStatus() == EmpresaStatus.EM_TESTE) {
+            empresa.setStatus(EmpresaStatus.SEM_CREDITO);
+            empresa.setUpdatedAt(Instant.now());
         }
     }
 }

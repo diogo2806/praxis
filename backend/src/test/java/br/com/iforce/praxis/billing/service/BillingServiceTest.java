@@ -1,47 +1,77 @@
 package br.com.iforce.praxis.billing.service;
 
 import br.com.iforce.praxis.admin.model.CommercialPlanType;
-import br.com.iforce.praxis.admin.model.TenantStatus;
-import br.com.iforce.praxis.auth.persistence.entity.TenantEntity;
-import br.com.iforce.praxis.auth.persistence.repository.TenantRepository;
+
+import br.com.iforce.praxis.admin.model.EmpresaStatus;
+
+import br.com.iforce.praxis.auth.persistence.entity.EmpresaEntity;
+
+import br.com.iforce.praxis.auth.persistence.repository.EmpresaRepository;
+
 import br.com.iforce.praxis.billing.config.MercadoPagoProperties;
+
 import br.com.iforce.praxis.billing.model.BillingEventType;
+
 import br.com.iforce.praxis.billing.model.SubscriptionStatus;
+
 import br.com.iforce.praxis.billing.persistence.entity.SubscriptionPlanEntity;
-import br.com.iforce.praxis.billing.persistence.entity.TenantBillingEventEntity;
-import br.com.iforce.praxis.billing.persistence.entity.TenantSubscriptionEntity;
+
+import br.com.iforce.praxis.billing.persistence.entity.EmpresaBillingEventEntity;
+
+import br.com.iforce.praxis.billing.persistence.entity.EmpresaSubscriptionEntity;
+
 import br.com.iforce.praxis.billing.persistence.repository.SubscriptionPlanRepository;
-import br.com.iforce.praxis.billing.persistence.repository.TenantBillingEventRepository;
-import br.com.iforce.praxis.billing.persistence.repository.TenantSubscriptionRepository;
+
+import br.com.iforce.praxis.billing.persistence.repository.EmpresaBillingEventRepository;
+
+import br.com.iforce.praxis.billing.persistence.repository.EmpresaSubscriptionRepository;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
+
 import org.junit.jupiter.api.BeforeEach;
+
 import org.junit.jupiter.api.Test;
+
 import org.junit.jupiter.api.extension.ExtendWith;
+
 import org.mockito.Mock;
+
 import org.mockito.junit.jupiter.MockitoExtension;
+
 
 import java.util.Optional;
 
+
 import static org.assertj.core.api.Assertions.assertThat;
+
 import static org.mockito.ArgumentMatchers.any;
+
 import static org.mockito.ArgumentMatchers.anyInt;
+
 import static org.mockito.ArgumentMatchers.anyLong;
+
 import static org.mockito.ArgumentMatchers.anyString;
+
 import static org.mockito.ArgumentMatchers.eq;
+
 import static org.mockito.Mockito.lenient;
+
 import static org.mockito.Mockito.never;
+
 import static org.mockito.Mockito.verify;
+
 import static org.mockito.Mockito.when;
+
 
 @ExtendWith(MockitoExtension.class)
 class BillingServiceTest {
 
     @Mock private MercadoPagoClient mercadoPagoClient;
     @Mock private SubscriptionPlanRepository planRepository;
-    @Mock private TenantBillingEventRepository eventRepository;
-    @Mock private TenantSubscriptionRepository subscriptionRepository;
+    @Mock private EmpresaBillingEventRepository eventRepository;
+    @Mock private EmpresaSubscriptionRepository subscriptionRepository;
     @Mock private CreditService creditService;
-    @Mock private TenantRepository tenantRepository;
+    @Mock private EmpresaRepository empresaRepository;
 
     private final ObjectMapper objectMapper = new ObjectMapper();
     private BillingService service;
@@ -49,11 +79,25 @@ class BillingServiceTest {
     @BeforeEach
     void setUp() {
         MercadoPagoProperties properties =
-                new MercadoPagoProperties(true, null, "tok", "pub", "sec", 7, null, null);
+                new MercadoPagoProperties(
+                        true,
+                        null,
+                        null,
+                        "tok",
+                        "pub",
+                        "sec",
+                        null,
+                        null,
+                        null,
+                        null,
+                        7,
+                        null,
+                        null
+                );
         service = new BillingService(mercadoPagoClient, properties, planRepository, eventRepository,
-                subscriptionRepository, creditService, tenantRepository);
-        lenient().when(eventRepository.save(any(TenantBillingEventEntity.class))).thenAnswer(invocation -> {
-            TenantBillingEventEntity event = invocation.getArgument(0);
+                subscriptionRepository, creditService, empresaRepository);
+        lenient().when(eventRepository.save(any(EmpresaBillingEventEntity.class))).thenAnswer(invocation -> {
+            EmpresaBillingEventEntity event = invocation.getArgument(0);
             if (event.getId() == null) {
                 event.setId(1L);
             }
@@ -87,7 +131,7 @@ class BillingServiceTest {
         // A confirmação veio de consulta ao Mercado Pago (fonte da verdade).
         verify(mercadoPagoClient).getPayment("pay1");
         verify(creditService).addCredits(eq("t1"), eq(100), anyLong(), anyString());
-        verify(eventRepository).save(any(TenantBillingEventEntity.class));
+        verify(eventRepository).save(any(EmpresaBillingEventEntity.class));
     }
 
     @Test
@@ -109,44 +153,44 @@ class BillingServiceTest {
                 "{\"status\":\"rejected\",\"external_reference\":\"sub:t1:9:abc\",\"transaction_amount\":299.0}");
         when(mercadoPagoClient.getPayment("pay9")).thenReturn(payment);
 
-        TenantSubscriptionEntity subscription = new TenantSubscriptionEntity();
-        subscription.setTenantId("t1");
+        EmpresaSubscriptionEntity subscription = new EmpresaSubscriptionEntity();
+        subscription.setEmpresaId("t1");
         subscription.setStatus(SubscriptionStatus.AUTHORIZED);
-        when(subscriptionRepository.findFirstByTenantIdOrderByCreatedAtDesc("t1"))
+        when(subscriptionRepository.findFirstByEmpresaIdOrderByCreatedAtDesc("t1"))
                 .thenReturn(Optional.of(subscription));
-        TenantEntity tenant = new TenantEntity();
-        tenant.setId("t1");
-        tenant.setStatus(TenantStatus.ATIVO);
-        when(tenantRepository.findById("t1")).thenReturn(Optional.of(tenant));
+        EmpresaEntity empresa = new EmpresaEntity();
+        empresa.setId("t1");
+        empresa.setStatus(EmpresaStatus.ATIVO);
+        when(empresaRepository.findById("t1")).thenReturn(Optional.of(empresa));
 
         service.processPaymentNotification("pay9", "req-9");
 
         assertThat(subscription.getStatus()).isEqualTo(SubscriptionStatus.DELINQUENT);
         assertThat(subscription.getGraceUntil()).isNotNull();
-        assertThat(tenant.getStatus()).isEqualTo(TenantStatus.INADIMPLENTE);
+        assertThat(empresa.getStatus()).isEqualTo(EmpresaStatus.INADIMPLENTE);
     }
 
     @Test
-    void approvedSubscriptionPaymentReactivatesTenant() throws Exception {
+    void approvedSubscriptionPaymentReactivatesEmpresa() throws Exception {
         var payment = objectMapper.readTree(
                 "{\"status\":\"approved\",\"external_reference\":\"sub:t1:9:abc\",\"transaction_amount\":299.0}");
         when(mercadoPagoClient.getPayment("pay9")).thenReturn(payment);
         when(eventRepository.existsByMpResourceIdAndEventType("pay9", BillingEventType.SUBSCRIPTION_PAYMENT_APPROVED))
                 .thenReturn(false);
-        TenantSubscriptionEntity subscription = new TenantSubscriptionEntity();
-        subscription.setTenantId("t1");
+        EmpresaSubscriptionEntity subscription = new EmpresaSubscriptionEntity();
+        subscription.setEmpresaId("t1");
         subscription.setStatus(SubscriptionStatus.PENDING);
-        when(subscriptionRepository.findFirstByTenantIdOrderByCreatedAtDesc("t1"))
+        when(subscriptionRepository.findFirstByEmpresaIdOrderByCreatedAtDesc("t1"))
                 .thenReturn(Optional.of(subscription));
-        TenantEntity tenant = new TenantEntity();
-        tenant.setId("t1");
-        tenant.setStatus(TenantStatus.PENDENTE_PAGAMENTO);
-        when(tenantRepository.findById("t1")).thenReturn(Optional.of(tenant));
+        EmpresaEntity empresa = new EmpresaEntity();
+        empresa.setId("t1");
+        empresa.setStatus(EmpresaStatus.PENDENTE_PAGAMENTO);
+        when(empresaRepository.findById("t1")).thenReturn(Optional.of(empresa));
 
         service.processPaymentNotification("pay9", "req-9");
 
         assertThat(subscription.getStatus()).isEqualTo(SubscriptionStatus.AUTHORIZED);
         assertThat(subscription.getLastPaymentAt()).isNotNull();
-        assertThat(tenant.getStatus()).isEqualTo(TenantStatus.ATIVO);
+        assertThat(empresa.getStatus()).isEqualTo(EmpresaStatus.ATIVO);
     }
 }

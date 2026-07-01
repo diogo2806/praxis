@@ -1,13 +1,19 @@
 package br.com.iforce.praxis.audit.service;
 
 import com.fasterxml.jackson.core.type.TypeReference;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
+
 import org.junit.jupiter.api.Test;
+
 
 import java.util.Map;
 
+
 import static org.assertj.core.api.Assertions.assertThat;
+
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+
 
 class AuditMetadataTest {
 

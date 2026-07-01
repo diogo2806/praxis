@@ -1,7 +1,9 @@
 package br.com.iforce.praxis.media.dto;
 
 import br.com.iforce.praxis.shared.model.MediaType;
+
 import io.swagger.v3.oas.annotations.media.Schema;
+
 
 @Schema(description = "Resultado do upload de uma mídia (imagem ou áudio) para o cadastro de testes.")
 public record MediaUploadResponse(

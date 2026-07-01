@@ -1,9 +1,12 @@
 package br.com.iforce.praxis.journey.dto;
 
 import br.com.iforce.praxis.journey.model.AssessmentJourneyStepStatus;
+
 import io.swagger.v3.oas.annotations.media.Schema;
 
+
 import java.time.Instant;
+
 
 @Schema(description = "Etapa da tentativa da jornada, ligada a uma tentativa individual de teste.")
 public record JourneyAttemptStepResponse(

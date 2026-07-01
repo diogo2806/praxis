@@ -1,24 +1,41 @@
 package br.com.iforce.praxis.simulation.service;
 
 import br.com.iforce.praxis.config.PraxisProperties;
+
 import br.com.iforce.praxis.simulation.dto.CompetencyWeightDto;
+
 import br.com.iforce.praxis.simulation.dto.SimulationValidationResponse;
+
 import br.com.iforce.praxis.simulation.dto.ValidationIssueResponse;
+
 import br.com.iforce.praxis.simulation.model.ValidationIssueSeverity;
+
 import br.com.iforce.praxis.simulation.persistence.entity.OptionCompetencyScoreEntity;
+
 import br.com.iforce.praxis.simulation.persistence.entity.SimulationCompetencyEntity;
+
 import br.com.iforce.praxis.simulation.persistence.entity.SimulationEntity;
+
 import br.com.iforce.praxis.simulation.persistence.entity.SimulationNodeEntity;
+
 import br.com.iforce.praxis.simulation.persistence.entity.SimulationOptionEntity;
+
 import br.com.iforce.praxis.simulation.persistence.entity.SimulationVersionEntity;
+
 import org.junit.jupiter.api.Test;
+
 import org.springframework.web.server.ResponseStatusException;
 
+
 import java.util.List;
+
 import java.util.Map;
 
+
 import static org.assertj.core.api.Assertions.assertThat;
+
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+
 
 class SimulationValidationServiceTest {
 

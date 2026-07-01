@@ -1,14 +1,22 @@
 package br.com.iforce.praxis.billing.service;
 
 import br.com.iforce.praxis.billing.config.MercadoPagoProperties;
+
 import org.slf4j.Logger;
+
 import org.slf4j.LoggerFactory;
+
 import org.springframework.stereotype.Component;
 
+
 import javax.crypto.Mac;
+
 import javax.crypto.spec.SecretKeySpec;
+
 import java.nio.charset.StandardCharsets;
+
 import java.util.HexFormat;
+
 
 /**
  * Valida a assinatura {@code x-signature} dos webhooks do Mercado Pago.
@@ -40,6 +48,10 @@ public class MercadoPagoSignatureValidator {
     public boolean isValid(String xSignature, String xRequestId, String dataId) {
         String secret = properties.webhookSecret();
         if (secret == null || secret.isBlank()) {
+            if (properties.enabled()) {
+                log.error("MP_WEBHOOK_SECRET ausente com mp.enabled=true: rejeitando webhook por segurança.");
+                return false;
+            }
             log.warn("MP_WEBHOOK_SECRET ausente: assinatura do webhook não verificada (apenas dev).");
             return true;
         }

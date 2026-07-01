@@ -1,13 +1,20 @@
 package br.com.iforce.praxis.shared.integration;
 
 import org.springframework.http.HttpStatus;
+
 import org.springframework.stereotype.Service;
+
 import org.springframework.web.server.ResponseStatusException;
 
+
 import java.nio.charset.StandardCharsets;
+
 import java.security.MessageDigest;
+
 import java.security.NoSuchAlgorithmException;
+
 import java.util.Base64;
+
 
 /**
  * Valida tokens de integração vindo de sistemas externos.
@@ -42,7 +49,7 @@ public class IntegrationAuthService {
      * @return ID da empresa e ID corporativo se o token for válido
      * @throws ResponseStatusException se o token é inválido ou não existe
      */
-    public IntegrationTenantContext validateBearerToken(String authorizationHeader, String provider) {
+    public IntegrationEmpresaContext validateBearerToken(String authorizationHeader, String provider) {
         if (authorizationHeader == null || !authorizationHeader.startsWith(BEARER_PREFIX)) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Token Bearer obrigatório.");
         }
@@ -51,9 +58,9 @@ public class IntegrationAuthService {
         String tokenHash = sha256(token);
 
         return integrationTokenRepository.findFirstByProviderAndTokenHash(provider, tokenHash)
-                .map(entity -> new IntegrationTenantContext(
-                        entity.getTenant().getId(),
-                        entity.getTenant().getCompanyId()
+                .map(entity -> new IntegrationEmpresaContext(
+                        entity.getEmpresa().getId(),
+                        entity.getEmpresa().getCompanyId()
                 ))
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Token Bearer inválido."));
     }

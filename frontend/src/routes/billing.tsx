@@ -109,7 +109,7 @@ function CurrentPlanCard({ data }: { data: ClientBillingResponse }) {
         <InfoRow
           label="Status"
           value={
-            <TenantStatusBadge status={data.tenantStatus} />
+            <EmpresaStatusBadge status={data.empresaStatus} />
           }
         />
         {data.plan === "PROFISSIONAL" && data.subscription?.currentPeriodEnd && (
@@ -315,7 +315,7 @@ function BillingEventsTable({ events }: { events: BillingEvent[] }) {
 // Badges
 // ---------------------------------------------------------------------------
 
-function TenantStatusBadge({ status }: { status: string }) {
+function EmpresaStatusBadge({ status }: { status: string }) {
   const map: Record<string, { label: string; cls: string }> = {
     ATIVO: { label: "Ativo", cls: "bg-emerald-100 text-emerald-700" },
     EM_TESTE: { label: "Em teste", cls: "bg-blue-100 text-blue-700" },

@@ -1,10 +1,14 @@
 package br.com.iforce.praxis.journey.dto;
 
 import br.com.iforce.praxis.journey.model.AssessmentJourneyAttemptStatus;
+
 import io.swagger.v3.oas.annotations.media.Schema;
 
+
 import java.time.Instant;
+
 import java.util.List;
+
 
 @Schema(description = "Progresso da tentativa de um candidato em uma jornada.")
 public record AssessmentJourneyAttemptResponse(

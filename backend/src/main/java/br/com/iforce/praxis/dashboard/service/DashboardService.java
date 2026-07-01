@@ -1,54 +1,102 @@
 package br.com.iforce.praxis.dashboard.service;
 
 import br.com.iforce.praxis.admin.model.CommercialPlanType;
-import br.com.iforce.praxis.auth.persistence.entity.TenantEntity;
-import br.com.iforce.praxis.auth.persistence.repository.TenantRepository;
-import br.com.iforce.praxis.auth.service.CurrentTenantService;
-import br.com.iforce.praxis.billing.dto.TenantBillingOverviewResponse;
+
+import br.com.iforce.praxis.auth.persistence.entity.EmpresaEntity;
+
+import br.com.iforce.praxis.auth.persistence.repository.EmpresaRepository;
+
+import br.com.iforce.praxis.auth.service.CurrentEmpresaService;
+
+import br.com.iforce.praxis.billing.dto.EmpresaBillingOverviewResponse;
+
 import br.com.iforce.praxis.billing.service.BillingService;
+
 import br.com.iforce.praxis.dashboard.dto.DashboardResponse;
+
 import br.com.iforce.praxis.dashboard.dto.DashboardResponse.AssessmentJourneyItem;
+
 import br.com.iforce.praxis.dashboard.dto.DashboardResponse.AssessmentJourneysSummary;
+
 import br.com.iforce.praxis.dashboard.dto.DashboardResponse.BillingUsage;
+
 import br.com.iforce.praxis.dashboard.dto.DashboardResponse.IntegrationStatus;
+
 import br.com.iforce.praxis.dashboard.dto.DashboardResponse.IntegrationStatusItem;
+
 import br.com.iforce.praxis.dashboard.dto.DashboardResponse.LatestResult;
+
 import br.com.iforce.praxis.dashboard.dto.DashboardResponse.RecommendedAction;
+
 import br.com.iforce.praxis.dashboard.dto.DashboardResponse.RecommendedActionSeverity;
+
 import br.com.iforce.praxis.dashboard.dto.DashboardResponse.RecommendedActionType;
+
 import br.com.iforce.praxis.gupy.model.AttemptStatus;
+
 import br.com.iforce.praxis.gupy.persistence.entity.CandidateAttemptEntity;
+
 import br.com.iforce.praxis.gupy.persistence.repository.CandidateAttemptRepository;
+
 import br.com.iforce.praxis.journey.model.AssessmentJourneyAttemptStatus;
+
 import br.com.iforce.praxis.journey.model.AssessmentJourneyStatus;
+
 import br.com.iforce.praxis.journey.persistence.entity.AssessmentJourneyEntity;
+
 import br.com.iforce.praxis.journey.persistence.repository.AssessmentJourneyAttemptRepository;
+
 import br.com.iforce.praxis.journey.persistence.repository.AssessmentJourneyRepository;
+
 import br.com.iforce.praxis.shared.integration.IntegrationTokenEntity;
+
 import br.com.iforce.praxis.shared.integration.IntegrationTokenRepository;
+
 import br.com.iforce.praxis.shared.integration.model.IntegrationProvider;
-import br.com.iforce.praxis.shared.integration.persistence.entity.TenantIntegrationEntity;
-import br.com.iforce.praxis.shared.integration.persistence.repository.TenantIntegrationRepository;
+
+import br.com.iforce.praxis.shared.integration.persistence.entity.EmpresaIntegrationEntity;
+
+import br.com.iforce.praxis.shared.integration.persistence.repository.EmpresaIntegrationRepository;
+
 import br.com.iforce.praxis.simulation.model.SimulationVersionStatus;
+
 import br.com.iforce.praxis.simulation.persistence.entity.SimulationEntity;
+
 import br.com.iforce.praxis.simulation.persistence.repository.SimulationRepository;
+
 import org.springframework.data.domain.PageRequest;
+
 import org.springframework.http.HttpStatus;
+
 import org.springframework.stereotype.Service;
+
 import org.springframework.transaction.annotation.Transactional;
+
 import org.springframework.web.server.ResponseStatusException;
 
+
 import java.time.Instant;
+
 import java.time.temporal.ChronoUnit;
+
 import java.util.ArrayList;
+
 import java.util.Comparator;
+
 import java.util.LinkedHashMap;
+
 import java.util.List;
+
 import java.util.Locale;
+
 import java.util.Map;
+
 import java.util.Set;
+
 import java.util.function.Function;
+
 import java.util.stream.Collectors;
+
 
 @Service
 public class DashboardService {
@@ -59,46 +107,46 @@ public class DashboardService {
             new ProviderDefinition("CUSTOM_API", "API própria", "custom_api", true)
     );
 
-    private final CurrentTenantService currentTenantService;
-    private final TenantRepository tenantRepository;
+    private final CurrentEmpresaService currentEmpresaService;
+    private final EmpresaRepository empresaRepository;
     private final SimulationRepository simulationRepository;
     private final AssessmentJourneyRepository journeyRepository;
     private final AssessmentJourneyAttemptRepository journeyAttemptRepository;
     private final CandidateAttemptRepository candidateAttemptRepository;
     private final IntegrationTokenRepository integrationTokenRepository;
-    private final TenantIntegrationRepository tenantIntegrationRepository;
+    private final EmpresaIntegrationRepository empresaIntegrationRepository;
     private final BillingService billingService;
 
     public DashboardService(
-            CurrentTenantService currentTenantService,
-            TenantRepository tenantRepository,
+            CurrentEmpresaService currentEmpresaService,
+            EmpresaRepository empresaRepository,
             SimulationRepository simulationRepository,
             AssessmentJourneyRepository journeyRepository,
             AssessmentJourneyAttemptRepository journeyAttemptRepository,
             CandidateAttemptRepository candidateAttemptRepository,
             IntegrationTokenRepository integrationTokenRepository,
-            TenantIntegrationRepository tenantIntegrationRepository,
+            EmpresaIntegrationRepository empresaIntegrationRepository,
             BillingService billingService
     ) {
-        this.currentTenantService = currentTenantService;
-        this.tenantRepository = tenantRepository;
+        this.currentEmpresaService = currentEmpresaService;
+        this.empresaRepository = empresaRepository;
         this.simulationRepository = simulationRepository;
         this.journeyRepository = journeyRepository;
         this.journeyAttemptRepository = journeyAttemptRepository;
         this.candidateAttemptRepository = candidateAttemptRepository;
         this.integrationTokenRepository = integrationTokenRepository;
-        this.tenantIntegrationRepository = tenantIntegrationRepository;
+        this.empresaIntegrationRepository = empresaIntegrationRepository;
         this.billingService = billingService;
     }
 
     @Transactional(readOnly = true)
     public DashboardResponse getDashboard() {
-        String tenantId = currentTenantService.requiredTenantId();
-        TenantEntity tenant = tenantRepository.findById(tenantId)
+        String empresaId = currentEmpresaService.requiredEmpresaId();
+        EmpresaEntity empresa = empresaRepository.findById(empresaId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Cliente não encontrado."));
 
-        List<SimulationEntity> simulations = simulationRepository.findByTenantIdOrderByCreatedAtDesc(tenantId);
-        List<AssessmentJourneyEntity> journeys = journeyRepository.findByTenantIdOrderByCreatedAtDesc(tenantId);
+        List<SimulationEntity> simulations = simulationRepository.findByEmpresaIdOrderByCreatedAtDesc(empresaId);
+        List<AssessmentJourneyEntity> journeys = journeyRepository.findByEmpresaIdOrderByCreatedAtDesc(empresaId);
         Map<String, String> simulationNames = simulations.stream()
                 .collect(Collectors.toMap(SimulationEntity::getId, SimulationEntity::getName, (left, right) -> left));
 
@@ -110,40 +158,40 @@ public class DashboardService {
                 .filter(journey -> journey.getStatus() == AssessmentJourneyStatus.DRAFT)
                 .count();
 
-        long candidatesInProgress = candidateAttemptRepository.countByTenantIdAndStatusIn(
-                tenantId,
+        long candidatesInProgress = candidateAttemptRepository.countByEmpresaIdAndStatusIn(
+                empresaId,
                 List.of(AttemptStatus.NOT_STARTED, AttemptStatus.IN_PROGRESS, AttemptStatus.PAUSED)
-        ) + journeyAttemptRepository.countByTenantIdAndStatusIn(
-                tenantId,
+        ) + journeyAttemptRepository.countByEmpresaIdAndStatusIn(
+                empresaId,
                 List.of(AssessmentJourneyAttemptStatus.CREATED, AssessmentJourneyAttemptStatus.IN_PROGRESS)
         );
-        long completedAttemptsLast30Days = candidateAttemptRepository.countByTenantIdAndStatusAndFinishedAtAfter(
-                tenantId,
+        long completedAttemptsLast30Days = candidateAttemptRepository.countByEmpresaIdAndStatusAndFinishedAtAfter(
+                empresaId,
                 AttemptStatus.COMPLETED,
                 Instant.now().minus(30, ChronoUnit.DAYS)
         );
 
-        List<IntegrationStatusItem> integrations = getIntegrationStatuses(tenantId);
-        TenantBillingOverviewResponse billingOverview = billingService.overview(tenantId);
+        List<IntegrationStatusItem> integrations = getIntegrationStatuses(empresaId);
+        EmpresaBillingOverviewResponse billingOverview = billingService.overview(empresaId);
         BillingUsage billing = new BillingUsage(
-                tenant.getCommercialPlanType(),
-                tenant.getStatus(),
+                empresa.getCommercialPlanType(),
+                empresa.getStatus(),
                 billingOverview.creditBalance(),
                 completedAttemptsLast30Days,
                 billingOverview.subscription() == null ? null : billingOverview.subscription().status(),
                 billingOverview.subscription() == null ? null : billingOverview.subscription().currentPeriodEnd(),
-                tenant.getCommercialCondition()
+                empresa.getCommercialCondition()
         );
 
         return new DashboardResponse(
-                tenantId,
-                displayName(tenant),
+                empresaId,
+                displayName(empresa),
                 activeSimulations,
                 new AssessmentJourneysSummary(journeys.size(), publishedJourneys, draftJourneys),
                 candidatesInProgress,
                 completedAttemptsLast30Days,
-                latestResults(tenantId, simulationNames),
-                journeyItems(tenantId, journeys),
+                latestResults(empresaId, simulationNames),
+                journeyItems(empresaId, journeys),
                 integrations,
                 billing,
                 recommendedActions(simulations, journeys, integrations, billing, completedAttemptsLast30Days)
@@ -152,11 +200,11 @@ public class DashboardService {
 
     @Transactional(readOnly = true)
     public List<IntegrationStatusItem> getIntegrationStatuses() {
-        return getIntegrationStatuses(currentTenantService.requiredTenantId());
+        return getIntegrationStatuses(currentEmpresaService.requiredEmpresaId());
     }
 
-    private List<IntegrationStatusItem> getIntegrationStatuses(String tenantId) {
-        Map<String, IntegrationTokenEntity> tokens = integrationTokenRepository.findByTenantIdOrderByProviderAsc(tenantId)
+    private List<IntegrationStatusItem> getIntegrationStatuses(String empresaId) {
+        Map<String, IntegrationTokenEntity> tokens = integrationTokenRepository.findByEmpresaIdOrderByProviderAsc(empresaId)
                 .stream()
                 .collect(Collectors.toMap(
                         token -> token.getProvider().toLowerCase(Locale.ROOT),
@@ -164,14 +212,14 @@ public class DashboardService {
                         (left, right) -> left,
                         LinkedHashMap::new
                 ));
-        Map<IntegrationProvider, TenantIntegrationEntity> tenantIntegrations = tenantIntegrationRepository
-                .findByTenantIdOrderByProviderAsc(tenantId)
+        Map<IntegrationProvider, EmpresaIntegrationEntity> empresaIntegrations = empresaIntegrationRepository
+                .findByEmpresaIdOrderByProviderAsc(empresaId)
                 .stream()
-                .collect(Collectors.toMap(TenantIntegrationEntity::getProvider, Function.identity()));
+                .collect(Collectors.toMap(EmpresaIntegrationEntity::getProvider, Function.identity()));
 
         return PROVIDERS.stream()
                 .map(provider -> {
-                    TenantIntegrationEntity integration = tenantIntegrations.get(IntegrationProvider.valueOf(provider.code()));
+                    EmpresaIntegrationEntity integration = empresaIntegrations.get(IntegrationProvider.valueOf(provider.code()));
                     IntegrationTokenEntity token = tokens.get(provider.tokenProvider());
                     IntegrationStatus status = integration != null
                             ? IntegrationStatus.valueOf(integration.getStatus().name())
@@ -187,8 +235,8 @@ public class DashboardService {
                 .toList();
     }
 
-    private List<LatestResult> latestResults(String tenantId, Map<String, String> simulationNames) {
-        return candidateAttemptRepository.findByTenantIdOrderByCreatedAtDesc(tenantId, PageRequest.of(0, 5))
+    private List<LatestResult> latestResults(String empresaId, Map<String, String> simulationNames) {
+        return candidateAttemptRepository.findByEmpresaIdOrderByCreatedAtDesc(empresaId, PageRequest.of(0, 5))
                 .stream()
                 .map(attempt -> new LatestResult(
                         attempt.getId(),
@@ -205,12 +253,12 @@ public class DashboardService {
                 .toList();
     }
 
-    private List<AssessmentJourneyItem> journeyItems(String tenantId, List<AssessmentJourneyEntity> journeys) {
+    private List<AssessmentJourneyItem> journeyItems(String empresaId, List<AssessmentJourneyEntity> journeys) {
         return journeys.stream()
                 .limit(5)
                 .map(journey -> {
-                    long inProgress = journeyAttemptRepository.countByTenantIdAndJourneyIdAndStatusIn(
-                            tenantId,
+                    long inProgress = journeyAttemptRepository.countByEmpresaIdAndJourneyIdAndStatusIn(
+                            empresaId,
                             journey.getId(),
                             List.of(AssessmentJourneyAttemptStatus.CREATED, AssessmentJourneyAttemptStatus.IN_PROGRESS)
                     );
@@ -310,11 +358,11 @@ public class DashboardService {
                 .anyMatch(version -> version.getStatus() == SimulationVersionStatus.PUBLISHED);
     }
 
-    private static String displayName(TenantEntity tenant) {
-        if (tenant.getTradeName() != null && !tenant.getTradeName().isBlank()) {
-            return tenant.getTradeName();
+    private static String displayName(EmpresaEntity empresa) {
+        if (empresa.getTradeName() != null && !empresa.getTradeName().isBlank()) {
+            return empresa.getTradeName();
         }
-        return tenant.getName();
+        return empresa.getName();
     }
 
     private static int severityOrder(RecommendedActionSeverity severity) {

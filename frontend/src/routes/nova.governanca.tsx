@@ -106,7 +106,7 @@ function Page() {
   });
   const termAccepted = acceptanceQuery.data?.accepted ?? false;
 
-  // Termo de uso na vertical de saúde (Minuta C). A publicação só o exige quando o tenant opera
+  // Termo de uso na vertical de saúde (Minuta C). A publicação só o exige quando o empresa opera
   // nessa vertical: o backend bloqueia com 409, e então mostramos o aceite para liberar a republicação.
   const healthTermQuery = useQuery({
     queryKey: ["health-use-term"],

@@ -1,7 +1,7 @@
 package br.com.iforce.praxis.billing.model;
 
 /**
- * Tipo de evento financeiro append-only registrado em {@code tenant_billing_events}.
+ * Tipo de evento financeiro append-only registrado em {@code empresa_billing_events}.
  *
  * <p>Os eventos refletem fatos confirmados junto ao Mercado Pago (ou ajustes manuais),
  * nunca uma marcação manual de "pago".</p>

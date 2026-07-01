@@ -2,6 +2,7 @@ package br.com.iforce.praxis.candidate.service;
 
 import java.util.Locale;
 
+
 /**
  * Mascaramento de identidade para o Modo Cego (REQ-L3). Reduz viés demográfico na decisão humana
  * trocando o nome do candidato por um código estável derivado do attemptId. A defesa em

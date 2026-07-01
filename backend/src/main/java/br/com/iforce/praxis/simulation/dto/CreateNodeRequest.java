@@ -1,8 +1,11 @@
 package br.com.iforce.praxis.simulation.dto;
 
 import br.com.iforce.praxis.shared.model.MediaType;
+
 import io.swagger.v3.oas.annotations.media.Schema;
+
 import jakarta.validation.constraints.Size;
+
 
 @Schema(description = "Dados para criar uma etapa do teste.")
 public record CreateNodeRequest(

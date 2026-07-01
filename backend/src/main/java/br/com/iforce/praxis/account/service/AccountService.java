@@ -1,23 +1,34 @@
 package br.com.iforce.praxis.account.service;
 
 import br.com.iforce.praxis.account.dto.AccountResponse;
+
 import br.com.iforce.praxis.account.dto.ChangePasswordRequest;
+
 import br.com.iforce.praxis.auth.persistence.entity.UserEntity;
+
 import br.com.iforce.praxis.auth.persistence.repository.UserRepository;
-import br.com.iforce.praxis.auth.service.CurrentTenantService;
+
+import br.com.iforce.praxis.auth.service.CurrentEmpresaService;
+
 import br.com.iforce.praxis.auth.service.CurrentUserService;
+
 import org.springframework.http.HttpStatus;
+
 import org.springframework.security.crypto.password.PasswordEncoder;
+
 import org.springframework.stereotype.Service;
+
 import org.springframework.transaction.annotation.Transactional;
+
 import org.springframework.web.server.ResponseStatusException;
+
 
 /**
  * Cuida dos dados da própria conta do usuário que está logado.
  *
  * <p>Na visão do processo, é aqui que a pessoa consulta os seus dados de
  * cadastro (nome, e-mail, perfis de acesso) e troca a sua própria senha.
- * Todas as operações são feitas sempre no contexto da empresa (tenant) e do
+ * Todas as operações são feitas sempre no contexto da empresa (empresa) e do
  * usuário autenticado naquele momento, garantindo que ninguém acesse a conta
  * de outra pessoa.</p>
  */
@@ -25,18 +36,18 @@ import org.springframework.web.server.ResponseStatusException;
 public class AccountService {
 
     private final CurrentUserService currentUserService;
-    private final CurrentTenantService currentTenantService;
+    private final CurrentEmpresaService currentEmpresaService;
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
 
     public AccountService(
             CurrentUserService currentUserService,
-            CurrentTenantService currentTenantService,
+            CurrentEmpresaService currentEmpresaService,
             UserRepository userRepository,
             PasswordEncoder passwordEncoder
     ) {
         this.currentUserService = currentUserService;
-        this.currentTenantService = currentTenantService;
+        this.currentEmpresaService = currentEmpresaService;
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
     }
@@ -84,18 +95,18 @@ public class AccountService {
 
     /**
      * Localiza, com segurança, o cadastro do usuário que está logado,
-     * garantindo que ele pertença à empresa (tenant) atual. Uso interno.
+     * garantindo que ele pertença à empresa (empresa) atual. Uso interno.
      */
     private UserEntity loadCurrentUser() {
-        String tenantId = currentTenantService.requiredTenantId();
+        String empresaId = currentEmpresaService.requiredEmpresaId();
         String userId = currentUserService.requiredUserId();
         try {
             Long id = Long.valueOf(userId);
             return userRepository.findById(id)
-                    .filter(user -> tenantId.equals(user.getTenantId()))
+                    .filter(user -> empresaId.equals(user.getEmpresaId()))
                     .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Usuário não encontrado."));
         } catch (NumberFormatException exception) {
-            return userRepository.findFirstByTenantId(tenantId)
+            return userRepository.findFirstByEmpresaId(empresaId)
                     .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Usuário não encontrado."));
         }
     }
@@ -107,7 +118,7 @@ public class AccountService {
     private static AccountResponse toResponse(UserEntity user) {
         return new AccountResponse(
                 user.getId(),
-                user.getTenantId(),
+                user.getEmpresaId(),
                 user.getName(),
                 user.getEmail(),
                 user.getRoles()

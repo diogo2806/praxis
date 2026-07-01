@@ -1,10 +1,14 @@
 package br.com.iforce.praxis.shared.web;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+
 import io.swagger.v3.oas.annotations.media.Schema;
 
+
 import java.time.Instant;
+
 import java.util.Map;
+
 
 @Schema(description = "Resposta padronizada de erro da API.")
 public record ApiErrorResponse(

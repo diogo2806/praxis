@@ -1,17 +1,27 @@
 package br.com.iforce.praxis.auth.config;
 
 import br.com.iforce.praxis.auth.service.JwtService;
+
 import org.junit.jupiter.api.Test;
+
 import org.springframework.beans.factory.annotation.Autowired;
+
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+
 import org.springframework.boot.test.context.SpringBootTest;
+
 import org.springframework.test.context.jdbc.Sql;
+
 import org.springframework.test.web.servlet.MockMvc;
+
 
 import java.util.Set;
 
+
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
 
 @SpringBootTest(properties = {
         "praxis.security.enabled=true",
@@ -30,13 +40,13 @@ class SecurityConfigTest {
     @Test
     void gupyTokenCannotAccessAdminEndpoints() throws Exception {
         mockMvc.perform(get("/api/v1/simulations")
-                        .header("Authorization", "Bearer tenant1-token"))
+                        .header("Authorization", "Bearer empresa1-token"))
                 .andExpect(status().isUnauthorized());
     }
 
     @Test
     void empresaJwtCanAccessCompanyEndpoints() throws Exception {
-        String empresaToken = jwtService.generateToken("empresa-user", "tenant-1", Set.of("EMPRESA"));
+        String empresaToken = jwtService.generateToken("empresa-user", "empresa-1", Set.of("EMPRESA"));
 
         mockMvc.perform(get("/api/v1/simulations")
                         .header("Authorization", "Bearer " + empresaToken))
@@ -46,7 +56,7 @@ class SecurityConfigTest {
     @Test
     void gupyTokenCanAccessOnlyGupyEndpoints() throws Exception {
         mockMvc.perform(get("/test")
-                        .header("Authorization", "Bearer tenant1-token"))
+                        .header("Authorization", "Bearer empresa1-token"))
                 .andExpect(status().isOk());
     }
 }
