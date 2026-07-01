@@ -66,6 +66,7 @@ import { Route as MarketplaceOrdersOrderIdRouteImport } from './routes/marketpla
 import { Route as MarketplaceCheckoutListingIdRouteImport } from './routes/marketplace.checkout.$listingId'
 import { Route as AdminMarketplaceProfessionalsRouteImport } from './routes/admin.marketplace.professionals'
 import { Route as AdminMarketplaceListingsRouteImport } from './routes/admin.marketplace.listings'
+import { Route as AdminMarketplaceDisputesRouteImport } from './routes/admin.marketplace.disputes'
 import { Route as AdminEmpresasEmpresaIdRouteImport } from './routes/admin.empresas.$empresaId'
 import { Route as ProfissionalListingsListingIdEditarRouteImport } from './routes/profissional.listings.$listingId.editar'
 
@@ -362,6 +363,12 @@ const AdminMarketplaceListingsRoute =
     path: '/admin/marketplace/listings',
     getParentRoute: () => rootRouteImport,
   } as any)
+const AdminMarketplaceDisputesRoute =
+  AdminMarketplaceDisputesRouteImport.update({
+    id: '/admin/marketplace/disputes',
+    path: '/admin/marketplace/disputes',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const AdminEmpresasEmpresaIdRoute = AdminEmpresasEmpresaIdRouteImport.update({
   id: '/admin/empresas/$empresaId',
   path: '/admin/empresas/$empresaId',
@@ -424,6 +431,7 @@ export interface FileRoutesByFullPath {
   '/admin/': typeof AdminIndexRoute
   '/assessment-journeys/': typeof AssessmentJourneysIndexRoute
   '/admin/empresas/$empresaId': typeof AdminEmpresasEmpresaIdRoute
+  '/admin/marketplace/disputes': typeof AdminMarketplaceDisputesRoute
   '/admin/marketplace/listings': typeof AdminMarketplaceListingsRoute
   '/admin/marketplace/professionals': typeof AdminMarketplaceProfessionalsRoute
   '/marketplace/checkout/$listingId': typeof MarketplaceCheckoutListingIdRoute
@@ -485,6 +493,7 @@ export interface FileRoutesByTo {
   '/admin': typeof AdminIndexRoute
   '/assessment-journeys': typeof AssessmentJourneysIndexRoute
   '/admin/empresas/$empresaId': typeof AdminEmpresasEmpresaIdRoute
+  '/admin/marketplace/disputes': typeof AdminMarketplaceDisputesRoute
   '/admin/marketplace/listings': typeof AdminMarketplaceListingsRoute
   '/admin/marketplace/professionals': typeof AdminMarketplaceProfessionalsRoute
   '/marketplace/checkout/$listingId': typeof MarketplaceCheckoutListingIdRoute
@@ -547,6 +556,7 @@ export interface FileRoutesById {
   '/admin/': typeof AdminIndexRoute
   '/assessment-journeys/': typeof AssessmentJourneysIndexRoute
   '/admin/empresas/$empresaId': typeof AdminEmpresasEmpresaIdRoute
+  '/admin/marketplace/disputes': typeof AdminMarketplaceDisputesRoute
   '/admin/marketplace/listings': typeof AdminMarketplaceListingsRoute
   '/admin/marketplace/professionals': typeof AdminMarketplaceProfessionalsRoute
   '/marketplace/checkout/$listingId': typeof MarketplaceCheckoutListingIdRoute
@@ -610,6 +620,7 @@ export interface FileRouteTypes {
     | '/admin/'
     | '/assessment-journeys/'
     | '/admin/empresas/$empresaId'
+    | '/admin/marketplace/disputes'
     | '/admin/marketplace/listings'
     | '/admin/marketplace/professionals'
     | '/marketplace/checkout/$listingId'
@@ -671,6 +682,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/assessment-journeys'
     | '/admin/empresas/$empresaId'
+    | '/admin/marketplace/disputes'
     | '/admin/marketplace/listings'
     | '/admin/marketplace/professionals'
     | '/marketplace/checkout/$listingId'
@@ -732,6 +744,7 @@ export interface FileRouteTypes {
     | '/admin/'
     | '/assessment-journeys/'
     | '/admin/empresas/$empresaId'
+    | '/admin/marketplace/disputes'
     | '/admin/marketplace/listings'
     | '/admin/marketplace/professionals'
     | '/marketplace/checkout/$listingId'
@@ -783,6 +796,7 @@ export interface RootRouteChildren {
   AdminIndexRoute: typeof AdminIndexRoute
   AssessmentJourneysIndexRoute: typeof AssessmentJourneysIndexRoute
   AdminEmpresasEmpresaIdRoute: typeof AdminEmpresasEmpresaIdRoute
+  AdminMarketplaceDisputesRoute: typeof AdminMarketplaceDisputesRoute
   AdminMarketplaceListingsRoute: typeof AdminMarketplaceListingsRoute
   AdminMarketplaceProfessionalsRoute: typeof AdminMarketplaceProfessionalsRoute
   AdminEmpresasIndexRoute: typeof AdminEmpresasIndexRoute
@@ -1189,6 +1203,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminMarketplaceListingsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin/marketplace/disputes': {
+      id: '/admin/marketplace/disputes'
+      path: '/admin/marketplace/disputes'
+      fullPath: '/admin/marketplace/disputes'
+      preLoaderRoute: typeof AdminMarketplaceDisputesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/admin/empresas/$empresaId': {
       id: '/admin/empresas/$empresaId'
       path: '/admin/empresas/$empresaId'
@@ -1342,6 +1363,7 @@ const rootRouteChildren: RootRouteChildren = {
   AdminIndexRoute: AdminIndexRoute,
   AssessmentJourneysIndexRoute: AssessmentJourneysIndexRoute,
   AdminEmpresasEmpresaIdRoute: AdminEmpresasEmpresaIdRoute,
+  AdminMarketplaceDisputesRoute: AdminMarketplaceDisputesRoute,
   AdminMarketplaceListingsRoute: AdminMarketplaceListingsRoute,
   AdminMarketplaceProfessionalsRoute: AdminMarketplaceProfessionalsRoute,
   AdminEmpresasIndexRoute: AdminEmpresasIndexRoute,
