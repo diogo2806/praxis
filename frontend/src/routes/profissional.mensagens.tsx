@@ -3,10 +3,10 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft, Loader2, Send } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
+import { MessageThread } from "@/components/marketplace/message-thread";
 import { StateBanner } from "@/components/praxis-ui";
 import { Button } from "@/components/ui/button";
 import { listMarketplaceMessageThreads, sendMarketplaceProfessionalMessage } from "@/lib/api/praxis";
-import { formatMarketplaceDate } from "@/lib/marketplace";
 
 export const Route = createFileRoute("/profissional/mensagens")({
   head: () => ({
@@ -106,18 +106,8 @@ function ProfessionalMessagesPage() {
                 <div className="text-xs text-muted-foreground">Thread #{selectedThread.id}</div>
               </div>
 
-              <div className="flex-1 space-y-3 overflow-y-auto p-4">
-                {selectedThread.messages.map((message) => (
-                  <article
-                    key={message.id}
-                    className={`max-w-[78%] rounded-md border border-border p-3 text-sm ${
-                      message.senderType === "PROFESSIONAL" ? "ml-auto bg-primary/10" : "bg-background"
-                    }`}
-                  >
-                    <div className="mb-1 text-xs text-muted-foreground">{formatMarketplaceDate(message.createdAt)}</div>
-                    <p className="whitespace-pre-line">{message.body}</p>
-                  </article>
-                ))}
+              <div className="flex-1 overflow-y-auto p-4">
+                <MessageThread thread={selectedThread} />
               </div>
 
               <form
