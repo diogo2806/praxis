@@ -143,7 +143,7 @@ export const en = {
     descriptionCompetenciesLabel: "Competencies",
   },
   dashboard: {
-    title: "Dashboard - Praxis",
+    title: "Dashboard - Práxis",
     metaDescription: "Dashboard: active assessments, quality, readiness and optional integrations.",
     greeting: "Good afternoon",
     noSimulations: "No simulations created",
@@ -187,7 +187,7 @@ export const en = {
     },
   },
   getStarted: {
-    title: "Get Started - Praxis",
+    title: "Get Started - Práxis",
     heading: "Welcome to Praxis 👋",
     howItWorks: "How it works?",
     forWhom: "Who is it for?",
@@ -205,7 +205,7 @@ export const en = {
       "Structured situational assessment with interactive scenarios, scoring by defined criteria and change history.",
   },
   governance: {
-    title: "Governance & Audit - Praxis",
+    title: "Governance & Audit - Práxis",
     heading: "Governance and audit",
     editingPublished: "Editing published creates new version",
     candidatesInProgress: "Participations in progress stay on current version",
@@ -219,7 +219,7 @@ export const en = {
     noActiveSimulations: "No active simulations found",
   },
   lgpd: {
-    title: "Data Protection & Transparency - Praxis",
+    title: "Data Protection & Transparency - Práxis",
     heading: "Data protection and result transparency",
     selectSimulation: "Select a simulation to see the explanation",
     normalizedScoring: "Normalized scoring by path",
@@ -234,7 +234,7 @@ export const en = {
     eliminatoryUsage: "Eliminatory use is only permitted if...",
   },
   defensability: {
-    title: "Reliability and Technical Security - Praxis",
+    title: "Reliability and Technical Security - Práxis",
     heading: "Reliability and technical security",
     selectSimulation: "Select a simulation to see the justification",
     constructDefined: "Construct defined",

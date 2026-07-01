@@ -19,7 +19,7 @@ import { cn } from "@/lib/utils";
 export const Route = createFileRoute("/monitoramento")({
   head: () => ({
     meta: [
-      { title: "Monitoramento - Praxis" },
+      { title: "Monitoramento - Práxis" },
       {
         name: "description",
         content: "Central operacional para acompanhar convites, tentativas e entregas.",
@@ -165,7 +165,7 @@ function MonitoringPage() {
                   onChange={(event) => setSimulationFilter(event.target.value)}
                   className="h-8 min-h-8 rounded-md border border-border bg-background px-3 text-xs"
                 >
-                  <option value="todos">Todos os testes</option>
+                  <option value="todos">Todas as avaliações</option>
                   {simulations.map((simulation) => (
                     <option key={simulation.id} value={simulation.id}>
                       {simulation.name}
@@ -246,7 +246,7 @@ function MonitoringPage() {
 
           <section className="overflow-hidden rounded-xl border border-border bg-card">
             <div className="border-b border-border px-4 py-4">
-              <h2 className="text-sm font-semibold">Testes em producao</h2>
+              <h2 className="text-sm font-semibold">Avaliações no ar</h2>
               <p className="mt-1 text-xs text-muted-foreground">
                 Versoes publicadas com dados de tentativas
               </p>
@@ -257,7 +257,7 @@ function MonitoringPage() {
               ))}
               {simulations.length === 0 && (
                 <div className="px-4 py-8 text-sm text-muted-foreground">
-                  Nenhum teste publicado encontrado.
+                  Nenhuma avaliação publicada encontrada.
                 </div>
               )}
             </div>

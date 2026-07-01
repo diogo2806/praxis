@@ -13,7 +13,7 @@ import {
 export const Route = createFileRoute("/nova/rapido")({
   head: () => ({
     meta: [
-      { title: "Começar rápido - Praxis" },
+      { title: "Começar rápido - Práxis" },
       {
         name: "description",
         content: "Crie uma avaliação a partir de um modelo pronto, sem os 9 passos do assistente.",

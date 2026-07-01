@@ -23,7 +23,7 @@ import { useLanguage } from "@/lib/language-context";
 export const Route = createFileRoute("/comecar")({
   head: () => ({
     meta: [
-      { title: "Comece por aqui - Praxis" },
+      { title: "Comece por aqui - Práxis" },
       {
         name: "description",
         content:
@@ -114,7 +114,7 @@ const faq = [
   },
   {
     q: "Preciso ter formação técnica para usar?",
-    a: "Não. A criação do teste é guiada por etapas. Termos técnicos têm uma explicação simples quando você passa o mouse sobre eles.",
+    a: "Não. A criação da avaliação é guiada por etapas. Termos técnicos têm uma explicação simples quando você passa o mouse sobre eles.",
   },
   {
     q: "A pessoa participante pediu um código de acesso. O que é isso?",

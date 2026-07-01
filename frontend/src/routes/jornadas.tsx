@@ -38,10 +38,11 @@ import { cn } from "@/lib/utils";
 export const Route = createFileRoute("/jornadas")({
   head: () => ({
     meta: [
-      { title: "Jornadas de Avaliacao - Praxis" },
+      { title: "Jornadas de avaliação - Práxis" },
       {
         name: "description",
-        content: "Monte sequencias de testes publicados, publique jornadas e acompanhe candidatos.",
+        content:
+          "Monte sequências de avaliações publicadas, publique jornadas e acompanhe participantes.",
       },
     ],
   }),
@@ -207,11 +208,11 @@ function AssessmentJourneysPage() {
           <div>
             <div className="text-xs font-semibold uppercase text-primary">Jornada de Avaliacao</div>
             <h1 className="mt-1 text-3xl font-semibold text-foreground">
-              Sequencias de testes publicados
+              Sequências de avaliações publicadas
             </h1>
             <p className="mt-2 max-w-3xl text-sm leading-6 text-muted-foreground">
-              Combine testes ja publicados, publique a composicao e gere uma tentativa de jornada
-              para cada candidato.
+              Combine avaliações já publicadas, publique a composição e gere uma tentativa de
+              jornada para cada candidato.
             </p>
           </div>
           <Button
@@ -292,7 +293,7 @@ function AssessmentJourneysPage() {
                         <div className="min-w-0">
                           <div className="truncate text-sm font-medium">{journey.name}</div>
                           <div className="mt-1 text-xs text-muted-foreground">
-                            {journey.stepCount} testes - {journey.sequenceCount} sequencia
+                            {journey.stepCount} avaliações - {journey.sequenceCount} sequencia
                           </div>
                         </div>
                         <JourneyStatusBadge status={journey.status} />
@@ -308,7 +309,7 @@ function AssessmentJourneysPage() {
             {!selectedJourneyId ? (
               <EmptyState
                 title="Selecione uma jornada"
-                description="Crie ou escolha um rascunho para adicionar testes publicados e gerar convites."
+                description="Crie ou escolha um rascunho para adicionar avaliações publicadas e gerar convites."
               />
             ) : selectedJourneyQuery.isLoading ? (
               <section className="rounded-md border border-border bg-card p-4">
@@ -419,7 +420,7 @@ function JourneyComposer({
             <p className="mt-1 max-w-2xl text-sm text-muted-foreground">{journey.description}</p>
           )}
           <p className="mt-2 text-xs text-muted-foreground">
-            {totalSteps} {totalSteps === 1 ? "teste" : "testes"} em {sequences.length}{" "}
+            {totalSteps} {totalSteps === 1 ? "avaliação" : "avaliações"} em {sequences.length}{" "}
             {sequences.length === 1 ? "sequencia" : "sequencias"}
           </p>
         </div>
@@ -457,7 +458,7 @@ function JourneyComposer({
               value={selectedSimulationId}
               onChange={(event) => onSimulationChange(event.target.value)}
             >
-              <option value="">Selecione um teste publicado</option>
+              <option value="">Selecione uma avaliação publicada</option>
               {simulations.map((simulation) => (
                 <option key={simulation.id} value={simulation.id}>
                   {simulation.name} - v
@@ -496,15 +497,15 @@ function JourneyComposer({
             </Button>
           </div>
           <p className="mt-2 text-xs text-muted-foreground">
-            Combine varios testes em uma mesma sequencia ou crie sequencias diferentes digitando um
-            novo nome. Cada candidato recebe o link de uma sequencia.
+            Combine várias avaliações em uma mesma sequência ou crie sequências diferentes digitando
+            um novo nome. Cada candidato recebe o link de uma sequencia.
           </p>
         </div>
       )}
 
       {totalSteps === 0 ? (
         <div className="p-5 text-sm text-muted-foreground">
-          Adicione pelo menos um teste publicado para publicar a jornada.
+          Adicione pelo menos uma avaliação publicada para publicar a jornada.
         </div>
       ) : (
         <div className="divide-y divide-border">
@@ -515,7 +516,7 @@ function JourneyComposer({
                   {sequence.sequenceKey}
                 </span>
                 <span className="text-xs text-muted-foreground">
-                  {sequence.steps.length} {sequence.steps.length === 1 ? "teste" : "testes"}
+                  {sequence.steps.length} {sequence.steps.length === 1 ? "avaliação" : "avaliações"}
                 </span>
               </div>
               <div className="overflow-x-auto">
@@ -523,7 +524,7 @@ function JourneyComposer({
                   <thead className="border-b border-border bg-muted/45 text-xs uppercase text-muted-foreground">
                     <tr>
                       <th className="px-4 py-3 font-medium">Ordem</th>
-                      <th className="px-4 py-3 font-medium">Teste</th>
+                      <th className="px-4 py-3 font-medium">Avaliação</th>
                       <th className="px-4 py-3 font-medium">Versao</th>
                       <th className="px-4 py-3 font-medium">Obrigatorio</th>
                       <th className="px-4 py-3 text-right font-medium">Acoes</th>
@@ -624,7 +625,7 @@ function JourneyAttempts({
       <div className="border-b border-border p-5">
         <h2 className="text-xl font-semibold">Candidatos da jornada</h2>
         <p className="mt-1 text-sm text-muted-foreground">
-          Gere um link de jornada; cada etapa interna abre o teste individual na ordem definida.
+          Gere um link de jornada; cada etapa interna abre a avaliação individual na ordem definida.
         </p>
       </div>
 
@@ -725,7 +726,7 @@ function JourneyAttempts({
                       <AttemptStatusBadge status={attempt.status} />
                     </td>
                     <td className="px-4 py-3 text-muted-foreground">
-                      {completed}/{attempt.steps.length} testes
+                      {completed}/{attempt.steps.length} avaliações
                     </td>
                     <td className="max-w-[300px] px-4 py-3">
                       <code className="block truncate rounded-md border border-border bg-background px-2 py-1.5 text-xs text-muted-foreground">

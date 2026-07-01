@@ -14,7 +14,7 @@ import { useSession } from "@/lib/session";
 export const Route = createFileRoute("/configuracoes/conta")({
   head: () => ({
     meta: [
-      { title: "Minha conta - Praxis" },
+      { title: "Minha conta - Práxis" },
       {
         name: "description",
         content: "Dados de acesso e troca de senha da conta.",

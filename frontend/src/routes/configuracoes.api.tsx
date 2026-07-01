@@ -21,7 +21,7 @@ import { getApiBaseUrl } from "@/lib/runtime-config";
 export const Route = createFileRoute("/configuracoes/api")({
   head: () => ({
     meta: [
-      { title: "API e Webhooks - Praxis" },
+      { title: "API e Webhooks - Práxis" },
       {
         name: "description",
         content: "Webhook assinado e token de API pública para integrar qualquer sistema.",

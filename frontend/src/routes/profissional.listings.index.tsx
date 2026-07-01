@@ -10,7 +10,7 @@ import { marketplaceProfessionalDashboardFallback } from "@/lib/marketplace-prof
 
 export const Route = createFileRoute("/profissional/listings/")({
   head: () => ({
-    meta: [{ title: "Meus testes - Marketplace Praxis" }],
+    meta: [{ title: "Minhas avaliações - Marketplace Práxis" }],
   }),
   component: ProfessionalListingsPage,
 });
@@ -37,7 +37,7 @@ function ProfessionalListingsPage() {
         <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
           <div>
             <div className="text-xs uppercase text-primary">Anuncios</div>
-            <h1 className="mt-1 text-2xl font-semibold">Meus testes</h1>
+            <h1 className="mt-1 text-2xl font-semibold">Minhas avaliações</h1>
           </div>
           <Button asChild>
             <Link to="/profissional/listings/novo">
@@ -60,7 +60,7 @@ function ProfessionalListingsPage() {
         )}
         {dashboard.data && listings.length === 0 && (
           <section className="rounded-md border border-border bg-card p-5">
-            <p className="text-sm text-muted-foreground">Nenhum teste publicado ainda.</p>
+            <p className="text-sm text-muted-foreground">Nenhuma avaliação publicada ainda.</p>
           </section>
         )}
         {listings.length > 0 && (

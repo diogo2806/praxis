@@ -33,8 +33,8 @@ export const Route = createFileRoute("/nova/governanca")({
   }),
   head: () => ({
     meta: [
-      { title: "Governança & Aprovações - Praxis" },
-      { name: "description", content: "Publicação validada do teste." },
+      { title: "Governança & Aprovações - Práxis" },
+      { name: "description", content: "Publicação validada da avaliação." },
     ],
   }),
   component: Page,
@@ -139,13 +139,13 @@ function Page() {
         <div className="text-xs uppercase tracking-[0.2em] text-primary">Passo 4</div>
         <h1 className="mt-1 font-display text-3xl">Publicação para colocar no ar</h1>
         <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
-          Antes de entrar no ar, o teste passa pela validação automática e pelo preflight.
+          Antes de entrar no ar, a avaliação passa pela validação automática e pelo preflight.
         </p>
       </div>
 
       {hasGovernanceParams && auditQuery.isLoading && (
         <StateBanner tone="info" title="Governança conectada">
-          Buscando registro de auditoria do teste {search.simulationId} v{search.versionNumber}.
+          Buscando registro de auditoria da avaliação {search.simulationId} v{search.versionNumber}.
         </StateBanner>
       )}
 
@@ -481,7 +481,7 @@ function SimulationLinks({
   if (loading) {
     return (
       <div className="rounded-md border border-border bg-card px-4 py-3 text-sm">
-        Carregando testes...
+        Carregando avaliações...
       </div>
     );
   }
@@ -492,7 +492,7 @@ function SimulationLinks({
         to="/nova/blueprint"
         className="rounded-md border border-border bg-card px-4 py-3 text-sm hover:bg-accent"
       >
-        Criar teste
+        Criar avaliação
       </Link>
     );
   }

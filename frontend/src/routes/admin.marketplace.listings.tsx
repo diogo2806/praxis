@@ -52,7 +52,7 @@ function AdminMarketplaceListingsPage() {
             Marketplace
           </div>
           <h1 className="mt-1 text-2xl font-semibold">Anuncios pendentes</h1>
-          <p className="mt-1 text-sm text-slate-500">Modere testes antes da publicacao na vitrine.</p>
+          <p className="mt-1 text-sm text-slate-500">Modere avaliações antes da publicação na vitrine.</p>
         </div>
         <div className="flex flex-wrap gap-2">
           <Button asChild variant="outline">

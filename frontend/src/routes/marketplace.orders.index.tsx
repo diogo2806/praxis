@@ -63,7 +63,7 @@ function MarketplaceOrdersPage() {
         {(orders.data ?? []).length > 0 && (
           <section className="rounded-md border border-border bg-card">
             <div className="grid grid-cols-[1fr_150px_130px] gap-3 border-b border-border px-4 py-3 text-xs font-medium uppercase text-muted-foreground">
-              <div>Teste</div>
+              <div>Avaliação</div>
               <div>Status</div>
               <div className="text-right">Valor</div>
             </div>

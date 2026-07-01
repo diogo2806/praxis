@@ -17,7 +17,7 @@ import { cn } from "@/lib/utils";
 export const Route = createFileRoute("/jornada/$attemptId")({
   head: () => ({
     meta: [
-      { title: "Jornada de Avaliacao - Praxis" },
+      { title: "Jornada de avaliação - Práxis" },
       {
         name: "description",
         content: "Acesso do candidato a uma Jornada de Avaliacao.",
@@ -137,9 +137,9 @@ function CandidateJourneyPage() {
 
             <section className="rounded-md border border-border bg-card">
               <div className="border-b border-border p-5">
-                <h2 className="text-xl font-semibold">Testes da jornada</h2>
+                <h2 className="text-xl font-semibold">Avaliações da jornada</h2>
                 <p className="mt-1 text-sm text-muted-foreground">
-                  Siga a ordem abaixo. Ao concluir um teste, volte para esta pagina e confirme a
+                  Siga a ordem abaixo. Ao concluir uma avaliação, volte para esta página e confirme a
                   etapa.
                 </p>
               </div>
@@ -201,7 +201,7 @@ function ProgressSummary({ attempt }: { attempt: AssessmentJourneyAttemptRespons
         <div>
           <div className="text-sm font-medium">Progresso geral</div>
           <div className="mt-1 text-xs text-muted-foreground">
-            {completed} de {total} testes concluidos
+            {completed} de {total} avaliações concluídas
           </div>
         </div>
         <div className="text-2xl font-semibold tabular-nums">{percent}%</div>
@@ -264,7 +264,7 @@ function CandidateJourneyStep({
           <Button asChild variant="outline" size="sm" className="h-9 gap-2 bg-background">
             <a href={toParticipantPageUrl(step.candidateUrl)}>
               <ExternalLink className="h-4 w-4" />
-              Abrir teste
+              Abrir avaliação
             </a>
           </Button>
         )}
@@ -277,7 +277,7 @@ function CandidateJourneyStep({
             onClick={onStart}
           >
             <ClipboardCheck className="h-4 w-4" />
-            Iniciar teste
+            Iniciar avaliação
           </Button>
         )}
         {step.candidateAttemptId && !completed && (

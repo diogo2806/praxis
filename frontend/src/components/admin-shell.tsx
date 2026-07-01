@@ -16,7 +16,7 @@ export function AdminShell({ children }: { children: ReactNode }) {
     { to: "/admin", label: "Dashboard", icon: LayoutDashboard, exact: true },
     { to: "/admin/empresas", label: "Clientes", icon: Building2, exact: false },
     { to: "/admin/marketplace/professionals", label: "Profissionais", icon: Store, exact: false },
-    { to: "/admin/marketplace/listings", label: "Moderação de testes", icon: ClipboardCheck, exact: false },
+    { to: "/admin/marketplace/listings", label: "Moderação de avaliações", icon: ClipboardCheck, exact: false },
     { to: "/admin/marketplace/disputes", label: "Disputas", icon: RotateCcw, exact: false },
   ];
 

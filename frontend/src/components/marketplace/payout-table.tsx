@@ -12,7 +12,7 @@ export function PayoutTable({ payouts }: { payouts: MarketplacePayoutSummary[] }
         <thead>
           <tr className="border-b border-border text-left text-xs uppercase text-muted-foreground">
             <th className="py-2 pr-3">Pedido</th>
-            <th className="py-2 pr-3">Teste</th>
+            <th className="py-2 pr-3">Avaliação</th>
             <th className="py-2 pr-3">Valor</th>
             <th className="py-2 pr-3">Status</th>
             <th className="py-2">Liberacao</th>

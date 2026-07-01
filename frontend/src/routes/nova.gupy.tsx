@@ -32,11 +32,11 @@ export const Route = createFileRoute("/nova/gupy")({
   }),
   head: () => ({
     meta: [
-      { title: "Gupy - Preflight & Conferência - Praxis" },
+      { title: "Gupy - Preflight & Conferência - Práxis" },
       {
         name: "description",
         content:
-          "Diagnóstico técnico em tempo real da integração do Praxis com testes externos da Gupy.",
+          "Diagnóstico técnico em tempo real da integração do Práxis com avaliações externas da Gupy.",
       },
     ],
   }),
@@ -44,8 +44,8 @@ export const Route = createFileRoute("/nova/gupy")({
 });
 
 const integrationChecks = [
-  "A Gupy consegue encontrar as testes que estão no ar.",
-  "O convite do candidato abre o teste correta.",
+  "A Gupy consegue encontrar as avaliações que estão no ar.",
+  "O convite do candidato abre a avaliação correta.",
   "A pontuação e as competências são enviadas de volta após a conclusão.",
 ];
 
@@ -82,7 +82,7 @@ function GupyActivation() {
           <div className="text-xs uppercase text-primary">Passo 4</div>
           <h1 className="mt-1 text-3xl font-semibold">Gupy - Preflight e conferência</h1>
           <p className="mt-1 max-w-3xl text-sm text-muted-foreground">
-            Confira se este teste está pronta para aparecer na Gupy e se os resultados serão
+            Confira se esta avaliação está pronta para aparecer na Gupy e se os resultados serão
             enviados corretamente depois que o candidato terminar.
           </p>
         </div>
@@ -103,7 +103,7 @@ function GupyActivation() {
         <>
           {preflightQuery.isLoading && (
             <StateBanner tone="info" title="Verificação conectada">
-              Validando o teste {search.simulationId} v{search.versionNumber}.
+              Validando a avaliação {search.simulationId} v{search.versionNumber}.
             </StateBanner>
           )}
 
@@ -130,11 +130,11 @@ function GupyActivation() {
             <NextStepContract
               primary={
                 hasFailure
-                  ? "Corrigir a lista de verificação antes de vincular o teste na Gupy."
+                  ? "Corrigir a lista de verificação antes de vincular a avaliação na Gupy."
                   : "Vincular a versão publicada dentro da Gupy quando o diagnóstico estiver aprovado."
               }
-              secondary="Cliente vincula o teste na vaga dentro da Gupy; o gestor não usa tela externa."
-              versionRule="A Gupy lista apenos testes no ar e versões protegidas."
+              secondary="Cliente vincula a avaliação na vaga dentro da Gupy; o gestor não usa tela externa."
+              versionRule="A Gupy lista apenas avaliações no ar e versões protegidas."
               lockedAfter="O diagnóstico não coloca rascunho no ar nem altera tentativa já iniciada."
             />
           </div>
@@ -272,7 +272,7 @@ function SimulationLinks({
   if (loading) {
     return (
       <div className="rounded-md border border-border bg-card px-4 py-3 text-sm">
-        Carregando testes...
+        Carregando avaliações...
       </div>
     );
   }
@@ -283,7 +283,7 @@ function SimulationLinks({
         to="/nova/blueprint"
         className="rounded-md border border-border bg-card px-4 py-3 text-sm hover:bg-accent"
       >
-        Criar teste
+        Criar avaliação
       </Link>
     );
   }

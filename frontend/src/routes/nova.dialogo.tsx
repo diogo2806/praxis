@@ -44,7 +44,7 @@ export const Route = createFileRoute("/nova/dialogo")({
   head: () => ({
     meta: [
       { title: "Editor de Diálogo - Práxis" },
-      { name: "description", content: "Edição do diálogo usada na revisão do teste." },
+      { name: "description", content: "Edição do diálogo usada na revisão da avaliação." },
     ],
   }),
   component: DialogEditor,
@@ -313,7 +313,7 @@ function DialogEditor() {
         />
       ) : empresaConfigLoading || versionQuery.isLoading ? (
         <StateBanner tone="info" title="Carregando fluxo da conversa">
-          Buscando teste {search.simulationId} v{search.versionNumber}.
+          Buscando avaliação {search.simulationId} v{search.versionNumber}.
         </StateBanner>
       ) : empresaConfigError ? (
         <StateBanner tone="danger" title="Não foi possível carregar a configuração">

@@ -18,7 +18,7 @@ import {
 export const Route = createFileRoute("/configuracoes/integracoes")({
   head: () => ({
     meta: [
-      { title: "Integrações - Praxis" },
+      { title: "Integrações - Práxis" },
       {
         name: "description",
         content: "Configuração de tokens para integrações externas.",

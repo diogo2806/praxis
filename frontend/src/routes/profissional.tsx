@@ -102,7 +102,7 @@ function ProfessionalHomePage() {
               <Link to="/profissional/mensagens">Mensagens</Link>
             </Button>
             <Button asChild variant="outline">
-              <Link to="/profissional/listings">Meus testes</Link>
+              <Link to="/profissional/listings">Minhas avaliações</Link>
             </Button>
             <Button asChild>
               <Link to="/profissional/listings/novo">
@@ -209,7 +209,7 @@ function ProfessionalHomePage() {
 
             <section className="rounded-md border border-border bg-card p-5 lg:col-start-2">
               <div className="flex flex-wrap items-center justify-between gap-3">
-                <h2 className="text-lg font-semibold">Meus testes</h2>
+                <h2 className="text-lg font-semibold">Minhas avaliações</h2>
                 <Button asChild size="sm" variant="outline">
                   <Link to="/profissional/listings">
                     Ver todos
@@ -223,7 +223,7 @@ function ProfessionalHomePage() {
                 </div>
               )}
               {dashboard.data?.listings.length === 0 && (
-                <p className="mt-3 text-sm text-muted-foreground">Nenhum teste publicado ainda.</p>
+                <p className="mt-3 text-sm text-muted-foreground">Nenhuma avaliação publicada ainda.</p>
               )}
               {(dashboard.data?.listings ?? []).length > 0 && (
                 <div className="mt-3 divide-y divide-border">

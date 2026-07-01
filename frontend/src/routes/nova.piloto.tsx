@@ -28,7 +28,7 @@ export const Route = createFileRoute("/nova/piloto")({
   }),
   head: () => ({
     meta: [
-      { title: "Piloto e indicadores - Praxis" },
+      { title: "Piloto e indicadores - Práxis" },
       { name: "description", content: "Indicadores reais de execução antes da publicação." },
     ],
   }),
@@ -79,7 +79,7 @@ function Page() {
         />
       ) : monitoringQuery.isLoading ? (
         <StateBanner tone="info" title="Carregando piloto">
-          Buscando monitoramento do teste {search.simulationId} v{search.versionNumber}.
+          Buscando monitoramento da avaliação {search.simulationId} v{search.versionNumber}.
         </StateBanner>
       ) : monitoringQuery.isError ? (
         <StateBanner tone="danger" title="Não foi possível carregar o piloto">

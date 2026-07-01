@@ -12,7 +12,7 @@ import { defaultAuthenticatedRoute, saveAuthenticatedSession } from "@/lib/sessi
 export const Route = createFileRoute("/convite/$token")({
   head: () => ({
     meta: [
-      { title: "Ativar acesso - Praxis" },
+      { title: "Ativar acesso - Práxis" },
       {
         name: "description",
         content: "Defina sua senha para ativar o acesso ao Praxis.",

@@ -15,7 +15,7 @@ import {
 export const Route = createFileRoute("/results")({
   head: () => ({
     meta: [
-      { title: "Resultados - Praxis" },
+      { title: "Resultados - Práxis" },
       {
         name: "description",
         content: "Lista, filtros e análise de resultados de candidatos avaliados no Praxis.",

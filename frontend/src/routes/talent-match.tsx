@@ -41,7 +41,7 @@ export const Route = createFileRoute("/talent-match")({
   }),
   head: () => ({
     meta: [
-      { title: "Comparar resultados - Praxis" },
+      { title: "Comparar resultados - Práxis" },
       {
         name: "description",
         content:

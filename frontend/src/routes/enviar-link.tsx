@@ -32,7 +32,7 @@ import { cn } from "@/lib/utils";
 export const Route = createFileRoute("/enviar-link")({
   head: () => ({
     meta: [
-      { title: "Compartilhar avaliação - Praxis" },
+      { title: "Compartilhar avaliação - Práxis" },
       {
         name: "description",
         content: "Gere um link de avaliação para compartilhar por e-mail ou WhatsApp.",
@@ -132,7 +132,7 @@ function EnviarLinkPage() {
 
   return (
     <AppShell>
-      <ScreenStateStrip blockedReason="sem testes no ar para gerar link" />
+      <ScreenStateStrip blockedReason="sem avaliações no ar para gerar link" />
 
       <div className="mb-6">
         <div className="text-xs uppercase text-primary">Envio direto</div>
@@ -146,7 +146,7 @@ function EnviarLinkPage() {
       <div className="mb-6 flex gap-4">
         <StepIndicator
           number={1}
-          label="Teste"
+          label="Avaliação"
           active={step === "select"}
           done={step === "form" || step === "share"}
         />
@@ -163,7 +163,7 @@ function EnviarLinkPage() {
         <StateBanner tone="danger" title="Não foi possível gerar o link">
           {linkMutation.error instanceof Error
             ? linkMutation.error.message
-            : "Verifique se o sistema está disponível e se o teste está no ar."}
+            : "Verifique se o sistema está disponível e se a avaliação está no ar."}
         </StateBanner>
       )}
 
@@ -277,7 +277,7 @@ function SelectSimulationStep({
 
   if (error) {
     return (
-      <StateBanner tone="danger" title="Não foi possível carregar os testes">
+      <StateBanner tone="danger" title="Não foi possível carregar as avaliações">
         {errorMessage ?? "Verifique se o sistema está disponível e tente novamente."}
       </StateBanner>
     );
@@ -286,14 +286,14 @@ function SelectSimulationStep({
   if (simulations.length === 0) {
     return (
       <EmptyState
-        title="Nenhum teste no ar"
+        title="Nenhuma avaliação no ar"
         description="Coloque uma avaliação no ar antes de gerar links de participação."
         actions={
           <Link
             to="/nova/blueprint"
             className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-3 text-sm font-medium text-primary-foreground hover:bg-primary/90"
           >
-            Criar teste
+            Criar avaliação
           </Link>
         }
       />
@@ -307,7 +307,7 @@ function SelectSimulationStep({
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Teste</TableHead>
+              <TableHead>Avaliação</TableHead>
               <TableHead>Descrição</TableHead>
               <TableHead>{t.common.status}</TableHead>
               <TableHead className="text-right">Versão</TableHead>
@@ -679,7 +679,7 @@ function ShareStep({
   return (
     <div className="space-y-6">
       <StateBanner tone="ok" title="Link gerado com sucesso">
-        O link de acesso ao teste "{simulationName}" foi criado para {candidateName} (
+        O link de acesso à avaliação "{simulationName}" foi criado para {candidateName} (
         {candidateEmail}).
       </StateBanner>
 
@@ -749,7 +749,7 @@ function ShareStep({
                 <dd className="mt-0.5 text-sm">{candidateEmail}</dd>
               </div>
               <div>
-                <dt className="text-xs uppercase text-muted-foreground">Teste</dt>
+                <dt className="text-xs uppercase text-muted-foreground">Avaliação</dt>
                 <dd className="mt-0.5 text-sm">{simulationName}</dd>
               </div>
             </dl>

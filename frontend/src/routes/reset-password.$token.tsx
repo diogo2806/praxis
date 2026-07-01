@@ -15,7 +15,7 @@ import {
 export const Route = createFileRoute("/reset-password/$token")({
   head: () => ({
     meta: [
-      { title: "Redefinir senha - Praxis" },
+      { title: "Redefinir senha - Práxis" },
       {
         name: "description",
         content: "Defina uma nova senha de acesso ao Praxis.",

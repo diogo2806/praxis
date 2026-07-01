@@ -314,7 +314,7 @@ const candidateStyles = `
 export const Route = createFileRoute("/candidato")({
   head: () => ({
     meta: [
-      { title: "Teste do candidato - Praxis" },
+      { title: "Avaliação do participante - Práxis" },
       {
         name: "description",
         content: "Experiência mobile-first com timer, respostas claras, retomada e acessibilidade.",
@@ -330,9 +330,9 @@ const SUBMIT_ERROR_MESSAGES: Record<number, string> = {
 };
 
 const LOAD_ERROR_MESSAGES: Record<number, string> = {
-  400: "Não consegui abrir este teste. Verifique o link recebido e tente novamente.",
-  404: "Não encontrei este teste. Verifique o link recebido e tente novamente.",
-  409: "Este teste não está mais disponível.",
+  400: "Não consegui abrir esta avaliação. Verifique o link recebido e tente novamente.",
+  404: "Não encontrei esta avaliação. Verifique o link recebido e tente novamente.",
+  409: "Esta avaliação não está mais disponível.",
 };
 
 const ACCESSIBILITY_STORAGE_KEY = "praxis:candidate-accessibility";
@@ -401,7 +401,7 @@ function CandidateEntryPage() {
     <AppShell>
       <EmptyState
         title="Código de acesso obrigatório"
-        description="Para abrir o teste, use o código de acesso enviado pelo convite. Cole aqui ou abra o link do e-mail."
+        description="Para abrir a avaliação, use o código de acesso enviado pelo convite. Cole aqui ou abra o link do e-mail."
         actions={
           <div className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_auto_auto]">
             <input
@@ -417,7 +417,7 @@ function CandidateEntryPage() {
                 !normalizedToken ? "pointer-events-none opacity-50" : ""
               }`}
             >
-              Abrir teste
+              Abrir avaliação
             </Link>
             <Link
               to="/"
@@ -668,12 +668,12 @@ function FocusedCandidateExperience({ token }: { token: string }) {
       {attemptQuery.isLoading ? (
         <div className="cand-status">
           <div className="cs-label loading">Carregando</div>
-          <h1>Preparando seu teste.</h1>
+          <h1>Preparando sua avaliação.</h1>
         </div>
       ) : attemptQuery.isError && !attempt ? (
         <div className="cand-status">
           <div className="cs-label error">Acesso indisponível</div>
-          <h1>Não foi possível carregar o teste.</h1>
+          <h1>Não foi possível carregar a avaliação.</h1>
           <p>
             {friendlyApiErrorMessage(
               attemptQuery.error,
@@ -702,7 +702,7 @@ function FocusedCandidateExperience({ token }: { token: string }) {
             </div>
           </div>
 
-          <div className="scenario" aria-label="Cenário do teste">
+          <div className="scenario" aria-label="Cenário da avaliação">
             <div className="sc-top">
               <div className="sc-id">
                 <div className="avatar">
@@ -711,7 +711,7 @@ function FocusedCandidateExperience({ token }: { token: string }) {
                 <div>
                   <div className="who">{currentNode.pessoa ?? "Participante"}</div>
                   <div className="stage">
-                    Cenário {currentStep}/{totalSteps} · {attempt?.avaliacaoNome ?? "teste"}
+                    Cenário {currentStep}/{totalSteps} · {attempt?.avaliacaoNome ?? "avaliação"}
                   </div>
                 </div>
               </div>
@@ -828,7 +828,7 @@ function FocusedCandidateExperience({ token }: { token: string }) {
       <div className="cand-footer">
         {attempt?.verticalSaude
           ? "Esta é uma atividade educativa. Seus dados são tratados para esta finalidade, conforme a LGPD e a política de privacidade da empresa responsável. Não é diagnóstico nem substitui avaliação profissional. A decisão é de uma pessoa, não de um sistema automático, e você pode pedir revisão humana."
-          : "Seus dados são tratados para fins desta avaliação, conforme a LGPD e a política de privacidade da empresa responsável. A pontuação segue critérios definidos antes do teste, sem IA julgando você. A decisão sobre a sua candidatura é tomada por uma pessoa, não por um sistema automático, e você pode solicitar revisão humana do resultado."}
+          : "Seus dados são tratados para fins desta avaliação, conforme a LGPD e a política de privacidade da empresa responsável. A pontuação segue critérios definidos antes da avaliação, sem IA julgando você. A decisão sobre a sua candidatura é tomada por uma pessoa, não por um sistema automático, e você pode solicitar revisão humana do resultado."}
       </div>
     </main>
   );

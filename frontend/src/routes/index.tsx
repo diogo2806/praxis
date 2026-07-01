@@ -562,7 +562,7 @@ const landingMarkup = `<header class="nav" id="nav">
       <a class="link" href="#contratacao">Planos</a>
     </nav>
     <div class="nav-cta">
-      <a class="link" href="https://praxis.iforce.com.br/comecar">Entrar</a>
+      <a class="link" href="/comecar">Entrar</a>
       <a class="btn btn-primary" href="#cta">Solicitar demonstração</a>
     </div>
     <button class="menu-btn" id="menuBtn" aria-label="Abrir menu" aria-expanded="false">

@@ -51,7 +51,7 @@ function EditProfessionalListingPage() {
         <Button asChild variant="ghost" size="sm" className="mb-4">
           <Link to="/profissional/listings">
             <ArrowLeft className="h-4 w-4" />
-            Meus testes
+            Minhas avaliações
           </Link>
         </Button>
 
