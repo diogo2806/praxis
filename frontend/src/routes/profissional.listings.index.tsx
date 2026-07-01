@@ -6,6 +6,7 @@ import { ListingStatusBadge } from "@/components/marketplace/listing-status-badg
 import { StateBanner } from "@/components/praxis-ui";
 import { Button } from "@/components/ui/button";
 import { getMarketplaceProfessionalDashboard } from "@/lib/api/praxis";
+import { marketplaceProfessionalDashboardFallback } from "@/lib/marketplace-professional-fallback";
 
 export const Route = createFileRoute("/profissional/listings/")({
   head: () => ({
@@ -18,6 +19,7 @@ function ProfessionalListingsPage() {
   const dashboard = useQuery({
     queryKey: ["marketplace-professional-dashboard"],
     queryFn: getMarketplaceProfessionalDashboard,
+    placeholderData: marketplaceProfessionalDashboardFallback,
     retry: false,
   });
   const listings = dashboard.data?.listings ?? [];
