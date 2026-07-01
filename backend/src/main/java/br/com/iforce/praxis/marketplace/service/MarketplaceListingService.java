@@ -5,6 +5,7 @@ import br.com.iforce.praxis.marketplace.dto.CreateListingResponse;
 import br.com.iforce.praxis.marketplace.dto.ListingDetailResponse;
 import br.com.iforce.praxis.marketplace.dto.ListingSummaryResponse;
 import br.com.iforce.praxis.marketplace.dto.MarketplacePageResponse;
+import br.com.iforce.praxis.marketplace.dto.UpdateListingRequest;
 import br.com.iforce.praxis.marketplace.model.ListingCategory;
 import br.com.iforce.praxis.marketplace.model.ListingStatus;
 import br.com.iforce.praxis.marketplace.model.ProfessionalVerificationStatus;
@@ -98,6 +99,37 @@ public class MarketplaceListingService {
         }
 
         listing.setStatus(ListingStatus.PENDING_REVIEW);
+        listing.setRejectionReason(null);
+        return new CreateListingResponse(listing.getId(), listing.getStatus());
+    }
+
+    @Transactional
+    public CreateListingResponse update(String userId, Long listingId, UpdateListingRequest request) {
+        MarketplaceProfessionalEntity professional = loadProfessional(userId);
+        MarketplaceListingEntity listing = listingRepository.findById(listingId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Listing nao encontrado."));
+        if (!listing.getProfessionalId().equals(professional.getId())) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Listing pertence a outro profissional.");
+        }
+        if (listing.getStatus() != ListingStatus.DRAFT && listing.getStatus() != ListingStatus.REJECTED) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Listing nao esta em estado editavel.");
+        }
+
+        if (request.title() != null && !request.title().isBlank()) {
+            listing.setTitle(request.title().trim());
+        }
+        if (request.description() != null && !request.description().isBlank()) {
+            listing.setDescription(request.description().trim());
+        }
+        if (request.category() != null) {
+            listing.setCategory(request.category());
+        }
+        if (request.priceCents() != null) {
+            listing.setPriceCents(request.priceCents());
+        }
+        if (request.previewNodeIds() != null) {
+            listing.setPreviewNodeIds(cleanPreviewNodes(request.previewNodeIds()));
+        }
         listing.setRejectionReason(null);
         return new CreateListingResponse(listing.getId(), listing.getStatus());
     }
