@@ -38,6 +38,7 @@ import { Route as ProfissionalMensagensRouteImport } from './routes/profissional
 import { Route as ProfissionalFinanceiroRouteImport } from './routes/profissional.financeiro'
 import { Route as ProfissionalCadastroRouteImport } from './routes/profissional.cadastro'
 import { Route as NovaValidadorRouteImport } from './routes/nova.validador'
+import { Route as NovaTestesRouteImport } from './routes/nova.testes'
 import { Route as NovaRapidoRouteImport } from './routes/nova.rapido'
 import { Route as NovaPilotoRouteImport } from './routes/nova.piloto'
 import { Route as NovaPersonagemRouteImport } from './routes/nova.personagem'
@@ -215,6 +216,11 @@ const ProfissionalCadastroRoute = ProfissionalCadastroRouteImport.update({
 const NovaValidadorRoute = NovaValidadorRouteImport.update({
   id: '/nova/validador',
   path: '/nova/validador',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const NovaTestesRoute = NovaTestesRouteImport.update({
+  id: '/nova/testes',
+  path: '/nova/testes',
   getParentRoute: () => rootRouteImport,
 } as any)
 const NovaRapidoRoute = NovaRapidoRouteImport.update({
@@ -434,6 +440,7 @@ export interface FileRoutesByFullPath {
   '/nova/personagem': typeof NovaPersonagemRoute
   '/nova/piloto': typeof NovaPilotoRoute
   '/nova/rapido': typeof NovaRapidoRoute
+  '/nova/testes': typeof NovaTestesRoute
   '/nova/validador': typeof NovaValidadorRoute
   '/profissional/cadastro': typeof ProfissionalCadastroRoute
   '/profissional/financeiro': typeof ProfissionalFinanceiroRoute
@@ -498,6 +505,7 @@ export interface FileRoutesByTo {
   '/nova/personagem': typeof NovaPersonagemRoute
   '/nova/piloto': typeof NovaPilotoRoute
   '/nova/rapido': typeof NovaRapidoRoute
+  '/nova/testes': typeof NovaTestesRoute
   '/nova/validador': typeof NovaValidadorRoute
   '/profissional/cadastro': typeof ProfissionalCadastroRoute
   '/profissional/financeiro': typeof ProfissionalFinanceiroRoute
@@ -563,6 +571,7 @@ export interface FileRoutesById {
   '/nova/personagem': typeof NovaPersonagemRoute
   '/nova/piloto': typeof NovaPilotoRoute
   '/nova/rapido': typeof NovaRapidoRoute
+  '/nova/testes': typeof NovaTestesRoute
   '/nova/validador': typeof NovaValidadorRoute
   '/profissional/cadastro': typeof ProfissionalCadastroRoute
   '/profissional/financeiro': typeof ProfissionalFinanceiroRoute
@@ -629,6 +638,7 @@ export interface FileRouteTypes {
     | '/nova/personagem'
     | '/nova/piloto'
     | '/nova/rapido'
+    | '/nova/testes'
     | '/nova/validador'
     | '/profissional/cadastro'
     | '/profissional/financeiro'
@@ -693,6 +703,7 @@ export interface FileRouteTypes {
     | '/nova/personagem'
     | '/nova/piloto'
     | '/nova/rapido'
+    | '/nova/testes'
     | '/nova/validador'
     | '/profissional/cadastro'
     | '/profissional/financeiro'
@@ -757,6 +768,7 @@ export interface FileRouteTypes {
     | '/nova/personagem'
     | '/nova/piloto'
     | '/nova/rapido'
+    | '/nova/testes'
     | '/nova/validador'
     | '/profissional/cadastro'
     | '/profissional/financeiro'
@@ -815,6 +827,7 @@ export interface RootRouteChildren {
   NovaPersonagemRoute: typeof NovaPersonagemRoute
   NovaPilotoRoute: typeof NovaPilotoRoute
   NovaRapidoRoute: typeof NovaRapidoRoute
+  NovaTestesRoute: typeof NovaTestesRoute
   NovaValidadorRoute: typeof NovaValidadorRoute
   ResetPasswordTokenRoute: typeof ResetPasswordTokenRoute
   SimulationsNewRoute: typeof SimulationsNewRoute
@@ -1030,6 +1043,13 @@ declare module '@tanstack/react-router' {
       path: '/nova/validador'
       fullPath: '/nova/validador'
       preLoaderRoute: typeof NovaValidadorRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/nova/testes': {
+      id: '/nova/testes'
+      path: '/nova/testes'
+      fullPath: '/nova/testes'
+      preLoaderRoute: typeof NovaTestesRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/nova/rapido': {
@@ -1399,6 +1419,7 @@ const rootRouteChildren: RootRouteChildren = {
   NovaPersonagemRoute: NovaPersonagemRoute,
   NovaPilotoRoute: NovaPilotoRoute,
   NovaRapidoRoute: NovaRapidoRoute,
+  NovaTestesRoute: NovaTestesRoute,
   NovaValidadorRoute: NovaValidadorRoute,
   ResetPasswordTokenRoute: ResetPasswordTokenRoute,
   SimulationsNewRoute: SimulationsNewRoute,
