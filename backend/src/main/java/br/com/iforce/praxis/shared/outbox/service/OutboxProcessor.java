@@ -16,6 +16,8 @@ import br.com.iforce.praxis.gupy.service.GupyTestResultMapper;
 
 import br.com.iforce.praxis.gupy.service.SimulationCatalogService;
 
+import br.com.iforce.praxis.shared.integration.service.GenericWebhookDeliveryService;
+
 import br.com.iforce.praxis.shared.notification.service.ResultDeliveryDlqAlertService;
 
 import br.com.iforce.praxis.shared.outbox.persistence.entity.OutboxEventEntity;
@@ -90,6 +92,7 @@ public class OutboxProcessor {
     private final GupyTestResultMapper gupyTestResultMapper;
     private final GupyOutboundUrlValidator outboundUrlValidator;
     private final ResultDeliveryDlqAlertService dlqAlertService;
+    private final GenericWebhookDeliveryService genericWebhookDeliveryService;
     private final TransactionTemplate txTemplate;
 
     public OutboxProcessor(
@@ -101,6 +104,7 @@ public class OutboxProcessor {
         GupyTestResultMapper gupyTestResultMapper,
         GupyOutboundUrlValidator outboundUrlValidator,
         ResultDeliveryDlqAlertService dlqAlertService,
+        GenericWebhookDeliveryService genericWebhookDeliveryService,
         PlatformTransactionManager transactionManager
     ) {
         this.outboxEventRepository = outboxEventRepository;
@@ -111,6 +115,7 @@ public class OutboxProcessor {
         this.gupyTestResultMapper = gupyTestResultMapper;
         this.outboundUrlValidator = outboundUrlValidator;
         this.dlqAlertService = dlqAlertService;
+        this.genericWebhookDeliveryService = genericWebhookDeliveryService;
         this.txTemplate = new TransactionTemplate(transactionManager);
     }
 
@@ -266,7 +271,8 @@ public class OutboxProcessor {
     private void processResultReadyEvent(OutboxEventEntity event) {
         JsonNode payload = parsePayload(event.getPayload());
 
-        String webhookUrl = payload.get("webhookUrl").asText();
+        JsonNode webhookUrlNode = payload.get("webhookUrl");
+        String webhookUrl = webhookUrlNode == null || webhookUrlNode.isNull() ? null : webhookUrlNode.asText();
         TestResultResponse testResult = null;
         JsonNode testResultNode = payload.get("testResult");
         if (testResultNode != null && !testResultNode.isNull()) {
@@ -279,9 +285,20 @@ public class OutboxProcessor {
             testResult = fetchTestResult(attemptId, event.getEmpresaId());
         }
 
-        outboundUrlValidator.validate(webhookUrl);
-        log.debug("Enviando resultado para webhook: {}", webhookUrl);
-        resultWebhookClient.postResult(webhookUrl, testResult);
+        if (webhookUrl != null && !webhookUrl.isBlank()) {
+            outboundUrlValidator.validate(webhookUrl);
+            log.debug("Enviando resultado para webhook: {}", webhookUrl);
+            resultWebhookClient.postResult(webhookUrl, testResult);
+        }
+
+        // Entrega adicional (melhor esforço) ao webhook personalizado do cliente,
+        // se houver integração CUSTOM_API ativa. Nunca interrompe a entrega da Gupy.
+        deliverGenericWebhook(event);
+    }
+
+    private void deliverGenericWebhook(OutboxEventEntity event) {
+        candidateAttemptRepository.findByEmpresaIdAndId(event.getEmpresaId(), event.getAggregateId())
+                .ifPresent(attempt -> genericWebhookDeliveryService.deliverResultReady(event.getEmpresaId(), attempt));
     }
 
     private void processAttemptEngagementEvent(OutboxEventEntity event) {

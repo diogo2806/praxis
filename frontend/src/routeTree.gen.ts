@@ -48,6 +48,7 @@ import { Route as ConviteTokenRouteImport } from './routes/convite.$token'
 import { Route as ConfiguracoesPerfilRouteImport } from './routes/configuracoes.perfil'
 import { Route as ConfiguracoesIntegracoesRouteImport } from './routes/configuracoes.integracoes'
 import { Route as ConfiguracoesContaRouteImport } from './routes/configuracoes.conta'
+import { Route as ConfiguracoesApiRouteImport } from './routes/configuracoes.api'
 import { Route as CandidatoTokenRouteImport } from './routes/candidato.$token'
 import { Route as CandidateLinksNewRouteImport } from './routes/candidate-links/new'
 import { Route as AssessmentJourneysNewRouteImport } from './routes/assessment-journeys/new'
@@ -250,6 +251,11 @@ const ConfiguracoesContaRoute = ConfiguracoesContaRouteImport.update({
   path: '/conta',
   getParentRoute: () => ConfiguracoesRoute,
 } as any)
+const ConfiguracoesApiRoute = ConfiguracoesApiRouteImport.update({
+  id: '/api',
+  path: '/api',
+  getParentRoute: () => ConfiguracoesRoute,
+} as any)
 const CandidatoTokenRoute = CandidatoTokenRouteImport.update({
   id: '/$token',
   path: '/$token',
@@ -297,6 +303,7 @@ export interface FileRoutesByFullPath {
   '/assessment-journeys/new': typeof AssessmentJourneysNewRoute
   '/candidate-links/new': typeof CandidateLinksNewRoute
   '/candidato/$token': typeof CandidatoTokenRoute
+  '/configuracoes/api': typeof ConfiguracoesApiRoute
   '/configuracoes/conta': typeof ConfiguracoesContaRoute
   '/configuracoes/integracoes': typeof ConfiguracoesIntegracoesRoute
   '/configuracoes/perfil': typeof ConfiguracoesPerfilRoute
@@ -343,6 +350,7 @@ export interface FileRoutesByTo {
   '/assessment-journeys/new': typeof AssessmentJourneysNewRoute
   '/candidate-links/new': typeof CandidateLinksNewRoute
   '/candidato/$token': typeof CandidatoTokenRoute
+  '/configuracoes/api': typeof ConfiguracoesApiRoute
   '/configuracoes/conta': typeof ConfiguracoesContaRoute
   '/configuracoes/integracoes': typeof ConfiguracoesIntegracoesRoute
   '/configuracoes/perfil': typeof ConfiguracoesPerfilRoute
@@ -390,6 +398,7 @@ export interface FileRoutesById {
   '/assessment-journeys/new': typeof AssessmentJourneysNewRoute
   '/candidate-links/new': typeof CandidateLinksNewRoute
   '/candidato/$token': typeof CandidatoTokenRoute
+  '/configuracoes/api': typeof ConfiguracoesApiRoute
   '/configuracoes/conta': typeof ConfiguracoesContaRoute
   '/configuracoes/integracoes': typeof ConfiguracoesIntegracoesRoute
   '/configuracoes/perfil': typeof ConfiguracoesPerfilRoute
@@ -438,6 +447,7 @@ export interface FileRouteTypes {
     | '/assessment-journeys/new'
     | '/candidate-links/new'
     | '/candidato/$token'
+    | '/configuracoes/api'
     | '/configuracoes/conta'
     | '/configuracoes/integracoes'
     | '/configuracoes/perfil'
@@ -484,6 +494,7 @@ export interface FileRouteTypes {
     | '/assessment-journeys/new'
     | '/candidate-links/new'
     | '/candidato/$token'
+    | '/configuracoes/api'
     | '/configuracoes/conta'
     | '/configuracoes/integracoes'
     | '/configuracoes/perfil'
@@ -530,6 +541,7 @@ export interface FileRouteTypes {
     | '/assessment-journeys/new'
     | '/candidate-links/new'
     | '/candidato/$token'
+    | '/configuracoes/api'
     | '/configuracoes/conta'
     | '/configuracoes/integracoes'
     | '/configuracoes/perfil'
@@ -872,6 +884,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ConfiguracoesContaRouteImport
       parentRoute: typeof ConfiguracoesRoute
     }
+    '/configuracoes/api': {
+      id: '/configuracoes/api'
+      path: '/api'
+      fullPath: '/configuracoes/api'
+      preLoaderRoute: typeof ConfiguracoesApiRouteImport
+      parentRoute: typeof ConfiguracoesRoute
+    }
     '/candidato/$token': {
       id: '/candidato/$token'
       path: '/$token'
@@ -923,12 +942,14 @@ const CandidatoRouteWithChildren = CandidatoRoute._addFileChildren(
 )
 
 interface ConfiguracoesRouteChildren {
+  ConfiguracoesApiRoute: typeof ConfiguracoesApiRoute
   ConfiguracoesContaRoute: typeof ConfiguracoesContaRoute
   ConfiguracoesIntegracoesRoute: typeof ConfiguracoesIntegracoesRoute
   ConfiguracoesPerfilRoute: typeof ConfiguracoesPerfilRoute
 }
 
 const ConfiguracoesRouteChildren: ConfiguracoesRouteChildren = {
+  ConfiguracoesApiRoute: ConfiguracoesApiRoute,
   ConfiguracoesContaRoute: ConfiguracoesContaRoute,
   ConfiguracoesIntegracoesRoute: ConfiguracoesIntegracoesRoute,
   ConfiguracoesPerfilRoute: ConfiguracoesPerfilRoute,
