@@ -37,7 +37,7 @@ export function ProfessionalCard({
       <div className="mt-3 flex items-center gap-2 text-sm text-muted-foreground">
         <StarRating value={Math.round(Number(averageRating ?? 0))} readOnly />
         <span>{averageRating ? Number(averageRating).toFixed(1) : "Sem notas"}</span>
-        {totalReviews != null && <span>· {totalReviews}</span>}
+        {totalReviews != null && <span>- {totalReviews}</span>}
       </div>
     </Link>
   );
