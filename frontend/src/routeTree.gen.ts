@@ -9,10 +9,13 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as TeamRouteImport } from './routes/team'
 import { Route as TalentMatchRouteImport } from './routes/talent-match'
 import { Route as ResultsRouteImport } from './routes/results'
 import { Route as RecuperarSenhaRouteImport } from './routes/recuperar-senha'
+import { Route as ProfissionalRouteImport } from './routes/profissional'
 import { Route as MonitoramentoRouteImport } from './routes/monitoramento'
+import { Route as MarketplaceRouteImport } from './routes/marketplace'
 import { Route as JornadasRouteImport } from './routes/jornadas'
 import { Route as IntegrationsRouteImport } from './routes/integrations'
 import { Route as EnviarLinkRouteImport } from './routes/enviar-link'
@@ -30,6 +33,8 @@ import { Route as AdminIndexRouteImport } from './routes/admin.index'
 import { Route as SimulationsNewRouteImport } from './routes/simulations/new'
 import { Route as ResultsAttemptIdRouteImport } from './routes/results.$attemptId'
 import { Route as ResetPasswordTokenRouteImport } from './routes/reset-password.$token'
+import { Route as ProfissionalFinanceiroRouteImport } from './routes/profissional.financeiro'
+import { Route as ProfissionalCadastroRouteImport } from './routes/profissional.cadastro'
 import { Route as NovaValidadorRouteImport } from './routes/nova.validador'
 import { Route as NovaPilotoRouteImport } from './routes/nova.piloto'
 import { Route as NovaPersonagemRouteImport } from './routes/nova.personagem'
@@ -40,7 +45,9 @@ import { Route as NovaGovernancaRouteImport } from './routes/nova.governanca'
 import { Route as NovaDialogoRouteImport } from './routes/nova.dialogo'
 import { Route as NovaCompetenciasRouteImport } from './routes/nova.competencias'
 import { Route as NovaBlueprintRouteImport } from './routes/nova.blueprint'
+import { Route as MarketplaceListingIdRouteImport } from './routes/marketplace.$listingId'
 import { Route as JornadaAttemptIdRouteImport } from './routes/jornada.$attemptId'
+import { Route as IntegrationsProviderRouteImport } from './routes/integrations.$provider'
 import { Route as ConviteTokenRouteImport } from './routes/convite.$token'
 import { Route as ConfiguracoesPerfilRouteImport } from './routes/configuracoes.perfil'
 import { Route as ConfiguracoesIntegracoesRouteImport } from './routes/configuracoes.integracoes'
@@ -49,8 +56,16 @@ import { Route as CandidatoTokenRouteImport } from './routes/candidato.$token'
 import { Route as CandidateLinksNewRouteImport } from './routes/candidate-links/new'
 import { Route as AssessmentJourneysNewRouteImport } from './routes/assessment-journeys/new'
 import { Route as AdminEmpresasIndexRouteImport } from './routes/admin.empresas.index'
+import { Route as ProfissionalListingsNovoRouteImport } from './routes/profissional.listings.novo'
+import { Route as MarketplaceCheckoutListingIdRouteImport } from './routes/marketplace.checkout.$listingId'
+import { Route as AdminMarketplaceProfessionalsRouteImport } from './routes/admin.marketplace.professionals'
 import { Route as AdminEmpresasEmpresaIdRouteImport } from './routes/admin.empresas.$empresaId'
 
+const TeamRoute = TeamRouteImport.update({
+  id: '/team',
+  path: '/team',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const TalentMatchRoute = TalentMatchRouteImport.update({
   id: '/talent-match',
   path: '/talent-match',
@@ -66,9 +81,19 @@ const RecuperarSenhaRoute = RecuperarSenhaRouteImport.update({
   path: '/recuperar-senha',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ProfissionalRoute = ProfissionalRouteImport.update({
+  id: '/profissional',
+  path: '/profissional',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const MonitoramentoRoute = MonitoramentoRouteImport.update({
   id: '/monitoramento',
   path: '/monitoramento',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MarketplaceRoute = MarketplaceRouteImport.update({
+  id: '/marketplace',
+  path: '/marketplace',
   getParentRoute: () => rootRouteImport,
 } as any)
 const JornadasRoute = JornadasRouteImport.update({
@@ -156,6 +181,16 @@ const ResetPasswordTokenRoute = ResetPasswordTokenRouteImport.update({
   path: '/reset-password/$token',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ProfissionalFinanceiroRoute = ProfissionalFinanceiroRouteImport.update({
+  id: '/financeiro',
+  path: '/financeiro',
+  getParentRoute: () => ProfissionalRoute,
+} as any)
+const ProfissionalCadastroRoute = ProfissionalCadastroRouteImport.update({
+  id: '/cadastro',
+  path: '/cadastro',
+  getParentRoute: () => ProfissionalRoute,
+} as any)
 const NovaValidadorRoute = NovaValidadorRouteImport.update({
   id: '/nova/validador',
   path: '/nova/validador',
@@ -206,10 +241,20 @@ const NovaBlueprintRoute = NovaBlueprintRouteImport.update({
   path: '/nova/blueprint',
   getParentRoute: () => rootRouteImport,
 } as any)
+const MarketplaceListingIdRoute = MarketplaceListingIdRouteImport.update({
+  id: '/$listingId',
+  path: '/$listingId',
+  getParentRoute: () => MarketplaceRoute,
+} as any)
 const JornadaAttemptIdRoute = JornadaAttemptIdRouteImport.update({
   id: '/jornada/$attemptId',
   path: '/jornada/$attemptId',
   getParentRoute: () => rootRouteImport,
+} as any)
+const IntegrationsProviderRoute = IntegrationsProviderRouteImport.update({
+  id: '/$provider',
+  path: '/$provider',
+  getParentRoute: () => IntegrationsRoute,
 } as any)
 const ConviteTokenRoute = ConviteTokenRouteImport.update({
   id: '/convite/$token',
@@ -252,6 +297,24 @@ const AdminEmpresasIndexRoute = AdminEmpresasIndexRouteImport.update({
   path: '/admin/empresas/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ProfissionalListingsNovoRoute =
+  ProfissionalListingsNovoRouteImport.update({
+    id: '/listings/novo',
+    path: '/listings/novo',
+    getParentRoute: () => ProfissionalRoute,
+  } as any)
+const MarketplaceCheckoutListingIdRoute =
+  MarketplaceCheckoutListingIdRouteImport.update({
+    id: '/checkout/$listingId',
+    path: '/checkout/$listingId',
+    getParentRoute: () => MarketplaceRoute,
+  } as any)
+const AdminMarketplaceProfessionalsRoute =
+  AdminMarketplaceProfessionalsRouteImport.update({
+    id: '/admin/marketplace/professionals',
+    path: '/admin/marketplace/professionals',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const AdminEmpresasEmpresaIdRoute = AdminEmpresasEmpresaIdRouteImport.update({
   id: '/admin/empresas/$empresaId',
   path: '/admin/empresas/$empresaId',
@@ -269,12 +332,15 @@ export interface FileRoutesByFullPath {
   '/configuracoes': typeof ConfiguracoesRouteWithChildren
   '/dashboard': typeof DashboardRoute
   '/enviar-link': typeof EnviarLinkRoute
-  '/integrations': typeof IntegrationsRoute
+  '/integrations': typeof IntegrationsRouteWithChildren
   '/jornadas': typeof JornadasRoute
+  '/marketplace': typeof MarketplaceRouteWithChildren
   '/monitoramento': typeof MonitoramentoRoute
+  '/profissional': typeof ProfissionalRouteWithChildren
   '/recuperar-senha': typeof RecuperarSenhaRoute
   '/results': typeof ResultsRouteWithChildren
   '/talent-match': typeof TalentMatchRoute
+  '/team': typeof TeamRoute
   '/assessment-journeys/new': typeof AssessmentJourneysNewRoute
   '/candidate-links/new': typeof CandidateLinksNewRoute
   '/candidato/$token': typeof CandidatoTokenRoute
@@ -282,7 +348,9 @@ export interface FileRoutesByFullPath {
   '/configuracoes/integracoes': typeof ConfiguracoesIntegracoesRoute
   '/configuracoes/perfil': typeof ConfiguracoesPerfilRoute
   '/convite/$token': typeof ConviteTokenRoute
+  '/integrations/$provider': typeof IntegrationsProviderRoute
   '/jornada/$attemptId': typeof JornadaAttemptIdRoute
+  '/marketplace/$listingId': typeof MarketplaceListingIdRoute
   '/nova/blueprint': typeof NovaBlueprintRoute
   '/nova/competencias': typeof NovaCompetenciasRoute
   '/nova/dialogo': typeof NovaDialogoRoute
@@ -293,12 +361,17 @@ export interface FileRoutesByFullPath {
   '/nova/personagem': typeof NovaPersonagemRoute
   '/nova/piloto': typeof NovaPilotoRoute
   '/nova/validador': typeof NovaValidadorRoute
+  '/profissional/cadastro': typeof ProfissionalCadastroRoute
+  '/profissional/financeiro': typeof ProfissionalFinanceiroRoute
   '/reset-password/$token': typeof ResetPasswordTokenRoute
   '/results/$attemptId': typeof ResultsAttemptIdRoute
   '/simulations/new': typeof SimulationsNewRoute
   '/admin/': typeof AdminIndexRoute
   '/assessment-journeys/': typeof AssessmentJourneysIndexRoute
   '/admin/empresas/$empresaId': typeof AdminEmpresasEmpresaIdRoute
+  '/admin/marketplace/professionals': typeof AdminMarketplaceProfessionalsRoute
+  '/marketplace/checkout/$listingId': typeof MarketplaceCheckoutListingIdRoute
+  '/profissional/listings/novo': typeof ProfissionalListingsNovoRoute
   '/admin/empresas/': typeof AdminEmpresasIndexRoute
 }
 export interface FileRoutesByTo {
@@ -312,12 +385,15 @@ export interface FileRoutesByTo {
   '/configuracoes': typeof ConfiguracoesRouteWithChildren
   '/dashboard': typeof DashboardRoute
   '/enviar-link': typeof EnviarLinkRoute
-  '/integrations': typeof IntegrationsRoute
+  '/integrations': typeof IntegrationsRouteWithChildren
   '/jornadas': typeof JornadasRoute
+  '/marketplace': typeof MarketplaceRouteWithChildren
   '/monitoramento': typeof MonitoramentoRoute
+  '/profissional': typeof ProfissionalRouteWithChildren
   '/recuperar-senha': typeof RecuperarSenhaRoute
   '/results': typeof ResultsRouteWithChildren
   '/talent-match': typeof TalentMatchRoute
+  '/team': typeof TeamRoute
   '/assessment-journeys/new': typeof AssessmentJourneysNewRoute
   '/candidate-links/new': typeof CandidateLinksNewRoute
   '/candidato/$token': typeof CandidatoTokenRoute
@@ -325,7 +401,9 @@ export interface FileRoutesByTo {
   '/configuracoes/integracoes': typeof ConfiguracoesIntegracoesRoute
   '/configuracoes/perfil': typeof ConfiguracoesPerfilRoute
   '/convite/$token': typeof ConviteTokenRoute
+  '/integrations/$provider': typeof IntegrationsProviderRoute
   '/jornada/$attemptId': typeof JornadaAttemptIdRoute
+  '/marketplace/$listingId': typeof MarketplaceListingIdRoute
   '/nova/blueprint': typeof NovaBlueprintRoute
   '/nova/competencias': typeof NovaCompetenciasRoute
   '/nova/dialogo': typeof NovaDialogoRoute
@@ -336,12 +414,17 @@ export interface FileRoutesByTo {
   '/nova/personagem': typeof NovaPersonagemRoute
   '/nova/piloto': typeof NovaPilotoRoute
   '/nova/validador': typeof NovaValidadorRoute
+  '/profissional/cadastro': typeof ProfissionalCadastroRoute
+  '/profissional/financeiro': typeof ProfissionalFinanceiroRoute
   '/reset-password/$token': typeof ResetPasswordTokenRoute
   '/results/$attemptId': typeof ResultsAttemptIdRoute
   '/simulations/new': typeof SimulationsNewRoute
   '/admin': typeof AdminIndexRoute
   '/assessment-journeys': typeof AssessmentJourneysIndexRoute
   '/admin/empresas/$empresaId': typeof AdminEmpresasEmpresaIdRoute
+  '/admin/marketplace/professionals': typeof AdminMarketplaceProfessionalsRoute
+  '/marketplace/checkout/$listingId': typeof MarketplaceCheckoutListingIdRoute
+  '/profissional/listings/novo': typeof ProfissionalListingsNovoRoute
   '/admin/empresas': typeof AdminEmpresasIndexRoute
 }
 export interface FileRoutesById {
@@ -356,12 +439,15 @@ export interface FileRoutesById {
   '/configuracoes': typeof ConfiguracoesRouteWithChildren
   '/dashboard': typeof DashboardRoute
   '/enviar-link': typeof EnviarLinkRoute
-  '/integrations': typeof IntegrationsRoute
+  '/integrations': typeof IntegrationsRouteWithChildren
   '/jornadas': typeof JornadasRoute
+  '/marketplace': typeof MarketplaceRouteWithChildren
   '/monitoramento': typeof MonitoramentoRoute
+  '/profissional': typeof ProfissionalRouteWithChildren
   '/recuperar-senha': typeof RecuperarSenhaRoute
   '/results': typeof ResultsRouteWithChildren
   '/talent-match': typeof TalentMatchRoute
+  '/team': typeof TeamRoute
   '/assessment-journeys/new': typeof AssessmentJourneysNewRoute
   '/candidate-links/new': typeof CandidateLinksNewRoute
   '/candidato/$token': typeof CandidatoTokenRoute
@@ -369,7 +455,9 @@ export interface FileRoutesById {
   '/configuracoes/integracoes': typeof ConfiguracoesIntegracoesRoute
   '/configuracoes/perfil': typeof ConfiguracoesPerfilRoute
   '/convite/$token': typeof ConviteTokenRoute
+  '/integrations/$provider': typeof IntegrationsProviderRoute
   '/jornada/$attemptId': typeof JornadaAttemptIdRoute
+  '/marketplace/$listingId': typeof MarketplaceListingIdRoute
   '/nova/blueprint': typeof NovaBlueprintRoute
   '/nova/competencias': typeof NovaCompetenciasRoute
   '/nova/dialogo': typeof NovaDialogoRoute
@@ -380,12 +468,17 @@ export interface FileRoutesById {
   '/nova/personagem': typeof NovaPersonagemRoute
   '/nova/piloto': typeof NovaPilotoRoute
   '/nova/validador': typeof NovaValidadorRoute
+  '/profissional/cadastro': typeof ProfissionalCadastroRoute
+  '/profissional/financeiro': typeof ProfissionalFinanceiroRoute
   '/reset-password/$token': typeof ResetPasswordTokenRoute
   '/results/$attemptId': typeof ResultsAttemptIdRoute
   '/simulations/new': typeof SimulationsNewRoute
   '/admin/': typeof AdminIndexRoute
   '/assessment-journeys/': typeof AssessmentJourneysIndexRoute
   '/admin/empresas/$empresaId': typeof AdminEmpresasEmpresaIdRoute
+  '/admin/marketplace/professionals': typeof AdminMarketplaceProfessionalsRoute
+  '/marketplace/checkout/$listingId': typeof MarketplaceCheckoutListingIdRoute
+  '/profissional/listings/novo': typeof ProfissionalListingsNovoRoute
   '/admin/empresas/': typeof AdminEmpresasIndexRoute
 }
 export interface FileRouteTypes {
@@ -403,10 +496,13 @@ export interface FileRouteTypes {
     | '/enviar-link'
     | '/integrations'
     | '/jornadas'
+    | '/marketplace'
     | '/monitoramento'
+    | '/profissional'
     | '/recuperar-senha'
     | '/results'
     | '/talent-match'
+    | '/team'
     | '/assessment-journeys/new'
     | '/candidate-links/new'
     | '/candidato/$token'
@@ -414,7 +510,9 @@ export interface FileRouteTypes {
     | '/configuracoes/integracoes'
     | '/configuracoes/perfil'
     | '/convite/$token'
+    | '/integrations/$provider'
     | '/jornada/$attemptId'
+    | '/marketplace/$listingId'
     | '/nova/blueprint'
     | '/nova/competencias'
     | '/nova/dialogo'
@@ -425,12 +523,17 @@ export interface FileRouteTypes {
     | '/nova/personagem'
     | '/nova/piloto'
     | '/nova/validador'
+    | '/profissional/cadastro'
+    | '/profissional/financeiro'
     | '/reset-password/$token'
     | '/results/$attemptId'
     | '/simulations/new'
     | '/admin/'
     | '/assessment-journeys/'
     | '/admin/empresas/$empresaId'
+    | '/admin/marketplace/professionals'
+    | '/marketplace/checkout/$listingId'
+    | '/profissional/listings/novo'
     | '/admin/empresas/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -446,10 +549,13 @@ export interface FileRouteTypes {
     | '/enviar-link'
     | '/integrations'
     | '/jornadas'
+    | '/marketplace'
     | '/monitoramento'
+    | '/profissional'
     | '/recuperar-senha'
     | '/results'
     | '/talent-match'
+    | '/team'
     | '/assessment-journeys/new'
     | '/candidate-links/new'
     | '/candidato/$token'
@@ -457,7 +563,9 @@ export interface FileRouteTypes {
     | '/configuracoes/integracoes'
     | '/configuracoes/perfil'
     | '/convite/$token'
+    | '/integrations/$provider'
     | '/jornada/$attemptId'
+    | '/marketplace/$listingId'
     | '/nova/blueprint'
     | '/nova/competencias'
     | '/nova/dialogo'
@@ -468,12 +576,17 @@ export interface FileRouteTypes {
     | '/nova/personagem'
     | '/nova/piloto'
     | '/nova/validador'
+    | '/profissional/cadastro'
+    | '/profissional/financeiro'
     | '/reset-password/$token'
     | '/results/$attemptId'
     | '/simulations/new'
     | '/admin'
     | '/assessment-journeys'
     | '/admin/empresas/$empresaId'
+    | '/admin/marketplace/professionals'
+    | '/marketplace/checkout/$listingId'
+    | '/profissional/listings/novo'
     | '/admin/empresas'
   id:
     | '__root__'
@@ -489,10 +602,13 @@ export interface FileRouteTypes {
     | '/enviar-link'
     | '/integrations'
     | '/jornadas'
+    | '/marketplace'
     | '/monitoramento'
+    | '/profissional'
     | '/recuperar-senha'
     | '/results'
     | '/talent-match'
+    | '/team'
     | '/assessment-journeys/new'
     | '/candidate-links/new'
     | '/candidato/$token'
@@ -500,7 +616,9 @@ export interface FileRouteTypes {
     | '/configuracoes/integracoes'
     | '/configuracoes/perfil'
     | '/convite/$token'
+    | '/integrations/$provider'
     | '/jornada/$attemptId'
+    | '/marketplace/$listingId'
     | '/nova/blueprint'
     | '/nova/competencias'
     | '/nova/dialogo'
@@ -511,12 +629,17 @@ export interface FileRouteTypes {
     | '/nova/personagem'
     | '/nova/piloto'
     | '/nova/validador'
+    | '/profissional/cadastro'
+    | '/profissional/financeiro'
     | '/reset-password/$token'
     | '/results/$attemptId'
     | '/simulations/new'
     | '/admin/'
     | '/assessment-journeys/'
     | '/admin/empresas/$empresaId'
+    | '/admin/marketplace/professionals'
+    | '/marketplace/checkout/$listingId'
+    | '/profissional/listings/novo'
     | '/admin/empresas/'
   fileRoutesById: FileRoutesById
 }
@@ -531,12 +654,15 @@ export interface RootRouteChildren {
   ConfiguracoesRoute: typeof ConfiguracoesRouteWithChildren
   DashboardRoute: typeof DashboardRoute
   EnviarLinkRoute: typeof EnviarLinkRoute
-  IntegrationsRoute: typeof IntegrationsRoute
+  IntegrationsRoute: typeof IntegrationsRouteWithChildren
   JornadasRoute: typeof JornadasRoute
+  MarketplaceRoute: typeof MarketplaceRouteWithChildren
   MonitoramentoRoute: typeof MonitoramentoRoute
+  ProfissionalRoute: typeof ProfissionalRouteWithChildren
   RecuperarSenhaRoute: typeof RecuperarSenhaRoute
   ResultsRoute: typeof ResultsRouteWithChildren
   TalentMatchRoute: typeof TalentMatchRoute
+  TeamRoute: typeof TeamRoute
   AssessmentJourneysNewRoute: typeof AssessmentJourneysNewRoute
   CandidateLinksNewRoute: typeof CandidateLinksNewRoute
   ConviteTokenRoute: typeof ConviteTokenRoute
@@ -556,11 +682,19 @@ export interface RootRouteChildren {
   AdminIndexRoute: typeof AdminIndexRoute
   AssessmentJourneysIndexRoute: typeof AssessmentJourneysIndexRoute
   AdminEmpresasEmpresaIdRoute: typeof AdminEmpresasEmpresaIdRoute
+  AdminMarketplaceProfessionalsRoute: typeof AdminMarketplaceProfessionalsRoute
   AdminEmpresasIndexRoute: typeof AdminEmpresasIndexRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/team': {
+      id: '/team'
+      path: '/team'
+      fullPath: '/team'
+      preLoaderRoute: typeof TeamRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/talent-match': {
       id: '/talent-match'
       path: '/talent-match'
@@ -582,11 +716,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof RecuperarSenhaRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/profissional': {
+      id: '/profissional'
+      path: '/profissional'
+      fullPath: '/profissional'
+      preLoaderRoute: typeof ProfissionalRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/monitoramento': {
       id: '/monitoramento'
       path: '/monitoramento'
       fullPath: '/monitoramento'
       preLoaderRoute: typeof MonitoramentoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/marketplace': {
+      id: '/marketplace'
+      path: '/marketplace'
+      fullPath: '/marketplace'
+      preLoaderRoute: typeof MarketplaceRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/jornadas': {
@@ -708,6 +856,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ResetPasswordTokenRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/profissional/financeiro': {
+      id: '/profissional/financeiro'
+      path: '/financeiro'
+      fullPath: '/profissional/financeiro'
+      preLoaderRoute: typeof ProfissionalFinanceiroRouteImport
+      parentRoute: typeof ProfissionalRoute
+    }
+    '/profissional/cadastro': {
+      id: '/profissional/cadastro'
+      path: '/cadastro'
+      fullPath: '/profissional/cadastro'
+      preLoaderRoute: typeof ProfissionalCadastroRouteImport
+      parentRoute: typeof ProfissionalRoute
+    }
     '/nova/validador': {
       id: '/nova/validador'
       path: '/nova/validador'
@@ -778,12 +940,26 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof NovaBlueprintRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/marketplace/$listingId': {
+      id: '/marketplace/$listingId'
+      path: '/$listingId'
+      fullPath: '/marketplace/$listingId'
+      preLoaderRoute: typeof MarketplaceListingIdRouteImport
+      parentRoute: typeof MarketplaceRoute
+    }
     '/jornada/$attemptId': {
       id: '/jornada/$attemptId'
       path: '/jornada/$attemptId'
       fullPath: '/jornada/$attemptId'
       preLoaderRoute: typeof JornadaAttemptIdRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/integrations/$provider': {
+      id: '/integrations/$provider'
+      path: '/$provider'
+      fullPath: '/integrations/$provider'
+      preLoaderRoute: typeof IntegrationsProviderRouteImport
+      parentRoute: typeof IntegrationsRoute
     }
     '/convite/$token': {
       id: '/convite/$token'
@@ -841,6 +1017,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminEmpresasIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/profissional/listings/novo': {
+      id: '/profissional/listings/novo'
+      path: '/listings/novo'
+      fullPath: '/profissional/listings/novo'
+      preLoaderRoute: typeof ProfissionalListingsNovoRouteImport
+      parentRoute: typeof ProfissionalRoute
+    }
+    '/marketplace/checkout/$listingId': {
+      id: '/marketplace/checkout/$listingId'
+      path: '/checkout/$listingId'
+      fullPath: '/marketplace/checkout/$listingId'
+      preLoaderRoute: typeof MarketplaceCheckoutListingIdRouteImport
+      parentRoute: typeof MarketplaceRoute
+    }
+    '/admin/marketplace/professionals': {
+      id: '/admin/marketplace/professionals'
+      path: '/admin/marketplace/professionals'
+      fullPath: '/admin/marketplace/professionals'
+      preLoaderRoute: typeof AdminMarketplaceProfessionalsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/admin/empresas/$empresaId': {
       id: '/admin/empresas/$empresaId'
       path: '/admin/empresas/$empresaId'
@@ -879,6 +1076,48 @@ const ConfiguracoesRouteWithChildren = ConfiguracoesRoute._addFileChildren(
   ConfiguracoesRouteChildren,
 )
 
+interface IntegrationsRouteChildren {
+  IntegrationsProviderRoute: typeof IntegrationsProviderRoute
+}
+
+const IntegrationsRouteChildren: IntegrationsRouteChildren = {
+  IntegrationsProviderRoute: IntegrationsProviderRoute,
+}
+
+const IntegrationsRouteWithChildren = IntegrationsRoute._addFileChildren(
+  IntegrationsRouteChildren,
+)
+
+interface MarketplaceRouteChildren {
+  MarketplaceListingIdRoute: typeof MarketplaceListingIdRoute
+  MarketplaceCheckoutListingIdRoute: typeof MarketplaceCheckoutListingIdRoute
+}
+
+const MarketplaceRouteChildren: MarketplaceRouteChildren = {
+  MarketplaceListingIdRoute: MarketplaceListingIdRoute,
+  MarketplaceCheckoutListingIdRoute: MarketplaceCheckoutListingIdRoute,
+}
+
+const MarketplaceRouteWithChildren = MarketplaceRoute._addFileChildren(
+  MarketplaceRouteChildren,
+)
+
+interface ProfissionalRouteChildren {
+  ProfissionalCadastroRoute: typeof ProfissionalCadastroRoute
+  ProfissionalFinanceiroRoute: typeof ProfissionalFinanceiroRoute
+  ProfissionalListingsNovoRoute: typeof ProfissionalListingsNovoRoute
+}
+
+const ProfissionalRouteChildren: ProfissionalRouteChildren = {
+  ProfissionalCadastroRoute: ProfissionalCadastroRoute,
+  ProfissionalFinanceiroRoute: ProfissionalFinanceiroRoute,
+  ProfissionalListingsNovoRoute: ProfissionalListingsNovoRoute,
+}
+
+const ProfissionalRouteWithChildren = ProfissionalRoute._addFileChildren(
+  ProfissionalRouteChildren,
+)
+
 interface ResultsRouteChildren {
   ResultsAttemptIdRoute: typeof ResultsAttemptIdRoute
 }
@@ -901,12 +1140,15 @@ const rootRouteChildren: RootRouteChildren = {
   ConfiguracoesRoute: ConfiguracoesRouteWithChildren,
   DashboardRoute: DashboardRoute,
   EnviarLinkRoute: EnviarLinkRoute,
-  IntegrationsRoute: IntegrationsRoute,
+  IntegrationsRoute: IntegrationsRouteWithChildren,
   JornadasRoute: JornadasRoute,
+  MarketplaceRoute: MarketplaceRouteWithChildren,
   MonitoramentoRoute: MonitoramentoRoute,
+  ProfissionalRoute: ProfissionalRouteWithChildren,
   RecuperarSenhaRoute: RecuperarSenhaRoute,
   ResultsRoute: ResultsRouteWithChildren,
   TalentMatchRoute: TalentMatchRoute,
+  TeamRoute: TeamRoute,
   AssessmentJourneysNewRoute: AssessmentJourneysNewRoute,
   CandidateLinksNewRoute: CandidateLinksNewRoute,
   ConviteTokenRoute: ConviteTokenRoute,
@@ -926,6 +1168,7 @@ const rootRouteChildren: RootRouteChildren = {
   AdminIndexRoute: AdminIndexRoute,
   AssessmentJourneysIndexRoute: AssessmentJourneysIndexRoute,
   AdminEmpresasEmpresaIdRoute: AdminEmpresasEmpresaIdRoute,
+  AdminMarketplaceProfessionalsRoute: AdminMarketplaceProfessionalsRoute,
   AdminEmpresasIndexRoute: AdminEmpresasIndexRoute,
 }
 export const routeTree = rootRouteImport

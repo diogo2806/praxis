@@ -71,7 +71,14 @@ public enum AuditEventType implements DescribedEnum {
     TEAM_USER_INVITED("teamUserInvited"),
     TEAM_USER_INVITE_RESENT("teamUserInviteResent"),
     TEAM_USER_BLOCKED("teamUserBlocked"),
-    TEAM_USER_UNBLOCKED("teamUserUnblocked");
+    TEAM_USER_UNBLOCKED("teamUserUnblocked"),
+    MARKETPLACE_PROFESSIONAL_APPROVED("marketplaceProfessionalApproved"),
+    MARKETPLACE_PROFESSIONAL_REJECTED("marketplaceProfessionalRejected"),
+    MARKETPLACE_PROFESSIONAL_SUSPENDED("marketplaceProfessionalSuspended"),
+    MARKETPLACE_LISTING_APPROVED("marketplaceListingApproved"),
+    MARKETPLACE_LISTING_REJECTED("marketplaceListingRejected"),
+    MARKETPLACE_LISTING_SUSPENDED("marketplaceListingSuspended"),
+    MARKETPLACE_PROFESSIONAL_ANONYMIZED("marketplaceProfessionalAnonymized");
 
     private final String descricao;
 

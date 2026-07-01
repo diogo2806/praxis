@@ -107,4 +107,7 @@ public class UserEntity {
     /** Momento da última redefinição concluída; mantido como histórico. */
     @Column(name = "last_password_reset_at")
     private Instant lastPasswordResetAt;
+
+    @Column(name = "is_marketplace_professional", nullable = false)
+    private boolean marketplaceProfessional = false;
 }

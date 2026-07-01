@@ -1,0 +1,2 @@
+ALTER TABLE users
+    ADD COLUMN IF NOT EXISTS is_marketplace_professional BOOLEAN NOT NULL DEFAULT FALSE;

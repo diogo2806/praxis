@@ -79,7 +79,21 @@ class BillingServiceTest {
     @BeforeEach
     void setUp() {
         MercadoPagoProperties properties =
-                new MercadoPagoProperties(true, null, "tok", "pub", "sec", 7, null, null);
+                new MercadoPagoProperties(
+                        true,
+                        null,
+                        null,
+                        "tok",
+                        "pub",
+                        "sec",
+                        null,
+                        null,
+                        null,
+                        null,
+                        7,
+                        null,
+                        null
+                );
         service = new BillingService(mercadoPagoClient, properties, planRepository, eventRepository,
                 subscriptionRepository, creditService, empresaRepository);
         lenient().when(eventRepository.save(any(EmpresaBillingEventEntity.class))).thenAnswer(invocation -> {
