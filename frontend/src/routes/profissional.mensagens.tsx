@@ -1,0 +1,150 @@
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { ArrowLeft, Loader2, Send } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+
+import { StateBanner } from "@/components/praxis-ui";
+import { Button } from "@/components/ui/button";
+import { listMarketplaceMessageThreads, sendMarketplaceProfessionalMessage } from "@/lib/api/praxis";
+import { formatMarketplaceDate } from "@/lib/marketplace";
+
+export const Route = createFileRoute("/profissional/mensagens")({
+  head: () => ({
+    meta: [{ title: "Mensagens - Marketplace Praxis" }],
+  }),
+  component: ProfessionalMessagesPage,
+});
+
+function ProfessionalMessagesPage() {
+  const queryClient = useQueryClient();
+  const [selectedThreadId, setSelectedThreadId] = useState<number | null>(null);
+  const [body, setBody] = useState("");
+  const threads = useQuery({
+    queryKey: ["marketplace-message-threads", "professional"],
+    queryFn: () => listMarketplaceMessageThreads("professional"),
+    retry: false,
+  });
+  const selectedThread = useMemo(
+    () => threads.data?.find((thread) => thread.id === selectedThreadId) ?? threads.data?.[0],
+    [selectedThreadId, threads.data],
+  );
+
+  useEffect(() => {
+    if (selectedThreadId == null && threads.data?.[0]) {
+      setSelectedThreadId(threads.data[0].id);
+    }
+  }, [selectedThreadId, threads.data]);
+
+  const send = useMutation({
+    mutationFn: () =>
+      sendMarketplaceProfessionalMessage({
+        threadId: selectedThread?.id,
+        body,
+      }),
+    onSuccess: async () => {
+      setBody("");
+      await queryClient.invalidateQueries({ queryKey: ["marketplace-message-threads", "professional"] });
+    },
+  });
+
+  return (
+    <main className="min-h-screen bg-background text-foreground">
+      <div className="mx-auto max-w-6xl px-5 py-6">
+        <Button asChild variant="ghost" size="sm" className="mb-4">
+          <Link to="/profissional">
+            <ArrowLeft className="h-4 w-4" />
+            Area do profissional
+          </Link>
+        </Button>
+
+        <div className="mb-5">
+          <div className="text-xs uppercase text-primary">Conversas</div>
+          <h1 className="mt-1 text-2xl font-semibold">Mensagens</h1>
+        </div>
+
+        {threads.isLoading && (
+          <div className="flex items-center gap-2 rounded-md border border-border bg-card p-4 text-sm text-muted-foreground">
+            <Loader2 className="h-4 w-4 animate-spin" />
+            Carregando mensagens
+          </div>
+        )}
+        {threads.isError && (
+          <StateBanner tone="danger" title="Nao foi possivel carregar as mensagens">
+            {threads.error instanceof Error ? threads.error.message : "Tente novamente."}
+          </StateBanner>
+        )}
+        {threads.data?.length === 0 && (
+          <section className="rounded-md border border-border bg-card p-5">
+            <p className="text-sm text-muted-foreground">Nenhuma conversa aberta.</p>
+          </section>
+        )}
+        {selectedThread && (
+          <section className="grid min-h-[520px] overflow-hidden rounded-md border border-border bg-card lg:grid-cols-[320px_1fr]">
+            <aside className="border-b border-border lg:border-b-0 lg:border-r">
+              <div className="divide-y divide-border">
+                {(threads.data ?? []).map((thread) => (
+                  <button
+                    key={thread.id}
+                    type="button"
+                    onClick={() => setSelectedThreadId(thread.id)}
+                    className={`w-full px-4 py-3 text-left text-sm transition hover:bg-muted ${
+                      thread.id === selectedThread.id ? "bg-muted" : ""
+                    }`}
+                  >
+                    <div className="font-medium">Anuncio #{thread.listingId}</div>
+                    <div className="mt-1 line-clamp-1 text-xs text-muted-foreground">
+                      {thread.messages.at(-1)?.body ?? "Sem mensagens"}
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </aside>
+
+            <div className="flex min-h-[520px] flex-col">
+              <div className="border-b border-border px-4 py-3">
+                <div className="font-medium">Anuncio #{selectedThread.listingId}</div>
+                <div className="text-xs text-muted-foreground">Thread #{selectedThread.id}</div>
+              </div>
+
+              <div className="flex-1 space-y-3 overflow-y-auto p-4">
+                {selectedThread.messages.map((message) => (
+                  <article
+                    key={message.id}
+                    className={`max-w-[78%] rounded-md border border-border p-3 text-sm ${
+                      message.senderType === "PROFESSIONAL" ? "ml-auto bg-primary/10" : "bg-background"
+                    }`}
+                  >
+                    <div className="mb-1 text-xs text-muted-foreground">{formatMarketplaceDate(message.createdAt)}</div>
+                    <p className="whitespace-pre-line">{message.body}</p>
+                  </article>
+                ))}
+              </div>
+
+              <form
+                className="border-t border-border p-4"
+                onSubmit={(event) => {
+                  event.preventDefault();
+                  if (!body.trim()) return;
+                  send.mutate();
+                }}
+              >
+                <textarea
+                  value={body}
+                  onChange={(event) => setBody(event.target.value)}
+                  rows={3}
+                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                />
+                <div className="mt-3 flex justify-end">
+                  <Button type="submit" disabled={send.isPending || !body.trim()}>
+                    {send.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+                    Enviar
+                  </Button>
+                </div>
+              </form>
+            </div>
+          </section>
+        )}
+      </div>
+    </main>
+  );
+}
