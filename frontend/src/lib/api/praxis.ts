@@ -1,5 +1,10 @@
 import { getApiBaseUrl } from "@/lib/runtime-config";
 import { getSession } from "@/lib/session";
+import {
+  embeddedQuickStartTemplates,
+  listEmbeddedQuickStartTemplates,
+  type EmbeddedQuickStartTemplate,
+} from "@/lib/quick-start-fallback";
 
 export type AttemptStatus =
   | "notStarted"
@@ -1579,14 +1584,132 @@ export interface QuickStartCreatedResponse {
 }
 
 export function getQuickStartTemplates() {
-  return request<QuickStartTemplateSummaryResponse[]>("/api/v1/simulations/quick-start/templates");
+  return request<QuickStartTemplateSummaryResponse[]>("/api/v1/simulations/quick-start/templates").catch(
+    (error) => {
+      if (error instanceof PraxisApiError && error.status === 404) {
+        return listEmbeddedQuickStartTemplates();
+      }
+      throw error;
+    },
+  );
 }
 
 export function createFromQuickStart(category: QuickStartCategory) {
   return request<QuickStartCreatedResponse>("/api/v1/simulations/quick-start", {
     method: "POST",
     body: JSON.stringify({ category }),
+  }).catch((error) => {
+    if (error instanceof PraxisApiError && error.status === 404) {
+      return createFromEmbeddedQuickStart(category);
+    }
+    throw error;
   });
+}
+
+async function createFromEmbeddedQuickStart(
+  category: QuickStartCategory,
+): Promise<QuickStartCreatedResponse> {
+  const template = embeddedQuickStartTemplates[category];
+  if (!template) {
+    throw new Error("Modelo rapido indisponivel.");
+  }
+
+  const created = await request<SimulationSummaryResponse>("/api/v1/simulations/drafts", {
+    method: "POST",
+    body: JSON.stringify({
+      name: template.name,
+      description: buildEmbeddedQuickStartDescription(template),
+      rootNodeId: "turno-1",
+      competencies: template.competencies.map((competency) => competency.name),
+      criticalSituation: template.criticalSituation,
+      resultUse: template.resultUse,
+    }),
+  });
+
+  await request<SimulationSummaryResponse>(
+    `/api/v1/simulations/${encodeURIComponent(created.id)}/versions/${created.versionNumber}/blueprint`,
+    {
+      method: "PATCH",
+      body: JSON.stringify({
+        rootNodeId: "turno-1",
+        criticalSituation: template.criticalSituation,
+        resultUse: template.resultUse,
+        competencies: template.competencies.map((competency) => ({
+          name: competency.name,
+          weight: competency.weight,
+          targetScore: competency.targetScore,
+          tier: competency.tier,
+        })),
+      }),
+    },
+  );
+
+  const sortedNodes = [...template.nodes].sort((left, right) => left.turnIndex - right.turnIndex);
+  const nodeIdMap = new Map<string, string>();
+
+  for (const node of sortedNodes) {
+    const generatedNodeId = await request<string>(
+      `/api/v1/simulations/${encodeURIComponent(created.id)}/versions/${created.versionNumber}/nodes`,
+      {
+        method: "POST",
+        body: JSON.stringify({
+          clientMessage: node.message,
+          timeLimitSeconds: node.timeLimitSeconds ?? null,
+          timeoutNextNodeId: null,
+          isFinal: Boolean(node.isFinal),
+          reportText: node.reportText ?? null,
+        }),
+      },
+    );
+    nodeIdMap.set(node.nodeId, generatedNodeId);
+  }
+
+  for (const node of sortedNodes) {
+    const generatedNodeId = nodeIdMap.get(node.nodeId);
+    if (!generatedNodeId) continue;
+
+    await request<void>(
+      `/api/v1/simulations/${encodeURIComponent(created.id)}/versions/${created.versionNumber}/nodes/${encodeURIComponent(generatedNodeId)}`,
+      {
+        method: "PUT",
+        body: JSON.stringify({
+          clientMessage: node.message,
+          timeLimitSeconds: node.timeLimitSeconds ?? null,
+          timeoutNextNodeId: node.timeoutNextNodeId
+            ? (nodeIdMap.get(node.timeoutNextNodeId) ?? null)
+            : null,
+          isFinal: Boolean(node.isFinal),
+          reportText: node.reportText ?? null,
+        }),
+      },
+    );
+
+    for (const option of node.options ?? []) {
+      await request<string>(
+        `/api/v1/simulations/${encodeURIComponent(created.id)}/versions/${created.versionNumber}/nodes/${encodeURIComponent(generatedNodeId)}/options`,
+        {
+          method: "POST",
+          body: JSON.stringify({
+            text: option.text,
+            competencyLevels: option.competencyScores,
+            isCritical: Boolean(option.critical),
+            nextNodeId: option.nextNodeId ? (nodeIdMap.get(option.nextNodeId) ?? null) : null,
+            resultingTone: option.auditNote ?? "",
+          }),
+        },
+      );
+    }
+  }
+
+  return {
+    simulationId: created.id,
+    versionNumber: created.versionNumber,
+    redirectTo: `/nova/mapa?simulationId=${encodeURIComponent(created.id)}&versionNumber=${created.versionNumber}`,
+  };
+}
+
+function buildEmbeddedQuickStartDescription(template: EmbeddedQuickStartTemplate) {
+  return `Modelo pronto: ${template.title} - ${template.criticalSituation}`;
 }
 
 export function getSimulationVersion(simulationId: string, versionNumber: number) {
