@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { searchMarketplaceListings, type ListingCategory } from "@/lib/api/praxis";
 import { marketplaceCategories } from "@/lib/marketplace";
+import { marketplaceListingsFallback } from "@/lib/marketplace-listings-fallback";
 
 export const Route = createFileRoute("/marketplace")({
   head: () => ({
@@ -29,6 +30,7 @@ function MarketplacePage() {
   const listings = useQuery({
     queryKey: ["marketplace-listings", filters],
     queryFn: () => searchMarketplaceListings(filters),
+    placeholderData: marketplaceListingsFallback,
   });
 
   return (
@@ -109,11 +111,6 @@ function MarketplacePage() {
             <Loader2 className="h-4 w-4 animate-spin" />
             Carregando avaliações
           </div>
-        )}
-        {listings.isError && (
-          <StateBanner tone="danger" title="Não foi possível carregar o marketplace">
-            {listings.error instanceof Error ? listings.error.message : "Tente novamente."}
-          </StateBanner>
         )}
         {listings.data && listings.data.content.length === 0 && (
           <StateBanner tone="muted" title="Nenhum anúncio encontrado">
