@@ -1,13 +1,14 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { Filter, Loader2, Search, ShieldCheck, Star } from "lucide-react";
+import { Filter, Loader2, Search } from "lucide-react";
 import { useMemo, useState } from "react";
 
+import { ListingCard } from "@/components/marketplace/listing-card";
 import { StateBanner } from "@/components/praxis-ui";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { searchMarketplaceListings, type ListingCategory } from "@/lib/api/praxis";
-import { categoryLabel, formatMarketplacePrice, marketplaceCategories } from "@/lib/marketplace";
+import { marketplaceCategories } from "@/lib/marketplace";
 
 export const Route = createFileRoute("/marketplace")({
   head: () => ({
@@ -121,32 +122,7 @@ function MarketplacePage() {
         )}
         {listings.data && listings.data.content.length > 0 && (
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-            {listings.data.content.map((listing) => (
-              <Link
-                key={listing.id}
-                to="/marketplace/$listingId"
-                params={{ listingId: String(listing.id) }}
-                className="rounded-md border border-border bg-card p-4 transition hover:border-primary/50 hover:shadow-sm"
-              >
-                <div className="flex items-start justify-between gap-3">
-                  <span className="rounded-md bg-primary/10 px-2 py-1 text-xs font-medium text-primary">
-                    {categoryLabel(listing.category)}
-                  </span>
-                  <span className="text-sm font-semibold">{formatMarketplacePrice(listing.priceCents)}</span>
-                </div>
-                <h2 className="mt-3 line-clamp-2 text-lg font-semibold">{listing.title}</h2>
-                <div className="mt-3 flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
-                  <span className="inline-flex items-center gap-1">
-                    <ShieldCheck className="h-3.5 w-3.5" />
-                    {listing.professional.displayName}
-                  </span>
-                  <span className="inline-flex items-center gap-1">
-                    <Star className="h-3.5 w-3.5" />
-                    {listing.averageRating ? Number(listing.averageRating).toFixed(1) : "Sem notas"} · {listing.totalReviews}
-                  </span>
-                </div>
-              </Link>
-            ))}
+            {listings.data.content.map((listing) => <ListingCard key={listing.id} listing={listing} />)}
           </div>
         )}
       </div>
