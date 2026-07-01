@@ -110,7 +110,13 @@ function MarketplaceListingDetailPage() {
             <aside className="space-y-4">
               <section className="rounded-md border border-border bg-card p-5">
                 <div className="text-sm text-muted-foreground">Profissional</div>
-                <h2 className="mt-1 text-xl font-semibold">{listing.data.professional.displayName}</h2>
+                <Link
+                  to="/marketplace/professionals/$professionalId"
+                  params={{ professionalId: String(listing.data.professional.id) }}
+                  className="mt-1 block text-xl font-semibold hover:text-primary"
+                >
+                  {listing.data.professional.displayName}
+                </Link>
                 <div className="mt-3 flex items-center gap-2 text-sm text-muted-foreground">
                   <Star className="h-4 w-4 text-warning" />
                   {listing.data.averageRating ? Number(listing.data.averageRating).toFixed(1) : "Sem notas"} ·{" "}
