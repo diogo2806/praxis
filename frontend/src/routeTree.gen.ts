@@ -67,6 +67,7 @@ import { Route as MarketplaceCheckoutListingIdRouteImport } from './routes/marke
 import { Route as AdminMarketplaceProfessionalsRouteImport } from './routes/admin.marketplace.professionals'
 import { Route as AdminMarketplaceListingsRouteImport } from './routes/admin.marketplace.listings'
 import { Route as AdminEmpresasEmpresaIdRouteImport } from './routes/admin.empresas.$empresaId'
+import { Route as ProfissionalListingsListingIdEditarRouteImport } from './routes/profissional.listings.$listingId.editar'
 
 const TeamRoute = TeamRouteImport.update({
   id: '/team',
@@ -366,6 +367,12 @@ const AdminEmpresasEmpresaIdRoute = AdminEmpresasEmpresaIdRouteImport.update({
   path: '/admin/empresas/$empresaId',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ProfissionalListingsListingIdEditarRoute =
+  ProfissionalListingsListingIdEditarRouteImport.update({
+    id: '/listings/$listingId/editar',
+    path: '/listings/$listingId/editar',
+    getParentRoute: () => ProfissionalRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -426,6 +433,7 @@ export interface FileRoutesByFullPath {
   '/admin/empresas/': typeof AdminEmpresasIndexRoute
   '/marketplace/orders/': typeof MarketplaceOrdersIndexRoute
   '/profissional/listings/': typeof ProfissionalListingsIndexRoute
+  '/profissional/listings/$listingId/editar': typeof ProfissionalListingsListingIdEditarRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -486,6 +494,7 @@ export interface FileRoutesByTo {
   '/admin/empresas': typeof AdminEmpresasIndexRoute
   '/marketplace/orders': typeof MarketplaceOrdersIndexRoute
   '/profissional/listings': typeof ProfissionalListingsIndexRoute
+  '/profissional/listings/$listingId/editar': typeof ProfissionalListingsListingIdEditarRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -547,6 +556,7 @@ export interface FileRoutesById {
   '/admin/empresas/': typeof AdminEmpresasIndexRoute
   '/marketplace/orders/': typeof MarketplaceOrdersIndexRoute
   '/profissional/listings/': typeof ProfissionalListingsIndexRoute
+  '/profissional/listings/$listingId/editar': typeof ProfissionalListingsListingIdEditarRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -609,6 +619,7 @@ export interface FileRouteTypes {
     | '/admin/empresas/'
     | '/marketplace/orders/'
     | '/profissional/listings/'
+    | '/profissional/listings/$listingId/editar'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -669,6 +680,7 @@ export interface FileRouteTypes {
     | '/admin/empresas'
     | '/marketplace/orders'
     | '/profissional/listings'
+    | '/profissional/listings/$listingId/editar'
   id:
     | '__root__'
     | '/'
@@ -729,6 +741,7 @@ export interface FileRouteTypes {
     | '/admin/empresas/'
     | '/marketplace/orders/'
     | '/profissional/listings/'
+    | '/profissional/listings/$listingId/editar'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -1183,6 +1196,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminEmpresasEmpresaIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/profissional/listings/$listingId/editar': {
+      id: '/profissional/listings/$listingId/editar'
+      path: '/listings/$listingId/editar'
+      fullPath: '/profissional/listings/$listingId/editar'
+      preLoaderRoute: typeof ProfissionalListingsListingIdEditarRouteImport
+      parentRoute: typeof ProfissionalRoute
+    }
   }
 }
 
@@ -1254,6 +1274,7 @@ interface ProfissionalRouteChildren {
   ProfissionalPerfilRoute: typeof ProfissionalPerfilRoute
   ProfissionalListingsNovoRoute: typeof ProfissionalListingsNovoRoute
   ProfissionalListingsIndexRoute: typeof ProfissionalListingsIndexRoute
+  ProfissionalListingsListingIdEditarRoute: typeof ProfissionalListingsListingIdEditarRoute
 }
 
 const ProfissionalRouteChildren: ProfissionalRouteChildren = {
@@ -1263,6 +1284,8 @@ const ProfissionalRouteChildren: ProfissionalRouteChildren = {
   ProfissionalPerfilRoute: ProfissionalPerfilRoute,
   ProfissionalListingsNovoRoute: ProfissionalListingsNovoRoute,
   ProfissionalListingsIndexRoute: ProfissionalListingsIndexRoute,
+  ProfissionalListingsListingIdEditarRoute:
+    ProfissionalListingsListingIdEditarRoute,
 }
 
 const ProfissionalRouteWithChildren = ProfissionalRoute._addFileChildren(
