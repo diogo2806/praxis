@@ -168,10 +168,8 @@ public class MarketplaceOrderService {
 
     private void reversePayout(Long orderId, String reason) {
         payoutRepository.findByOrderId(orderId).ifPresent(payout -> {
-            if (payout.getStatus() != PayoutStatus.RELEASED) {
-                payout.setStatus(PayoutStatus.REVERSED);
-                payout.setFailureReason(reason);
-            }
+            payout.setStatus(PayoutStatus.REVERSED);
+            payout.setFailureReason(reason);
         });
     }
 
