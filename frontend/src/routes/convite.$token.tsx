@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { acceptInvite, PraxisApiError } from "@/lib/api/praxis";
-import { saveAuthenticatedSession } from "@/lib/session";
+import { defaultAuthenticatedRoute, saveAuthenticatedSession } from "@/lib/session";
 
 export const Route = createFileRoute("/convite/$token")({
   head: () => ({
@@ -47,7 +47,7 @@ function InviteAcceptPage() {
       }),
     onSuccess: async (response) => {
       saveAuthenticatedSession(response);
-      await navigate({ to: "/dashboard" });
+      await navigate({ to: defaultAuthenticatedRoute(response.roles) });
     },
   });
 

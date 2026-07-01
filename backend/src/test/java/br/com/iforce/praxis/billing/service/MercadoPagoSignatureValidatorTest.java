@@ -22,7 +22,21 @@ class MercadoPagoSignatureValidatorTest {
     private static final String SECRET = "webhook-secret-de-teste";
 
     private MercadoPagoProperties properties(String secret) {
-        return new MercadoPagoProperties(true, null, "token", "pub", secret, 7, null, null);
+        return new MercadoPagoProperties(
+                true,
+                null,
+                null,
+                "token",
+                "pub",
+                secret,
+                null,
+                null,
+                null,
+                null,
+                7,
+                null,
+                null
+        );
     }
 
     private String signature(String ts, String dataId, String requestId) throws Exception {
@@ -53,8 +67,22 @@ class MercadoPagoSignatureValidatorTest {
     }
 
     @Test
-    void acceptsInDevWhenSecretBlank() {
-        var validator = new MercadoPagoSignatureValidator(properties(""));
+    void acceptsInDevWhenSecretBlankAndMpDisabled() {
+        var validator = new MercadoPagoSignatureValidator(new MercadoPagoProperties(
+                false,
+                null,
+                null,
+                "token",
+                "pub",
+                "",
+                null,
+                null,
+                null,
+                null,
+                7,
+                null,
+                null
+        ));
         assertThat(validator.isValid(null, null, null)).isTrue();
     }
 }

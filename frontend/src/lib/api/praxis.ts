@@ -772,6 +772,7 @@ export async function uploadMedia(file: File): Promise<MediaUploadResponse> {
 function isAdminPath(path: string) {
   return (
     path.startsWith("/api/admin") ||
+    path.startsWith("/api/v1/admin") ||
     path.startsWith("/api/v1/simulations") ||
     path.startsWith("/api/v1/dashboard") ||
     path.startsWith("/api/v1/empresa-config") ||
@@ -786,7 +787,8 @@ function isAdminPath(path: string) {
     path.startsWith("/api/v1/assessment-journeys") ||
     path.startsWith("/api/v1/assessment-journey-attempts") ||
     path.startsWith("/api/v1/candidate-links") ||
-    path.startsWith("/api/v1/billing")
+    path.startsWith("/api/v1/billing") ||
+    path.startsWith("/api/v1/marketplace")
   );
 }
 
@@ -2475,4 +2477,394 @@ export function resetPassword(requestBody: ResetPasswordRequest) {
     method: "POST",
     body: JSON.stringify(requestBody),
   });
+}
+
+// ---------------------------------------------------------------------------
+// Marketplace de psicometria
+// ---------------------------------------------------------------------------
+
+export type ProfessionalVerificationStatus = "PENDING_VERIFICATION" | "VERIFIED" | "REJECTED" | "SUSPENDED";
+export type ListingStatus = "DRAFT" | "PENDING_REVIEW" | "APPROVED" | "REJECTED" | "SUSPENDED";
+export type ListingCategory = "SELECAO" | "TREINAMENTO" | "COMPLIANCE" | "EDUCACAO" | "LIDERANCA" | "ATENDIMENTO";
+export type MarketplaceOrderStatus = "PENDING_PAYMENT" | "PAID" | "REFUNDED" | "DISPUTED" | "CANCELLED";
+export type MessageSenderType = "TENANT" | "PROFESSIONAL";
+
+export interface MarketplacePageResponse<T> {
+  content: T[];
+  page: number;
+  totalPages: number;
+  totalElements: number;
+}
+
+export interface MarketplaceProfessionalSummary {
+  id: number;
+  displayName: string;
+  verified: boolean;
+}
+
+export interface MarketplaceListingSummary {
+  id: number;
+  title: string;
+  category: ListingCategory;
+  priceCents: number;
+  status: ListingStatus;
+  averageRating: number | null;
+  totalReviews: number;
+  professional: MarketplaceProfessionalSummary;
+}
+
+export interface MarketplaceListingPreviewOption {
+  id: number;
+  optionId: string;
+  text: string;
+}
+
+export interface MarketplaceListingPreviewNode {
+  id: number;
+  nodeId: string;
+  turnIndex: number;
+  speaker: string;
+  message: string;
+  options: MarketplaceListingPreviewOption[];
+}
+
+export interface MarketplaceListingDetail extends MarketplaceListingSummary {
+  description: string;
+  sourceSimulationId: string;
+  sourceVersionId: number | null;
+  previewNodeIds: number[];
+  previewNodes: MarketplaceListingPreviewNode[];
+}
+
+export interface MarketplaceProfessionalProfile {
+  id: number;
+  displayName: string;
+  bio: string | null;
+  specialties: string[];
+  linkedinUrl: string | null;
+  verificationStatus: ProfessionalVerificationStatus;
+  averageRating: number | null;
+  totalReviews: number;
+  totalSales: number;
+  mercadoPagoConnected: boolean;
+}
+
+export interface MarketplaceProfessionalDashboardListing {
+  id: number;
+  title: string;
+  status: ListingStatus;
+  salesCount: number;
+}
+
+export interface MarketplacePayoutSummary {
+  id: number;
+  orderId: number;
+  listingTitle: string | null;
+  amountCents: number;
+  status: "ESCROW" | "RELEASED" | "FAILED" | "REVERSED";
+  escrowReleaseAt: string;
+  releasedAt: string | null;
+  createdAt: string;
+}
+
+export interface MarketplaceProfessionalDashboard {
+  totalRevenueCents: number;
+  pendingEscrowCents: number;
+  releasedCents: number;
+  salesCount: number;
+  listings: MarketplaceProfessionalDashboardListing[];
+  recentReviews: MarketplaceReviewResponse[];
+  payouts: MarketplacePayoutSummary[];
+}
+
+export interface RegisterProfessionalRequest {
+  name: string;
+  email: string;
+  password: string;
+  document: string;
+  professionalRegistration?: string;
+  bio?: string;
+  specialties?: string[];
+  linkedinUrl?: string;
+  pixKey?: string;
+}
+
+export interface RegisterProfessionalResponse {
+  id: number;
+  status: ProfessionalVerificationStatus;
+  email: string;
+}
+
+export interface UpdateProfessionalProfileRequest {
+  displayName?: string;
+  bio?: string;
+  specialties?: string[];
+  linkedinUrl?: string;
+  pixKey?: string;
+}
+
+export interface CreateMarketplaceListingRequest {
+  sourceSimulationId: string;
+  sourceVersionNumber: number;
+  title: string;
+  description: string;
+  category: ListingCategory;
+  priceCents: number;
+  previewNodeIds?: number[];
+}
+
+export interface UpdateMarketplaceListingRequest {
+  title?: string;
+  description?: string;
+  category?: ListingCategory;
+  priceCents?: number;
+  previewNodeIds?: number[];
+}
+
+export interface CreateMarketplaceListingResponse {
+  id: number;
+  status: ListingStatus;
+}
+
+export interface MarketplaceCheckoutResponse {
+  orderId: number;
+  checkoutUrl: string;
+  mpPreferenceId: string;
+}
+
+export interface MarketplaceOrderResponse {
+  id: number;
+  status: MarketplaceOrderStatus;
+  listingTitle: string;
+  priceCents: number;
+  clonedSimulationId: string | null;
+  paidAt: string | null;
+}
+
+export interface MarketplaceReviewResponse {
+  id: number;
+  orderId: number;
+  listingId: number;
+  professionalId: number;
+  rating: number;
+  comment: string | null;
+  createdAt: string;
+}
+
+export interface MarketplaceMessage {
+  id: number;
+  threadId: number;
+  senderType: MessageSenderType;
+  senderId: number;
+  body: string;
+  createdAt: string;
+}
+
+export interface MarketplaceMessageThread {
+  id: number;
+  listingId: number;
+  professionalId: number;
+  requesterTenantId: string;
+  createdAt: string;
+  messages: MarketplaceMessage[];
+}
+
+export interface AdminMarketplaceDashboardResponse {
+  pendingProfessionals: number;
+  verifiedProfessionals: number;
+  pendingListings: number;
+  approvedListings: number;
+  paidOrders: number;
+}
+
+export interface MarketplaceSearchFilters {
+  category?: ListingCategory | "ALL";
+  minPriceCents?: number;
+  maxPriceCents?: number;
+  minRating?: number;
+  text?: string;
+  page?: number;
+  size?: number;
+}
+
+function marketplaceQuery(filters: MarketplaceSearchFilters = {}) {
+  const params = new URLSearchParams();
+  if (filters.category && filters.category !== "ALL") params.set("category", filters.category);
+  if (filters.minPriceCents != null) params.set("minPriceCents", String(filters.minPriceCents));
+  if (filters.maxPriceCents != null) params.set("maxPriceCents", String(filters.maxPriceCents));
+  if (filters.minRating != null) params.set("minRating", String(filters.minRating));
+  if (filters.text?.trim()) params.set("text", filters.text.trim());
+  params.set("page", String(filters.page ?? 0));
+  params.set("size", String(filters.size ?? 20));
+  const queryString = params.toString();
+  return queryString ? `?${queryString}` : "";
+}
+
+export function searchMarketplaceListings(filters: MarketplaceSearchFilters = {}) {
+  return request<MarketplacePageResponse<MarketplaceListingSummary>>(
+    `/api/v1/marketplace/listings${marketplaceQuery(filters)}`,
+  );
+}
+
+export function getMarketplaceListing(id: number | string) {
+  return request<MarketplaceListingDetail>(`/api/v1/marketplace/listings/${encodeURIComponent(String(id))}`);
+}
+
+export function createMarketplaceCheckout(listingId: number) {
+  return request<MarketplaceCheckoutResponse>("/api/v1/marketplace/orders/checkout", {
+    method: "POST",
+    body: JSON.stringify({ listingId }),
+  });
+}
+
+export function listMarketplaceOrders() {
+  return request<MarketplaceOrderResponse[]>("/api/v1/marketplace/orders");
+}
+
+export function getMarketplaceOrder(id: number | string) {
+  return request<MarketplaceOrderResponse>(`/api/v1/marketplace/orders/${encodeURIComponent(String(id))}`);
+}
+
+export function registerMarketplaceProfessional(body: RegisterProfessionalRequest) {
+  return request<RegisterProfessionalResponse>("/api/v1/marketplace/professionals/register", {
+    method: "POST",
+    body: JSON.stringify(body),
+  });
+}
+
+export function getMarketplaceProfessionalMe() {
+  return request<MarketplaceProfessionalProfile>("/api/v1/marketplace/professionals/me");
+}
+
+export function getMarketplaceProfessional(id: number | string) {
+  return request<MarketplaceProfessionalProfile>(`/api/v1/marketplace/professionals/${encodeURIComponent(String(id))}`);
+}
+
+export function getMarketplaceProfessionalDashboard() {
+  return request<MarketplaceProfessionalDashboard>("/api/v1/marketplace/professionals/me/dashboard");
+}
+
+export function updateMarketplaceProfessionalMe(body: UpdateProfessionalProfileRequest) {
+  return request<MarketplaceProfessionalProfile>("/api/v1/marketplace/professionals/me", {
+    method: "PUT",
+    body: JSON.stringify(body),
+  });
+}
+
+export function createMarketplaceListing(body: CreateMarketplaceListingRequest) {
+  return request<CreateMarketplaceListingResponse>("/api/v1/marketplace/listings", {
+    method: "POST",
+    body: JSON.stringify(body),
+  });
+}
+
+export function updateMarketplaceListing(id: number, body: UpdateMarketplaceListingRequest) {
+  return request<CreateMarketplaceListingResponse>(
+    `/api/v1/marketplace/listings/${encodeURIComponent(String(id))}`,
+    {
+      method: "PUT",
+      body: JSON.stringify(body),
+    },
+  );
+}
+
+export function submitMarketplaceListing(id: number) {
+  return request<CreateMarketplaceListingResponse>(
+    `/api/v1/marketplace/listings/${encodeURIComponent(String(id))}/submit`,
+    { method: "POST" },
+  );
+}
+
+export function getMarketplaceReviews(listingId: number) {
+  return request<MarketplaceReviewResponse[]>(
+    `/api/v1/marketplace/reviews?listingId=${encodeURIComponent(String(listingId))}`,
+  );
+}
+
+export function createMarketplaceReview(body: { orderId: number; rating: number; comment?: string }) {
+  return request<MarketplaceReviewResponse>("/api/v1/marketplace/reviews", {
+    method: "POST",
+    body: JSON.stringify(body),
+  });
+}
+
+export function listMarketplaceMessageThreads(scope: "tenant" | "professional") {
+  return request<MarketplaceMessageThread[]>(`/api/v1/marketplace/messages?scope=${scope}`);
+}
+
+export function sendMarketplaceTenantMessage(body: { listingId?: number; threadId?: number; body: string }) {
+  return request<MarketplaceMessageThread>("/api/v1/marketplace/messages/tenant", {
+    method: "POST",
+    body: JSON.stringify(body),
+  });
+}
+
+export function sendMarketplaceProfessionalMessage(body: { listingId?: number; threadId?: number; body: string }) {
+  return request<MarketplaceMessageThread>("/api/v1/marketplace/messages/professional", {
+    method: "POST",
+    body: JSON.stringify(body),
+  });
+}
+
+export function disconnectMarketplaceMercadoPago() {
+  return request<void>("/api/v1/marketplace/professionals/me/mercadopago", { method: "DELETE" });
+}
+
+export function getAdminMarketplaceDashboard() {
+  return request<AdminMarketplaceDashboardResponse>("/api/v1/admin/marketplace");
+}
+
+export function listAdminPendingMarketplaceProfessionals() {
+  return request<MarketplaceProfessionalProfile[]>(
+    "/api/v1/admin/marketplace/professionals?status=PENDING_VERIFICATION",
+  );
+}
+
+export function listAdminPendingMarketplaceListings() {
+  return request<CreateMarketplaceListingResponse[]>("/api/v1/admin/marketplace/listings?status=PENDING_REVIEW");
+}
+
+export function moderateMarketplaceProfessional(
+  id: number,
+  action: "approve" | "reject" | "suspend",
+  reason?: string,
+) {
+  if (action === "approve" || action === "reject") {
+    return request<MarketplaceProfessionalProfile>(
+      `/api/v1/admin/marketplace/professionals/${encodeURIComponent(String(id))}/verify`,
+      { method: "POST", body: JSON.stringify({ approved: action === "approve", reason }) },
+    );
+  }
+  return request<MarketplaceProfessionalProfile>(
+    `/api/v1/admin/marketplace/professionals/${encodeURIComponent(String(id))}/${action}`,
+    { method: "POST", body: JSON.stringify({ reason }) },
+  );
+}
+
+export function moderateMarketplaceListing(
+  id: number,
+  action: "approve" | "reject" | "suspend",
+  reason?: string,
+) {
+  if (action === "approve" || action === "reject") {
+    return request<CreateMarketplaceListingResponse>(
+      `/api/v1/admin/marketplace/listings/${encodeURIComponent(String(id))}/moderate`,
+      { method: "POST", body: JSON.stringify({ approved: action === "approve", reason }) },
+    );
+  }
+  return request<CreateMarketplaceListingResponse>(
+    `/api/v1/admin/marketplace/listings/${encodeURIComponent(String(id))}/${action}`,
+    { method: "POST", body: JSON.stringify({ reason }) },
+  );
+}
+
+export function listAdminMarketplaceDisputes() {
+  return request<MarketplaceOrderResponse[]>("/api/v1/admin/marketplace/disputes");
+}
+
+export function refundAdminMarketplaceOrder(id: number, reason?: string) {
+  return request<MarketplaceOrderResponse>(
+    `/api/v1/admin/marketplace/orders/${encodeURIComponent(String(id))}/refund`,
+    { method: "POST", body: JSON.stringify({ reason }) },
+  );
 }

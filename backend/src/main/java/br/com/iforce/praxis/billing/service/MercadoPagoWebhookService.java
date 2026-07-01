@@ -4,6 +4,10 @@ import br.com.iforce.praxis.billing.persistence.entity.MpWebhookReceiptEntity;
 
 import br.com.iforce.praxis.billing.persistence.repository.MpWebhookReceiptRepository;
 
+import br.com.iforce.praxis.marketplace.service.MarketplaceOrderService;
+
+import com.fasterxml.jackson.databind.JsonNode;
+
 import org.slf4j.Logger;
 
 import org.slf4j.LoggerFactory;
@@ -39,15 +43,21 @@ public class MercadoPagoWebhookService {
     private final MercadoPagoSignatureValidator signatureValidator;
     private final MpWebhookReceiptRepository receiptRepository;
     private final BillingService billingService;
+    private final MercadoPagoClient mercadoPagoClient;
+    private final MarketplaceOrderService marketplaceOrderService;
 
     public MercadoPagoWebhookService(
             MercadoPagoSignatureValidator signatureValidator,
             MpWebhookReceiptRepository receiptRepository,
-            BillingService billingService
+            BillingService billingService,
+            MercadoPagoClient mercadoPagoClient,
+            MarketplaceOrderService marketplaceOrderService
     ) {
         this.signatureValidator = signatureValidator;
         this.receiptRepository = receiptRepository;
         this.billingService = billingService;
+        this.mercadoPagoClient = mercadoPagoClient;
+        this.marketplaceOrderService = marketplaceOrderService;
     }
 
     /**
@@ -98,11 +108,25 @@ public class MercadoPagoWebhookService {
         if (normalized.contains("preapproval")) {
             billingService.processPreapprovalNotification(dataId, xRequestId);
         } else if (normalized.contains("payment")) {
-            // Inclui "payment" e "subscription_authorized_payment".
+            JsonNode payment = mercadoPagoClient.getPayment(dataId);
+            if (isMarketplacePayment(payment)) {
+                marketplaceOrderService.processPaymentNotification(payment, xRequestId);
+                return;
+            }
             billingService.processPaymentNotification(dataId, xRequestId);
         } else {
             log.debug("Tópico de webhook não tratado: {}", topic);
         }
+    }
+
+    private boolean isMarketplacePayment(JsonNode payment) {
+        JsonNode metadata = payment == null ? null : payment.get("metadata");
+        JsonNode orderType = metadata == null ? null : metadata.get("order_type");
+        if (orderType != null && "marketplace".equalsIgnoreCase(orderType.asText())) {
+            return true;
+        }
+        JsonNode externalReference = payment == null ? null : payment.get("external_reference");
+        return externalReference != null && externalReference.asText("").startsWith("marketplace:");
     }
 
     private static String truncate(String value) {
