@@ -110,7 +110,7 @@ public class MercadoPagoWebhookService {
         } else if (normalized.contains("payment")) {
             JsonNode payment = mercadoPagoClient.getPayment(dataId);
             if (isMarketplacePayment(payment)) {
-                marketplaceOrderService.processPaymentNotification(payment, xRequestId);
+                marketplaceOrderService.processApprovedPayment(payment, xRequestId);
                 return;
             }
             billingService.processPaymentNotification(dataId, xRequestId);
