@@ -71,7 +71,13 @@ function MarketplaceOrdersPage() {
               {orders.data!.map((order) => (
                 <article key={order.id} className="grid grid-cols-1 gap-3 px-4 py-4 sm:grid-cols-[1fr_150px_130px] sm:items-center">
                   <div>
-                    <div className="font-medium">{order.listingTitle}</div>
+                    <Link
+                      to="/marketplace/orders/$orderId"
+                      params={{ orderId: String(order.id) }}
+                      className="font-medium hover:text-primary"
+                    >
+                      {order.listingTitle}
+                    </Link>
                     <div className="mt-1 text-xs text-muted-foreground">
                       Pedido #{order.id} · {formatMarketplaceDate(order.paidAt)}
                     </div>
