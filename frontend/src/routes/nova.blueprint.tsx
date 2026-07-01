@@ -299,6 +299,13 @@ function Page() {
               </Link>
             </p>
 
+            <p className="text-sm text-muted-foreground">
+              Quer consultar o que já existe?{" "}
+              <Link to="/nova/testes" className="font-medium text-primary hover:underline">
+                Ver testes cadastrados →
+              </Link>
+            </p>
+
             <Card title={copy.roleCard} required requiredLabel={copy.required}>
               <Field label={copy.roleLabel}>
                 <input
