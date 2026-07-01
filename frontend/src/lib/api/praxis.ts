@@ -2460,6 +2460,14 @@ export interface CreateMarketplaceListingRequest {
   previewNodeIds?: number[];
 }
 
+export interface UpdateMarketplaceListingRequest {
+  title?: string;
+  description?: string;
+  category?: ListingCategory;
+  priceCents?: number;
+  previewNodeIds?: number[];
+}
+
 export interface CreateMarketplaceListingResponse {
   id: number;
   status: ListingStatus;
@@ -2587,6 +2595,16 @@ export function createMarketplaceListing(body: CreateMarketplaceListingRequest) 
     method: "POST",
     body: JSON.stringify(body),
   });
+}
+
+export function updateMarketplaceListing(id: number, body: UpdateMarketplaceListingRequest) {
+  return request<CreateMarketplaceListingResponse>(
+    `/api/v1/marketplace/listings/${encodeURIComponent(String(id))}`,
+    {
+      method: "PUT",
+      body: JSON.stringify(body),
+    },
+  );
 }
 
 export function submitMarketplaceListing(id: number) {
