@@ -54,9 +54,14 @@ function AdminMarketplaceListingsPage() {
           <h1 className="mt-1 text-2xl font-semibold">Anuncios pendentes</h1>
           <p className="mt-1 text-sm text-slate-500">Modere testes antes da publicacao na vitrine.</p>
         </div>
-        <Button asChild variant="outline">
-          <Link to="/admin/marketplace/professionals">Profissionais</Link>
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          <Button asChild variant="outline">
+            <Link to="/admin/marketplace/professionals">Profissionais</Link>
+          </Button>
+          <Button asChild variant="outline">
+            <Link to="/admin/marketplace/disputes">Disputas</Link>
+          </Button>
+        </div>
       </div>
 
       {(dashboard.isError || listings.isError) && (
