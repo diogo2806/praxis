@@ -13,6 +13,7 @@ import {
   HelpCircle,
   Home,
   KeyRound,
+  ListChecks,
   Link2,
   Menu,
   Settings,
@@ -45,6 +46,12 @@ type TranslationMap = ReturnType<typeof useLanguage>["t"];
 const getNav = (t: TranslationMap) =>
   [
     { to: "/dashboard", label: t.common.dashboard, icon: Home, desc: t.descriptions.dashboard },
+    {
+      to: "/testes",
+      label: "Testes",
+      icon: ListChecks,
+      desc: "Ver e editar testes",
+    },
     {
       to: "/nova/blueprint",
       label: t.common.createTest,
@@ -334,7 +341,8 @@ function SidebarContent({
 function pageLabel(pathname: string, t: TranslationMap) {
   if (pathname === "/monitoramento") return t.common.monitoring;
   if (pathname === "/results" || pathname.startsWith("/results/")) return "Resultados";
-  if (pathname === "/dashboard" || pathname === "/app") return t.common.dashboard;
+  if (pathname === "/testes") return "Testes";
+  if (pathname === "/dashboard") return t.common.dashboard;
   if (pathname.startsWith("/nova")) return t.common.createTest;
   if (pathname === "/talent-match") return t.common.talentMatch;
   if (pathname === "/jornadas") return "Jornadas";

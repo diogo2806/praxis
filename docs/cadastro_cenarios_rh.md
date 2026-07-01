@@ -131,7 +131,7 @@ Antes de publicar uma simulacao, RH deve confirmar:
 
 | Tela | Rota | Objetivo |
 | --- | --- | --- |
-| Painel | `/app` | Lista simulacoes, status, metricas e acoes. |
+| Testes | `/testes` | Ver e editar testes: lista, status, metricas e acoes. |
 | Começar | `/comecar` | Entrada para criar nova avaliacao. |
 | Blueprint | `/nova/blueprint` | Cria rascunho com nome, descricao, situacao critica e competencias. |
 | Competencias | `/nova/competencias` | Configura catalogos do empresa. |
