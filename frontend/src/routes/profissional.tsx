@@ -88,6 +88,9 @@ function ProfessionalHomePage() {
               <Link to="/profissional/financeiro">Financeiro</Link>
             </Button>
             <Button asChild variant="outline">
+              <Link to="/profissional/perfil">Perfil</Link>
+            </Button>
+            <Button asChild variant="outline">
               <Link to="/profissional/listings">Meus testes</Link>
             </Button>
             <Button asChild>
