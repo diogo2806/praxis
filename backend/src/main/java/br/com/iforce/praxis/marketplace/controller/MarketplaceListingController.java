@@ -6,6 +6,7 @@ import br.com.iforce.praxis.marketplace.dto.CreateListingResponse;
 import br.com.iforce.praxis.marketplace.dto.ListingDetailResponse;
 import br.com.iforce.praxis.marketplace.dto.ListingSummaryResponse;
 import br.com.iforce.praxis.marketplace.dto.MarketplacePageResponse;
+import br.com.iforce.praxis.marketplace.dto.UpdateListingRequest;
 import br.com.iforce.praxis.marketplace.model.ListingCategory;
 import br.com.iforce.praxis.marketplace.service.MarketplaceListingService;
 
@@ -15,6 +16,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -49,6 +51,14 @@ public class MarketplaceListingController {
     @PostMapping("/{id}/submit")
     public ResponseEntity<CreateListingResponse> submit(@PathVariable Long id) {
         return ResponseEntity.ok(listingService.submit(currentUserService.requiredUserId(), id));
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<CreateListingResponse> update(
+            @PathVariable Long id,
+            @Valid @RequestBody UpdateListingRequest request
+    ) {
+        return ResponseEntity.ok(listingService.update(currentUserService.requiredUserId(), id, request));
     }
 
     @GetMapping
