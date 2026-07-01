@@ -45,7 +45,12 @@ type TranslationMap = ReturnType<typeof useLanguage>["t"];
 
 const getNav = (t: TranslationMap) =>
   [
-    { to: "/dashboard", label: t.common.dashboard, icon: Home, desc: t.descriptions.dashboard },
+    {
+      to: "/dashboard",
+      label: "Dashboard",
+      icon: Home,
+      desc: "Centro da operação",
+    },
     {
       to: "/avaliacoes",
       label: "Avaliações",
@@ -54,9 +59,27 @@ const getNav = (t: TranslationMap) =>
     },
     {
       to: "/nova/blueprint",
-      label: t.common.createTest,
+      label: "Criar avaliação",
       icon: ClipboardCheck,
-      desc: t.descriptions.createTest,
+      desc: "Criar uma nova avaliação por cenários",
+    },
+    {
+      to: "/results",
+      label: "Resultados",
+      icon: ClipboardList,
+      desc: "Resultados, competências e decisões humanas",
+    },
+    {
+      to: "/enviar-link",
+      label: t.common.sendLink,
+      icon: Link2,
+      desc: "Compartilhar uma avaliação com participantes",
+    },
+    {
+      to: "/integrations",
+      label: "Integrações",
+      icon: KeyRound,
+      desc: "Conexões com Gupy, Recrutei e API própria",
     },
     {
       to: "/monitoramento",
@@ -65,10 +88,10 @@ const getNav = (t: TranslationMap) =>
       desc: t.descriptions.monitoring,
     },
     {
-      to: "/results",
-      label: "Resultados",
-      icon: ClipboardList,
-      desc: "Resultados e decisões humanas",
+      to: "/jornadas",
+      label: "Jornadas",
+      icon: Workflow,
+      desc: "Processos com múltiplas avaliações",
     },
     {
       to: "/talent-match",
@@ -77,18 +100,11 @@ const getNav = (t: TranslationMap) =>
       desc: t.descriptions.talentMatch,
     },
     {
-      to: "/jornadas",
-      label: "Jornadas",
-      icon: Workflow,
-      desc: "Sequencias de testes publicados",
-    },
-    {
       to: "/marketplace",
       label: "Marketplace",
       icon: Store,
-      desc: "Testes prontos para compra",
+      desc: "Avaliações prontas para compra",
     },
-    { to: "/enviar-link", label: t.common.sendLink, icon: Link2, desc: t.descriptions.sendLink },
   ] as const;
 
 const getSecondary = (t: TranslationMap) =>
@@ -120,12 +136,6 @@ const getSettingsNav = (t: TranslationMap) =>
       label: "Minha conta",
       icon: UserRound,
       desc: "Dados de acesso",
-    },
-    {
-      to: "/configuracoes/integracoes",
-      label: "Integrações",
-      icon: KeyRound,
-      desc: "Conexões externas",
     },
     {
       to: "/team",
@@ -339,14 +349,17 @@ function SidebarContent({
 }
 
 function pageLabel(pathname: string, t: TranslationMap) {
-  if (pathname === "/monitoramento") return t.common.monitoring;
-  if (pathname === "/results" || pathname.startsWith("/results/")) return "Resultados";
+  if (pathname === "/dashboard") return "Dashboard";
   if (pathname === "/avaliacoes") return "Avaliações";
-  if (pathname === "/dashboard") return t.common.dashboard;
-  if (pathname.startsWith("/nova")) return t.common.createTest;
-  if (pathname === "/talent-match") return t.common.talentMatch;
-  if (pathname === "/jornadas") return "Jornadas";
+  if (pathname.startsWith("/nova")) return "Criar avaliação";
+  if (pathname === "/results" || pathname.startsWith("/results/")) return "Resultados";
   if (pathname === "/enviar-link") return t.common.sendLink;
+  if (pathname === "/integrations" || pathname.startsWith("/integrations/")) return "Integrações";
+  if (pathname === "/monitoramento") return t.common.monitoring;
+  if (pathname === "/jornadas") return "Jornadas";
+  if (pathname === "/talent-match") return t.common.talentMatch;
+  if (pathname === "/marketplace") return "Marketplace";
+  if (pathname === "/billing") return "Plano";
   if (pathname === "/compliance") return t.common.compliance;
   if (pathname === "/configuracoes" || pathname === "/configuracoes/perfil")
     return "Perfil da empresa";

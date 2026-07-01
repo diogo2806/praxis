@@ -7,6 +7,7 @@ import {
   ExternalLink,
   FilePlus2,
   Filter,
+  Home,
   PlayCircle,
   Search,
   Table2,
@@ -106,16 +107,25 @@ function AvaliacoesPage() {
       <ScreenStateStrip blockedReason="espaço de trabalho sem permissão ou configuração obrigatória pendente" />
       <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
         <div>
-          <div className="text-xs uppercase text-muted-foreground">Avaliações</div>
-          <h1 className="mt-1 text-3xl font-semibold text-foreground">Ver e editar avaliações</h1>
+          <div className="text-xs uppercase text-muted-foreground">Dashboard / Avaliações</div>
+          <h1 className="mt-1 text-3xl font-semibold text-foreground">Avaliações</h1>
           <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
-            Consulte e edite as avaliações da sua empresa, com{" "}
+            Consulte e edite as avaliações da sua empresa. Esta área faz parte do fluxo principal
+            iniciado no Dashboard, com{" "}
             <Termo id="pontuacao-criterios">pontuação por critérios definidos</Termo>,{" "}
             <Termo id="decisao-contexto">escolha baseada na situação</Termo> e{" "}
             <Termo id="trilha-auditavel">histórico completo de alterações</Termo>.
           </p>
         </div>
         <div className="flex gap-2">
+          <Link
+            to="/dashboard"
+            className="inline-flex items-center gap-2 rounded-md border border-border bg-card px-3 py-2 text-sm hover:bg-accent"
+          >
+            <Home className="h-4 w-4" />
+            Dashboard
+          </Link>
+
           <Link
             to="/monitoramento"
             className="inline-flex items-center gap-2 rounded-md border border-border bg-card px-3 py-2 text-sm hover:bg-accent"
@@ -160,7 +170,7 @@ function AvaliacoesPage() {
       ) : simulations.length === 0 ? (
         <EmptyState
           title="Nenhuma avaliação cadastrada"
-          description="Crie ou importe uma avaliação para que ela apareça aqui."
+          description="Crie uma avaliação para que ela apareça aqui e possa ser acompanhada pelo Dashboard."
           actions={
             <>
               <Link
