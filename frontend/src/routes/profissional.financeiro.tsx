@@ -2,6 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft, ExternalLink, Loader2, PlugZap, Trash2 } from "lucide-react";
 
+import { PayoutTable } from "@/components/marketplace/payout-table";
 import { StateBanner } from "@/components/praxis-ui";
 import { Button } from "@/components/ui/button";
 import {
@@ -9,7 +10,7 @@ import {
   disconnectMarketplaceMercadoPago,
   getMarketplaceProfessionalMe,
 } from "@/lib/api/praxis";
-import { formatMarketplaceDate, formatMarketplacePrice, payoutStatusLabels } from "@/lib/marketplace";
+import { formatMarketplacePrice } from "@/lib/marketplace";
 import { getApiBaseUrl } from "@/lib/runtime-config";
 
 export const Route = createFileRoute("/profissional/financeiro")({
@@ -117,34 +118,9 @@ function ProfessionalFinancePage() {
                 <Metric label="Em escrow" value={formatMarketplacePrice(dashboard.data.pendingEscrowCents)} />
                 <Metric label="Liberado" value={formatMarketplacePrice(dashboard.data.releasedCents)} />
               </div>
-              {dashboard.data.payouts.length === 0 ? (
-                <p className="mt-4 text-sm text-muted-foreground">Nenhum repasse registrado ainda.</p>
-              ) : (
-                <div className="mt-4 overflow-x-auto">
-                  <table className="w-full min-w-[620px] text-left text-sm">
-                    <thead className="border-b border-border text-xs uppercase text-muted-foreground">
-                      <tr>
-                        <th className="py-2 pr-3 font-medium">Pedido</th>
-                        <th className="py-2 pr-3 font-medium">Teste</th>
-                        <th className="py-2 pr-3 font-medium">Valor</th>
-                        <th className="py-2 pr-3 font-medium">Status</th>
-                        <th className="py-2 font-medium">Data</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-border">
-                      {dashboard.data.payouts.map((payout) => (
-                        <tr key={payout.id}>
-                          <td className="py-2 pr-3">#{payout.orderId}</td>
-                          <td className="py-2 pr-3">{payout.listingTitle ?? "Listing removido"}</td>
-                          <td className="py-2 pr-3 font-medium">{formatMarketplacePrice(payout.amountCents)}</td>
-                          <td className="py-2 pr-3">{payoutStatusLabels[payout.status]}</td>
-                          <td className="py-2">{formatMarketplaceDate(payout.releasedAt ?? payout.escrowReleaseAt)}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
+              <div className="mt-4">
+                <PayoutTable payouts={dashboard.data.payouts} />
+              </div>
             </section>
           )}
         </section>
