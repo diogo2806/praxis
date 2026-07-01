@@ -3,9 +3,10 @@ import { useQuery } from "@tanstack/react-query";
 import { ArrowLeft, CheckCircle2, Loader2, MessageSquare, ShieldCheck, Star } from "lucide-react";
 
 import { StateBanner } from "@/components/praxis-ui";
+import { ReviewList } from "@/components/marketplace/review-list";
 import { Button } from "@/components/ui/button";
 import { getMarketplaceListing, getMarketplaceReviews } from "@/lib/api/praxis";
-import { categoryLabel, formatMarketplaceDate, formatMarketplacePrice } from "@/lib/marketplace";
+import { categoryLabel, formatMarketplacePrice } from "@/lib/marketplace";
 
 export const Route = createFileRoute("/marketplace/$listingId")({
   head: () => ({
@@ -154,17 +155,7 @@ function MarketplaceListingDetailPage() {
         {reviews.data && reviews.data.length > 0 && (
           <section className="mt-5 rounded-md border border-border bg-card p-5">
             <h2 className="text-lg font-semibold">Reviews</h2>
-            <div className="mt-3 divide-y divide-border">
-              {reviews.data.map((review) => (
-                <div key={review.id} className="py-3">
-                  <div className="flex flex-wrap items-center gap-2 text-sm">
-                    <span className="font-semibold">{review.rating}/5</span>
-                    <span className="text-muted-foreground">{formatMarketplaceDate(review.createdAt)}</span>
-                  </div>
-                  {review.comment && <p className="mt-1 text-sm text-muted-foreground">{review.comment}</p>}
-                </div>
-              ))}
-            </div>
+            <ReviewList reviews={reviews.data} />
           </section>
         )}
       </div>
