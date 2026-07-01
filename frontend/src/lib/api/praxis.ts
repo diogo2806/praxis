@@ -2678,11 +2678,13 @@ export function getAdminMarketplaceDashboard() {
 }
 
 export function listAdminPendingMarketplaceProfessionals() {
-  return request<MarketplaceProfessionalProfile[]>("/api/v1/admin/marketplace/professionals/pending");
+  return request<MarketplaceProfessionalProfile[]>(
+    "/api/v1/admin/marketplace/professionals?status=PENDING_VERIFICATION",
+  );
 }
 
 export function listAdminPendingMarketplaceListings() {
-  return request<CreateMarketplaceListingResponse[]>("/api/v1/admin/marketplace/listings/pending");
+  return request<CreateMarketplaceListingResponse[]>("/api/v1/admin/marketplace/listings?status=PENDING_REVIEW");
 }
 
 export function moderateMarketplaceProfessional(
@@ -2690,6 +2692,12 @@ export function moderateMarketplaceProfessional(
   action: "approve" | "reject" | "suspend",
   reason?: string,
 ) {
+  if (action === "approve" || action === "reject") {
+    return request<MarketplaceProfessionalProfile>(
+      `/api/v1/admin/marketplace/professionals/${encodeURIComponent(String(id))}/verify`,
+      { method: "POST", body: JSON.stringify({ approved: action === "approve", reason }) },
+    );
+  }
   return request<MarketplaceProfessionalProfile>(
     `/api/v1/admin/marketplace/professionals/${encodeURIComponent(String(id))}/${action}`,
     { method: "POST", body: JSON.stringify({ reason }) },
@@ -2701,6 +2709,12 @@ export function moderateMarketplaceListing(
   action: "approve" | "reject" | "suspend",
   reason?: string,
 ) {
+  if (action === "approve" || action === "reject") {
+    return request<CreateMarketplaceListingResponse>(
+      `/api/v1/admin/marketplace/listings/${encodeURIComponent(String(id))}/moderate`,
+      { method: "POST", body: JSON.stringify({ approved: action === "approve", reason }) },
+    );
+  }
   return request<CreateMarketplaceListingResponse>(
     `/api/v1/admin/marketplace/listings/${encodeURIComponent(String(id))}/${action}`,
     { method: "POST", body: JSON.stringify({ reason }) },
