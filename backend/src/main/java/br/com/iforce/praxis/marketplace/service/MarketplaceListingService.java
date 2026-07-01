@@ -35,6 +35,13 @@ import java.util.List;
 import java.util.Set;
 
 @Service
+/**
+ * Gerencia o ciclo de vida dos testes publicados por profissionais no marketplace.
+ *
+ * <p>Na vis&atilde;o de neg&oacute;cio, este servi&ccedil;o cuida desde a cria&ccedil;&atilde;o do rascunho at&eacute; a
+ * disponibiliza&ccedil;&atilde;o do item para compra, incluindo edi&ccedil;&atilde;o, envio para revis&atilde;o e consulta
+ * do cat&aacute;logo p&uacute;blico.</p>
+ */
 public class MarketplaceListingService {
 
     private static final String PLATFORM_EMPRESA_ID = "PLATFORM";
@@ -54,6 +61,12 @@ public class MarketplaceListingService {
     }
 
     @Transactional
+    /**
+     * Cria um novo rascunho de item comercializ&aacute;vel a partir de uma vers&atilde;o j&aacute; publicada de simula&ccedil;&atilde;o.
+     *
+     * <p>Esse &eacute; o momento em que o profissional define como seu material aparecer&aacute; para venda
+     * no marketplace, sem ainda deix&aacute;-lo vis&iacute;vel para clientes.</p>
+     */
     public CreateListingResponse create(String userId, CreateListingRequest request) {
         MarketplaceProfessionalEntity professional = loadProfessional(userId);
         SimulationVersionEntity version = simulationVersionRepository
@@ -87,6 +100,12 @@ public class MarketplaceListingService {
     }
 
     @Transactional
+    /**
+     * Envia um rascunho para modera&ccedil;&atilde;o da plataforma.
+     *
+     * <p>No processo, isso marca que o profissional terminou a prepara&ccedil;&atilde;o do item e deseja
+     * que a plataforma avalie se ele pode ser vendido.</p>
+     */
     public CreateListingResponse submit(String userId, Long listingId) {
         MarketplaceProfessionalEntity professional = loadProfessional(userId);
         if (professional.getVerificationStatus() != ProfessionalVerificationStatus.VERIFIED) {
@@ -108,6 +127,12 @@ public class MarketplaceListingService {
     }
 
     @Transactional
+    /**
+     * Atualiza os dados comerciais e de apresenta&ccedil;&atilde;o de um item ainda edit&aacute;vel.
+     *
+     * <p>Esse fluxo existe para permitir ajustes antes da aprova&ccedil;&atilde;o final ou corre&ccedil;&otilde;es ap&oacute;s
+     * uma rejei&ccedil;&atilde;o da modera&ccedil;&atilde;o.</p>
+     */
     public CreateListingResponse update(String userId, Long listingId, UpdateListingRequest request) {
         MarketplaceProfessionalEntity professional = loadProfessional(userId);
         MarketplaceListingEntity listing = listingRepository.findById(listingId)
@@ -139,6 +164,12 @@ public class MarketplaceListingService {
     }
 
     @Transactional(readOnly = true)
+    /**
+     * Consulta o cat&aacute;logo p&uacute;blico de testes dispon&iacute;veis para compra.
+     *
+     * <p>O resultado representa a vitrine do marketplace, com filtros para facilitar a busca
+     * do cliente por tipo de teste, faixa de pre&ccedil;o, reputa&ccedil;&atilde;o e texto.</p>
+     */
     public MarketplacePageResponse<ListingSummaryResponse> search(ListingSearchFilter filter) {
         Pageable pageable = PageRequest.of(
                 Math.max(filter.page(), 0),
@@ -164,6 +195,12 @@ public class MarketplaceListingService {
     }
 
     @Transactional(readOnly = true)
+    /**
+     * Exibe a ficha completa de um item aprovado e dispon&iacute;vel no marketplace.
+     *
+     * <p>Essa consulta entrega os dados necess&aacute;rios para o cliente entender o que est&aacute;
+     * comprando, quem &eacute; o profissional e quais trechos de pr&eacute;via est&atilde;o liberados.</p>
+     */
     public ListingDetailResponse detail(Long id) {
         MarketplaceListingEntity listing = listingRepository.findByIdAndStatus(id, ListingStatus.APPROVED)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Listing nao encontrado."));

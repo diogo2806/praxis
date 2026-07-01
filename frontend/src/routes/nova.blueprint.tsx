@@ -346,19 +346,19 @@ function Page() {
               <div className="mb-3">
                 <input
                   className="input"
-                  placeholder="Buscar competÃªncia"
+                  placeholder="Buscar competência"
                   value={competencySearch}
                   onChange={(event) => setCompetencySearch(event.target.value)}
                   disabled={empresaConfigLoading || addCompetencyMutation.isPending}
                 />
                 <div className="mt-1 text-xs text-muted-foreground">
-                  {visibleCompetencies.length} de {competencies.length} disponÃ­veis
+                  {visibleCompetencies.length} de {competencies.length} disponíveis
                 </div>
               </div>
               <div className="flex flex-wrap gap-2">
                 {visibleCompetencies.length === 0 ? (
                   <p className="text-sm text-muted-foreground">
-                    Nenhuma competÃªncia encontrada para esse filtro.
+                    Nenhuma competência encontrada para esse filtro.
                   </p>
                 ) : (
                   visibleCompetencies.map((competency) => (
@@ -605,7 +605,7 @@ function Card({
   children,
   tone,
   required,
-  requiredLabel = "ObrigatÃ³rio",
+  requiredLabel = "Obrigatório",
 }: {
   title: string;
   children: React.ReactNode;

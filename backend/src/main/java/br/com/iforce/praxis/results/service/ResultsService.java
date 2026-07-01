@@ -168,12 +168,12 @@ public class ResultsService {
     public ResultDetailResponse get(String attemptId) {
         String empresaId = currentEmpresaService.requiredEmpresaId();
         CandidateAttemptEntity attempt = candidateAttemptRepository.findByEmpresaIdAndId(empresaId, attemptId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Resultado nÃ£o encontrado."));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Resultado não encontrado."));
         PublishedSimulation simulation = resolveSimulation(attempt, empresaId).orElse(null);
         String simulationTitle = simulation == null
                 ? simulationRepository.findByEmpresaIdAndId(empresaId, attempt.getSimulationId())
                         .map(SimulationEntity::getName)
-                        .orElse("AvaliaÃ§Ã£o")
+                        .orElse("Avaliação")
                 : simulation.name();
         List<AuditEventResponse> auditTrail = auditEventService.listCandidateAttemptEvents(attemptId);
 
@@ -268,7 +268,7 @@ public class ResultsService {
                 attempt.getCandidateName(),
                 attempt.getCandidateEmail(),
                 attempt.getSimulationId(),
-                simulationTitles.getOrDefault(attempt.getSimulationId(), "AvaliaÃ§Ã£o"),
+                simulationTitles.getOrDefault(attempt.getSimulationId(), "Avaliação"),
                 attempt.getStatus(),
                 attempt.getStartedAt(),
                 attempt.getFinishedAt(),
@@ -361,7 +361,7 @@ public class ResultsService {
                 ? null
                 : option.competencyScores().values().stream().mapToInt(Integer::intValue).sum();
         return new ResultDetailResponse.Answer(
-                "SituaÃ§Ã£o " + node.turnIndex(),
+                "Situação " + node.turnIndex(),
                 node.message(),
                 answer.isTimedOut() ? "Tempo esgotado" : option == null ? answer.getOptionId() : option.text(),
                 score
@@ -429,9 +429,9 @@ public class ResultsService {
 
     private String competencySummary(String name, int score) {
         return switch (competencyLevel(score)) {
-            case "ALTO" -> "Demonstrou forte aderÃªncia em " + name + ".";
-            case "MEDIO" -> "Apresentou desempenho adequado, com espaÃ§o para aprofundar " + name + ".";
-            default -> "Requer atenÃ§Ã£o e anÃ¡lise humana cuidadosa em " + name + ".";
+            case "ALTO" -> "Demonstrou forte aderência em " + name + ".";
+            case "MEDIO" -> "Apresentou desempenho adequado, com espaço para aprofundar " + name + ".";
+            default -> "Requer atenção e análise humana cuidadosa em " + name + ".";
         };
     }
 }

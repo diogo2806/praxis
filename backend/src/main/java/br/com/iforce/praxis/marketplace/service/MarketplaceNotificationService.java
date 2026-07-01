@@ -16,6 +16,12 @@ import java.time.Instant;
 import java.util.List;
 
 @Service
+/**
+ * Registra notifica&ccedil;&otilde;es internas relacionadas aos acontecimentos do marketplace.
+ *
+ * <p>Na pr&aacute;tica, este servi&ccedil;o transforma eventos importantes do processo, como aprova&ccedil;&otilde;es,
+ * vendas, avalia&ccedil;&otilde;es e libera&ccedil;&atilde;o de repasse, em avisos que aparecem para os envolvidos.</p>
+ */
 public class MarketplaceNotificationService {
 
     private static final String PLATFORM_EMPRESA_ID = "PLATFORM";
@@ -36,6 +42,12 @@ public class MarketplaceNotificationService {
     }
 
     @Transactional(propagation = Propagation.MANDATORY)
+    /**
+     * Envia uma notifica&ccedil;&atilde;o para o profissional dono do cadastro indicado.
+     *
+     * <p>Esse fluxo &eacute; usado quando o assunto do marketplace precisa chegar diretamente a quem
+     * vende ou administra o conte&uacute;do profissional.</p>
+     */
     public void notifyProfessional(
             Long professionalId,
             InAppNotificationType type,
@@ -53,6 +65,12 @@ public class MarketplaceNotificationService {
     }
 
     @Transactional(propagation = Propagation.MANDATORY)
+    /**
+     * Envia uma notifica&ccedil;&atilde;o para os administradores da empresa cliente.
+     *
+     * <p>Serve para avisar o tenant comprador sobre fatos relevantes da opera&ccedil;&atilde;o, como
+     * disponibilidade de conte&uacute;do, atualiza&ccedil;&otilde;es de pedido ou outras a&ccedil;&otilde;es do marketplace.</p>
+     */
     public void notifyTenantAdmins(
             String tenantId,
             InAppNotificationType type,

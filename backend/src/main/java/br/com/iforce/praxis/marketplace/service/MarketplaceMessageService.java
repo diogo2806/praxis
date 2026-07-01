@@ -24,6 +24,12 @@ import java.time.temporal.ChronoUnit;
 import java.util.List;
 
 @Service
+/**
+ * Controla a conversa entre empresa interessada e profissional dentro do marketplace.
+ *
+ * <p>Esse servi&ccedil;o representa o canal oficial de contato comercial antes ou durante a rela&ccedil;&atilde;o
+ * de compra, preservando o contexto por thread e aplicando limites b&aacute;sicos de uso.</p>
+ */
 public class MarketplaceMessageService {
 
     private static final int MAX_MESSAGES_PER_THREAD_PER_HOUR = 20;
@@ -46,6 +52,12 @@ public class MarketplaceMessageService {
     }
 
     @Transactional
+    /**
+     * Envia uma mensagem em nome do tenant comprador ou potencial comprador.
+     *
+     * <p>O fluxo permite iniciar uma nova conversa sobre um item ou continuar uma thread existente
+     * sem perder o hist&oacute;rico de intera&ccedil;&atilde;o entre as partes.</p>
+     */
     public MessageThreadResponse sendAsTenant(String tenantId, Long userId, SendMessageRequest request) {
         MarketplaceMessageThreadEntity thread = resolveTenantThread(tenantId, request);
         appendMessage(thread.getId(), MessageSenderType.TENANT, userId, request.body());
@@ -53,6 +65,12 @@ public class MarketplaceMessageService {
     }
 
     @Transactional
+    /**
+     * Envia uma resposta do profissional em uma conversa j&aacute; aberta.
+     *
+     * <p>Na vis&atilde;o do processo, esta &eacute; a continuidade do atendimento comercial dado pelo autor
+     * do item anunciado.</p>
+     */
     public MessageThreadResponse sendAsProfessional(String userId, SendMessageRequest request) {
         MarketplaceProfessionalEntity professional = loadProfessional(userId);
         if (request.threadId() == null) {
@@ -68,6 +86,9 @@ public class MarketplaceMessageService {
     }
 
     @Transactional(readOnly = true)
+    /**
+     * Lista todas as conversas do tenant com profissionais do marketplace.
+     */
     public List<MessageThreadResponse> listForTenant(String tenantId) {
         return threadRepository.findByRequesterTenantIdOrderByCreatedAtDesc(tenantId)
                 .stream()
@@ -76,6 +97,9 @@ public class MarketplaceMessageService {
     }
 
     @Transactional(readOnly = true)
+    /**
+     * Lista todas as conversas recebidas pelo profissional.
+     */
     public List<MessageThreadResponse> listForProfessional(String userId) {
         MarketplaceProfessionalEntity professional = loadProfessional(userId);
         return threadRepository.findByProfessionalIdOrderByCreatedAtDesc(professional.getId())

@@ -14,6 +14,12 @@ import java.security.SecureRandom;
 import java.util.Base64;
 
 @Service
+/**
+ * Protege os tokens sens&iacute;veis usados na integra&ccedil;&atilde;o financeira do marketplace.
+ *
+ * <p>Na vis&atilde;o do processo, este servi&ccedil;o existe para que o sistema possa guardar credenciais
+ * operacionais do Mercado Pago sem expor o valor original em banco ou respostas de API.</p>
+ */
 public class MarketplaceTokenCryptoService {
 
     private static final String PREFIX = "v1:";
@@ -33,6 +39,12 @@ public class MarketplaceTokenCryptoService {
         }
     }
 
+    /**
+     * Converte um token leg&iacute;vel em uma forma segura para armazenamento.
+     *
+     * <p>Esse passo &eacute; usado quando a plataforma recebe ou atualiza uma credencial que precisar&aacute;
+     * ser reutilizada mais tarde para operar pagamentos em nome do profissional.</p>
+     */
     public String encrypt(String plainText) {
         requireConfigured();
         try {
@@ -49,6 +61,12 @@ public class MarketplaceTokenCryptoService {
         }
     }
 
+    /**
+     * Recupera o valor original de um token protegido para uso operacional controlado.
+     *
+     * <p>Esse fluxo ocorre apenas no backend, quando a plataforma precisa efetivamente chamar
+     * o provedor financeiro com a credencial previamente guardada.</p>
+     */
     public String decrypt(String encryptedValue) {
         requireConfigured();
         if (encryptedValue == null || !encryptedValue.startsWith(PREFIX)) {

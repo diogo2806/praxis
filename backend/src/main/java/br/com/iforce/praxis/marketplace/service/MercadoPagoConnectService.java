@@ -14,10 +14,18 @@ import org.springframework.web.server.ResponseStatusException;
 
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
 import java.security.SecureRandom;
 import java.util.Base64;
 
 @Service
+/**
+ * Gerencia a conex&atilde;o OAuth entre o profissional e a conta do Mercado Pago.
+ *
+ * <p>No processo de neg&oacute;cio, este servi&ccedil;o &eacute; o elo que autoriza a plataforma a receber
+ * pagamentos e preparar repasses em nome do vendedor dentro do marketplace.</p>
+ */
 public class MercadoPagoConnectService {
 
     private final SecureRandom secureRandom = new SecureRandom();
@@ -39,12 +47,24 @@ public class MercadoPagoConnectService {
     }
 
     @Transactional(readOnly = true)
+    /**
+     * Gera a URL que o profissional deve acessar para autorizar a integra&ccedil;&atilde;o com o Mercado Pago.
+     *
+     * <p>Esse passo inicia a etapa em que o vendedor concede permiss&atilde;o para a plataforma operar
+     * o fluxo comercial do marketplace com a sua conta recebedora.</p>
+     */
     public String connectUrl(String userId) {
         MarketplaceProfessionalEntity professional = loadProfessional(userId);
         return mercadoPagoClient.connectAuthorizationUrl(state(professional.getId()));
     }
 
     @Transactional
+    /**
+     * Finaliza o retorno do OAuth e guarda a credencial recebida do Mercado Pago.
+     *
+     * <p>Na pr&aacute;tica, este m&eacute;todo confirma que o retorno pertence ao profissional correto e
+     * registra os dados necess&aacute;rios para que ele possa vender pelo marketplace.</p>
+     */
     public void handleCallback(String state, String code) {
         if (code == null || code.isBlank()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Code Mercado Pago obrigatorio.");
@@ -61,6 +81,12 @@ public class MercadoPagoConnectService {
     }
 
     @Transactional
+    /**
+     * Desfaz a liga&ccedil;&atilde;o entre o profissional e o Mercado Pago no cadastro local.
+     *
+     * <p>Depois deste passo, novas vendas deixam de ser eleg&iacute;veis at&eacute; que a integra&ccedil;&atilde;o seja
+     * conectada novamente.</p>
+     */
     public void disconnect(String userId) {
         MarketplaceProfessionalEntity professional = loadProfessional(userId);
         professional.setMpSellerId(null);
@@ -80,7 +106,7 @@ public class MercadoPagoConnectService {
 
     private MarketplaceProfessionalEntity loadProfessionalByState(String state) {
         String[] parts = state == null ? new String[0] : state.split(":", 3);
-        if (parts.length != 3 || !signature(parts[0], parts[1]).equals(parts[2])) {
+        if (parts.length != 3 || !constantTimeEquals(signature(parts[0], parts[1]), parts[2])) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "State Mercado Pago invalido.");
         }
         Long professionalId;
@@ -91,6 +117,13 @@ public class MercadoPagoConnectService {
         }
         return professionalRepository.findById(professionalId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Profissional nao encontrado."));
+    }
+
+    private static boolean constantTimeEquals(String expected, String actual) {
+        return MessageDigest.isEqual(
+                expected.getBytes(StandardCharsets.UTF_8),
+                actual.getBytes(StandardCharsets.UTF_8)
+        );
     }
 
     private String state(Long professionalId) {
@@ -109,9 +142,9 @@ public class MercadoPagoConnectService {
         }
         try {
             Mac mac = Mac.getInstance("HmacSHA256");
-            mac.init(new SecretKeySpec(stateSecret.getBytes(java.nio.charset.StandardCharsets.UTF_8), "HmacSHA256"));
+            mac.init(new SecretKeySpec(stateSecret.getBytes(StandardCharsets.UTF_8), "HmacSHA256"));
             return Base64.getUrlEncoder().withoutPadding()
-                    .encodeToString(mac.doFinal((professionalId + ":" + nonce).getBytes(java.nio.charset.StandardCharsets.UTF_8)));
+                    .encodeToString(mac.doFinal((professionalId + ":" + nonce).getBytes(StandardCharsets.UTF_8)));
         } catch (Exception exception) {
             throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Falha ao assinar state Mercado Pago.");
         }

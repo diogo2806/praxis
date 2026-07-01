@@ -12,6 +12,12 @@ import org.springframework.stereotype.Service;
 import java.util.Map;
 
 @Service
+/**
+ * Prepara a etapa financeira da compra no marketplace usando o Mercado Pago.
+ *
+ * <p>Na jornada do usu&aacute;rio, este servi&ccedil;o monta os dados que permitem abrir o checkout e dividir
+ * corretamente o valor entre plataforma e profissional vendedor.</p>
+ */
 public class MarketplaceMercadoPagoService {
 
     private final MercadoPagoClient mercadoPagoClient;
@@ -20,6 +26,12 @@ public class MarketplaceMercadoPagoService {
         this.mercadoPagoClient = mercadoPagoClient;
     }
 
+    /**
+     * Cria a prefer&ecirc;ncia de pagamento usada para iniciar o checkout de uma compra do marketplace.
+     *
+     * <p>Esse passo registra no provedor de pagamento qual item est&aacute; sendo vendido, quem est&aacute;
+     * comprando e como o valor ser&aacute; distribu&iacute;do quando a transa&ccedil;&atilde;o for conclu&iacute;da.</p>
+     */
     public CheckoutPreference createCheckoutPreference(
             MarketplaceOrderEntity order,
             MarketplaceListingEntity listing,
@@ -48,6 +60,9 @@ public class MarketplaceMercadoPagoService {
         return value == null || value.isNull() ? null : value.asText();
     }
 
+    /**
+     * Dados necess&aacute;rios para abrir o checkout no frontend e reconciliar o pedido no backend.
+     */
     public record CheckoutPreference(String preferenceId, String checkoutUrl) {
     }
 }

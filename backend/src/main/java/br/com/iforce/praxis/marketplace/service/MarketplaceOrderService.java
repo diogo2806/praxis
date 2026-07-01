@@ -30,6 +30,13 @@ import java.time.temporal.ChronoUnit;
 import java.util.List;
 
 @Service
+/**
+ * Conduz a jornada de compra e p&oacute;s-pagamento dos itens do marketplace.
+ *
+ * <p>Na vis&atilde;o do processo, este servi&ccedil;o transforma interesse comercial em pedido,
+ * integra o checkout, confirma o pagamento, entrega o conte&uacute;do comprado e cria o repasse
+ * financeiro do profissional.</p>
+ */
 public class MarketplaceOrderService {
 
     private final MarketplaceListingRepository listingRepository;
@@ -65,6 +72,12 @@ public class MarketplaceOrderService {
     }
 
     @Transactional
+    /**
+     * Inicia a compra de um item aprovado e devolve os dados necess&aacute;rios para abrir o checkout.
+     *
+     * <p>Esse &eacute; o ponto em que a inten&ccedil;&atilde;o de compra vira um pedido formal no sistema,
+     * com o valor da plataforma e do profissional j&aacute; separados para concilia&ccedil;&atilde;o posterior.</p>
+     */
     public CheckoutResponse checkout(String buyerTenantId, CheckoutRequest request) {
         MarketplaceListingEntity listing = listingRepository.findByIdAndStatus(request.listingId(), ListingStatus.APPROVED)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Listing nao encontrado."));
@@ -97,6 +110,9 @@ public class MarketplaceOrderService {
     }
 
     @Transactional(readOnly = true)
+    /**
+     * Consulta um pedido espec&iacute;fico do ponto de vista do tenant comprador.
+     */
     public MarketplaceOrderResponse getOrder(String buyerTenantId, Long orderId) {
         MarketplaceOrderEntity order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Pedido nao encontrado."));
@@ -107,6 +123,9 @@ public class MarketplaceOrderService {
     }
 
     @Transactional(readOnly = true)
+    /**
+     * Lista o hist&oacute;rico de compras do tenant no marketplace.
+     */
     public List<MarketplaceOrderResponse> listOrders(String buyerTenantId) {
         return orderRepository.findByBuyerTenantIdOrderByCreatedAtDesc(buyerTenantId)
                 .stream()
@@ -115,6 +134,12 @@ public class MarketplaceOrderService {
     }
 
     @Transactional
+    /**
+     * Processa uma notifica&ccedil;&atilde;o financeira recebida sobre um pedido do marketplace.
+     *
+     * <p>Dependendo do status recebido, o sistema confirma a compra, marca disputa ou registra
+     * reembolso, mantendo o pedido alinhado com a fonte de verdade do pagamento.</p>
+     */
     public void processPaymentNotification(JsonNode payment, String requestId) {
         Long orderId = orderId(payment);
         if (orderId == null) {
@@ -140,6 +165,12 @@ public class MarketplaceOrderService {
     }
 
     @Transactional
+    /**
+     * Trata explicitamente confirma&ccedil;&otilde;es de pagamento aprovado.
+     *
+     * <p>Hoje esse fluxo reaproveita a mesma rotina padr&atilde;o de notifica&ccedil;&atilde;o, mas existe como
+     * entrada sem&acirc;ntica para eventos em que o backend j&aacute; sabe que o pagamento foi conclu&iacute;do.</p>
+     */
     public void processApprovedPayment(JsonNode payment, String requestId) {
         processPaymentNotification(payment, requestId);
     }
