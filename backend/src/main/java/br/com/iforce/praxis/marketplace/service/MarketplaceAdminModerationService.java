@@ -207,10 +207,11 @@ public class MarketplaceAdminModerationService {
     }
 
     private void reversePayout(MarketplacePayoutEntity payout) {
-        if (payout.getStatus() != PayoutStatus.RELEASED) {
-            payout.setStatus(PayoutStatus.REVERSED);
-            payout.setFailureReason("Pedido reembolsado antes da liberacao.");
-        }
+        String detail = payout.getStatus() == PayoutStatus.RELEASED
+                ? "Pedido reembolsado apos liberacao do repasse."
+                : "Pedido reembolsado antes da liberacao.";
+        payout.setStatus(PayoutStatus.REVERSED);
+        payout.setFailureReason(detail);
     }
 
     private MarketplaceOrderResponse toOrderResponse(MarketplaceOrderEntity order) {
