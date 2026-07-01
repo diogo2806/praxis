@@ -2,10 +2,10 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { ArrowLeft, CreditCard, Loader2, ShieldCheck } from "lucide-react";
 
+import { CheckoutSummary } from "@/components/marketplace/checkout-summary";
 import { StateBanner } from "@/components/praxis-ui";
 import { Button } from "@/components/ui/button";
 import { createMarketplaceCheckout, getMarketplaceListing } from "@/lib/api/praxis";
-import { formatMarketplacePrice } from "@/lib/marketplace";
 
 export const Route = createFileRoute("/marketplace/checkout/$listingId")({
   head: () => ({
@@ -78,11 +78,8 @@ function MarketplaceCheckoutPage() {
                 </div>
                 <p className="mt-3 line-clamp-4 text-sm text-muted-foreground">{listing.data.description}</p>
               </section>
-              <aside className="rounded-md border border-border bg-background p-4">
-                <div className="text-sm text-muted-foreground">Total</div>
-                <div className="mt-1 text-2xl font-semibold">
-                  {formatMarketplacePrice(listing.data.priceCents)}
-                </div>
+              <aside>
+                <CheckoutSummary listing={listing.data} />
                 <Button
                   className="mt-5 w-full"
                   disabled={checkout.isPending}
