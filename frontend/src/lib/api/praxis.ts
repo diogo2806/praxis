@@ -2533,8 +2533,60 @@ export interface ClientBillingResponse {
   events: BillingEvent[];
 }
 
-export function getClientBilling() {
-  return request<ClientBillingResponse>("/api/v1/billing");
+export async function getClientBilling() {
+  try {
+    return await request<ClientBillingResponse>("/api/v1/billing");
+  } catch (error) {
+    if (error instanceof PraxisApiError && error.status === 404) {
+      return getClientBillingFallback();
+    }
+    throw error;
+  }
+}
+
+// Backends anteriores à API de cobrança do cliente ainda não expõem
+// GET /api/v1/billing e respondem 404. Nesses casos degradamos para uma
+// visão "gerenciada comercialmente" (Enterprise) e derivamos o uso a partir
+// dos links de candidato, evitando quebrar a tela de plano e uso.
+async function getClientBillingFallback(): Promise<ClientBillingResponse> {
+  const session = getSession();
+  const [account, candidateLinks] = await Promise.all([
+    getCurrentAccount().catch(() => ({
+      id: 0,
+      empresaId: session.empresaId ?? "",
+      name: session.userName,
+      email: "",
+      roles: [] as string[],
+    })),
+    listCandidateLinks().catch(() => []),
+  ]);
+
+  const now = Date.now();
+  const last7Days = now - 7 * 24 * 60 * 60 * 1000;
+  const last30Days = now - 30 * 24 * 60 * 60 * 1000;
+
+  const completed = candidateLinks.filter((link) => link.status === "completed");
+  const completedSince = (threshold: number) =>
+    completed.filter((link) => {
+      const createdAt = new Date(link.createdAt).getTime();
+      return Number.isFinite(createdAt) && createdAt >= threshold;
+    }).length;
+
+  return {
+    empresaId: account.empresaId,
+    plan: "ENTERPRISE",
+    empresaStatus: "ATIVO",
+    financialStatus: "REGULAR",
+    creditBalance: 0,
+    usage: {
+      completedLast7Days: completedSince(last7Days),
+      completedLast30Days: completedSince(last30Days),
+      completedAllTime: completed.length,
+    },
+    subscription: null,
+    availableActions: ["CONTACT_SUPPORT"],
+    events: [],
+  };
 }
 
 export type AcceptInviteRequest = {
