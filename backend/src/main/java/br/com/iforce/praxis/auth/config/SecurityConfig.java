@@ -28,6 +28,8 @@ import org.springframework.security.web.SecurityFilterChain;
 
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
+import org.springframework.security.web.util.matcher.RegexRequestMatcher;
+
 
 @Configuration
 public class SecurityConfig {
@@ -80,6 +82,8 @@ public class SecurityConfig {
                                 "/api/v1/marketplace/professionals/register",
                                 "/api/v1/marketplace/professionals/me/mercadopago/callback"
                         ).permitAll()
+                        .requestMatchers(new RegexRequestMatcher("/api/v1/marketplace/professionals/[0-9]+", "GET"))
+                        .permitAll()
                         .requestMatchers(
                                 HttpMethod.GET,
                                 "/api/v1/marketplace/listings",
