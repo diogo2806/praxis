@@ -61,6 +61,7 @@ import { Route as ProfissionalListingsIndexRouteImport } from './routes/profissi
 import { Route as MarketplaceOrdersIndexRouteImport } from './routes/marketplace.orders.index'
 import { Route as AdminEmpresasIndexRouteImport } from './routes/admin.empresas.index'
 import { Route as ProfissionalListingsNovoRouteImport } from './routes/profissional.listings.novo'
+import { Route as MarketplaceProfessionalsProfessionalIdRouteImport } from './routes/marketplace.professionals.$professionalId'
 import { Route as MarketplaceOrdersOrderIdRouteImport } from './routes/marketplace.orders.$orderId'
 import { Route as MarketplaceCheckoutListingIdRouteImport } from './routes/marketplace.checkout.$listingId'
 import { Route as AdminMarketplaceProfessionalsRouteImport } from './routes/admin.marketplace.professionals'
@@ -330,6 +331,12 @@ const ProfissionalListingsNovoRoute =
     path: '/listings/novo',
     getParentRoute: () => ProfissionalRoute,
   } as any)
+const MarketplaceProfessionalsProfessionalIdRoute =
+  MarketplaceProfessionalsProfessionalIdRouteImport.update({
+    id: '/professionals/$professionalId',
+    path: '/professionals/$professionalId',
+    getParentRoute: () => MarketplaceRoute,
+  } as any)
 const MarketplaceOrdersOrderIdRoute =
   MarketplaceOrdersOrderIdRouteImport.update({
     id: '/orders/$orderId',
@@ -414,6 +421,7 @@ export interface FileRoutesByFullPath {
   '/admin/marketplace/professionals': typeof AdminMarketplaceProfessionalsRoute
   '/marketplace/checkout/$listingId': typeof MarketplaceCheckoutListingIdRoute
   '/marketplace/orders/$orderId': typeof MarketplaceOrdersOrderIdRoute
+  '/marketplace/professionals/$professionalId': typeof MarketplaceProfessionalsProfessionalIdRoute
   '/profissional/listings/novo': typeof ProfissionalListingsNovoRoute
   '/admin/empresas/': typeof AdminEmpresasIndexRoute
   '/marketplace/orders/': typeof MarketplaceOrdersIndexRoute
@@ -473,6 +481,7 @@ export interface FileRoutesByTo {
   '/admin/marketplace/professionals': typeof AdminMarketplaceProfessionalsRoute
   '/marketplace/checkout/$listingId': typeof MarketplaceCheckoutListingIdRoute
   '/marketplace/orders/$orderId': typeof MarketplaceOrdersOrderIdRoute
+  '/marketplace/professionals/$professionalId': typeof MarketplaceProfessionalsProfessionalIdRoute
   '/profissional/listings/novo': typeof ProfissionalListingsNovoRoute
   '/admin/empresas': typeof AdminEmpresasIndexRoute
   '/marketplace/orders': typeof MarketplaceOrdersIndexRoute
@@ -533,6 +542,7 @@ export interface FileRoutesById {
   '/admin/marketplace/professionals': typeof AdminMarketplaceProfessionalsRoute
   '/marketplace/checkout/$listingId': typeof MarketplaceCheckoutListingIdRoute
   '/marketplace/orders/$orderId': typeof MarketplaceOrdersOrderIdRoute
+  '/marketplace/professionals/$professionalId': typeof MarketplaceProfessionalsProfessionalIdRoute
   '/profissional/listings/novo': typeof ProfissionalListingsNovoRoute
   '/admin/empresas/': typeof AdminEmpresasIndexRoute
   '/marketplace/orders/': typeof MarketplaceOrdersIndexRoute
@@ -594,6 +604,7 @@ export interface FileRouteTypes {
     | '/admin/marketplace/professionals'
     | '/marketplace/checkout/$listingId'
     | '/marketplace/orders/$orderId'
+    | '/marketplace/professionals/$professionalId'
     | '/profissional/listings/novo'
     | '/admin/empresas/'
     | '/marketplace/orders/'
@@ -653,6 +664,7 @@ export interface FileRouteTypes {
     | '/admin/marketplace/professionals'
     | '/marketplace/checkout/$listingId'
     | '/marketplace/orders/$orderId'
+    | '/marketplace/professionals/$professionalId'
     | '/profissional/listings/novo'
     | '/admin/empresas'
     | '/marketplace/orders'
@@ -712,6 +724,7 @@ export interface FileRouteTypes {
     | '/admin/marketplace/professionals'
     | '/marketplace/checkout/$listingId'
     | '/marketplace/orders/$orderId'
+    | '/marketplace/professionals/$professionalId'
     | '/profissional/listings/novo'
     | '/admin/empresas/'
     | '/marketplace/orders/'
@@ -1128,6 +1141,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ProfissionalListingsNovoRouteImport
       parentRoute: typeof ProfissionalRoute
     }
+    '/marketplace/professionals/$professionalId': {
+      id: '/marketplace/professionals/$professionalId'
+      path: '/professionals/$professionalId'
+      fullPath: '/marketplace/professionals/$professionalId'
+      preLoaderRoute: typeof MarketplaceProfessionalsProfessionalIdRouteImport
+      parentRoute: typeof MarketplaceRoute
+    }
     '/marketplace/orders/$orderId': {
       id: '/marketplace/orders/$orderId'
       path: '/orders/$orderId'
@@ -1210,6 +1230,7 @@ interface MarketplaceRouteChildren {
   MarketplaceListingIdRoute: typeof MarketplaceListingIdRoute
   MarketplaceCheckoutListingIdRoute: typeof MarketplaceCheckoutListingIdRoute
   MarketplaceOrdersOrderIdRoute: typeof MarketplaceOrdersOrderIdRoute
+  MarketplaceProfessionalsProfessionalIdRoute: typeof MarketplaceProfessionalsProfessionalIdRoute
   MarketplaceOrdersIndexRoute: typeof MarketplaceOrdersIndexRoute
 }
 
@@ -1217,6 +1238,8 @@ const MarketplaceRouteChildren: MarketplaceRouteChildren = {
   MarketplaceListingIdRoute: MarketplaceListingIdRoute,
   MarketplaceCheckoutListingIdRoute: MarketplaceCheckoutListingIdRoute,
   MarketplaceOrdersOrderIdRoute: MarketplaceOrdersOrderIdRoute,
+  MarketplaceProfessionalsProfessionalIdRoute:
+    MarketplaceProfessionalsProfessionalIdRoute,
   MarketplaceOrdersIndexRoute: MarketplaceOrdersIndexRoute,
 }
 
