@@ -8,7 +8,9 @@ import {
   StateBanner,
 } from "@/components/praxis-ui";
 import { WizardStepper } from "@/components/wizard-stepper";
+import { CalibrationReport } from "@/components/simulation/calibration-report";
 import {
+  getCalibrationReport,
   getSimulationMonitoring,
   listSimulations,
   type SimulationSummaryResponse,
@@ -44,6 +46,11 @@ function Page() {
   const monitoringQuery = useQuery({
     queryKey: ["simulation-monitoring", search.simulationId, search.versionNumber],
     queryFn: () => getSimulationMonitoring(search.simulationId!, search.versionNumber!),
+    enabled: hasContext,
+  });
+  const calibrationQuery = useQuery({
+    queryKey: ["simulation-calibration", search.simulationId, search.versionNumber],
+    queryFn: () => getCalibrationReport(search.simulationId!, search.versionNumber!),
     enabled: hasContext,
   });
   const monitoring = monitoringQuery.data;
@@ -103,6 +110,21 @@ function Page() {
             <Metric label="Falhas" value={monitoring.attemptsFailed} />
             <Metric label="Desistência" value={`${monitoring.dropOffRatePercent.toFixed(1)}%`} />
           </div>
+          <section className="mt-8">
+            {calibrationQuery.isLoading ? (
+              <StateBanner tone="info" title="Calculando calibração">
+                Reunindo as tentativas concluídas para calibrar critérios e pesos.
+              </StateBanner>
+            ) : calibrationQuery.isError ? (
+              <StateBanner tone="danger" title="Não foi possível calcular a calibração">
+                {calibrationQuery.error instanceof Error
+                  ? calibrationQuery.error.message
+                  : "Tente novamente."}
+              </StateBanner>
+            ) : calibrationQuery.data ? (
+              <CalibrationReport report={calibrationQuery.data} />
+            ) : null}
+          </section>
           <div className="mt-8 flex justify-between">
             <Link
               to="/nova/validador"

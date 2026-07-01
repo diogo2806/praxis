@@ -122,6 +122,31 @@ export interface SimulationMonitoringResponse {
   dropOffRatePercent: number;
 }
 
+export type CalibrationFlag = "OK" | "FRACO" | "REVISAR";
+
+export interface OptionDiscriminationDto {
+  nodeId: string;
+  optionId: string;
+  optionLabel: string;
+  discriminationIndex: number;
+  difficultyIndex: number;
+  flag: CalibrationFlag;
+}
+
+export interface CompetencyCalibrationDto {
+  competencyName: string;
+  averageScore: number;
+  stdDeviation: number;
+}
+
+export interface CalibrationReportResponse {
+  sampleSize: number;
+  minimumSampleRequired: number;
+  sufficientSample: boolean;
+  items: OptionDiscriminationDto[];
+  competencies: CompetencyCalibrationDto[];
+}
+
 export interface SimulationSummaryResponse {
   id: string;
   name: string;
@@ -804,6 +829,81 @@ export function rotateIntegrationToken(provider: IntegrationProvider) {
   );
 }
 
+// --- Conector universal (webhook personalizado + API pública) ---
+
+export type IntegrationStatusValue =
+  | "CONECTADA"
+  | "PENDENTE"
+  | "ERRO"
+  | "DESATIVADA"
+  | "NAO_CONFIGURADA";
+
+export type WebhookEvent = "RESULT_READY" | "ATTEMPT_STARTED";
+
+export interface GenericWebhookConfigResponse {
+  webhookUrl: string | null;
+  secretPreview: string | null;
+  events: string[];
+  status: IntegrationStatusValue;
+  lastDeliveryAt: string | null;
+  lastError: string | null;
+}
+
+export interface ConfigureGenericWebhookRequest {
+  webhookUrl: string;
+  events: string[];
+}
+
+export interface WebhookTestResponse {
+  delivered: boolean;
+  httpStatus: number | null;
+  responseSnippet: string | null;
+}
+
+export interface PublicApiTokenResponse {
+  token: string;
+  tokenPreview: string;
+}
+
+export interface WebhookSecretResponse {
+  secret: string;
+  secretPreview: string;
+}
+
+export function getGenericWebhook() {
+  return request<GenericWebhookConfigResponse>("/api/v1/integrations/custom-api/webhook");
+}
+
+export function configureGenericWebhook(body: ConfigureGenericWebhookRequest) {
+  return request<GenericWebhookConfigResponse>("/api/v1/integrations/custom-api/webhook", {
+    method: "POST",
+    body: JSON.stringify(body),
+  });
+}
+
+export function rotateGenericWebhookSecret() {
+  return request<WebhookSecretResponse>(
+    "/api/v1/integrations/custom-api/webhook/secret/rotate",
+    { method: "POST" },
+  );
+}
+
+export function testGenericWebhook() {
+  return request<WebhookTestResponse>("/api/v1/integrations/custom-api/webhook/test", {
+    method: "POST",
+  });
+}
+
+export function generatePublicApiToken() {
+  return request<PublicApiTokenResponse>("/api/v1/integrations/custom-api/api-token", {
+    method: "POST",
+  });
+}
+
+export function revokePublicApiToken() {
+  return request<void>("/api/v1/integrations/custom-api/api-token", { method: "DELETE" });
+}
+
 export async function getDashboard() {
   try {
     return await request<DashboardResponse>("/api/v1/dashboard");
@@ -1458,6 +1558,37 @@ export function createSimulationDraft(body: CreateSimulationDraftRequest) {
   });
 }
 
+export type QuickStartCategory =
+  | "ATENDIMENTO"
+  | "LIDERANCA"
+  | "VENDAS"
+  | "COMPLIANCE"
+  | "ONBOARDING";
+
+export interface QuickStartTemplateSummaryResponse {
+  category: QuickStartCategory;
+  title: string;
+  description: string;
+  nodeCount: number;
+}
+
+export interface QuickStartCreatedResponse {
+  simulationId: string;
+  versionNumber: number;
+  redirectTo: string;
+}
+
+export function getQuickStartTemplates() {
+  return request<QuickStartTemplateSummaryResponse[]>("/api/v1/simulations/quick-start/templates");
+}
+
+export function createFromQuickStart(category: QuickStartCategory) {
+  return request<QuickStartCreatedResponse>("/api/v1/simulations/quick-start", {
+    method: "POST",
+    body: JSON.stringify({ category }),
+  });
+}
+
 export function getSimulationVersion(simulationId: string, versionNumber: number) {
   return request<SimulationVersionDetailResponse>(
     `/api/v1/simulations/${encodeURIComponent(simulationId)}/versions/${versionNumber}`,
@@ -1566,6 +1697,12 @@ export function deleteSimulationOption(
 export function getSimulationMonitoring(simulationId: string, versionNumber: number) {
   return request<SimulationMonitoringResponse>(
     `/api/v1/simulations/${encodeURIComponent(simulationId)}/versions/${versionNumber}/monitoring`,
+  );
+}
+
+export function getCalibrationReport(simulationId: string, versionNumber: number) {
+  return request<CalibrationReportResponse>(
+    `/api/v1/simulations/${encodeURIComponent(simulationId)}/versions/${versionNumber}/calibration`,
   );
 }
 

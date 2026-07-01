@@ -78,6 +78,9 @@ class OutboxProcessorTest {
     private ResultDeliveryDlqAlertService dlqAlertService;
 
     @Mock
+    private br.com.iforce.praxis.shared.integration.service.GenericWebhookDeliveryService genericWebhookDeliveryService;
+
+    @Mock
     private PlatformTransactionManager transactionManager;
 
     private OutboxProcessor outboxProcessor;
@@ -95,6 +98,7 @@ class OutboxProcessorTest {
             gupyTestResultMapper,
             outboundUrlValidator,
             dlqAlertService,
+            genericWebhookDeliveryService,
             transactionManager
         );
     }

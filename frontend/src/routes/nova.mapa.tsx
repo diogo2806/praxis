@@ -19,6 +19,7 @@ import { WizardStepper } from "@/components/wizard-stepper";
 import {
   createSimulationNode,
   createSimulationOption,
+  getSimulationValidation,
   getSimulationVersion,
   listSimulations,
   updateSimulationOption,
@@ -27,6 +28,11 @@ import {
   type SimulationVersionNodeResponse,
   type SimulationVersionOptionResponse,
 } from "@/lib/api/praxis";
+import {
+  groupIssuesByNode,
+  ValidationBadge,
+  ValidationSummary,
+} from "@/components/simulation/validation-badge";
 import { canEditSimulationVersion } from "@/lib/simulation-meta";
 import { defaultAnswerTimeLimitSeconds, useEmpresaConfig } from "@/lib/empresa-config";
 import { cn } from "@/lib/utils";
@@ -93,7 +99,30 @@ function Page() {
     enabled: hasContext,
   });
 
+  // Validação em tempo real: mesma rota do validador final, mas chamada aqui com
+  // debounce após cada edição, para mostrar erros/avisos por nó já no construtor.
+  const validationQuery = useQuery({
+    queryKey: ["simulation-validation", search.simulationId, search.versionNumber],
+    queryFn: () => getSimulationValidation(search.simulationId!, search.versionNumber!),
+    enabled: hasContext,
+  });
+  const issuesByNode = useMemo(
+    () => groupIssuesByNode(validationQuery.data?.issues),
+    [validationQuery.data],
+  );
+
   const version = versionQuery.data;
+  const versionUpdatedAt = versionQuery.dataUpdatedAt;
+  useEffect(() => {
+    if (!hasContext) return;
+    const timer = setTimeout(() => {
+      void validationQuery.refetch();
+    }, 800);
+    return () => clearTimeout(timer);
+    // Reavalia ~800ms depois de cada mudança nos dados da versão.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [versionUpdatedAt, hasContext]);
+
   const nodes = useMemo(() => version?.nodes ?? [], [version?.nodes]);
   const selectedNode = nodes.find((node) => node.id === selectedId) ?? nodes[0] ?? null;
   const isEditable = version?.status ? canEditSimulationVersion(version.status) : true;
@@ -197,7 +226,15 @@ function Page() {
             Monte o fluxo do teste arrastando etapas e ligando alternativas com setas.
           </p>
         </div>
-        {version && <StatusBadge status={version.status} />}
+        <div className="flex flex-col items-end gap-2">
+          {version && <StatusBadge status={version.status} />}
+          {version && validationQuery.data && (
+            <ValidationSummary
+              blockerCount={validationQuery.data.blockerCount}
+              warningCount={validationQuery.data.warningCount}
+            />
+          )}
+        </div>
       </div>
 
       {!hasContext ? (
@@ -259,6 +296,7 @@ function Page() {
               onConnectionRejected={(message) =>
                 setFeedback({ tone: "danger", title: "Conexão rejeitada", body: message })
               }
+              issuesByNode={issuesByNode}
             />
 
             <aside className="rounded-md border border-border bg-card p-4">
@@ -392,6 +430,7 @@ function SimulationGraphCanvas({
   onSelectNode,
   onConnect,
   onConnectionRejected,
+  issuesByNode,
 }: {
   version: SimulationVersionDetailResponse;
   disabled: boolean;
@@ -403,6 +442,7 @@ function SimulationGraphCanvas({
     targetNodeId: string | null,
   ) => void;
   onConnectionRejected: (message: string) => void;
+  issuesByNode: ReturnType<typeof groupIssuesByNode>;
 }) {
   const storageKey = `praxis.graph.positions.${version.simulationId}.${version.versionNumber}`;
   const viewportRef = useRef<HTMLDivElement>(null);
@@ -689,6 +729,7 @@ function SimulationGraphCanvas({
                       {!isOrphan && !noPathToEnd && (
                         <CheckCircle2 className="h-3.5 w-3.5 text-success" />
                       )}
+                      <ValidationBadge issues={issuesByNode.get(node.id) ?? []} />
                     </div>
                     <button
                       type="button"

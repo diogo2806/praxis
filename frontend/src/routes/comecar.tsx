@@ -214,6 +214,12 @@ function GettingStartedPage() {
               </Link>
             ))}
           </div>
+          <p className="mt-3 text-sm text-muted-foreground">
+            ou{" "}
+            <Link to="/nova/rapido" className="font-medium text-primary hover:underline">
+              comece com um modelo pronto →
+            </Link>
+          </p>
         </section>
 
         <section aria-labelledby="faq" className="mb-10">

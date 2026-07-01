@@ -38,6 +38,7 @@ import { Route as ProfissionalMensagensRouteImport } from './routes/profissional
 import { Route as ProfissionalFinanceiroRouteImport } from './routes/profissional.financeiro'
 import { Route as ProfissionalCadastroRouteImport } from './routes/profissional.cadastro'
 import { Route as NovaValidadorRouteImport } from './routes/nova.validador'
+import { Route as NovaRapidoRouteImport } from './routes/nova.rapido'
 import { Route as NovaPilotoRouteImport } from './routes/nova.piloto'
 import { Route as NovaPersonagemRouteImport } from './routes/nova.personagem'
 import { Route as NovaObjetivoRouteImport } from './routes/nova.objetivo'
@@ -54,6 +55,7 @@ import { Route as ConviteTokenRouteImport } from './routes/convite.$token'
 import { Route as ConfiguracoesPerfilRouteImport } from './routes/configuracoes.perfil'
 import { Route as ConfiguracoesIntegracoesRouteImport } from './routes/configuracoes.integracoes'
 import { Route as ConfiguracoesContaRouteImport } from './routes/configuracoes.conta'
+import { Route as ConfiguracoesApiRouteImport } from './routes/configuracoes.api'
 import { Route as CandidatoTokenRouteImport } from './routes/candidato.$token'
 import { Route as CandidateLinksNewRouteImport } from './routes/candidate-links/new'
 import { Route as AssessmentJourneysNewRouteImport } from './routes/assessment-journeys/new'
@@ -215,6 +217,11 @@ const NovaValidadorRoute = NovaValidadorRouteImport.update({
   path: '/nova/validador',
   getParentRoute: () => rootRouteImport,
 } as any)
+const NovaRapidoRoute = NovaRapidoRouteImport.update({
+  id: '/nova/rapido',
+  path: '/nova/rapido',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const NovaPilotoRoute = NovaPilotoRouteImport.update({
   id: '/nova/piloto',
   path: '/nova/piloto',
@@ -294,6 +301,11 @@ const ConfiguracoesIntegracoesRoute =
 const ConfiguracoesContaRoute = ConfiguracoesContaRouteImport.update({
   id: '/conta',
   path: '/conta',
+  getParentRoute: () => ConfiguracoesRoute,
+} as any)
+const ConfiguracoesApiRoute = ConfiguracoesApiRouteImport.update({
+  id: '/api',
+  path: '/api',
   getParentRoute: () => ConfiguracoesRoute,
 } as any)
 const CandidatoTokenRoute = CandidatoTokenRouteImport.update({
@@ -404,6 +416,7 @@ export interface FileRoutesByFullPath {
   '/assessment-journeys/new': typeof AssessmentJourneysNewRoute
   '/candidate-links/new': typeof CandidateLinksNewRoute
   '/candidato/$token': typeof CandidatoTokenRoute
+  '/configuracoes/api': typeof ConfiguracoesApiRoute
   '/configuracoes/conta': typeof ConfiguracoesContaRoute
   '/configuracoes/integracoes': typeof ConfiguracoesIntegracoesRoute
   '/configuracoes/perfil': typeof ConfiguracoesPerfilRoute
@@ -420,6 +433,7 @@ export interface FileRoutesByFullPath {
   '/nova/objetivo': typeof NovaObjetivoRoute
   '/nova/personagem': typeof NovaPersonagemRoute
   '/nova/piloto': typeof NovaPilotoRoute
+  '/nova/rapido': typeof NovaRapidoRoute
   '/nova/validador': typeof NovaValidadorRoute
   '/profissional/cadastro': typeof ProfissionalCadastroRoute
   '/profissional/financeiro': typeof ProfissionalFinanceiroRoute
@@ -466,6 +480,7 @@ export interface FileRoutesByTo {
   '/assessment-journeys/new': typeof AssessmentJourneysNewRoute
   '/candidate-links/new': typeof CandidateLinksNewRoute
   '/candidato/$token': typeof CandidatoTokenRoute
+  '/configuracoes/api': typeof ConfiguracoesApiRoute
   '/configuracoes/conta': typeof ConfiguracoesContaRoute
   '/configuracoes/integracoes': typeof ConfiguracoesIntegracoesRoute
   '/configuracoes/perfil': typeof ConfiguracoesPerfilRoute
@@ -482,6 +497,7 @@ export interface FileRoutesByTo {
   '/nova/objetivo': typeof NovaObjetivoRoute
   '/nova/personagem': typeof NovaPersonagemRoute
   '/nova/piloto': typeof NovaPilotoRoute
+  '/nova/rapido': typeof NovaRapidoRoute
   '/nova/validador': typeof NovaValidadorRoute
   '/profissional/cadastro': typeof ProfissionalCadastroRoute
   '/profissional/financeiro': typeof ProfissionalFinanceiroRoute
@@ -529,6 +545,7 @@ export interface FileRoutesById {
   '/assessment-journeys/new': typeof AssessmentJourneysNewRoute
   '/candidate-links/new': typeof CandidateLinksNewRoute
   '/candidato/$token': typeof CandidatoTokenRoute
+  '/configuracoes/api': typeof ConfiguracoesApiRoute
   '/configuracoes/conta': typeof ConfiguracoesContaRoute
   '/configuracoes/integracoes': typeof ConfiguracoesIntegracoesRoute
   '/configuracoes/perfil': typeof ConfiguracoesPerfilRoute
@@ -545,6 +562,7 @@ export interface FileRoutesById {
   '/nova/objetivo': typeof NovaObjetivoRoute
   '/nova/personagem': typeof NovaPersonagemRoute
   '/nova/piloto': typeof NovaPilotoRoute
+  '/nova/rapido': typeof NovaRapidoRoute
   '/nova/validador': typeof NovaValidadorRoute
   '/profissional/cadastro': typeof ProfissionalCadastroRoute
   '/profissional/financeiro': typeof ProfissionalFinanceiroRoute
@@ -593,6 +611,7 @@ export interface FileRouteTypes {
     | '/assessment-journeys/new'
     | '/candidate-links/new'
     | '/candidato/$token'
+    | '/configuracoes/api'
     | '/configuracoes/conta'
     | '/configuracoes/integracoes'
     | '/configuracoes/perfil'
@@ -609,6 +628,7 @@ export interface FileRouteTypes {
     | '/nova/objetivo'
     | '/nova/personagem'
     | '/nova/piloto'
+    | '/nova/rapido'
     | '/nova/validador'
     | '/profissional/cadastro'
     | '/profissional/financeiro'
@@ -655,6 +675,7 @@ export interface FileRouteTypes {
     | '/assessment-journeys/new'
     | '/candidate-links/new'
     | '/candidato/$token'
+    | '/configuracoes/api'
     | '/configuracoes/conta'
     | '/configuracoes/integracoes'
     | '/configuracoes/perfil'
@@ -671,6 +692,7 @@ export interface FileRouteTypes {
     | '/nova/objetivo'
     | '/nova/personagem'
     | '/nova/piloto'
+    | '/nova/rapido'
     | '/nova/validador'
     | '/profissional/cadastro'
     | '/profissional/financeiro'
@@ -717,6 +739,7 @@ export interface FileRouteTypes {
     | '/assessment-journeys/new'
     | '/candidate-links/new'
     | '/candidato/$token'
+    | '/configuracoes/api'
     | '/configuracoes/conta'
     | '/configuracoes/integracoes'
     | '/configuracoes/perfil'
@@ -733,6 +756,7 @@ export interface FileRouteTypes {
     | '/nova/objetivo'
     | '/nova/personagem'
     | '/nova/piloto'
+    | '/nova/rapido'
     | '/nova/validador'
     | '/profissional/cadastro'
     | '/profissional/financeiro'
@@ -790,6 +814,7 @@ export interface RootRouteChildren {
   NovaObjetivoRoute: typeof NovaObjetivoRoute
   NovaPersonagemRoute: typeof NovaPersonagemRoute
   NovaPilotoRoute: typeof NovaPilotoRoute
+  NovaRapidoRoute: typeof NovaRapidoRoute
   NovaValidadorRoute: typeof NovaValidadorRoute
   ResetPasswordTokenRoute: typeof ResetPasswordTokenRoute
   SimulationsNewRoute: typeof SimulationsNewRoute
@@ -1007,6 +1032,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof NovaValidadorRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/nova/rapido': {
+      id: '/nova/rapido'
+      path: '/nova/rapido'
+      fullPath: '/nova/rapido'
+      preLoaderRoute: typeof NovaRapidoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/nova/piloto': {
       id: '/nova/piloto'
       path: '/nova/piloto'
@@ -1117,6 +1149,13 @@ declare module '@tanstack/react-router' {
       path: '/conta'
       fullPath: '/configuracoes/conta'
       preLoaderRoute: typeof ConfiguracoesContaRouteImport
+      parentRoute: typeof ConfiguracoesRoute
+    }
+    '/configuracoes/api': {
+      id: '/configuracoes/api'
+      path: '/api'
+      fullPath: '/configuracoes/api'
+      preLoaderRoute: typeof ConfiguracoesApiRouteImport
       parentRoute: typeof ConfiguracoesRoute
     }
     '/candidato/$token': {
@@ -1240,12 +1279,14 @@ const CandidatoRouteWithChildren = CandidatoRoute._addFileChildren(
 )
 
 interface ConfiguracoesRouteChildren {
+  ConfiguracoesApiRoute: typeof ConfiguracoesApiRoute
   ConfiguracoesContaRoute: typeof ConfiguracoesContaRoute
   ConfiguracoesIntegracoesRoute: typeof ConfiguracoesIntegracoesRoute
   ConfiguracoesPerfilRoute: typeof ConfiguracoesPerfilRoute
 }
 
 const ConfiguracoesRouteChildren: ConfiguracoesRouteChildren = {
+  ConfiguracoesApiRoute: ConfiguracoesApiRoute,
   ConfiguracoesContaRoute: ConfiguracoesContaRoute,
   ConfiguracoesIntegracoesRoute: ConfiguracoesIntegracoesRoute,
   ConfiguracoesPerfilRoute: ConfiguracoesPerfilRoute,
@@ -1357,6 +1398,7 @@ const rootRouteChildren: RootRouteChildren = {
   NovaObjetivoRoute: NovaObjetivoRoute,
   NovaPersonagemRoute: NovaPersonagemRoute,
   NovaPilotoRoute: NovaPilotoRoute,
+  NovaRapidoRoute: NovaRapidoRoute,
   NovaValidadorRoute: NovaValidadorRoute,
   ResetPasswordTokenRoute: ResetPasswordTokenRoute,
   SimulationsNewRoute: SimulationsNewRoute,
@@ -1371,13 +1413,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}

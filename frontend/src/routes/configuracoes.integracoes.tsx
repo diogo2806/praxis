@@ -1,7 +1,7 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
-import { Check, Copy, KeyRound, RefreshCw, Trash2 } from "lucide-react";
+import { ArrowRight, Check, Copy, KeyRound, RefreshCw, Trash2, Webhook } from "lucide-react";
 
 import { AppShell } from "@/components/app-shell";
 import { SkeletonRows, StateBanner } from "@/components/praxis-ui";
@@ -124,6 +124,28 @@ function IntegrationsPage() {
                 onCopy={(value) => void copyToken(token.provider, value)}
               />
             ))}
+          </div>
+        </section>
+
+        <section className="mt-6 rounded-md border border-border bg-card">
+          <div className="border-b border-border px-5 py-4">
+            <div className="flex items-center gap-2 text-sm font-semibold">
+              <Webhook className="h-4 w-4 text-primary" />
+              API / Webhook personalizado
+            </div>
+          </div>
+          <div className="flex flex-wrap items-center justify-between gap-3 p-5">
+            <p className="max-w-xl text-sm text-muted-foreground">
+              Tem outro ATS ou sistema interno? Configure um webhook assinado (HMAC) para receber os
+              resultados e gere um token para consultar a nossa API.
+            </p>
+            <Link
+              to="/configuracoes/api"
+              className="inline-flex items-center gap-1.5 rounded-md border border-border bg-background px-4 py-2 text-sm font-medium hover:bg-accent"
+            >
+              Abrir API e Webhooks
+              <ArrowRight className="h-4 w-4" />
+            </Link>
           </div>
         </section>
       </div>

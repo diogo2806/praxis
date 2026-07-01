@@ -1,0 +1,48 @@
+{
+  "category": "VENDAS",
+  "title": "Negociação de objeções",
+  "description": "Cenários de objeção de preço e fechamento consultivo.",
+  "name": "Vendas — negociação de objeções",
+  "criticalSituation": "Cliente em potencial diz que o preço está acima do concorrente e ameaça desistir.",
+  "resultUse": "Seleção comercial",
+  "rootNodeId": "turno-1",
+  "competencies": [
+    { "name": "Negociação", "weight": 0.6, "targetScore": 70, "tier": "major" },
+    { "name": "Escuta Ativa", "weight": 0.4, "targetScore": 70, "tier": "major" }
+  ],
+  "nodes": [
+    {
+      "nodeId": "turno-1",
+      "turnIndex": 1,
+      "speaker": "Cliente",
+      "message": "O concorrente cobra bem menos. Por que eu pagaria mais com vocês?",
+      "timeLimitSeconds": 90,
+      "timeoutNextNodeId": "turno-2",
+      "options": [
+        { "optionId": "opcao-1", "text": "Investigar a necessidade real e conectar o valor da solução ao problema do cliente.", "nextNodeId": "turno-2", "auditNote": "Venda consultiva.", "competencyScores": { "Negociação": 90, "Escuta Ativa": 90 } },
+        { "optionId": "opcao-2", "text": "Oferecer desconto imediato para igualar o concorrente.", "nextNodeId": "turno-2", "critical": true, "auditNote": "Compete só por preço.", "competencyScores": { "Negociação": 35, "Escuta Ativa": 25 } },
+        { "optionId": "opcao-3", "text": "Desqualificar o concorrente sem entender o contexto.", "nextNodeId": "turno-2", "auditNote": "Ataca em vez de ouvir.", "competencyScores": { "Negociação": 25, "Escuta Ativa": 15 } }
+      ]
+    },
+    {
+      "nodeId": "turno-2",
+      "turnIndex": 2,
+      "speaker": "Cliente",
+      "message": "Entendi o valor, mas preciso justificar o investimento internamente.",
+      "timeLimitSeconds": 90,
+      "timeoutNextNodeId": "fim",
+      "options": [
+        { "optionId": "opcao-1", "text": "Construir junto um caso de retorno e propor um próximo passo claro.", "nextNodeId": "fim", "auditNote": "Avança com ROI e próximo passo.", "competencyScores": { "Negociação": 90, "Escuta Ativa": 80 } },
+        { "optionId": "opcao-2", "text": "Pressionar para fechar hoje com uma oferta por tempo limitado.", "nextNodeId": "fim", "auditNote": "Pressão de urgência.", "competencyScores": { "Negociação": 45, "Escuta Ativa": 30 } }
+      ]
+    },
+    {
+      "nodeId": "fim",
+      "turnIndex": 99,
+      "speaker": "Sistema",
+      "message": "Negociação encerrada.",
+      "isFinal": true,
+      "reportText": "Resumo da negociação para revisão da liderança comercial."
+    }
+  ]
+}

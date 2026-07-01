@@ -1,5 +1,7 @@
 package br.com.iforce.praxis.simulation.controller;
 
+import br.com.iforce.praxis.simulation.dto.CalibrationReportResponse;
+
 import br.com.iforce.praxis.simulation.dto.CloneSimulationVersionResponse;
 
 import br.com.iforce.praxis.simulation.dto.CreateNodeRequest;
@@ -13,6 +15,12 @@ import br.com.iforce.praxis.simulation.dto.CreateSimulationRequest;
 import br.com.iforce.praxis.simulation.dto.GupyPreflightResponse;
 
 import br.com.iforce.praxis.simulation.dto.PublishSimulationResponse;
+
+import br.com.iforce.praxis.simulation.dto.QuickStartCreatedResponse;
+
+import br.com.iforce.praxis.simulation.dto.QuickStartRequest;
+
+import br.com.iforce.praxis.simulation.dto.QuickStartTemplateSummaryResponse;
 
 import br.com.iforce.praxis.simulation.dto.SimulationMonitoringResponse;
 
@@ -33,6 +41,10 @@ import br.com.iforce.praxis.simulation.dto.UpdateOptionRequest;
 import br.com.iforce.praxis.simulation.service.GupyPreflightService;
 
 import br.com.iforce.praxis.simulation.service.SimulationAdminService;
+
+import br.com.iforce.praxis.simulation.service.SimulationCalibrationService;
+
+import br.com.iforce.praxis.simulation.service.SimulationQuickStartService;
 
 import br.com.iforce.praxis.simulation.service.SimulationMonitoringService;
 
@@ -109,17 +121,23 @@ public class SimulationAdminController {
     private final SimulationMonitoringService simulationMonitoringService;
     private final GupyPreflightService gupyPreflightService;
     private final TalentMatchService talentMatchService;
+    private final SimulationCalibrationService simulationCalibrationService;
+    private final SimulationQuickStartService simulationQuickStartService;
 
     public SimulationAdminController(
             SimulationAdminService simulationAdminService,
             SimulationMonitoringService simulationMonitoringService,
             GupyPreflightService gupyPreflightService,
-            TalentMatchService talentMatchService
+            TalentMatchService talentMatchService,
+            SimulationCalibrationService simulationCalibrationService,
+            SimulationQuickStartService simulationQuickStartService
     ) {
         this.simulationAdminService = simulationAdminService;
         this.simulationMonitoringService = simulationMonitoringService;
         this.gupyPreflightService = gupyPreflightService;
         this.talentMatchService = talentMatchService;
+        this.simulationCalibrationService = simulationCalibrationService;
+        this.simulationQuickStartService = simulationQuickStartService;
     }
 
     /**
@@ -186,6 +204,46 @@ public class SimulationAdminController {
             @Valid @RequestBody CreateSimulationDraftRequest request
     ) {
         return ResponseEntity.ok(simulationAdminService.createDraftSimulation(request));
+    }
+
+    /**
+     * Lista os modelos prontos do "começar rápido".
+     *
+     * @return os resumos de cada modelo disponível por categoria
+     */
+    @GetMapping("/quick-start/templates")
+    @Operation(
+            summary = "Lista modelos prontos",
+            description = "Retorna os modelos do começar rápido (categoria, título, descrição e número de cenários)."
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Modelos retornados."),
+            @ApiResponse(responseCode = "403", description = "Acesso negado.", content = @Content(examples = @ExampleObject(value = ERROR_EXAMPLE)))
+    })
+    public ResponseEntity<List<QuickStartTemplateSummaryResponse>> listQuickStartTemplates() {
+        return ResponseEntity.ok(simulationQuickStartService.listTemplates());
+    }
+
+    /**
+     * Cria uma simulação em rascunho a partir de um modelo pronto.
+     *
+     * @param request a categoria do modelo a usar
+     * @return o identificador, a versão criada e a rota de destino
+     */
+    @PostMapping("/quick-start")
+    @Operation(
+            summary = "Cria rascunho a partir de modelo pronto",
+            description = "Gera uma simulação completa em rascunho (competências, etapas, respostas e pesos) a partir de um modelo por categoria."
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "201", description = "Rascunho criado."),
+            @ApiResponse(responseCode = "400", description = "Categoria invalida.", content = @Content(examples = @ExampleObject(value = ERROR_EXAMPLE))),
+            @ApiResponse(responseCode = "403", description = "Acesso negado.", content = @Content(examples = @ExampleObject(value = ERROR_EXAMPLE)))
+    })
+    public ResponseEntity<QuickStartCreatedResponse> createFromQuickStart(
+            @Valid @RequestBody QuickStartRequest request
+    ) {
+        return ResponseEntity.status(201).body(simulationQuickStartService.createFromTemplate(request.category()));
     }
 
     /**
@@ -391,6 +449,36 @@ public class SimulationAdminController {
             @PathVariable int versionNumber
     ) {
         return ResponseEntity.ok(simulationAdminService.validateVersion(simulationId, versionNumber));
+    }
+
+    /**
+     * Gera o relatório de calibração estatística de uma versão.
+     *
+     * <p>A partir das tentativas já concluídas, calcula índices de discriminação
+     * e dificuldade por opção e a distribuição das notas por competência,
+     * sinalizando o que está estatisticamente fraco ou invertido. Quando a
+     * amostra ainda é pequena, devolve apenas o aviso de amostra insuficiente.</p>
+     *
+     * @param simulationId identificador da prova
+     * @param versionNumber número da versão
+     * @return o relatório de calibração
+     */
+    @GetMapping("/{simulationId}/versions/{versionNumber}/calibration")
+    @Operation(
+            summary = "Calibração estatística da versão",
+            description = "Calcula discriminação/dificuldade por opção e a distribuição por competência a partir das tentativas concluídas."
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Calibracao calculada."),
+            @ApiResponse(responseCode = "400", description = "Parametro invalido.", content = @Content(examples = @ExampleObject(value = ERROR_EXAMPLE))),
+            @ApiResponse(responseCode = "403", description = "Acesso negado.", content = @Content(examples = @ExampleObject(value = ERROR_EXAMPLE))),
+            @ApiResponse(responseCode = "404", description = "Versão não encontrada.", content = @Content(examples = @ExampleObject(value = ERROR_EXAMPLE)))
+    })
+    public ResponseEntity<CalibrationReportResponse> getCalibrationReport(
+            @PathVariable String simulationId,
+            @PathVariable int versionNumber
+    ) {
+        return ResponseEntity.ok(simulationCalibrationService.getCalibrationReport(simulationId, versionNumber));
     }
 
     /**

@@ -42,6 +42,8 @@ import br.com.iforce.praxis.gupy.dto.TestResultResponse;
 
 import br.com.iforce.praxis.shared.integration.IntegrationEmpresaContext;
 
+import br.com.iforce.praxis.shared.integration.service.GenericWebhookDeliveryService;
+
 import br.com.iforce.praxis.gupy.model.AttemptAnswer;
 
 import br.com.iforce.praxis.gupy.model.AttemptStatus;
@@ -136,6 +138,7 @@ public class CandidateAttemptService {
     private final GupyTestResultMapper gupyTestResultMapper;
     private final HealthVerticalService healthVerticalService;
     private final CreditService creditService;
+    private final GenericWebhookDeliveryService genericWebhookDeliveryService;
 
     public CandidateAttemptService(
             CandidateAttemptRepository candidateAttemptRepository,
@@ -149,7 +152,8 @@ public class CandidateAttemptService {
             AttemptStateMachine attemptStateMachine,
             GupyTestResultMapper gupyTestResultMapper,
             HealthVerticalService healthVerticalService,
-            CreditService creditService
+            CreditService creditService,
+            GenericWebhookDeliveryService genericWebhookDeliveryService
     ) {
         this.candidateAttemptRepository = candidateAttemptRepository;
         this.auditEventService = auditEventService;
@@ -163,6 +167,7 @@ public class CandidateAttemptService {
         this.gupyTestResultMapper = gupyTestResultMapper;
         this.healthVerticalService = healthVerticalService;
         this.creditService = creditService;
+        this.genericWebhookDeliveryService = genericWebhookDeliveryService;
     }
 
     /**
@@ -980,17 +985,25 @@ public class CandidateAttemptService {
     }
 
     private void publishResultReadyEvent(CandidateAttemptEntity candidateAttemptEntity) {
-        if (candidateAttemptEntity.getResultWebhookUrl() == null || candidateAttemptEntity.getResultWebhookUrl().isBlank()) {
+        boolean hasGupyWebhook = candidateAttemptEntity.getResultWebhookUrl() != null
+                && !candidateAttemptEntity.getResultWebhookUrl().isBlank();
+        boolean hasGenericWebhook = genericWebhookDeliveryService
+                .hasActiveResultWebhook(candidateAttemptEntity.getEmpresaId());
+        // Sem destino algum (nem Gupy nem webhook personalizado): nada a entregar.
+        if (!hasGupyWebhook && !hasGenericWebhook) {
             return;
         }
 
         PublishedSimulation simulation = findSimulation(candidateAttemptEntity);
         TestResultResponse testResult = gupyTestResultMapper.toResponse(candidateAttemptEntity, simulation);
 
-        var payload = Map.of(
-            "webhookUrl", candidateAttemptEntity.getResultWebhookUrl(),
-            "testResult", testResult
-        );
+        Map<String, Object> payload = new LinkedHashMap<>();
+        // webhookUrl só vai quando há destino da Gupy; o webhook personalizado é
+        // resolvido no momento da entrega a partir da integração do cliente.
+        if (hasGupyWebhook) {
+            payload.put("webhookUrl", candidateAttemptEntity.getResultWebhookUrl());
+        }
+        payload.put("testResult", testResult);
 
         outboxService.publish(
             candidateAttemptEntity.getEmpresaId(),

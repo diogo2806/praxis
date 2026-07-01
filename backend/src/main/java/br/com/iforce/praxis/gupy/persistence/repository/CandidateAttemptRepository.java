@@ -102,6 +102,18 @@ public interface CandidateAttemptRepository extends JpaRepository<CandidateAttem
 
     long countByEmpresaIdAndSimulationVersionId(String empresaId, Long simulationVersionId);
 
+    /**
+     * Tentativas de uma versão num determinado estado, já com respostas e itens de
+     * resultado carregados. Usado pela calibração estatística, que precisa percorrer
+     * as respostas escolhidas e as notas por competência de cada tentativa concluída.
+     */
+    @EntityGraph(attributePaths = {"answers", "resultItems"})
+    List<CandidateAttemptEntity> findByEmpresaIdAndSimulationVersionIdAndStatus(
+            String empresaId,
+            Long simulationVersionId,
+            AttemptStatus status
+    );
+
     long countByEmpresaIdAndSimulationVersionIdAndStatus(
             String empresaId,
             Long simulationVersionId,

@@ -292,6 +292,13 @@ function Page() {
           <div className="space-y-6">
             <Header kicker={copy.kicker} title={copy.heading} lede={copy.lede} />
 
+            <p className="text-sm text-muted-foreground">
+              Prefere começar de um modelo pronto?{" "}
+              <Link to="/nova/rapido" className="font-medium text-primary hover:underline">
+                Usar um modelo →
+              </Link>
+            </p>
+
             <Card title={copy.roleCard} required requiredLabel={copy.required}>
               <Field label={copy.roleLabel}>
                 <input
