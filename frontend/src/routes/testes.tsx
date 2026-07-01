@@ -30,21 +30,20 @@ import {
   type SimulationVersionStatus,
 } from "@/lib/api/praxis";
 import { maturityForStatus } from "@/lib/simulation-meta";
-import { useSession } from "@/lib/session";
 import { cn } from "@/lib/utils";
 
-export const Route = createFileRoute("/app")({
+export const Route = createFileRoute("/testes")({
   head: () => ({
     meta: [
-      { title: "Painel - Praxis" },
+      { title: "Testes - Práxis" },
       {
         name: "description",
         content:
-          "Painel de avaliações situacionais, participações, resultados, qualidade e prontidão para publicação.",
+          "Veja e edite os testes da sua empresa: status, competências, prontidão para publicação e tentativas registradas.",
       },
     ],
   }),
-  component: Dashboard,
+  component: TestesPage,
 });
 
 const filters: Array<"todas" | SimulationVersionStatus> = [
@@ -61,12 +60,10 @@ const filterLabels: Record<(typeof filters)[number], string> = {
   archived: "arquivadas",
 };
 
-function Dashboard() {
+function TestesPage() {
   const [filter, setFilter] = useState<(typeof filters)[number]>("todas");
   const [query, setQuery] = useState("");
   const queryClient = useQueryClient();
-  const session = useSession();
-  const firstName = session.userName.trim().split(/\s+/)[0] || "bem-vindo";
   const simulationsQuery = useQuery({
     queryKey: ["simulations"],
     queryFn: listSimulations,
@@ -109,10 +106,10 @@ function Dashboard() {
       <ScreenStateStrip blockedReason="espaço de trabalho sem permissão ou configuração obrigatória pendente" />
       <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
         <div>
-          <div className="text-xs uppercase text-muted-foreground">Painel</div>
-          <h1 className="mt-1 text-3xl font-semibold text-foreground">Boa tarde, {firstName}.</h1>
+          <div className="text-xs uppercase text-muted-foreground">Testes</div>
+          <h1 className="mt-1 text-3xl font-semibold text-foreground">Ver e editar testes</h1>
           <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
-            Teste situacional estruturado para recrutamento, com{" "}
+            Consulte e edite os testes da sua empresa, com{" "}
             <Termo id="pontuacao-criterios">pontuação por critérios definidos</Termo>,{" "}
             <Termo id="decisao-contexto">escolha baseada na situação</Termo> e{" "}
             <Termo id="trilha-auditavel">histórico completo de alterações</Termo>.
@@ -340,8 +337,8 @@ function Dashboard() {
                                 </span>
                               </TooltipTrigger>
                               <TooltipContent>
-                                A versão v{simulation.livePublishedVersionNumber} continua publicada e
-                                acessível por link enquanto este rascunho é editado.
+                                A versão v{simulation.livePublishedVersionNumber} continua publicada
+                                e acessível por link enquanto este rascunho é editado.
                               </TooltipContent>
                             </Tooltip>
                           )}

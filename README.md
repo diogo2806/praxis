@@ -58,7 +58,7 @@ As telas ficam em `frontend/src/routes` e usam TanStack Router.
 
 Principais rotas:
 
-- `/app`: painel de simulacoes.
+- `/testes`: tela para ver e editar os testes.
 - `/comecar`: entrada do fluxo de criacao.
 - `/nova/blueprint`: cria rascunho da avaliacao.
 - `/nova/competencias`: configura catalogos do empresa.

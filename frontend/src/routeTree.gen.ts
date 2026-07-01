@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as TestesRouteImport } from './routes/testes'
 import { Route as TeamRouteImport } from './routes/team'
 import { Route as TalentMatchRouteImport } from './routes/talent-match'
 import { Route as ResultsRouteImport } from './routes/results'
@@ -26,7 +27,6 @@ import { Route as CompetenciasRouteImport } from './routes/competencias'
 import { Route as ComecarRouteImport } from './routes/comecar'
 import { Route as CandidatoRouteImport } from './routes/candidato'
 import { Route as BillingRouteImport } from './routes/billing'
-import { Route as AppRouteImport } from './routes/app'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AssessmentJourneysIndexRouteImport } from './routes/assessment-journeys/index'
 import { Route as AdminIndexRouteImport } from './routes/admin.index'
@@ -73,6 +73,11 @@ import { Route as AdminMarketplaceDisputesRouteImport } from './routes/admin.mar
 import { Route as AdminEmpresasEmpresaIdRouteImport } from './routes/admin.empresas.$empresaId'
 import { Route as ProfissionalListingsListingIdEditarRouteImport } from './routes/profissional.listings.$listingId.editar'
 
+const TestesRoute = TestesRouteImport.update({
+  id: '/testes',
+  path: '/testes',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const TeamRoute = TeamRouteImport.update({
   id: '/team',
   path: '/team',
@@ -156,11 +161,6 @@ const CandidatoRoute = CandidatoRouteImport.update({
 const BillingRoute = BillingRouteImport.update({
   id: '/billing',
   path: '/billing',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AppRoute = AppRouteImport.update({
-  id: '/app',
-  path: '/app',
   getParentRoute: () => rootRouteImport,
 } as any)
 const IndexRoute = IndexRouteImport.update({
@@ -401,7 +401,6 @@ const ProfissionalListingsListingIdEditarRoute =
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/app': typeof AppRoute
   '/billing': typeof BillingRoute
   '/candidato': typeof CandidatoRouteWithChildren
   '/comecar': typeof ComecarRoute
@@ -419,6 +418,7 @@ export interface FileRoutesByFullPath {
   '/results': typeof ResultsRouteWithChildren
   '/talent-match': typeof TalentMatchRoute
   '/team': typeof TeamRoute
+  '/testes': typeof TestesRoute
   '/assessment-journeys/new': typeof AssessmentJourneysNewRoute
   '/candidate-links/new': typeof CandidateLinksNewRoute
   '/candidato/$token': typeof CandidatoTokenRoute
@@ -466,7 +466,6 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/app': typeof AppRoute
   '/billing': typeof BillingRoute
   '/candidato': typeof CandidatoRouteWithChildren
   '/comecar': typeof ComecarRoute
@@ -484,6 +483,7 @@ export interface FileRoutesByTo {
   '/results': typeof ResultsRouteWithChildren
   '/talent-match': typeof TalentMatchRoute
   '/team': typeof TeamRoute
+  '/testes': typeof TestesRoute
   '/assessment-journeys/new': typeof AssessmentJourneysNewRoute
   '/candidate-links/new': typeof CandidateLinksNewRoute
   '/candidato/$token': typeof CandidatoTokenRoute
@@ -532,7 +532,6 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/app': typeof AppRoute
   '/billing': typeof BillingRoute
   '/candidato': typeof CandidatoRouteWithChildren
   '/comecar': typeof ComecarRoute
@@ -550,6 +549,7 @@ export interface FileRoutesById {
   '/results': typeof ResultsRouteWithChildren
   '/talent-match': typeof TalentMatchRoute
   '/team': typeof TeamRoute
+  '/testes': typeof TestesRoute
   '/assessment-journeys/new': typeof AssessmentJourneysNewRoute
   '/candidate-links/new': typeof CandidateLinksNewRoute
   '/candidato/$token': typeof CandidatoTokenRoute
@@ -599,7 +599,6 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
-    | '/app'
     | '/billing'
     | '/candidato'
     | '/comecar'
@@ -617,6 +616,7 @@ export interface FileRouteTypes {
     | '/results'
     | '/talent-match'
     | '/team'
+    | '/testes'
     | '/assessment-journeys/new'
     | '/candidate-links/new'
     | '/candidato/$token'
@@ -664,7 +664,6 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
-    | '/app'
     | '/billing'
     | '/candidato'
     | '/comecar'
@@ -682,6 +681,7 @@ export interface FileRouteTypes {
     | '/results'
     | '/talent-match'
     | '/team'
+    | '/testes'
     | '/assessment-journeys/new'
     | '/candidate-links/new'
     | '/candidato/$token'
@@ -729,7 +729,6 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
-    | '/app'
     | '/billing'
     | '/candidato'
     | '/comecar'
@@ -747,6 +746,7 @@ export interface FileRouteTypes {
     | '/results'
     | '/talent-match'
     | '/team'
+    | '/testes'
     | '/assessment-journeys/new'
     | '/candidate-links/new'
     | '/candidato/$token'
@@ -795,7 +795,6 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  AppRoute: typeof AppRoute
   BillingRoute: typeof BillingRoute
   CandidatoRoute: typeof CandidatoRouteWithChildren
   ComecarRoute: typeof ComecarRoute
@@ -813,6 +812,7 @@ export interface RootRouteChildren {
   ResultsRoute: typeof ResultsRouteWithChildren
   TalentMatchRoute: typeof TalentMatchRoute
   TeamRoute: typeof TeamRoute
+  TestesRoute: typeof TestesRoute
   AssessmentJourneysNewRoute: typeof AssessmentJourneysNewRoute
   CandidateLinksNewRoute: typeof CandidateLinksNewRoute
   ConviteTokenRoute: typeof ConviteTokenRoute
@@ -842,6 +842,13 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/testes': {
+      id: '/testes'
+      path: '/testes'
+      fullPath: '/testes'
+      preLoaderRoute: typeof TestesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/team': {
       id: '/team'
       path: '/team'
@@ -959,13 +966,6 @@ declare module '@tanstack/react-router' {
       path: '/billing'
       fullPath: '/billing'
       preLoaderRoute: typeof BillingRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/app': {
-      id: '/app'
-      path: '/app'
-      fullPath: '/app'
-      preLoaderRoute: typeof AppRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/': {
@@ -1387,7 +1387,6 @@ const ResultsRouteWithChildren =
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  AppRoute: AppRoute,
   BillingRoute: BillingRoute,
   CandidatoRoute: CandidatoRouteWithChildren,
   ComecarRoute: ComecarRoute,
@@ -1405,6 +1404,7 @@ const rootRouteChildren: RootRouteChildren = {
   ResultsRoute: ResultsRouteWithChildren,
   TalentMatchRoute: TalentMatchRoute,
   TeamRoute: TeamRoute,
+  TestesRoute: TestesRoute,
   AssessmentJourneysNewRoute: AssessmentJourneysNewRoute,
   CandidateLinksNewRoute: CandidateLinksNewRoute,
   ConviteTokenRoute: ConviteTokenRoute,
