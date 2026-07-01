@@ -24,7 +24,7 @@
 
 ### Criacao e publicacao
 
-1. `/testes` lista simulacoes por `GET /api/v1/simulations`.
+1. `/avaliacoes` lista simulacoes por `GET /api/v1/simulations`.
 2. `/nova/blueprint` cria rascunho por `POST /api/v1/simulations/drafts`.
 3. `/nova/objetivo`, `/nova/personagem` e `/nova/dialogo` editam plano, nos, alternativas e midias.
 4. `/nova/validador` consulta `GET /validation`.
@@ -47,8 +47,8 @@
 
 | Rota | Arquivo | Integracao atual |
 | --- | --- | --- |
-| `/` | `frontend/src/routes/index.tsx` | Landing/entrada inicial; o painel operacional e `/testes`. |
-| `/testes` | `frontend/src/routes/testes.tsx` | Tela para ver e editar testes com `GET /api/v1/simulations` e exclusao definitiva por `DELETE /api/v1/simulations/{id}`. |
+| `/` | `frontend/src/routes/index.tsx` | Landing/entrada inicial; o painel operacional e `/avaliacoes`. |
+| `/avaliacoes` | `frontend/src/routes/avaliacoes.tsx` | Tela para ver e editar avaliacoes com `GET /api/v1/simulations` e exclusao definitiva por `DELETE /api/v1/simulations/{id}`. |
 | `/comecar` | `frontend/src/routes/comecar.tsx` | Inicio do fluxo de criacao. |
 | `/nova/blueprint` | `frontend/src/routes/nova.blueprint.tsx` | Cria rascunho com `POST /api/v1/simulations/drafts`; usa catalogos de `GET /api/v1/empresa-config`. |
 | `/nova/competencias` | `frontend/src/routes/nova.competencias.tsx` | Configuracao de competencias do empresa via `GET/PUT /api/v1/empresa-config`. |

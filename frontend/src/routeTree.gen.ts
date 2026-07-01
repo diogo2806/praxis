@@ -9,7 +9,6 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as TestesRouteImport } from './routes/testes'
 import { Route as TeamRouteImport } from './routes/team'
 import { Route as TalentMatchRouteImport } from './routes/talent-match'
 import { Route as ResultsRouteImport } from './routes/results'
@@ -27,6 +26,7 @@ import { Route as CompetenciasRouteImport } from './routes/competencias'
 import { Route as ComecarRouteImport } from './routes/comecar'
 import { Route as CandidatoRouteImport } from './routes/candidato'
 import { Route as BillingRouteImport } from './routes/billing'
+import { Route as AvaliacoesRouteImport } from './routes/avaliacoes'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AssessmentJourneysIndexRouteImport } from './routes/assessment-journeys/index'
 import { Route as AdminIndexRouteImport } from './routes/admin.index'
@@ -38,7 +38,6 @@ import { Route as ProfissionalMensagensRouteImport } from './routes/profissional
 import { Route as ProfissionalFinanceiroRouteImport } from './routes/profissional.financeiro'
 import { Route as ProfissionalCadastroRouteImport } from './routes/profissional.cadastro'
 import { Route as NovaValidadorRouteImport } from './routes/nova.validador'
-import { Route as NovaTestesRouteImport } from './routes/nova.testes'
 import { Route as NovaRapidoRouteImport } from './routes/nova.rapido'
 import { Route as NovaPilotoRouteImport } from './routes/nova.piloto'
 import { Route as NovaPersonagemRouteImport } from './routes/nova.personagem'
@@ -49,6 +48,7 @@ import { Route as NovaGovernancaRouteImport } from './routes/nova.governanca'
 import { Route as NovaDialogoRouteImport } from './routes/nova.dialogo'
 import { Route as NovaCompetenciasRouteImport } from './routes/nova.competencias'
 import { Route as NovaBlueprintRouteImport } from './routes/nova.blueprint'
+import { Route as NovaAvaliacoesRouteImport } from './routes/nova.avaliacoes'
 import { Route as MarketplaceListingIdRouteImport } from './routes/marketplace.$listingId'
 import { Route as JornadaAttemptIdRouteImport } from './routes/jornada.$attemptId'
 import { Route as IntegrationsProviderRouteImport } from './routes/integrations.$provider'
@@ -73,11 +73,6 @@ import { Route as AdminMarketplaceDisputesRouteImport } from './routes/admin.mar
 import { Route as AdminEmpresasEmpresaIdRouteImport } from './routes/admin.empresas.$empresaId'
 import { Route as ProfissionalListingsListingIdEditarRouteImport } from './routes/profissional.listings.$listingId.editar'
 
-const TestesRoute = TestesRouteImport.update({
-  id: '/testes',
-  path: '/testes',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const TeamRoute = TeamRouteImport.update({
   id: '/team',
   path: '/team',
@@ -163,6 +158,11 @@ const BillingRoute = BillingRouteImport.update({
   path: '/billing',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AvaliacoesRoute = AvaliacoesRouteImport.update({
+  id: '/avaliacoes',
+  path: '/avaliacoes',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
@@ -218,11 +218,6 @@ const NovaValidadorRoute = NovaValidadorRouteImport.update({
   path: '/nova/validador',
   getParentRoute: () => rootRouteImport,
 } as any)
-const NovaTestesRoute = NovaTestesRouteImport.update({
-  id: '/nova/testes',
-  path: '/nova/testes',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const NovaRapidoRoute = NovaRapidoRouteImport.update({
   id: '/nova/rapido',
   path: '/nova/rapido',
@@ -271,6 +266,11 @@ const NovaCompetenciasRoute = NovaCompetenciasRouteImport.update({
 const NovaBlueprintRoute = NovaBlueprintRouteImport.update({
   id: '/nova/blueprint',
   path: '/nova/blueprint',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const NovaAvaliacoesRoute = NovaAvaliacoesRouteImport.update({
+  id: '/nova/avaliacoes',
+  path: '/nova/avaliacoes',
   getParentRoute: () => rootRouteImport,
 } as any)
 const MarketplaceListingIdRoute = MarketplaceListingIdRouteImport.update({
@@ -401,6 +401,7 @@ const ProfissionalListingsListingIdEditarRoute =
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/avaliacoes': typeof AvaliacoesRoute
   '/billing': typeof BillingRoute
   '/candidato': typeof CandidatoRouteWithChildren
   '/comecar': typeof ComecarRoute
@@ -418,7 +419,6 @@ export interface FileRoutesByFullPath {
   '/results': typeof ResultsRouteWithChildren
   '/talent-match': typeof TalentMatchRoute
   '/team': typeof TeamRoute
-  '/testes': typeof TestesRoute
   '/assessment-journeys/new': typeof AssessmentJourneysNewRoute
   '/candidate-links/new': typeof CandidateLinksNewRoute
   '/candidato/$token': typeof CandidatoTokenRoute
@@ -430,6 +430,7 @@ export interface FileRoutesByFullPath {
   '/integrations/$provider': typeof IntegrationsProviderRoute
   '/jornada/$attemptId': typeof JornadaAttemptIdRoute
   '/marketplace/$listingId': typeof MarketplaceListingIdRoute
+  '/nova/avaliacoes': typeof NovaAvaliacoesRoute
   '/nova/blueprint': typeof NovaBlueprintRoute
   '/nova/competencias': typeof NovaCompetenciasRoute
   '/nova/dialogo': typeof NovaDialogoRoute
@@ -440,7 +441,6 @@ export interface FileRoutesByFullPath {
   '/nova/personagem': typeof NovaPersonagemRoute
   '/nova/piloto': typeof NovaPilotoRoute
   '/nova/rapido': typeof NovaRapidoRoute
-  '/nova/testes': typeof NovaTestesRoute
   '/nova/validador': typeof NovaValidadorRoute
   '/profissional/cadastro': typeof ProfissionalCadastroRoute
   '/profissional/financeiro': typeof ProfissionalFinanceiroRoute
@@ -466,6 +466,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/avaliacoes': typeof AvaliacoesRoute
   '/billing': typeof BillingRoute
   '/candidato': typeof CandidatoRouteWithChildren
   '/comecar': typeof ComecarRoute
@@ -483,7 +484,6 @@ export interface FileRoutesByTo {
   '/results': typeof ResultsRouteWithChildren
   '/talent-match': typeof TalentMatchRoute
   '/team': typeof TeamRoute
-  '/testes': typeof TestesRoute
   '/assessment-journeys/new': typeof AssessmentJourneysNewRoute
   '/candidate-links/new': typeof CandidateLinksNewRoute
   '/candidato/$token': typeof CandidatoTokenRoute
@@ -495,6 +495,7 @@ export interface FileRoutesByTo {
   '/integrations/$provider': typeof IntegrationsProviderRoute
   '/jornada/$attemptId': typeof JornadaAttemptIdRoute
   '/marketplace/$listingId': typeof MarketplaceListingIdRoute
+  '/nova/avaliacoes': typeof NovaAvaliacoesRoute
   '/nova/blueprint': typeof NovaBlueprintRoute
   '/nova/competencias': typeof NovaCompetenciasRoute
   '/nova/dialogo': typeof NovaDialogoRoute
@@ -505,7 +506,6 @@ export interface FileRoutesByTo {
   '/nova/personagem': typeof NovaPersonagemRoute
   '/nova/piloto': typeof NovaPilotoRoute
   '/nova/rapido': typeof NovaRapidoRoute
-  '/nova/testes': typeof NovaTestesRoute
   '/nova/validador': typeof NovaValidadorRoute
   '/profissional/cadastro': typeof ProfissionalCadastroRoute
   '/profissional/financeiro': typeof ProfissionalFinanceiroRoute
@@ -532,6 +532,7 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/avaliacoes': typeof AvaliacoesRoute
   '/billing': typeof BillingRoute
   '/candidato': typeof CandidatoRouteWithChildren
   '/comecar': typeof ComecarRoute
@@ -549,7 +550,6 @@ export interface FileRoutesById {
   '/results': typeof ResultsRouteWithChildren
   '/talent-match': typeof TalentMatchRoute
   '/team': typeof TeamRoute
-  '/testes': typeof TestesRoute
   '/assessment-journeys/new': typeof AssessmentJourneysNewRoute
   '/candidate-links/new': typeof CandidateLinksNewRoute
   '/candidato/$token': typeof CandidatoTokenRoute
@@ -561,6 +561,7 @@ export interface FileRoutesById {
   '/integrations/$provider': typeof IntegrationsProviderRoute
   '/jornada/$attemptId': typeof JornadaAttemptIdRoute
   '/marketplace/$listingId': typeof MarketplaceListingIdRoute
+  '/nova/avaliacoes': typeof NovaAvaliacoesRoute
   '/nova/blueprint': typeof NovaBlueprintRoute
   '/nova/competencias': typeof NovaCompetenciasRoute
   '/nova/dialogo': typeof NovaDialogoRoute
@@ -571,7 +572,6 @@ export interface FileRoutesById {
   '/nova/personagem': typeof NovaPersonagemRoute
   '/nova/piloto': typeof NovaPilotoRoute
   '/nova/rapido': typeof NovaRapidoRoute
-  '/nova/testes': typeof NovaTestesRoute
   '/nova/validador': typeof NovaValidadorRoute
   '/profissional/cadastro': typeof ProfissionalCadastroRoute
   '/profissional/financeiro': typeof ProfissionalFinanceiroRoute
@@ -599,6 +599,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/avaliacoes'
     | '/billing'
     | '/candidato'
     | '/comecar'
@@ -616,7 +617,6 @@ export interface FileRouteTypes {
     | '/results'
     | '/talent-match'
     | '/team'
-    | '/testes'
     | '/assessment-journeys/new'
     | '/candidate-links/new'
     | '/candidato/$token'
@@ -628,6 +628,7 @@ export interface FileRouteTypes {
     | '/integrations/$provider'
     | '/jornada/$attemptId'
     | '/marketplace/$listingId'
+    | '/nova/avaliacoes'
     | '/nova/blueprint'
     | '/nova/competencias'
     | '/nova/dialogo'
@@ -638,7 +639,6 @@ export interface FileRouteTypes {
     | '/nova/personagem'
     | '/nova/piloto'
     | '/nova/rapido'
-    | '/nova/testes'
     | '/nova/validador'
     | '/profissional/cadastro'
     | '/profissional/financeiro'
@@ -664,6 +664,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/avaliacoes'
     | '/billing'
     | '/candidato'
     | '/comecar'
@@ -681,7 +682,6 @@ export interface FileRouteTypes {
     | '/results'
     | '/talent-match'
     | '/team'
-    | '/testes'
     | '/assessment-journeys/new'
     | '/candidate-links/new'
     | '/candidato/$token'
@@ -693,6 +693,7 @@ export interface FileRouteTypes {
     | '/integrations/$provider'
     | '/jornada/$attemptId'
     | '/marketplace/$listingId'
+    | '/nova/avaliacoes'
     | '/nova/blueprint'
     | '/nova/competencias'
     | '/nova/dialogo'
@@ -703,7 +704,6 @@ export interface FileRouteTypes {
     | '/nova/personagem'
     | '/nova/piloto'
     | '/nova/rapido'
-    | '/nova/testes'
     | '/nova/validador'
     | '/profissional/cadastro'
     | '/profissional/financeiro'
@@ -729,6 +729,7 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/avaliacoes'
     | '/billing'
     | '/candidato'
     | '/comecar'
@@ -746,7 +747,6 @@ export interface FileRouteTypes {
     | '/results'
     | '/talent-match'
     | '/team'
-    | '/testes'
     | '/assessment-journeys/new'
     | '/candidate-links/new'
     | '/candidato/$token'
@@ -758,6 +758,7 @@ export interface FileRouteTypes {
     | '/integrations/$provider'
     | '/jornada/$attemptId'
     | '/marketplace/$listingId'
+    | '/nova/avaliacoes'
     | '/nova/blueprint'
     | '/nova/competencias'
     | '/nova/dialogo'
@@ -768,7 +769,6 @@ export interface FileRouteTypes {
     | '/nova/personagem'
     | '/nova/piloto'
     | '/nova/rapido'
-    | '/nova/testes'
     | '/nova/validador'
     | '/profissional/cadastro'
     | '/profissional/financeiro'
@@ -795,6 +795,7 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AvaliacoesRoute: typeof AvaliacoesRoute
   BillingRoute: typeof BillingRoute
   CandidatoRoute: typeof CandidatoRouteWithChildren
   ComecarRoute: typeof ComecarRoute
@@ -812,11 +813,11 @@ export interface RootRouteChildren {
   ResultsRoute: typeof ResultsRouteWithChildren
   TalentMatchRoute: typeof TalentMatchRoute
   TeamRoute: typeof TeamRoute
-  TestesRoute: typeof TestesRoute
   AssessmentJourneysNewRoute: typeof AssessmentJourneysNewRoute
   CandidateLinksNewRoute: typeof CandidateLinksNewRoute
   ConviteTokenRoute: typeof ConviteTokenRoute
   JornadaAttemptIdRoute: typeof JornadaAttemptIdRoute
+  NovaAvaliacoesRoute: typeof NovaAvaliacoesRoute
   NovaBlueprintRoute: typeof NovaBlueprintRoute
   NovaCompetenciasRoute: typeof NovaCompetenciasRoute
   NovaDialogoRoute: typeof NovaDialogoRoute
@@ -827,7 +828,6 @@ export interface RootRouteChildren {
   NovaPersonagemRoute: typeof NovaPersonagemRoute
   NovaPilotoRoute: typeof NovaPilotoRoute
   NovaRapidoRoute: typeof NovaRapidoRoute
-  NovaTestesRoute: typeof NovaTestesRoute
   NovaValidadorRoute: typeof NovaValidadorRoute
   ResetPasswordTokenRoute: typeof ResetPasswordTokenRoute
   SimulationsNewRoute: typeof SimulationsNewRoute
@@ -842,13 +842,6 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/testes': {
-      id: '/testes'
-      path: '/testes'
-      fullPath: '/testes'
-      preLoaderRoute: typeof TestesRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/team': {
       id: '/team'
       path: '/team'
@@ -968,6 +961,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof BillingRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/avaliacoes': {
+      id: '/avaliacoes'
+      path: '/avaliacoes'
+      fullPath: '/avaliacoes'
+      preLoaderRoute: typeof AvaliacoesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -1045,13 +1045,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof NovaValidadorRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/nova/testes': {
-      id: '/nova/testes'
-      path: '/nova/testes'
-      fullPath: '/nova/testes'
-      preLoaderRoute: typeof NovaTestesRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/nova/rapido': {
       id: '/nova/rapido'
       path: '/nova/rapido'
@@ -1120,6 +1113,13 @@ declare module '@tanstack/react-router' {
       path: '/nova/blueprint'
       fullPath: '/nova/blueprint'
       preLoaderRoute: typeof NovaBlueprintRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/nova/avaliacoes': {
+      id: '/nova/avaliacoes'
+      path: '/nova/avaliacoes'
+      fullPath: '/nova/avaliacoes'
+      preLoaderRoute: typeof NovaAvaliacoesRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/marketplace/$listingId': {
@@ -1387,6 +1387,7 @@ const ResultsRouteWithChildren =
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AvaliacoesRoute: AvaliacoesRoute,
   BillingRoute: BillingRoute,
   CandidatoRoute: CandidatoRouteWithChildren,
   ComecarRoute: ComecarRoute,
@@ -1404,11 +1405,11 @@ const rootRouteChildren: RootRouteChildren = {
   ResultsRoute: ResultsRouteWithChildren,
   TalentMatchRoute: TalentMatchRoute,
   TeamRoute: TeamRoute,
-  TestesRoute: TestesRoute,
   AssessmentJourneysNewRoute: AssessmentJourneysNewRoute,
   CandidateLinksNewRoute: CandidateLinksNewRoute,
   ConviteTokenRoute: ConviteTokenRoute,
   JornadaAttemptIdRoute: JornadaAttemptIdRoute,
+  NovaAvaliacoesRoute: NovaAvaliacoesRoute,
   NovaBlueprintRoute: NovaBlueprintRoute,
   NovaCompetenciasRoute: NovaCompetenciasRoute,
   NovaDialogoRoute: NovaDialogoRoute,
@@ -1419,7 +1420,6 @@ const rootRouteChildren: RootRouteChildren = {
   NovaPersonagemRoute: NovaPersonagemRoute,
   NovaPilotoRoute: NovaPilotoRoute,
   NovaRapidoRoute: NovaRapidoRoute,
-  NovaTestesRoute: NovaTestesRoute,
   NovaValidadorRoute: NovaValidadorRoute,
   ResetPasswordTokenRoute: ResetPasswordTokenRoute,
   SimulationsNewRoute: SimulationsNewRoute,

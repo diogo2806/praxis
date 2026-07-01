@@ -65,7 +65,7 @@ export function saveAuthenticatedSession(response: AuthenticatedSessionResponse)
 }
 
 export function defaultAuthenticatedRoute(roles: string[]) {
-  return isProfessionalRole(roles) ? "/profissional" : "/testes";
+  return isProfessionalRole(roles) ? "/profissional" : "/avaliacoes";
 }
 
 function parseRoles(value: string | null) {
