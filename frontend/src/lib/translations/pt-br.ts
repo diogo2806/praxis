@@ -58,6 +58,17 @@ export const ptBr = {
     governanceNav: "Histórico, versões e auditoria",
     complianceNav: "LGPD, transparência e base técnica do resultado",
   },
+  marketplace: {
+    title: "Marketplace",
+    listings: "Anuncios",
+    purchases: "Minhas compras",
+    professionalArea: "Area do profissional",
+    publishTest: "Publicar teste",
+    saveDraft: "Salvar rascunho",
+    submitForReview: "Enviar para revisao",
+    payouts: "Repasses",
+    disputes: "Disputas",
+  },
   wizard: {
     createTest: "Criar novo teste",
     stepOf: "etapa {current} de {total}",
