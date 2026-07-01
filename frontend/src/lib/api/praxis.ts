@@ -2376,11 +2376,27 @@ export interface MarketplaceListingSummary {
   professional: MarketplaceProfessionalSummary;
 }
 
+export interface MarketplaceListingPreviewOption {
+  id: number;
+  optionId: string;
+  text: string;
+}
+
+export interface MarketplaceListingPreviewNode {
+  id: number;
+  nodeId: string;
+  turnIndex: number;
+  speaker: string;
+  message: string;
+  options: MarketplaceListingPreviewOption[];
+}
+
 export interface MarketplaceListingDetail extends MarketplaceListingSummary {
   description: string;
   sourceSimulationId: string;
   sourceVersionId: number | null;
   previewNodeIds: number[];
+  previewNodes: MarketplaceListingPreviewNode[];
 }
 
 export interface MarketplaceProfessionalProfile {
