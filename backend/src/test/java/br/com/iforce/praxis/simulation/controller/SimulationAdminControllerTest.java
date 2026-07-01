@@ -69,6 +69,15 @@ class SimulationAdminControllerTest {
     }
 
     @Test
+    void calibrationSeededVersionReturnsInsufficientSampleReport() throws Exception {
+        mockMvc.perform(get("/api/v1/simulations/sim-atendimento-caos/versions/1/calibration"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.sampleSize").value(0))
+                .andExpect(jsonPath("$.minimumSampleRequired").value(30))
+                .andExpect(jsonPath("$.sufficientSample").value(false));
+    }
+
+    @Test
     void createDraftSimulationFromBlueprintPersistsInitialDraft() throws Exception {
         mockMvc.perform(post("/api/v1/simulations/drafts")
                         .contentType(MediaType.APPLICATION_JSON)

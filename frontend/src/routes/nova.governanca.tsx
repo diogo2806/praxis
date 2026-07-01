@@ -499,25 +499,28 @@ function SimulationLinks({
 
   return (
     <>
-      {simulations.slice(0, 3).map((simulation) => (
-        <Link
-          key={simulation.id}
-          to="/nova/piloto"
-          search={{
-            simulationId: simulation.id,
-            versionNumber: simulation.versionNumber,
-          }}
-          className="rounded-md border border-border bg-card px-4 py-3 text-sm hover:bg-accent"
-        >
-          <span className="block font-medium">{simulation.name}</span>
-          <span className="mt-1 block">
-            <StatusBadge
-              status={simulation.status}
-              maturity={maturityForStatus(simulation.status)}
-            />
-          </span>
-        </Link>
-      ))}
+      {simulations.slice(0, 3).map((simulation) => {
+        const versionNumber = simulation.livePublishedVersionNumber ?? simulation.versionNumber;
+        return (
+          <Link
+            key={`${simulation.id}-${versionNumber}`}
+            to="/nova/piloto"
+            search={{
+              simulationId: simulation.id,
+              versionNumber,
+            }}
+            className="rounded-md border border-border bg-card px-4 py-3 text-sm hover:bg-accent"
+          >
+            <span className="block font-medium">{simulation.name}</span>
+            <span className="mt-1 block">
+              <StatusBadge
+                status={simulation.status}
+                maturity={maturityForStatus(simulation.status)}
+              />
+            </span>
+          </Link>
+        );
+      })}
     </>
   );
 }

@@ -172,16 +172,19 @@ function SimulationLinks({
   if (loading) return <span className="text-sm text-muted-foreground">Carregando...</span>;
   return (
     <div className="flex flex-wrap gap-2">
-      {simulations.map((simulation) => (
-        <Link
-          key={`${simulation.id}-${simulation.versionNumber}`}
-          to="/nova/piloto"
-          search={{ simulationId: simulation.id, versionNumber: simulation.versionNumber }}
-          className="rounded-md border border-border bg-card px-3 py-2 text-sm hover:bg-accent"
-        >
-          {simulation.name} v{simulation.versionNumber}
-        </Link>
-      ))}
+      {simulations.map((simulation) => {
+        const versionNumber = simulation.livePublishedVersionNumber ?? simulation.versionNumber;
+        return (
+          <Link
+            key={`${simulation.id}-${versionNumber}`}
+            to="/nova/piloto"
+            search={{ simulationId: simulation.id, versionNumber }}
+            className="rounded-md border border-border bg-card px-3 py-2 text-sm hover:bg-accent"
+          >
+            {simulation.name} v{versionNumber}
+          </Link>
+        );
+      })}
     </div>
   );
 }
