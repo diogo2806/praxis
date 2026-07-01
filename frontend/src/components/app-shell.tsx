@@ -18,6 +18,7 @@ import {
   Settings,
   ShieldCheck,
   Sparkles,
+  Store,
   Target,
   UserRound,
   Users,
@@ -73,6 +74,12 @@ const getNav = (t: TranslationMap) =>
       label: "Jornadas",
       icon: Workflow,
       desc: "Sequencias de testes publicados",
+    },
+    {
+      to: "/marketplace",
+      label: "Marketplace",
+      icon: Store,
+      desc: "Testes prontos para compra",
     },
     { to: "/enviar-link", label: t.common.sendLink, icon: Link2, desc: t.descriptions.sendLink },
   ] as const;
