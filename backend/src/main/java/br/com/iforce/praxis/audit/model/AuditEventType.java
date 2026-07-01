@@ -78,6 +78,8 @@ public enum AuditEventType implements DescribedEnum {
     MARKETPLACE_LISTING_APPROVED("marketplaceListingApproved"),
     MARKETPLACE_LISTING_REJECTED("marketplaceListingRejected"),
     MARKETPLACE_LISTING_SUSPENDED("marketplaceListingSuspended"),
+    MARKETPLACE_ORDER_DISPUTED("marketplaceOrderDisputed"),
+    MARKETPLACE_ORDER_REFUNDED("marketplaceOrderRefunded"),
     MARKETPLACE_PROFESSIONAL_ANONYMIZED("marketplaceProfessionalAnonymized");
 
     private final String descricao;
