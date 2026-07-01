@@ -2706,3 +2706,14 @@ export function moderateMarketplaceListing(
     { method: "POST", body: JSON.stringify({ reason }) },
   );
 }
+
+export function listAdminMarketplaceDisputes() {
+  return request<MarketplaceOrderResponse[]>("/api/v1/admin/marketplace/disputes");
+}
+
+export function refundAdminMarketplaceOrder(id: number, reason?: string) {
+  return request<MarketplaceOrderResponse>(
+    `/api/v1/admin/marketplace/orders/${encodeURIComponent(String(id))}/refund`,
+    { method: "POST", body: JSON.stringify({ reason }) },
+  );
+}
