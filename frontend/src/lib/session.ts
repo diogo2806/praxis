@@ -6,6 +6,8 @@ export type PraxisSession = {
   workspaceName: string;
   userName: string;
   userRole: string;
+  roles: string[];
+  isProfessional: boolean;
 };
 
 const anonymousSession: PraxisSession = {
@@ -14,6 +16,8 @@ const anonymousSession: PraxisSession = {
   workspaceName: "Workspace",
   userName: "Usuário",
   userRole: "Operador",
+  roles: [],
+  isProfessional: false,
 };
 
 export function getSession(): PraxisSession {
@@ -21,12 +25,15 @@ export function getSession(): PraxisSession {
     return anonymousSession;
   }
 
+  const roles = parseRoles(localStorage.getItem("praxis.userRole"));
   return {
     token: localStorage.getItem("praxis.token"),
     empresaId: localStorage.getItem("praxis.empresaId"),
     workspaceName: localStorage.getItem("praxis.workspaceName") ?? "Workspace",
     userName: localStorage.getItem("praxis.userName") ?? "Usuário",
     userRole: localStorage.getItem("praxis.userRole") ?? "Operador",
+    roles,
+    isProfessional: isProfessionalRole(roles),
   };
 }
 
@@ -55,4 +62,22 @@ export function saveAuthenticatedSession(response: AuthenticatedSessionResponse)
   localStorage.setItem("praxis.workspaceName", response.empresaId);
   localStorage.setItem("praxis.userName", response.name);
   localStorage.setItem("praxis.userRole", response.roles.join(", "));
+}
+
+export function defaultAuthenticatedRoute(roles: string[]) {
+  return isProfessionalRole(roles) ? "/profissional" : "/app";
+}
+
+function parseRoles(value: string | null) {
+  if (!value) {
+    return [];
+  }
+  return value
+    .split(",")
+    .map((role) => role.trim())
+    .filter(Boolean);
+}
+
+function isProfessionalRole(roles: string[]) {
+  return roles.includes("PROFESSIONAL") || roles.includes("ROLE_PROFESSIONAL");
 }
