@@ -16,7 +16,7 @@ import { cn } from "@/lib/utils";
 export const Route = createFileRoute("/results/$attemptId")({
   head: () => ({
     meta: [
-      { title: "Resultado do candidato - Praxis" },
+      { title: "Resultado do candidato - Práxis" },
       {
         name: "description",
         content: "Detalhe do resultado por candidato, competências, respostas e decisão humana.",

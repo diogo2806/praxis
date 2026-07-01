@@ -148,13 +148,13 @@ function Page() {
         <h1 className="mt-1 font-display text-3xl">Objetivo do modelo base</h1>
         <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
           Esta etapa usa o modelo base salvo no sistema. Ajustes estruturais continuam em Nova
-          teste.
+          avaliação.
         </p>
       </div>
 
       {!hasDraftContext ? (
         <EmptyState
-          title="Escolha um teste real"
+          title="Escolha uma avaliação real"
           description="Sem contexto de versão, esta tela não cria objetivo local nem carrega exemplos."
           actions={
             <SimulationLinks
@@ -165,7 +165,7 @@ function Page() {
         />
       ) : versionQuery.isLoading ? (
         <StateBanner tone="info" title="Carregando modelo base">
-          Buscando teste {search.simulationId} v{search.versionNumber}.
+          Buscando avaliação {search.simulationId} v{search.versionNumber}.
         </StateBanner>
       ) : versionQuery.isError ? (
         <StateBanner tone="danger" title="Não foi possível carregar o modelo base">

@@ -145,7 +145,7 @@ export const esMx = {
     descriptionCompetenciesLabel: "Competencias",
   },
   dashboard: {
-    title: "Panel - Praxis",
+    title: "Panel - Práxis",
     metaDescription:
       "Panel: evaluaciones activas, calidad, preparación e integraciones opcionales.",
     greeting: "Buenas tardes",
@@ -190,7 +190,7 @@ export const esMx = {
     },
   },
   getStarted: {
-    title: "Comienza aquí - Praxis",
+    title: "Comienza aquí - Práxis",
     heading: "Bienvenido a Praxis 👋",
     howItWorks: "¿Cómo funciona?",
     forWhom: "¿Para quién es?",
@@ -208,7 +208,7 @@ export const esMx = {
       "Evaluación situacional estructurada, con escenarios interactivos, puntuación por criterios definidos e historial de cambios.",
   },
   governance: {
-    title: "Gobierno y Auditoría - Praxis",
+    title: "Gobierno y Auditoría - Práxis",
     heading: "Gobierno y auditoría",
     editingPublished: "Editar publicado crea nueva versión",
     candidatesInProgress: "Las participaciones en progreso permanecen en la versión actual",
@@ -222,7 +222,7 @@ export const esMx = {
     noActiveSimulations: "Ninguna simulación activa encontrada",
   },
   lgpd: {
-    title: "Protección de Datos y Transparencia - Praxis",
+    title: "Protección de Datos y Transparencia - Práxis",
     heading: "Protección de datos y transparencia de resultados",
     selectSimulation: "Selecciona una simulación para ver la explicación",
     normalizedScoring: "Calificación normalizada por ruta",
@@ -237,7 +237,7 @@ export const esMx = {
     eliminatoryUsage: "El uso eliminatorio solo se permite si...",
   },
   defensability: {
-    title: "Confiabilidad y Seguridad Técnica - Praxis",
+    title: "Confiabilidad y Seguridad Técnica - Práxis",
     heading: "Confiabilidad y seguridad técnica",
     selectSimulation: "Selecciona una simulación para ver la justificación",
     constructDefined: "Constructo definido",

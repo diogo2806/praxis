@@ -116,7 +116,7 @@ export const Route = createFileRoute("/compliance")({
           : undefined,
   }),
   head: () => ({
-    meta: [{ title: "Conformidade dos testes - Praxis" }],
+    meta: [{ title: "Conformidade das avaliações - Práxis" }],
   }),
   component: CompliancePage,
 });
@@ -214,8 +214,8 @@ function CompliancePage() {
           </div>
           <h1 className="mt-1 font-serif text-3xl leading-tight">{t.common.compliance}</h1>
           <p className="mt-2 max-w-3xl text-sm text-muted-foreground">
-            Cada linha é uma versão de teste: status de governança, taxa de conclusão e bloqueios em
-            aberto, em um único lugar.
+            Cada linha é uma versão de avaliação: status de governança, taxa de conclusão e
+            bloqueios em aberto, em um único lugar.
           </p>
         </div>
 
@@ -223,8 +223,8 @@ function CompliancePage() {
           <Info className="mt-0.5 h-4 w-4 shrink-0 text-primary" aria-hidden />
           <div className="text-muted-foreground">
             <span className="font-medium text-foreground">O que é esta tela?</span> Aqui você
-            acompanha se cada versão de teste está pronta para ir ao ar com segurança. Use a busca e
-            o filtro de status para encontrar uma versão e clique em{" "}
+            acompanha se cada versão de avaliação está pronta para ir ao ar com segurança. Use a
+            busca e o filtro de status para encontrar uma versão e clique em{" "}
             <span className="font-medium text-foreground">Detalhes</span> para abrir um resumo
             completo — com pendências, critérios de avaliação, caminhos possíveis e o histórico de
             alterações.
@@ -247,7 +247,7 @@ function CompliancePage() {
               <input
                 value={query}
                 onChange={(event) => setQuery(event.target.value)}
-                placeholder="Buscar teste, autor..."
+                placeholder="Buscar avaliação, autor..."
                 className="rounded-md border border-border bg-background px-2.5 py-1.5 text-xs outline-none focus:ring-1 focus:ring-ring"
               />
               <select
@@ -266,7 +266,7 @@ function CompliancePage() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Teste</TableHead>
+                  <TableHead>Avaliação</TableHead>
                   <TableHead>Versão</TableHead>
                   <TableHead>{t.common.status}</TableHead>
                   <TableHead>Taxa de conclusão</TableHead>
@@ -296,7 +296,7 @@ function CompliancePage() {
                 ) : rows.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={8} className="p-4 text-sm text-muted-foreground">
-                      Nenhum teste encontrado.
+                      Nenhuma avaliação encontrada.
                     </TableCell>
                   </TableRow>
                 ) : (
@@ -475,10 +475,10 @@ function ComplianceDialog({
 
           <DialogSection
             title="Caminhos possíveis"
-            description={`Cada caminho é uma rota que o candidato pode seguir no teste. Caminhos verdes alcançam a nota de corte (${CORTA}/100); os vermelhos ficam abaixo.`}
+            description={`Cada caminho é uma rota que o candidato pode seguir na avaliação. Caminhos verdes alcançam a nota de corte (${CORTA}/100); os vermelhos ficam abaixo.`}
           >
             {loading || !version ? (
-              <PanelSkeleton label="Mapeando caminhos do teste..." />
+              <PanelSkeleton label="Mapeando caminhos da avaliação..." />
             ) : (
               <CaminhosPanel version={version} cutoff={CORTA} />
             )}
@@ -755,7 +755,7 @@ function CriteriosPanel({ version }: { version: SimulationVersionDetailResponse 
                   </TableCell>
                   <TableCell
                     className="text-muted-foreground"
-                    title="Em quantas etapas do teste este critério é avaliado"
+                    title="Em quantas etapas da avaliação este critério é avaliado"
                   >
                     {item.cobertura === 1 ? "1 etapa" : `${item.cobertura} etapas`}
                   </TableCell>
@@ -944,7 +944,7 @@ function PathAttemptDetails({ path }: { path: PathCandidate }) {
           <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
             <span className="text-muted-foreground">Etapa {step.turnIndex}</span>
             <span className="text-muted-foreground">
-              {step.nextNodeId ? "leva à próxima etapa" : "encerra o teste"}
+              {step.nextNodeId ? "leva à próxima etapa" : "encerra a avaliação"}
             </span>
           </div>
           <div className="mt-2 text-xs">
@@ -1203,8 +1203,8 @@ function formatAuditMessage(message: string) {
     .replace("Nó de simulação adicionado.", "Etapa adicionada.")
     .replace("Nó de simulação atualizado.", "Etapa atualizada.")
     .replace("Nó de simulação removido.", "Etapa removida.")
-    .replaceAll("simulação", "teste")
-    .replaceAll("Simulação", "Teste")
+    .replaceAll("simulação", "avaliação")
+    .replaceAll("Simulação", "Avaliação")
     .replaceAll("nó", "etapa")
     .replaceAll("Nó", "Etapa");
 }

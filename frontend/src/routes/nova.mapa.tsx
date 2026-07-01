@@ -64,10 +64,10 @@ export const Route = createFileRoute("/nova/mapa")({
   }),
   head: () => ({
     meta: [
-      { title: "Construtor Visual - Praxis" },
+      { title: "Construtor Visual - Práxis" },
       {
         name: "description",
-        content: "Canvas drag and drop para montar e validar o fluxo do teste.",
+        content: "Canvas drag and drop para montar e validar o fluxo da avaliação.",
       },
     ],
   }),
@@ -223,7 +223,7 @@ function Page() {
           <div className="text-xs uppercase text-primary">Passo 3</div>
           <h1 className="mt-1 font-display text-3xl">Construtor visual</h1>
           <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
-            Monte o fluxo do teste arrastando etapas e ligando alternativas com setas.
+            Monte o fluxo da avaliação arrastando etapas e ligando alternativas com setas.
           </p>
         </div>
         <div className="flex flex-col items-end gap-2">
@@ -250,7 +250,7 @@ function Page() {
         />
       ) : versionQuery.isLoading || empresaConfig.isLoading ? (
         <StateBanner tone="info" title="Carregando mapa">
-          Buscando o fluxo da conversa do teste {search.simulationId} v{search.versionNumber}.
+          Buscando o fluxo da conversa da avaliação {search.simulationId} v{search.versionNumber}.
         </StateBanner>
       ) : versionQuery.isError || empresaConfig.isError ? (
         <StateBanner tone="danger" title="Não foi possível carregar o mapa">
@@ -541,7 +541,7 @@ function SimulationGraphCanvas({
     }
 
     if (targetNodeId && createsCycle(version.nodes, sourceNode.id, targetNodeId)) {
-      onConnectionRejected("Loops não são permitidos em testes.");
+      onConnectionRejected("Loops não são permitidos em avaliações.");
       return;
     }
 

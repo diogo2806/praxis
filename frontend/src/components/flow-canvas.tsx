@@ -341,13 +341,13 @@ export default function FlowCanvas({
       <div className="vx-ctx">
         <button className="vx-ctx-toggle" onClick={() => setCtxOpen((v) => !v)}>
           <ChevronDown size={15} className={ctxOpen ? "vx-rot" : ""} />
-          Contexto do teste
+          Contexto da avaliação
           <span className="vx-ctx-name">{version.name}</span>
         </button>
         {ctxOpen && (
           <div className="vx-ctx-grid">
             <div className="vx-ctx-col">
-              <div className="vx-ctx-tag"><Target size={12} /> Etapa 1 · Teste</div>
+              <div className="vx-ctx-tag"><Target size={12} /> Etapa 1 · Avaliação</div>
               <div className="vx-ctx-row"><b>Nome</b><span>{version.name || "—"}</span></div>
               <div className="vx-ctx-row"><b>Descrição</b><span>{version.description || "—"}</span></div>
               {resultUse && <div className="vx-ctx-row"><b>Uso do resultado</b><span>{resultUse}</span></div>}

@@ -19,17 +19,17 @@ export const glossario = {
   "decisao-contexto":
     "Escolha baseada na situação: registrar a decisão da pessoa diante de um cenário simulado, para apoiar a análise do processo.",
   "trilha-auditavel":
-    "Histórico completo de alterações: registro de todos os passos do teste, que pode ser conferido depois por outra pessoa.",
+    "Histórico completo de alterações: registro de todos os passos da avaliação, que pode ser conferido depois por outra pessoa.",
   "score-auditavel":
     "Cada ponto da nota pode ser conferido: dá para ver de qual regra e de qual resposta ele veio.",
-  blueprint: "Plano do teste: define o cargo, a situação e o que será medido.",
-  validador: "Etapa que confere se a estrutura do teste está completa e coerente antes de entrar no ar.",
+  blueprint: "Plano da avaliação: define o cargo, a situação e o que será medido.",
+  validador: "Etapa que confere se a estrutura da avaliação está completa e coerente antes de entrar no ar.",
   calibracao:
     "Análise dos dados reais do piloto para encontrar ajustes necessários. Não é uma etapa obrigatória para entender a tela.",
   "vazamento-prova":
-    "Quando respostas ou critérios internos circulam fora do público autorizado, reduzindo a utilidade do teste.",
+    "Quando respostas ou critérios internos circulam fora do público autorizado, reduzindo a utilidade da avaliação.",
   maturidade:
-    "Prontidão do teste: indica se ele ainda está em rascunho, em revisão ou pronto para uso.",
+    "Prontidão da avaliação: indica se ela ainda está em rascunho, em revisão ou pronta para uso.",
   backend: "A parte do sistema que roda nos servidores, nos bastidores, fora da tela.",
   "caixa-preta":
     "Sistema que decide sem explicar como chegou ao resultado. Aqui o cálculo usa regras, pesos e critérios consultáveis.",
@@ -51,10 +51,10 @@ export const glossario = {
   sjt: "Teste de Julgamento Situacional (SJT) — teste que mostra como alguém decide diante de situações reais do trabalho.",
   determinisitco:
     "Nota calculada por regras fixas, sempre igual: as mesmas respostas geram sempre a mesma pontuação.",
-  empresa: "Sua empresa ou cliente — espaço isolado onde você cria e gerencia testes.",
+  empresa: "Sua empresa ou cliente — espaço isolado onde você cria e gerencia avaliações.",
   taxonomia: "Catálogo de competências da sua empresa — lista de habilidades que você mede.",
-  workspace: "Área de trabalho: seu espaço pessoal para criar e gerenciar testes.",
-  score: "Nota ou pontuação — resultado numérico do teste.",
+  workspace: "Área de trabalho: seu espaço pessoal para criar e gerenciar avaliações.",
+  score: "Nota ou pontuação — resultado numérico da avaliação.",
   defensabilidade:
     "Capacidade de demonstrar quais regras, critérios, pesos, respostas e versões participaram do cálculo apresentado.",
   override: "Ajuste manual ou exceção — quando alguém altera um resultado fora das regras normais.",

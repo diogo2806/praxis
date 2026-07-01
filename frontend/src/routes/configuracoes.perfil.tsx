@@ -9,7 +9,7 @@ import { getCompanyProfile } from "@/lib/api/praxis";
 export const Route = createFileRoute("/configuracoes/perfil")({
   head: () => ({
     meta: [
-      { title: "Perfil da empresa - Praxis" },
+      { title: "Perfil da empresa - Práxis" },
       {
         name: "description",
         content: "Dados cadastrais da empresa no Praxis.",

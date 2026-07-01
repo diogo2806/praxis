@@ -14,50 +14,33 @@ const LanguageContext = createContext<LanguageContextType | undefined>(undefined
 
 const LANGUAGE_STORAGE_KEY = "praxis-language";
 
-const getDefaultLanguage = (): Language => {
-  if (typeof window === "undefined") return "pt-BR";
-
-  try {
-    const stored = localStorage.getItem(LANGUAGE_STORAGE_KEY) as Language | null;
-    if (stored) return stored;
-
-    const browserLang = navigator.language.toLowerCase();
-    if (browserLang.startsWith("en")) return "en";
-    if (browserLang.startsWith("es")) return "es-MX";
-  } catch {
-    // localStorage might not be available
-  }
-
-  return "pt-BR";
-};
+const isKnownLanguage = (value: string | null): value is Language =>
+  value === "pt-BR" || value === "en" || value === "es-MX";
 
 export function LanguageProvider({ children }: { children: ReactNode }) {
-  const [language, setLanguageState] = useState<Language>(() => {
-    // Initialize immediately with server-safe default
-    if (typeof window === "undefined") return "pt-BR";
-    return getDefaultLanguage();
-  });
-  const [mounted, setMounted] = useState(false);
+  // O primeiro render do cliente precisa bater com o HTML do servidor (pt-BR);
+  // a preferência salva é aplicada depois da hidratação, no efeito abaixo.
+  const [language, setLanguageState] = useState<Language>("pt-BR");
 
   useEffect(() => {
-    // Update language from localStorage on client-side mount
-    const stored = localStorage.getItem(LANGUAGE_STORAGE_KEY) as Language | null;
-    if (stored) {
-      setLanguageState(stored);
-    } else {
-      const browserLang = navigator.language.toLowerCase();
-      if (browserLang.startsWith("en")) {
-        setLanguageState("en");
-      } else if (browserLang.startsWith("es")) {
-        setLanguageState("es-MX");
+    try {
+      const stored = localStorage.getItem(LANGUAGE_STORAGE_KEY);
+      if (isKnownLanguage(stored)) {
+        setLanguageState(stored);
+        document.documentElement.lang = stored;
       }
+    } catch {
+      // localStorage pode estar indisponível
     }
-    setMounted(true);
   }, []);
 
   const setLanguage = (newLanguage: Language) => {
     setLanguageState(newLanguage);
-    localStorage.setItem(LANGUAGE_STORAGE_KEY, newLanguage);
+    try {
+      localStorage.setItem(LANGUAGE_STORAGE_KEY, newLanguage);
+    } catch {
+      // localStorage pode estar indisponível
+    }
     document.documentElement.lang = newLanguage;
   };
 

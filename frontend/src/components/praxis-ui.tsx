@@ -211,7 +211,7 @@ export function GlobalProductStateBar({
       label: "No ar para candidatos",
       Icon: Lock,
       tone: "ok",
-      hint: "Esta versão pode ser enviada para candidatos. Editar cria uma nova versão sem afetar quem já recebeu o teste.",
+      hint: "Esta versão pode ser enviada para candidatos. Editar cria uma nova versão sem afetar quem já recebeu a avaliação.",
     },
   } as const;
   const publicationMeta = {
@@ -219,7 +219,7 @@ export function GlobalProductStateBar({
       label: "Publicação parada",
       Icon: Send,
       tone: "muted",
-      hint: "Nenhuma publicação em andamento para este teste.",
+      hint: "Nenhuma publicação em andamento para esta avaliação.",
     },
     running: {
       label: "Publicação em andamento",
@@ -276,7 +276,7 @@ const globalErrorItems = [
     tone: "danger",
   },
   {
-    title: "Carregamento do teste",
+    title: "Carregamento da avaliação",
     description: "Recuperação: skeleton, recarregar e manter rascunho local visível.",
     action: "Recarregar",
     Icon: Loader2,

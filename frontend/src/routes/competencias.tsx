@@ -22,7 +22,7 @@ export const Route = createFileRoute("/competencias")({
       { title: "Gerenciar Competências - Práxis" },
       {
         name: "description",
-        content: "Crie e edite as competências utilizadas nas suos testes.",
+        content: "Crie e edite as competências utilizadas nas suas avaliações.",
       },
     ],
   }),
@@ -157,7 +157,7 @@ function CompetenciasManagement() {
         <div>
           <h1 className="text-3xl font-semibold">Gerenciar Competências</h1>
           <p className="mt-2 text-sm text-muted-foreground">
-            Cadastre e edite as competências que aparecem nas suos testes.
+            Cadastre e edite as competências que aparecem nas suas avaliações.
           </p>
         </div>
         <button
@@ -180,7 +180,7 @@ function CompetenciasManagement() {
       {competencias.length === 0 ? (
         <EmptyState
           title="Nenhuma competência cadastrada"
-          description="Crie sua primeira competência para começar a usar nos testes."
+          description="Crie sua primeira competência para começar a usar nas avaliações."
           actions={
             <button
               onClick={handleOpenCreateDialog}
@@ -373,7 +373,7 @@ function CompetenciasManagement() {
             <DialogTitle>Remover competência</DialogTitle>
             <DialogDescription>
               Confirme para remover esta competência do catálogo. Essa alteração afeta novos planos
-              de teste criados a partir de agora.
+              de avaliação criados a partir de agora.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">

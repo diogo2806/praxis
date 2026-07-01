@@ -425,7 +425,7 @@ function Page() {
                   className="mt-1 h-4 w-4"
                 />
                 <span>
-                  <span className="block font-medium">Publicar este teste no Marketplace</span>
+                  <span className="block font-medium">Publicar esta avaliação no Marketplace</span>
                   <span className="mt-1 block text-muted-foreground">
                     Profissionais podem transformar uma versao publicada em anuncio para revisao.
                   </span>
@@ -664,7 +664,7 @@ function FieldMeta({ error, count, max }: { error?: string; count: number; max: 
 }
 
 function competencyHint(label: string) {
-  return `Competência "${label}": esta competência descreve o que será cobrado durante o teste.`;
+  return `Competência "${label}": esta competência descreve o que será cobrado durante a avaliação.`;
 }
 
 function Help({ children }: { children: React.ReactNode }) {

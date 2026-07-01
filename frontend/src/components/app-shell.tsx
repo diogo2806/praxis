@@ -189,18 +189,13 @@ function SidebarContent({
   return (
     <>
       <div className="border-b border-border px-5 py-5">
-        <div className="flex items-center gap-2 text-xs uppercase text-muted-foreground">
-          <span className="inline-block h-1.5 w-1.5 rounded-full bg-primary" />
-          {t.common.testCreator}
-        </div>
-        <div className="mt-2 font-display text-2xl leading-tight">
-          {t.common.situationalAssessment.split("\n")[0]}
-          <br />
-          <span className="text-foreground/85">
-            {t.common.situationalAssessment.split("\n")[1] || "Situacional"}
-          </span>
-        </div>
-        <div className="mt-3 text-[11px] uppercase text-muted-foreground">
+        <ShellLink closeOnSelect={closeOnSelect}>
+          <Link to="/dashboard" className="inline-flex items-baseline gap-1.5">
+            <span className="font-display text-3xl leading-none text-foreground">Práxis</span>
+            <span className="inline-block h-1.5 w-1.5 rounded-full bg-primary" />
+          </Link>
+        </ShellLink>
+        <div className="mt-3 text-[11px] uppercase leading-relaxed text-muted-foreground">
           Avaliações situacionais com critérios rastreáveis
         </div>
       </div>
@@ -368,7 +363,9 @@ function pageLabel(pathname: string, t: TranslationMap) {
   if (pathname === "/competencias") return t.common.competencies;
   if (pathname === "/comecar") return t.common.startHere;
   if (pathname === "/team") return "Minha equipe";
-  return t.common.workspace;
+  if (pathname === "/candidato" || pathname.startsWith("/candidato/"))
+    return t.common.candidateView;
+  return "Práxis";
 }
 
 export function AppShell({ children }: { children: ReactNode }) {

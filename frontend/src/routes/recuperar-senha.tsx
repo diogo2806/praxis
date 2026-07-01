@@ -11,7 +11,7 @@ import { PraxisApiError, requestPasswordReset } from "@/lib/api/praxis";
 export const Route = createFileRoute("/recuperar-senha")({
   head: () => ({
     meta: [
-      { title: "Recuperar senha - Praxis" },
+      { title: "Recuperar senha - Práxis" },
       {
         name: "description",
         content: "Receba um link temporário para redefinir sua senha de acesso ao Praxis.",

@@ -67,7 +67,7 @@ export const Route = createFileRoute("/nova/validador")({
   }),
   head: () => ({
     meta: [
-      { title: "Validador de Qualidade - Praxis" },
+      { title: "Validador de Qualidade - Práxis" },
       {
         name: "description",
         content: "Diagnóstico determinístico com bloqueios de publicação.",
@@ -1154,7 +1154,7 @@ function NormalizedScoreMap({
   const [zoom, setZoom] = useState(1);
   const [editingOptionId, setEditingOptionId] = useState<string | null>(null);
   const [optionDraft, setOptionDraft] = useState<OptionDraft | null>(null);
-  const title = version?.name ?? simulationId ?? "Teste";
+  const title = version?.name ?? simulationId ?? "Avaliação";
   const flow = version ? buildInteractiveScoreFlow(version) : null;
   const nodeLabels = version ? buildTurnStepLabels(version.nodes) : new Map<string, string>();
   const nodeLabel = (nodeId: string) => nodeLabels.get(nodeId) ?? nodeId;
@@ -2291,7 +2291,7 @@ function mapValidationIssues(validation: SimulationValidationResponse): Validati
         nodeId: null,
         tone: "ok",
         text: "Nenhum bloqueio ou alerta encontrado nesta versão",
-        target: `Teste ${validation.simulationId} v${validation.versionNumber}`,
+        target: `Avaliação ${validation.simulationId} v${validation.versionNumber}`,
       },
     ];
   }
@@ -2301,7 +2301,7 @@ function mapValidationIssues(validation: SimulationValidationResponse): Validati
     nodeId: issue.nodeId,
     tone: issue.severity === "blocker" ? "danger" : "warn",
     text: issue.message,
-    target: issue.nodeId ? `Editor: ${issue.nodeId}` : "Teste",
+    target: issue.nodeId ? `Editor: ${issue.nodeId}` : "Avaliação",
   }));
 }
 
@@ -2315,7 +2315,7 @@ function SimulationLinks({
   if (loading) {
     return (
       <div className="rounded-md border border-border bg-card px-4 py-3 text-sm">
-        Carregando testes...
+        Carregando avaliações...
       </div>
     );
   }
@@ -2326,7 +2326,7 @@ function SimulationLinks({
         to="/nova/blueprint"
         className="rounded-md border border-border bg-card px-4 py-3 text-sm hover:bg-accent"
       >
-        Criar teste
+        Criar avaliação
       </Link>
     );
   }

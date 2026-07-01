@@ -147,7 +147,7 @@ function Page() {
 
       {!hasDraftContext ? (
         <EmptyState
-          title="Escolha um teste real"
+          title="Escolha uma avaliação real"
           description="Esta etapa não usa personagem de exemplo."
           actions={
             <SimulationLinks
@@ -158,7 +158,7 @@ function Page() {
         />
       ) : empresaConfigLoading || versionQuery.isLoading ? (
         <StateBanner tone="info" title="Carregando fluxo da conversa">
-          Buscando a primeira etapa do teste {search.simulationId} v{search.versionNumber}.
+          Buscando a primeira etapa da avaliação {search.simulationId} v{search.versionNumber}.
         </StateBanner>
       ) : empresaConfigError ? (
         <StateBanner tone="danger" title="Não foi possível carregar a configuração">
