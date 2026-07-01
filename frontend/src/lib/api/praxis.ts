@@ -2599,6 +2599,10 @@ export function getMarketplaceProfessionalMe() {
   return request<MarketplaceProfessionalProfile>("/api/v1/marketplace/professionals/me");
 }
 
+export function getMarketplaceProfessional(id: number | string) {
+  return request<MarketplaceProfessionalProfile>(`/api/v1/marketplace/professionals/${encodeURIComponent(String(id))}`);
+}
+
 export function getMarketplaceProfessionalDashboard() {
   return request<MarketplaceProfessionalDashboard>("/api/v1/marketplace/professionals/me/dashboard");
 }
