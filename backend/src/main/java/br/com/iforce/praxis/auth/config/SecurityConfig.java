@@ -117,6 +117,8 @@ public class SecurityConfig {
                                 "/api/v1/marketplace/listings",
                                 "/api/v1/marketplace/listings/*/submit"
                         ).hasRole("PROFESSIONAL")
+                        .requestMatchers(HttpMethod.PUT, "/api/v1/marketplace/listings/*")
+                        .hasRole("PROFESSIONAL")
                         .requestMatchers("/api/v1/marketplace/orders", "/api/v1/marketplace/orders/**")
                         .hasRole("EMPRESA")
                         .requestMatchers(HttpMethod.POST, "/api/v1/marketplace/reviews")
