@@ -12,6 +12,7 @@ import jakarta.validation.Valid;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -48,6 +49,11 @@ public class MarketplaceProfessionalController {
     @GetMapping("/me")
     public ResponseEntity<ProfessionalPublicProfileResponse> me() {
         return ResponseEntity.ok(professionalService.currentProfile(currentUserService.requiredUserId()));
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<ProfessionalPublicProfileResponse> publicProfile(@PathVariable Long id) {
+        return ResponseEntity.ok(professionalService.publicProfile(id));
     }
 
     @GetMapping("/me/dashboard")
