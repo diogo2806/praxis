@@ -5,15 +5,21 @@ import br.com.iforce.praxis.audit.service.AuditEventService;
 import br.com.iforce.praxis.marketplace.dto.AdminMarketplaceDashboardResponse;
 import br.com.iforce.praxis.marketplace.dto.AdminModerateListingRequest;
 import br.com.iforce.praxis.marketplace.dto.AdminModerateProfessionalRequest;
+import br.com.iforce.praxis.marketplace.dto.AdminRefundOrderRequest;
 import br.com.iforce.praxis.marketplace.dto.CreateListingResponse;
+import br.com.iforce.praxis.marketplace.dto.MarketplaceOrderResponse;
 import br.com.iforce.praxis.marketplace.dto.ProfessionalPublicProfileResponse;
 import br.com.iforce.praxis.marketplace.model.ListingStatus;
 import br.com.iforce.praxis.marketplace.model.OrderStatus;
+import br.com.iforce.praxis.marketplace.model.PayoutStatus;
 import br.com.iforce.praxis.marketplace.model.ProfessionalVerificationStatus;
 import br.com.iforce.praxis.marketplace.persistence.entity.MarketplaceListingEntity;
 import br.com.iforce.praxis.marketplace.persistence.entity.MarketplaceProfessionalEntity;
+import br.com.iforce.praxis.marketplace.persistence.entity.MarketplaceOrderEntity;
+import br.com.iforce.praxis.marketplace.persistence.entity.MarketplacePayoutEntity;
 import br.com.iforce.praxis.marketplace.persistence.repository.MarketplaceListingRepository;
 import br.com.iforce.praxis.marketplace.persistence.repository.MarketplaceOrderRepository;
+import br.com.iforce.praxis.marketplace.persistence.repository.MarketplacePayoutRepository;
 import br.com.iforce.praxis.marketplace.persistence.repository.MarketplaceProfessionalRepository;
 import br.com.iforce.praxis.shared.notification.model.InAppNotificationType;
 
@@ -31,6 +37,7 @@ public class MarketplaceAdminModerationService {
     private final MarketplaceProfessionalRepository professionalRepository;
     private final MarketplaceListingRepository listingRepository;
     private final MarketplaceOrderRepository orderRepository;
+    private final MarketplacePayoutRepository payoutRepository;
     private final AuditEventService auditEventService;
     private final MarketplaceNotificationService notificationService;
 
@@ -38,12 +45,14 @@ public class MarketplaceAdminModerationService {
             MarketplaceProfessionalRepository professionalRepository,
             MarketplaceListingRepository listingRepository,
             MarketplaceOrderRepository orderRepository,
+            MarketplacePayoutRepository payoutRepository,
             AuditEventService auditEventService,
             MarketplaceNotificationService notificationService
     ) {
         this.professionalRepository = professionalRepository;
         this.listingRepository = listingRepository;
         this.orderRepository = orderRepository;
+        this.payoutRepository = payoutRepository;
         this.auditEventService = auditEventService;
         this.notificationService = notificationService;
     }
@@ -165,6 +174,28 @@ public class MarketplaceAdminModerationService {
         return new CreateListingResponse(listing.getId(), listing.getStatus());
     }
 
+    @Transactional(readOnly = true)
+    public List<MarketplaceOrderResponse> disputedOrders() {
+        return orderRepository.findByStatus(OrderStatus.DISPUTED)
+                .stream()
+                .map(this::toOrderResponse)
+                .toList();
+    }
+
+    @Transactional
+    public MarketplaceOrderResponse refundOrder(String actorUserId, Long orderId, AdminRefundOrderRequest request) {
+        MarketplaceOrderEntity order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Pedido nao encontrado."));
+        if (order.getStatus() != OrderStatus.PAID && order.getStatus() != OrderStatus.DISPUTED) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Pedido nao esta elegivel para reembolso.");
+        }
+        order.setStatus(OrderStatus.REFUNDED);
+        payoutRepository.findByOrderId(order.getId()).ifPresent(this::reversePayout);
+        audit(actorUserId, AuditEventType.MARKETPLACE_ORDER_REFUNDED, "Pedido marketplace reembolsado.",
+                "{\"orderId\":" + orderId + ",\"reason\":\"" + escape(reason(request)) + "\"}");
+        return toOrderResponse(order);
+    }
+
     private MarketplaceProfessionalEntity requireProfessional(Long professionalId) {
         return professionalRepository.findById(professionalId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Profissional nao encontrado."));
@@ -173,6 +204,25 @@ public class MarketplaceAdminModerationService {
     private MarketplaceListingEntity requireListing(Long listingId) {
         return listingRepository.findById(listingId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Listing nao encontrado."));
+    }
+
+    private void reversePayout(MarketplacePayoutEntity payout) {
+        if (payout.getStatus() != PayoutStatus.RELEASED) {
+            payout.setStatus(PayoutStatus.REVERSED);
+            payout.setFailureReason("Pedido reembolsado antes da liberacao.");
+        }
+    }
+
+    private MarketplaceOrderResponse toOrderResponse(MarketplaceOrderEntity order) {
+        MarketplaceListingEntity listing = requireListing(order.getListingId());
+        return new MarketplaceOrderResponse(
+                order.getId(),
+                order.getStatus(),
+                listing.getTitle(),
+                order.getPriceCents(),
+                order.getClonedSimulationId(),
+                order.getPaidAt()
+        );
     }
 
     private ProfessionalPublicProfileResponse toProfessionalResponse(MarketplaceProfessionalEntity professional) {
@@ -199,6 +249,10 @@ public class MarketplaceAdminModerationService {
     }
 
     private static String reason(AdminModerateListingRequest request) {
+        return request == null || request.reason() == null ? "" : request.reason().trim();
+    }
+
+    private static String reason(AdminRefundOrderRequest request) {
         return request == null || request.reason() == null ? "" : request.reason().trim();
     }
 
