@@ -3,6 +3,7 @@ package br.com.iforce.praxis.marketplace.service;
 import br.com.iforce.praxis.marketplace.dto.CreateListingRequest;
 import br.com.iforce.praxis.marketplace.dto.CreateListingResponse;
 import br.com.iforce.praxis.marketplace.dto.ListingDetailResponse;
+import br.com.iforce.praxis.marketplace.dto.ListingSearchFilter;
 import br.com.iforce.praxis.marketplace.dto.ListingSummaryResponse;
 import br.com.iforce.praxis.marketplace.dto.MarketplacePageResponse;
 import br.com.iforce.praxis.marketplace.dto.UpdateListingRequest;
@@ -28,7 +29,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
-import java.math.BigDecimal;
 import java.util.Comparator;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -139,27 +139,19 @@ public class MarketplaceListingService {
     }
 
     @Transactional(readOnly = true)
-    public MarketplacePageResponse<ListingSummaryResponse> search(
-            ListingCategory category,
-            Long minPriceCents,
-            Long maxPriceCents,
-            BigDecimal minRating,
-            String text,
-            int page,
-            int size
-    ) {
+    public MarketplacePageResponse<ListingSummaryResponse> search(ListingSearchFilter filter) {
         Pageable pageable = PageRequest.of(
-                Math.max(page, 0),
-                Math.min(Math.max(size, 1), 100),
+                Math.max(filter.page(), 0),
+                Math.min(Math.max(filter.size(), 1), 100),
                 Sort.by(Sort.Direction.DESC, "createdAt")
         );
         Page<ListingSummaryResponse> result = listingRepository.search(
                 ListingStatus.APPROVED,
-                category,
-                minPriceCents,
-                maxPriceCents,
-                minRating,
-                blankToNull(text),
+                filter.category(),
+                filter.minPriceCents(),
+                filter.maxPriceCents(),
+                filter.minRating(),
+                blankToNull(filter.text()),
                 pageable
         ).map(this::toSummary);
 
