@@ -115,18 +115,32 @@ public class MarketplaceOrderService {
     }
 
     @Transactional
-    public void processApprovedPayment(JsonNode payment, String requestId) {
+    public void processPaymentNotification(JsonNode payment, String requestId) {
         Long orderId = orderId(payment);
         if (orderId == null) {
             return;
         }
         MarketplaceOrderEntity order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Pedido marketplace nao encontrado."));
-        if (order.getStatus() == OrderStatus.PAID) {
+        String status = text(payment, "status");
+        if ("approved".equals(status)) {
+            approvePayment(order, payment);
             return;
         }
-        String status = text(payment, "status");
-        if (!"approved".equals(status)) {
+        if ("refunded".equals(status)) {
+            order.setStatus(OrderStatus.REFUNDED);
+            order.setMpPaymentId(text(payment, "id"));
+            reversePayout(order.getId(), "Pagamento reembolsado pelo Mercado Pago.");
+            return;
+        }
+        if ("charged_back".equals(status) || "in_mediation".equals(status)) {
+            order.setStatus(OrderStatus.DISPUTED);
+            order.setMpPaymentId(text(payment, "id"));
+        }
+    }
+
+    private void approvePayment(MarketplaceOrderEntity order, JsonNode payment) {
+        if (order.getStatus() == OrderStatus.PAID) {
             return;
         }
 
@@ -150,6 +164,15 @@ public class MarketplaceOrderService {
                 "Nova venda no marketplace",
                 "O teste \"" + listing.getTitle() + "\" foi comprado e clonado para o cliente."
         );
+    }
+
+    private void reversePayout(Long orderId, String reason) {
+        payoutRepository.findByOrderId(orderId).ifPresent(payout -> {
+            if (payout.getStatus() != PayoutStatus.RELEASED) {
+                payout.setStatus(PayoutStatus.REVERSED);
+                payout.setFailureReason(reason);
+            }
+        });
     }
 
     private MarketplaceOrderResponse toResponse(MarketplaceOrderEntity order) {
