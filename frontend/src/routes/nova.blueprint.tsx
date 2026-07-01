@@ -78,6 +78,7 @@ function Page() {
   const [selectedCompetencies, setSelectedCompetencies] = useState<string[]>([]);
   const [newCompetency, setNewCompetency] = useState("");
   const [submitAttempted, setSubmitAttempted] = useState(false);
+  const [publishToMarketplace, setPublishToMarketplace] = useState(false);
   const [hydratedVersionKey, setHydratedVersionKey] = useState<string | null>(null);
   const roleMaxLength = 180;
   const criticalSituationMaxLength = 1200;
@@ -400,6 +401,31 @@ function Page() {
               )}
               <Help>{copy.customCompetencyHelp}</Help>
             </Card>
+
+            <div className="rounded-xl border border-border bg-card p-5">
+              <label className="flex items-start gap-3 text-sm">
+                <input
+                  type="checkbox"
+                  checked={publishToMarketplace}
+                  onChange={(event) => setPublishToMarketplace(event.target.checked)}
+                  className="mt-1 h-4 w-4"
+                />
+                <span>
+                  <span className="block font-medium">Publicar este teste no Marketplace</span>
+                  <span className="mt-1 block text-muted-foreground">
+                    Profissionais podem transformar uma versao publicada em anuncio para revisao.
+                  </span>
+                </span>
+              </label>
+              {publishToMarketplace && (
+                <Link
+                  to="/profissional/listings/novo"
+                  className="mt-4 inline-flex rounded-md border border-border bg-background px-4 py-2 text-sm hover:bg-accent"
+                >
+                  Abrir publicacao no Marketplace
+                </Link>
+              )}
+            </div>
 
 
             <div className="sticky bottom-0 -mx-6 mt-2 flex flex-col gap-3 border-t border-border bg-background/90 px-6 py-4 backdrop-blur sm:flex-row sm:items-center sm:justify-between lg:-mx-10 lg:px-10">
