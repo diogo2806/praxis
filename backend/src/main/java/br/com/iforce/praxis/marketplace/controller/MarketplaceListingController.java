@@ -4,6 +4,7 @@ import br.com.iforce.praxis.auth.service.CurrentUserService;
 import br.com.iforce.praxis.marketplace.dto.CreateListingRequest;
 import br.com.iforce.praxis.marketplace.dto.CreateListingResponse;
 import br.com.iforce.praxis.marketplace.dto.ListingDetailResponse;
+import br.com.iforce.praxis.marketplace.dto.ListingSearchFilter;
 import br.com.iforce.praxis.marketplace.dto.ListingSummaryResponse;
 import br.com.iforce.praxis.marketplace.dto.MarketplacePageResponse;
 import br.com.iforce.praxis.marketplace.dto.UpdateListingRequest;
@@ -71,7 +72,7 @@ public class MarketplaceListingController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size
     ) {
-        return ResponseEntity.ok(listingService.search(
+        return ResponseEntity.ok(listingService.search(new ListingSearchFilter(
                 category,
                 minPriceCents,
                 maxPriceCents,
@@ -79,7 +80,7 @@ public class MarketplaceListingController {
                 text,
                 page,
                 size
-        ));
+        )));
     }
 
     @GetMapping("/{id}")
