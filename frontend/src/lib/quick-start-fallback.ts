@@ -1,8 +1,8 @@
-import atendimentoTemplate from "../../../backend/src/main/resources/quickstart-templates/atendimento.json";
-import complianceTemplate from "../../../backend/src/main/resources/quickstart-templates/compliance.json";
-import liderancaTemplate from "../../../backend/src/main/resources/quickstart-templates/lideranca.json";
-import onboardingTemplate from "../../../backend/src/main/resources/quickstart-templates/onboarding.json";
-import vendasTemplate from "../../../backend/src/main/resources/quickstart-templates/vendas.json";
+import atendimentoTemplate from "./quickstart-templates/atendimento.json";
+import complianceTemplate from "./quickstart-templates/compliance.json";
+import liderancaTemplate from "./quickstart-templates/lideranca.json";
+import onboardingTemplate from "./quickstart-templates/onboarding.json";
+import vendasTemplate from "./quickstart-templates/vendas.json";
 import type { QuickStartCategory } from "@/lib/api/praxis";
 
 export type EmbeddedQuickStartCompetency = {

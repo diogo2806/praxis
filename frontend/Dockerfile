@@ -20,6 +20,7 @@ RUN --mount=type=cache,target=/root/.npm \
     sh -c 'echo "[build][frontend][npm-ci][start] $(date -u +%Y-%m-%dT%H:%M:%SZ)"; pipe=/tmp/build-log.$$; mkfifo "$pipe"; while IFS= read -r line; do echo "[$(date -u +%Y-%m-%dT%H:%M:%SZ)] $line"; done < "$pipe" & logger=$!; npm ci --prefer-offline --no-audit --fund=false --progress=false --loglevel=warn > "$pipe" 2>&1; status=$?; wait "$logger"; rm -f "$pipe"; echo "[build][frontend][npm-ci][end] $(date -u +%Y-%m-%dT%H:%M:%SZ) status=$status"; exit "$status"'
 
 COPY . .
+COPY ../backend/src/main/resources/quickstart-templates ./src/lib/quickstart-templates/
 RUN sh -c 'echo "[build][frontend][vite-build][start] $(date -u +%Y-%m-%dT%H:%M:%SZ)"; pipe=/tmp/build-log.$$; mkfifo "$pipe"; while IFS= read -r line; do echo "[$(date -u +%Y-%m-%dT%H:%M:%SZ)] $line"; done < "$pipe" & logger=$!; npm run build > "$pipe" 2>&1; status=$?; wait "$logger"; rm -f "$pipe"; echo "[build][frontend][vite-build][end] $(date -u +%Y-%m-%dT%H:%M:%SZ) status=$status"; exit "$status"'
 
 # Runtime stage
