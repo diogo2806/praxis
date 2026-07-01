@@ -73,14 +73,21 @@ function ProfessionalListingsPage() {
                 <div key={listing.id} className="grid grid-cols-1 gap-3 px-4 py-4 sm:grid-cols-[1fr_140px_120px] sm:items-center">
                   <div>
                     <div className="font-medium">{listing.title}</div>
-                    {listing.status === "APPROVED" && (
+                    <div className="mt-1 flex flex-wrap gap-3">
                       <Button asChild variant="link" className="h-auto p-0 text-xs">
-                        <Link to="/marketplace/$listingId" params={{ listingId: String(listing.id) }}>
-                          <ExternalLink className="h-3.5 w-3.5" />
-                          Ver na vitrine
+                        <Link to="/profissional/listings/$listingId/editar" params={{ listingId: String(listing.id) }}>
+                          Editar
                         </Link>
                       </Button>
-                    )}
+                      {listing.status === "APPROVED" && (
+                        <Button asChild variant="link" className="h-auto p-0 text-xs">
+                          <Link to="/marketplace/$listingId" params={{ listingId: String(listing.id) }}>
+                            <ExternalLink className="h-3.5 w-3.5" />
+                            Ver na vitrine
+                          </Link>
+                        </Button>
+                      )}
+                    </div>
                   </div>
                   <div className="text-sm text-muted-foreground">{listingStatusLabels[listing.status]}</div>
                   <div className="text-sm font-semibold sm:text-right">{listing.salesCount} venda(s)</div>
