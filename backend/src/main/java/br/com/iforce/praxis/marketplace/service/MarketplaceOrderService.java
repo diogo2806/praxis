@@ -15,7 +15,6 @@ import br.com.iforce.praxis.marketplace.persistence.repository.MarketplaceOrderR
 import br.com.iforce.praxis.marketplace.persistence.repository.MarketplacePayoutRepository;
 import br.com.iforce.praxis.marketplace.persistence.repository.MarketplaceProfessionalRepository;
 import br.com.iforce.praxis.simulation.dto.CloneSimulationVersionResponse;
-import br.com.iforce.praxis.simulation.service.SimulationAdminService;
 import br.com.iforce.praxis.shared.notification.model.InAppNotificationType;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -38,7 +37,7 @@ public class MarketplaceOrderService {
     private final MarketplaceOrderRepository orderRepository;
     private final MarketplacePayoutRepository payoutRepository;
     private final MarketplaceMercadoPagoService mercadoPagoService;
-    private final SimulationAdminService simulationAdminService;
+    private final MarketplaceListingCloneService listingCloneService;
     private final JdbcTemplate jdbcTemplate;
     private final MarketplaceTokenCryptoService tokenCryptoService;
     private final MarketplaceNotificationService notificationService;
@@ -49,7 +48,7 @@ public class MarketplaceOrderService {
             MarketplaceOrderRepository orderRepository,
             MarketplacePayoutRepository payoutRepository,
             MarketplaceMercadoPagoService mercadoPagoService,
-            SimulationAdminService simulationAdminService,
+            MarketplaceListingCloneService listingCloneService,
             JdbcTemplate jdbcTemplate,
             MarketplaceTokenCryptoService tokenCryptoService,
             MarketplaceNotificationService notificationService
@@ -59,7 +58,7 @@ public class MarketplaceOrderService {
         this.orderRepository = orderRepository;
         this.payoutRepository = payoutRepository;
         this.mercadoPagoService = mercadoPagoService;
-        this.simulationAdminService = simulationAdminService;
+        this.listingCloneService = listingCloneService;
         this.jdbcTemplate = jdbcTemplate;
         this.tokenCryptoService = tokenCryptoService;
         this.notificationService = notificationService;
@@ -131,10 +130,8 @@ public class MarketplaceOrderService {
             return;
         }
 
-        CloneSimulationVersionResponse clone = simulationAdminService.cloneVersionToTenant(
-                requireListing(order.getListingId()).getSourceVersionId(),
-                order.getBuyerTenantId()
-        );
+        MarketplaceListingEntity listing = requireListing(order.getListingId());
+        CloneSimulationVersionResponse clone = listingCloneService.cloneListingToTenant(listing, order.getBuyerTenantId());
         order.setStatus(OrderStatus.PAID);
         order.setMpPaymentId(text(payment, "id"));
         order.setClonedSimulationId(clone.simulationId());
@@ -147,7 +144,6 @@ public class MarketplaceOrderService {
         payout.setStatus(PayoutStatus.ESCROW);
         payout.setEscrowReleaseAt(Instant.now().plus(configLong("escrow_days", 7), ChronoUnit.DAYS));
         payoutRepository.save(payout);
-        MarketplaceListingEntity listing = requireListing(order.getListingId());
         notificationService.notifyProfessional(
                 order.getProfessionalId(),
                 InAppNotificationType.MARKETPLACE_ORDER_RECEIVED,
