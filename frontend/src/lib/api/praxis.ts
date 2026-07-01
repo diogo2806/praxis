@@ -1,5 +1,12 @@
 import { getApiBaseUrl } from "@/lib/runtime-config";
 import { getSession } from "@/lib/session";
+import { empresaConfigFallback } from "@/lib/empresa-config-fallback";
+import { marketplaceListingsFallback } from "@/lib/marketplace-listings-fallback";
+import {
+  marketplaceMessageThreadsFallback,
+  marketplaceProfessionalDashboardFallback,
+  marketplaceProfessionalMeFallback,
+} from "@/lib/marketplace-professional-fallback";
 import {
   embeddedQuickStartTemplates,
   listEmbeddedQuickStartTemplates,
@@ -797,8 +804,18 @@ function isAdminPath(path: string) {
   );
 }
 
-export function getEmpresaConfig() {
-  return request<EmpresaConfig>("/api/v1/empresa-config");
+// Backends que ainda não expõem GET /api/v1/empresa-config respondem 404.
+// Nesses casos degradamos para os catálogos padrão embutidos, seguindo o
+// mesmo padrão de getClientBilling e getDashboard.
+export async function getEmpresaConfig() {
+  try {
+    return await request<EmpresaConfig>("/api/v1/empresa-config");
+  } catch (error) {
+    if (error instanceof PraxisApiError && error.status === 404) {
+      return empresaConfigFallback;
+    }
+    throw error;
+  }
 }
 
 export function updateEmpresaConfig(configType: EmpresaConfigType, options: EmpresaConfigOption[]) {
@@ -2875,10 +2892,20 @@ function marketplaceQuery(filters: MarketplaceSearchFilters = {}) {
   return queryString ? `?${queryString}` : "";
 }
 
-export function searchMarketplaceListings(filters: MarketplaceSearchFilters = {}) {
-  return request<MarketplacePageResponse<MarketplaceListingSummary>>(
-    `/api/v1/marketplace/listings${marketplaceQuery(filters)}`,
-  );
+// Backends que ainda não expõem as rotas GET do marketplace respondem 404.
+// Nesses casos as funções abaixo degradam para os fallbacks embutidos em vez
+// de derrubar as telas com um estado de erro (mesmo padrão de getClientBilling).
+export async function searchMarketplaceListings(filters: MarketplaceSearchFilters = {}) {
+  try {
+    return await request<MarketplacePageResponse<MarketplaceListingSummary>>(
+      `/api/v1/marketplace/listings${marketplaceQuery(filters)}`,
+    );
+  } catch (error) {
+    if (error instanceof PraxisApiError && error.status === 404) {
+      return marketplaceListingsFallback;
+    }
+    throw error;
+  }
 }
 
 export function getMarketplaceListing(id: number | string) {
@@ -2907,16 +2934,32 @@ export function registerMarketplaceProfessional(body: RegisterProfessionalReques
   });
 }
 
-export function getMarketplaceProfessionalMe() {
-  return request<MarketplaceProfessionalProfile>("/api/v1/marketplace/professionals/me");
+// O 404 aqui também acontece quando o usuário logado ainda não é um
+// profissional cadastrado; o perfil de fallback mantém a área renderizável.
+export async function getMarketplaceProfessionalMe() {
+  try {
+    return await request<MarketplaceProfessionalProfile>("/api/v1/marketplace/professionals/me");
+  } catch (error) {
+    if (error instanceof PraxisApiError && error.status === 404) {
+      return marketplaceProfessionalMeFallback;
+    }
+    throw error;
+  }
 }
 
 export function getMarketplaceProfessional(id: number | string) {
   return request<MarketplaceProfessionalProfile>(`/api/v1/marketplace/professionals/${encodeURIComponent(String(id))}`);
 }
 
-export function getMarketplaceProfessionalDashboard() {
-  return request<MarketplaceProfessionalDashboard>("/api/v1/marketplace/professionals/me/dashboard");
+export async function getMarketplaceProfessionalDashboard() {
+  try {
+    return await request<MarketplaceProfessionalDashboard>("/api/v1/marketplace/professionals/me/dashboard");
+  } catch (error) {
+    if (error instanceof PraxisApiError && error.status === 404) {
+      return marketplaceProfessionalDashboardFallback;
+    }
+    throw error;
+  }
 }
 
 export function updateMarketplaceProfessionalMe(body: UpdateProfessionalProfileRequest) {
@@ -2963,8 +3006,15 @@ export function createMarketplaceReview(body: { orderId: number; rating: number;
   });
 }
 
-export function listMarketplaceMessageThreads(scope: "tenant" | "professional") {
-  return request<MarketplaceMessageThread[]>(`/api/v1/marketplace/messages?scope=${scope}`);
+export async function listMarketplaceMessageThreads(scope: "tenant" | "professional") {
+  try {
+    return await request<MarketplaceMessageThread[]>(`/api/v1/marketplace/messages?scope=${scope}`);
+  } catch (error) {
+    if (error instanceof PraxisApiError && error.status === 404) {
+      return marketplaceMessageThreadsFallback;
+    }
+    throw error;
+  }
 }
 
 export function sendMarketplaceTenantMessage(body: { listingId?: number; threadId?: number; body: string }) {
