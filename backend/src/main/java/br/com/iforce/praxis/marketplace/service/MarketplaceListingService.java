@@ -14,6 +14,8 @@ import br.com.iforce.praxis.marketplace.persistence.entity.MarketplaceProfession
 import br.com.iforce.praxis.marketplace.persistence.repository.MarketplaceListingRepository;
 import br.com.iforce.praxis.marketplace.persistence.repository.MarketplaceProfessionalRepository;
 import br.com.iforce.praxis.simulation.model.SimulationVersionStatus;
+import br.com.iforce.praxis.simulation.persistence.entity.SimulationNodeEntity;
+import br.com.iforce.praxis.simulation.persistence.entity.SimulationOptionEntity;
 import br.com.iforce.praxis.simulation.persistence.entity.SimulationVersionEntity;
 import br.com.iforce.praxis.simulation.persistence.repository.SimulationVersionRepository;
 
@@ -27,7 +29,9 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.math.BigDecimal;
+import java.util.Comparator;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Set;
 
 @Service
@@ -182,6 +186,7 @@ public class MarketplaceListingService {
                 listing.getSourceSimulationId(),
                 listing.getSourceVersionId(),
                 Set.copyOf(listing.getPreviewNodeIds()),
+                previewNodes(listing),
                 toProfessionalSummary(professional)
         );
     }
@@ -197,6 +202,39 @@ public class MarketplaceListingService {
                 professional.getAverageRating(),
                 professional.getTotalReviews(),
                 toProfessionalSummary(professional)
+        );
+    }
+
+    private List<ListingDetailResponse.PreviewNodeResponse> previewNodes(MarketplaceListingEntity listing) {
+        if (listing.getPreviewNodeIds().isEmpty()) {
+            return List.of();
+        }
+        SimulationVersionEntity version = simulationVersionRepository.findById(listing.getSourceVersionId())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Versao de simulacao nao encontrada."));
+        Set<Long> allowedNodeIds = listing.getPreviewNodeIds();
+        return version.getNodes().stream()
+                .filter(node -> allowedNodeIds.contains(node.getId()))
+                .sorted(Comparator.comparingInt(SimulationNodeEntity::getTurnIndex))
+                .map(this::toPreviewNode)
+                .toList();
+    }
+
+    private ListingDetailResponse.PreviewNodeResponse toPreviewNode(SimulationNodeEntity node) {
+        List<ListingDetailResponse.PreviewOptionResponse> options = node.getOptions().stream()
+                .sorted(Comparator.comparing(SimulationOptionEntity::getOptionId))
+                .map(option -> new ListingDetailResponse.PreviewOptionResponse(
+                        option.getId(),
+                        option.getOptionId(),
+                        option.getText()
+                ))
+                .toList();
+        return new ListingDetailResponse.PreviewNodeResponse(
+                node.getId(),
+                node.getNodeId(),
+                node.getTurnIndex(),
+                node.getSpeaker(),
+                node.getMessage(),
+                options
         );
     }
 
