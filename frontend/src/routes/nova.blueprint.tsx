@@ -301,8 +301,8 @@ function Page() {
 
             <p className="text-sm text-muted-foreground">
               Quer consultar o que já existe?{" "}
-              <Link to="/nova/testes" className="font-medium text-primary hover:underline">
-                Ver testes cadastrados →
+              <Link to="/nova/avaliacoes" className="font-medium text-primary hover:underline">
+                Ver avaliações cadastradas →
               </Link>
             </p>
 
