@@ -59,6 +59,7 @@ import { Route as ProfissionalListingsIndexRouteImport } from './routes/profissi
 import { Route as MarketplaceOrdersIndexRouteImport } from './routes/marketplace.orders.index'
 import { Route as AdminEmpresasIndexRouteImport } from './routes/admin.empresas.index'
 import { Route as ProfissionalListingsNovoRouteImport } from './routes/profissional.listings.novo'
+import { Route as MarketplaceOrdersOrderIdRouteImport } from './routes/marketplace.orders.$orderId'
 import { Route as MarketplaceCheckoutListingIdRouteImport } from './routes/marketplace.checkout.$listingId'
 import { Route as AdminMarketplaceProfessionalsRouteImport } from './routes/admin.marketplace.professionals'
 import { Route as AdminEmpresasEmpresaIdRouteImport } from './routes/admin.empresas.$empresaId'
@@ -316,6 +317,12 @@ const ProfissionalListingsNovoRoute =
     path: '/listings/novo',
     getParentRoute: () => ProfissionalRoute,
   } as any)
+const MarketplaceOrdersOrderIdRoute =
+  MarketplaceOrdersOrderIdRouteImport.update({
+    id: '/orders/$orderId',
+    path: '/orders/$orderId',
+    getParentRoute: () => MarketplaceRoute,
+  } as any)
 const MarketplaceCheckoutListingIdRoute =
   MarketplaceCheckoutListingIdRouteImport.update({
     id: '/checkout/$listingId',
@@ -384,6 +391,7 @@ export interface FileRoutesByFullPath {
   '/admin/empresas/$empresaId': typeof AdminEmpresasEmpresaIdRoute
   '/admin/marketplace/professionals': typeof AdminMarketplaceProfessionalsRoute
   '/marketplace/checkout/$listingId': typeof MarketplaceCheckoutListingIdRoute
+  '/marketplace/orders/$orderId': typeof MarketplaceOrdersOrderIdRoute
   '/profissional/listings/novo': typeof ProfissionalListingsNovoRoute
   '/admin/empresas/': typeof AdminEmpresasIndexRoute
   '/marketplace/orders/': typeof MarketplaceOrdersIndexRoute
@@ -439,6 +447,7 @@ export interface FileRoutesByTo {
   '/admin/empresas/$empresaId': typeof AdminEmpresasEmpresaIdRoute
   '/admin/marketplace/professionals': typeof AdminMarketplaceProfessionalsRoute
   '/marketplace/checkout/$listingId': typeof MarketplaceCheckoutListingIdRoute
+  '/marketplace/orders/$orderId': typeof MarketplaceOrdersOrderIdRoute
   '/profissional/listings/novo': typeof ProfissionalListingsNovoRoute
   '/admin/empresas': typeof AdminEmpresasIndexRoute
   '/marketplace/orders': typeof MarketplaceOrdersIndexRoute
@@ -495,6 +504,7 @@ export interface FileRoutesById {
   '/admin/empresas/$empresaId': typeof AdminEmpresasEmpresaIdRoute
   '/admin/marketplace/professionals': typeof AdminMarketplaceProfessionalsRoute
   '/marketplace/checkout/$listingId': typeof MarketplaceCheckoutListingIdRoute
+  '/marketplace/orders/$orderId': typeof MarketplaceOrdersOrderIdRoute
   '/profissional/listings/novo': typeof ProfissionalListingsNovoRoute
   '/admin/empresas/': typeof AdminEmpresasIndexRoute
   '/marketplace/orders/': typeof MarketplaceOrdersIndexRoute
@@ -552,6 +562,7 @@ export interface FileRouteTypes {
     | '/admin/empresas/$empresaId'
     | '/admin/marketplace/professionals'
     | '/marketplace/checkout/$listingId'
+    | '/marketplace/orders/$orderId'
     | '/profissional/listings/novo'
     | '/admin/empresas/'
     | '/marketplace/orders/'
@@ -607,6 +618,7 @@ export interface FileRouteTypes {
     | '/admin/empresas/$empresaId'
     | '/admin/marketplace/professionals'
     | '/marketplace/checkout/$listingId'
+    | '/marketplace/orders/$orderId'
     | '/profissional/listings/novo'
     | '/admin/empresas'
     | '/marketplace/orders'
@@ -662,6 +674,7 @@ export interface FileRouteTypes {
     | '/admin/empresas/$empresaId'
     | '/admin/marketplace/professionals'
     | '/marketplace/checkout/$listingId'
+    | '/marketplace/orders/$orderId'
     | '/profissional/listings/novo'
     | '/admin/empresas/'
     | '/marketplace/orders/'
@@ -1063,6 +1076,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ProfissionalListingsNovoRouteImport
       parentRoute: typeof ProfissionalRoute
     }
+    '/marketplace/orders/$orderId': {
+      id: '/marketplace/orders/$orderId'
+      path: '/orders/$orderId'
+      fullPath: '/marketplace/orders/$orderId'
+      preLoaderRoute: typeof MarketplaceOrdersOrderIdRouteImport
+      parentRoute: typeof MarketplaceRoute
+    }
     '/marketplace/checkout/$listingId': {
       id: '/marketplace/checkout/$listingId'
       path: '/checkout/$listingId'
@@ -1130,12 +1150,14 @@ const IntegrationsRouteWithChildren = IntegrationsRoute._addFileChildren(
 interface MarketplaceRouteChildren {
   MarketplaceListingIdRoute: typeof MarketplaceListingIdRoute
   MarketplaceCheckoutListingIdRoute: typeof MarketplaceCheckoutListingIdRoute
+  MarketplaceOrdersOrderIdRoute: typeof MarketplaceOrdersOrderIdRoute
   MarketplaceOrdersIndexRoute: typeof MarketplaceOrdersIndexRoute
 }
 
 const MarketplaceRouteChildren: MarketplaceRouteChildren = {
   MarketplaceListingIdRoute: MarketplaceListingIdRoute,
   MarketplaceCheckoutListingIdRoute: MarketplaceCheckoutListingIdRoute,
+  MarketplaceOrdersOrderIdRoute: MarketplaceOrdersOrderIdRoute,
   MarketplaceOrdersIndexRoute: MarketplaceOrdersIndexRoute,
 }
 
