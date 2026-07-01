@@ -4,7 +4,9 @@ import br.com.iforce.praxis.auth.service.CurrentUserService;
 import br.com.iforce.praxis.marketplace.dto.AdminMarketplaceDashboardResponse;
 import br.com.iforce.praxis.marketplace.dto.AdminModerateListingRequest;
 import br.com.iforce.praxis.marketplace.dto.AdminModerateProfessionalRequest;
+import br.com.iforce.praxis.marketplace.dto.AdminRefundOrderRequest;
 import br.com.iforce.praxis.marketplace.dto.CreateListingResponse;
+import br.com.iforce.praxis.marketplace.dto.MarketplaceOrderResponse;
 import br.com.iforce.praxis.marketplace.dto.ProfessionalPublicProfileResponse;
 import br.com.iforce.praxis.marketplace.service.MarketplaceAdminModerationService;
 
@@ -96,5 +98,18 @@ public class AdminMarketplaceController {
             @Valid @RequestBody(required = false) AdminModerateListingRequest request
     ) {
         return ResponseEntity.ok(moderationService.suspendListing(currentUserService.requiredUserId(), id, request));
+    }
+
+    @GetMapping("/disputes")
+    public ResponseEntity<List<MarketplaceOrderResponse>> disputes() {
+        return ResponseEntity.ok(moderationService.disputedOrders());
+    }
+
+    @PostMapping("/orders/{id}/refund")
+    public ResponseEntity<MarketplaceOrderResponse> refundOrder(
+            @PathVariable Long id,
+            @Valid @RequestBody(required = false) AdminRefundOrderRequest request
+    ) {
+        return ResponseEntity.ok(moderationService.refundOrder(currentUserService.requiredUserId(), id, request));
     }
 }
