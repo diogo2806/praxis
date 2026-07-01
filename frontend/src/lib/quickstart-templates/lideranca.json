@@ -1,0 +1,60 @@
+{
+  "category": "LIDERANCA",
+  "title": "Feedback difícil",
+  "description": "Conversas de gestão, priorização e feedback de baixo desempenho.",
+  "name": "Liderança — feedback difícil",
+  "criticalSituation": "Pessoa da equipe com queda de desempenho reage na defensiva durante a conversa de feedback.",
+  "resultUse": "Avaliação de liderança",
+  "rootNodeId": "turno-1",
+  "competencies": [
+    { "name": "Comunicação", "weight": 0.5, "targetScore": 70, "tier": "major" },
+    { "name": "Gestão de Pessoas", "weight": 0.5, "targetScore": 70, "tier": "major" }
+  ],
+  "nodes": [
+    {
+      "nodeId": "turno-1",
+      "turnIndex": 1,
+      "speaker": "Liderado",
+      "message": "Não acho justo. Estou fazendo o mesmo de sempre e agora você diz que meu desempenho caiu?",
+      "timeLimitSeconds": 90,
+      "timeoutNextNodeId": "turno-2",
+      "options": [
+        { "optionId": "opcao-1", "text": "Apresentar fatos concretos e ouvir a perspectiva da pessoa antes de concluir.", "nextNodeId": "turno-2", "auditNote": "Baseia-se em evidências e escuta.", "competencyScores": { "Comunicação": 90, "Gestão de Pessoas": 85 } },
+        { "optionId": "opcao-2", "text": "Reafirmar a avaliação sem abrir espaço para resposta.", "nextNodeId": "turno-2", "auditNote": "Comunicação unilateral.", "competencyScores": { "Comunicação": 40, "Gestão de Pessoas": 25 } },
+        { "optionId": "opcao-3", "text": "Recuar e minimizar o problema para evitar o conflito.", "nextNodeId": "turno-2", "critical": true, "auditNote": "Evita a conversa difícil.", "competencyScores": { "Comunicação": 30, "Gestão de Pessoas": 20 } }
+      ]
+    },
+    {
+      "nodeId": "turno-2",
+      "turnIndex": 2,
+      "speaker": "Liderado",
+      "message": "Tá. Mas o que você espera de mim daqui pra frente?",
+      "timeLimitSeconds": 90,
+      "timeoutNextNodeId": "turno-3",
+      "options": [
+        { "optionId": "opcao-1", "text": "Definir metas claras, prazos e oferecer apoio para alcançá-las.", "nextNodeId": "turno-3", "auditNote": "Acordo claro com suporte.", "competencyScores": { "Comunicação": 85, "Gestão de Pessoas": 90 } },
+        { "optionId": "opcao-2", "text": "Dizer apenas para 'melhorar', sem definir o que isso significa.", "nextNodeId": "turno-3", "auditNote": "Expectativa vaga.", "competencyScores": { "Comunicação": 35, "Gestão de Pessoas": 30 } }
+      ]
+    },
+    {
+      "nodeId": "turno-3",
+      "turnIndex": 3,
+      "speaker": "Liderado",
+      "message": "E se eu precisar de ajuda no meio do caminho?",
+      "timeLimitSeconds": 90,
+      "timeoutNextNodeId": "fim",
+      "options": [
+        { "optionId": "opcao-1", "text": "Combinar acompanhamentos periódicos e deixar o canal aberto.", "nextNodeId": "fim", "auditNote": "Acompanhamento contínuo.", "competencyScores": { "Comunicação": 80, "Gestão de Pessoas": 90 } },
+        { "optionId": "opcao-2", "text": "Dizer para procurar só se houver um problema grave.", "nextNodeId": "fim", "auditNote": "Apoio reativo.", "competencyScores": { "Comunicação": 40, "Gestão de Pessoas": 45 } }
+      ]
+    },
+    {
+      "nodeId": "fim",
+      "turnIndex": 99,
+      "speaker": "Sistema",
+      "message": "Conversa encerrada.",
+      "isFinal": true,
+      "reportText": "Resumo da conversa de feedback para revisão de RH."
+    }
+  ]
+}

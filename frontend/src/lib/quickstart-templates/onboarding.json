@@ -1,0 +1,48 @@
+{
+  "category": "ONBOARDING",
+  "title": "Primeiros dias",
+  "description": "Cenários de integração: autonomia, dúvidas e pedido de ajuda.",
+  "name": "Onboarding — primeiros dias",
+  "criticalSituation": "Pessoa recém-contratada recebe uma tarefa pouco clara e precisa decidir como agir.",
+  "resultUse": "Avaliação de onboarding",
+  "rootNodeId": "turno-1",
+  "competencies": [
+    { "name": "Autonomia", "weight": 0.5, "targetScore": 70, "tier": "major" },
+    { "name": "Colaboração", "weight": 0.5, "targetScore": 70, "tier": "major" }
+  ],
+  "nodes": [
+    {
+      "nodeId": "turno-1",
+      "turnIndex": 1,
+      "speaker": "Gestor",
+      "message": "Preciso que você toque essa entrega. Os detalhes estão meio soltos, mas conto com você.",
+      "timeLimitSeconds": 90,
+      "timeoutNextNodeId": "turno-2",
+      "options": [
+        { "optionId": "opcao-1", "text": "Mapear o que sabe, listar dúvidas objetivas e alinhar rapidamente com o gestor.", "nextNodeId": "turno-2", "auditNote": "Autonomia com alinhamento.", "competencyScores": { "Autonomia": 90, "Colaboração": 85 } },
+        { "optionId": "opcao-2", "text": "Começar sozinho sem perguntar nada para mostrar independência.", "nextNodeId": "turno-2", "auditNote": "Autonomia sem alinhamento.", "competencyScores": { "Autonomia": 55, "Colaboração": 20 } },
+        { "optionId": "opcao-3", "text": "Esperar instruções completas antes de fazer qualquer coisa.", "nextNodeId": "turno-2", "auditNote": "Passividade.", "competencyScores": { "Autonomia": 15, "Colaboração": 35 } }
+      ]
+    },
+    {
+      "nodeId": "turno-2",
+      "turnIndex": 2,
+      "speaker": "Colega",
+      "message": "Se quiser, posso te mostrar como a gente costuma fazer isso por aqui.",
+      "timeLimitSeconds": 90,
+      "timeoutNextNodeId": "fim",
+      "options": [
+        { "optionId": "opcao-1", "text": "Aceitar a ajuda, aprender o processo e registrar o aprendizado.", "nextNodeId": "fim", "auditNote": "Colabora e aprende.", "competencyScores": { "Autonomia": 80, "Colaboração": 90 } },
+        { "optionId": "opcao-2", "text": "Recusar para não atrapalhar o colega e seguir tentando sozinho.", "nextNodeId": "fim", "auditNote": "Recusa apoio disponível.", "competencyScores": { "Autonomia": 50, "Colaboração": 30 } }
+      ]
+    },
+    {
+      "nodeId": "fim",
+      "turnIndex": 99,
+      "speaker": "Sistema",
+      "message": "Cenário encerrado.",
+      "isFinal": true,
+      "reportText": "Resumo da integração para revisão do gestor e RH."
+    }
+  ]
+}
