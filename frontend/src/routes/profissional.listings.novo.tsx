@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation } from "@tanstack/react-query";
-import { ArrowLeft, Loader2, Send } from "lucide-react";
+import { ArrowLeft, Loader2, Save, Send } from "lucide-react";
 import { useState } from "react";
 
 import { StateBanner } from "@/components/praxis-ui";
@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import {
   createMarketplaceListing,
   submitMarketplaceListing,
+  type CreateMarketplaceListingRequest,
   type ListingCategory,
 } from "@/lib/api/praxis";
 import { marketplaceCategories, splitList } from "@/lib/marketplace";
@@ -31,9 +32,7 @@ function NewProfessionalListingPage() {
     previewNodeIds: "",
   });
 
-  const createAndSubmit = useMutation({
-    mutationFn: async () => {
-      const created = await createMarketplaceListing({
+  const buildRequest = (): CreateMarketplaceListingRequest => ({
         sourceSimulationId: form.sourceSimulationId,
         sourceVersionNumber: Number(form.sourceVersionNumber),
         title: form.title,
@@ -41,10 +40,20 @@ function NewProfessionalListingPage() {
         category: form.category,
         priceCents: Math.round(Number(form.price.replace(",", ".")) * 100),
         previewNodeIds: splitList(form.previewNodeIds).map(Number).filter(Number.isFinite),
-      });
+  });
+
+  const saveDraft = useMutation({
+    mutationFn: async () => createMarketplaceListing(buildRequest()),
+  });
+
+  const createAndSubmit = useMutation({
+    mutationFn: async () => {
+      const created = await createMarketplaceListing(buildRequest());
       return submitMarketplaceListing(created.id);
     },
   });
+
+  const isSaving = saveDraft.isPending || createAndSubmit.isPending;
 
   return (
     <main className="min-h-screen bg-background text-foreground">
@@ -63,6 +72,13 @@ function NewProfessionalListingPage() {
             A simulação precisa estar publicada para ser clonada ao comprador.
           </p>
 
+          {saveDraft.isSuccess && (
+            <div className="mt-5">
+              <StateBanner tone="ok" title="Rascunho salvo">
+                O anúncio ficou disponível para edição antes do envio para revisão.
+              </StateBanner>
+            </div>
+          )}
           {createAndSubmit.isSuccess && (
             <div className="mt-5">
               <StateBanner tone="ok" title="Anúncio enviado para revisão">
@@ -70,10 +86,12 @@ function NewProfessionalListingPage() {
               </StateBanner>
             </div>
           )}
-          {createAndSubmit.isError && (
+          {(saveDraft.isError || createAndSubmit.isError) && (
             <div className="mt-5">
-              <StateBanner tone="danger" title="Não foi possível enviar o anúncio">
-                {createAndSubmit.error instanceof Error ? createAndSubmit.error.message : "Tente novamente."}
+              <StateBanner tone="danger" title="Não foi possível salvar o anúncio">
+                {(saveDraft.error instanceof Error && saveDraft.error.message) ||
+                  (createAndSubmit.error instanceof Error && createAndSubmit.error.message) ||
+                  "Tente novamente."}
               </StateBanner>
             </div>
           )}
@@ -138,8 +156,12 @@ function NewProfessionalListingPage() {
                 className="rounded-md border border-input bg-background px-3 py-2 text-sm"
               />
             </label>
-            <div className="flex justify-end">
-              <Button type="submit" disabled={createAndSubmit.isPending}>
+            <div className="flex flex-col gap-2 sm:flex-row sm:justify-end">
+              <Button type="button" variant="outline" disabled={isSaving} onClick={() => saveDraft.mutate()}>
+                {saveDraft.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+                Salvar rascunho
+              </Button>
+              <Button type="submit" disabled={isSaving}>
                 {createAndSubmit.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
                 Enviar para revisão
               </Button>
