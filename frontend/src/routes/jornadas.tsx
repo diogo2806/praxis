@@ -57,8 +57,10 @@ function AssessmentJourneysPage() {
   const [journeyDescription, setJourneyDescription] = useState("");
   const [selectedSimulationId, setSelectedSimulationId] = useState("");
   const [required, setRequired] = useState(true);
+  const [sequenceKey, setSequenceKey] = useState(DEFAULT_SEQUENCE);
   const [candidateName, setCandidateName] = useState("");
   const [candidateEmail, setCandidateEmail] = useState("");
+  const [candidateSequenceKey, setCandidateSequenceKey] = useState("");
   const [copiedAttemptId, setCopiedAttemptId] = useState<string | null>(null);
 
   const journeysQuery = useQuery({
@@ -109,7 +111,7 @@ function AssessmentJourneysPage() {
     mutationFn: () =>
       addAssessmentJourneyStep(selectedJourneyId!, {
         simulationId: selectedSimulationId,
-        sequenceKey: DEFAULT_SEQUENCE,
+        sequenceKey: sequenceKey.trim() || DEFAULT_SEQUENCE,
         required,
       }),
     onSuccess: async (journey) => {
@@ -150,6 +152,7 @@ function AssessmentJourneysPage() {
     onSuccess: async () => {
       setCandidateName("");
       setCandidateEmail("");
+      setCandidateSequenceKey("");
       await queryClient.invalidateQueries({
         queryKey: ["assessment-journey-attempts", selectedJourneyId],
       });
@@ -174,17 +177,19 @@ function AssessmentJourneysPage() {
   }
 
   function addStep() {
-    if (!selectedJourneyId || !selectedSimulationId) return;
+    if (!selectedJourneyId || !selectedSimulationId || !sequenceKey.trim()) return;
     addStepMutation.mutate();
   }
 
   function createAttempt() {
     if (!selectedJourney || !candidateName.trim() || !candidateEmail.includes("@")) return;
+    const sequences = selectedJourney.sequences;
+    const chosenSequenceKey = candidateSequenceKey || sequences[0]?.sequenceKey || DEFAULT_SEQUENCE;
     attemptMutation.mutate({
       journeyId: selectedJourney.id,
       candidateName: candidateName.trim(),
       candidateEmail: candidateEmail.trim(),
-      sequenceKey: DEFAULT_SEQUENCE,
+      sequenceKey: chosenSequenceKey,
     });
   }
 
@@ -322,8 +327,10 @@ function AssessmentJourneysPage() {
                   simulations={liveSimulations}
                   selectedSimulationId={selectedSimulationId}
                   required={required}
+                  sequenceKey={sequenceKey}
                   onSimulationChange={setSelectedSimulationId}
                   onRequiredChange={setRequired}
+                  onSequenceKeyChange={setSequenceKey}
                   onAddStep={addStep}
                   addPending={addStepMutation.isPending}
                   onPublish={() => publishMutation.mutate(selectedJourney.id)}
@@ -340,8 +347,10 @@ function AssessmentJourneysPage() {
                   loading={attemptsQuery.isLoading}
                   candidateName={candidateName}
                   candidateEmail={candidateEmail}
+                  candidateSequenceKey={candidateSequenceKey}
                   onCandidateNameChange={setCandidateName}
                   onCandidateEmailChange={setCandidateEmail}
+                  onCandidateSequenceKeyChange={setCandidateSequenceKey}
                   onCreateAttempt={createAttempt}
                   createPending={attemptMutation.isPending}
                   copiedAttemptId={copiedAttemptId}
@@ -361,8 +370,10 @@ function JourneyComposer({
   simulations,
   selectedSimulationId,
   required,
+  sequenceKey,
   onSimulationChange,
   onRequiredChange,
+  onSequenceKeyChange,
   onAddStep,
   addPending,
   onPublish,
@@ -376,8 +387,10 @@ function JourneyComposer({
   simulations: SimulationSummaryResponse[];
   selectedSimulationId: string;
   required: boolean;
+  sequenceKey: string;
   onSimulationChange: (value: string) => void;
   onRequiredChange: (value: boolean) => void;
+  onSequenceKeyChange: (value: string) => void;
   onAddStep: () => void;
   addPending: boolean;
   onPublish: () => void;
@@ -387,10 +400,11 @@ function JourneyComposer({
   onRemoveStep: (stepId: number) => void;
   onMoveStep: (step: JourneyStepResponse, direction: -1 | 1) => void;
 }) {
-  const steps =
-    journey.sequences.find((sequence) => sequence.sequenceKey === DEFAULT_SEQUENCE)?.steps ?? [];
+  const sequences = journey.sequences;
+  const totalSteps = sequences.reduce((total, sequence) => total + sequence.steps.length, 0);
+  const existingSequenceKeys = sequences.map((sequence) => sequence.sequenceKey);
   const draft = journey.status === "DRAFT";
-  const canPublish = draft && steps.length > 0;
+  const canPublish = draft && totalSteps > 0;
 
   return (
     <section className="rounded-md border border-border bg-card">
@@ -404,6 +418,10 @@ function JourneyComposer({
           {journey.description && (
             <p className="mt-1 max-w-2xl text-sm text-muted-foreground">{journey.description}</p>
           )}
+          <p className="mt-2 text-xs text-muted-foreground">
+            {totalSteps} {totalSteps === 1 ? "teste" : "testes"} em {sequences.length}{" "}
+            {sequences.length === 1 ? "sequencia" : "sequencias"}
+          </p>
         </div>
         <div className="flex flex-wrap gap-2">
           <Button
@@ -432,104 +450,136 @@ function JourneyComposer({
       </div>
 
       {draft && (
-        <div className="grid gap-3 border-b border-border p-5 lg:grid-cols-[minmax(0,1fr)_160px_120px]">
-          <select
-            className="input w-full"
-            value={selectedSimulationId}
-            onChange={(event) => onSimulationChange(event.target.value)}
-          >
-            <option value="">Selecione um teste publicado</option>
-            {simulations.map((simulation) => (
-              <option key={simulation.id} value={simulation.id}>
-                {simulation.name} - v
-                {simulation.livePublishedVersionNumber ?? simulation.versionNumber}
-              </option>
-            ))}
-          </select>
-          <label className="inline-flex h-10 items-center gap-2 rounded-md border border-border bg-background px-3 text-sm">
+        <div className="border-b border-border p-5">
+          <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_minmax(0,220px)_160px_120px]">
+            <select
+              className="input w-full"
+              value={selectedSimulationId}
+              onChange={(event) => onSimulationChange(event.target.value)}
+            >
+              <option value="">Selecione um teste publicado</option>
+              {simulations.map((simulation) => (
+                <option key={simulation.id} value={simulation.id}>
+                  {simulation.name} - v
+                  {simulation.livePublishedVersionNumber ?? simulation.versionNumber}
+                </option>
+              ))}
+            </select>
             <input
-              type="checkbox"
-              checked={required}
-              onChange={(event) => onRequiredChange(event.target.checked)}
+              className="input w-full"
+              list="journey-sequence-keys"
+              placeholder="Sequencia (ex: principal)"
+              value={sequenceKey}
+              onChange={(event) => onSequenceKeyChange(event.target.value)}
             />
-            Obrigatorio
-          </label>
-          <Button
-            type="button"
-            className="h-10 gap-2"
-            disabled={!selectedSimulationId || addPending}
-            onClick={onAddStep}
-          >
-            <Plus className="h-4 w-4" />
-            Adicionar
-          </Button>
+            <datalist id="journey-sequence-keys">
+              {existingSequenceKeys.map((key) => (
+                <option key={key} value={key} />
+              ))}
+            </datalist>
+            <label className="inline-flex h-10 items-center gap-2 rounded-md border border-border bg-background px-3 text-sm">
+              <input
+                type="checkbox"
+                checked={required}
+                onChange={(event) => onRequiredChange(event.target.checked)}
+              />
+              Obrigatorio
+            </label>
+            <Button
+              type="button"
+              className="h-10 gap-2"
+              disabled={!selectedSimulationId || !sequenceKey.trim() || addPending}
+              onClick={onAddStep}
+            >
+              <Plus className="h-4 w-4" />
+              Adicionar
+            </Button>
+          </div>
+          <p className="mt-2 text-xs text-muted-foreground">
+            Combine varios testes em uma mesma sequencia ou crie sequencias diferentes digitando um
+            novo nome. Cada candidato recebe o link de uma sequencia.
+          </p>
         </div>
       )}
 
-      {steps.length === 0 ? (
+      {totalSteps === 0 ? (
         <div className="p-5 text-sm text-muted-foreground">
           Adicione pelo menos um teste publicado para publicar a jornada.
         </div>
       ) : (
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[720px] text-left text-sm">
-            <thead className="border-b border-border bg-muted/45 text-xs uppercase text-muted-foreground">
-              <tr>
-                <th className="px-4 py-3 font-medium">Ordem</th>
-                <th className="px-4 py-3 font-medium">Teste</th>
-                <th className="px-4 py-3 font-medium">Versao</th>
-                <th className="px-4 py-3 font-medium">Obrigatorio</th>
-                <th className="px-4 py-3 text-right font-medium">Acoes</th>
-              </tr>
-            </thead>
-            <tbody>
-              {steps.map((step, index) => (
-                <tr key={step.id} className="border-b border-border last:border-0">
-                  <td className="px-4 py-3 tabular-nums">{index + 1}</td>
-                  <td className="px-4 py-3 font-medium">{step.simulationName}</td>
-                  <td className="px-4 py-3 text-muted-foreground">
-                    v{step.simulationVersionNumber}
-                  </td>
-                  <td className="px-4 py-3">{step.required ? "Sim" : "Opcional"}</td>
-                  <td className="px-4 py-3 text-right">
-                    {draft && (
-                      <div className="flex justify-end gap-2">
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          className="h-8 bg-background text-xs"
-                          disabled={index === 0}
-                          onClick={() => onMoveStep(step, -1)}
-                        >
-                          Subir
-                        </Button>
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          className="h-8 bg-background text-xs"
-                          disabled={index === steps.length - 1}
-                          onClick={() => onMoveStep(step, 1)}
-                        >
-                          Descer
-                        </Button>
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          className="h-8 bg-background text-xs text-danger"
-                          onClick={() => onRemoveStep(step.id)}
-                        >
-                          <Trash2 className="h-3.5 w-3.5" />
-                        </Button>
-                      </div>
-                    )}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        <div className="divide-y divide-border">
+          {sequences.map((sequence) => (
+            <div key={sequence.sequenceKey} className="p-5">
+              <div className="mb-3 flex items-center gap-2">
+                <span className="rounded-full border border-primary/30 bg-primary/10 px-2.5 py-0.5 text-xs font-medium text-primary">
+                  {sequence.sequenceKey}
+                </span>
+                <span className="text-xs text-muted-foreground">
+                  {sequence.steps.length} {sequence.steps.length === 1 ? "teste" : "testes"}
+                </span>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full min-w-[720px] text-left text-sm">
+                  <thead className="border-b border-border bg-muted/45 text-xs uppercase text-muted-foreground">
+                    <tr>
+                      <th className="px-4 py-3 font-medium">Ordem</th>
+                      <th className="px-4 py-3 font-medium">Teste</th>
+                      <th className="px-4 py-3 font-medium">Versao</th>
+                      <th className="px-4 py-3 font-medium">Obrigatorio</th>
+                      <th className="px-4 py-3 text-right font-medium">Acoes</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {sequence.steps.map((step, index) => (
+                      <tr key={step.id} className="border-b border-border last:border-0">
+                        <td className="px-4 py-3 tabular-nums">{index + 1}</td>
+                        <td className="px-4 py-3 font-medium">{step.simulationName}</td>
+                        <td className="px-4 py-3 text-muted-foreground">
+                          v{step.simulationVersionNumber}
+                        </td>
+                        <td className="px-4 py-3">{step.required ? "Sim" : "Opcional"}</td>
+                        <td className="px-4 py-3 text-right">
+                          {draft && (
+                            <div className="flex justify-end gap-2">
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                className="h-8 bg-background text-xs"
+                                disabled={index === 0}
+                                onClick={() => onMoveStep(step, -1)}
+                              >
+                                Subir
+                              </Button>
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                className="h-8 bg-background text-xs"
+                                disabled={index === sequence.steps.length - 1}
+                                onClick={() => onMoveStep(step, 1)}
+                              >
+                                Descer
+                              </Button>
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                className="h-8 bg-background text-xs text-danger"
+                                onClick={() => onRemoveStep(step.id)}
+                              >
+                                <Trash2 className="h-3.5 w-3.5" />
+                              </Button>
+                            </div>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          ))}
         </div>
       )}
     </section>
@@ -542,8 +592,10 @@ function JourneyAttempts({
   loading,
   candidateName,
   candidateEmail,
+  candidateSequenceKey,
   onCandidateNameChange,
   onCandidateEmailChange,
+  onCandidateSequenceKeyChange,
   onCreateAttempt,
   createPending,
   copiedAttemptId,
@@ -554,14 +606,18 @@ function JourneyAttempts({
   loading: boolean;
   candidateName: string;
   candidateEmail: string;
+  candidateSequenceKey: string;
   onCandidateNameChange: (value: string) => void;
   onCandidateEmailChange: (value: string) => void;
+  onCandidateSequenceKeyChange: (value: string) => void;
   onCreateAttempt: () => void;
   createPending: boolean;
   copiedAttemptId: string | null;
   onCopy: (attempt: AssessmentJourneyAttemptResponse) => void;
 }) {
   const published = journey.status === "PUBLISHED";
+  const sequences = journey.sequences;
+  const hasMultipleSequences = sequences.length > 1;
 
   return (
     <section className="rounded-md border border-border bg-card">
@@ -572,7 +628,14 @@ function JourneyAttempts({
         </p>
       </div>
 
-      <div className="grid gap-3 border-b border-border p-5 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_140px]">
+      <div
+        className={cn(
+          "grid gap-3 border-b border-border p-5",
+          hasMultipleSequences
+            ? "lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,180px)_140px]"
+            : "lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_140px]",
+        )}
+      >
         <input
           className="input w-full"
           placeholder="Nome do candidato"
@@ -588,6 +651,21 @@ function JourneyAttempts({
           disabled={!published}
           onChange={(event) => onCandidateEmailChange(event.target.value)}
         />
+        {hasMultipleSequences && (
+          <select
+            className="input w-full"
+            value={candidateSequenceKey}
+            disabled={!published}
+            onChange={(event) => onCandidateSequenceKeyChange(event.target.value)}
+          >
+            <option value="">{sequences[0]?.sequenceKey} (padrao)</option>
+            {sequences.map((sequence) => (
+              <option key={sequence.sequenceKey} value={sequence.sequenceKey}>
+                {sequence.sequenceKey}
+              </option>
+            ))}
+          </select>
+        )}
         <Button
           type="button"
           className="h-10 gap-2"
@@ -637,6 +715,11 @@ function JourneyAttempts({
                     <td className="px-4 py-3">
                       <div className="font-medium">{attempt.candidateName}</div>
                       <div className="text-xs text-muted-foreground">{attempt.candidateEmail}</div>
+                      {hasMultipleSequences && (
+                        <div className="mt-1 text-[11px] text-muted-foreground">
+                          Sequencia: {attempt.sequenceKey}
+                        </div>
+                      )}
                     </td>
                     <td className="px-4 py-3">
                       <AttemptStatusBadge status={attempt.status} />
