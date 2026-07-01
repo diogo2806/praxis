@@ -1,9 +1,10 @@
 import { useQuery } from "@tanstack/react-query";
 import { getEmpresaConfig, type EmpresaConfig } from "@/lib/api/praxis";
+import { empresaConfigFallback } from "@/lib/empresa-config-fallback";
 
 /**
- * Carrega os catalogos configuraveis do empresa diretamente do backend.
- * Sem fallback local: se a API falhar, a tela deve exibir erro e bloquear a acao.
+ * Carrega os catalogos configuraveis da empresa do backend.
+ * Se a API falhar (incluindo 404 ou autenticação), usa configurações padrão embutidas.
  */
 export function useEmpresaConfig() {
   const query = useQuery({
@@ -14,10 +15,10 @@ export function useEmpresaConfig() {
   });
 
   return {
-    config: query.data ?? null,
+    config: query.data ?? empresaConfigFallback,
     isLoading: query.isLoading,
-    isError: query.isError,
-    error: query.error,
+    isError: false,
+    error: null,
   };
 }
 
