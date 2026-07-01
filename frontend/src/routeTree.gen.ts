@@ -34,6 +34,7 @@ import { Route as SimulationsNewRouteImport } from './routes/simulations/new'
 import { Route as ResultsAttemptIdRouteImport } from './routes/results.$attemptId'
 import { Route as ResetPasswordTokenRouteImport } from './routes/reset-password.$token'
 import { Route as ProfissionalPerfilRouteImport } from './routes/profissional.perfil'
+import { Route as ProfissionalMensagensRouteImport } from './routes/profissional.mensagens'
 import { Route as ProfissionalFinanceiroRouteImport } from './routes/profissional.financeiro'
 import { Route as ProfissionalCadastroRouteImport } from './routes/profissional.cadastro'
 import { Route as NovaValidadorRouteImport } from './routes/nova.validador'
@@ -188,6 +189,11 @@ const ResetPasswordTokenRoute = ResetPasswordTokenRouteImport.update({
 const ProfissionalPerfilRoute = ProfissionalPerfilRouteImport.update({
   id: '/perfil',
   path: '/perfil',
+  getParentRoute: () => ProfissionalRoute,
+} as any)
+const ProfissionalMensagensRoute = ProfissionalMensagensRouteImport.update({
+  id: '/mensagens',
+  path: '/mensagens',
   getParentRoute: () => ProfissionalRoute,
 } as any)
 const ProfissionalFinanceiroRoute = ProfissionalFinanceiroRouteImport.update({
@@ -389,6 +395,7 @@ export interface FileRoutesByFullPath {
   '/nova/validador': typeof NovaValidadorRoute
   '/profissional/cadastro': typeof ProfissionalCadastroRoute
   '/profissional/financeiro': typeof ProfissionalFinanceiroRoute
+  '/profissional/mensagens': typeof ProfissionalMensagensRoute
   '/profissional/perfil': typeof ProfissionalPerfilRoute
   '/reset-password/$token': typeof ResetPasswordTokenRoute
   '/results/$attemptId': typeof ResultsAttemptIdRoute
@@ -446,6 +453,7 @@ export interface FileRoutesByTo {
   '/nova/validador': typeof NovaValidadorRoute
   '/profissional/cadastro': typeof ProfissionalCadastroRoute
   '/profissional/financeiro': typeof ProfissionalFinanceiroRoute
+  '/profissional/mensagens': typeof ProfissionalMensagensRoute
   '/profissional/perfil': typeof ProfissionalPerfilRoute
   '/reset-password/$token': typeof ResetPasswordTokenRoute
   '/results/$attemptId': typeof ResultsAttemptIdRoute
@@ -504,6 +512,7 @@ export interface FileRoutesById {
   '/nova/validador': typeof NovaValidadorRoute
   '/profissional/cadastro': typeof ProfissionalCadastroRoute
   '/profissional/financeiro': typeof ProfissionalFinanceiroRoute
+  '/profissional/mensagens': typeof ProfissionalMensagensRoute
   '/profissional/perfil': typeof ProfissionalPerfilRoute
   '/reset-password/$token': typeof ResetPasswordTokenRoute
   '/results/$attemptId': typeof ResultsAttemptIdRoute
@@ -563,6 +572,7 @@ export interface FileRouteTypes {
     | '/nova/validador'
     | '/profissional/cadastro'
     | '/profissional/financeiro'
+    | '/profissional/mensagens'
     | '/profissional/perfil'
     | '/reset-password/$token'
     | '/results/$attemptId'
@@ -620,6 +630,7 @@ export interface FileRouteTypes {
     | '/nova/validador'
     | '/profissional/cadastro'
     | '/profissional/financeiro'
+    | '/profissional/mensagens'
     | '/profissional/perfil'
     | '/reset-password/$token'
     | '/results/$attemptId'
@@ -677,6 +688,7 @@ export interface FileRouteTypes {
     | '/nova/validador'
     | '/profissional/cadastro'
     | '/profissional/financeiro'
+    | '/profissional/mensagens'
     | '/profissional/perfil'
     | '/reset-password/$token'
     | '/results/$attemptId'
@@ -911,6 +923,13 @@ declare module '@tanstack/react-router' {
       path: '/perfil'
       fullPath: '/profissional/perfil'
       preLoaderRoute: typeof ProfissionalPerfilRouteImport
+      parentRoute: typeof ProfissionalRoute
+    }
+    '/profissional/mensagens': {
+      id: '/profissional/mensagens'
+      path: '/mensagens'
+      fullPath: '/profissional/mensagens'
+      preLoaderRoute: typeof ProfissionalMensagensRouteImport
       parentRoute: typeof ProfissionalRoute
     }
     '/profissional/financeiro': {
@@ -1187,6 +1206,7 @@ const MarketplaceRouteWithChildren = MarketplaceRoute._addFileChildren(
 interface ProfissionalRouteChildren {
   ProfissionalCadastroRoute: typeof ProfissionalCadastroRoute
   ProfissionalFinanceiroRoute: typeof ProfissionalFinanceiroRoute
+  ProfissionalMensagensRoute: typeof ProfissionalMensagensRoute
   ProfissionalPerfilRoute: typeof ProfissionalPerfilRoute
   ProfissionalListingsNovoRoute: typeof ProfissionalListingsNovoRoute
   ProfissionalListingsIndexRoute: typeof ProfissionalListingsIndexRoute
@@ -1195,6 +1215,7 @@ interface ProfissionalRouteChildren {
 const ProfissionalRouteChildren: ProfissionalRouteChildren = {
   ProfissionalCadastroRoute: ProfissionalCadastroRoute,
   ProfissionalFinanceiroRoute: ProfissionalFinanceiroRoute,
+  ProfissionalMensagensRoute: ProfissionalMensagensRoute,
   ProfissionalPerfilRoute: ProfissionalPerfilRoute,
   ProfissionalListingsNovoRoute: ProfissionalListingsNovoRoute,
   ProfissionalListingsIndexRoute: ProfissionalListingsIndexRoute,
