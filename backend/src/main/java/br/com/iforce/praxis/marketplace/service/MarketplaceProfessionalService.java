@@ -13,6 +13,7 @@ import br.com.iforce.praxis.marketplace.dto.RegisterProfessionalResponse;
 import br.com.iforce.praxis.marketplace.dto.UpdateProfessionalProfileRequest;
 import br.com.iforce.praxis.marketplace.model.OrderStatus;
 import br.com.iforce.praxis.marketplace.model.PayoutStatus;
+import br.com.iforce.praxis.marketplace.model.ProfessionalVerificationStatus;
 import br.com.iforce.praxis.marketplace.persistence.entity.MarketplaceListingEntity;
 import br.com.iforce.praxis.marketplace.persistence.entity.MarketplaceOrderEntity;
 import br.com.iforce.praxis.marketplace.persistence.entity.MarketplacePayoutEntity;
@@ -125,6 +126,16 @@ public class MarketplaceProfessionalService {
     @Transactional(readOnly = true)
     public ProfessionalPublicProfileResponse currentProfile(String userId) {
         return toProfile(loadByUserId(userId));
+    }
+
+    @Transactional(readOnly = true)
+    public ProfessionalPublicProfileResponse publicProfile(Long professionalId) {
+        MarketplaceProfessionalEntity professional = professionalRepository.findById(professionalId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Profissional nao encontrado."));
+        if (professional.getVerificationStatus() != ProfessionalVerificationStatus.VERIFIED) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Profissional nao encontrado.");
+        }
+        return toProfile(professional);
     }
 
     @Transactional(readOnly = true)
