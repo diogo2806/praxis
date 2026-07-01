@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { getMarketplaceProfessionalMe, updateMarketplaceProfessionalMe } from "@/lib/api/praxis";
 import { professionalStatusLabels, splitList } from "@/lib/marketplace";
+import { marketplaceProfessionalMeFallback } from "@/lib/marketplace-professional-fallback";
 
 export const Route = createFileRoute("/profissional/perfil")({
   head: () => ({
@@ -21,6 +22,7 @@ function ProfessionalProfilePage() {
   const profile = useQuery({
     queryKey: ["marketplace-professional-me"],
     queryFn: getMarketplaceProfessionalMe,
+    placeholderData: marketplaceProfessionalMeFallback,
   });
   const [form, setForm] = useState({ displayName: "", bio: "", specialties: "", linkedinUrl: "", pixKey: "" });
 

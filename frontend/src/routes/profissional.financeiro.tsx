@@ -12,6 +12,10 @@ import {
 } from "@/lib/api/praxis";
 import { formatMarketplacePrice } from "@/lib/marketplace";
 import { getApiBaseUrl } from "@/lib/runtime-config";
+import {
+  marketplaceProfessionalMeFallback,
+  marketplaceProfessionalDashboardFallback,
+} from "@/lib/marketplace-professional-fallback";
 
 export const Route = createFileRoute("/profissional/financeiro")({
   head: () => ({
@@ -25,10 +29,12 @@ function ProfessionalFinancePage() {
   const profile = useQuery({
     queryKey: ["marketplace-professional-me"],
     queryFn: getMarketplaceProfessionalMe,
+    placeholderData: marketplaceProfessionalMeFallback,
   });
   const dashboard = useQuery({
     queryKey: ["marketplace-professional-dashboard"],
     queryFn: getMarketplaceProfessionalDashboard,
+    placeholderData: marketplaceProfessionalDashboardFallback,
     retry: false,
   });
   const disconnect = useMutation({

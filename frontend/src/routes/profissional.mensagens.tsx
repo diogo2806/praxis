@@ -7,6 +7,7 @@ import { MessageThread } from "@/components/marketplace/message-thread";
 import { StateBanner } from "@/components/praxis-ui";
 import { Button } from "@/components/ui/button";
 import { listMarketplaceMessageThreads, sendMarketplaceProfessionalMessage } from "@/lib/api/praxis";
+import { marketplaceMessageThreadsFallback } from "@/lib/marketplace-professional-fallback";
 
 export const Route = createFileRoute("/profissional/mensagens")({
   head: () => ({
@@ -22,6 +23,7 @@ function ProfessionalMessagesPage() {
   const threads = useQuery({
     queryKey: ["marketplace-message-threads", "professional"],
     queryFn: () => listMarketplaceMessageThreads("professional"),
+    placeholderData: marketplaceMessageThreadsFallback,
     retry: false,
   });
   const selectedThread = useMemo(

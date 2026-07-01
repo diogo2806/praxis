@@ -19,6 +19,11 @@ import {
   professionalStatusLabels,
   splitList,
 } from "@/lib/marketplace";
+import {
+  marketplaceProfessionalMeFallback,
+  marketplaceProfessionalDashboardFallback,
+  marketplaceMessageThreadsFallback,
+} from "@/lib/marketplace-professional-fallback";
 
 export const Route = createFileRoute("/profissional")({
   head: () => ({
@@ -32,15 +37,18 @@ function ProfessionalHomePage() {
   const profile = useQuery({
     queryKey: ["marketplace-professional-me"],
     queryFn: getMarketplaceProfessionalMe,
+    placeholderData: marketplaceProfessionalMeFallback,
   });
   const dashboard = useQuery({
     queryKey: ["marketplace-professional-dashboard"],
     queryFn: getMarketplaceProfessionalDashboard,
+    placeholderData: marketplaceProfessionalDashboardFallback,
     retry: false,
   });
   const threads = useQuery({
     queryKey: ["marketplace-message-threads", "professional"],
     queryFn: () => listMarketplaceMessageThreads("professional"),
+    placeholderData: marketplaceMessageThreadsFallback,
     retry: false,
   });
   const [form, setForm] = useState({ displayName: "", bio: "", specialties: "", linkedinUrl: "", pixKey: "" });
