@@ -1,0 +1,37 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  backend-build:
+    name: Backend — build deployable artifact
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: maven
+
+      # Compila e empacota o jar executável. Garante que a main está sempre
+      # deployável — foi a ausência desta checagem que deixou passar builds/
+      # regressões sem alarme.
+      #
+      # NOTA: os testes de integração (@SpringBootTest) ainda não rodam no CI
+      # porque a suíte usa H2, e várias migrations usam sintaxe exclusiva do
+      # PostgreSQL (índice parcial em V14, múltiplos ADD COLUMN em V22/V27/V35).
+      # O caminho recomendado é migrar os testes para PostgreSQL via
+      # Testcontainers (ver docs/marketplace/README.md §0.8) e então trocar
+      # este passo por `mvn -B verify`.
+      - name: Build (skip tests)
+        run: mvn -B -ntp -DskipTests package
