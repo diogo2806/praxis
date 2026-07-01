@@ -87,6 +87,9 @@ function ProfessionalHomePage() {
             <Button asChild variant="outline">
               <Link to="/profissional/financeiro">Financeiro</Link>
             </Button>
+            <Button asChild variant="outline">
+              <Link to="/profissional/listings">Meus testes</Link>
+            </Button>
             <Button asChild>
               <Link to="/profissional/listings/novo">
                 <Plus className="h-4 w-4" />
@@ -194,9 +197,8 @@ function ProfessionalHomePage() {
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <h2 className="text-lg font-semibold">Meus testes</h2>
                 <Button asChild size="sm" variant="outline">
-                  <Link to="/profissional/listings/novo">
-                    <Plus className="h-4 w-4" />
-                    Publicar
+                  <Link to="/profissional/listings">
+                    Ver todos
                   </Link>
                 </Button>
               </div>
