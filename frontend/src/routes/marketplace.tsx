@@ -39,6 +39,9 @@ function MarketplacePage() {
           </Link>
           <div className="flex flex-wrap gap-2">
             <Button asChild variant="outline" size="sm">
+              <Link to="/marketplace/orders">Minhas compras</Link>
+            </Button>
+            <Button asChild variant="outline" size="sm">
               <Link to="/profissional/cadastro">Vender avaliações</Link>
             </Button>
             <Button asChild size="sm">
