@@ -2,10 +2,10 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { ArrowLeft, ExternalLink, Loader2, Plus } from "lucide-react";
 
+import { ListingStatusBadge } from "@/components/marketplace/listing-status-badge";
 import { StateBanner } from "@/components/praxis-ui";
 import { Button } from "@/components/ui/button";
 import { getMarketplaceProfessionalDashboard } from "@/lib/api/praxis";
-import { listingStatusLabels } from "@/lib/marketplace";
 
 export const Route = createFileRoute("/profissional/listings/")({
   head: () => ({
@@ -89,7 +89,7 @@ function ProfessionalListingsPage() {
                       )}
                     </div>
                   </div>
-                  <div className="text-sm text-muted-foreground">{listingStatusLabels[listing.status]}</div>
+                  <ListingStatusBadge status={listing.status} />
                   <div className="text-sm font-semibold sm:text-right">{listing.salesCount} venda(s)</div>
                 </div>
               ))}
