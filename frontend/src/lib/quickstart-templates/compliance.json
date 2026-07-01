@@ -1,0 +1,48 @@
+{
+  "category": "COMPLIANCE",
+  "title": "Dilema de conduta",
+  "description": "Cenários de conflito de interesse e canais de denúncia.",
+  "name": "Compliance — dilema de conduta",
+  "criticalSituation": "Um fornecedor oferece um presente caro logo antes de uma decisão de contratação.",
+  "resultUse": "Avaliação de compliance",
+  "rootNodeId": "turno-1",
+  "competencies": [
+    { "name": "Integridade", "weight": 0.6, "targetScore": 70, "tier": "major" },
+    { "name": "Aderência à Política", "weight": 0.4, "targetScore": 70, "tier": "major" }
+  ],
+  "nodes": [
+    {
+      "nodeId": "turno-1",
+      "turnIndex": 1,
+      "speaker": "Fornecedor",
+      "message": "É só uma lembrança pela parceria. Pode aceitar tranquilo, ninguém precisa saber.",
+      "timeLimitSeconds": 90,
+      "timeoutNextNodeId": "turno-2",
+      "options": [
+        { "optionId": "opcao-1", "text": "Recusar com cordialidade e registrar a oferta no canal de compliance.", "nextNodeId": "turno-2", "auditNote": "Recusa e reporta.", "competencyScores": { "Integridade": 95, "Aderência à Política": 90 } },
+        { "optionId": "opcao-2", "text": "Aceitar o presente, mas prometer não deixar isso influenciar a decisão.", "nextNodeId": "turno-2", "critical": true, "auditNote": "Conflito de interesse.", "competencyScores": { "Integridade": 15, "Aderência à Política": 10 } },
+        { "optionId": "opcao-3", "text": "Recusar, mas não relatar para evitar constrangimento.", "nextNodeId": "turno-2", "auditNote": "Recusa sem registro.", "competencyScores": { "Integridade": 55, "Aderência à Política": 40 } }
+      ]
+    },
+    {
+      "nodeId": "turno-2",
+      "turnIndex": 2,
+      "speaker": "Colega",
+      "message": "Relaxa, todo mundo aqui já aceitou alguma coisa desse fornecedor.",
+      "timeLimitSeconds": 90,
+      "timeoutNextNodeId": "fim",
+      "options": [
+        { "optionId": "opcao-1", "text": "Reafirmar a política e orientar o colega a também reportar.", "nextNodeId": "fim", "auditNote": "Reforça a cultura de integridade.", "competencyScores": { "Integridade": 90, "Aderência à Política": 90 } },
+        { "optionId": "opcao-2", "text": "Concordar que é prática comum e seguir em frente.", "nextNodeId": "fim", "critical": true, "auditNote": "Normaliza o desvio.", "competencyScores": { "Integridade": 10, "Aderência à Política": 10 } }
+      ]
+    },
+    {
+      "nodeId": "fim",
+      "turnIndex": 99,
+      "speaker": "Sistema",
+      "message": "Cenário encerrado.",
+      "isFinal": true,
+      "reportText": "Resumo do dilema de conduta para revisão de compliance."
+    }
+  ]
+}
