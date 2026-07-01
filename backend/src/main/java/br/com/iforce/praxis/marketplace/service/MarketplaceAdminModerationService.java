@@ -80,8 +80,28 @@ public class MarketplaceAdminModerationService {
     }
 
     @Transactional(readOnly = true)
+    public List<ProfessionalPublicProfileResponse> professionalsByStatus(ProfessionalVerificationStatus status) {
+        ProfessionalVerificationStatus effectiveStatus = status == null
+                ? ProfessionalVerificationStatus.PENDING_VERIFICATION
+                : status;
+        return professionalRepository.findByVerificationStatusOrderByCreatedAtAsc(effectiveStatus)
+                .stream()
+                .map(this::toProfessionalResponse)
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
     public List<CreateListingResponse> pendingListings() {
         return listingRepository.findByStatusOrderByCreatedAtAsc(ListingStatus.PENDING_REVIEW)
+                .stream()
+                .map(listing -> new CreateListingResponse(listing.getId(), listing.getStatus()))
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<CreateListingResponse> listingsByStatus(ListingStatus status) {
+        ListingStatus effectiveStatus = status == null ? ListingStatus.PENDING_REVIEW : status;
+        return listingRepository.findByStatusOrderByCreatedAtAsc(effectiveStatus)
                 .stream()
                 .map(listing -> new CreateListingResponse(listing.getId(), listing.getStatus()))
                 .toList();
