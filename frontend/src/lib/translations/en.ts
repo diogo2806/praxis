@@ -57,6 +57,17 @@ export const en = {
     governanceNav: "History, versions and audit",
     complianceNav: "LGPD, transparency and technical basis of the result",
   },
+  marketplace: {
+    title: "Marketplace",
+    listings: "Listings",
+    purchases: "My purchases",
+    professionalArea: "Professional area",
+    publishTest: "Publish assessment",
+    saveDraft: "Save draft",
+    submitForReview: "Submit for review",
+    payouts: "Payouts",
+    disputes: "Disputes",
+  },
   wizard: {
     createTest: "Create new assessment",
     stepOf: "step {current} of {total}",
