@@ -139,6 +139,11 @@ public class MarketplaceOrderService {
         }
     }
 
+    @Transactional
+    public void processApprovedPayment(JsonNode payment, String requestId) {
+        processPaymentNotification(payment, requestId);
+    }
+
     private void approvePayment(MarketplaceOrderEntity order, JsonNode payment) {
         if (order.getStatus() == OrderStatus.PAID) {
             return;
