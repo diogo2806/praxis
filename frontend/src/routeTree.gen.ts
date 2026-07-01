@@ -56,6 +56,7 @@ import { Route as CandidatoTokenRouteImport } from './routes/candidato.$token'
 import { Route as CandidateLinksNewRouteImport } from './routes/candidate-links/new'
 import { Route as AssessmentJourneysNewRouteImport } from './routes/assessment-journeys/new'
 import { Route as ProfissionalListingsIndexRouteImport } from './routes/profissional.listings.index'
+import { Route as MarketplaceOrdersIndexRouteImport } from './routes/marketplace.orders.index'
 import { Route as AdminEmpresasIndexRouteImport } from './routes/admin.empresas.index'
 import { Route as ProfissionalListingsNovoRouteImport } from './routes/profissional.listings.novo'
 import { Route as MarketplaceCheckoutListingIdRouteImport } from './routes/marketplace.checkout.$listingId'
@@ -299,6 +300,11 @@ const ProfissionalListingsIndexRoute =
     path: '/listings/',
     getParentRoute: () => ProfissionalRoute,
   } as any)
+const MarketplaceOrdersIndexRoute = MarketplaceOrdersIndexRouteImport.update({
+  id: '/orders/',
+  path: '/orders/',
+  getParentRoute: () => MarketplaceRoute,
+} as any)
 const AdminEmpresasIndexRoute = AdminEmpresasIndexRouteImport.update({
   id: '/admin/empresas/',
   path: '/admin/empresas/',
@@ -380,6 +386,7 @@ export interface FileRoutesByFullPath {
   '/marketplace/checkout/$listingId': typeof MarketplaceCheckoutListingIdRoute
   '/profissional/listings/novo': typeof ProfissionalListingsNovoRoute
   '/admin/empresas/': typeof AdminEmpresasIndexRoute
+  '/marketplace/orders/': typeof MarketplaceOrdersIndexRoute
   '/profissional/listings/': typeof ProfissionalListingsIndexRoute
 }
 export interface FileRoutesByTo {
@@ -434,6 +441,7 @@ export interface FileRoutesByTo {
   '/marketplace/checkout/$listingId': typeof MarketplaceCheckoutListingIdRoute
   '/profissional/listings/novo': typeof ProfissionalListingsNovoRoute
   '/admin/empresas': typeof AdminEmpresasIndexRoute
+  '/marketplace/orders': typeof MarketplaceOrdersIndexRoute
   '/profissional/listings': typeof ProfissionalListingsIndexRoute
 }
 export interface FileRoutesById {
@@ -489,6 +497,7 @@ export interface FileRoutesById {
   '/marketplace/checkout/$listingId': typeof MarketplaceCheckoutListingIdRoute
   '/profissional/listings/novo': typeof ProfissionalListingsNovoRoute
   '/admin/empresas/': typeof AdminEmpresasIndexRoute
+  '/marketplace/orders/': typeof MarketplaceOrdersIndexRoute
   '/profissional/listings/': typeof ProfissionalListingsIndexRoute
 }
 export interface FileRouteTypes {
@@ -545,6 +554,7 @@ export interface FileRouteTypes {
     | '/marketplace/checkout/$listingId'
     | '/profissional/listings/novo'
     | '/admin/empresas/'
+    | '/marketplace/orders/'
     | '/profissional/listings/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -599,6 +609,7 @@ export interface FileRouteTypes {
     | '/marketplace/checkout/$listingId'
     | '/profissional/listings/novo'
     | '/admin/empresas'
+    | '/marketplace/orders'
     | '/profissional/listings'
   id:
     | '__root__'
@@ -653,6 +664,7 @@ export interface FileRouteTypes {
     | '/marketplace/checkout/$listingId'
     | '/profissional/listings/novo'
     | '/admin/empresas/'
+    | '/marketplace/orders/'
     | '/profissional/listings/'
   fileRoutesById: FileRoutesById
 }
@@ -1030,6 +1042,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ProfissionalListingsIndexRouteImport
       parentRoute: typeof ProfissionalRoute
     }
+    '/marketplace/orders/': {
+      id: '/marketplace/orders/'
+      path: '/orders'
+      fullPath: '/marketplace/orders/'
+      preLoaderRoute: typeof MarketplaceOrdersIndexRouteImport
+      parentRoute: typeof MarketplaceRoute
+    }
     '/admin/empresas/': {
       id: '/admin/empresas/'
       path: '/admin/empresas'
@@ -1111,11 +1130,13 @@ const IntegrationsRouteWithChildren = IntegrationsRoute._addFileChildren(
 interface MarketplaceRouteChildren {
   MarketplaceListingIdRoute: typeof MarketplaceListingIdRoute
   MarketplaceCheckoutListingIdRoute: typeof MarketplaceCheckoutListingIdRoute
+  MarketplaceOrdersIndexRoute: typeof MarketplaceOrdersIndexRoute
 }
 
 const MarketplaceRouteChildren: MarketplaceRouteChildren = {
   MarketplaceListingIdRoute: MarketplaceListingIdRoute,
   MarketplaceCheckoutListingIdRoute: MarketplaceCheckoutListingIdRoute,
+  MarketplaceOrdersIndexRoute: MarketplaceOrdersIndexRoute,
 }
 
 const MarketplaceRouteWithChildren = MarketplaceRoute._addFileChildren(
