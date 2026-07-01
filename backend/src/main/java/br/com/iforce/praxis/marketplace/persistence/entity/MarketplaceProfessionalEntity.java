@@ -111,6 +111,9 @@ public class MarketplaceProfessionalEntity {
     @Column(name = "updated_at", nullable = false)
     private Instant updatedAt;
 
+    @Column(name = "anonymized_at")
+    private Instant anonymizedAt;
+
     @PrePersist
     void onCreate() {
         Instant now = Instant.now();

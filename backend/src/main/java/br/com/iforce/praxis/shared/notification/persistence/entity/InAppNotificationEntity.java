@@ -66,16 +66,16 @@ public class InAppNotificationEntity implements EmpresaAwareEntity {
     @Column(name = "message", nullable = false, length = 1000)
     private String message;
 
-    @Column(name = "candidate_attempt_id", nullable = false, length = 80)
+    @Column(name = "candidate_attempt_id", length = 80)
     private String candidateAttemptId;
 
-    @Column(name = "candidate_name", nullable = false, length = 160)
+    @Column(name = "candidate_name", length = 160)
     private String candidateName;
 
-    @Column(name = "candidate_email", nullable = false, length = 180)
+    @Column(name = "candidate_email", length = 180)
     private String candidateEmail;
 
-    @Column(name = "outbox_event_id", nullable = false)
+    @Column(name = "outbox_event_id")
     private Long outboxEventId;
 
     @Column(name = "created_at", nullable = false)

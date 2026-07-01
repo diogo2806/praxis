@@ -10,6 +10,12 @@ import br.com.iforce.praxis.gupy.persistence.entity.CandidateAttemptEntity;
 
 import br.com.iforce.praxis.gupy.persistence.repository.CandidateAttemptRepository;
 
+import br.com.iforce.praxis.marketplace.model.ProfessionalVerificationStatus;
+
+import br.com.iforce.praxis.marketplace.persistence.entity.MarketplaceProfessionalEntity;
+
+import br.com.iforce.praxis.marketplace.persistence.repository.MarketplaceProfessionalRepository;
+
 import org.springframework.beans.factory.annotation.Autowired;
 
 import org.springframework.beans.factory.annotation.Value;
@@ -52,6 +58,7 @@ public class PrivacyRetentionService {
     );
 
     private final CandidateAttemptRepository candidateAttemptRepository;
+    private final MarketplaceProfessionalRepository marketplaceProfessionalRepository;
     private final AuditEventService auditEventService;
     private final Clock clock;
     private final int retentionDays;
@@ -59,19 +66,22 @@ public class PrivacyRetentionService {
     @Autowired
     public PrivacyRetentionService(
             CandidateAttemptRepository candidateAttemptRepository,
+            MarketplaceProfessionalRepository marketplaceProfessionalRepository,
             AuditEventService auditEventService,
             @Value("${praxis.privacy-retention-days:180}") int retentionDays
     ) {
-        this(candidateAttemptRepository, auditEventService, Clock.systemUTC(), retentionDays);
+        this(candidateAttemptRepository, marketplaceProfessionalRepository, auditEventService, Clock.systemUTC(), retentionDays);
     }
 
     PrivacyRetentionService(
             CandidateAttemptRepository candidateAttemptRepository,
+            MarketplaceProfessionalRepository marketplaceProfessionalRepository,
             AuditEventService auditEventService,
             Clock clock,
             int retentionDays
     ) {
         this.candidateAttemptRepository = candidateAttemptRepository;
+        this.marketplaceProfessionalRepository = marketplaceProfessionalRepository;
         this.auditEventService = auditEventService;
         this.clock = clock;
         this.retentionDays = retentionDays;
@@ -105,7 +115,10 @@ public class PrivacyRetentionService {
 
         Instant anonymizedAt = Instant.now(clock);
         candidates.forEach(candidate -> anonymize(candidate, anonymizedAt));
-        return candidates.size();
+        int professionalCount = AuditEventService.PLATFORM_EMPRESA_ID.equals(empresaId)
+                ? anonymizeExpiredMarketplaceProfessionals(cutoff, anonymizedAt)
+                : 0;
+        return candidates.size() + professionalCount;
     }
 
     /**
@@ -137,6 +150,43 @@ public class PrivacyRetentionService {
                 AuditEventType.ATTEMPT_ANONYMIZED,
                 "Dados pessoais da tentativa anonimizados por politica de retencao.",
                 "{\"retentionDays\":" + retentionDays + ",\"anonymizedAt\":\"" + anonymizedAt + "\"}"
+        );
+    }
+
+    private int anonymizeExpiredMarketplaceProfessionals(Instant cutoff, Instant anonymizedAt) {
+        List<MarketplaceProfessionalEntity> professionals =
+                marketplaceProfessionalRepository.findByVerificationStatusInAndUpdatedAtBeforeAndAnonymizedAtIsNull(
+                        List.of(
+                                ProfessionalVerificationStatus.REJECTED,
+                                ProfessionalVerificationStatus.SUSPENDED
+                        ),
+                        cutoff
+                );
+        professionals.forEach(professional -> anonymizeProfessional(professional, anonymizedAt));
+        return professionals.size();
+    }
+
+    private void anonymizeProfessional(MarketplaceProfessionalEntity professional, Instant anonymizedAt) {
+        Long professionalId = professional.getId();
+        professional.setDisplayName("Profissional anonimizado " + professionalId);
+        professional.setDocument("anon-" + professionalId);
+        professional.setProfessionalRegistration(null);
+        professional.setBio(null);
+        professional.getSpecialties().clear();
+        professional.setLinkedinUrl(null);
+        professional.setPixKey(null);
+        professional.setMpSellerId(null);
+        professional.setMpAccessToken(null);
+        professional.setAnonymizedAt(anonymizedAt);
+
+        auditEventService.appendUserEvent(
+                AuditEventService.PLATFORM_EMPRESA_ID,
+                professional.getUserId().toString(),
+                AuditEventType.MARKETPLACE_PROFESSIONAL_ANONYMIZED,
+                "Dados pessoais do profissional marketplace anonimizados por politica de retencao.",
+                "{\"retentionDays\":" + retentionDays
+                        + ",\"professionalId\":" + professionalId
+                        + ",\"anonymizedAt\":\"" + anonymizedAt + "\"}"
         );
     }
 }

@@ -108,6 +108,12 @@ public interface CandidateAttemptRepository extends JpaRepository<CandidateAttem
             AttemptStatus status
     );
 
+    long countByEmpresaIdAndSimulationIdAndStatus(
+            String empresaId,
+            String simulationId,
+            AttemptStatus status
+    );
+
     List<CandidateAttemptEntity> findByEmpresaIdOrderByCreatedAtDesc(String empresaId, Pageable pageable);
 
     @EntityGraph(attributePaths = {"answers", "resultItems"})

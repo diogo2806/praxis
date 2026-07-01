@@ -5,6 +5,7 @@ import br.com.iforce.praxis.marketplace.persistence.entity.MarketplaceProfession
 
 import org.springframework.data.jpa.repository.JpaRepository;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 
@@ -19,4 +20,8 @@ public interface MarketplaceProfessionalRepository extends JpaRepository<Marketp
     /** Fila de moderação: profissionais por situação de verificação. */
     List<MarketplaceProfessionalEntity> findByVerificationStatusOrderByCreatedAtAsc(
             ProfessionalVerificationStatus verificationStatus);
+    List<MarketplaceProfessionalEntity> findByVerificationStatusInAndUpdatedAtBeforeAndAnonymizedAtIsNull(
+            List<ProfessionalVerificationStatus> statuses,
+            Instant updatedBefore
+    );
 }
