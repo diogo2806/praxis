@@ -1,8 +1,9 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { ArrowLeft, CheckCircle2, Loader2, Send, Star } from "lucide-react";
+import { ArrowLeft, CheckCircle2, Loader2, Send } from "lucide-react";
 import { useState } from "react";
 
+import { StarRating } from "@/components/marketplace/star-rating";
 import { StateBanner } from "@/components/praxis-ui";
 import { Button } from "@/components/ui/button";
 import { createMarketplaceReview, getMarketplaceOrder } from "@/lib/api/praxis";
@@ -100,20 +101,7 @@ function MarketplaceOrderDetailPage() {
                     review.mutate();
                   }}
                 >
-                  <div className="flex flex-wrap gap-2">
-                    {[1, 2, 3, 4, 5].map((value) => (
-                      <Button
-                        key={value}
-                        type="button"
-                        variant={value <= rating ? "default" : "outline"}
-                        size="icon"
-                        aria-label={`${value} estrela(s)`}
-                        onClick={() => setRating(value)}
-                      >
-                        <Star className="h-4 w-4" />
-                      </Button>
-                    ))}
-                  </div>
+                  <StarRating value={rating} onChange={setRating} />
                   <textarea
                     value={comment}
                     onChange={(event) => setComment(event.target.value)}
