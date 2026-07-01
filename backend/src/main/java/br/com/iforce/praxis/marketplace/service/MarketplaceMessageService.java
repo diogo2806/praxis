@@ -27,8 +27,8 @@ import java.util.List;
 /**
  * Controla a conversa entre empresa interessada e profissional dentro do marketplace.
  *
- * <p>Esse servi&ccedil;o representa o canal oficial de contato comercial antes ou durante a rela&ccedil;&atilde;o
- * de compra, preservando o contexto por thread e aplicando limites b&aacute;sicos de uso.</p>
+ * <p>Esse serviço representa o canal oficial de contato comercial antes ou durante a relação
+ * de compra, preservando o contexto por thread e aplicando limites básicos de uso.</p>
  */
 public class MarketplaceMessageService {
 
@@ -56,7 +56,7 @@ public class MarketplaceMessageService {
      * Envia uma mensagem em nome do tenant comprador ou potencial comprador.
      *
      * <p>O fluxo permite iniciar uma nova conversa sobre um item ou continuar uma thread existente
-     * sem perder o hist&oacute;rico de intera&ccedil;&atilde;o entre as partes.</p>
+     * sem perder o histórico de interação entre as partes.</p>
      */
     public MessageThreadResponse sendAsTenant(String tenantId, Long userId, SendMessageRequest request) {
         MarketplaceMessageThreadEntity thread = resolveTenantThread(tenantId, request);
@@ -66,9 +66,9 @@ public class MarketplaceMessageService {
 
     @Transactional
     /**
-     * Envia uma resposta do profissional em uma conversa j&aacute; aberta.
+     * Envia uma resposta do profissional em uma conversa já aberta.
      *
-     * <p>Na vis&atilde;o do processo, esta &eacute; a continuidade do atendimento comercial dado pelo autor
+     * <p>Na visão do processo, esta é a continuidade do atendimento comercial dado pelo autor
      * do item anunciado.</p>
      */
     public MessageThreadResponse sendAsProfessional(String userId, SendMessageRequest request) {

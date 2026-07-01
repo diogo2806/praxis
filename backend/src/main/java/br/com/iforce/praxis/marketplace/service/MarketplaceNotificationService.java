@@ -17,10 +17,10 @@ import java.util.List;
 
 @Service
 /**
- * Registra notifica&ccedil;&otilde;es internas relacionadas aos acontecimentos do marketplace.
+ * Registra notificações internas relacionadas aos acontecimentos do marketplace.
  *
- * <p>Na pr&aacute;tica, este servi&ccedil;o transforma eventos importantes do processo, como aprova&ccedil;&otilde;es,
- * vendas, avalia&ccedil;&otilde;es e libera&ccedil;&atilde;o de repasse, em avisos que aparecem para os envolvidos.</p>
+ * <p>Na prática, este serviço transforma eventos importantes do processo, como aprovações,
+ * vendas, avaliações e liberação de repasse, em avisos que aparecem para os envolvidos.</p>
  */
 public class MarketplaceNotificationService {
 
@@ -43,10 +43,10 @@ public class MarketplaceNotificationService {
 
     @Transactional(propagation = Propagation.MANDATORY)
     /**
-     * Envia uma notifica&ccedil;&atilde;o para o profissional dono do cadastro indicado.
+     * Envia uma notificação para o profissional dono do cadastro indicado.
      *
-     * <p>Esse fluxo &eacute; usado quando o assunto do marketplace precisa chegar diretamente a quem
-     * vende ou administra o conte&uacute;do profissional.</p>
+     * <p>Esse fluxo é usado quando o assunto do marketplace precisa chegar diretamente a quem
+     * vende ou administra o conteúdo profissional.</p>
      */
     public void notifyProfessional(
             Long professionalId,
@@ -66,10 +66,10 @@ public class MarketplaceNotificationService {
 
     @Transactional(propagation = Propagation.MANDATORY)
     /**
-     * Envia uma notifica&ccedil;&atilde;o para os administradores da empresa cliente.
+     * Envia uma notificação para os administradores da empresa cliente.
      *
-     * <p>Serve para avisar o tenant comprador sobre fatos relevantes da opera&ccedil;&atilde;o, como
-     * disponibilidade de conte&uacute;do, atualiza&ccedil;&otilde;es de pedido ou outras a&ccedil;&otilde;es do marketplace.</p>
+     * <p>Serve para avisar o tenant comprador sobre fatos relevantes da operação, como
+     * disponibilidade de conteúdo, atualizações de pedido ou outras ações do marketplace.</p>
      */
     public void notifyTenantAdmins(
             String tenantId,

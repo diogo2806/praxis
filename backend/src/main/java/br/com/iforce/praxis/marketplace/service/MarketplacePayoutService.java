@@ -13,9 +13,9 @@ import java.util.List;
 
 @Service
 /**
- * Administra a libera&ccedil;&atilde;o dos repasses financeiros devidos aos profissionais.
+ * Administra a liberação dos repasses financeiros devidos aos profissionais.
  *
- * <p>No processo do marketplace, este servi&ccedil;o cuida do momento em que um valor deixa o
+ * <p>No processo do marketplace, este serviço cuida do momento em que um valor deixa o
  * escrow administrativo e passa a ser considerado liberado para o vendedor.</p>
  */
 public class MarketplacePayoutService {
@@ -33,10 +33,10 @@ public class MarketplacePayoutService {
 
     @Transactional
     /**
-     * Libera todos os repasses cujo prazo de reten&ccedil;&atilde;o j&aacute; terminou.
+     * Libera todos os repasses cujo prazo de retenção já terminou.
      *
-     * <p>Esse passo reduz risco operacional ap&oacute;s a venda e formaliza que o pedido cumpriu o
-     * per&iacute;odo definido antes da disponibiliza&ccedil;&atilde;o do valor ao profissional.</p>
+     * <p>Esse passo reduz risco operacional após a venda e formaliza que o pedido cumpriu o
+     * período definido antes da disponibilização do valor ao profissional.</p>
      */
     public int releaseReadyEscrowPayouts() {
         List<MarketplacePayoutEntity> ready = payoutRepository.findByStatusAndEscrowReleaseAtBefore(

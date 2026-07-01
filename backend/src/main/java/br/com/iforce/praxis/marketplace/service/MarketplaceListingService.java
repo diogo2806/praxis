@@ -38,9 +38,9 @@ import java.util.Set;
 /**
  * Gerencia o ciclo de vida dos testes publicados por profissionais no marketplace.
  *
- * <p>Na vis&atilde;o de neg&oacute;cio, este servi&ccedil;o cuida desde a cria&ccedil;&atilde;o do rascunho at&eacute; a
- * disponibiliza&ccedil;&atilde;o do item para compra, incluindo edi&ccedil;&atilde;o, envio para revis&atilde;o e consulta
- * do cat&aacute;logo p&uacute;blico.</p>
+ * <p>Na visão de negócio, este serviço cuida desde a criação do rascunho até a
+ * disponibilização do item para compra, incluindo edição, envio para revisão e consulta
+ * do catálogo público.</p>
  */
 public class MarketplaceListingService {
 
@@ -62,10 +62,10 @@ public class MarketplaceListingService {
 
     @Transactional
     /**
-     * Cria um novo rascunho de item comercializ&aacute;vel a partir de uma vers&atilde;o j&aacute; publicada de simula&ccedil;&atilde;o.
+     * Cria um novo rascunho de item comercializável a partir de uma versão já publicada de simulação.
      *
-     * <p>Esse &eacute; o momento em que o profissional define como seu material aparecer&aacute; para venda
-     * no marketplace, sem ainda deix&aacute;-lo vis&iacute;vel para clientes.</p>
+     * <p>Esse é o momento em que o profissional define como seu material aparecerá para venda
+     * no marketplace, sem ainda deixá-lo visível para clientes.</p>
      */
     public CreateListingResponse create(String userId, CreateListingRequest request) {
         MarketplaceProfessionalEntity professional = loadProfessional(userId);
@@ -101,9 +101,9 @@ public class MarketplaceListingService {
 
     @Transactional
     /**
-     * Envia um rascunho para modera&ccedil;&atilde;o da plataforma.
+     * Envia um rascunho para moderação da plataforma.
      *
-     * <p>No processo, isso marca que o profissional terminou a prepara&ccedil;&atilde;o do item e deseja
+     * <p>No processo, isso marca que o profissional terminou a preparação do item e deseja
      * que a plataforma avalie se ele pode ser vendido.</p>
      */
     public CreateListingResponse submit(String userId, Long listingId) {
@@ -128,10 +128,10 @@ public class MarketplaceListingService {
 
     @Transactional
     /**
-     * Atualiza os dados comerciais e de apresenta&ccedil;&atilde;o de um item ainda edit&aacute;vel.
+     * Atualiza os dados comerciais e de apresentação de um item ainda editável.
      *
-     * <p>Esse fluxo existe para permitir ajustes antes da aprova&ccedil;&atilde;o final ou corre&ccedil;&otilde;es ap&oacute;s
-     * uma rejei&ccedil;&atilde;o da modera&ccedil;&atilde;o.</p>
+     * <p>Esse fluxo existe para permitir ajustes antes da aprovação final ou correções após
+     * uma rejeição da moderação.</p>
      */
     public CreateListingResponse update(String userId, Long listingId, UpdateListingRequest request) {
         MarketplaceProfessionalEntity professional = loadProfessional(userId);
@@ -165,10 +165,10 @@ public class MarketplaceListingService {
 
     @Transactional(readOnly = true)
     /**
-     * Consulta o cat&aacute;logo p&uacute;blico de testes dispon&iacute;veis para compra.
+     * Consulta o catálogo público de testes disponíveis para compra.
      *
      * <p>O resultado representa a vitrine do marketplace, com filtros para facilitar a busca
-     * do cliente por tipo de teste, faixa de pre&ccedil;o, reputa&ccedil;&atilde;o e texto.</p>
+     * do cliente por tipo de teste, faixa de preço, reputação e texto.</p>
      */
     public MarketplacePageResponse<ListingSummaryResponse> search(ListingSearchFilter filter) {
         Pageable pageable = PageRequest.of(
@@ -196,10 +196,10 @@ public class MarketplaceListingService {
 
     @Transactional(readOnly = true)
     /**
-     * Exibe a ficha completa de um item aprovado e dispon&iacute;vel no marketplace.
+     * Exibe a ficha completa de um item aprovado e disponível no marketplace.
      *
-     * <p>Essa consulta entrega os dados necess&aacute;rios para o cliente entender o que est&aacute;
-     * comprando, quem &eacute; o profissional e quais trechos de pr&eacute;via est&atilde;o liberados.</p>
+     * <p>Essa consulta entrega os dados necessários para o cliente entender o que está
+     * comprando, quem é o profissional e quais trechos de prévia estão liberados.</p>
      */
     public ListingDetailResponse detail(Long id) {
         MarketplaceListingEntity listing = listingRepository.findByIdAndStatus(id, ListingStatus.APPROVED)

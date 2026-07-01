@@ -33,10 +33,10 @@ import java.util.Set;
 
 @Service
 /**
- * Executa as decis&otilde;es administrativas que mant&ecirc;m a qualidade e a governan&ccedil;a do marketplace.
+ * Executa as decisões administrativas que mantêm a qualidade e a governança do marketplace.
  *
- * <p>Este servi&ccedil;o representa a mesa de opera&ccedil;&atilde;o da plataforma: acompanha indicadores,
- * aprova ou bloqueia profissionais e itens, trata disputas e registra as a&ccedil;&otilde;es de auditoria.</p>
+ * <p>Este serviço representa a mesa de operação da plataforma: acompanha indicadores,
+ * aprova ou bloqueia profissionais e itens, trata disputas e registra as ações de auditoria.</p>
  */
 public class MarketplaceAdminModerationService {
 
@@ -65,9 +65,9 @@ public class MarketplaceAdminModerationService {
 
     @Transactional(readOnly = true)
     /**
-     * Resume a situa&ccedil;&atilde;o operacional do marketplace para uso administrativo.
+     * Resume a situação operacional do marketplace para uso administrativo.
      *
-     * <p>O objetivo &eacute; mostrar rapidamente quantos cadastros, publica&ccedil;&otilde;es e vendas exigem
+     * <p>O objetivo é mostrar rapidamente quantos cadastros, publicações e vendas exigem
      * acompanhamento da equipe da plataforma.</p>
      */
     public AdminMarketplaceDashboardResponse dashboard() {
@@ -84,7 +84,7 @@ public class MarketplaceAdminModerationService {
 
     @Transactional(readOnly = true)
     /**
-     * Lista profissionais aguardando valida&ccedil;&atilde;o da plataforma.
+     * Lista profissionais aguardando validação da plataforma.
      */
     public List<ProfessionalPublicProfileResponse> pendingProfessionals() {
         return professionalRepository.findByVerificationStatusOrderByCreatedAtAsc(
@@ -110,7 +110,7 @@ public class MarketplaceAdminModerationService {
 
     @Transactional(readOnly = true)
     /**
-     * Lista itens que foram enviados para revis&atilde;o e ainda aguardam decis&atilde;o.
+     * Lista itens que foram enviados para revisão e ainda aguardam decisão.
      */
     public List<CreateListingResponse> pendingListings() {
         return listingRepository.findByStatusOrderByCreatedAtAsc(ListingStatus.PENDING_REVIEW)
@@ -135,8 +135,8 @@ public class MarketplaceAdminModerationService {
     /**
      * Aprova o cadastro de um profissional para que ele possa atuar normalmente no marketplace.
      *
-     * <p>Depois desta decis&atilde;o, o profissional passa a ter condi&ccedil;&otilde;es de submeter materiais
-     * comerciais dentro do fluxo padr&atilde;o da plataforma.</p>
+     * <p>Depois desta decisão, o profissional passa a ter condições de submeter materiais
+     * comerciais dentro do fluxo padrão da plataforma.</p>
      */
     public ProfessionalPublicProfileResponse approveProfessional(
             String actorUserId,
@@ -158,10 +158,10 @@ public class MarketplaceAdminModerationService {
 
     @Transactional
     /**
-     * Rejeita o cadastro de um profissional durante a etapa de valida&ccedil;&atilde;o.
+     * Rejeita o cadastro de um profissional durante a etapa de validação.
      *
-     * <p>Este caminho &eacute; usado quando a plataforma entende que o perfil n&atilde;o est&aacute; apto para
-     * ingresso no marketplace nas condi&ccedil;&otilde;es atuais.</p>
+     * <p>Este caminho é usado quando a plataforma entende que o perfil não está apto para
+     * ingresso no marketplace nas condições atuais.</p>
      */
     public ProfessionalPublicProfileResponse rejectProfessional(
             String actorUserId,
@@ -177,9 +177,9 @@ public class MarketplaceAdminModerationService {
 
     @Transactional
     /**
-     * Suspende um profissional j&aacute; cadastrado, interrompendo sua opera&ccedil;&atilde;o no marketplace.
+     * Suspende um profissional já cadastrado, interrompendo sua operação no marketplace.
      *
-     * <p>Serve para a&ccedil;&otilde;es corretivas ou preventivas quando a plataforma precisa limitar a atua&ccedil;&atilde;o
+     * <p>Serve para ações corretivas ou preventivas quando a plataforma precisa limitar a atuação
      * de um vendedor sem remover historicamente seus registros.</p>
      */
     public ProfessionalPublicProfileResponse suspendProfessional(
@@ -198,8 +198,8 @@ public class MarketplaceAdminModerationService {
     /**
      * Aprova um item para venda no marketplace.
      *
-     * <p>Ap&oacute;s esta etapa, o teste deixa de ser apenas um material em revis&atilde;o e passa a compor
-     * a vitrine p&uacute;blica dispon&iacute;vel para compra.</p>
+     * <p>Após esta etapa, o teste deixa de ser apenas um material em revisão e passa a compor
+     * a vitrine pública disponível para compra.</p>
      */
     public CreateListingResponse approveListing(String actorUserId, Long listingId, AdminModerateListingRequest request) {
         MarketplaceListingEntity listing = requireListing(listingId);
@@ -218,10 +218,10 @@ public class MarketplaceAdminModerationService {
 
     @Transactional
     /**
-     * Rejeita um item e devolve ao profissional a necessidade de corre&ccedil;&atilde;o.
+     * Rejeita um item e devolve ao profissional a necessidade de correção.
      *
-     * <p>A rejei&ccedil;&atilde;o registra o motivo operacional e permite que o autor ajuste o material
-     * antes de tentar nova submiss&atilde;o.</p>
+     * <p>A rejeição registra o motivo operacional e permite que o autor ajuste o material
+     * antes de tentar nova submissão.</p>
      */
     public CreateListingResponse rejectListing(String actorUserId, Long listingId, AdminModerateListingRequest request) {
         MarketplaceListingEntity listing = requireListing(listingId);
@@ -240,10 +240,10 @@ public class MarketplaceAdminModerationService {
 
     @Transactional
     /**
-     * Suspende um item previamente publicado ou em circula&ccedil;&atilde;o administrativa.
+     * Suspende um item previamente publicado ou em circulação administrativa.
      *
-     * <p>Esse fluxo remove o item da opera&ccedil;&atilde;o comercial quando a plataforma precisa interromper
-     * sua disponibilidade por motivo de governan&ccedil;a, risco ou qualidade.</p>
+     * <p>Esse fluxo remove o item da operação comercial quando a plataforma precisa interromper
+     * sua disponibilidade por motivo de governança, risco ou qualidade.</p>
      */
     public CreateListingResponse suspendListing(String actorUserId, Long listingId, AdminModerateListingRequest request) {
         MarketplaceListingEntity listing = requireListing(listingId);
@@ -256,7 +256,7 @@ public class MarketplaceAdminModerationService {
 
     @Transactional(readOnly = true)
     /**
-     * Lista pedidos que entraram em disputa e exigem interven&ccedil;&atilde;o humana.
+     * Lista pedidos que entraram em disputa e exigem intervenção humana.
      */
     public List<MarketplaceOrderResponse> disputedOrders() {
         return orderRepository.findByStatus(OrderStatus.DISPUTED)
@@ -270,7 +270,7 @@ public class MarketplaceAdminModerationService {
      * Registra o reembolso administrativo de uma compra do marketplace.
      *
      * <p>Esse processo encerra a venda, atualiza o pedido e ajusta o repasse associado para
-     * refletir que o valor n&atilde;o deve mais seguir para o profissional.</p>
+     * refletir que o valor não deve mais seguir para o profissional.</p>
      */
     public MarketplaceOrderResponse refundOrder(String actorUserId, Long orderId, AdminRefundOrderRequest request) {
         MarketplaceOrderEntity order = orderRepository.findById(orderId)

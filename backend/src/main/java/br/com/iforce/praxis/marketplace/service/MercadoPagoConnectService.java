@@ -21,9 +21,9 @@ import java.util.Base64;
 
 @Service
 /**
- * Gerencia a conex&atilde;o OAuth entre o profissional e a conta do Mercado Pago.
+ * Gerencia a conexão OAuth entre o profissional e a conta do Mercado Pago.
  *
- * <p>No processo de neg&oacute;cio, este servi&ccedil;o &eacute; o elo que autoriza a plataforma a receber
+ * <p>No processo de negócio, este serviço é o elo que autoriza a plataforma a receber
  * pagamentos e preparar repasses em nome do vendedor dentro do marketplace.</p>
  */
 public class MercadoPagoConnectService {
@@ -48,9 +48,9 @@ public class MercadoPagoConnectService {
 
     @Transactional(readOnly = true)
     /**
-     * Gera a URL que o profissional deve acessar para autorizar a integra&ccedil;&atilde;o com o Mercado Pago.
+     * Gera a URL que o profissional deve acessar para autorizar a integração com o Mercado Pago.
      *
-     * <p>Esse passo inicia a etapa em que o vendedor concede permiss&atilde;o para a plataforma operar
+     * <p>Esse passo inicia a etapa em que o vendedor concede permissão para a plataforma operar
      * o fluxo comercial do marketplace com a sua conta recebedora.</p>
      */
     public String connectUrl(String userId) {
@@ -62,8 +62,8 @@ public class MercadoPagoConnectService {
     /**
      * Finaliza o retorno do OAuth e guarda a credencial recebida do Mercado Pago.
      *
-     * <p>Na pr&aacute;tica, este m&eacute;todo confirma que o retorno pertence ao profissional correto e
-     * registra os dados necess&aacute;rios para que ele possa vender pelo marketplace.</p>
+     * <p>Na prática, este método confirma que o retorno pertence ao profissional correto e
+     * registra os dados necessários para que ele possa vender pelo marketplace.</p>
      */
     public void handleCallback(String state, String code) {
         if (code == null || code.isBlank()) {
@@ -82,9 +82,9 @@ public class MercadoPagoConnectService {
 
     @Transactional
     /**
-     * Desfaz a liga&ccedil;&atilde;o entre o profissional e o Mercado Pago no cadastro local.
+     * Desfaz a ligação entre o profissional e o Mercado Pago no cadastro local.
      *
-     * <p>Depois deste passo, novas vendas deixam de ser eleg&iacute;veis at&eacute; que a integra&ccedil;&atilde;o seja
+     * <p>Depois deste passo, novas vendas deixam de ser elegíveis até que a integração seja
      * conectada novamente.</p>
      */
     public void disconnect(String userId) {

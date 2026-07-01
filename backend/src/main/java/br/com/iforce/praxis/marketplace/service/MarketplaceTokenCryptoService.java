@@ -15,9 +15,9 @@ import java.util.Base64;
 
 @Service
 /**
- * Protege os tokens sens&iacute;veis usados na integra&ccedil;&atilde;o financeira do marketplace.
+ * Protege os tokens sensíveis usados na integração financeira do marketplace.
  *
- * <p>Na vis&atilde;o do processo, este servi&ccedil;o existe para que o sistema possa guardar credenciais
+ * <p>Na visão do processo, este serviço existe para que o sistema possa guardar credenciais
  * operacionais do Mercado Pago sem expor o valor original em banco ou respostas de API.</p>
  */
 public class MarketplaceTokenCryptoService {
@@ -40,9 +40,9 @@ public class MarketplaceTokenCryptoService {
     }
 
     /**
-     * Converte um token leg&iacute;vel em uma forma segura para armazenamento.
+     * Converte um token legível em uma forma segura para armazenamento.
      *
-     * <p>Esse passo &eacute; usado quando a plataforma recebe ou atualiza uma credencial que precisar&aacute;
+     * <p>Esse passo é usado quando a plataforma recebe ou atualiza uma credencial que precisará
      * ser reutilizada mais tarde para operar pagamentos em nome do profissional.</p>
      */
     public String encrypt(String plainText) {

@@ -24,9 +24,9 @@ import java.util.List;
 
 @Service
 /**
- * Controla as avalia&ccedil;&otilde;es deixadas pelos clientes ap&oacute;s o uso do item comprado.
+ * Controla as avaliações deixadas pelos clientes após o uso do item comprado.
  *
- * <p>No processo do marketplace, este servi&ccedil;o garante que a reputa&ccedil;&atilde;o do profissional seja
+ * <p>No processo do marketplace, este serviço garante que a reputação do profissional seja
  * formada apenas a partir de compras pagas e efetivamente utilizadas.</p>
  */
 public class MarketplaceReviewService {
@@ -53,10 +53,10 @@ public class MarketplaceReviewService {
 
     @Transactional
     /**
-     * Registra a avalia&ccedil;&atilde;o de um cliente sobre uma compra conclu&iacute;da.
+     * Registra a avaliação de um cliente sobre uma compra concluída.
      *
-     * <p>O sistema s&oacute; aceita esse passo depois que o pedido foi pago e houve pelo menos uma
-     * tentativa conclu&iacute;da na simula&ccedil;&atilde;o clonada, para que a nota reflita uso real.</p>
+     * <p>O sistema só aceita esse passo depois que o pedido foi pago e houve pelo menos uma
+     * tentativa concluída na simulação clonada, para que a nota reflita uso real.</p>
      */
     public ReviewResponse create(String reviewerTenantId, CreateReviewRequest request) {
         MarketplaceOrderEntity order = orderRepository.findById(request.orderId())
@@ -106,7 +106,7 @@ public class MarketplaceReviewService {
 
     @Transactional(readOnly = true)
     /**
-     * Lista as avalia&ccedil;&otilde;es j&aacute; publicadas para um item do marketplace.
+     * Lista as avaliações já publicadas para um item do marketplace.
      */
     public List<ReviewResponse> listByListing(Long listingId) {
         return reviewRepository.findByListingIdOrderByCreatedAtDesc(listingId)

@@ -15,7 +15,7 @@ import java.util.Map;
 /**
  * Prepara a etapa financeira da compra no marketplace usando o Mercado Pago.
  *
- * <p>Na jornada do usu&aacute;rio, este servi&ccedil;o monta os dados que permitem abrir o checkout e dividir
+ * <p>Na jornada do usuário, este serviço monta os dados que permitem abrir o checkout e dividir
  * corretamente o valor entre plataforma e profissional vendedor.</p>
  */
 public class MarketplaceMercadoPagoService {
@@ -27,10 +27,10 @@ public class MarketplaceMercadoPagoService {
     }
 
     /**
-     * Cria a prefer&ecirc;ncia de pagamento usada para iniciar o checkout de uma compra do marketplace.
+     * Cria a preferência de pagamento usada para iniciar o checkout de uma compra do marketplace.
      *
-     * <p>Esse passo registra no provedor de pagamento qual item est&aacute; sendo vendido, quem est&aacute;
-     * comprando e como o valor ser&aacute; distribu&iacute;do quando a transa&ccedil;&atilde;o for conclu&iacute;da.</p>
+     * <p>Esse passo registra no provedor de pagamento qual item está sendo vendido, quem está
+     * comprando e como o valor será distribuído quando a transação for concluída.</p>
      */
     public CheckoutPreference createCheckoutPreference(
             MarketplaceOrderEntity order,
@@ -61,7 +61,7 @@ public class MarketplaceMercadoPagoService {
     }
 
     /**
-     * Dados necess&aacute;rios para abrir o checkout no frontend e reconciliar o pedido no backend.
+     * Dados necessários para abrir o checkout no frontend e reconciliar o pedido no backend.
      */
     public record CheckoutPreference(String preferenceId, String checkoutUrl) {
     }

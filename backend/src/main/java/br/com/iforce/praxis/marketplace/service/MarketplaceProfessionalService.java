@@ -44,8 +44,8 @@ import java.util.stream.Collectors;
 /**
  * Gerencia a vida cadastral e operacional do profissional que vende no marketplace.
  *
- * <p>Na jornada do produto, este servi&ccedil;o cobre a entrada do profissional na plataforma,
- * consulta de perfil p&uacute;blico, edi&ccedil;&atilde;o de dados e acompanhamento de desempenho comercial.</p>
+ * <p>Na jornada do produto, este serviço cobre a entrada do profissional na plataforma,
+ * consulta de perfil público, edição de dados e acompanhamento de desempenho comercial.</p>
  */
 public class MarketplaceProfessionalService {
 
@@ -85,7 +85,7 @@ public class MarketplaceProfessionalService {
     /**
      * Cadastra um novo profissional no marketplace.
      *
-     * <p>Esse passo cria tanto o acesso do usu&aacute;rio quanto o perfil comercial que depois poder&aacute;
+     * <p>Esse passo cria tanto o acesso do usuário quanto o perfil comercial que depois poderá
      * ser validado pela plataforma e usado para publicar testes.</p>
      */
     public RegisterProfessionalResponse register(RegisterProfessionalRequest request) {
@@ -137,7 +137,7 @@ public class MarketplaceProfessionalService {
 
     @Transactional(readOnly = true)
     /**
-     * Exibe o perfil do profissional autenticado para gest&atilde;o do pr&oacute;prio cadastro.
+     * Exibe o perfil do profissional autenticado para gestão do próprio cadastro.
      */
     public ProfessionalPublicProfileResponse currentProfile(String userId) {
         return toProfile(loadByUserId(userId));
@@ -145,10 +145,10 @@ public class MarketplaceProfessionalService {
 
     @Transactional(readOnly = true)
     /**
-     * Exibe o perfil p&uacute;blico de um profissional verificado.
+     * Exibe o perfil público de um profissional verificado.
      *
-     * <p>Esta vis&atilde;o &eacute; destinada a clientes e interessados que precisam avaliar quem &eacute;
-     * o vendedor por tr&aacute;s de um item do marketplace.</p>
+     * <p>Esta visão é destinada a clientes e interessados que precisam avaliar quem é
+     * o vendedor por trás de um item do marketplace.</p>
      */
     public ProfessionalPublicProfileResponse publicProfile(Long professionalId) {
         MarketplaceProfessionalEntity professional = professionalRepository.findById(professionalId)
@@ -164,7 +164,7 @@ public class MarketplaceProfessionalService {
      * Consolida os principais indicadores operacionais do profissional.
      *
      * <p>O retorno resume vendas, valores em escrow, valores liberados, itens publicados,
-     * avalia&ccedil;&otilde;es recentes e hist&oacute;rico de repasses.</p>
+     * avaliações recentes e histórico de repasses.</p>
      */
     public ProfessionalDashboardResponse dashboard(String userId) {
         MarketplaceProfessionalEntity professional = loadByUserId(userId);
@@ -236,9 +236,9 @@ public class MarketplaceProfessionalService {
 
     @Transactional
     /**
-     * Atualiza os dados edit&aacute;veis do perfil profissional.
+     * Atualiza os dados editáveis do perfil profissional.
      *
-     * <p>Esse fluxo permite manter a apresenta&ccedil;&atilde;o comercial e os dados de recebimento alinhados
+     * <p>Esse fluxo permite manter a apresentação comercial e os dados de recebimento alinhados
      * com a realidade atual do profissional.</p>
      */
     public ProfessionalPublicProfileResponse updateCurrentProfile(
