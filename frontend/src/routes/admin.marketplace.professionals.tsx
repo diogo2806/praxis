@@ -68,9 +68,14 @@ function AdminMarketplacePage() {
             Profissionais e anúncios precisam de aprovação manual antes de aparecerem na vitrine.
           </p>
         </div>
-        <Button asChild variant="outline">
-          <Link to="/admin/marketplace/listings">Anúncios</Link>
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          <Button asChild variant="outline">
+            <Link to="/admin/marketplace/listings">Anúncios</Link>
+          </Button>
+          <Button asChild variant="outline">
+            <Link to="/admin/marketplace/disputes">Disputas</Link>
+          </Button>
+        </div>
       </div>
 
       {(dashboard.isError || professionals.isError || listings.isError) && (
