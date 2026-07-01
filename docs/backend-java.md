@@ -6,7 +6,7 @@ REGRA DE ESCOPO E CRITICIDADE DE ALTERAÇÃO
 
 Correções de Sintaxe e Compilabilidade: Regras 1.1 (Arquivos Completos), 1.2 (Contexto de Geração), 1.3 (Compilabilidade).
 
-Correções de Decodificação (Mojibake): Sempre que for identificado o padrão de caracteres Ã§Ã, Ã£..., etc.
+Correções de Decodificação (Mojibake): Sempre que for identificado o padrão de caracteres `Ã§`, `Ã£`..., etc.
 
 Correções Críticas de Segurança/Null-safety/LGPD: Regras da Seção 11 (LGPD) e 14 (Null-safety), mas apenas no escopo imediato da alteração (Ex: adicionar Objects.requireNonNull em um novo parâmetro).
 
@@ -78,7 +78,7 @@ Correções de padrões de código não relacionados ao foco (SOLID, var, fully 
 
 
 
- • Sempre que for identificado o padrão de caracteres Ã§Ã, Ã£, Ã³, Ãª, ou qualquer outra sequência de caracteres que resulte de um erro de decodificação de texto (mojibake), substitua-os imediatamente pelo caractere acentuado correspondente e correto.
+ • Sempre que for identificado o padrão de caracteres `Ã§`, `Ã£`, `Ã³`, `Ãª`, ou qualquer outra sequência de caracteres que resulte de um erro de decodificação de texto (mojibake), substitua-os imediatamente pelo caractere acentuado correspondente e correto.
 
 
 
