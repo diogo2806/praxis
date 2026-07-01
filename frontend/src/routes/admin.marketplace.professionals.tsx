@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { CheckCircle2, Loader2, ShieldAlert, Store, XCircle } from "lucide-react";
 
@@ -57,15 +57,20 @@ function AdminMarketplacePage() {
 
   return (
     <AdminShell>
-      <div className="mb-6">
-        <div className="flex items-center gap-2 text-xs uppercase text-primary">
-          <Store className="h-4 w-4" />
-          Marketplace
+      <div className="mb-6 flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <div className="flex items-center gap-2 text-xs uppercase text-primary">
+            <Store className="h-4 w-4" />
+            Marketplace
+          </div>
+          <h1 className="mt-1 text-2xl font-semibold">Moderação de psicometria</h1>
+          <p className="mt-1 text-sm text-slate-500">
+            Profissionais e anúncios precisam de aprovação manual antes de aparecerem na vitrine.
+          </p>
         </div>
-        <h1 className="mt-1 text-2xl font-semibold">Moderação de psicometria</h1>
-        <p className="mt-1 text-sm text-slate-500">
-          Profissionais e anúncios precisam de aprovação manual antes de aparecerem na vitrine.
-        </p>
+        <Button asChild variant="outline">
+          <Link to="/admin/marketplace/listings">Anúncios</Link>
+        </Button>
       </div>
 
       {(dashboard.isError || professionals.isError || listings.isError) && (
