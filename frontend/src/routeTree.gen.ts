@@ -52,6 +52,7 @@ import { Route as NovaAvaliacoesRouteImport } from './routes/nova.avaliacoes'
 import { Route as MarketplaceListingIdRouteImport } from './routes/marketplace.$listingId'
 import { Route as JornadaAttemptIdRouteImport } from './routes/jornada.$attemptId'
 import { Route as IntegrationsProviderRouteImport } from './routes/integrations.$provider'
+import { Route as DocsIntegracaoApiPropriaRouteImport } from './routes/docs.integracao-api-propria'
 import { Route as ConviteTokenRouteImport } from './routes/convite.$token'
 import { Route as ConfiguracoesPerfilRouteImport } from './routes/configuracoes.perfil'
 import { Route as ConfiguracoesIntegracoesRouteImport } from './routes/configuracoes.integracoes'
@@ -288,6 +289,12 @@ const IntegrationsProviderRoute = IntegrationsProviderRouteImport.update({
   path: '/$provider',
   getParentRoute: () => IntegrationsRoute,
 } as any)
+const DocsIntegracaoApiPropriaRoute =
+  DocsIntegracaoApiPropriaRouteImport.update({
+    id: '/docs/integracao-api-propria',
+    path: '/docs/integracao-api-propria',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ConviteTokenRoute = ConviteTokenRouteImport.update({
   id: '/convite/$token',
   path: '/convite/$token',
@@ -427,6 +434,7 @@ export interface FileRoutesByFullPath {
   '/configuracoes/integracoes': typeof ConfiguracoesIntegracoesRoute
   '/configuracoes/perfil': typeof ConfiguracoesPerfilRoute
   '/convite/$token': typeof ConviteTokenRoute
+  '/docs/integracao-api-propria': typeof DocsIntegracaoApiPropriaRoute
   '/integrations/$provider': typeof IntegrationsProviderRoute
   '/jornada/$attemptId': typeof JornadaAttemptIdRoute
   '/marketplace/$listingId': typeof MarketplaceListingIdRoute
@@ -492,6 +500,7 @@ export interface FileRoutesByTo {
   '/configuracoes/integracoes': typeof ConfiguracoesIntegracoesRoute
   '/configuracoes/perfil': typeof ConfiguracoesPerfilRoute
   '/convite/$token': typeof ConviteTokenRoute
+  '/docs/integracao-api-propria': typeof DocsIntegracaoApiPropriaRoute
   '/integrations/$provider': typeof IntegrationsProviderRoute
   '/jornada/$attemptId': typeof JornadaAttemptIdRoute
   '/marketplace/$listingId': typeof MarketplaceListingIdRoute
@@ -558,6 +567,7 @@ export interface FileRoutesById {
   '/configuracoes/integracoes': typeof ConfiguracoesIntegracoesRoute
   '/configuracoes/perfil': typeof ConfiguracoesPerfilRoute
   '/convite/$token': typeof ConviteTokenRoute
+  '/docs/integracao-api-propria': typeof DocsIntegracaoApiPropriaRoute
   '/integrations/$provider': typeof IntegrationsProviderRoute
   '/jornada/$attemptId': typeof JornadaAttemptIdRoute
   '/marketplace/$listingId': typeof MarketplaceListingIdRoute
@@ -625,6 +635,7 @@ export interface FileRouteTypes {
     | '/configuracoes/integracoes'
     | '/configuracoes/perfil'
     | '/convite/$token'
+    | '/docs/integracao-api-propria'
     | '/integrations/$provider'
     | '/jornada/$attemptId'
     | '/marketplace/$listingId'
@@ -690,6 +701,7 @@ export interface FileRouteTypes {
     | '/configuracoes/integracoes'
     | '/configuracoes/perfil'
     | '/convite/$token'
+    | '/docs/integracao-api-propria'
     | '/integrations/$provider'
     | '/jornada/$attemptId'
     | '/marketplace/$listingId'
@@ -755,6 +767,7 @@ export interface FileRouteTypes {
     | '/configuracoes/integracoes'
     | '/configuracoes/perfil'
     | '/convite/$token'
+    | '/docs/integracao-api-propria'
     | '/integrations/$provider'
     | '/jornada/$attemptId'
     | '/marketplace/$listingId'
@@ -816,6 +829,7 @@ export interface RootRouteChildren {
   AssessmentJourneysNewRoute: typeof AssessmentJourneysNewRoute
   CandidateLinksNewRoute: typeof CandidateLinksNewRoute
   ConviteTokenRoute: typeof ConviteTokenRoute
+  DocsIntegracaoApiPropriaRoute: typeof DocsIntegracaoApiPropriaRoute
   JornadaAttemptIdRoute: typeof JornadaAttemptIdRoute
   NovaAvaliacoesRoute: typeof NovaAvaliacoesRoute
   NovaBlueprintRoute: typeof NovaBlueprintRoute
@@ -1143,6 +1157,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IntegrationsProviderRouteImport
       parentRoute: typeof IntegrationsRoute
     }
+    '/docs/integracao-api-propria': {
+      id: '/docs/integracao-api-propria'
+      path: '/docs/integracao-api-propria'
+      fullPath: '/docs/integracao-api-propria'
+      preLoaderRoute: typeof DocsIntegracaoApiPropriaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/convite/$token': {
       id: '/convite/$token'
       path: '/convite/$token'
@@ -1408,6 +1429,7 @@ const rootRouteChildren: RootRouteChildren = {
   AssessmentJourneysNewRoute: AssessmentJourneysNewRoute,
   CandidateLinksNewRoute: CandidateLinksNewRoute,
   ConviteTokenRoute: ConviteTokenRoute,
+  DocsIntegracaoApiPropriaRoute: DocsIntegracaoApiPropriaRoute,
   JornadaAttemptIdRoute: JornadaAttemptIdRoute,
   NovaAvaliacoesRoute: NovaAvaliacoesRoute,
   NovaBlueprintRoute: NovaBlueprintRoute,
