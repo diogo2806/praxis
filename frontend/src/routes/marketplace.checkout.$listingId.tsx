@@ -69,14 +69,16 @@ function MarketplaceCheckoutPage() {
             </div>
           )}
           {listing.data && (
-            <div className="mt-5 grid gap-5 md:grid-cols-[1fr_260px]">
+            <div className="mt-5 space-y-5">
               <section className="rounded-md border border-border bg-background p-4">
                 <h2 className="text-lg font-semibold">{listing.data.title}</h2>
                 <div className="mt-3 flex items-center gap-2 text-sm text-muted-foreground">
                   <ShieldCheck className="h-4 w-4" />
                   {listing.data.professional.displayName}
                 </div>
-                <p className="mt-3 line-clamp-4 text-sm text-muted-foreground">{listing.data.description}</p>
+                <p className="mt-3 line-clamp-4 text-sm text-muted-foreground">
+                  {listing.data.description}
+                </p>
               </section>
               <aside>
                 <CheckoutSummary listing={listing.data} />
@@ -85,7 +87,11 @@ function MarketplaceCheckoutPage() {
                   disabled={checkout.isPending}
                   onClick={() => checkout.mutate()}
                 >
-                  {checkout.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <CreditCard className="h-4 w-4" />}
+                  {checkout.isPending ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <CreditCard className="h-4 w-4" />
+                  )}
                   Pagar com Mercado Pago
                 </Button>
               </aside>
@@ -96,4 +102,3 @@ function MarketplaceCheckoutPage() {
     </main>
   );
 }
-

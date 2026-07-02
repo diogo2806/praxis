@@ -25,11 +25,7 @@ import {
 } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
 import FlowCanvas, { type NodeUpdateBody } from "@/components/flow-canvas";
-import {
-  EmptyState,
-  StateBanner,
-  StatusBadge,
-} from "@/components/praxis-ui";
+import { EmptyState, StateBanner, StatusBadge } from "@/components/praxis-ui";
 import { WizardStepper } from "@/components/wizard-stepper";
 import {
   cloneSimulationVersionToDraft,
@@ -1297,7 +1293,7 @@ function NormalizedScoreMap({
       </div>
 
       {flow ? (
-        <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_360px]">
+        <div className="space-y-4">
           <div className="overflow-auto rounded-md border border-border bg-muted/20">
             <div
               className="relative origin-top-left"
@@ -1855,7 +1851,9 @@ interface InteractiveScoreFlow {
 function buildTurnStepLabels(nodes: SimulationVersionNodeResponse[]) {
   const labels = new Map<string, string>();
   const rowsByTurn = new Map<number, SimulationVersionNodeResponse[]>();
-  const orderedNodes = [...nodes].sort((a, b) => a.turnIndex - b.turnIndex || a.id.localeCompare(b.id));
+  const orderedNodes = [...nodes].sort(
+    (a, b) => a.turnIndex - b.turnIndex || a.id.localeCompare(b.id),
+  );
 
   orderedNodes.forEach((node) => {
     rowsByTurn.set(node.turnIndex, [...(rowsByTurn.get(node.turnIndex) ?? []), node]);
@@ -2019,7 +2017,7 @@ function FlowOutcomeSummary({ version }: { version: SimulationVersionDetailRespo
     : 0;
 
   return (
-    <div className="mt-5 grid gap-4 lg:grid-cols-2">
+    <div className="mt-5 space-y-4">
       <section className="rounded-md border border-border bg-background p-4">
         <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
           <h3 className="text-sm font-semibold">Finais alcançáveis</h3>

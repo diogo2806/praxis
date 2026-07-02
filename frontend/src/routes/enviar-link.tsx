@@ -3,12 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { CheckCircle2, Copy, Link2, Mail, MessageCircle, Send } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
-import {
-  EmptyState,
-  SkeletonRows,
-  StateBanner,
-  StatusBadge,
-} from "@/components/praxis-ui";
+import { EmptyState, SkeletonRows, StateBanner, StatusBadge } from "@/components/praxis-ui";
 import {
   Table,
   TableBody,
@@ -131,7 +126,6 @@ function EnviarLinkPage() {
 
   return (
     <AppShell>
-
       <div className="mb-6">
         <div className="text-xs uppercase text-primary">Envio direto</div>
         <h1 className="mt-1 text-3xl font-semibold">Compartilhar acesso</h1>
@@ -570,7 +564,7 @@ function CandidateFormStep({
   const valid = candidateName.trim().length > 0 && candidateEmail.trim().includes("@");
 
   return (
-    <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_360px]">
+    <div className="space-y-6">
       <div className="rounded-md border border-border bg-card p-6">
         <h2 className="text-lg font-semibold">Dados da pessoa participante</h2>
         <p className="mt-1 text-sm text-muted-foreground">
@@ -681,7 +675,7 @@ function ShareStep({
         {candidateEmail}).
       </StateBanner>
 
-      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_360px]">
+      <div className="space-y-6">
         <div className="space-y-5">
           <div className="rounded-md border border-border bg-card p-6">
             <h2 className="text-lg font-semibold">Link de participação</h2>
@@ -734,30 +728,10 @@ function ShareStep({
           </div>
         </div>
 
-        <aside className="space-y-4">
-          <div className="rounded-md border border-border bg-card p-5">
-            <h3 className="text-sm font-semibold">Resumo do envio</h3>
-            <dl className="mt-3 space-y-3">
-              <div>
-                <dt className="text-xs uppercase text-muted-foreground">Participante</dt>
-                <dd className="mt-0.5 text-sm font-medium">{candidateName}</dd>
-              </div>
-              <div>
-                <dt className="text-xs uppercase text-muted-foreground">Email</dt>
-                <dd className="mt-0.5 text-sm">{candidateEmail}</dd>
-              </div>
-              <div>
-                <dt className="text-xs uppercase text-muted-foreground">Avaliação</dt>
-                <dd className="mt-0.5 text-sm">{simulationName}</dd>
-              </div>
-            </dl>
-          </div>
-
-          <StateBanner tone="info" title="Um link por participação">
-            Se você gerar o link de novo com o mesmo e-mail e a mesma avaliação, o link retornado
-            será o mesmo. Pode reenviar sem duplicar.
-          </StateBanner>
-        </aside>
+        <StateBanner tone="info" title="Um link por participação">
+          Se você gerar o link de novo com o mesmo e-mail e a mesma avaliação, o link retornado será
+          o mesmo. Pode reenviar sem duplicar.
+        </StateBanner>
       </div>
 
       <div className="flex gap-3">

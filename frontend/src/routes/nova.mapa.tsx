@@ -282,7 +282,7 @@ function Page() {
             </div>
           )}
 
-          <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_340px]">
+          <div className="space-y-4">
             <SimulationGraphCanvas
               version={version}
               disabled={!isEditable || connectMutation.isPending}

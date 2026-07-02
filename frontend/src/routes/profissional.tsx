@@ -51,7 +51,13 @@ function ProfessionalHomePage() {
     placeholderData: marketplaceMessageThreadsFallback,
     retry: false,
   });
-  const [form, setForm] = useState({ displayName: "", bio: "", specialties: "", linkedinUrl: "", pixKey: "" });
+  const [form, setForm] = useState({
+    displayName: "",
+    bio: "",
+    specialties: "",
+    linkedinUrl: "",
+    pixKey: "",
+  });
 
   const update = useMutation({
     mutationFn: () =>
@@ -121,7 +127,9 @@ function ProfessionalHomePage() {
         )}
         {profile.isError && (
           <StateBanner tone="danger" title="Não foi possível carregar seu perfil profissional">
-            {profile.error instanceof Error ? profile.error.message : "Faça login com uma conta profissional."}
+            {profile.error instanceof Error
+              ? profile.error.message
+              : "Faça login com uma conta profissional."}
           </StateBanner>
         )}
         {update.isError && (
@@ -132,7 +140,7 @@ function ProfessionalHomePage() {
           </div>
         )}
         {profile.data && (
-          <div className="grid gap-5 lg:grid-cols-[360px_1fr]">
+          <div className="space-y-5">
             <aside className="space-y-4">
               <section className="rounded-md border border-border bg-card p-5">
                 <div className="flex items-start justify-between gap-3">
@@ -143,20 +151,36 @@ function ProfessionalHomePage() {
                       {professionalStatusLabels[profile.data.verificationStatus]}
                     </div>
                   </div>
-                  <Button variant="outline" size="icon" onClick={loadForm} aria-label="Editar perfil">
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={loadForm}
+                    aria-label="Editar perfil"
+                  >
                     <Edit3 className="h-4 w-4" />
                   </Button>
                 </div>
                 <div className="mt-4 grid grid-cols-3 gap-2 text-center">
                   <Metric
                     label="Receita"
-                    value={dashboard.data ? formatMarketplacePrice(dashboard.data.totalRevenueCents) : "-"}
+                    value={
+                      dashboard.data
+                        ? formatMarketplacePrice(dashboard.data.totalRevenueCents)
+                        : "-"
+                    }
                   />
                   <Metric
                     label="Escrow"
-                    value={dashboard.data ? formatMarketplacePrice(dashboard.data.pendingEscrowCents) : "-"}
+                    value={
+                      dashboard.data
+                        ? formatMarketplacePrice(dashboard.data.pendingEscrowCents)
+                        : "-"
+                    }
                   />
-                  <Metric label="Vendas" value={String(dashboard.data?.salesCount ?? profile.data.totalSales)} />
+                  <Metric
+                    label="Vendas"
+                    value={String(dashboard.data?.salesCount ?? profile.data.totalSales)}
+                  />
                 </div>
               </section>
               <section className="rounded-md border border-border bg-card p-5">
@@ -166,12 +190,19 @@ function ProfessionalHomePage() {
                 </h2>
                 <div className="mt-3 space-y-2">
                   {(threads.data ?? []).slice(0, 4).map((thread) => (
-                    <div key={thread.id} className="rounded-md border border-border bg-background p-3 text-sm">
+                    <div
+                      key={thread.id}
+                      className="rounded-md border border-border bg-background p-3 text-sm"
+                    >
                       <div className="font-medium">Anúncio #{thread.listingId}</div>
-                      <div className="text-xs text-muted-foreground">{thread.messages.at(-1)?.body ?? "Sem mensagens"}</div>
+                      <div className="text-xs text-muted-foreground">
+                        {thread.messages.at(-1)?.body ?? "Sem mensagens"}
+                      </div>
                     </div>
                   ))}
-                  {threads.data?.length === 0 && <p className="text-sm text-muted-foreground">Nenhuma conversa aberta.</p>}
+                  {threads.data?.length === 0 && (
+                    <p className="text-sm text-muted-foreground">Nenhuma conversa aberta.</p>
+                  )}
                 </div>
               </section>
             </aside>
@@ -185,10 +216,26 @@ function ProfessionalHomePage() {
                   update.mutate();
                 }}
               >
-                <Field label="Nome público" value={form.displayName} onChange={(value) => setForm({ ...form, displayName: value })} />
-                <Field label="Especialidades" value={form.specialties} onChange={(value) => setForm({ ...form, specialties: value })} />
-                <Field label="LinkedIn" value={form.linkedinUrl} onChange={(value) => setForm({ ...form, linkedinUrl: value })} />
-                <Field label="Chave Pix" value={form.pixKey} onChange={(value) => setForm({ ...form, pixKey: value })} />
+                <Field
+                  label="Nome público"
+                  value={form.displayName}
+                  onChange={(value) => setForm({ ...form, displayName: value })}
+                />
+                <Field
+                  label="Especialidades"
+                  value={form.specialties}
+                  onChange={(value) => setForm({ ...form, specialties: value })}
+                />
+                <Field
+                  label="LinkedIn"
+                  value={form.linkedinUrl}
+                  onChange={(value) => setForm({ ...form, linkedinUrl: value })}
+                />
+                <Field
+                  label="Chave Pix"
+                  value={form.pixKey}
+                  onChange={(value) => setForm({ ...form, pixKey: value })}
+                />
                 <label className="grid gap-1 text-sm">
                   <span className="font-medium">Bio</span>
                   <textarea
@@ -200,7 +247,11 @@ function ProfessionalHomePage() {
                 </label>
                 <div className="flex justify-end">
                   <Button type="submit" disabled={update.isPending}>
-                    {update.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+                    {update.isPending ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Save className="h-4 w-4" />
+                    )}
                     Salvar perfil
                   </Button>
                 </div>
@@ -211,9 +262,7 @@ function ProfessionalHomePage() {
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <h2 className="text-lg font-semibold">Minhas avaliações</h2>
                 <Button asChild size="sm" variant="outline">
-                  <Link to="/profissional/listings">
-                    Ver todos
-                  </Link>
+                  <Link to="/profissional/listings">Ver todos</Link>
                 </Button>
               </div>
               {dashboard.isLoading && (
@@ -223,12 +272,17 @@ function ProfessionalHomePage() {
                 </div>
               )}
               {dashboard.data?.listings.length === 0 && (
-                <p className="mt-3 text-sm text-muted-foreground">Nenhuma avaliação publicada ainda.</p>
+                <p className="mt-3 text-sm text-muted-foreground">
+                  Nenhuma avaliação publicada ainda.
+                </p>
               )}
               {(dashboard.data?.listings ?? []).length > 0 && (
                 <div className="mt-3 divide-y divide-border">
                   {dashboard.data!.listings.map((listing) => (
-                    <div key={listing.id} className="flex flex-wrap items-center justify-between gap-3 py-3">
+                    <div
+                      key={listing.id}
+                      className="flex flex-wrap items-center justify-between gap-3 py-3"
+                    >
                       <div>
                         <div className="font-medium">{listing.title}</div>
                         <div className="mt-1 text-xs text-muted-foreground">
@@ -245,7 +299,9 @@ function ProfessionalHomePage() {
             <section className="rounded-md border border-border bg-card p-5 lg:col-start-2">
               <h2 className="text-lg font-semibold">Avaliações recentes</h2>
               {dashboard.data?.recentReviews.length === 0 && (
-                <p className="mt-3 text-sm text-muted-foreground">Nenhuma avaliação recebida ainda.</p>
+                <p className="mt-3 text-sm text-muted-foreground">
+                  Nenhuma avaliação recebida ainda.
+                </p>
               )}
               {(dashboard.data?.recentReviews ?? []).length > 0 && (
                 <div className="mt-3 divide-y divide-border">
@@ -256,9 +312,13 @@ function ProfessionalHomePage() {
                           <Star className="h-4 w-4 text-warning" />
                           {review.rating}/5
                         </span>
-                        <span className="text-muted-foreground">{formatMarketplaceDate(review.createdAt)}</span>
+                        <span className="text-muted-foreground">
+                          {formatMarketplaceDate(review.createdAt)}
+                        </span>
                       </div>
-                      {review.comment && <p className="mt-1 text-sm text-muted-foreground">{review.comment}</p>}
+                      {review.comment && (
+                        <p className="mt-1 text-sm text-muted-foreground">{review.comment}</p>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -275,14 +335,20 @@ function Metric({ label, value }: { label: string; value: string }) {
   return (
     <div className="rounded-md border border-border bg-background p-2">
       <div className="text-xs text-muted-foreground">{label}</div>
-      <div className="mt-1 flex items-center justify-center gap-1 font-semibold">
-        {value}
-      </div>
+      <div className="mt-1 flex items-center justify-center gap-1 font-semibold">{value}</div>
     </div>
   );
 }
 
-function Field({ label, value, onChange }: { label: string; value: string; onChange: (value: string) => void }) {
+function Field({
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+}) {
   return (
     <label className="grid gap-1 text-sm">
       <span className="font-medium">{label}</span>

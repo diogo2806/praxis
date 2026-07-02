@@ -52,7 +52,7 @@ function MarketplaceListingDetailPage() {
           </StateBanner>
         )}
         {listing.data && (
-          <div className="grid gap-5 lg:grid-cols-[1fr_340px]">
+          <div className="space-y-5">
             <section className="rounded-md border border-border bg-card p-5">
               <div className="flex flex-wrap items-center gap-2">
                 <span className="rounded-md bg-primary/10 px-2 py-1 text-xs font-medium text-primary">
@@ -72,7 +72,11 @@ function MarketplaceListingDetailPage() {
                 <Metric label="Preço" value={formatMarketplacePrice(listing.data.priceCents)} />
                 <Metric
                   label="Avaliação"
-                  value={listing.data.averageRating ? Number(listing.data.averageRating).toFixed(1) : "Sem notas"}
+                  value={
+                    listing.data.averageRating
+                      ? Number(listing.data.averageRating).toFixed(1)
+                      : "Sem notas"
+                  }
                 />
                 <Metric label="Reviews" value={String(listing.data.totalReviews)} />
               </div>
@@ -86,7 +90,10 @@ function MarketplaceListingDetailPage() {
                 ) : (
                   <div className="mt-3 space-y-3">
                     {listing.data.previewNodes.map((node) => (
-                      <article key={node.id} className="rounded-md border border-border bg-card p-3">
+                      <article
+                        key={node.id}
+                        className="rounded-md border border-border bg-card p-3"
+                      >
                         <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
                           <span className="font-medium text-foreground">{node.speaker}</span>
                           <span>Etapa {node.turnIndex}</span>
@@ -95,7 +102,10 @@ function MarketplaceListingDetailPage() {
                         {node.options.length > 0 && (
                           <div className="mt-3 grid gap-2">
                             {node.options.map((option) => (
-                              <div key={option.id} className="rounded-md border border-border bg-background px-3 py-2 text-sm">
+                              <div
+                                key={option.id}
+                                className="rounded-md border border-border bg-background px-3 py-2 text-sm"
+                              >
                                 {option.text}
                               </div>
                             ))}
@@ -120,8 +130,10 @@ function MarketplaceListingDetailPage() {
                 </Link>
                 <div className="mt-3 flex items-center gap-2 text-sm text-muted-foreground">
                   <Star className="h-4 w-4 text-warning" />
-                  {listing.data.averageRating ? Number(listing.data.averageRating).toFixed(1) : "Sem notas"} ·{" "}
-                  {listing.data.totalReviews} review(s)
+                  {listing.data.averageRating
+                    ? Number(listing.data.averageRating).toFixed(1)
+                    : "Sem notas"}{" "}
+                  · {listing.data.totalReviews} review(s)
                 </div>
                 <Button asChild className="mt-5 w-full">
                   <Link to="/marketplace/checkout/$listingId" params={{ listingId }}>
@@ -171,4 +183,3 @@ function Metric({ label, value }: { label: string; value: string }) {
     </div>
   );
 }
-

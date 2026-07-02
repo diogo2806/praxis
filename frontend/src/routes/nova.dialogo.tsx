@@ -366,10 +366,7 @@ function DialogEditor() {
               </StateBanner>
             </div>
           )}
-          <fieldset
-            disabled={!isEditable}
-            className="mt-5 grid gap-5 disabled:opacity-75 lg:grid-cols-[320px_minmax(0,1fr)]"
-          >
+          <fieldset disabled={!isEditable} className="mt-5 space-y-5 disabled:opacity-75">
             <aside className="rounded-md border border-border bg-card p-4">
               <div className="mb-3 text-sm font-semibold">Etapas salvas</div>
               <div className="space-y-2">
