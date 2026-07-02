@@ -19,17 +19,11 @@ export function WizardStepper({
   );
   return (
     <div className="mb-8 rounded-xl border border-border bg-card p-4">
-      <div className="mb-3 flex items-center justify-between text-xs text-muted-foreground">
-        <div>
-          <span className="font-semibold text-foreground">{t.wizard.createTest}</span>{" "}
-          ·{" "}
-          {t.wizard.stepOf
-            .replace("{current}", String(idx + 1))
-            .replace("{total}", String(wizardSteps.length))}
-        </div>
-        <div>
-          {t.wizard.autosaved} <span className="text-success">●</span>
-        </div>
+      <div className="mb-3 text-xs text-muted-foreground">
+        <span className="font-semibold text-foreground">{t.wizard.createTest}</span> ·{" "}
+        {t.wizard.stepOf
+          .replace("{current}", String(idx + 1))
+          .replace("{total}", String(wizardSteps.length))}
       </div>
       <ol className="flex gap-2 overflow-x-auto pb-1 md:grid md:grid-cols-4 md:overflow-visible md:pb-0">
         {wizardSteps.map((s, i) => {

@@ -12,7 +12,7 @@ import {
   Tooltip as RechartsTooltip,
 } from "recharts";
 import { AppShell } from "@/components/app-shell";
-import { ScreenStateStrip, StateBanner, StatusBadge } from "@/components/praxis-ui";
+import { StateBanner, StatusBadge } from "@/components/praxis-ui";
 import {
   getEvidenceReport,
   getSimulationVersion,
@@ -135,7 +135,6 @@ function TalentMatchPage() {
 
   return (
     <AppShell>
-      <ScreenStateStrip blockedReason="sem participações concluídas para comparar" />
       <div className="mb-5 flex flex-wrap items-end justify-between gap-4">
         <div>
           <div className="text-xs uppercase text-primary">{t.common.talentMatch}</div>

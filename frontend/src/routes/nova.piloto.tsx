@@ -3,8 +3,6 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { AppShell } from "@/components/app-shell";
 import {
   EmptyState,
-  NextStepContract,
-  ScreenStateStrip,
   StateBanner,
 } from "@/components/praxis-ui";
 import { WizardStepper } from "@/components/wizard-stepper";
@@ -58,7 +56,6 @@ function Page() {
   return (
     <AppShell>
       <WizardStepper current="publicacao" />
-      <ScreenStateStrip blockedReason="acompanhe tentativas reais antes de avançar" />
       <div className="mb-6">
         <div className="text-xs uppercase tracking-[0.2em] text-primary">Passo 4</div>
         <h1 className="mt-1 font-display text-3xl">Piloto e indicadores</h1>
@@ -89,12 +86,6 @@ function Page() {
         </StateBanner>
       ) : monitoring ? (
         <>
-          <NextStepContract
-            primary="Usar os indicadores reais para decidir se a versão segue para mapa e governança."
-            secondary="Voltar ao validador ou ao modelo base antes da publicação final continua permitido."
-            versionRule="Ajustes posteriores criam uma nova versão quando a versão atual já estiver no ar."
-            lockedAfter="Tentativas existentes permanecem na versão em que foram criadas."
-          />
           <div className="mt-5 grid gap-4 md:grid-cols-4">
             <Metric label="Criadas" value={monitoring.attemptsCreated} />
             <Metric

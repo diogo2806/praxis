@@ -3,7 +3,7 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { GitBranch, ImagePlus, Music, Plus, Save, Trash2, X } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
-import { EmptyState, ScreenStateStrip, StateBanner, StatusBadge } from "@/components/praxis-ui";
+import { EmptyState, StateBanner, StatusBadge } from "@/components/praxis-ui";
 import { WizardStepper } from "@/components/wizard-stepper";
 import {
   cloneSimulationVersionToDraft,
@@ -280,7 +280,6 @@ function DialogEditor() {
   return (
     <AppShell>
       <WizardStepper current="revisao" unlockedThrough={canReview ? "revisao" : "cenario"} />
-      <ScreenStateStrip blockedReason="o fluxo da conversa precisa existir no sistema e passar pelo validador" />
       <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
         <div>
           <div className="text-xs uppercase text-primary">Passo 3</div>

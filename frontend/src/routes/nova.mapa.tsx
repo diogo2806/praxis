@@ -14,7 +14,7 @@ import {
   ZoomOut,
 } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
-import { EmptyState, ScreenStateStrip, StateBanner, StatusBadge } from "@/components/praxis-ui";
+import { EmptyState, StateBanner, StatusBadge } from "@/components/praxis-ui";
 import { WizardStepper } from "@/components/wizard-stepper";
 import {
   createSimulationNode,
@@ -217,7 +217,6 @@ function Page() {
   return (
     <AppShell>
       <WizardStepper current="revisao" unlockedThrough="publicacao" />
-      <ScreenStateStrip blockedReason="Fluxo da conversa inválido ou com caminho sem saída precisa voltar ao editor." />
       <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
         <div>
           <div className="text-xs uppercase text-primary">Passo 3</div>

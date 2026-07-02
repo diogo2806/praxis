@@ -2,7 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { AppShell } from "@/components/app-shell";
-import { EmptyState, ScreenStateStrip, StateBanner, StatusBadge } from "@/components/praxis-ui";
+import { EmptyState, StateBanner, StatusBadge } from "@/components/praxis-ui";
 import { WizardStepper } from "@/components/wizard-stepper";
 import {
   getSimulationVersion,
@@ -142,7 +142,6 @@ function Page() {
   return (
     <AppShell>
       <WizardStepper current="avaliacao" unlockedThrough="cenario" />
-      <ScreenStateStrip blockedReason="selecione uma versão real para continuar" />
       <div className="mb-8">
         <div className="text-xs uppercase tracking-[0.2em] text-primary">Passo 1</div>
         <h1 className="mt-1 font-display text-3xl">Objetivo do modelo base</h1>

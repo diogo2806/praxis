@@ -2,8 +2,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { AppShell } from "@/components/app-shell";
-import { Termo } from "@/components/glossario";
-import { ScreenStateStrip, StateBanner } from "@/components/praxis-ui";
+import { StateBanner } from "@/components/praxis-ui";
 import { WizardStepper } from "@/components/wizard-stepper";
 import {
   createSimulationDraft,
@@ -211,7 +210,6 @@ function Page() {
   return (
     <AppShell>
       <WizardStepper current="avaliacao" unlockedThrough={canGoNext ? "cenario" : "avaliacao"} />
-      <ScreenStateStrip blockedReason={copy.blockedReason} />
 
       {empresaConfigLoading && (
         <StateBanner tone="info" title={copy.loadingConfigTitle}>
@@ -269,26 +267,6 @@ function Page() {
 
       {config && !versionQuery.isLoading && !versionQuery.isError && (
         <div className="space-y-6">
-          <div className="rounded-xl border border-border bg-card p-5">
-            <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-              {copy.whyTitle}
-            </div>
-            <p className="mt-2 text-sm text-foreground/80">
-              {copy.whyBodyStart} <Termo id="blueprint">{copy.whyTerm}</Termo>{" "}
-              {copy.whyBodyEnd.split("{validator}")[0]}
-              <Termo id="validador">{copy.validatorTerm}</Termo>
-              {copy.whyBodyEnd.split("{validator}")[1]}
-            </p>
-          </div>
-          <div className="rounded-xl border border-warning/30 bg-warning/10 p-5">
-            <div className="text-xs font-semibold uppercase tracking-wider text-warning-foreground">
-              {copy.scoringTitle}
-            </div>
-            <p className="mt-2 text-sm text-foreground/80">
-              {copy.scoringBodyStart} <Termo id="blueprint">{copy.whyTerm}</Termo>{" "}
-              {copy.scoringBodyEnd}
-            </p>
-          </div>
           <div className="space-y-6">
             <Header kicker={copy.kicker} title={copy.heading} lede={copy.lede} />
 
@@ -296,12 +274,9 @@ function Page() {
               Prefere começar de um modelo pronto?{" "}
               <Link to="/nova/rapido" className="font-medium text-primary hover:underline">
                 Usar um modelo →
-              </Link>
-            </p>
-
-            <p className="text-sm text-muted-foreground">
-              Quer consultar o que já existe?{" "}
-              <Link to="/nova/avaliacoes" className="font-medium text-primary hover:underline">
+              </Link>{" "}
+              · Quer consultar o que já existe?{" "}
+              <Link to="/avaliacoes" className="font-medium text-primary hover:underline">
                 Ver avaliações cadastradas →
               </Link>
             </p>
@@ -441,7 +416,6 @@ function Page() {
               )}
             </div>
 
-
             <div className="sticky bottom-0 -mx-6 mt-2 flex flex-col gap-3 border-t border-border bg-background/90 px-6 py-4 backdrop-blur sm:flex-row sm:items-center sm:justify-between lg:-mx-10 lg:px-10">
               <Link
                 to="/"
@@ -526,7 +500,12 @@ function buildBlueprintDescription({
 
 function buildCompetencyWeights(
   competencies: string[],
-  existingCompetencies?: { name: string; weight: number; targetScore?: number | null; tier?: "major" | "minor" | null }[],
+  existingCompetencies?: {
+    name: string;
+    weight: number;
+    targetScore?: number | null;
+    tier?: "major" | "minor" | null;
+  }[],
 ) {
   const uniqueCompetencies = [
     ...new Set(competencies.map((competency) => competency.trim())),
@@ -557,7 +536,12 @@ function buildCompetencyWeights(
   }
 
   const weight = uniqueCompetencies.length > 0 ? 1 / uniqueCompetencies.length : 1;
-  return uniqueCompetencies.map((name) => ({ name, weight, targetScore: null, tier: "major" as const }));
+  return uniqueCompetencies.map((name) => ({
+    name,
+    weight,
+    targetScore: null,
+    tier: "major" as const,
+  }));
 }
 
 function parseBlueprintDescription(description: string) {

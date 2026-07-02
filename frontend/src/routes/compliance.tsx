@@ -1,16 +1,7 @@
 import { Fragment, useEffect, useMemo, useState, type ReactNode } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import {
-  Eye,
-  Globe,
-  CircleHelp,
-  Info,
-  ShieldCheck,
-  ShieldAlert,
-  Gauge,
-  AlertTriangle,
-} from "lucide-react";
+import { Eye, ShieldCheck, ShieldAlert, Gauge, AlertTriangle } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
 import { StateBanner } from "@/components/praxis-ui";
 import {
@@ -214,21 +205,11 @@ function CompliancePage() {
           </div>
           <h1 className="mt-1 font-serif text-3xl leading-tight">{t.common.compliance}</h1>
           <p className="mt-2 max-w-3xl text-sm text-muted-foreground">
-            Cada linha é uma versão de avaliação: status de governança, taxa de conclusão e
-            bloqueios em aberto, em um único lugar.
-          </p>
-        </div>
-
-        <div className="mb-6 flex items-start gap-3 rounded-xl border border-primary/25 bg-primary/5 p-4 text-sm">
-          <Info className="mt-0.5 h-4 w-4 shrink-0 text-primary" aria-hidden />
-          <div className="text-muted-foreground">
-            <span className="font-medium text-foreground">O que é esta tela?</span> Aqui você
-            acompanha se cada versão de avaliação está pronta para ir ao ar com segurança. Use a
+            Acompanhe se cada versão de avaliação está pronta para ir ao ar com segurança. Use a
             busca e o filtro de status para encontrar uma versão e clique em{" "}
-            <span className="font-medium text-foreground">Detalhes</span> para abrir um resumo
-            completo — com pendências, critérios de avaliação, caminhos possíveis e o histórico de
-            alterações.
-          </div>
+            <span className="font-medium text-foreground">Detalhes</span> para ver pendências,
+            critérios, caminhos possíveis e o histórico de alterações.
+          </p>
         </div>
 
         <section className="rounded-xl border border-border bg-card">
@@ -396,15 +377,6 @@ function CompliancePage() {
         }
         onClose={closeDialog}
       />
-
-      <div className="fixed bottom-3 right-3 flex items-center gap-2">
-        <button className="inline-flex items-center gap-1.5 rounded-md border border-border bg-card px-2.5 py-1.5 text-xs hover:bg-accent">
-          <Globe className="h-3.5 w-3.5" /> PT-BR
-        </button>
-        <button className="inline-flex items-center gap-1.5 rounded-md border border-border bg-card px-2.5 py-1.5 text-xs hover:bg-accent">
-          <CircleHelp className="h-3.5 w-3.5" /> Ajuda
-        </button>
-      </div>
     </AppShell>
   );
 }
