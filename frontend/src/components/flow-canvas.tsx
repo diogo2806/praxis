@@ -68,9 +68,10 @@ const TIMEOUT_H = 40;
 const FOOTER_H = 38;
 const OPT_START = MSG_H + LABEL_H;
 const END_HEAD_H = 44;
-const END_NOTE_H = 84;
+const END_NOTE_MIN_H = 84;   // min-height do CSS (mantém o visual mínimo atual)
+const END_NOTE_ROW = 15;     // altura de cada linha de competência
+const END_NOTE_BASE = 62;    // paddings + label + linha "final ponderada"
 const END_REPORT_H = 140;
-const END_HEIGHT = END_HEAD_H + END_NOTE_H + END_REPORT_H;
 const FIM = "__fim__";
 const NEW = "__new__";
 
@@ -117,6 +118,8 @@ export default function FlowCanvas({
   const nComps = comps.length;
   const OPT_H = OPT_TEXT_H + OPT_DEST_H + nComps * OPT_SCORE_ROW + OPT_BOTTOM;
   const stepHeight = (n: NodeDto) => OPT_START + n.options.length * OPT_H + TIMEOUT_H + FOOTER_H;
+  const END_NOTE_H = Math.max(END_NOTE_MIN_H, END_NOTE_BASE + nComps * END_NOTE_ROW);
+  const END_HEIGHT = END_HEAD_H + END_NOTE_H + END_REPORT_H;
   const nodeHeight = (n: NodeDto) => (isEnd(n) ? END_HEIGHT : stepHeight(n));
 
   /* ---- contexto (etapas 1 e 2), lido do version ---- */
@@ -456,7 +459,7 @@ export default function FlowCanvas({
                           </div>
                         ))}
                       </div>
-                      <span className="vx-end-note-final">final ponderada <b>{nota == null ? "—" : nota}%</b></span>
+                      <span className="vx-end-note-final">final ponderada <b>{nota == null ? "—" : `${nota}%`}</b></span>
                     </div>
                     <div className="vx-end-report">
                       <div className="vx-end-report-label">Relatório para a equipe responsável{pending && <em>*</em>}</div>
@@ -634,7 +637,7 @@ export default function FlowCanvas({
               const pend = !((n as { reportText?: string }).reportText ?? "").trim();
               return (
                 <button key={n.id} className={`vx-endchip ${selectedNodeId === n.id ? "vx-endchip-on" : ""}`} onClick={() => onSelectNode(n.id)}>
-                  <Flag size={11} /><b>{labelOf(n.id)}</b><span>{nota == null ? "—" : nota}<small>/100</small></span>{pend && <i title="Falta o relatório">!</i>}
+                  <Flag size={11} /><b>{labelOf(n.id)}</b><span>{nota == null ? "—" : <>{nota}<small>/100</small></>}</span>{pend && <i title="Falta o relatório">!</i>}
                 </button>
               );
             })}
@@ -734,7 +737,7 @@ const CSS = `
 .vx-end{border-color:var(--gold-line)} .vx-end.vx-node-on{border-color:var(--primary)}
 .vx-end-head{height:${END_HEAD_H}px;display:flex;align-items:center;gap:6px;padding:0 11px;background:var(--gold-weak);border-bottom:1px solid var(--gold-line);border-radius:12px 12px 0 0}
 .vx-end-del{margin-left:auto;width:24px;height:24px;display:inline-flex;align-items:center;justify-content:center;border:1px solid var(--gold-line);border-radius:7px;background:#fff;color:var(--danger);cursor:pointer}
-.vx-end-note{height:auto;min-height:${END_NOTE_H}px;display:flex;flex-direction:column;justify-content:center;gap:4px;padding:8px 11px;border-bottom:1px solid var(--line)}
+.vx-end-note{height:auto;min-height:${END_NOTE_MIN_H}px;display:flex;flex-direction:column;justify-content:center;gap:4px;padding:8px 11px;border-bottom:1px solid var(--line)}
 .vx-end-note-l{font-size:9.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--soft);font-weight:700}
 .vx-end-comps{display:flex;flex-direction:column;gap:3px;width:100%}
 .vx-end-comp{display:flex;align-items:baseline;gap:8px;font-size:11px}
