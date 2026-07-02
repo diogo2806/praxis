@@ -33,5 +33,12 @@ jobs:
       # O caminho recomendado é migrar os testes para PostgreSQL via
       # Testcontainers (ver docs/marketplace/README.md §0.8) e então trocar
       # este passo por `mvn -B verify`.
+      # Roda apenas testes que não dependem de banco (não usam @SpringBootTest),
+      # como rede de segurança rápida contra rotas de API sumirem
+      # silenciosamente numa refatoração — enquanto a suíte completa não
+      # migra para Testcontainers (ver nota acima).
+      - name: Test (rotas sem dependência de banco)
+        run: mvn -B -ntp -Dtest=SimulationAdminControllerRouteRegressionTest test
+
       - name: Build (skip tests)
         run: mvn -B -ntp -DskipTests package
