@@ -33,6 +33,7 @@ import {
   type SimulationVersionDetailResponse,
   type ValidationIssueResponse,
 } from "@/lib/api/praxis";
+import { buildStepLabels, localizeStepIds, stepLabelOf } from "@/lib/step-labels";
 
 const CORTA = 60;
 const PAGE_SIZE = 8;
@@ -586,13 +587,13 @@ function IssuesPanel({
   const [filter, setFilter] = useState<IssueFilter>("Todas");
   const [page, setPage] = useState(0);
 
-  const nodeLabelById = useMemo(() => {
-    const map = new Map<string, string>();
-    for (const node of version?.nodes ?? []) {
-      map.set(node.id, `Etapa ${node.turnIndex}`);
-    }
-    return map;
-  }, [version]);
+  // Mesmos rótulos do mapa do validador (1.0, 5.0…); o id interno (turno-N) não aparece.
+  const stepLabels = useMemo(() => buildStepLabels(version?.nodes ?? []), [version]);
+  const issueLocation = (nodeId: string | null) => {
+    if (!nodeId) return "Geral";
+    const label = stepLabelOf(stepLabels, nodeId);
+    return label === nodeId ? label : `Etapa ${label}`;
+  };
 
   const issues = useMemo<ValidationIssueResponse[]>(() => {
     const all = validation?.issues ?? [];
@@ -672,9 +673,11 @@ function IssuesPanel({
                       {issue.severity === "blocker" ? "Bloqueio" : "Aviso"}
                     </span>
                   </TableCell>
-                  <TableCell className="px-3 py-2 text-sm">{issue.message}</TableCell>
+                  <TableCell className="px-3 py-2 text-sm">
+                    {localizeStepIds(issue.message, stepLabels)}
+                  </TableCell>
                   <TableCell className="px-3 py-2 text-xs text-muted-foreground">
-                    {issue.nodeId ? (nodeLabelById.get(issue.nodeId) ?? "Etapa") : "Geral"}
+                    {issueLocation(issue.nodeId)}
                   </TableCell>
                 </TableRow>
               ))
