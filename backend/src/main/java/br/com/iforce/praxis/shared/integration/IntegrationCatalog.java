@@ -22,7 +22,7 @@ public final class IntegrationCatalog {
             new Definition(
                     IntegrationProvider.GUPY,
                     "Gupy",
-                    "Recebe candidatos da Gupy automaticamente e devolve o resultado da avaliacao ao processo seletivo correspondente.",
+                    "Recebe candidatos da Gupy automaticamente e devolve o resultado da avaliação ao processo seletivo correspondente.",
                     IntegrationType.ATS,
                     "gupy",
                     false
@@ -30,7 +30,7 @@ public final class IntegrationCatalog {
             new Definition(
                     IntegrationProvider.RECRUTEI,
                     "Recrutei",
-                    "Recebe candidatos do Recrutei e devolve o resultado da avaliacao concluida ao processo seletivo.",
+                    "Recebe candidatos do Recrutei e devolve o resultado da avaliação concluída ao processo seletivo.",
                     IntegrationType.ATS,
                     "recrutei",
                     false
@@ -38,7 +38,7 @@ public final class IntegrationCatalog {
             new Definition(
                     IntegrationProvider.CUSTOM_API,
                     "API própria",
-                    "Conecte sistemas internos via token de API e webhooks. Consulte a documentacao para os endpoints disponiveis.",
+                    "Conecte sistemas internos via token de API e webhooks. Consulte a documentação para os endpoints disponíveis.",
                     IntegrationType.API,
                     "custom_api",
                     false
