@@ -452,54 +452,71 @@ function JourneyComposer({
 
       {draft && (
         <div className="border-b border-border p-5">
-          <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_minmax(0,220px)_160px_120px]">
-            <select
-              className="input w-full"
-              value={selectedSimulationId}
-              onChange={(event) => onSimulationChange(event.target.value)}
-            >
-              <option value="">Selecione uma avaliação publicada</option>
-              {simulations.map((simulation) => (
-                <option key={simulation.id} value={simulation.id}>
-                  {simulation.name} - v
-                  {simulation.livePublishedVersionNumber ?? simulation.versionNumber}
-                </option>
-              ))}
-            </select>
-            <input
-              className="input w-full"
-              list="journey-sequence-keys"
-              placeholder="Sequencia (ex: principal)"
-              value={sequenceKey}
-              onChange={(event) => onSequenceKeyChange(event.target.value)}
+          {simulations.length === 0 ? (
+            <EmptyState
+              title="Nenhuma avaliação publicada"
+              description="Publique uma avaliação para poder vinculá-la a esta jornada."
+              actions={
+                <Button asChild size="sm" className="h-9 gap-2">
+                  <Link to="/avaliacoes">
+                    <Plus className="h-4 w-4" />
+                    Ir para avaliações
+                  </Link>
+                </Button>
+              }
             />
-            <datalist id="journey-sequence-keys">
-              {existingSequenceKeys.map((key) => (
-                <option key={key} value={key} />
-              ))}
-            </datalist>
-            <label className="inline-flex h-10 items-center gap-2 rounded-md border border-border bg-background px-3 text-sm">
-              <input
-                type="checkbox"
-                checked={required}
-                onChange={(event) => onRequiredChange(event.target.checked)}
-              />
-              Obrigatorio
-            </label>
-            <Button
-              type="button"
-              className="h-10 gap-2"
-              disabled={!selectedSimulationId || !sequenceKey.trim() || addPending}
-              onClick={onAddStep}
-            >
-              <Plus className="h-4 w-4" />
-              Adicionar
-            </Button>
-          </div>
-          <p className="mt-2 text-xs text-muted-foreground">
-            Combine várias avaliações em uma mesma sequência ou crie sequências diferentes digitando
-            um novo nome. Cada candidato recebe o link de uma sequencia.
-          </p>
+          ) : (
+            <>
+              <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_minmax(0,220px)_160px_120px]">
+                <select
+                  className="input w-full"
+                  value={selectedSimulationId}
+                  onChange={(event) => onSimulationChange(event.target.value)}
+                >
+                  <option value="">Selecione uma avaliação publicada</option>
+                  {simulations.map((simulation) => (
+                    <option key={simulation.id} value={simulation.id}>
+                      {simulation.name} - v
+                      {simulation.livePublishedVersionNumber ?? simulation.versionNumber}
+                    </option>
+                  ))}
+                </select>
+                <input
+                  className="input w-full"
+                  list="journey-sequence-keys"
+                  placeholder="Sequencia (ex: principal)"
+                  value={sequenceKey}
+                  onChange={(event) => onSequenceKeyChange(event.target.value)}
+                />
+                <datalist id="journey-sequence-keys">
+                  {existingSequenceKeys.map((key) => (
+                    <option key={key} value={key} />
+                  ))}
+                </datalist>
+                <label className="inline-flex h-10 items-center gap-2 rounded-md border border-border bg-background px-3 text-sm">
+                  <input
+                    type="checkbox"
+                    checked={required}
+                    onChange={(event) => onRequiredChange(event.target.checked)}
+                  />
+                  Obrigatorio
+                </label>
+                <Button
+                  type="button"
+                  className="h-10 gap-2"
+                  disabled={!selectedSimulationId || !sequenceKey.trim() || addPending}
+                  onClick={onAddStep}
+                >
+                  <Plus className="h-4 w-4" />
+                  Adicionar
+                </Button>
+              </div>
+              <p className="mt-2 text-xs text-muted-foreground">
+                Combine várias avaliações em uma mesma sequência ou crie sequências diferentes
+                digitando um novo nome. Cada candidato recebe o link de uma sequencia.
+              </p>
+            </>
+          )}
         </div>
       )}
 
