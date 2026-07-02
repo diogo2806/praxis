@@ -106,9 +106,17 @@ public class IntegrationManagementService {
 
     @Transactional
     public IntegrationResponse configure(String provider, ConfigureIntegrationRequest request) {
+        IntegrationCatalog.Definition definition = IntegrationCatalog.requireDefinition(provider);
+        if (usesAccessToken(definition.provider())) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Gupy e Recrutei sao conectados por token, nao por configuracao em JSON. "
+                            + "Use POST /api/v1/integrations/" + provider + "/tokens."
+            );
+        }
+
         String empresaId = currentEmpresaService.requiredEmpresaId();
         String actorUserId = currentUserService.requiredUserId();
-        IntegrationCatalog.Definition definition = IntegrationCatalog.requireDefinition(provider);
         EmpresaEntity empresa = empresaRepository.findById(empresaId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Cliente nao encontrado."));
 
@@ -129,13 +137,7 @@ public class IntegrationManagementService {
         Instant now = Instant.now();
 
         validateConfigureRequest(definition, request);
-        if (usesAccessToken(definition.provider())) {
-            String newToken = integrationTokenAdminService.rotateToken(definition.tokenProvider()).token();
-            entity.setCredentialsHash(sha256(newToken));
-            entity.setTokenPreview(buildTokenPreview(newToken));
-        } else {
-            entity.setCredentialsHash(hashJson(request == null ? null : request.credentials()));
-        }
+        entity.setCredentialsHash(hashJson(request == null ? null : request.credentials()));
 
         entity.setType(definition.type());
         entity.setStatus(nextConfiguredStatus(definition.provider()));
@@ -386,11 +388,16 @@ public class IntegrationManagementService {
             boolean supportsManualSync
     ) {
         boolean isCustomApi = provider == IntegrationProvider.CUSTOM_API;
+        boolean isAtsProvider = provider == IntegrationProvider.GUPY || provider == IntegrationProvider.RECRUTEI;
         return switch (status) {
             case NAO_CONFIGURADA -> isCustomApi
                     ? List.of(IntegrationAction.VIEW_DOCS, IntegrationAction.GENERATE_TOKEN)
+                    : isAtsProvider
+                    ? List.of(IntegrationAction.GENERATE_TOKEN)
                     : List.of(IntegrationAction.CONFIGURE);
-            case PENDENTE -> List.of(IntegrationAction.CONFIGURE);
+            case PENDENTE -> isAtsProvider
+                    ? List.of(IntegrationAction.GENERATE_TOKEN)
+                    : List.of(IntegrationAction.CONFIGURE);
             case CONECTADA -> supportsManualSync
                     ? List.of(IntegrationAction.VIEW, IntegrationAction.SYNC, IntegrationAction.DISCONNECT)
                     : isCustomApi
@@ -398,6 +405,8 @@ public class IntegrationManagementService {
                     : List.of(IntegrationAction.VIEW, IntegrationAction.TEST_CONNECTION, IntegrationAction.DISCONNECT);
             case ERRO -> isCustomApi
                     ? List.of(IntegrationAction.VIEW_ERROR, IntegrationAction.RETRY, IntegrationAction.EDIT)
+                    : isAtsProvider
+                    ? List.of(IntegrationAction.VIEW_ERROR, IntegrationAction.TEST_CONNECTION, IntegrationAction.GENERATE_TOKEN)
                     : List.of(IntegrationAction.VIEW_ERROR, IntegrationAction.TEST_CONNECTION, IntegrationAction.EDIT);
             case DESATIVADA -> List.of(IntegrationAction.REACTIVATE, IntegrationAction.VIEW, IntegrationAction.DISCONNECT);
         };
