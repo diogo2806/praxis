@@ -127,16 +127,52 @@ class SimulationValidationServiceTest {
     }
 
     @Test
-    void blocksPublicationWhenAPathDoesNotScoreConfiguredCompetency() {
+    void warnsWithoutBlockingWhenAPathDoesNotScoreConfiguredCompetency() {
         SimulationVersionEntity version = branchingVersionWithMissingCompetencyOnOnePath();
 
         SimulationValidationResponse response = service.validate(version);
 
-        assertThat(response.publishable()).isFalse();
+        assertThat(response.publishable()).isTrue();
         assertThat(response.issues())
-                .anyMatch(issue -> issue.severity() == ValidationIssueSeverity.BLOCKER
+                .anyMatch(issue -> issue.severity() == ValidationIssueSeverity.WARNING
                         && issue.nodeId().equals("fim-b")
                         && issue.message().contains("não pontua a competência \"Resolucao\""));
+        assertThat(response.issues())
+                .noneMatch(issue -> issue.severity() == ValidationIssueSeverity.BLOCKER);
+    }
+
+    @Test
+    void allowsPublicationWhenACompetencyIsZeroedOnEveryPath() {
+        // Cenário relatado no validador: uma etapa com duas respostas e três encerramentos
+        // (dois por resposta, um por timeout); "Negociacao" tem peso mas nota 0 em tudo.
+        SimulationVersionEntity version = baseVersion("turno-1");
+        version.getCompetencies().add(competency(version, "Empatia", 0.34));
+        version.getCompetencies().add(competency(version, "Lideranca", 0.33));
+        version.getCompetencies().add(competency(version, "Negociacao", 0.33));
+
+        SimulationNodeEntity root = node(version, "turno-1", 1);
+        root.setTimeoutNextNodeId("turno-2");
+        SimulationOptionEntity optionA = option(root, "opcao-a", "turno-3", List.of("Lideranca"), 6);
+        SimulationOptionEntity optionB = option(root, "opcao-b", "turno-4", List.of("Empatia"), 5);
+        addZeroScore(optionA, "Empatia");
+        addZeroScore(optionA, "Negociacao");
+        addZeroScore(optionB, "Lideranca");
+        addZeroScore(optionB, "Negociacao");
+        root.getOptions().add(optionA);
+        root.getOptions().add(optionB);
+        version.getNodes().add(root);
+        version.getNodes().add(finalNode(version, "turno-2", 2));
+        version.getNodes().add(finalNode(version, "turno-3", 2));
+        version.getNodes().add(finalNode(version, "turno-4", 2));
+
+        SimulationValidationResponse response = service.validate(version);
+
+        assertThat(response.publishable()).isTrue();
+        assertThat(response.blockerCount()).isZero();
+        assertThat(response.issues())
+                .filteredOn(issue -> issue.severity() == ValidationIssueSeverity.WARNING
+                        && issue.message().contains("não pontua a competência \"Negociacao\""))
+                .hasSize(3);
     }
 
     @Test
@@ -339,6 +375,14 @@ class SimulationValidationServiceTest {
         node.setFinal(true);
         node.setReportText("Relatorio final");
         return node;
+    }
+
+    private void addZeroScore(SimulationOptionEntity option, String competencyName) {
+        OptionCompetencyScoreEntity score = new OptionCompetencyScoreEntity();
+        score.setSimulationOption(option);
+        score.setCompetencyName(competencyName);
+        score.setScore(0);
+        option.getCompetencyScores().add(score);
     }
 
     private SimulationOptionEntity option(
