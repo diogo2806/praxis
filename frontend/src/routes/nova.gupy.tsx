@@ -1,12 +1,8 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { CheckCircle2, Link2, RefreshCw, Send, XCircle } from "lucide-react";
+import { CheckCircle2, RefreshCw, Send, XCircle } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
-import {
-  EmptyState,
-  StateBanner,
-  StatusBadge,
-} from "@/components/praxis-ui";
+import { EmptyState, StateBanner, StatusBadge } from "@/components/praxis-ui";
 import { WizardStepper } from "@/components/wizard-stepper";
 import {
   getGupyPreflight,
@@ -40,12 +36,6 @@ export const Route = createFileRoute("/nova/gupy")({
   }),
   component: GupyActivation,
 });
-
-const integrationChecks = [
-  "A Gupy consegue encontrar as avaliações que estão no ar.",
-  "O convite do candidato abre a avaliação correta.",
-  "A pontuação e as competências são enviadas de volta após a conclusão.",
-];
 
 function GupyActivation() {
   const search = Route.useSearch();
@@ -123,37 +113,17 @@ function GupyActivation() {
             </StateBanner>
           )}
 
+          <div className="mt-5 space-y-5">
+            <section className="rounded-md border border-border bg-card p-5">
+              <h2 className="text-sm font-semibold">Lista de verificação da integração</h2>
+              <div className="mt-4 space-y-3">
+                {(preflightQuery.data?.checks ?? []).map((item) => (
+                  <PreflightCheck key={item.code} item={item} />
+                ))}
+              </div>
+            </section>
 
-          <div className="mt-5 grid gap-5 lg:grid-cols-[minmax(0,1fr)_360px]">
-            <main className="space-y-5">
-              <section className="rounded-md border border-border bg-card p-5">
-                <div className="mb-4 flex items-center gap-2 text-sm font-semibold">
-                  <Link2 className="h-4 w-4" />O que será conferido
-                </div>
-                <div className="grid gap-3">
-                  {integrationChecks.map((check) => (
-                    <div
-                      key={check}
-                      className="flex items-start gap-3 rounded-md border border-border bg-background p-3"
-                    >
-                      <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-success" />
-                      <span className="text-sm text-muted-foreground">{check}</span>
-                    </div>
-                  ))}
-                </div>
-              </section>
-
-              <section className="rounded-md border border-border bg-card p-5">
-                <h2 className="text-sm font-semibold">Lista de verificação da integração</h2>
-                <div className="mt-4 space-y-3">
-                  {(preflightQuery.data?.checks ?? []).map((item) => (
-                    <PreflightCheck key={item.code} item={item} />
-                  ))}
-                </div>
-              </section>
-            </main>
-
-            <aside className="rounded-md border border-border bg-card p-5">
+            <section className="rounded-md border border-border bg-card p-5">
               <div className="mb-4 flex items-center gap-2 text-sm font-semibold">
                 <Send className="h-4 w-4" />
                 Envios de resultado
@@ -163,7 +133,7 @@ function GupyActivation() {
                 loading={deliveriesQuery.isLoading}
                 error={deliveriesQuery.isError}
               />
-            </aside>
+            </section>
           </div>
         </>
       )}

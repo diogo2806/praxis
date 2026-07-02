@@ -147,7 +147,7 @@ function MonitoringPage() {
           />
         </section>
 
-        <div className="grid gap-5 lg:grid-cols-[minmax(0,2fr)_minmax(320px,1fr)]">
+        <div className="space-y-5">
           <section className="overflow-hidden rounded-xl border border-border bg-card">
             <div className="flex flex-col gap-3 border-b border-border px-4 py-4 md:flex-row md:items-center md:justify-between">
               <div>

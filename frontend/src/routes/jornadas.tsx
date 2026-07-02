@@ -238,7 +238,7 @@ function AssessmentJourneysPage() {
           </StateBanner>
         )}
 
-        <div className="grid gap-5 lg:grid-cols-[340px_minmax(0,1fr)]">
+        <div className="space-y-5">
           <aside className="space-y-5">
             <section className="rounded-md border border-border bg-card p-4">
               <h2 className="text-sm font-semibold">Nova jornada</h2>

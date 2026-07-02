@@ -72,11 +72,9 @@ function ResultDetailContent({ result }: { result: ResultDetailResponse }) {
   return (
     <>
       <CandidateResultHeader result={result} />
-      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_360px]">
-        <div className="space-y-6">
-          <CompetencyBreakdown competencies={result.competencies} />
-          <CandidateAnswersPanel answers={result.answers} />
-        </div>
+      <div className="space-y-6">
+        <CompetencyBreakdown competencies={result.competencies} />
+        <CandidateAnswersPanel answers={result.answers} />
         <HumanDecisionPanel result={result} />
       </div>
     </>
@@ -114,7 +112,11 @@ function CandidateResultHeader({ result }: { result: ResultDetailResponse }) {
   );
 }
 
-function CompetencyBreakdown({ competencies }: { competencies: ResultDetailResponse["competencies"] }) {
+function CompetencyBreakdown({
+  competencies,
+}: {
+  competencies: ResultDetailResponse["competencies"];
+}) {
   return (
     <section className="rounded-md border border-border bg-card">
       <div className="border-b border-border p-4">
@@ -163,7 +165,10 @@ function CandidateAnswersPanel({ answers }: { answers: ResultDetailResponse["ans
               <dl className="mt-3 space-y-2 text-sm">
                 <AnswerLine label="Pergunta" value={answer.question} />
                 <AnswerLine label="Resposta" value={answer.answer ?? "-"} />
-                <AnswerLine label="Pontuação" value={answer.score == null ? "-" : `${answer.score}/10`} />
+                <AnswerLine
+                  label="Pontuação"
+                  value={answer.score == null ? "-" : `${answer.score}/10`}
+                />
               </dl>
             </article>
           ))}
@@ -204,7 +209,9 @@ function HumanDecisionPanel({ result }: { result: ResultDetailResponse }) {
             {decisionLabel(result.humanDecision.status)}
           </div>
           <div className="mt-2 text-xs text-muted-foreground">
-            {result.humanDecision.decidedBy ? `Responsável: ${result.humanDecision.decidedBy}` : "Responsável não informado"}
+            {result.humanDecision.decidedBy
+              ? `Responsável: ${result.humanDecision.decidedBy}`
+              : "Responsável não informado"}
           </div>
           <div className="mt-1 text-xs text-muted-foreground">
             {formatDate(result.humanDecision.decidedAt)}
@@ -335,32 +342,38 @@ function AnswerLine({ label, value }: { label: string; value: string }) {
 }
 
 function competencyTone(level: string) {
-  return {
-    ALTO: "bg-success/10 text-success",
-    MEDIO: "bg-muted text-muted-foreground",
-    BAIXO: "bg-warning/10 text-warning",
-  }[level] ?? "bg-muted text-muted-foreground";
+  return (
+    {
+      ALTO: "bg-success/10 text-success",
+      MEDIO: "bg-muted text-muted-foreground",
+      BAIXO: "bg-warning/10 text-warning",
+    }[level] ?? "bg-muted text-muted-foreground"
+  );
 }
 
 function levelLabel(level: string) {
-  return {
-    ALTO: "Alto",
-    MEDIO: "Médio",
-    BAIXO: "Baixo",
-  }[level] ?? level;
+  return (
+    {
+      ALTO: "Alto",
+      MEDIO: "Médio",
+      BAIXO: "Baixo",
+    }[level] ?? level
+  );
 }
 
 function decisionLabel(value: string) {
-  return {
-    ADVANCED: "Avançar candidato",
-    REJECTED: "Reprovar",
-    HIRED: "Contratar",
-    ON_HOLD: "Colocar em espera",
-    advanced: "Avançar candidato",
-    rejected: "Reprovar",
-    hired: "Contratar",
-    onHold: "Colocar em espera",
-  }[value] ?? value;
+  return (
+    {
+      ADVANCED: "Avançar candidato",
+      REJECTED: "Reprovar",
+      HIRED: "Contratar",
+      ON_HOLD: "Colocar em espera",
+      advanced: "Avançar candidato",
+      rejected: "Reprovar",
+      hired: "Contratar",
+      onHold: "Colocar em espera",
+    }[value] ?? value
+  );
 }
 
 function formatDate(value: string | null) {

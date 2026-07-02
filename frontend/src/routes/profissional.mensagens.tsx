@@ -6,7 +6,10 @@ import { useEffect, useMemo, useState } from "react";
 import { MessageThread } from "@/components/marketplace/message-thread";
 import { StateBanner } from "@/components/praxis-ui";
 import { Button } from "@/components/ui/button";
-import { listMarketplaceMessageThreads, sendMarketplaceProfessionalMessage } from "@/lib/api/praxis";
+import {
+  listMarketplaceMessageThreads,
+  sendMarketplaceProfessionalMessage,
+} from "@/lib/api/praxis";
 import { marketplaceMessageThreadsFallback } from "@/lib/marketplace-professional-fallback";
 
 export const Route = createFileRoute("/profissional/mensagens")({
@@ -45,7 +48,9 @@ function ProfessionalMessagesPage() {
       }),
     onSuccess: async () => {
       setBody("");
-      await queryClient.invalidateQueries({ queryKey: ["marketplace-message-threads", "professional"] });
+      await queryClient.invalidateQueries({
+        queryKey: ["marketplace-message-threads", "professional"],
+      });
     },
   });
 
@@ -81,7 +86,7 @@ function ProfessionalMessagesPage() {
           </section>
         )}
         {selectedThread && (
-          <section className="grid min-h-[520px] overflow-hidden rounded-md border border-border bg-card lg:grid-cols-[320px_1fr]">
+          <section className="overflow-hidden rounded-md border border-border bg-card">
             <aside className="border-b border-border lg:border-b-0 lg:border-r">
               <div className="divide-y divide-border">
                 {(threads.data ?? []).map((thread) => (
@@ -128,7 +133,11 @@ function ProfessionalMessagesPage() {
                 />
                 <div className="mt-3 flex justify-end">
                   <Button type="submit" disabled={send.isPending || !body.trim()}>
-                    {send.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+                    {send.isPending ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Send className="h-4 w-4" />
+                    )}
                     Enviar
                   </Button>
                 </div>

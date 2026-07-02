@@ -167,16 +167,12 @@ function DashboardContent({
         />
       </div>
 
-      <div className="grid gap-6 xl:grid-cols-[minmax(0,1.35fr)_minmax(320px,0.65fr)]">
-        <div className="space-y-6">
-          <RecommendedActionsPanel actions={dashboard.recommendedActions} />
-          <LatestResultsTable dashboard={dashboard} />
-          <AssessmentJourneySummary dashboard={dashboard} />
-        </div>
-        <div className="space-y-6">
-          <IntegrationsStatusPanel dashboard={dashboard} />
-          <BillingUsageCard dashboard={dashboard} />
-        </div>
+      <div className="space-y-6">
+        <RecommendedActionsPanel actions={dashboard.recommendedActions} />
+        <LatestResultsTable dashboard={dashboard} />
+        <AssessmentJourneySummary dashboard={dashboard} />
+        <IntegrationsStatusPanel dashboard={dashboard} />
+        <BillingUsageCard dashboard={dashboard} />
       </div>
     </div>
   );
