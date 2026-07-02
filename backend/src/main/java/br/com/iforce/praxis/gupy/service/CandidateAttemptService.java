@@ -42,6 +42,10 @@ import br.com.iforce.praxis.gupy.dto.TestResultResponse;
 
 import br.com.iforce.praxis.shared.integration.IntegrationEmpresaContext;
 
+import br.com.iforce.praxis.shared.integration.IntegrationManagementService;
+
+import br.com.iforce.praxis.shared.integration.model.IntegrationProvider;
+
 import br.com.iforce.praxis.shared.integration.service.GenericWebhookDeliveryService;
 
 import br.com.iforce.praxis.gupy.model.AttemptAnswer;
@@ -139,6 +143,7 @@ public class CandidateAttemptService {
     private final HealthVerticalService healthVerticalService;
     private final CreditService creditService;
     private final GenericWebhookDeliveryService genericWebhookDeliveryService;
+    private final IntegrationManagementService integrationManagementService;
 
     public CandidateAttemptService(
             CandidateAttemptRepository candidateAttemptRepository,
@@ -153,7 +158,8 @@ public class CandidateAttemptService {
             GupyTestResultMapper gupyTestResultMapper,
             HealthVerticalService healthVerticalService,
             CreditService creditService,
-            GenericWebhookDeliveryService genericWebhookDeliveryService
+            GenericWebhookDeliveryService genericWebhookDeliveryService,
+            IntegrationManagementService integrationManagementService
     ) {
         this.candidateAttemptRepository = candidateAttemptRepository;
         this.auditEventService = auditEventService;
@@ -168,6 +174,7 @@ public class CandidateAttemptService {
         this.healthVerticalService = healthVerticalService;
         this.creditService = creditService;
         this.genericWebhookDeliveryService = genericWebhookDeliveryService;
+        this.integrationManagementService = integrationManagementService;
     }
 
     /**
@@ -199,6 +206,7 @@ public class CandidateAttemptService {
         CandidateAttemptEntity candidateAttemptEntity = candidateAttemptRepository
                 .findByEmpresaIdAndIdempotencyKey(empresaId, idempotencyKey)
                 .orElseGet(() -> createAndAuditAttemptSafely(empresaId, idempotencyKey, request, publishedSimulation));
+        recordIncomingActivity(empresaContext);
 
         return new CreateCandidateResponse(
                 candidateApiUrl(candidateAttemptEntity),
@@ -422,6 +430,15 @@ public class CandidateAttemptService {
                 )
         );
         return candidateAttemptEntity;
+    }
+
+    private void recordIncomingActivity(IntegrationEmpresaContext empresaContext) {
+        try {
+            IntegrationProvider provider = IntegrationProvider.valueOf(empresaContext.provider().toUpperCase());
+            integrationManagementService.recordActivity(empresaContext.empresaId(), provider);
+        } catch (RuntimeException ignored) {
+            // A tentativa recebida continua sendo o evento de negocio principal.
+        }
     }
 
     /**

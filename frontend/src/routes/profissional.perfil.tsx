@@ -29,6 +29,7 @@ function ProfessionalProfilePage() {
     bio: "",
     specialties: "",
     linkedinUrl: "",
+    lattesUrl: "",
     pixKey: "",
   });
 
@@ -39,6 +40,7 @@ function ProfessionalProfilePage() {
       bio: profile.data.bio ?? "",
       specialties: profile.data.specialties.join(", "),
       linkedinUrl: profile.data.linkedinUrl ?? "",
+      lattesUrl: profile.data.lattesUrl ?? "",
       pixKey: "",
     });
   }, [profile.data]);
@@ -50,6 +52,7 @@ function ProfessionalProfilePage() {
         bio: form.bio,
         specialties: splitList(form.specialties),
         linkedinUrl: form.linkedinUrl,
+        lattesUrl: form.lattesUrl,
         pixKey: form.pixKey,
       }),
     onSuccess: async () => {
@@ -126,6 +129,23 @@ function ProfessionalProfilePage() {
                 value={form.linkedinUrl}
                 onChange={(value) => setForm({ ...form, linkedinUrl: value })}
               />
+              <Field
+                label="Curriculo Lattes (URL)"
+                value={form.lattesUrl}
+                onChange={(value) => setForm({ ...form, lattesUrl: value })}
+              />
+              {profile.data.lattesVerified ? (
+                <StateBanner tone="ok" title="Curriculo Lattes verificado">
+                  Seu Lattes foi confirmado pela plataforma e aparece no seu perfil publico.
+                </StateBanner>
+              ) : profile.data.lattesVerificationCode ? (
+                <StateBanner tone="warning" title="Verificacao do Lattes pendente">
+                  Para comprovar que o curriculo e seu, adicione o codigo{" "}
+                  <strong>{profile.data.lattesVerificationCode}</strong> ao campo{" "}
+                  "Texto informado pelo autor" do seu Curriculo Lattes (lattes.cnpq.br) e aguarde
+                  a analise da plataforma. Apos a aprovacao, o codigo pode ser removido.
+                </StateBanner>
+              ) : null}
               <Field
                 label="Chave Pix"
                 value={form.pixKey}

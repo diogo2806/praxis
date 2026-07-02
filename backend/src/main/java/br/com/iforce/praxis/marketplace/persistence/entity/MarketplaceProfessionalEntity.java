@@ -81,6 +81,18 @@ public class MarketplaceProfessionalEntity {
     @Column(name = "linkedin_url", length = 300)
     private String linkedinUrl;
 
+    /** ID do Curriculo Lattes (16 digitos de lattes.cnpq.br/{id}). Unico na plataforma. */
+    @Column(name = "lattes_id", length = 16, unique = true)
+    private String lattesId;
+
+    /** Codigo-desafio que o profissional deve inserir no "Texto informado pelo autor" do Lattes. */
+    @Column(name = "lattes_verification_code", length = 20)
+    private String lattesVerificationCode;
+
+    /** Momento em que a posse do Lattes foi confirmada pela moderacao. Nulo = nao verificado. */
+    @Column(name = "lattes_verified_at")
+    private Instant lattesVerifiedAt;
+
     @Column(name = "pix_key", length = 150)
     private String pixKey;
 

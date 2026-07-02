@@ -28,6 +28,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.Set;
 
@@ -144,6 +145,14 @@ public class MarketplaceAdminModerationService {
             AdminModerateProfessionalRequest request
     ) {
         MarketplaceProfessionalEntity professional = requireProfessional(professionalId);
+        if (professional.getLattesId() == null) {
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "Profissional sem Curriculo Lattes cadastrado. Solicite o cadastro antes de aprovar."
+            );
+        }
+        professional.setLattesVerifiedAt(Instant.now());
+        professional.setLattesVerificationCode(null);
         professional.setVerificationStatus(ProfessionalVerificationStatus.VERIFIED);
         audit(actorUserId, AuditEventType.MARKETPLACE_PROFESSIONAL_APPROVED, "Profissional marketplace aprovado.",
                 "{\"professionalId\":" + professionalId + ",\"reason\":\"" + escape(reason(request)) + "\"}");
@@ -322,6 +331,9 @@ public class MarketplaceAdminModerationService {
                 professional.getBio(),
                 Set.copyOf(professional.getSpecialties()),
                 professional.getLinkedinUrl(),
+                professional.getLattesId() == null ? null : "http://lattes.cnpq.br/" + professional.getLattesId(),
+                professional.getLattesVerifiedAt() != null,
+                professional.getLattesVerifiedAt() == null ? professional.getLattesVerificationCode() : null,
                 professional.getVerificationStatus(),
                 professional.getAverageRating(),
                 professional.getTotalReviews(),

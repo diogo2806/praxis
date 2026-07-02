@@ -22,6 +22,8 @@ import br.com.iforce.praxis.shared.integration.dto.WebhookSecretResponse;
 
 import br.com.iforce.praxis.shared.integration.dto.WebhookTestResponse;
 
+import br.com.iforce.praxis.shared.integration.IntegrationManagementService;
+
 import br.com.iforce.praxis.shared.integration.model.IntegrationProvider;
 
 import br.com.iforce.praxis.shared.integration.model.IntegrationStatus;
@@ -97,6 +99,7 @@ public class GenericWebhookDeliveryService {
     private final PraxisProperties praxisProperties;
     private final ObjectMapper objectMapper;
     private final RestClient restClient;
+    private final IntegrationManagementService integrationManagementService;
 
     public GenericWebhookDeliveryService(
             EmpresaIntegrationRepository empresaIntegrationRepository,
@@ -106,7 +109,8 @@ public class GenericWebhookDeliveryService {
             GupyOutboundUrlValidator outboundUrlValidator,
             PraxisProperties praxisProperties,
             ObjectMapper objectMapper,
-            RestClient.Builder restClientBuilder
+            RestClient.Builder restClientBuilder,
+            IntegrationManagementService integrationManagementService
     ) {
         this.empresaIntegrationRepository = empresaIntegrationRepository;
         this.empresaRepository = empresaRepository;
@@ -116,6 +120,7 @@ public class GenericWebhookDeliveryService {
         this.praxisProperties = praxisProperties;
         this.objectMapper = objectMapper;
         this.restClient = restClientBuilder.build();
+        this.integrationManagementService = integrationManagementService;
     }
 
     // --- Configuração ---------------------------------------------------------
@@ -309,6 +314,9 @@ public class GenericWebhookDeliveryService {
                     entity.setSettingsJson(writeSettings(updated));
                     entity.setUpdatedAt(Instant.now());
                     empresaIntegrationRepository.save(entity);
+                    if (result.delivered()) {
+                        integrationManagementService.recordActivity(empresaId, IntegrationProvider.CUSTOM_API);
+                    }
                 });
     }
 

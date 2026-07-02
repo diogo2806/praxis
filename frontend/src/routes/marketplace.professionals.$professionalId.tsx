@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowLeft, Loader2, ShieldCheck, Star } from "lucide-react";
+import { ArrowLeft, ExternalLink, Loader2, ShieldCheck, Star } from "lucide-react";
 
 import { LinkedinEmbed } from "@/components/marketplace/linkedin-embed";
 import { StateBanner } from "@/components/praxis-ui";
@@ -62,7 +62,21 @@ function MarketplaceProfessionalProfilePage() {
                   <span>{profile.data.totalSales} venda(s)</span>
                 </div>
               </div>
-              <LinkedinEmbed url={profile.data.linkedinUrl} />
+              <div className="grid justify-items-end gap-2">
+                <LinkedinEmbed url={profile.data.linkedinUrl} />
+                {profile.data.lattesVerified && profile.data.lattesUrl && (
+                  <a
+                    href={profile.data.lattesUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-xs font-medium text-foreground hover:bg-muted"
+                  >
+                    <ShieldCheck className="h-3.5 w-3.5 text-primary" />
+                    Lattes verificado
+                    <ExternalLink className="h-3.5 w-3.5" />
+                  </a>
+                )}
+              </div>
             </div>
 
             {profile.data.specialties.length > 0 && (

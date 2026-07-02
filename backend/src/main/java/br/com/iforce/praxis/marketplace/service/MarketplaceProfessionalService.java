@@ -31,6 +31,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.security.SecureRandom;
 import java.time.Instant;
 import java.util.List;
 import java.util.LinkedHashSet;
@@ -39,6 +40,8 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 @Service
 /**
@@ -51,6 +54,10 @@ public class MarketplaceProfessionalService {
 
     private static final String PLATFORM_EMPRESA_ID = "PLATFORM";
     private static final String PROFESSIONAL_ROLE = "PROFESSIONAL";
+    private static final Pattern LATTES_URL_PATTERN =
+            Pattern.compile("^https?://lattes\\.cnpq\\.br/(\\d{16})/?$");
+    private static final SecureRandom RANDOM = new SecureRandom();
+    private static final String CODE_ALPHABET = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
 
     private final MarketplaceProfessionalRepository professionalRepository;
     private final UserRepository userRepository;
@@ -126,6 +133,7 @@ public class MarketplaceProfessionalService {
         professional.setLinkedinUrl(blankToNull(request.linkedinUrl()));
         professional.setPixKey(blankToNull(request.pixKey()));
         professional.setSpecialties(normalizeSpecialties(request.specialties()));
+        applyLattes(professional, request.lattesUrl());
         professional = professionalRepository.save(professional);
 
         return new RegisterProfessionalResponse(
@@ -156,7 +164,7 @@ public class MarketplaceProfessionalService {
         if (professional.getVerificationStatus() != ProfessionalVerificationStatus.VERIFIED) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Profissional nao encontrado.");
         }
-        return toProfile(professional);
+        return toProfile(professional, false);
     }
 
     @Transactional(readOnly = true)
@@ -258,6 +266,15 @@ public class MarketplaceProfessionalService {
         if (request.linkedinUrl() != null) {
             professional.setLinkedinUrl(blankToNull(request.linkedinUrl()));
         }
+        if (request.lattesUrl() != null && !request.lattesUrl().isBlank()) {
+            boolean wasVerified = professional.getVerificationStatus() == ProfessionalVerificationStatus.VERIFIED;
+            String previousLattesId = professional.getLattesId();
+            applyLattes(professional, request.lattesUrl());
+            boolean lattesChanged = !Objects.equals(previousLattesId, professional.getLattesId());
+            if (wasVerified && lattesChanged) {
+                professional.setVerificationStatus(ProfessionalVerificationStatus.PENDING_VERIFICATION);
+            }
+        }
         if (request.pixKey() != null) {
             professional.setPixKey(blankToNull(request.pixKey()));
         }
@@ -276,18 +293,76 @@ public class MarketplaceProfessionalService {
     }
 
     private ProfessionalPublicProfileResponse toProfile(MarketplaceProfessionalEntity professional) {
+        return toProfile(professional, true);
+    }
+
+    private ProfessionalPublicProfileResponse toProfile(
+            MarketplaceProfessionalEntity professional,
+            boolean includeVerificationCode
+    ) {
+        boolean lattesVerified = professional.getLattesVerifiedAt() != null;
         return new ProfessionalPublicProfileResponse(
                 professional.getId(),
                 professional.getDisplayName(),
                 professional.getBio(),
                 Set.copyOf(professional.getSpecialties()),
                 professional.getLinkedinUrl(),
+                professional.getLattesId() == null || (!lattesVerified && !includeVerificationCode)
+                        ? null
+                        : "http://lattes.cnpq.br/" + professional.getLattesId(),
+                lattesVerified,
+                includeVerificationCode && !lattesVerified
+                        ? professional.getLattesVerificationCode()
+                        : null,
                 professional.getVerificationStatus(),
                 professional.getAverageRating(),
                 professional.getTotalReviews(),
                 professional.getTotalSales(),
                 professional.getMpSellerId() != null && !professional.getMpSellerId().isBlank()
         );
+    }
+
+    private String parseLattesId(String lattesUrl) {
+        if (lattesUrl == null || lattesUrl.isBlank()) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Informe a URL do seu Curriculo Lattes (lattes.cnpq.br)."
+            );
+        }
+        Matcher matcher = LATTES_URL_PATTERN.matcher(lattesUrl.trim());
+        if (!matcher.matches()) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "URL do Lattes invalida. Formato esperado: http://lattes.cnpq.br/0000000000000000"
+            );
+        }
+        return matcher.group(1);
+    }
+
+    private String newLattesVerificationCode() {
+        StringBuilder code = new StringBuilder("PRAXIS-");
+        for (int i = 0; i < 6; i++) {
+            code.append(CODE_ALPHABET.charAt(RANDOM.nextInt(CODE_ALPHABET.length())));
+        }
+        return code.toString();
+    }
+
+    private void applyLattes(MarketplaceProfessionalEntity professional, String lattesUrl) {
+        String lattesId = parseLattesId(lattesUrl);
+        if (lattesId.equals(professional.getLattesId())) {
+            return;
+        }
+        professionalRepository.findByLattesId(lattesId)
+                .filter(other -> !Objects.equals(other.getId(), professional.getId()))
+                .ifPresent(other -> {
+                    throw new ResponseStatusException(
+                            HttpStatus.CONFLICT,
+                            "Este Curriculo Lattes ja esta vinculado a outro profissional."
+                    );
+                });
+        professional.setLattesId(lattesId);
+        professional.setLattesVerifiedAt(null);
+        professional.setLattesVerificationCode(newLattesVerificationCode());
     }
 
     private ReviewResponse toReview(MarketplaceReviewEntity review) {

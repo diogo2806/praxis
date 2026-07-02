@@ -44,6 +44,7 @@ import {
   listIntegrations,
   reactivateIntegration,
   syncIntegration,
+  testIntegrationConnection,
   type ConfigureIntegrationRequest,
   type GenerateIntegrationTokenResponse,
   type IntegrationCenterAction,
@@ -105,6 +106,7 @@ function IntegrationsPage() {
   const [generatedToken, setGeneratedToken] = useState<GenerateIntegrationTokenResponse | null>(
     null,
   );
+  const [testedProvider, setTestedProvider] = useState<IntegrationCenterProvider | null>(null);
 
   const integrationsQuery = useQuery({
     queryKey: ["integrations"],
@@ -149,6 +151,15 @@ function IntegrationsPage() {
     onSuccess: invalidate,
   });
 
+  const testConnectionMutation = useMutation({
+    mutationFn: testIntegrationConnection,
+    onSuccess: async (_data, provider) => {
+      setTestedProvider(provider);
+      await invalidate();
+      window.setTimeout(() => setTestedProvider(null), 2500);
+    },
+  });
+
   const generateTokenMutation = useMutation({
     mutationFn: generateIntegrationToken,
     onSuccess: async (data) => {
@@ -167,6 +178,7 @@ function IntegrationsPage() {
     disconnectMutation.error ??
     syncMutation.error ??
     reactivateMutation.error ??
+    testConnectionMutation.error ??
     generateTokenMutation.error;
 
   return (
@@ -225,9 +237,15 @@ function IntegrationsPage() {
                   disconnectMutation.isPending ||
                   syncMutation.isPending ||
                   reactivateMutation.isPending ||
+                  testConnectionMutation.isPending ||
                   generateTokenMutation.isPending
                 }
                 syncing={syncMutation.isPending && syncMutation.variables === integration.provider}
+                testingConnection={
+                  testConnectionMutation.isPending &&
+                  testConnectionMutation.variables === integration.provider
+                }
+                connectionTested={testedProvider === integration.provider}
                 reactivating={
                   reactivateMutation.isPending &&
                   reactivateMutation.variables === integration.provider
@@ -235,6 +253,7 @@ function IntegrationsPage() {
                 onConfigure={() => setConfiguring(integration)}
                 onDisconnect={() => setDisconnecting(integration)}
                 onSync={() => syncMutation.mutate(integration.provider)}
+                onTestConnection={() => testConnectionMutation.mutate(integration.provider)}
                 onReactivate={() => reactivateMutation.mutate(integration.provider)}
                 onGenerateToken={() => generateTokenMutation.mutate(integration.provider)}
               />
@@ -265,20 +284,26 @@ function IntegrationCard({
   integration,
   pendingAction,
   syncing,
+  testingConnection,
+  connectionTested,
   reactivating,
   onConfigure,
   onDisconnect,
   onSync,
+  onTestConnection,
   onReactivate,
   onGenerateToken,
 }: {
   integration: IntegrationCenterItem;
   pendingAction: boolean;
   syncing: boolean;
+  testingConnection: boolean;
+  connectionTested: boolean;
   reactivating: boolean;
   onConfigure: () => void;
   onDisconnect: () => void;
   onSync: () => void;
+  onTestConnection: () => void;
   onReactivate: () => void;
   onGenerateToken: () => void;
 }) {
@@ -288,19 +313,28 @@ function IntegrationCard({
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
             <h2 className="text-xl font-semibold">{integration.name}</h2>
-            <IntegrationStatusBadge status={integration.status} />
+            <IntegrationStatusBadge integration={integration} />
           </div>
           <p className="mt-1 max-w-3xl text-sm text-muted-foreground">{integration.description}</p>
+          <p className="mt-3 text-sm">
+            <span className="font-medium">Como funciona:</span>{" "}
+            {integration.provider === "CUSTOM_API"
+              ? "Sistema interno envia candidatos via API -> Praxis avalia -> webhook recebe o resultado."
+              : "ATS envia candidato -> Praxis avalia -> Praxis devolve o resultado."}
+          </p>
         </div>
         <div className="flex shrink-0 flex-wrap gap-2">
           <CardActions
             integration={integration}
             pendingAction={pendingAction}
             syncing={syncing}
+            testingConnection={testingConnection}
+            connectionTested={connectionTested}
             reactivating={reactivating}
             onConfigure={onConfigure}
             onDisconnect={onDisconnect}
             onSync={onSync}
+            onTestConnection={onTestConnection}
             onReactivate={onReactivate}
             onGenerateToken={onGenerateToken}
           />
@@ -308,7 +342,7 @@ function IntegrationCard({
       </div>
 
       <div className="mt-4 grid gap-3 text-sm md:grid-cols-3">
-        <InfoItem label="Última sincronização" value={formatDateTime(integration.lastSyncAt)} />
+        <InfoItem label="Última atividade" value={formatDateTime(integration.lastSyncAt)} />
         <InfoItem
           label="Tipo"
           value={integration.type === "API" ? "API personalizada" : integration.type}
@@ -335,20 +369,26 @@ function CardActions({
   integration,
   pendingAction,
   syncing,
+  testingConnection,
+  connectionTested,
   reactivating,
   onConfigure,
   onDisconnect,
   onSync,
+  onTestConnection,
   onReactivate,
   onGenerateToken,
 }: {
   integration: IntegrationCenterItem;
   pendingAction: boolean;
   syncing: boolean;
+  testingConnection: boolean;
+  connectionTested: boolean;
   reactivating: boolean;
   onConfigure: () => void;
   onDisconnect: () => void;
   onSync: () => void;
+  onTestConnection: () => void;
   onReactivate: () => void;
   onGenerateToken: () => void;
 }) {
@@ -390,6 +430,18 @@ function CardActions({
           disabled={pendingAction && !syncing}
           onClick={onSync}
         />
+      )}
+      {hasAction("TEST_CONNECTION") && (
+        <Button
+          type="button"
+          size="sm"
+          variant="outline"
+          onClick={onTestConnection}
+          disabled={pendingAction && !testingConnection}
+        >
+          <RefreshCw className={cn("h-4 w-4", testingConnection && "animate-spin")} />
+          {testingConnection ? "Testando" : connectionTested ? "Conexão ok" : "Testar conexão"}
+        </Button>
       )}
       {hasAction("RETRY") && (
         <Button type="button" size="sm" variant="outline" onClick={onSync} disabled={pendingAction}>
@@ -435,7 +487,8 @@ function CardActions({
   );
 }
 
-function IntegrationStatusBadge({ status }: { status: IntegrationCenterStatus }) {
+function IntegrationStatusBadge({ integration }: { integration: IntegrationCenterItem }) {
+  const { status } = integration;
   const Icon =
     status === "CONECTADA"
       ? CheckCircle2
@@ -456,7 +509,9 @@ function IntegrationStatusBadge({ status }: { status: IntegrationCenterStatus })
       )}
     >
       <Icon className="h-3.5 w-3.5" />
-      {statusLabel[status]}
+      {status === "CONECTADA" && !integration.lastSyncAt
+        ? "Conectada · aguardando primeiro evento"
+        : statusLabel[status]}
     </span>
   );
 }

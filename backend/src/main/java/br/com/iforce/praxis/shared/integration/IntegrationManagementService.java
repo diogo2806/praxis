@@ -234,7 +234,6 @@ public class IntegrationManagementService {
     @Transactional
     public IntegrationResponse sync(String provider) {
         String empresaId = currentEmpresaService.requiredEmpresaId();
-        String actorUserId = currentUserService.requiredUserId();
         IntegrationCatalog.Definition definition = IntegrationCatalog.requireDefinition(provider);
         EmpresaIntegrationEntity entity = requireIntegration(empresaId, definition.provider());
 
@@ -245,33 +244,55 @@ public class IntegrationManagementService {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Configure a integracao antes de sincronizar.");
         }
 
-        IntegrationStatus previousStatus = entity.getStatus();
-        appendAudit(
-                empresaId,
-                actorUserId,
-                definition.provider(),
-                previousStatus,
-                previousStatus,
-                AuditEventType.INTEGRATION_SYNC_STARTED,
-                null
-        );
+        throw new ResponseStatusException(HttpStatus.NOT_IMPLEMENTED, "Sincronizacao manual nao implementada para este provedor.");
+    }
 
-        entity.setLastSyncAt(Instant.now());
+    @Transactional
+    public IntegrationResponse testConnection(String provider) {
+        String empresaId = currentEmpresaService.requiredEmpresaId();
+        IntegrationCatalog.Definition definition = IntegrationCatalog.requireDefinition(provider);
+        EmpresaIntegrationEntity entity = requireIntegration(empresaId, definition.provider());
+
+        if (!usesAccessToken(definition.provider())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Este provedor nao possui teste de conexao.");
+        }
+        if (entity.getStatus() == IntegrationStatus.NAO_CONFIGURADA || entity.getStatus() == IntegrationStatus.DESATIVADA) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Configure a integracao antes de testar a conexao.");
+        }
+        if (entity.getCredentialsHash() == null || entity.getCredentialsHash().isBlank()) {
+            entity.setStatus(IntegrationStatus.ERRO);
+            entity.setLastErrorMessage("Token de integracao ausente. Gere um novo token e configure o provedor.");
+            entity.setUpdatedAt(Instant.now());
+            empresaIntegrationRepository.save(entity);
+            throw new ResponseStatusException(HttpStatus.CONFLICT, entity.getLastErrorMessage());
+        }
+
         entity.setStatus(IntegrationStatus.CONECTADA);
         entity.setLastErrorMessage(null);
         entity.setUpdatedAt(Instant.now());
         EmpresaIntegrationEntity saved = empresaIntegrationRepository.save(entity);
-
-        appendAudit(
-                empresaId,
-                actorUserId,
-                definition.provider(),
-                previousStatus,
-                saved.getStatus(),
-                AuditEventType.INTEGRATION_SYNC_COMPLETED,
-                null
-        );
         return toResponse(definition, saved);
+    }
+
+    @Transactional
+    public void recordActivity(String empresaId, IntegrationProvider provider) {
+        IntegrationCatalog.Definition definition = IntegrationCatalog.requireDefinition(provider.name());
+        EmpresaIntegrationEntity entity = empresaIntegrationRepository
+                .findFirstByEmpresaIdAndProvider(empresaId, provider)
+                .orElse(null);
+        if (entity == null) {
+            return;
+        }
+
+        Instant now = Instant.now();
+        if (provider != IntegrationProvider.CUSTOM_API) {
+            entity.setType(definition.type());
+        }
+        entity.setStatus(IntegrationStatus.CONECTADA);
+        entity.setLastSyncAt(now);
+        entity.setLastErrorMessage(null);
+        entity.setUpdatedAt(now);
+        empresaIntegrationRepository.save(entity);
     }
 
     @Transactional
@@ -372,9 +393,13 @@ public class IntegrationManagementService {
             case PENDENTE -> List.of(IntegrationAction.CONFIGURE);
             case CONECTADA -> supportsManualSync
                     ? List.of(IntegrationAction.VIEW, IntegrationAction.SYNC, IntegrationAction.DISCONNECT)
-                    : List.of(IntegrationAction.VIEW, IntegrationAction.DISCONNECT);
-            case ERRO -> List.of(IntegrationAction.VIEW_ERROR, IntegrationAction.RETRY, IntegrationAction.EDIT);
-            case DESATIVADA -> List.of(IntegrationAction.REACTIVATE);
+                    : isCustomApi
+                    ? List.of(IntegrationAction.VIEW, IntegrationAction.DISCONNECT)
+                    : List.of(IntegrationAction.VIEW, IntegrationAction.TEST_CONNECTION, IntegrationAction.DISCONNECT);
+            case ERRO -> isCustomApi
+                    ? List.of(IntegrationAction.VIEW_ERROR, IntegrationAction.RETRY, IntegrationAction.EDIT)
+                    : List.of(IntegrationAction.VIEW_ERROR, IntegrationAction.TEST_CONNECTION, IntegrationAction.EDIT);
+            case DESATIVADA -> List.of(IntegrationAction.REACTIVATE, IntegrationAction.VIEW, IntegrationAction.DISCONNECT);
         };
     }
 

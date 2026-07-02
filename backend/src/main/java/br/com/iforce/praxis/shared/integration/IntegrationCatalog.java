@@ -22,23 +22,23 @@ public final class IntegrationCatalog {
             new Definition(
                     IntegrationProvider.GUPY,
                     "Gupy",
-                    "Receba candidatos e envie resultados automaticamente.",
+                    "Recebe candidatos da Gupy automaticamente e devolve o resultado da avaliacao ao processo seletivo correspondente.",
                     IntegrationType.ATS,
                     "gupy",
-                    true
+                    false
             ),
             new Definition(
                     IntegrationProvider.RECRUTEI,
                     "Recrutei",
-                    "Conecte o Práxis ao Recrutei para automatizar avaliações.",
+                    "Recebe candidatos do Recrutei e devolve o resultado da avaliacao concluida ao processo seletivo.",
                     IntegrationType.ATS,
                     "recrutei",
-                    true
+                    false
             ),
             new Definition(
                     IntegrationProvider.CUSTOM_API,
                     "API própria",
-                    "Use esta opção para conectar sistemas internos ao Práxis.",
+                    "Conecte sistemas internos via token de API e webhooks. Consulte a documentacao para os endpoints disponiveis.",
                     IntegrationType.API,
                     "custom_api",
                     false

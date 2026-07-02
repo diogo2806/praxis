@@ -26,6 +26,7 @@ function ProfessionalSignupPage() {
     bio: "",
     specialties: "",
     linkedinUrl: "",
+    lattesUrl: "",
     pixKey: "",
   });
 
@@ -128,6 +129,13 @@ function ProfessionalSignupPage() {
               label="LinkedIn"
               value={form.linkedinUrl}
               onChange={(value) => setForm({ ...form, linkedinUrl: value })}
+            />
+            <Field
+              label="Curriculo Lattes (URL)"
+              value={form.lattesUrl}
+              onChange={(value) => setForm({ ...form, lattesUrl: value })}
+              placeholder="https://lattes.cnpq.br/0000000000000000"
+              required
             />
             <label className="grid gap-1 text-sm">
               <span className="font-medium">Bio</span>

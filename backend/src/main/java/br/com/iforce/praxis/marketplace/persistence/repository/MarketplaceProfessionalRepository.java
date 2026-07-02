@@ -15,6 +15,8 @@ public interface MarketplaceProfessionalRepository extends JpaRepository<Marketp
 
     Optional<MarketplaceProfessionalEntity> findByDocument(String document);
 
+    Optional<MarketplaceProfessionalEntity> findByLattesId(String lattesId);
+
     boolean existsByDocument(String document);
 
     /** Fila de moderação: profissionais por situação de verificação. */

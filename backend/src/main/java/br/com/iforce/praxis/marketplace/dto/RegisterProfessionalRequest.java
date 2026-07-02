@@ -15,6 +15,7 @@ public record RegisterProfessionalRequest(
         @Size(max = 4000) String bio,
         Set<@Size(max = 60) String> specialties,
         @Size(max = 300) String linkedinUrl,
+        @NotBlank @Size(max = 300) String lattesUrl,
         @Size(max = 150) String pixKey
 ) {
 }

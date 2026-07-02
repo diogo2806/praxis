@@ -16,6 +16,8 @@ import br.com.iforce.praxis.gupy.service.GupyTestResultMapper;
 
 import br.com.iforce.praxis.gupy.service.SimulationCatalogService;
 
+import br.com.iforce.praxis.shared.integration.IntegrationManagementService;
+
 import br.com.iforce.praxis.shared.notification.service.ResultDeliveryDlqAlertService;
 
 import br.com.iforce.praxis.shared.outbox.persistence.entity.OutboxEventEntity;
@@ -81,6 +83,9 @@ class OutboxProcessorTest {
     private br.com.iforce.praxis.shared.integration.service.GenericWebhookDeliveryService genericWebhookDeliveryService;
 
     @Mock
+    private IntegrationManagementService integrationManagementService;
+
+    @Mock
     private PlatformTransactionManager transactionManager;
 
     private OutboxProcessor outboxProcessor;
@@ -99,6 +104,7 @@ class OutboxProcessorTest {
             outboundUrlValidator,
             dlqAlertService,
             genericWebhookDeliveryService,
+            integrationManagementService,
             transactionManager
         );
     }

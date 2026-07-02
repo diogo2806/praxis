@@ -64,6 +64,11 @@ public class IntegrationManagementController {
         return ResponseEntity.ok(integrationManagementService.sync(provider));
     }
 
+    @PostMapping("/{provider}/test-connection")
+    public ResponseEntity<IntegrationResponse> testConnection(@PathVariable String provider) {
+        return ResponseEntity.ok(integrationManagementService.testConnection(provider));
+    }
+
     @PostMapping("/{provider}/reactivate")
     public ResponseEntity<IntegrationResponse> reactivate(@PathVariable String provider) {
         return ResponseEntity.ok(integrationManagementService.reactivate(provider));

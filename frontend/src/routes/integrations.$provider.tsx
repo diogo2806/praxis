@@ -37,6 +37,7 @@ import {
   rotateIntegrationProviderToken,
   revokeIntegrationProviderToken,
   syncIntegration,
+  testIntegrationConnection,
   type GenerateIntegrationTokenResponse,
   type IntegrationCenterItem,
   type IntegrationCenterProvider,
@@ -78,6 +79,7 @@ function IntegrationDetailPage() {
   const [confirmRevokeToken, setConfirmRevokeToken] = useState(false);
   const [generatedToken, setGeneratedToken] = useState<GenerateIntegrationTokenResponse | null>(null);
   const [copied, setCopied] = useState(false);
+  const [connectionTested, setConnectionTested] = useState(false);
 
   const integrationQuery = useQuery({
     queryKey: ["integration", provider],
@@ -106,6 +108,15 @@ function IntegrationDetailPage() {
   const syncMutation = useMutation({
     mutationFn: () => syncIntegration(provider!),
     onSuccess: invalidate,
+  });
+
+  const testConnectionMutation = useMutation({
+    mutationFn: () => testIntegrationConnection(provider!),
+    onSuccess: async () => {
+      setConnectionTested(true);
+      await invalidate();
+      window.setTimeout(() => setConnectionTested(false), 2500);
+    },
   });
 
   const generateTokenMutation = useMutation({
@@ -156,6 +167,7 @@ function IntegrationDetailPage() {
     disconnectMutation.isPending ||
     reactivateMutation.isPending ||
     syncMutation.isPending ||
+    testConnectionMutation.isPending ||
     generateTokenMutation.isPending ||
     rotateTokenMutation.isPending ||
     revokeTokenMutation.isPending;
@@ -165,6 +177,7 @@ function IntegrationDetailPage() {
     disconnectMutation.error ??
     reactivateMutation.error ??
     syncMutation.error ??
+    testConnectionMutation.error ??
     generateTokenMutation.error ??
     rotateTokenMutation.error ??
     revokeTokenMutation.error;
@@ -207,7 +220,7 @@ function IntegrationDetailPage() {
                 <div>
                   <div className="flex flex-wrap items-center gap-2">
                     <h1 className="text-2xl font-semibold">{integration.name}</h1>
-                    <IntegrationStatusBadge status={integration.status} />
+                    <IntegrationStatusBadge integration={integration} />
                   </div>
                   <p className="mt-1 text-sm text-muted-foreground">{integration.description}</p>
                 </div>
@@ -222,6 +235,24 @@ function IntegrationDetailPage() {
                     >
                       <RefreshCw className={cn("h-4 w-4", syncMutation.isPending && "animate-spin")} />
                       {syncMutation.isPending ? "Sincronizando" : "Sincronizar agora"}
+                    </Button>
+                  )}
+                  {hasAction("TEST_CONNECTION") && (
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      onClick={() => testConnectionMutation.mutate()}
+                      disabled={anyPending}
+                    >
+                      <RefreshCw
+                        className={cn("h-4 w-4", testConnectionMutation.isPending && "animate-spin")}
+                      />
+                      {testConnectionMutation.isPending
+                        ? "Testando"
+                        : connectionTested
+                          ? "Conexão ok"
+                          : "Testar conexão"}
                     </Button>
                   )}
                   {hasAction("REACTIVATE") && (
@@ -261,7 +292,7 @@ function IntegrationDetailPage() {
               {/* Meta info */}
               <div className="mt-5 grid gap-3 text-sm md:grid-cols-3">
                 <InfoItem label="Tipo" value={typeLabel(integration.type)} />
-                <InfoItem label="Última sincronização" value={formatDateTime(integration.lastSyncAt)} />
+                <InfoItem label="Última atividade" value={formatDateTime(integration.lastSyncAt)} />
                 <InfoItem label="Configurada em" value={formatDateTime(integration.configuredAt)} />
               </div>
             </div>
@@ -451,7 +482,8 @@ function TokenPanel({
   );
 }
 
-function IntegrationStatusBadge({ status }: { status: IntegrationCenterStatus }) {
+function IntegrationStatusBadge({ integration }: { integration: IntegrationCenterItem }) {
+  const { status } = integration;
   const Icon =
     status === "CONECTADA"
       ? CheckCircle2
@@ -472,7 +504,9 @@ function IntegrationStatusBadge({ status }: { status: IntegrationCenterStatus })
       )}
     >
       <Icon className="h-3.5 w-3.5" />
-      {statusLabel[status]}
+      {status === "CONECTADA" && !integration.lastSyncAt
+        ? "Conectada · aguardando primeiro evento"
+        : statusLabel[status]}
     </span>
   );
 }

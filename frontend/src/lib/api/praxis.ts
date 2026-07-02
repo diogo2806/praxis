@@ -600,6 +600,7 @@ export type IntegrationCenterAction =
   | "RETRY"
   | "EDIT"
   | "REACTIVATE"
+  | "TEST_CONNECTION"
   | "VIEW_DOCS"
   | "GENERATE_TOKEN";
 
@@ -1371,6 +1372,13 @@ export function disconnectIntegration(provider: IntegrationCenterProvider) {
 export function syncIntegration(provider: IntegrationCenterProvider) {
   return request<IntegrationCenterItem>(
     `/api/v1/integrations/${encodeURIComponent(provider)}/sync`,
+    { method: "POST" },
+  );
+}
+
+export function testIntegrationConnection(provider: IntegrationCenterProvider) {
+  return request<IntegrationCenterItem>(
+    `/api/v1/integrations/${encodeURIComponent(provider)}/test-connection`,
     { method: "POST" },
   );
 }
@@ -2734,6 +2742,9 @@ export interface MarketplaceProfessionalProfile {
   bio: string | null;
   specialties: string[];
   linkedinUrl: string | null;
+  lattesUrl: string | null;
+  lattesVerified: boolean;
+  lattesVerificationCode: string | null;
   verificationStatus: ProfessionalVerificationStatus;
   averageRating: number | null;
   totalReviews: number;
@@ -2778,6 +2789,7 @@ export interface RegisterProfessionalRequest {
   bio?: string;
   specialties?: string[];
   linkedinUrl?: string;
+  lattesUrl: string;
   pixKey?: string;
 }
 
@@ -2792,6 +2804,7 @@ export interface UpdateProfessionalProfileRequest {
   bio?: string;
   specialties?: string[];
   linkedinUrl?: string;
+  lattesUrl?: string;
   pixKey?: string;
 }
 

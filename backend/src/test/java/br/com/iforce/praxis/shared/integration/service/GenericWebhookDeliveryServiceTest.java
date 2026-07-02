@@ -12,6 +12,8 @@ import br.com.iforce.praxis.gupy.persistence.entity.ResultItemEntity;
 
 import br.com.iforce.praxis.shared.integration.model.IntegrationProvider;
 
+import br.com.iforce.praxis.shared.integration.IntegrationManagementService;
+
 import br.com.iforce.praxis.shared.integration.model.IntegrationStatus;
 
 import br.com.iforce.praxis.shared.integration.persistence.entity.EmpresaIntegrationEntity;
@@ -43,6 +45,8 @@ class GenericWebhookDeliveryServiceTest {
 
     private final EmpresaIntegrationRepository repository = mock(EmpresaIntegrationRepository.class);
 
+    private final IntegrationManagementService integrationManagementService = mock(IntegrationManagementService.class);
+
     private final GenericWebhookDeliveryService service = new GenericWebhookDeliveryService(
             repository,
             null,
@@ -51,7 +55,8 @@ class GenericWebhookDeliveryServiceTest {
             null,
             new PraxisProperties("https://praxis.example.com", 168, 24, 70, 15, 0.001),
             new ObjectMapper(),
-            RestClient.builder()
+            RestClient.builder(),
+            integrationManagementService
     );
 
     @Test

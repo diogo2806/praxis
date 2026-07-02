@@ -9,6 +9,7 @@ public enum IntegrationAction {
     RETRY,
     EDIT,
     REACTIVATE,
+    TEST_CONNECTION,
     VIEW_DOCS,
     GENERATE_TOKEN
 }

@@ -18,6 +18,10 @@ import br.com.iforce.praxis.gupy.service.SimulationCatalogService;
 
 import br.com.iforce.praxis.shared.integration.service.GenericWebhookDeliveryService;
 
+import br.com.iforce.praxis.shared.integration.IntegrationManagementService;
+
+import br.com.iforce.praxis.shared.integration.model.IntegrationProvider;
+
 import br.com.iforce.praxis.shared.notification.service.ResultDeliveryDlqAlertService;
 
 import br.com.iforce.praxis.shared.outbox.persistence.entity.OutboxEventEntity;
@@ -93,6 +97,7 @@ public class OutboxProcessor {
     private final GupyOutboundUrlValidator outboundUrlValidator;
     private final ResultDeliveryDlqAlertService dlqAlertService;
     private final GenericWebhookDeliveryService genericWebhookDeliveryService;
+    private final IntegrationManagementService integrationManagementService;
     private final TransactionTemplate txTemplate;
 
     public OutboxProcessor(
@@ -105,6 +110,7 @@ public class OutboxProcessor {
         GupyOutboundUrlValidator outboundUrlValidator,
         ResultDeliveryDlqAlertService dlqAlertService,
         GenericWebhookDeliveryService genericWebhookDeliveryService,
+        IntegrationManagementService integrationManagementService,
         PlatformTransactionManager transactionManager
     ) {
         this.outboxEventRepository = outboxEventRepository;
@@ -116,6 +122,7 @@ public class OutboxProcessor {
         this.outboundUrlValidator = outboundUrlValidator;
         this.dlqAlertService = dlqAlertService;
         this.genericWebhookDeliveryService = genericWebhookDeliveryService;
+        this.integrationManagementService = integrationManagementService;
         this.txTemplate = new TransactionTemplate(transactionManager);
     }
 
@@ -289,6 +296,7 @@ public class OutboxProcessor {
             outboundUrlValidator.validate(webhookUrl);
             log.debug("Enviando resultado para webhook: {}", webhookUrl);
             resultWebhookClient.postResult(webhookUrl, testResult);
+            integrationManagementService.recordActivity(event.getEmpresaId(), IntegrationProvider.GUPY);
         }
 
         // Entrega adicional (melhor esforço) ao webhook personalizado do cliente,

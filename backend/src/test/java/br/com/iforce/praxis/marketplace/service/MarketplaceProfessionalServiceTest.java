@@ -5,6 +5,7 @@ import br.com.iforce.praxis.auth.persistence.entity.UserEntity;
 import br.com.iforce.praxis.auth.persistence.repository.EmpresaRepository;
 import br.com.iforce.praxis.auth.persistence.repository.UserRepository;
 import br.com.iforce.praxis.marketplace.dto.RegisterProfessionalRequest;
+import br.com.iforce.praxis.marketplace.dto.UpdateProfessionalProfileRequest;
 import br.com.iforce.praxis.marketplace.model.ListingCategory;
 import br.com.iforce.praxis.marketplace.model.ListingStatus;
 import br.com.iforce.praxis.marketplace.model.OrderStatus;
@@ -24,6 +25,7 @@ import br.com.iforce.praxis.marketplace.persistence.repository.MarketplaceReview
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpStatus;
@@ -38,7 +40,6 @@ import java.util.Set;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -71,41 +72,27 @@ class MarketplaceProfessionalServiceTest {
     }
 
     @Test
-    void registerCreatesPlatformProfessionalWithValidatedDocument() {
-        EmpresaEntity platform = new EmpresaEntity();
-        platform.setId("PLATFORM");
-        when(empresaRepository.findById("PLATFORM")).thenReturn(Optional.of(platform));
-        when(userRepository.existsByEmpresaIdAndEmail("PLATFORM", "ana@example.com")).thenReturn(false);
-        when(professionalRepository.existsByDocument("52998224725")).thenReturn(false);
-        when(passwordEncoder.encode("senha-segura")).thenReturn("hash");
-        when(userRepository.save(any(UserEntity.class))).thenAnswer(invocation -> {
-            UserEntity user = invocation.getArgument(0);
-            user.setId(10L);
-            return user;
-        });
+    void registerCreatesPlatformProfessionalWithValidatedDocumentAndLattesChallenge() {
+        stubPlatformRegistration();
+        when(professionalRepository.findByLattesId("1234567890123456")).thenReturn(Optional.empty());
         when(professionalRepository.save(any(MarketplaceProfessionalEntity.class))).thenAnswer(invocation -> {
             MarketplaceProfessionalEntity professional = invocation.getArgument(0);
             professional.setId(20L);
             return professional;
         });
 
-        var response = service.register(new RegisterProfessionalRequest(
-                "Ana Souza",
-                "ANA@example.com",
-                "senha-segura",
-                "529.982.247-25",
-                "CRP 06/12345",
-                "Bio",
-                Set.of("Seleção", " Liderança "),
-                "https://linkedin.com/in/ana",
-                "ana@example.com"
-        ));
+        var response = service.register(registerRequest("ANA@example.com", "https://lattes.cnpq.br/1234567890123456"));
 
         assertThat(response.id()).isEqualTo(20L);
         assertThat(response.email()).isEqualTo("ana@example.com");
         assertThat(response.status()).isEqualTo(ProfessionalVerificationStatus.PENDING_VERIFICATION);
         verify(userRepository).save(any(UserEntity.class));
-        verify(professionalRepository).save(any(MarketplaceProfessionalEntity.class));
+        ArgumentCaptor<MarketplaceProfessionalEntity> professionalCaptor =
+                ArgumentCaptor.forClass(MarketplaceProfessionalEntity.class);
+        verify(professionalRepository).save(professionalCaptor.capture());
+        assertThat(professionalCaptor.getValue().getLattesId()).isEqualTo("1234567890123456");
+        assertThat(professionalCaptor.getValue().getLattesVerificationCode()).startsWith("PRAXIS-");
+        assertThat(professionalCaptor.getValue().getLattesVerifiedAt()).isNull();
     }
 
     @Test
@@ -116,18 +103,91 @@ class MarketplaceProfessionalServiceTest {
         when(userRepository.existsByEmpresaIdAndEmail("PLATFORM", "ana@example.com")).thenReturn(false);
 
         assertThatThrownBy(() -> service.register(new RegisterProfessionalRequest(
-                "Ana Souza",
-                "ana@example.com",
-                "senha-segura",
-                "111.111.111-11",
-                null,
-                null,
-                Set.of(),
-                null,
-                null
-        )))
+                        "Ana Souza",
+                        "ana@example.com",
+                        "senha-segura",
+                        "111.111.111-11",
+                        null,
+                        null,
+                        Set.of(),
+                        null,
+                        "https://lattes.cnpq.br/1234567890123456",
+                        null
+                )))
                 .isInstanceOf(ResponseStatusException.class)
                 .hasFieldOrPropertyWithValue("statusCode", HttpStatus.BAD_REQUEST);
+    }
+
+    @Test
+    void registerRejectsInvalidLattesUrl() {
+        stubPlatformRegistration();
+
+        assertThatThrownBy(() -> service.register(registerRequest("ana@example.com", "https://example.com/123")))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasFieldOrPropertyWithValue("statusCode", HttpStatus.BAD_REQUEST);
+    }
+
+    @Test
+    void registerRejectsLattesAlreadyUsedByAnotherProfessional() {
+        MarketplaceProfessionalEntity other = new MarketplaceProfessionalEntity();
+        other.setId(99L);
+        stubPlatformRegistration();
+        when(professionalRepository.findByLattesId("1234567890123456")).thenReturn(Optional.of(other));
+
+        assertThatThrownBy(() -> service.register(
+                registerRequest("ana@example.com", "https://lattes.cnpq.br/1234567890123456")
+        ))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasFieldOrPropertyWithValue("statusCode", HttpStatus.CONFLICT);
+    }
+
+    @Test
+    void updateCurrentProfileDemotesVerifiedProfessionalWhenLattesChanges() {
+        MarketplaceProfessionalEntity professional = professional();
+        professional.setLattesId("1234567890123456");
+        professional.setLattesVerifiedAt(Instant.now());
+        professional.setLattesVerificationCode(null);
+        when(professionalRepository.findByUserId(10L)).thenReturn(Optional.of(professional));
+        when(professionalRepository.findByLattesId("6543210987654321")).thenReturn(Optional.empty());
+
+        var response = service.updateCurrentProfile("10", new UpdateProfessionalProfileRequest(
+                null,
+                null,
+                null,
+                null,
+                "https://lattes.cnpq.br/6543210987654321",
+                null
+        ));
+
+        assertThat(professional.getVerificationStatus()).isEqualTo(ProfessionalVerificationStatus.PENDING_VERIFICATION);
+        assertThat(response.lattesVerified()).isFalse();
+        assertThat(response.lattesUrl()).isEqualTo("http://lattes.cnpq.br/6543210987654321");
+        assertThat(response.lattesVerificationCode()).startsWith("PRAXIS-");
+    }
+
+    @Test
+    void updateCurrentProfileKeepsExistingLattesWhenNotSent() {
+        Instant verifiedAt = Instant.now();
+        MarketplaceProfessionalEntity professional = professional();
+        professional.setLattesId("1234567890123456");
+        professional.setLattesVerifiedAt(verifiedAt);
+        professional.setLattesVerificationCode(null);
+        when(professionalRepository.findByUserId(10L)).thenReturn(Optional.of(professional));
+
+        var response = service.updateCurrentProfile("10", new UpdateProfessionalProfileRequest(
+                "Ana S.",
+                null,
+                null,
+                null,
+                null,
+                null
+        ));
+
+        assertThat(professional.getVerificationStatus()).isEqualTo(ProfessionalVerificationStatus.VERIFIED);
+        assertThat(professional.getLattesId()).isEqualTo("1234567890123456");
+        assertThat(professional.getLattesVerifiedAt()).isEqualTo(verifiedAt);
+        assertThat(response.lattesVerified()).isTrue();
+        assertThat(response.lattesVerificationCode()).isNull();
     }
 
     @Test
@@ -135,7 +195,7 @@ class MarketplaceProfessionalServiceTest {
         MarketplaceProfessionalEntity professional = professional();
         when(professionalRepository.findByUserId(10L)).thenReturn(Optional.of(professional));
 
-        MarketplaceListingEntity approved = listing(100L, "Atendimento sob pressão", ListingStatus.APPROVED);
+        MarketplaceListingEntity approved = listing(100L, "Atendimento sob pressao", ListingStatus.APPROVED);
         MarketplaceListingEntity draft = listing(101L, "Conflito em equipe", ListingStatus.DRAFT);
         when(listingRepository.findByProfessionalIdOrderByCreatedAtDesc(20L)).thenReturn(List.of(approved, draft));
 
@@ -147,7 +207,7 @@ class MarketplaceProfessionalServiceTest {
         MarketplacePayoutEntity released = payout(401L, 301L, PayoutStatus.RELEASED, 7600);
         when(payoutRepository.findByProfessionalIdOrderByCreatedAtDesc(20L)).thenReturn(List.of(escrow, released));
 
-        MarketplaceReviewEntity review = review(500L, 300L, 100L, (short) 5, "Critérios claros");
+        MarketplaceReviewEntity review = review(500L, 300L, 100L, (short) 5, "Criterios claros");
         when(reviewRepository.findByProfessionalIdOrderByCreatedAtDesc(20L)).thenReturn(List.of(review));
 
         var dashboard = service.dashboard("10");
@@ -160,7 +220,36 @@ class MarketplaceProfessionalServiceTest {
         assertThat(dashboard.listings().getFirst().salesCount()).isEqualTo(1);
         assertThat(dashboard.recentReviews()).hasSize(1);
         assertThat(dashboard.payouts()).hasSize(2);
-        assertThat(dashboard.payouts().getFirst().listingTitle()).isEqualTo("Atendimento sob pressão");
+        assertThat(dashboard.payouts().getFirst().listingTitle()).isEqualTo("Atendimento sob pressao");
+    }
+
+    private void stubPlatformRegistration() {
+        EmpresaEntity platform = new EmpresaEntity();
+        platform.setId("PLATFORM");
+        when(empresaRepository.findById("PLATFORM")).thenReturn(Optional.of(platform));
+        when(userRepository.existsByEmpresaIdAndEmail("PLATFORM", "ana@example.com")).thenReturn(false);
+        when(professionalRepository.existsByDocument("52998224725")).thenReturn(false);
+        when(passwordEncoder.encode("senha-segura")).thenReturn("hash");
+        when(userRepository.save(any(UserEntity.class))).thenAnswer(invocation -> {
+            UserEntity user = invocation.getArgument(0);
+            user.setId(10L);
+            return user;
+        });
+    }
+
+    private static RegisterProfessionalRequest registerRequest(String email, String lattesUrl) {
+        return new RegisterProfessionalRequest(
+                "Ana Souza",
+                email,
+                "senha-segura",
+                "529.982.247-25",
+                "CRP 06/12345",
+                "Bio",
+                Set.of("Selecao", " Lideranca "),
+                "https://linkedin.com/in/ana",
+                lattesUrl,
+                "ana@example.com"
+        );
     }
 
     private static MarketplaceProfessionalEntity professional() {
@@ -180,7 +269,7 @@ class MarketplaceProfessionalServiceTest {
         listing.setSourceSimulationId("sim-1");
         listing.setSourceVersionId(1L);
         listing.setTitle(title);
-        listing.setDescription("Descrição");
+        listing.setDescription("Descricao");
         listing.setCategory(ListingCategory.ATENDIMENTO);
         listing.setPriceCents(19000);
         listing.setStatus(status);
