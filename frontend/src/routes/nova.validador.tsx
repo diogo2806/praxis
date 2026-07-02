@@ -62,7 +62,7 @@ export const Route = createFileRoute("/nova/validador")({
   }),
   head: () => ({
     meta: [
-      { title: "Validador de Qualidade - Práxis" },
+      { title: "Revisão - Práxis" },
       {
         name: "description",
         content: "Diagnóstico determinístico com bloqueios de publicação.",

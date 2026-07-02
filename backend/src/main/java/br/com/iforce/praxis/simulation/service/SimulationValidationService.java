@@ -81,12 +81,13 @@ public class SimulationValidationService {
     public SimulationValidationResponse validate(SimulationVersionEntity simulationVersionEntity) {
         List<ValidationIssueResponse> issues = new ArrayList<>();
         Map<String, SimulationNodeEntity> nodesById = buildNodeMap(simulationVersionEntity, issues);
+        String rootNodeId = resolveRootNodeId(simulationVersionEntity, nodesById);
 
-        if (!nodesById.containsKey(simulationVersionEntity.getRootNodeId())) {
+        if (rootNodeId == null || !nodesById.containsKey(rootNodeId)) {
             issues.add(new ValidationIssueResponse(
                     ValidationIssueSeverity.BLOCKER,
-                    simulationVersionEntity.getRootNodeId(),
-                    "A primeira etapa do teste não foi encontrada. Escolha uma etapa inicial válida."
+                    null,
+                    "A etapa inicial da avaliação não foi encontrada. Selecione uma etapa inicial válida no fluxo."
             ));
         }
 
@@ -98,11 +99,11 @@ public class SimulationValidationService {
         validateCompetencyWeights(simulationVersionEntity, issues);
         warnLargeGraph(simulationVersionEntity, issues);
 
-        if (nodesById.containsKey(simulationVersionEntity.getRootNodeId())) {
-            detectCycles(simulationVersionEntity.getRootNodeId(), nodesById, issues);
-            validateReachability(simulationVersionEntity.getRootNodeId(), nodesById, issues);
-            validateDepth(simulationVersionEntity.getRootNodeId(), nodesById, issues);
-            validatePathCompetencyCoverage(simulationVersionEntity.getRootNodeId(), nodesById, simulationVersionEntity, issues);
+        if (rootNodeId != null && nodesById.containsKey(rootNodeId)) {
+            detectCycles(rootNodeId, nodesById, issues);
+            validateReachability(rootNodeId, nodesById, issues);
+            validateDepth(rootNodeId, nodesById, issues);
+            validatePathCompetencyCoverage(rootNodeId, nodesById, simulationVersionEntity, issues);
         }
 
         long blockerCount = issues.stream()
@@ -123,6 +124,66 @@ public class SimulationValidationService {
                 qualityScore,
                 issues
         );
+    }
+
+    private String resolveRootNodeId(
+            SimulationVersionEntity simulationVersionEntity,
+            Map<String, SimulationNodeEntity> nodesById
+    ) {
+        String normalizedRootNodeId = normalizeStepId(simulationVersionEntity.getRootNodeId());
+        if (normalizedRootNodeId != null && nodesById.containsKey(normalizedRootNodeId)) {
+            if (!normalizedRootNodeId.equals(simulationVersionEntity.getRootNodeId())) {
+                simulationVersionEntity.setRootNodeId(normalizedRootNodeId);
+            }
+            return normalizedRootNodeId;
+        }
+
+        String inferredRootNodeId = inferSingleRootNodeId(simulationVersionEntity, nodesById);
+        if (inferredRootNodeId != null) {
+            simulationVersionEntity.setRootNodeId(inferredRootNodeId);
+            return inferredRootNodeId;
+        }
+
+        return normalizedRootNodeId;
+    }
+
+    private String normalizeStepId(String nodeId) {
+        if (nodeId == null || nodeId.isBlank()) {
+            return null;
+        }
+        if (nodeId.matches("^etapa-\\d+$")) {
+            return "turno-" + nodeId.substring("etapa-".length());
+        }
+        return nodeId;
+    }
+
+    private String inferSingleRootNodeId(
+            SimulationVersionEntity simulationVersionEntity,
+            Map<String, SimulationNodeEntity> nodesById
+    ) {
+        Set<String> targetNodeIds = new HashSet<>();
+        for (SimulationNodeEntity node : simulationVersionEntity.getNodes()) {
+            if (node.getTimeoutNextNodeId() != null && !node.getTimeoutNextNodeId().isBlank()) {
+                targetNodeIds.add(node.getTimeoutNextNodeId());
+            }
+            for (SimulationOptionEntity option : node.getOptions()) {
+                if (option.getNextNodeId() != null && !option.getNextNodeId().isBlank()) {
+                    targetNodeIds.add(option.getNextNodeId());
+                }
+            }
+        }
+
+        String onlyRoot = null;
+        for (SimulationNodeEntity node : simulationVersionEntity.getNodes()) {
+            if (node.isFinal() || targetNodeIds.contains(node.getNodeId()) || !nodesById.containsKey(node.getNodeId())) {
+                continue;
+            }
+            if (onlyRoot != null) {
+                return null;
+            }
+            onlyRoot = node.getNodeId();
+        }
+        return onlyRoot;
     }
 
     private Map<String, SimulationNodeEntity> buildNodeMap(

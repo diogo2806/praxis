@@ -142,7 +142,7 @@ function Page() {
             competencies: copy.descriptionCompetenciesLabel,
           },
         }),
-        rootNodeId: "etapa-1",
+        rootNodeId: "turno-1",
         competencies: selectedCompetencies,
         criticalSituation: criticalSituation.trim(),
       }),
@@ -160,7 +160,7 @@ function Page() {
   const updateExistingMutation = useMutation({
     mutationFn: () =>
       updateSimulationBlueprint(search.simulationId!, search.versionNumber!, {
-        rootNodeId: versionQuery.data?.blueprint.rootNodeId ?? "etapa-1",
+        rootNodeId: versionQuery.data?.blueprint.rootNodeId ?? "turno-1",
         competencies: buildCompetencyWeights(
           selectedCompetencies,
           versionQuery.data?.blueprint.competencies,

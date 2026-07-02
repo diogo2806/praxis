@@ -67,6 +67,32 @@ class SimulationValidationServiceTest {
     }
 
     @Test
+    void normalizesLegacyRootNodeIdBeforeValidation() {
+        SimulationVersionEntity version = singleNodeVersion(Map.of("Empatia", 1.0));
+        version.setRootNodeId("etapa-1");
+
+        SimulationValidationResponse response = service.validate(version);
+
+        assertThat(response.publishable()).isTrue();
+        assertThat(version.getRootNodeId()).isEqualTo("turno-1");
+        assertThat(response.issues()).extracting(ValidationIssueResponse::message)
+                .noneMatch(message -> message.contains("etapa inicial"));
+    }
+
+    @Test
+    void infersSingleNodeWithoutIncomingEdgesAsRootWhenStoredRootIsInvalid() {
+        SimulationVersionEntity version = singleNodeVersion(Map.of("Empatia", 1.0));
+        version.setRootNodeId("turno-inexistente");
+
+        SimulationValidationResponse response = service.validate(version);
+
+        assertThat(response.publishable()).isTrue();
+        assertThat(version.getRootNodeId()).isEqualTo("turno-1");
+        assertThat(response.issues()).extracting(ValidationIssueResponse::message)
+                .noneMatch(message -> message.contains("etapa inicial"));
+    }
+
+    @Test
     void blocksPublicationWhenDepthExceedsMaximumTurns() {
         SimulationVersionEntity version = linearVersion(11);
 
@@ -131,7 +157,8 @@ class SimulationValidationServiceTest {
         assertThat(response.issues())
                 .anyMatch(issue -> issue.severity() == ValidationIssueSeverity.BLOCKER
                         && issue.nodeId().equals("turno-1")
-                        && issue.message().contains("competência \"Resolucao\", que não está configurada"));
+                        && issue.message().contains("\"Resolucao\"")
+                        && issue.message().contains("configurada"));
     }
 
     @Test
@@ -149,7 +176,7 @@ class SimulationValidationServiceTest {
         assertThat(response.issues())
                 .anyMatch(issue -> issue.severity() == ValidationIssueSeverity.BLOCKER
                         && issue.nodeId().equals("Resolucao")
-                        && issue.message().contains("tem peso mas nenhuma resposta a pontua"));
+                        && issue.message().contains("nenhuma resposta"));
     }
 
     @Test
@@ -168,7 +195,7 @@ class SimulationValidationServiceTest {
         assertThat(response.issues())
                 .anyMatch(issue -> issue.severity() == ValidationIssueSeverity.BLOCKER
                         && issue.nodeId().equals("turno-1")
-                        && issue.message().contains("precisa apontar para uma próxima etapa"));
+                        && issue.message().contains("está sem destino"));
     }
 
     @Test

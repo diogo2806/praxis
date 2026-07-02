@@ -61,7 +61,7 @@ const MSG_H = 76;
 const LABEL_H = 24;
 const OPT_TEXT_H = 35;     // linha do texto da resposta
 const OPT_DEST_H = 40;     // linha do destino (select)
-const OPT_SCORE_ROW = 50;  // cada linha de competência (nome · ponto · acum)
+const OPT_SCORE_ROW = 26;  // cada linha de competência (nome · ponto · acum)
 const OPT_BOTTOM = 24;     // "pula uma linha" antes da próxima resposta
 const OPT_PORT = OPT_TEXT_H + OPT_DEST_H / 2; // porta no centro da linha do destino
 const TIMEOUT_H = 40;
@@ -77,6 +77,11 @@ const NEW = "__new__";
 const isEnd = (n?: NodeDto) => !!n && (n as { isFinal?: boolean }).isFinal === true;
 const clamp = (v: number, a: number, b: number) => Math.min(b, Math.max(a, v));
 const shortName = (s: string) => { const t = s.trim(); return t.length <= 4 ? t : t.slice(0, 3); };
+const normalizeStepId = (id: string | null | undefined) => {
+  if (!id) return null;
+  const match = /^etapa-(\d+)$/.exec(id);
+  return match ? `turno-${match[1]}` : id;
+};
 
 export default function FlowCanvas({
   version, canEdit, selectedNodeId, onSelectNode,
@@ -101,7 +106,8 @@ export default function FlowCanvas({
     [version.nodes],
   );
   const nodeById = useMemo(() => Object.fromEntries(nodes.map((n) => [n.id, n])) as Record<string, NodeDto>, [nodes]);
-  const rootId = version.blueprint.rootNodeId ?? nodes[0]?.id ?? null;
+  const rootId = normalizeStepId(version.blueprint.rootNodeId);
+  const resolvedRootId = rootId && nodeById[rootId] ? rootId : nodes.find((n) => !isEnd(n))?.id ?? nodes[0]?.id ?? null;
   const comps: CompW[] = useMemo(
     () => (version.blueprint.competencies ?? []).slice(0, 3).map((c) => ({ name: c.name, weight: c.weight ?? 0, short: shortName(c.name) })),
     [version.blueprint.competencies],
@@ -114,7 +120,7 @@ export default function FlowCanvas({
   const nodeHeight = (n: NodeDto) => (isEnd(n) ? END_HEIGHT : stepHeight(n));
 
   /* ---- contexto (etapas 1 e 2), lido do version ---- */
-  const rootNode = rootId ? nodeById[rootId] : null;
+  const rootNode = resolvedRootId ? nodeById[resolvedRootId] : null;
   const critical = (version as { criticalSituation?: string | null }).criticalSituation ?? null;
   const resultUse = (version as { resultUse?: string | null }).resultUse ?? null;
   const [ctxOpen, setCtxOpen] = useState(true);
@@ -151,6 +157,19 @@ export default function FlowCanvas({
     if (ws === 0) return 0;
     let w = 0; comps.forEach((c) => { if (max[c.name] > 0) w += (raw[c.name] / max[c.name]) * (c.weight / ws); });
     return Math.round(w * 100);
+  };
+  const perCompScore = (nodeId: string) => {
+    const chain = chainTo(nodeId);
+    return comps.map((c) => {
+      let raw = 0, max = 0;
+      for (let i = 0; i < chain.length - 1; i++) {
+        const step = chain[i], next = chain[i + 1];
+        const picked = step.options.find((o) => o.nextNodeId === next.id);
+        max += step.options.reduce((m, o) => Math.max(m, o.competencyLevels?.[c.name] ?? 0), 0);
+        raw += picked?.competencyLevels?.[c.name] ?? 0;
+      }
+      return { name: c.name, short: c.short, acc: raw, pct: max > 0 ? Math.round((raw / max) * 100) : null };
+    });
   };
   /* acumulada bruta por competência até o nó (informativo, usado no inspetor) */
   const accTo = (nodeId: string): Record<string, number> => {
@@ -202,7 +221,7 @@ export default function FlowCanvas({
       n.options.forEach((o) => visit(o.nextNodeId, d + 1));
       visit(n.timeoutNextNodeId, d + 1);
     };
-    if (rootId) visit(rootId, 0);
+    if (resolvedRootId) visit(resolvedRootId, 0);
     const perDepth: Record<number, number> = {};
     const pos: Record<string, Pos> = {};
     nodes.forEach((n) => {
@@ -211,7 +230,7 @@ export default function FlowCanvas({
       pos[n.id] = { x: 60 + d * (NODE_W + 120), y: 60 + i * 280 };
     });
     return pos;
-  }, [nodes, rootId, nodeById]);
+  }, [nodes, resolvedRootId, nodeById]);
 
   const [localPos, setLocalPos] = useState<Record<string, Pos>>({});
   const posOf = (n: NodeDto): Pos => {
@@ -353,7 +372,7 @@ export default function FlowCanvas({
               {resultUse && <div className="vx-ctx-row"><b>Uso do resultado</b><span>{resultUse}</span></div>}
               <div className="vx-ctx-row"><b>Competências</b>
                 <span className="vx-ctx-comps">
-                  {comps.length ? comps.map((c) => <i key={c.name} title={`peso ${c.weight}`}>{c.name}</i>) : "—"}
+                  {comps.length ? comps.map((c) => <i key={c.name} title={`peso ${Math.round(c.weight * 100)}%`}>{c.name}</i>) : "—"}
                 </span>
               </div>
             </div>
@@ -416,19 +435,6 @@ export default function FlowCanvas({
                 const nota = pathScore(n.id);
                 const report = (n as { reportText?: string }).reportText ?? "";
                 const pending = !report.trim();
-                const perCompScore = (nodeId: string) => {
-                const chain = chainTo(nodeId);
-                return comps.map((c) => {
-                  let raw = 0, max = 0;
-                  for (let i = 0; i < chain.length - 1; i++) {
-                    const step = chain[i], next = chain[i + 1];
-                    const picked = step.options.find((o) => o.nextNodeId === next.id);
-                    max += step.options.reduce((m, o) => Math.max(m, o.competencyLevels?.[c.name] ?? 0), 0);
-                    raw += picked?.competencyLevels?.[c.name] ?? 0;
-                  }
-                  return { name: c.name, short: c.short, acc: raw, pct: max > 0 ? Math.round((raw / max) * 100) : null };
-                });
-              };
                 return (
                   <div key={n.id} className={`vx-node vx-end ${on ? "vx-node-on" : ""} ${issueClass}`} style={{ left: p.x, top: p.y, width: NODE_W }} onPointerDown={(e) => onNodeDown(e, n)}>
                     <span className="vx-port vx-port-in vx-port-end" />
@@ -437,7 +443,7 @@ export default function FlowCanvas({
                       <span className="vx-badge vx-badge-final">encerramento</span>
                       {issue && <span className={`vx-vbadge ${issue.error ? "vx-vbadge-err" : "vx-vbadge-warn"}`} title={issue.messages.join("\n")}>{issue.error ? "🔴" : "🟡"} {issue.messages.length}</span>}
                       {pending && <span className="vx-warn-mini" title="Falta o relatório"><Flag size={11} /></span>}
-                      {canEdit && <button className="vx-end-del" onClick={() => onDeleteStep(n.id)} title="Remover encerramento"><Trash2 size={13} /></button>}
+                      {canEdit && <button className="vx-end-del" onClick={() => window.confirm("Remover este encerramento?") && onDeleteStep(n.id)} title="Remover encerramento"><Trash2 size={13} /></button>}
                     </div>
                     <div className="vx-end-note">
                       <span className="vx-end-note-l">Nota determinística por competência</span>
@@ -446,14 +452,14 @@ export default function FlowCanvas({
                           <div className="vx-end-comp" key={c.name} title={c.name}>
                             <span className="vx-ec-name">{c.short}</span>
                             <span className="vx-ec-acc">acum {c.acc}</span>
-                            <span className="vx-ec-pct">{c.pct == null ? "—" : c.pct}<small>%</small></span>
+                            <span className="vx-ec-pct">{c.pct == null ? "—" : <>{c.pct}<small>%</small></>}</span>
                           </div>
                         ))}
                       </div>
                       <span className="vx-end-note-final">final ponderada <b>{nota == null ? "—" : nota}%</b></span>
                     </div>
                     <div className="vx-end-report">
-                      <div className="vx-end-report-label">Relatório para a equipe responsável {pending && <em>*</em>}</div>
+                      <div className="vx-end-report-label">Relatório para a equipe responsável{pending && <em>*</em>}</div>
                       <textarea className={pending ? "vx-end-report-warn" : ""} value={report} disabled={!canEdit}
                         onChange={(e) => onUpdateNode(n.id, { reportText: e.target.value })}
                         placeholder="Resumo apresentado à equipe responsável ao fim deste caminho…" />
@@ -462,7 +468,7 @@ export default function FlowCanvas({
                 );
               }
 
-              const isRoot = n.id === rootId;
+              const isRoot = n.id === resolvedRootId;
               const noTo = !n.timeoutNextNodeId;
               const fwd = forwardTargets(n.id);
               return (
@@ -507,14 +513,14 @@ export default function FlowCanvas({
                       <option value={NEW}>＋ nova etapa</option>
                     </select>
                     {canEdit && (n.timeoutNextNodeId
-                      ? <button className="vx-mini-del" onClick={() => (isEnd(nodeById[n.timeoutNextNodeId!]) ? onDeleteStep(n.timeoutNextNodeId!) : onUpdateNode(n.id, { timeoutNextNodeId: "" }))} title="Remover ligação"><Trash2 size={12} /></button>
+                      ? <button className="vx-mini-del" onClick={() => (isEnd(nodeById[n.timeoutNextNodeId!]) ? window.confirm("Remover o encerramento ligado ao tempo?") && onDeleteStep(n.timeoutNextNodeId!) : onUpdateNode(n.id, { timeoutNextNodeId: "" }))} title="Remover ligação"><Trash2 size={12} /></button>
                       : <button className="vx-mini-add vx-mini-add-to" onClick={() => onCreateChild(n.id, { via: "timeout" }, false)} title="Criar fallback do tempo"><Plus size={12} /></button>)}
                     <span className="vx-port vx-port-to" onPointerDown={(e) => { e.stopPropagation(); setConn(toPort(n)); setDrag({ type: "connect-timeout", fromNodeId: n.id }); }} />
                   </div>
 
                   <div className="vx-foot">
                     {canEdit && <button className="vx-foot-add" onClick={() => onAddOption(n.id)}><Plus size={13} /> resposta</button>}
-                    {canEdit && !isRoot && <button className="vx-foot-del" onClick={() => onDeleteStep(n.id)} title="Remover etapa"><Trash2 size={13} /></button>}
+                    {canEdit && !isRoot && <button className="vx-foot-del" onClick={() => window.confirm("Remover esta etapa? Esta ação também remove suas ligações no fluxo.") && onDeleteStep(n.id)} title="Remover etapa"><Trash2 size={13} /></button>}
                   </div>
                 </div>
               );
@@ -536,7 +542,16 @@ export default function FlowCanvas({
             <div className="vx-insp-body">
               <div className="vx-insp-head"><span className="vx-id vx-id-lg vx-id-end"><Flag size={13} />{labelOf(sel.id)}</span><button className="vx-x" onClick={() => onSelectNode(null)}><X size={15} /></button></div>
               <div className="vx-insp-tag">Card de encerramento</div>
-              <div className="vx-insp-note">Nota determinística deste caminho<b>{pathScore(sel.id) ?? "—"}<small>/100</small></b></div>
+              <div className="vx-insp-note">Final ponderada<b>{pathScore(sel.id) ?? "—"}<small>%</small></b></div>
+              <div className="vx-insp-end-comps">
+                {perCompScore(sel.id).map((c) => (
+                  <span key={c.name} title={c.name}>
+                    <b>{c.short}</b>
+                    acum {c.acc}
+                    <em>{c.pct == null ? "—" : `${c.pct}%`}</em>
+                  </span>
+                ))}
+              </div>
               <label className={`vx-field ${!((sel as { reportText?: string }).reportText ?? "").trim() ? "vx-field-warn" : ""}`} style={{ marginTop: 12 }}>
                 <span>Texto do relatório para a equipe responsável *</span>
                 <textarea rows={8} disabled={!canEdit} value={(sel as { reportText?: string }).reportText ?? ""} onChange={(e) => onUpdateNode(sel.id, { reportText: e.target.value })} />
@@ -544,7 +559,7 @@ export default function FlowCanvas({
             </div>
           ) : (
             <div className="vx-insp-body">
-              <div className="vx-insp-head"><span className="vx-id vx-id-lg">{sel.id === rootId ? <Crosshair size={13} /> : <Workflow size={13} />}{labelOf(sel.id)}</span><button className="vx-x" onClick={() => onSelectNode(null)}><X size={15} /></button></div>
+              <div className="vx-insp-head"><span className="vx-id vx-id-lg">{sel.id === resolvedRootId ? <Crosshair size={13} /> : <Workflow size={13} />}{labelOf(sel.id)}</span><button className="vx-x" onClick={() => onSelectNode(null)}><X size={15} /></button></div>
               <label className="vx-field"><span>Fala da etapa</span>
                 <textarea rows={3} disabled={!canEdit} value={sel.clientMessage ?? ""} onChange={(e) => onUpdateNode(sel.id, { clientMessage: e.target.value })} />
               </label>
@@ -597,7 +612,7 @@ export default function FlowCanvas({
               {nodes.filter((n) => !isEnd(n)).flatMap((n) =>
                 (n.options.length ? n.options : [null]).map((o, i) => (
                   <tr key={`${n.id}-${o?.id ?? i}`} className={selectedNodeId === n.id ? "vx-tr-on" : ""} onClick={() => onSelectNode(n.id)}>
-                    <td className="vx-td-step">{i === 0 ? <span className="vx-id">{n.id === rootId ? <Crosshair size={11} /> : <Workflow size={11} />}{labelOf(n.id)}</span> : ""}</td>
+                    <td className="vx-td-step">{i === 0 ? <span className="vx-id">{n.id === resolvedRootId ? <Crosshair size={11} /> : <Workflow size={11} />}{labelOf(n.id)}</span> : ""}</td>
                     <td className="vx-td-txt" title={o?.text ?? ""}>{o ? (o.text || <em>—</em>) : <em>sem respostas</em>}</td>
                     {comps.map((c) => (
                       <td key={c.name} className="vx-td-n">
@@ -719,9 +734,16 @@ const CSS = `
 .vx-end{border-color:var(--gold-line)} .vx-end.vx-node-on{border-color:var(--primary)}
 .vx-end-head{height:${END_HEAD_H}px;display:flex;align-items:center;gap:6px;padding:0 11px;background:var(--gold-weak);border-bottom:1px solid var(--gold-line);border-radius:12px 12px 0 0}
 .vx-end-del{margin-left:auto;width:24px;height:24px;display:inline-flex;align-items:center;justify-content:center;border:1px solid var(--gold-line);border-radius:7px;background:#fff;color:var(--danger);cursor:pointer}
-.vx-end-note{height:${END_NOTE_H}px;display:flex;flex-direction:column;justify-content:center;gap:1px;padding:0 11px;border-bottom:1px solid var(--line)}
+.vx-end-note{height:auto;min-height:${END_NOTE_H}px;display:flex;flex-direction:column;justify-content:center;gap:4px;padding:8px 11px;border-bottom:1px solid var(--line)}
 .vx-end-note-l{font-size:9.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--soft);font-weight:700}
-.vx-end-note-v{font-size:24px;font-weight:700;color:var(--gold);font-family:Georgia,serif} .vx-end-note-v small{font-size:11px;color:var(--muted);font-weight:600;margin-left:2px}
+.vx-end-comps{display:flex;flex-direction:column;gap:3px;width:100%}
+.vx-end-comp{display:flex;align-items:baseline;gap:8px;font-size:11px}
+.vx-ec-name{flex:none;width:34px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.02em;color:var(--soft)}
+.vx-ec-acc{flex:1;min-width:0;font-size:10.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.vx-ec-pct{flex:none;font-family:Georgia,serif;font-size:16px;font-weight:700;color:var(--gold);font-variant-numeric:tabular-nums}
+.vx-ec-pct small{font-size:10px;color:var(--muted);font-weight:600;margin-left:1px}
+.vx-end-note-final{display:flex;justify-content:flex-end;gap:4px;margin-top:2px;padding-top:5px;border-top:1px dashed var(--gold-line);font-size:11px;color:var(--muted)}
+.vx-end-note-final b{font-family:Georgia,serif;font-size:14px;color:var(--gold)}
 .vx-end-report{height:${END_REPORT_H}px;padding:8px 11px;display:flex;flex-direction:column}
 .vx-end-report-label{font-size:10px;text-transform:uppercase;letter-spacing:.05em;color:var(--soft);font-weight:700;margin-bottom:5px} .vx-end-report-label em{color:var(--amber);font-style:normal}
 .vx-end-report textarea{flex:1;width:100%;resize:none;border:1px solid var(--border);border-radius:8px;padding:7px 8px;font-size:12px;line-height:1.4;font-family:inherit;outline:none}
@@ -742,6 +764,8 @@ const CSS = `
 .vx-insp-tag{display:inline-block;font-size:10px;font-weight:700;text-transform:uppercase;color:var(--gold);background:var(--gold-weak);padding:3px 8px;border-radius:6px;margin-bottom:12px}
 .vx-insp-note{display:flex;align-items:center;justify-content:space-between;border:1px solid var(--gold-line);background:var(--gold-weak);border-radius:10px;padding:10px 11px;margin-bottom:8px;font-size:11px;font-weight:700;text-transform:uppercase;color:var(--gold)}
 .vx-insp-note b{font-family:Georgia,serif;font-size:24px;color:var(--gold)} .vx-insp-note small{font-size:11px;color:var(--muted)}
+.vx-insp-end-comps{display:flex;flex-direction:column;gap:5px;border:1px solid var(--gold-line);border-radius:9px;background:#fff;padding:8px 10px;margin-bottom:12px;font-size:11px;color:var(--muted)}
+.vx-insp-end-comps span{display:flex;align-items:center;gap:8px}.vx-insp-end-comps b{width:34px;color:var(--soft);text-transform:uppercase}.vx-insp-end-comps em{margin-left:auto;font-style:normal;font-family:Georgia,serif;font-size:15px;font-weight:700;color:var(--gold)}
 .vx-insp-acc{display:flex;flex-wrap:wrap;gap:10px;background:var(--bg);border:1px solid var(--border);border-radius:9px;padding:8px 11px;margin-bottom:12px;font-size:11px;color:var(--muted)} .vx-insp-acc span{display:inline-flex;gap:4px} .vx-insp-acc b{color:var(--primary-ink)}
 .vx-field{display:block;margin-bottom:12px}
 .vx-field>span{display:block;font-size:11px;font-weight:600;color:var(--muted);margin-bottom:5px}

@@ -305,7 +305,7 @@ public class SimulationAdminService {
      * @param versionNumber número da versão
      * @return o relatório de validação
      */
-    @Transactional(readOnly = true)
+    @Transactional
     public SimulationValidationResponse validateVersion(String simulationId, int versionNumber) {
         SimulationVersionEntity simulationVersionEntity = findVersion(simulationId, versionNumber);
         return simulationValidationService.validate(simulationVersionEntity);
@@ -502,7 +502,7 @@ public class SimulationAdminService {
     public void deleteNode(String simulationId, int versionNumber, String nodeId) {
         SimulationVersionEntity versionEntity = findAndAssertDraft(simulationId, versionNumber);
         if (Objects.equals(versionEntity.getRootNodeId(), nodeId)) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "A primeira etapa do teste não pode ser removida.");
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "A primeira etapa da avaliação não pode ser removida.");
         }
 
         SimulationNodeEntity nodeEntity = findNode(versionEntity, nodeId);

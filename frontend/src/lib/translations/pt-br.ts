@@ -111,7 +111,7 @@ export const ptBr = {
     scoringBodyEnd: "registra o porquê comportamental que a auditoria vai pedir.",
     kicker: "Passo 1",
     heading: "Plano da avaliação",
-    lede: "Antes de escrever qualquer diálogo, defina o porquê. O plano da avaliação vira referência fixa para o Validador de Qualidade.",
+    lede: "Antes de escrever qualquer diálogo, defina o porquê. O plano da avaliação vira referência fixa para a Revisão.",
     roleCard: "Contexto ou função",
     roleLabel: "Contexto ou função avaliada",
     rolePlaceholder: "Ex.: Atendimento de segundo nível",
