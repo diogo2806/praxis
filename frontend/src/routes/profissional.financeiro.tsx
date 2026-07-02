@@ -101,7 +101,11 @@ function ProfessionalFinancePage() {
                     disabled={disconnect.isPending}
                     onClick={() => disconnect.mutate()}
                   >
-                    {disconnect.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+                    {disconnect.isPending ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Trash2 className="h-4 w-4" />
+                    )}
                     Desconectar
                   </Button>
                 ) : (
@@ -120,9 +124,18 @@ function ProfessionalFinancePage() {
             <section className="mt-5 rounded-md border border-border bg-background p-4">
               <h2 className="text-sm font-semibold">Extrato de repasses</h2>
               <div className="mt-3 grid gap-3 sm:grid-cols-3">
-                <Metric label="Receita total" value={formatMarketplacePrice(dashboard.data.totalRevenueCents)} />
-                <Metric label="Em escrow" value={formatMarketplacePrice(dashboard.data.pendingEscrowCents)} />
-                <Metric label="Liberado" value={formatMarketplacePrice(dashboard.data.releasedCents)} />
+                <Metric
+                  label="Receita total"
+                  value={formatMarketplacePrice(dashboard.data.totalRevenueCents)}
+                />
+                <Metric
+                  label="Em escrow"
+                  value={formatMarketplacePrice(dashboard.data.pendingEscrowCents)}
+                />
+                <Metric
+                  label="Liberado"
+                  value={formatMarketplacePrice(dashboard.data.releasedCents)}
+                />
               </div>
               <div className="mt-4">
                 <PayoutTable payouts={dashboard.data.payouts} />

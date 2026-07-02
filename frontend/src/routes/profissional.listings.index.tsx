@@ -30,19 +30,19 @@ function ProfessionalListingsPage() {
         <Button asChild variant="ghost" size="sm" className="mb-4">
           <Link to="/profissional">
             <ArrowLeft className="h-4 w-4" />
-            Area do profissional
+            Área do profissional
           </Link>
         </Button>
 
         <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
           <div>
-            <div className="text-xs uppercase text-primary">Anuncios</div>
+            <div className="text-xs uppercase text-primary">Anúncios</div>
             <h1 className="mt-1 text-2xl font-semibold">Minhas avaliações</h1>
           </div>
           <Button asChild>
             <Link to="/profissional/listings/novo">
               <Plus className="h-4 w-4" />
-              Novo anuncio
+              Novo anúncio
             </Link>
           </Button>
         </div>
@@ -50,11 +50,11 @@ function ProfessionalListingsPage() {
         {dashboard.isLoading && (
           <div className="flex items-center gap-2 rounded-md border border-border bg-card p-4 text-sm text-muted-foreground">
             <Loader2 className="h-4 w-4 animate-spin" />
-            Carregando anuncios
+            Carregando anúncios
           </div>
         )}
         {dashboard.isError && (
-          <StateBanner tone="danger" title="Nao foi possivel carregar seus anuncios">
+          <StateBanner tone="danger" title="Não foi possível carregar seus anúncios">
             {dashboard.error instanceof Error ? dashboard.error.message : "Tente novamente."}
           </StateBanner>
         )}
@@ -66,24 +66,33 @@ function ProfessionalListingsPage() {
         {listings.length > 0 && (
           <section className="rounded-md border border-border bg-card">
             <div className="grid grid-cols-[1fr_140px_120px] gap-3 border-b border-border px-4 py-3 text-xs font-medium uppercase text-muted-foreground">
-              <div>Titulo</div>
+              <div>Título</div>
               <div>Status</div>
               <div className="text-right">Vendas</div>
             </div>
             <div className="divide-y divide-border">
               {listings.map((listing) => (
-                <div key={listing.id} className="grid grid-cols-1 gap-3 px-4 py-4 sm:grid-cols-[1fr_140px_120px] sm:items-center">
+                <div
+                  key={listing.id}
+                  className="grid grid-cols-1 gap-3 px-4 py-4 sm:grid-cols-[1fr_140px_120px] sm:items-center"
+                >
                   <div>
                     <div className="font-medium">{listing.title}</div>
                     <div className="mt-1 flex flex-wrap gap-3">
                       <Button asChild variant="link" className="h-auto p-0 text-xs">
-                        <Link to="/profissional/listings/$listingId/editar" params={{ listingId: String(listing.id) }}>
+                        <Link
+                          to="/profissional/listings/$listingId/editar"
+                          params={{ listingId: String(listing.id) }}
+                        >
                           Editar
                         </Link>
                       </Button>
                       {listing.status === "APPROVED" && (
                         <Button asChild variant="link" className="h-auto p-0 text-xs">
-                          <Link to="/marketplace/$listingId" params={{ listingId: String(listing.id) }}>
+                          <Link
+                            to="/marketplace/$listingId"
+                            params={{ listingId: String(listing.id) }}
+                          >
                             <ExternalLink className="h-3.5 w-3.5" />
                             Ver na vitrine
                           </Link>
@@ -92,7 +101,9 @@ function ProfessionalListingsPage() {
                     </div>
                   </div>
                   <ListingStatusBadge status={listing.status} />
-                  <div className="text-sm font-semibold sm:text-right">{listing.salesCount} venda(s)</div>
+                  <div className="text-sm font-semibold sm:text-right">
+                    {listing.salesCount} venda(s)
+                  </div>
                 </div>
               ))}
             </div>

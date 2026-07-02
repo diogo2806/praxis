@@ -1,4 +1,10 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import {
+  Link,
+  Outlet,
+  createFileRoute,
+  useChildMatches,
+  useNavigate,
+} from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { Filter, Loader2, Search } from "lucide-react";
 import { useMemo, useState } from "react";
@@ -15,8 +21,18 @@ export const Route = createFileRoute("/marketplace")({
   head: () => ({
     meta: [{ title: "Marketplace de psicometria - Práxis" }],
   }),
-  component: MarketplacePage,
+  component: MarketplaceRouteLayout,
 });
+
+// Esta é a rota-pai das sub-rotas; sem <Outlet /> as filhas nunca renderizam
+// e toda navegação interna cai de volta nesta página.
+function MarketplaceRouteLayout() {
+  const childMatches = useChildMatches();
+  if (childMatches.length > 0) {
+    return <Outlet />;
+  }
+  return <MarketplacePage />;
+}
 
 function MarketplacePage() {
   const navigate = useNavigate();
@@ -60,7 +76,8 @@ function MarketplacePage() {
             <div className="text-xs uppercase text-primary">Marketplace</div>
             <h1 className="mt-1 text-3xl font-semibold">Avaliações prontas para contratação</h1>
             <p className="mt-2 max-w-3xl text-sm text-muted-foreground">
-              Compre instrumentos publicados por profissionais verificados e receba uma cópia editável no seu workspace.
+              Compre instrumentos publicados por profissionais verificados e receba uma cópia
+              editável no seu workspace.
             </p>
           </div>
           <Button variant="outline" onClick={() => void navigate({ to: "/profissional" })}>
@@ -98,7 +115,11 @@ function MarketplacePage() {
               </select>
             </label>
             <div className="flex items-end">
-              <Button variant="outline" className="w-full md:w-auto" onClick={() => listings.refetch()}>
+              <Button
+                variant="outline"
+                className="w-full md:w-auto"
+                onClick={() => listings.refetch()}
+              >
                 <Filter className="h-4 w-4" />
                 Filtrar
               </Button>
@@ -119,11 +140,12 @@ function MarketplacePage() {
         )}
         {listings.data && listings.data.content.length > 0 && (
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-            {listings.data.content.map((listing) => <ListingCard key={listing.id} listing={listing} />)}
+            {listings.data.content.map((listing) => (
+              <ListingCard key={listing.id} listing={listing} />
+            ))}
           </div>
         )}
       </div>
     </main>
   );
 }
-
