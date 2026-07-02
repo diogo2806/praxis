@@ -9,7 +9,6 @@ ALTER TABLE users RENAME COLUMN tenant_id TO empresa_id;
 ALTER TABLE simulations RENAME COLUMN tenant_id TO empresa_id;
 ALTER TABLE candidate_attempts RENAME COLUMN tenant_id TO empresa_id;
 ALTER TABLE audit_events RENAME COLUMN tenant_id TO empresa_id;
-ALTER TABLE result_deliveries RENAME COLUMN tenant_id TO empresa_id;
 ALTER TABLE outbox_events RENAME COLUMN tenant_id TO empresa_id;
 ALTER TABLE in_app_notifications RENAME COLUMN tenant_id TO empresa_id;
 ALTER TABLE term_acceptances RENAME COLUMN tenant_id TO empresa_id;
