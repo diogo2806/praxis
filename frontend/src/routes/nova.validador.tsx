@@ -567,6 +567,12 @@ function ValidatorPage() {
                 )}
               </div>
             )}
+            {canPublish && warnings > 0 && (
+              <p className="text-xs text-muted-foreground sm:text-right" aria-live="polite">
+                {formatCount(warnings, "aviso amarelo", "avisos amarelos")} no mapa — avisos não
+                impedem a publicação.
+              </p>
+            )}
             <button
               type="button"
               disabled={!canPublish}

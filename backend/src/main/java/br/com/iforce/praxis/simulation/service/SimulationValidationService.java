@@ -517,14 +517,16 @@ public class SimulationValidationService {
             for (SimulationCompetencyEntity competency : simulationVersionEntity.getCompetencies()) {
                 int maxForCompetency = calculateMaxPathScoreForCompetency(path, competency.getName());
                 if (maxForCompetency <= 0) {
+                    // Pontuação zerada é permitida: o cálculo ignora competências com máximo zero
+                    // no caminho e renormaliza os pesos, então isso é aviso, não impedimento.
                     issues.add(new ValidationIssueResponse(
-                            ValidationIssueSeverity.BLOCKER,
+                            ValidationIssueSeverity.WARNING,
                             terminalNode.getNodeId(),
                             "O caminho que termina em "
                                     + terminalNode.getNodeId()
                                     + " não pontua a competência \""
                                     + competency.getName()
-                                    + "\". Em alguma resposta desse caminho, atribua uma nota maior que zero para essa competência."
+                                    + "\". Ela ficará de fora da nota final desse caminho; se não for intencional, atribua uma nota maior que zero em alguma resposta dele."
                     ));
                 }
             }
