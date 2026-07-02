@@ -1,6 +1,6 @@
 import { Link, Outlet, createFileRoute, useChildMatches } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import {
   AlertCircle,
   CheckCircle2,
@@ -80,7 +80,11 @@ function IntegrationsRouteLayout() {
 type ConfigureFormState = {
   baseUrl: string;
   tokenLabel: string;
-  settingsJson: string;
+};
+
+const EMPTY_CONFIGURE_FORM: ConfigureFormState = {
+  baseUrl: "",
+  tokenLabel: "",
 };
 
 const PROVIDER_SLUG: Record<IntegrationCenterProvider, string> = {
@@ -268,6 +272,10 @@ function IntegrationsPage() {
         error={configureMutation.error instanceof Error ? configureMutation.error.message : null}
         onOpenChange={(open) => !open && setConfiguring(null)}
         onSubmit={(provider, body) => configureMutation.mutate({ provider, body })}
+        onGenerateToken={(provider) => {
+          setConfiguring(null);
+          generateTokenMutation.mutate(provider);
+        }}
       />
       <IntegrationDisconnectDialog
         integration={disconnecting}
@@ -522,19 +530,25 @@ function IntegrationConfigModal({
   error,
   onOpenChange,
   onSubmit,
+  onGenerateToken,
 }: {
   integration: IntegrationCenterItem | null;
   pending: boolean;
   error: string | null;
   onOpenChange: (open: boolean) => void;
   onSubmit: (provider: IntegrationCenterProvider, body: ConfigureIntegrationRequest) => void;
+  onGenerateToken: (provider: IntegrationCenterProvider) => void;
 }) {
-  const [form, setForm] = useState<ConfigureFormState>({
-    baseUrl: "",
-    tokenLabel: "",
-    settingsJson: "{}",
-  });
+  const [form, setForm] = useState<ConfigureFormState>(EMPTY_CONFIGURE_FORM);
   const [localError, setLocalError] = useState<string | null>(null);
+  const provider = integration?.provider ?? null;
+  const usesToken = provider === "GUPY" || provider === "RECRUTEI";
+
+  // Limpa o formulário ao abrir para outro provedor ou reabrir o modal.
+  useEffect(() => {
+    setForm(EMPTY_CONFIGURE_FORM);
+    setLocalError(null);
+  }, [provider]);
 
   const title = useMemo(() => {
     if (!integration) return "Configurar integração";
@@ -547,20 +561,21 @@ function IntegrationConfigModal({
 
   function submit() {
     if (!integration) return;
-    setLocalError(null);
-    try {
-      const parsedSettings = parseJsonObject(form.settingsJson);
-      const body: ConfigureIntegrationRequest = {
-        credentials: integration.provider === "CUSTOM_API" ? { tokenLabel: form.tokenLabel } : {},
-        settings:
-          integration.provider === "CUSTOM_API"
-            ? { ...parsedSettings, baseUrl: form.baseUrl.trim() }
-            : parsedSettings,
-      };
-      onSubmit(integration.provider, body);
-    } catch (exception) {
-      setLocalError(exception instanceof Error ? exception.message : "Configuração inválida.");
+    const baseUrl = form.baseUrl.trim();
+    if (!baseUrl) {
+      setLocalError("Informe a URL base da sua API.");
+      return;
     }
+    if (!isValidHttpUrl(baseUrl)) {
+      setLocalError("A URL base deve ser um endereço válido iniciando com http:// ou https://.");
+      return;
+    }
+    setLocalError(null);
+    const tokenLabel = form.tokenLabel.trim();
+    onSubmit(integration.provider, {
+      credentials: tokenLabel ? { tokenLabel } : {},
+      settings: { baseUrl },
+    });
   }
 
   return (
@@ -569,49 +584,62 @@ function IntegrationConfigModal({
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
           <DialogDescription>
-            Credenciais sensíveis não são exibidas depois de salvas. Para Gupy e Recrutei, o backend
-            gera e guarda apenas o hash do token.
+            {usesToken
+              ? `A conexão com ${integration?.name} é feita por token de acesso. Por segurança, o token é exibido uma única vez e o Práxis guarda apenas o hash.`
+              : "Informe os dados do seu sistema. Credenciais sensíveis não são exibidas depois de salvas."}
           </DialogDescription>
         </DialogHeader>
 
         <div className="grid gap-4">
-          {integration?.provider === "CUSTOM_API" && (
+          {usesToken && integration && (
+            <ol className="grid gap-3 text-sm">
+              <TokenStep number={1}>
+                Gere o token de acesso do Práxis clicando no botão abaixo.
+              </TokenStep>
+              <TokenStep number={2}>
+                Copie o token e cole no painel de integrações do {integration.name}.
+              </TokenStep>
+              <TokenStep number={3}>
+                Pronto: o {integration.name} passa a enviar candidatos automaticamente e o Práxis
+                devolve o resultado da avaliação.
+              </TokenStep>
+            </ol>
+          )}
+          {provider === "CUSTOM_API" && (
             <>
               <div className="grid gap-2">
-                <Label htmlFor="custom-api-base-url">URL base</Label>
+                <Label htmlFor="custom-api-base-url">
+                  URL base da sua API <span className="text-danger">*</span>
+                </Label>
                 <Input
                   id="custom-api-base-url"
+                  type="url"
                   placeholder="https://api.suaempresa.com"
                   value={form.baseUrl}
                   onChange={(event) =>
                     setForm((current) => ({ ...current, baseUrl: event.target.value }))
                   }
                 />
+                <p className="text-xs text-muted-foreground">
+                  Endereço do sistema interno que vai se comunicar com o Práxis.
+                </p>
               </div>
               <div className="grid gap-2">
                 <Label htmlFor="custom-api-token-label">Identificação da credencial</Label>
                 <Input
                   id="custom-api-token-label"
-                  placeholder="Token do middleware interno"
+                  placeholder="Ex.: Token do middleware interno"
                   value={form.tokenLabel}
                   onChange={(event) =>
                     setForm((current) => ({ ...current, tokenLabel: event.target.value }))
                   }
                 />
+                <p className="text-xs text-muted-foreground">
+                  Opcional. Um apelido para identificar esta credencial mais tarde.
+                </p>
               </div>
             </>
           )}
-          <div className="grid gap-2">
-            <Label htmlFor="integration-settings-json">Configurações em JSON</Label>
-            <textarea
-              id="integration-settings-json"
-              className="min-h-28 rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
-              value={form.settingsJson}
-              onChange={(event) =>
-                setForm((current) => ({ ...current, settingsJson: event.target.value }))
-              }
-            />
-          </div>
           {(localError || error) && (
             <StateBanner tone="danger" title="Configuração inválida">
               {localError ?? error}
@@ -628,17 +656,39 @@ function IntegrationConfigModal({
           >
             Cancelar
           </Button>
-          <Button type="button" onClick={submit} disabled={pending}>
-            <Settings className="h-4 w-4" />
-            {pending
-              ? "Salvando"
-              : integration?.status === "DESATIVADA"
-                ? "Reativar"
-                : "Salvar configuração"}
-          </Button>
+          {usesToken && integration ? (
+            <Button
+              type="button"
+              onClick={() => onGenerateToken(integration.provider)}
+              disabled={pending}
+            >
+              <Key className="h-4 w-4" />
+              Gerar token
+            </Button>
+          ) : (
+            <Button type="button" onClick={submit} disabled={pending}>
+              <Settings className="h-4 w-4" />
+              {pending
+                ? "Salvando"
+                : integration?.status === "DESATIVADA"
+                  ? "Reativar"
+                  : "Salvar configuração"}
+            </Button>
+          )}
         </DialogFooter>
       </DialogContent>
     </Dialog>
+  );
+}
+
+function TokenStep({ number, children }: { number: number; children: ReactNode }) {
+  return (
+    <li className="flex items-start gap-3">
+      <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-semibold text-primary">
+        {number}
+      </span>
+      <span className="pt-0.5">{children}</span>
+    </li>
   );
 }
 
@@ -806,10 +856,11 @@ function formatDateTime(value: string | null) {
   }).format(new Date(value));
 }
 
-function parseJsonObject(value: string): Record<string, unknown> {
-  const parsed = JSON.parse(value || "{}") as unknown;
-  if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
-    throw new Error("Informe um objeto JSON válido.");
+function isValidHttpUrl(value: string) {
+  try {
+    const url = new URL(value);
+    return url.protocol === "http:" || url.protocol === "https:";
+  } catch {
+    return false;
   }
-  return parsed as Record<string, unknown>;
 }
