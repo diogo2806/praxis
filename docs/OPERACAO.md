@@ -99,7 +99,9 @@ sequenceDiagram
 - O empresa técnico `PLATFORM` hospeda os operadores `ADMIN`.
 - Com `PRAXIS_SECURITY_ENABLED=true`, o empresa vem do JWT (interno) ou do token de integração (ATS).
 - Com `PRAXIS_SECURITY_ENABLED=false`, todas as rotas ficam liberadas e o empresa usado é
-  `PRAXIS_DEFAULT_EMPRESA_ID` (padrão `empresa-1`). **Use `false` apenas em desenvolvimento.**
+  `PRAXIS_DEFAULT_EMPRESA_ID` (padrão `empresa-1`; o nome legado `PRAXIS_DEFAULT_TENANT_ID`
+  é aceito como fallback). Se a empresa configurada não existir no banco, ela é criada
+  automaticamente no startup. **Use `false` apenas em desenvolvimento.**
 - `EmpresaStatus.SUSPENSO` e `CANCELADO` bloqueiam autenticação e APIs protegidas; `SEM_CREDITO` e
   `INADIMPLENTE` não bloqueiam login/API.
 
@@ -227,7 +229,7 @@ Para cada uma: finalidade, se é obrigatória, valor padrão e exemplo.
 | `praxis.public-base-url` | `PRAXIS_PUBLIC_BASE_URL` | Base pública usada em links e resultados | Sim (prod) | `http://localhost:8080` | `https://app.praxis.com.br` |
 | `praxis.candidate-page-base-url` | `PRAXIS_CANDIDATE_PAGE_BASE_URL` | Base pública do fluxo do candidato | Não | herda `public-base-url` | `https://app.praxis.com.br` |
 | `praxis.security.enabled` | `PRAXIS_SECURITY_ENABLED` | Liga/desliga segurança interna (JWT) | Não | `true` | `true` |
-| `praxis.default-empresa-id` | `PRAXIS_DEFAULT_EMPRESA_ID` | Empresa usado quando segurança está desligada | Não | `empresa-1` | `empresa-1` |
+| `praxis.default-empresa-id` | `PRAXIS_DEFAULT_EMPRESA_ID` (fallback legado: `PRAXIS_DEFAULT_TENANT_ID`) | Empresa usado quando segurança está desligada (criada no startup se não existir) | Não | `empresa-1` | `empresa-1` |
 | `praxis.jwt-secret` | `PRAXIS_JWT_SECRET` | Segredo de assinatura do JWT | Sim | — (sem padrão) | string longa e aleatória |
 | `praxis.jwt-expiration-hours` | `PRAXIS_JWT_EXPIRATION_HOURS` | Validade do JWT em horas | Não | `8` | `8` |
 | `praxis.cors.allowed-origins` | `PRAXIS_CORS_ALLOWED_ORIGINS` | Origens liberadas no CORS (lista por vírgula) | Não | localhost dev | `https://app.praxis.com.br` |
