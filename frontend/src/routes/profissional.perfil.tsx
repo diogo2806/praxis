@@ -12,7 +12,7 @@ import { marketplaceProfessionalMeFallback } from "@/lib/marketplace-professiona
 
 export const Route = createFileRoute("/profissional/perfil")({
   head: () => ({
-    meta: [{ title: "Perfil profissional - Marketplace Praxis" }],
+    meta: [{ title: "Perfil profissional - Marketplace Práxis" }],
   }),
   component: ProfessionalProfilePage,
 });
@@ -24,7 +24,13 @@ function ProfessionalProfilePage() {
     queryFn: getMarketplaceProfessionalMe,
     placeholderData: marketplaceProfessionalMeFallback,
   });
-  const [form, setForm] = useState({ displayName: "", bio: "", specialties: "", linkedinUrl: "", pixKey: "" });
+  const [form, setForm] = useState({
+    displayName: "",
+    bio: "",
+    specialties: "",
+    linkedinUrl: "",
+    pixKey: "",
+  });
 
   useEffect(() => {
     if (!profile.data) return;
@@ -58,12 +64,12 @@ function ProfessionalProfilePage() {
         <Button asChild variant="ghost" size="sm" className="mb-4">
           <Link to="/profissional">
             <ArrowLeft className="h-4 w-4" />
-            Area do profissional
+            Área do profissional
           </Link>
         </Button>
 
         <section className="rounded-md border border-border bg-card p-5">
-          <div className="text-xs uppercase text-primary">Perfil publico</div>
+          <div className="text-xs uppercase text-primary">Perfil público</div>
           <h1 className="mt-1 text-2xl font-semibold">Dados profissionais</h1>
           {profile.data && (
             <div className="mt-2 text-sm text-muted-foreground">
@@ -79,14 +85,14 @@ function ProfessionalProfilePage() {
           )}
           {profile.isError && (
             <div className="mt-5">
-              <StateBanner tone="danger" title="Nao foi possivel carregar seu perfil">
+              <StateBanner tone="danger" title="Não foi possível carregar seu perfil">
                 {profile.error instanceof Error ? profile.error.message : "Tente novamente."}
               </StateBanner>
             </div>
           )}
           {update.isError && (
             <div className="mt-5">
-              <StateBanner tone="danger" title="Nao foi possivel salvar o perfil">
+              <StateBanner tone="danger" title="Não foi possível salvar o perfil">
                 {update.error instanceof Error ? update.error.message : "Tente novamente."}
               </StateBanner>
             </div>
@@ -105,10 +111,26 @@ function ProfessionalProfilePage() {
                 update.mutate();
               }}
             >
-              <Field label="Nome publico" value={form.displayName} onChange={(value) => setForm({ ...form, displayName: value })} />
-              <Field label="Especialidades" value={form.specialties} onChange={(value) => setForm({ ...form, specialties: value })} />
-              <Field label="LinkedIn" value={form.linkedinUrl} onChange={(value) => setForm({ ...form, linkedinUrl: value })} />
-              <Field label="Chave Pix" value={form.pixKey} onChange={(value) => setForm({ ...form, pixKey: value })} />
+              <Field
+                label="Nome público"
+                value={form.displayName}
+                onChange={(value) => setForm({ ...form, displayName: value })}
+              />
+              <Field
+                label="Especialidades"
+                value={form.specialties}
+                onChange={(value) => setForm({ ...form, specialties: value })}
+              />
+              <Field
+                label="LinkedIn"
+                value={form.linkedinUrl}
+                onChange={(value) => setForm({ ...form, linkedinUrl: value })}
+              />
+              <Field
+                label="Chave Pix"
+                value={form.pixKey}
+                onChange={(value) => setForm({ ...form, pixKey: value })}
+              />
               <label className="grid gap-1 text-sm">
                 <span className="font-medium">Bio</span>
                 <textarea
@@ -120,7 +142,11 @@ function ProfessionalProfilePage() {
               </label>
               <div className="flex justify-end">
                 <Button type="submit" disabled={update.isPending}>
-                  {update.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+                  {update.isPending ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Save className="h-4 w-4" />
+                  )}
                   Salvar perfil
                 </Button>
               </div>
@@ -132,7 +158,15 @@ function ProfessionalProfilePage() {
   );
 }
 
-function Field({ label, value, onChange }: { label: string; value: string; onChange: (value: string) => void }) {
+function Field({
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+}) {
   return (
     <label className="grid gap-1 text-sm">
       <span className="font-medium">{label}</span>

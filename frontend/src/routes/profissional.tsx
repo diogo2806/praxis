@@ -1,23 +1,19 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Edit3, Loader2, MessageSquare, Plus, Save, ShieldCheck, Star } from "lucide-react";
-import { useEffect, useState } from "react";
+import { Link, Outlet, createFileRoute, useChildMatches } from "@tanstack/react-router";
+import { useQuery } from "@tanstack/react-query";
+import { Edit3, Loader2, MessageSquare, Plus, ShieldCheck, Star } from "lucide-react";
 
 import { StateBanner } from "@/components/praxis-ui";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import {
   getMarketplaceProfessionalDashboard,
   getMarketplaceProfessionalMe,
   listMarketplaceMessageThreads,
-  updateMarketplaceProfessionalMe,
 } from "@/lib/api/praxis";
 import {
   formatMarketplaceDate,
   formatMarketplacePrice,
   listingStatusLabels,
   professionalStatusLabels,
-  splitList,
 } from "@/lib/marketplace";
 import {
   marketplaceProfessionalMeFallback,
@@ -29,11 +25,20 @@ export const Route = createFileRoute("/profissional")({
   head: () => ({
     meta: [{ title: "Área do profissional - Marketplace Práxis" }],
   }),
-  component: ProfessionalHomePage,
+  component: ProfessionalRouteLayout,
 });
 
+// Esta é a rota-pai das sub-rotas; sem <Outlet /> as filhas nunca renderizam
+// e toda navegação interna cai de volta nesta página.
+function ProfessionalRouteLayout() {
+  const childMatches = useChildMatches();
+  if (childMatches.length > 0) {
+    return <Outlet />;
+  }
+  return <ProfessionalHomePage />;
+}
+
 function ProfessionalHomePage() {
-  const queryClient = useQueryClient();
   const profile = useQuery({
     queryKey: ["marketplace-professional-me"],
     queryFn: getMarketplaceProfessionalMe,
@@ -51,44 +56,6 @@ function ProfessionalHomePage() {
     placeholderData: marketplaceMessageThreadsFallback,
     retry: false,
   });
-  const [form, setForm] = useState({
-    displayName: "",
-    bio: "",
-    specialties: "",
-    linkedinUrl: "",
-    pixKey: "",
-  });
-
-  const update = useMutation({
-    mutationFn: () =>
-      updateMarketplaceProfessionalMe({
-        displayName: form.displayName || undefined,
-        bio: form.bio,
-        specialties: splitList(form.specialties),
-        linkedinUrl: form.linkedinUrl,
-        pixKey: form.pixKey,
-      }),
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ["marketplace-professional-me"] });
-      await queryClient.invalidateQueries({ queryKey: ["marketplace-professional-dashboard"] });
-    },
-  });
-
-  const loadForm = () => {
-    if (!profile.data) return;
-    setForm({
-      displayName: profile.data.displayName,
-      bio: profile.data.bio ?? "",
-      specialties: profile.data.specialties.join(", "),
-      linkedinUrl: profile.data.linkedinUrl ?? "",
-      pixKey: "",
-    });
-  };
-
-  useEffect(() => {
-    loadForm();
-  }, [profile.data]);
-
   return (
     <main className="min-h-screen bg-background text-foreground">
       <div className="mx-auto max-w-6xl px-5 py-6">
@@ -132,16 +99,9 @@ function ProfessionalHomePage() {
               : "Faça login com uma conta profissional."}
           </StateBanner>
         )}
-        {update.isError && (
-          <div className="mb-4">
-            <StateBanner tone="danger" title="Não foi possível salvar o perfil">
-              {update.error instanceof Error ? update.error.message : "Tente novamente."}
-            </StateBanner>
-          </div>
-        )}
         {profile.data && (
           <div className="space-y-5">
-            <aside className="space-y-4">
+            <div className="space-y-4">
               <section className="rounded-md border border-border bg-card p-5">
                 <div className="flex items-start justify-between gap-3">
                   <div>
@@ -151,13 +111,10 @@ function ProfessionalHomePage() {
                       {professionalStatusLabels[profile.data.verificationStatus]}
                     </div>
                   </div>
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    onClick={loadForm}
-                    aria-label="Editar perfil"
-                  >
-                    <Edit3 className="h-4 w-4" />
+                  <Button asChild variant="outline" size="icon" aria-label="Editar perfil">
+                    <Link to="/profissional/perfil">
+                      <Edit3 className="h-4 w-4" />
+                    </Link>
                   </Button>
                 </div>
                 <div className="mt-4 grid grid-cols-3 gap-2 text-center">
@@ -184,10 +141,15 @@ function ProfessionalHomePage() {
                 </div>
               </section>
               <section className="rounded-md border border-border bg-card p-5">
-                <h2 className="flex items-center gap-2 text-sm font-semibold">
-                  <MessageSquare className="h-4 w-4" />
-                  Conversas
-                </h2>
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <h2 className="flex items-center gap-2 text-sm font-semibold">
+                    <MessageSquare className="h-4 w-4" />
+                    Conversas
+                  </h2>
+                  <Button asChild size="sm" variant="outline">
+                    <Link to="/profissional/mensagens">Ver todas</Link>
+                  </Button>
+                </div>
                 <div className="mt-3 space-y-2">
                   {(threads.data ?? []).slice(0, 4).map((thread) => (
                     <div
@@ -205,60 +167,9 @@ function ProfessionalHomePage() {
                   )}
                 </div>
               </section>
-            </aside>
+            </div>
 
             <section className="rounded-md border border-border bg-card p-5">
-              <h2 className="text-lg font-semibold">Perfil público</h2>
-              <form
-                className="mt-4 grid gap-4"
-                onSubmit={(event) => {
-                  event.preventDefault();
-                  update.mutate();
-                }}
-              >
-                <Field
-                  label="Nome público"
-                  value={form.displayName}
-                  onChange={(value) => setForm({ ...form, displayName: value })}
-                />
-                <Field
-                  label="Especialidades"
-                  value={form.specialties}
-                  onChange={(value) => setForm({ ...form, specialties: value })}
-                />
-                <Field
-                  label="LinkedIn"
-                  value={form.linkedinUrl}
-                  onChange={(value) => setForm({ ...form, linkedinUrl: value })}
-                />
-                <Field
-                  label="Chave Pix"
-                  value={form.pixKey}
-                  onChange={(value) => setForm({ ...form, pixKey: value })}
-                />
-                <label className="grid gap-1 text-sm">
-                  <span className="font-medium">Bio</span>
-                  <textarea
-                    value={form.bio}
-                    onChange={(event) => setForm({ ...form, bio: event.target.value })}
-                    rows={7}
-                    className="rounded-md border border-input bg-background px-3 py-2 text-sm"
-                  />
-                </label>
-                <div className="flex justify-end">
-                  <Button type="submit" disabled={update.isPending}>
-                    {update.isPending ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : (
-                      <Save className="h-4 w-4" />
-                    )}
-                    Salvar perfil
-                  </Button>
-                </div>
-              </form>
-            </section>
-
-            <section className="rounded-md border border-border bg-card p-5 lg:col-start-2">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <h2 className="text-lg font-semibold">Minhas avaliações</h2>
                 <Button asChild size="sm" variant="outline">
@@ -296,7 +207,7 @@ function ProfessionalHomePage() {
               )}
             </section>
 
-            <section className="rounded-md border border-border bg-card p-5 lg:col-start-2">
+            <section className="rounded-md border border-border bg-card p-5">
               <h2 className="text-lg font-semibold">Avaliações recentes</h2>
               {dashboard.data?.recentReviews.length === 0 && (
                 <p className="mt-3 text-sm text-muted-foreground">
@@ -337,22 +248,5 @@ function Metric({ label, value }: { label: string; value: string }) {
       <div className="text-xs text-muted-foreground">{label}</div>
       <div className="mt-1 flex items-center justify-center gap-1 font-semibold">{value}</div>
     </div>
-  );
-}
-
-function Field({
-  label,
-  value,
-  onChange,
-}: {
-  label: string;
-  value: string;
-  onChange: (value: string) => void;
-}) {
-  return (
-    <label className="grid gap-1 text-sm">
-      <span className="font-medium">{label}</span>
-      <Input value={value} onChange={(event) => onChange(event.target.value)} />
-    </label>
   );
 }

@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { ArrowLeft, Loader2, Save, Send } from "lucide-react";
 import { useState } from "react";
 
@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
   createMarketplaceListing,
+  listSimulations,
   submitMarketplaceListing,
   type CreateMarketplaceListingRequest,
   type ListingCategory,
@@ -24,7 +25,7 @@ export const Route = createFileRoute("/profissional/listings/novo")({
 function NewProfessionalListingPage() {
   const [form, setForm] = useState({
     sourceSimulationId: "",
-    sourceVersionNumber: "1",
+    sourceVersionNumber: 1,
     title: "",
     description: "",
     category: "SELECAO" as ListingCategory,
@@ -32,14 +33,23 @@ function NewProfessionalListingPage() {
     previewNodeIds: "",
   });
 
+  const simulationsQuery = useQuery({
+    queryKey: ["simulations"],
+    queryFn: listSimulations,
+    retry: false,
+  });
+  const publishedSimulations = (simulationsQuery.data ?? []).filter(
+    (simulation) => simulation.status === "published",
+  );
+
   const buildRequest = (): CreateMarketplaceListingRequest => ({
-        sourceSimulationId: form.sourceSimulationId,
-        sourceVersionNumber: Number(form.sourceVersionNumber),
-        title: form.title,
-        description: form.description,
-        category: form.category,
-        priceCents: Math.round(Number(form.price.replace(",", ".")) * 100),
-        previewNodeIds: splitList(form.previewNodeIds).map(Number).filter(Number.isFinite),
+    sourceSimulationId: form.sourceSimulationId,
+    sourceVersionNumber: form.sourceVersionNumber,
+    title: form.title,
+    description: form.description,
+    category: form.category,
+    priceCents: Math.round(Number(form.price.replace(",", ".")) * 100),
+    previewNodeIds: splitList(form.previewNodeIds).map(Number).filter(Number.isFinite),
   });
 
   const saveDraft = useMutation({
@@ -55,6 +65,16 @@ function NewProfessionalListingPage() {
 
   const isSaving = saveDraft.isPending || createAndSubmit.isPending;
 
+  const selectSimulation = (simulationId: string) => {
+    const simulation = publishedSimulations.find((item) => item.id === simulationId);
+    setForm({
+      ...form,
+      sourceSimulationId: simulationId,
+      sourceVersionNumber: simulation?.versionNumber ?? 1,
+      title: form.title || simulation?.name || "",
+    });
+  };
+
   return (
     <main className="min-h-screen bg-background text-foreground">
       <div className="mx-auto max-w-4xl px-5 py-6">
@@ -69,19 +89,36 @@ function NewProfessionalListingPage() {
           <div className="text-xs uppercase text-primary">Anúncios</div>
           <h1 className="mt-1 text-2xl font-semibold">Novo anúncio</h1>
           <p className="mt-2 text-sm text-muted-foreground">
-            A simulação precisa estar publicada para ser clonada ao comprador.
+            Escolha uma avaliação publicada: o comprador recebe uma cópia editável dela no workspace
+            da empresa.
           </p>
 
           {saveDraft.isSuccess && (
             <div className="mt-5">
-              <StateBanner tone="ok" title="Rascunho salvo">
+              <StateBanner
+                tone="ok"
+                title="Rascunho salvo"
+                action={
+                  <Button asChild size="sm" variant="outline">
+                    <Link to="/profissional/listings">Ver meus anúncios</Link>
+                  </Button>
+                }
+              >
                 O anúncio ficou disponível para edição antes do envio para revisão.
               </StateBanner>
             </div>
           )}
           {createAndSubmit.isSuccess && (
             <div className="mt-5">
-              <StateBanner tone="ok" title="Anúncio enviado para revisão">
+              <StateBanner
+                tone="ok"
+                title="Anúncio enviado para revisão"
+                action={
+                  <Button asChild size="sm" variant="outline">
+                    <Link to="/profissional/listings">Ver meus anúncios</Link>
+                  </Button>
+                }
+              >
                 A moderação precisa aprovar o anúncio antes de ele aparecer na vitrine.
               </StateBanner>
             </div>
@@ -103,27 +140,49 @@ function NewProfessionalListingPage() {
               createAndSubmit.mutate();
             }}
           >
-            <div className="grid gap-4 md:grid-cols-2">
-              <Field
-                label="ID da simulação"
-                value={form.sourceSimulationId}
-                onChange={(value) => setForm({ ...form, sourceSimulationId: value })}
-                required
-              />
-              <Field
-                label="Número da versão"
-                type="number"
-                value={form.sourceVersionNumber}
-                onChange={(value) => setForm({ ...form, sourceVersionNumber: value })}
-                required
-              />
-            </div>
-            <Field label="Título" value={form.title} onChange={(value) => setForm({ ...form, title: value })} required />
+            <label className="grid gap-1 text-sm">
+              <span className="font-medium">Avaliação publicada</span>
+              {simulationsQuery.isLoading ? (
+                <div className="flex items-center gap-2 rounded-md border border-input bg-background px-3 py-2 text-sm text-muted-foreground">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Carregando avaliações
+                </div>
+              ) : publishedSimulations.length > 0 ? (
+                <select
+                  value={form.sourceSimulationId}
+                  required
+                  onChange={(event) => selectSimulation(event.target.value)}
+                  className="h-9 rounded-md border border-input bg-background px-3 text-sm"
+                >
+                  <option value="">Selecione a avaliação que será vendida</option>
+                  {publishedSimulations.map((simulation) => (
+                    <option key={simulation.id} value={simulation.id}>
+                      {simulation.name} — v{simulation.versionNumber}
+                    </option>
+                  ))}
+                </select>
+              ) : (
+                <StateBanner tone="warn" title="Nenhuma avaliação publicada">
+                  Publique uma avaliação no seu workspace antes de criar o anúncio.{" "}
+                  <Link to="/avaliacoes" className="font-medium underline">
+                    Ver minhas avaliações
+                  </Link>
+                </StateBanner>
+              )}
+            </label>
+            <Field
+              label="Título do anúncio"
+              value={form.title}
+              onChange={(value) => setForm({ ...form, title: value })}
+              required
+            />
             <label className="grid gap-1 text-sm">
               <span className="font-medium">Categoria</span>
               <select
                 value={form.category}
-                onChange={(event) => setForm({ ...form, category: event.target.value as ListingCategory })}
+                onChange={(event) =>
+                  setForm({ ...form, category: event.target.value as ListingCategory })
+                }
                 className="h-9 rounded-md border border-input bg-background px-3 text-sm"
               >
                 {marketplaceCategories.map((item) => (
@@ -141,7 +200,7 @@ function NewProfessionalListingPage() {
               required
             />
             <Field
-              label="Nós liberados para preview"
+              label="Etapas liberadas para preview (opcional)"
               value={form.previewNodeIds}
               onChange={(value) => setForm({ ...form, previewNodeIds: value })}
               placeholder="101, 102"
@@ -157,12 +216,25 @@ function NewProfessionalListingPage() {
               />
             </label>
             <div className="flex flex-col gap-2 sm:flex-row sm:justify-end">
-              <Button type="button" variant="outline" disabled={isSaving} onClick={() => saveDraft.mutate()}>
-                {saveDraft.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+              <Button
+                type="button"
+                variant="outline"
+                disabled={isSaving || !form.sourceSimulationId}
+                onClick={() => saveDraft.mutate()}
+              >
+                {saveDraft.isPending ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Save className="h-4 w-4" />
+                )}
                 Salvar rascunho
               </Button>
-              <Button type="submit" disabled={isSaving}>
-                {createAndSubmit.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+              <Button type="submit" disabled={isSaving || !form.sourceSimulationId}>
+                {createAndSubmit.isPending ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Send className="h-4 w-4" />
+                )}
                 Enviar para revisão
               </Button>
             </div>
@@ -201,4 +273,3 @@ function Field({
     </label>
   );
 }
-

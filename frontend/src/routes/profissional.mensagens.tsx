@@ -14,7 +14,7 @@ import { marketplaceMessageThreadsFallback } from "@/lib/marketplace-professiona
 
 export const Route = createFileRoute("/profissional/mensagens")({
   head: () => ({
-    meta: [{ title: "Mensagens - Marketplace Praxis" }],
+    meta: [{ title: "Mensagens - Marketplace Práxis" }],
   }),
   component: ProfessionalMessagesPage,
 });
@@ -60,7 +60,7 @@ function ProfessionalMessagesPage() {
         <Button asChild variant="ghost" size="sm" className="mb-4">
           <Link to="/profissional">
             <ArrowLeft className="h-4 w-4" />
-            Area do profissional
+            Área do profissional
           </Link>
         </Button>
 
@@ -76,7 +76,7 @@ function ProfessionalMessagesPage() {
           </div>
         )}
         {threads.isError && (
-          <StateBanner tone="danger" title="Nao foi possivel carregar as mensagens">
+          <StateBanner tone="danger" title="Não foi possível carregar as mensagens">
             {threads.error instanceof Error ? threads.error.message : "Tente novamente."}
           </StateBanner>
         )}
@@ -98,7 +98,7 @@ function ProfessionalMessagesPage() {
                       thread.id === selectedThread.id ? "bg-muted" : ""
                     }`}
                   >
-                    <div className="font-medium">Anuncio #{thread.listingId}</div>
+                    <div className="font-medium">Anúncio #{thread.listingId}</div>
                     <div className="mt-1 line-clamp-1 text-xs text-muted-foreground">
                       {thread.messages.at(-1)?.body ?? "Sem mensagens"}
                     </div>
@@ -109,8 +109,7 @@ function ProfessionalMessagesPage() {
 
             <div className="flex min-h-[520px] flex-col">
               <div className="border-b border-border px-4 py-3">
-                <div className="font-medium">Anuncio #{selectedThread.listingId}</div>
-                <div className="text-xs text-muted-foreground">Thread #{selectedThread.id}</div>
+                <div className="font-medium">Anúncio #{selectedThread.listingId}</div>
               </div>
 
               <div className="flex-1 overflow-y-auto p-4">

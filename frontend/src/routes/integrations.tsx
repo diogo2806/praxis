@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { Link, Outlet, createFileRoute, useChildMatches } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import {
@@ -63,8 +63,18 @@ export const Route = createFileRoute("/integrations")({
       },
     ],
   }),
-  component: IntegrationsPage,
+  component: IntegrationsRouteLayout,
 });
+
+// Esta é a rota-pai das sub-rotas; sem <Outlet /> as filhas nunca renderizam
+// e toda navegação interna cai de volta nesta página.
+function IntegrationsRouteLayout() {
+  const childMatches = useChildMatches();
+  if (childMatches.length > 0) {
+    return <Outlet />;
+  }
+  return <IntegrationsPage />;
+}
 
 type ConfigureFormState = {
   baseUrl: string;
@@ -92,7 +102,9 @@ function IntegrationsPage() {
   const queryClient = useQueryClient();
   const [configuring, setConfiguring] = useState<IntegrationCenterItem | null>(null);
   const [disconnecting, setDisconnecting] = useState<IntegrationCenterItem | null>(null);
-  const [generatedToken, setGeneratedToken] = useState<GenerateIntegrationTokenResponse | null>(null);
+  const [generatedToken, setGeneratedToken] = useState<GenerateIntegrationTokenResponse | null>(
+    null,
+  );
 
   const integrationsQuery = useQuery({
     queryKey: ["integrations"],
@@ -106,8 +118,13 @@ function IntegrationsPage() {
   };
 
   const configureMutation = useMutation({
-    mutationFn: ({ provider, body }: { provider: IntegrationCenterProvider; body: ConfigureIntegrationRequest }) =>
-      configureIntegration(provider, body),
+    mutationFn: ({
+      provider,
+      body,
+    }: {
+      provider: IntegrationCenterProvider;
+      body: ConfigureIntegrationRequest;
+    }) => configureIntegration(provider, body),
     onSuccess: async () => {
       setConfiguring(null);
       await invalidate();
@@ -141,7 +158,9 @@ function IntegrationsPage() {
   });
 
   const integrations = integrationsQuery.data ?? [];
-  const configuredCount = integrations.filter((integration) => integration.status !== "NAO_CONFIGURADA").length;
+  const configuredCount = integrations.filter(
+    (integration) => integration.status !== "NAO_CONFIGURADA",
+  ).length;
   const hasOnlyUnconfigured = integrations.length > 0 && configuredCount === 0;
   const actionError =
     configureMutation.error ??
@@ -176,7 +195,11 @@ function IntegrationsPage() {
 
         {integrationsQuery.isError && (
           <IntegrationErrorState
-            message={integrationsQuery.error instanceof Error ? integrationsQuery.error.message : "Tente novamente."}
+            message={
+              integrationsQuery.error instanceof Error
+                ? integrationsQuery.error.message
+                : "Tente novamente."
+            }
             onRetry={() => void integrationsQuery.refetch()}
           />
         )}
@@ -205,7 +228,10 @@ function IntegrationsPage() {
                   generateTokenMutation.isPending
                 }
                 syncing={syncMutation.isPending && syncMutation.variables === integration.provider}
-                reactivating={reactivateMutation.isPending && reactivateMutation.variables === integration.provider}
+                reactivating={
+                  reactivateMutation.isPending &&
+                  reactivateMutation.variables === integration.provider
+                }
                 onConfigure={() => setConfiguring(integration)}
                 onDisconnect={() => setDisconnecting(integration)}
                 onSync={() => syncMutation.mutate(integration.provider)}
@@ -230,10 +256,7 @@ function IntegrationsPage() {
         onOpenChange={(open) => !open && setDisconnecting(null)}
         onConfirm={(provider) => disconnectMutation.mutate(provider)}
       />
-      <GeneratedTokenModal
-        tokenResponse={generatedToken}
-        onClose={() => setGeneratedToken(null)}
-      />
+      <GeneratedTokenModal tokenResponse={generatedToken} onClose={() => setGeneratedToken(null)} />
     </AppShell>
   );
 }
@@ -286,7 +309,10 @@ function IntegrationCard({
 
       <div className="mt-4 grid gap-3 text-sm md:grid-cols-3">
         <InfoItem label="Última sincronização" value={formatDateTime(integration.lastSyncAt)} />
-        <InfoItem label="Tipo" value={integration.type === "API" ? "API personalizada" : integration.type} />
+        <InfoItem
+          label="Tipo"
+          value={integration.type === "API" ? "API personalizada" : integration.type}
+        />
         <InfoItem label="Configurada em" value={formatDateTime(integration.configuredAt)} />
       </div>
 
@@ -326,7 +352,8 @@ function CardActions({
   onReactivate: () => void;
   onGenerateToken: () => void;
 }) {
-  const hasAction = (action: IntegrationCenterAction) => integration.availableActions.includes(action);
+  const hasAction = (action: IntegrationCenterAction) =>
+    integration.availableActions.includes(action);
   const slug = PROVIDER_SLUG[integration.provider];
 
   return (
@@ -358,7 +385,11 @@ function CardActions({
         </Button>
       )}
       {hasAction("SYNC") && (
-        <IntegrationSyncButton pending={syncing} disabled={pendingAction && !syncing} onClick={onSync} />
+        <IntegrationSyncButton
+          pending={syncing}
+          disabled={pendingAction && !syncing}
+          onClick={onSync}
+        />
       )}
       {hasAction("RETRY") && (
         <Button type="button" size="sm" variant="outline" onClick={onSync} disabled={pendingAction}>
@@ -375,7 +406,13 @@ function CardActions({
         </Button>
       )}
       {hasAction("DISCONNECT") && (
-        <Button type="button" size="sm" variant="outline" onClick={onDisconnect} disabled={pendingAction}>
+        <Button
+          type="button"
+          size="sm"
+          variant="outline"
+          onClick={onDisconnect}
+          disabled={pendingAction}
+        >
           <Unplug className="h-4 w-4" />
           Desconectar
         </Button>
@@ -400,7 +437,13 @@ function CardActions({
 
 function IntegrationStatusBadge({ status }: { status: IntegrationCenterStatus }) {
   const Icon =
-    status === "CONECTADA" ? CheckCircle2 : status === "DESATIVADA" ? CloudOff : status === "ERRO" ? AlertCircle : PlugZap;
+    status === "CONECTADA"
+      ? CheckCircle2
+      : status === "DESATIVADA"
+        ? CloudOff
+        : status === "ERRO"
+          ? AlertCircle
+          : PlugZap;
   return (
     <span
       className={cn(
@@ -440,7 +483,9 @@ function IntegrationConfigModal({
 
   const title = useMemo(() => {
     if (!integration) return "Configurar integração";
-    return integration.status === "CONECTADA" ? `Configuração de ${integration.name}` : `Configurar ${integration.name}`;
+    return integration.status === "CONECTADA"
+      ? `Configuração de ${integration.name}`
+      : `Configurar ${integration.name}`;
   }, [integration]);
 
   const open = Boolean(integration);
@@ -469,7 +514,8 @@ function IntegrationConfigModal({
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
           <DialogDescription>
-            Credenciais sensíveis não são exibidas depois de salvas. Para Gupy e Recrutei, o backend gera e guarda apenas o hash do token.
+            Credenciais sensíveis não são exibidas depois de salvas. Para Gupy e Recrutei, o backend
+            gera e guarda apenas o hash do token.
           </DialogDescription>
         </DialogHeader>
 
@@ -482,7 +528,9 @@ function IntegrationConfigModal({
                   id="custom-api-base-url"
                   placeholder="https://api.suaempresa.com"
                   value={form.baseUrl}
-                  onChange={(event) => setForm((current) => ({ ...current, baseUrl: event.target.value }))}
+                  onChange={(event) =>
+                    setForm((current) => ({ ...current, baseUrl: event.target.value }))
+                  }
                 />
               </div>
               <div className="grid gap-2">
@@ -491,7 +539,9 @@ function IntegrationConfigModal({
                   id="custom-api-token-label"
                   placeholder="Token do middleware interno"
                   value={form.tokenLabel}
-                  onChange={(event) => setForm((current) => ({ ...current, tokenLabel: event.target.value }))}
+                  onChange={(event) =>
+                    setForm((current) => ({ ...current, tokenLabel: event.target.value }))
+                  }
                 />
               </div>
             </>
@@ -502,7 +552,9 @@ function IntegrationConfigModal({
               id="integration-settings-json"
               className="min-h-28 rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
               value={form.settingsJson}
-              onChange={(event) => setForm((current) => ({ ...current, settingsJson: event.target.value }))}
+              onChange={(event) =>
+                setForm((current) => ({ ...current, settingsJson: event.target.value }))
+              }
             />
           </div>
           {(localError || error) && (
@@ -513,12 +565,21 @@ function IntegrationConfigModal({
         </div>
 
         <DialogFooter>
-          <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={pending}>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => onOpenChange(false)}
+            disabled={pending}
+          >
             Cancelar
           </Button>
           <Button type="button" onClick={submit} disabled={pending}>
             <Settings className="h-4 w-4" />
-            {pending ? "Salvando" : integration?.status === "DESATIVADA" ? "Reativar" : "Salvar configuração"}
+            {pending
+              ? "Salvando"
+              : integration?.status === "DESATIVADA"
+                ? "Reativar"
+                : "Salvar configuração"}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -543,7 +604,8 @@ function IntegrationDisconnectDialog({
         <AlertDialogHeader>
           <AlertDialogTitle>Desconectar integração</AlertDialogTitle>
           <AlertDialogDescription>
-            A integração {integration?.name} será desativada para este cliente. O histórico de sincronizações e auditoria será preservado.
+            A integração {integration?.name} será desativada para este cliente. O histórico de
+            sincronizações e auditoria será preservado.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
@@ -585,7 +647,8 @@ function GeneratedTokenModal({
         <DialogHeader>
           <DialogTitle>Token gerado</DialogTitle>
           <DialogDescription>
-            Copie o token agora. Por segurança, ele não será exibido novamente após fechar esta janela.
+            Copie o token agora. Por segurança, ele não será exibido novamente após fechar esta
+            janela.
           </DialogDescription>
         </DialogHeader>
         <div className="grid gap-3">
@@ -616,7 +679,13 @@ function IntegrationSyncButton({
   onClick: () => void;
 }) {
   return (
-    <Button type="button" size="sm" variant="outline" onClick={onClick} disabled={disabled || pending}>
+    <Button
+      type="button"
+      size="sm"
+      variant="outline"
+      onClick={onClick}
+      disabled={disabled || pending}
+    >
       <RefreshCw className={cn("h-4 w-4", pending && "animate-spin")} />
       {pending ? "Sincronizando" : "Sincronizar agora"}
     </Button>
@@ -635,7 +704,11 @@ function IntegrationEmptyState({
       title="Nenhuma integração configurada ainda."
       description="Conecte o Práxis aos sistemas que sua empresa já utiliza para automatizar o envio de candidatos e resultados."
       actions={
-        <Button type="button" disabled={!firstIntegration} onClick={() => firstIntegration && onConfigure(firstIntegration)}>
+        <Button
+          type="button"
+          disabled={!firstIntegration}
+          onClick={() => firstIntegration && onConfigure(firstIntegration)}
+        >
           <Settings className="h-4 w-4" />
           Configurar primeira integração
         </Button>

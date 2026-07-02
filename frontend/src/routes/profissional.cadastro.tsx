@@ -60,7 +60,8 @@ function ProfessionalSignupPage() {
           {register.isSuccess && (
             <div className="mt-5">
               <StateBanner tone="ok" title="Cadastro enviado para verificação">
-                Conta criada para {register.data.email}. A moderação precisa aprovar o perfil antes da venda.
+                Conta criada para {register.data.email}. A moderação precisa aprovar o perfil antes
+                da venda.
               </StateBanner>
             </div>
           )}
@@ -80,16 +81,42 @@ function ProfessionalSignupPage() {
             }}
           >
             <div className="grid gap-4 md:grid-cols-2">
-              <Field label="Nome" value={form.name} onChange={(value) => setForm({ ...form, name: value })} required />
-              <Field label="E-mail" type="email" value={form.email} onChange={(value) => setForm({ ...form, email: value })} required />
-              <Field label="Senha" type="password" value={form.password} onChange={(value) => setForm({ ...form, password: value })} required />
-              <Field label="CPF/CNPJ" value={form.document} onChange={(value) => setForm({ ...form, document: value })} required />
+              <Field
+                label="Nome"
+                value={form.name}
+                onChange={(value) => setForm({ ...form, name: value })}
+                required
+              />
+              <Field
+                label="E-mail"
+                type="email"
+                value={form.email}
+                onChange={(value) => setForm({ ...form, email: value })}
+                required
+              />
+              <Field
+                label="Senha"
+                type="password"
+                value={form.password}
+                onChange={(value) => setForm({ ...form, password: value })}
+                required
+              />
+              <Field
+                label="CPF/CNPJ"
+                value={form.document}
+                onChange={(value) => setForm({ ...form, document: value })}
+                required
+              />
               <Field
                 label="Registro profissional"
                 value={form.professionalRegistration}
                 onChange={(value) => setForm({ ...form, professionalRegistration: value })}
               />
-              <Field label="Chave Pix" value={form.pixKey} onChange={(value) => setForm({ ...form, pixKey: value })} />
+              <Field
+                label="Chave Pix"
+                value={form.pixKey}
+                onChange={(value) => setForm({ ...form, pixKey: value })}
+              />
             </div>
             <Field
               label="Especialidades"
@@ -97,7 +124,11 @@ function ProfessionalSignupPage() {
               onChange={(value) => setForm({ ...form, specialties: value })}
               placeholder="Seleção, liderança, atendimento"
             />
-            <Field label="LinkedIn" value={form.linkedinUrl} onChange={(value) => setForm({ ...form, linkedinUrl: value })} />
+            <Field
+              label="LinkedIn"
+              value={form.linkedinUrl}
+              onChange={(value) => setForm({ ...form, linkedinUrl: value })}
+            />
             <label className="grid gap-1 text-sm">
               <span className="font-medium">Bio</span>
               <textarea
@@ -148,4 +179,3 @@ function Field({
     </label>
   );
 }
-
