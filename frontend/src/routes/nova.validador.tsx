@@ -48,6 +48,7 @@ import {
   updateSimulationOption,
 } from "@/lib/api/praxis";
 import { canEditSimulationVersion, maturityForStatus, statusMeta } from "@/lib/simulation-meta";
+import { buildStepLabels, localizeStepIds, stepLabelOf } from "@/lib/step-labels";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/nova/validador")({
@@ -464,6 +465,9 @@ function ValidatorPage() {
   const previewVersion = editDraftQuery.data ?? versionQuery.data;
   const previewSimulationId = editDraft?.simulationId ?? search.simulationId;
   const previewVersionNumber = editDraft?.versionNumber ?? search.versionNumber;
+  // Diagnósticos citam o id interno (turno-N); o rodapé mostra o mesmo rótulo do mapa (1.0, 5.0…).
+  const stepLabels = buildStepLabels(previewVersion?.nodes ?? []);
+  const hiddenFooterBlockers = validationBlockers.length - footerBlockers.length;
 
   return (
     <AppShell>
@@ -543,10 +547,21 @@ function ValidatorPage() {
                     <ul className="mt-0.5 space-y-0.5 text-danger">
                       {footerBlockers.map((issue) => (
                         <li key={`${issue.nodeId ?? "global"}-${issue.message}`}>
-                          {issue.nodeId ? `${issue.nodeId}: ` : ""}
-                          {issue.message}
+                          {issue.nodeId ? `${stepLabelOf(stepLabels, issue.nodeId)}: ` : ""}
+                          {localizeStepIds(issue.message, stepLabels)}
                         </li>
                       ))}
+                      {hiddenFooterBlockers > 0 && (
+                        <li className="text-muted-foreground">
+                          …e mais{" "}
+                          {formatCount(
+                            hiddenFooterBlockers,
+                            "bloqueio sinalizado",
+                            "bloqueios sinalizados",
+                          )}{" "}
+                          nos cards do mapa.
+                        </li>
+                      )}
                     </ul>
                   </div>
                 )}
@@ -731,7 +746,7 @@ function InteractiveStepCard({
 }) {
   const [editingOptionId, setEditingOptionId] = useState<string | null>(null);
   const [optionDraft, setOptionDraft] = useState<OptionDraft | null>(null);
-  const nodeLabels = buildTurnStepLabels(version.nodes);
+  const nodeLabels = buildStepLabels(version.nodes);
   const nodeLabel = (nodeId: string) => nodeLabels.get(nodeId) ?? nodeId;
   const canEdit = isEditable || canCloneForEdit;
   const isRootNode = step.node.id === version.blueprint.rootNodeId;
@@ -1151,7 +1166,7 @@ function NormalizedScoreMap({
   const [optionDraft, setOptionDraft] = useState<OptionDraft | null>(null);
   const title = version?.name ?? simulationId ?? "Avaliação";
   const flow = version ? buildInteractiveScoreFlow(version) : null;
-  const nodeLabels = version ? buildTurnStepLabels(version.nodes) : new Map<string, string>();
+  const nodeLabels = version ? buildStepLabels(version.nodes) : new Map<string, string>();
   const nodeLabel = (nodeId: string) => nodeLabels.get(nodeId) ?? nodeId;
   const canEdit = isEditable || canCloneForEdit;
   const selectedFlowNode =
@@ -1848,26 +1863,6 @@ interface InteractiveScoreFlow {
   width: number;
 }
 
-function buildTurnStepLabels(nodes: SimulationVersionNodeResponse[]) {
-  const labels = new Map<string, string>();
-  const rowsByTurn = new Map<number, SimulationVersionNodeResponse[]>();
-  const orderedNodes = [...nodes].sort(
-    (a, b) => a.turnIndex - b.turnIndex || a.id.localeCompare(b.id),
-  );
-
-  orderedNodes.forEach((node) => {
-    rowsByTurn.set(node.turnIndex, [...(rowsByTurn.get(node.turnIndex) ?? []), node]);
-  });
-
-  rowsByTurn.forEach((turnNodes, turnIndex) => {
-    turnNodes.forEach((node, rowIndex) => {
-      labels.set(node.id, `${turnIndex}.${rowIndex}`);
-    });
-  });
-
-  return labels;
-}
-
 function buildInteractiveScoreFlow(version: SimulationVersionDetailResponse): InteractiveScoreFlow {
   const nodeWidth = 196;
   const nodeHeight = 118;
@@ -1877,7 +1872,7 @@ function buildInteractiveScoreFlow(version: SimulationVersionDetailResponse): In
   const startX = 36;
   const startY = 36;
   const nodesById = new Map(version.nodes.map((node) => [node.id, node]));
-  const nodeLabels = buildTurnStepLabels(version.nodes);
+  const nodeLabels = buildStepLabels(version.nodes);
   const nodeLabel = (nodeId: string) => nodeLabels.get(nodeId) ?? nodeId;
   const summariesById = new Map(
     buildStepScoreSummaries(version).map((summary) => [summary.node.id, summary]),
@@ -2164,7 +2159,7 @@ function scoreOption(
 
 function collectEndingTraces(version: SimulationVersionDetailResponse): EndingTrace[] {
   const nodesById = new Map(version.nodes.map((node) => [node.id, node]));
-  const nodeLabels = buildTurnStepLabels(version.nodes);
+  const nodeLabels = buildStepLabels(version.nodes);
   const nodeLabel = (nodeId: string) => nodeLabels.get(nodeId) ?? nodeId;
   const endings: EndingTrace[] = [];
   const maxDepth = version.nodes.length + 1;

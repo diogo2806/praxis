@@ -25,6 +25,7 @@ import type {
   UpdateOptionRequest,
   ValidationIssueResponse,
 } from "@/lib/api/praxis";
+import { buildStepLabels, localizeStepIds } from "@/lib/step-labels";
 
 type Version = SimulationVersionDetailResponse;
 type NodeDto = Version["nodes"][number];
@@ -184,23 +185,11 @@ export default function FlowCanvas({
     }
     return acc;
   };
-  const stepLabel = useMemo(() => {
-    const labels: Record<string, string> = {};
-    const rowsByTurn = new Map<number, NodeDto[]>();
-
-    nodes.forEach((node) => {
-      rowsByTurn.set(node.turnIndex, [...(rowsByTurn.get(node.turnIndex) ?? []), node]);
-    });
-
-    rowsByTurn.forEach((turnNodes, turnIndex) => {
-      turnNodes.forEach((node, rowIndex) => {
-        labels[node.id] = `${turnIndex}.${rowIndex}`;
-      });
-    });
-
-    return labels;
-  }, [nodes]);
-  const labelOf = (id: string) => stepLabel[id] ?? id;
+  const stepLabels = useMemo(() => buildStepLabels(nodes), [nodes]);
+  const labelOf = (id: string) => stepLabels.get(id) ?? id;
+  /* mensagens do diagnóstico citam o id interno (turno-N); mostra o rótulo do mapa */
+  const issueTitle = (issue: { messages: string[] }) =>
+    issue.messages.map((message) => localizeStepIds(message, stepLabels)).join("\n");
 
   const forwardTargets = (curId: string) => {
     const anc = new Set(chainTo(curId).map((n) => n.id));
@@ -444,7 +433,7 @@ export default function FlowCanvas({
                     <div className="vx-end-head">
                       <span className="vx-id vx-id-end"><Flag size={12} />{labelOf(n.id)}</span>
                       <span className="vx-badge vx-badge-final">encerramento</span>
-                      {issue && <span className={`vx-vbadge ${issue.error ? "vx-vbadge-err" : "vx-vbadge-warn"}`} title={issue.messages.join("\n")}>{issue.error ? "🔴" : "🟡"} {issue.messages.length}</span>}
+                      {issue && <span className={`vx-vbadge ${issue.error ? "vx-vbadge-err" : "vx-vbadge-warn"}`} title={issueTitle(issue)}>{issue.error ? "🔴" : "🟡"} {issue.messages.length}</span>}
                       {pending && <span className="vx-warn-mini" title="Falta o relatório"><Flag size={11} /></span>}
                       {canEdit && <button className="vx-end-del" onClick={() => window.confirm("Remover este encerramento?") && onDeleteStep(n.id)} title="Remover encerramento"><Trash2 size={13} /></button>}
                     </div>
@@ -481,7 +470,7 @@ export default function FlowCanvas({
                     <div className="vx-msg-head">
                       <span className="vx-id">{isRoot ? <Crosshair size={12} /> : <Workflow size={12} />}{labelOf(n.id)}</span>
                       {isRoot && <span className="vx-badge">início</span>}
-                      {issue && <span className={`vx-vbadge ${issue.error ? "vx-vbadge-err" : "vx-vbadge-warn"}`} title={issue.messages.join("\n")}>{issue.error ? "🔴" : "🟡"} {issue.messages.length}</span>}
+                      {issue && <span className={`vx-vbadge ${issue.error ? "vx-vbadge-err" : "vx-vbadge-warn"}`} title={issueTitle(issue)}>{issue.error ? "🔴" : "🟡"} {issue.messages.length}</span>}
                       {noTo && <span className="vx-warn-mini" title="Falta a saída de tempo"><Timer size={11} /></span>}
                       <span className="vx-time"><Clock size={11} /> {n.timeLimitSeconds ?? "—"}s</span>
                     </div>
