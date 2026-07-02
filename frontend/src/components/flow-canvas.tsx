@@ -657,7 +657,7 @@ const CSS = `
   --danger:#CC3E35;--danger-weak:#FAE7E5;
   --amber:#7A5410;--amber-weak:#FCF2DB;--amber-line:#E6C98A;--amber-solid:#E1A536;
   --gold:#8A6312;--gold-weak:#FBEFD4;--gold-line:#E4C57E;
-  --dot:#CFC8B6;
+  --dot:#B9AF95;--canvas-bg:#F1ECE1;
   font-family:system-ui,-apple-system,"Segoe UI",sans-serif;color:var(--ink);
   display:flex;flex-direction:column;border:1px solid var(--border);border-radius:14px;overflow:hidden;background:var(--bg)}
 .vx-root b{font-weight:650}
@@ -680,8 +680,8 @@ const CSS = `
 .vx-seg button{height:32px;min-width:32px;display:flex;align-items:center;justify-content:center;border:none;background:transparent;color:var(--muted);cursor:pointer}
 .vx-seg button:hover{background:#fff;color:var(--ink)} .vx-zlabel{font-size:12px;font-weight:600;padding:0 6px}
 .vx-ghost{display:inline-flex;align-items:center;gap:6px;height:34px;padding:0 12px;border:1px solid var(--border);border-radius:9px;background:#fff;font-size:13px;font-weight:550;cursor:pointer} .vx-ghost:hover{background:var(--bg)}
-.vx-stage{display:flex;height:600px;min-height:0}
-.vx-canvas{position:relative;flex:1;min-width:0;overflow:hidden;cursor:grab;touch-action:none}
+.vx-stage{display:flex;height:min(78vh,900px);min-height:520px}
+.vx-canvas{position:relative;flex:1;min-width:0;overflow:hidden;cursor:grab;touch-action:none;background:var(--canvas-bg);box-shadow:inset 0 0 0 1px var(--border)}
 .vx-canvas.vx-grabbing{cursor:grabbing}
 .vx-content{position:absolute;top:0;left:0;width:4200px;height:3200px;transform-origin:0 0;background-image:radial-gradient(circle,var(--dot) 1.4px,transparent 1.4px);background-size:22px 22px}
 .vx-edges{position:absolute;top:0;left:0;overflow:visible;pointer-events:none}
