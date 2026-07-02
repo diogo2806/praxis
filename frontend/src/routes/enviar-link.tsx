@@ -5,7 +5,6 @@ import { CheckCircle2, Copy, Link2, Mail, MessageCircle, Send } from "lucide-rea
 import { AppShell } from "@/components/app-shell";
 import {
   EmptyState,
-  ScreenStateStrip,
   SkeletonRows,
   StateBanner,
   StatusBadge,
@@ -132,7 +131,6 @@ function EnviarLinkPage() {
 
   return (
     <AppShell>
-      <ScreenStateStrip blockedReason="sem avaliações no ar para gerar link" />
 
       <div className="mb-6">
         <div className="text-xs uppercase text-primary">Envio direto</div>

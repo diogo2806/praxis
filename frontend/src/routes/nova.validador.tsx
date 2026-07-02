@@ -27,7 +27,6 @@ import { AppShell } from "@/components/app-shell";
 import FlowCanvas, { type NodeUpdateBody } from "@/components/flow-canvas";
 import {
   EmptyState,
-  NextStepContract,
   StateBanner,
   StatusBadge,
 } from "@/components/praxis-ui";

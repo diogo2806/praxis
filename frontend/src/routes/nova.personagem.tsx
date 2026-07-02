@@ -2,7 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { AppShell } from "@/components/app-shell";
-import { EmptyState, ScreenStateStrip, StateBanner, StatusBadge } from "@/components/praxis-ui";
+import { EmptyState, StateBanner, StatusBadge } from "@/components/praxis-ui";
 import { WizardStepper } from "@/components/wizard-stepper";
 import {
   cloneSimulationVersionToDraft,
@@ -136,7 +136,6 @@ function Page() {
   return (
     <AppShell>
       <WizardStepper current="cenario" />
-      <ScreenStateStrip blockedReason="contexto do cliente precisa ser preenchido" />
       <div className="mb-6">
         <div className="text-xs uppercase tracking-[0.2em] text-primary">Passo 2</div>
         <h1 className="mt-1 font-display text-3xl">Personagem do cliente fictício</h1>

@@ -4,8 +4,6 @@ import { CheckCircle2, Link2, RefreshCw, Send, XCircle } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
 import {
   EmptyState,
-  NextStepContract,
-  ScreenStateStrip,
   StateBanner,
   StatusBadge,
 } from "@/components/praxis-ui";
@@ -76,7 +74,6 @@ function GupyActivation() {
   return (
     <AppShell>
       <WizardStepper current="publicacao" />
-      <ScreenStateStrip blockedReason="lista de verificação incompleta bloqueia a integração Gupy" />
       <div className="mb-5 flex flex-wrap items-start justify-between gap-4">
         <div>
           <div className="text-xs uppercase text-primary">Passo 4</div>
@@ -126,18 +123,6 @@ function GupyActivation() {
             </StateBanner>
           )}
 
-          <div className="mt-5">
-            <NextStepContract
-              primary={
-                hasFailure
-                  ? "Corrigir a lista de verificação antes de vincular a avaliação na Gupy."
-                  : "Vincular a versão publicada dentro da Gupy quando o diagnóstico estiver aprovado."
-              }
-              secondary="Cliente vincula a avaliação na vaga dentro da Gupy; o gestor não usa tela externa."
-              versionRule="A Gupy lista apenas avaliações no ar e versões protegidas."
-              lockedAfter="O diagnóstico não coloca rascunho no ar nem altera tentativa já iniciada."
-            />
-          </div>
 
           <div className="mt-5 grid gap-5 lg:grid-cols-[minmax(0,1fr)_360px]">
             <main className="space-y-5">

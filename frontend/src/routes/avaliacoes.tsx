@@ -2,27 +2,18 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState, type CSSProperties } from "react";
 import {
-  BarChart3,
   CircleHelp,
   ExternalLink,
   FilePlus2,
   Filter,
-  Home,
   PlayCircle,
   Search,
-  Table2,
   Target,
   Trash2,
 } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
 import { Termo } from "@/components/glossario";
-import {
-  EmptyState,
-  ScreenStateStrip,
-  SkeletonRows,
-  StateBanner,
-  StatusBadge,
-} from "@/components/praxis-ui";
+import { EmptyState, SkeletonRows, StateBanner, StatusBadge } from "@/components/praxis-ui";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import {
   deleteSimulation,
@@ -104,57 +95,22 @@ function AvaliacoesPage() {
 
   return (
     <AppShell>
-      <ScreenStateStrip blockedReason="espaço de trabalho sem permissão ou configuração obrigatória pendente" />
       <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
         <div>
-          <div className="text-xs uppercase text-muted-foreground">Dashboard / Avaliações</div>
-          <h1 className="mt-1 text-3xl font-semibold text-foreground">Avaliações</h1>
+          <h1 className="text-3xl font-semibold text-foreground">Avaliações</h1>
           <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
-            Consulte e edite as avaliações da sua empresa. Esta área faz parte do fluxo principal
-            iniciado no Dashboard, com{" "}
-            <Termo id="pontuacao-criterios">pontuação por critérios definidos</Termo>,{" "}
-            <Termo id="decisao-contexto">escolha baseada na situação</Termo> e{" "}
+            Consulte e edite as avaliações da sua empresa, com{" "}
+            <Termo id="pontuacao-criterios">pontuação por critérios definidos</Termo> e{" "}
             <Termo id="trilha-auditavel">histórico completo de alterações</Termo>.
           </p>
         </div>
-        <div className="flex gap-2">
-          <Link
-            to="/dashboard"
-            className="inline-flex items-center gap-2 rounded-md border border-border bg-card px-3 py-2 text-sm hover:bg-accent"
-          >
-            <Home className="h-4 w-4" />
-            Dashboard
-          </Link>
-
-          <Link
-            to="/monitoramento"
-            className="inline-flex items-center gap-2 rounded-md border border-border bg-card px-3 py-2 text-sm hover:bg-accent"
-          >
-            <BarChart3 className="h-4 w-4" />
-            Monitoramento
-          </Link>
-          <Link
-            to="/talent-match"
-            className="inline-flex items-center gap-2 rounded-md border border-border bg-card px-3 py-2 text-sm hover:bg-accent"
-          >
-            <Target className="h-4 w-4" />
-            Talent Match
-          </Link>
-          <Link
-            to="/nova/blueprint"
-            className="inline-flex items-center gap-2 rounded-md border border-border bg-card px-3 py-2 text-sm hover:bg-accent"
-          >
-            <PlayCircle className="h-4 w-4" />
-            Fluxo guiado
-          </Link>
-          <Link
-            to="/nova/blueprint"
-            className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
-          >
-            <FilePlus2 className="h-4 w-4" />
-            Nova avaliação
-          </Link>
-        </div>
+        <Link
+          to="/nova/blueprint"
+          className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
+        >
+          <FilePlus2 className="h-4 w-4" />
+          Nova avaliação
+        </Link>
       </div>
 
       {simulationsQuery.isLoading ? (
@@ -172,22 +128,13 @@ function AvaliacoesPage() {
           title="Nenhuma avaliação cadastrada"
           description="Crie uma avaliação para que ela apareça aqui e possa ser acompanhada pelo Dashboard."
           actions={
-            <>
-              <Link
-                to="/nova/blueprint"
-                className="inline-flex items-center justify-between rounded-md border border-primary bg-primary px-4 py-3 text-sm font-medium text-primary-foreground hover:bg-primary/90"
-              >
-                Criar primeira avaliação
-                <FilePlus2 className="h-4 w-4" />
-              </Link>
-              <Link
-                to="/nova/blueprint"
-                className="inline-flex items-center justify-between rounded-md border border-border bg-card px-4 py-3 text-sm hover:bg-accent"
-              >
-                Abrir fluxo de cadastro
-                <Table2 className="h-4 w-4" />
-              </Link>
-            </>
+            <Link
+              to="/nova/blueprint"
+              className="inline-flex items-center justify-between rounded-md border border-primary bg-primary px-4 py-3 text-sm font-medium text-primary-foreground hover:bg-primary/90"
+            >
+              Criar primeira avaliação
+              <FilePlus2 className="h-4 w-4" />
+            </Link>
           }
         />
       ) : (

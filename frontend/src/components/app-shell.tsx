@@ -25,7 +25,6 @@ import {
   Users,
   Workflow,
 } from "lucide-react";
-import { GlobalErrorFlow, GlobalProductStateBar, StateBanner } from "@/components/praxis-ui";
 import { LanguageSelector } from "@/components/language-selector";
 import {
   Sheet,
@@ -38,7 +37,6 @@ import {
 } from "@/components/ui/sheet";
 import { useSession } from "@/lib/session";
 import { useLanguage } from "@/lib/language-context";
-import { useGupyConnectionState, useViewMode } from "@/lib/view-mode";
 import { cn } from "@/lib/utils";
 
 type TranslationMap = ReturnType<typeof useLanguage>["t"];
@@ -148,6 +146,12 @@ const getSettingsNav = (t: TranslationMap) =>
       label: t.common.competencies,
       icon: Settings,
       desc: t.descriptions.competencies,
+    },
+    {
+      to: "/configuracoes/api",
+      label: "API e Webhooks",
+      icon: KeyRound,
+      desc: "Token de API e webhook de resultados",
     },
   ] as const;
 
@@ -359,7 +363,7 @@ function pageLabel(pathname: string, t: TranslationMap) {
   if (pathname === "/configuracoes" || pathname === "/configuracoes/perfil")
     return "Perfil da empresa";
   if (pathname === "/configuracoes/conta") return "Minha conta";
-  if (pathname === "/configuracoes/integracoes") return "Integrações";
+  if (pathname === "/configuracoes/api") return "API e Webhooks";
   if (pathname === "/competencias") return t.common.competencies;
   if (pathname === "/comecar") return t.common.startHere;
   if (pathname === "/team") return "Minha equipe";
@@ -370,25 +374,10 @@ function pageLabel(pathname: string, t: TranslationMap) {
 
 export function AppShell({ children }: { children: ReactNode }) {
   const pathname = useRouterState({ select: (state) => state.location.pathname });
-  const mode = useViewMode();
   const session = useSession();
-  const isIntegrationPage = pathname === "/nova/gupy";
-  const gupyState = useGupyConnectionState(pathname);
   const { t } = useLanguage();
-  const hasIntegrationError = isIntegrationPage && gupyState === "error";
   const nav = getNav(t);
   const secondary = getSecondary(t);
-  const productState = isIntegrationPage
-    ? {
-        gupy: gupyState,
-        draft: "published" as const,
-        publication: hasIntegrationError ? ("blocked" as const) : ("running" as const),
-      }
-    : pathname === "/nova/validador"
-      ? { draft: "dirty" as const, publication: "idle" as const }
-      : pathname === "/nova/piloto" || pathname.startsWith("/nova/mapa")
-        ? { draft: "saved" as const, publication: "idle" as const }
-        : { draft: "saved" as const, publication: "idle" as const };
 
   return (
     <div className="flex min-h-screen bg-background text-foreground">
@@ -444,37 +433,9 @@ export function AppShell({ children }: { children: ReactNode }) {
               <HelpCircle className="h-3.5 w-3.5" />
               <span className="hidden sm:inline">Ajuda</span>
             </Link>
-            {mode === "technical" && (
-              <a
-                href={pathname}
-                className="rounded-md border border-border bg-card px-2.5 py-1 text-muted-foreground hover:bg-accent"
-              >
-                {t.common.viewCommercialMode}
-              </a>
-            )}
           </div>
         </header>
-        <div className="min-h-[calc(100vh-3.5rem)] px-6 py-8 lg:px-10">
-          <GlobalProductStateBar state={productState} />
-          {hasIntegrationError && mode === "commercial" && (
-            <StateBanner
-              tone="danger"
-              title={t.common.gupyConnectionError}
-              action={
-                <a
-                  href={`${pathname}?mode=technical&gupy=error`}
-                  className="shrink-0 rounded-md border border-current/20 bg-background/60 px-3 py-1.5 text-xs font-medium"
-                >
-                  {t.common.openDiagnostics}
-                </a>
-              }
-            >
-              {t.common.couldNotConfirmSubmission}
-            </StateBanner>
-          )}
-          {(mode === "technical" || hasIntegrationError) && <GlobalErrorFlow />}
-          {children}
-        </div>
+        <div className="min-h-[calc(100vh-3.5rem)] px-6 py-8 lg:px-10">{children}</div>
       </main>
     </div>
   );
