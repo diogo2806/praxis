@@ -609,6 +609,38 @@ class CandidateAttemptControllerTest {
         assertThat(abandonedEvents.getFirst().getPayload()).contains("\"event_type\":\"ATTEMPT_ABANDONED\"");
     }
 
+    @Test
+    void dataSubjectRequestIsRecordedOnAuditTrail() throws Exception {
+        String attemptId = createAttempt("candidate-data-request");
+
+        mockMvc.perform(post("/candidate/attempts/" + attemptId + "/data-request")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "requestType": "anonymizationDeletion",
+                                  "contact": "titular@example.com",
+                                  "details": "Quero excluir meus dados."
+                                }
+                                """))
+                .andExpect(status().isNoContent());
+
+        mockMvc.perform(get("/api/v1/audit/candidate-attempts/" + attemptId))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].eventType").value("attemptCreated"))
+                .andExpect(jsonPath("$[1].eventType").value("dataSubjectRequest"))
+                .andExpect(jsonPath("$[1].metadata").value(org.hamcrest.Matchers.containsString("anonymizationDeletion")));
+    }
+
+    @Test
+    void dataSubjectRequestRejectsMissingRequestType() throws Exception {
+        String attemptId = createAttempt("candidate-data-request-invalid");
+
+        mockMvc.perform(post("/candidate/attempts/" + attemptId + "/data-request")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{}"))
+                .andExpect(status().isBadRequest());
+    }
+
     private String createAttempt(String documentId) throws Exception {
         MvcResult createResult = createAttemptResult(documentId);
         String responseBody = createResult.getResponse().getContentAsString();

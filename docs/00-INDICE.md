@@ -52,7 +52,14 @@
 
 ## Compliance e juridico
 
+> Documentos em `docs/legal/` sao **minutas para validacao juridica** e nao
+> constituem aconselhamento juridico. Enderecam os riscos juridicos criticos.
+
 - [Minuta de consentimento e termos para a vertical de Saude](PROPOSTA-CONSENTIMENTO-SAUDE.md) - propostas de texto (LGPD dado sensivel, uso educativo) para validacao juridica antes de habilitar a vertical.
+- [RIPD / DPIA](legal/RIPD-DPIA.md) - relatorio de impacto do tratamento automatizado (LGPD art. 20 - risco critico #1).
+- [Direitos do titular (LGPD art. 18)](legal/DIREITOS-DO-TITULAR-LGPD.md) - canal in-product `data-request`, prazos e retencao (risco critico #2).
+- [DPA - Acordo de Tratamento de Dados](legal/DPA-ACORDO-DE-TRATAMENTO-DE-DADOS.md) - controlador x operador e mapa de suboperadores (LGPD art. 39 - risco critico #3).
+- [Politica de Privacidade](legal/POLITICA-DE-PRIVACIDADE.md), [Termos de Uso](legal/TERMOS-DE-USO.md) e [Politica de Cookies](legal/POLITICA-DE-COOKIES.md) - documentos publicos da plataforma (risco critico #4).
 
 ## Historico
 
