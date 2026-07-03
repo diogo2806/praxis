@@ -109,8 +109,11 @@ class AdminEmpresaControllerTest {
     void adminEndpointsRequireAdminRole() throws Exception {
         String empresaToken = jwtService.generateToken("u1", "empresa-1", Set.of("EMPRESA"));
 
+        // Sem token: a app não configura AuthenticationEntryPoint próprio, então o Spring Security
+        // usa o Http403ForbiddenEntryPoint padrão e responde 403 (e não 401) para requisições não
+        // autenticadas a endpoints protegidos. Um token inválido é que retorna 401 (via o filtro JWT).
         mockMvc.perform(get("/api/admin/empresas"))
-                .andExpect(status().isUnauthorized());
+                .andExpect(status().isForbidden());
 
         mockMvc.perform(get("/api/admin/empresas")
                         .header("Authorization", "Bearer " + empresaToken))

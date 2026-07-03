@@ -28,11 +28,17 @@ import static org.assertj.core.api.Assertions.assertThat;
 @SqlMergeMode(SqlMergeMode.MergeMode.MERGE)
 @Sql(scripts = {"/seed-simulation-fixture.sql", "/empresa-isolation-fixtures.sql"})
 @Sql(statements = {
+        // audit_events e append-only (trigger de V13). Desabilita o trigger USER apenas para
+        // limpar os dados de teste destes aggregate_ids e reabilita em seguida.
+        "ALTER TABLE audit_events DISABLE TRIGGER USER",
         "DELETE FROM audit_events WHERE aggregate_id IN ('retention-empresa1-old', 'retention-empresa1-recent', 'retention-empresa1-other', 'retention-empresa2-old')",
+        "ALTER TABLE audit_events ENABLE TRIGGER USER",
         "DELETE FROM candidate_attempts WHERE id IN ('retention-empresa1-old', 'retention-empresa1-recent', 'retention-empresa1-other', 'retention-empresa2-old')"
 })
 @Sql(statements = {
+        "ALTER TABLE audit_events DISABLE TRIGGER USER",
         "DELETE FROM audit_events WHERE aggregate_id IN ('retention-empresa1-old', 'retention-empresa1-recent', 'retention-empresa1-other', 'retention-empresa2-old')",
+        "ALTER TABLE audit_events ENABLE TRIGGER USER",
         "DELETE FROM candidate_attempts WHERE id IN ('retention-empresa1-old', 'retention-empresa1-recent', 'retention-empresa1-other', 'retention-empresa2-old')"
 }, executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD)
 class PrivacyRetentionServiceTest {

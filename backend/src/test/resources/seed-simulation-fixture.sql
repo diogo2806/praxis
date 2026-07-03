@@ -58,11 +58,11 @@ VALUES (
     CURRENT_TIMESTAMP
 );
 
-INSERT INTO simulation_competencies (simulation_version_id, name, weight)
+INSERT INTO simulation_competencies (simulation_version_id, name, weight, tier)
 VALUES
-    (1, 'Empatia', 0.4),
-    (1, 'Resolucao de conflito', 0.4),
-    (1, 'Aderencia a politica', 0.2);
+    (1, 'Empatia', 0.4, 'MAJOR'),
+    (1, 'Resolucao de conflito', 0.4, 'MAJOR'),
+    (1, 'Aderencia a politica', 0.2, 'MINOR');
 
 INSERT INTO simulation_nodes (
     id,
@@ -71,17 +71,36 @@ INSERT INTO simulation_nodes (
     turn_index,
     speaker,
     message,
-    time_limit_seconds
+    time_limit_seconds,
+    timeout_next_node_id,
+    is_final,
+    report_text
 )
-VALUES (
-    1,
-    1,
-    'turno-1',
-    1,
-    'Cliente',
-    'Mensagem inicial do cliente para teste.',
-    45
-);
+VALUES
+    (
+        1,
+        1,
+        'turno-1',
+        1,
+        'Cliente',
+        'Mensagem inicial do cliente para teste.',
+        45,
+        'encerramento',
+        FALSE,
+        NULL
+    ),
+    (
+        2,
+        1,
+        'encerramento',
+        2,
+        'Sistema',
+        'Encerramento da avaliacao.',
+        NULL,
+        NULL,
+        TRUE,
+        'Participacao encerrada. Resumo gerado para a equipe responsavel.'
+    );
 
 INSERT INTO simulation_options (
     id,
@@ -98,7 +117,7 @@ VALUES
         1,
         'opcao-promete-estorno',
         'Resposta critica para validar revisao humana.',
-        NULL,
+        'encerramento',
         TRUE,
         'Exige revisao humana.'
     ),
@@ -107,7 +126,7 @@ VALUES
         1,
         'opcao-processo-frio',
         'Resposta orientada a processo.',
-        NULL,
+        'encerramento',
         FALSE,
         'Segue processo.'
     ),
@@ -116,7 +135,7 @@ VALUES
         1,
         'opcao-equilibrada',
         'Resposta equilibrada entre acolhimento e regra.',
-        NULL,
+        'encerramento',
         FALSE,
         'Equilibra acolhimento e limite de alcada.'
     );

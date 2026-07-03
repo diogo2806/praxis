@@ -49,21 +49,32 @@ class MultiEmpresaIsolationTest {
     private CandidateAttemptEntity empresa1Attempt;
     private CandidateAttemptEntity empresa2Attempt;
 
+    // Versão própria e única para as tentativas do teste. Evita colidir com a versão 1 de
+    // sim-atendimento-caos (que outras classes @SpringBootTest persistem/commitam no mesmo banco
+    // compartilhado) tanto na PK de simulation_versions quanto nas contagens por versão.
+    private static final long ISOLATION_VERSION_ID = 987001L;
+
     @BeforeEach
     void setUp() {
         EmpresaContextHolder.clear();
+        // Os INSERTs são idempotentes: empresa-2/sim-1 podem já ter sido commitados por outra
+        // classe de teste que roda antes desta no mesmo banco (o @DataJpaTest desta classe faz
+        // rollback, mas dados commitados por classes @SpringBootTest persistem).
         jdbcTemplate.update("""
                 INSERT INTO empresas (id, name, company_id)
-                VALUES ('empresa-2', 'Empresa 2', 'company-2')
+                SELECT 'empresa-2', 'Empresa 2', 'company-2'
+                WHERE NOT EXISTS (SELECT 1 FROM empresas WHERE id = 'empresa-2')
                 """);
         jdbcTemplate.update("""
                 INSERT INTO simulations (id, empresa_id, name, description, created_at)
-                VALUES ('sim-1', 'empresa-1', 'Test Simulation', 'Test simulation description', CURRENT_TIMESTAMP)
+                SELECT 'sim-1', 'empresa-1', 'Test Simulation', 'Test simulation description', CURRENT_TIMESTAMP
+                WHERE NOT EXISTS (SELECT 1 FROM simulations WHERE id = 'sim-1')
                 """);
         jdbcTemplate.update("""
                 INSERT INTO simulation_versions (id, simulation_id, version_number, status, root_node_id, created_at)
-                VALUES (1, 'sim-1', 1, 'draft', 'node-1', CURRENT_TIMESTAMP)
-                """);
+                SELECT ?, 'sim-1', 1, 'draft', 'node-1', CURRENT_TIMESTAMP
+                WHERE NOT EXISTS (SELECT 1 FROM simulation_versions WHERE id = ?)
+                """, ISOLATION_VERSION_ID, ISOLATION_VERSION_ID);
 
         empresa1Attempt = createAttempt("empresa-1", "attempt-1", "idempotency-1", "result-1");
         repository.save(empresa1Attempt);
@@ -101,8 +112,8 @@ class MultiEmpresaIsolationTest {
 
     @Test
     void testCountByEmpresaIdRespectsIsolation() {
-        long empresa1Count = repository.countByEmpresaIdAndSimulationVersionId("empresa-1", 1L);
-        long empresa2Count = repository.countByEmpresaIdAndSimulationVersionId("empresa-2", 1L);
+        long empresa1Count = repository.countByEmpresaIdAndSimulationVersionId("empresa-1", ISOLATION_VERSION_ID);
+        long empresa2Count = repository.countByEmpresaIdAndSimulationVersionId("empresa-2", ISOLATION_VERSION_ID);
 
         assertEquals(1, empresa1Count);
         assertEquals(1, empresa2Count);
@@ -119,7 +130,7 @@ class MultiEmpresaIsolationTest {
         entity.setId(id);
         entity.setIdempotencyKey(idempotencyKey);
         entity.setResultId(resultId);
-        entity.setSimulationVersionId(1L);
+        entity.setSimulationVersionId(ISOLATION_VERSION_ID);
         entity.setCandidateName("Test Candidate");
         entity.setCandidateEmail("test@example.com");
         entity.setCompanyId("company-1");

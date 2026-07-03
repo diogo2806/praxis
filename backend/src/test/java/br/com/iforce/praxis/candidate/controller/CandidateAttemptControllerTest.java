@@ -24,6 +24,8 @@ import org.springframework.boot.test.context.SpringBootTest;
 
 import org.springframework.http.MediaType;
 
+import org.springframework.jdbc.core.JdbcTemplate;
+
 import org.springframework.test.context.jdbc.Sql;
 
 import org.springframework.test.web.servlet.MockMvc;
@@ -71,6 +73,9 @@ class CandidateAttemptControllerTest {
 
     @Autowired
     private JwtService jwtService;
+
+    @Autowired
+    private JdbcTemplate jdbcTemplate;
 
     @Test
     void getCandidateAttemptRejectsInvalidAttemptToken() throws Exception {
@@ -221,7 +226,7 @@ class CandidateAttemptControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("done"))
                 .andExpect(jsonPath("$.results[?(@.title=='Empatia')].score").value(org.hamcrest.Matchers.hasItem(95)))
-                .andExpect(jsonPath("$.company_result_string").value(org.hamcrest.Matchers.containsString("sinalizada para analise")));
+                .andExpect(jsonPath("$.company_result_string").value(org.hamcrest.Matchers.containsString("sinalizada para análise")));
     }
 
     @Test
@@ -628,6 +633,14 @@ class CandidateAttemptControllerTest {
                 .orElseThrow();
         candidateAttemptEntity.setStartedAt(startedAt);
         candidateAttemptRepository.save(candidateAttemptEntity);
+        // O prazo de cada etapa é medido a partir do momento em que o nó foi servido
+        // (attempt_node_serves.served_at), gravado no GET que inicia a participação. Para
+        // simular uma etapa iniciada no passado, também retrocedemos o served_at do nó.
+        jdbcTemplate.update(
+                "UPDATE attempt_node_serves SET served_at = ? WHERE candidate_attempt_id = ?",
+                startedAt.atOffset(java.time.ZoneOffset.UTC),
+                attemptId
+        );
     }
 
     private MvcResult createAttemptResult(String documentId) throws Exception {

@@ -23,22 +23,11 @@ jobs:
           java-version: "21"
           cache: maven
 
-      # Compila e empacota o jar executável. Garante que a main está sempre
-      # deployável — foi a ausência desta checagem que deixou passar builds/
-      # regressões sem alarme.
-      #
-      # NOTA: os testes de integração (@SpringBootTest) ainda não rodam no CI
-      # porque a suíte usa H2, e várias migrations usam sintaxe exclusiva do
-      # PostgreSQL (índice parcial em V14, múltiplos ADD COLUMN em V22/V27/V35).
-      # O caminho recomendado é migrar os testes para PostgreSQL via
-      # Testcontainers (ver docs/marketplace/README.md §0.8) e então trocar
-      # este passo por `mvn -B verify`.
-      # Roda apenas testes que não dependem de banco (não usam @SpringBootTest),
-      # como rede de segurança rápida contra rotas de API sumirem
-      # silenciosamente numa refatoração — enquanto a suíte completa não
-      # migra para Testcontainers (ver nota acima).
-      - name: Test (rotas sem dependência de banco)
-        run: mvn -B -ntp -Dtest=SimulationAdminControllerRouteRegressionTest test
-
-      - name: Build (skip tests)
-        run: mvn -B -ntp -DskipTests package
+      # Suíte completa + empacotamento. Os testes de integração (@SpringBootTest,
+      # @DataJpaTest) rodam contra PostgreSQL real via Testcontainers — as migrations
+      # Flyway usam sintaxe exclusiva do PostgreSQL (ex.: índice parcial na V14),
+      # incompatível com H2. O runner ubuntu-latest do GitHub já tem Docker, que o
+      # Testcontainers usa para subir o container do Postgres automaticamente
+      # (ver src/test/resources/application.properties, datasource jdbc:tc).
+      - name: Build & test (verify)
+        run: mvn -B -ntp verify
