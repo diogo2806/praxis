@@ -202,7 +202,8 @@ public class CandidateAttemptService {
         PublishedSimulation publishedSimulation = simulationCatalogService.findPublishedById(empresaId, request.testId())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Não encontramos o teste publicado."));
 
-        String idempotencyKey = empresaId + "|" + empresaContext.companyId() + "|" + request.documentId() + "|" + request.testId();
+        String idempotencyKey = IdempotencyKeyHasher.sha256Hex(
+                empresaId + "|" + empresaContext.companyId() + "|" + request.documentId() + "|" + request.testId());
         CandidateAttemptEntity candidateAttemptEntity = candidateAttemptRepository
                 .findByEmpresaIdAndIdempotencyKey(empresaId, idempotencyKey)
                 .orElseGet(() -> createAndAuditAttemptSafely(empresaId, idempotencyKey, request, publishedSimulation));
@@ -237,7 +238,8 @@ public class CandidateAttemptService {
                 .findPublishedById(empresaId, request.simulationId())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Não encontramos o teste publicado."));
 
-        String idempotencyKey = empresaId + "|company|" + request.candidateEmail().trim() + "|" + request.simulationId();
+        String idempotencyKey = IdempotencyKeyHasher.sha256Hex(
+                empresaId + "|company|" + request.candidateEmail().trim() + "|" + request.simulationId());
 
         CandidateAttemptEntity entity = candidateAttemptRepository
                 .findByEmpresaIdAndIdempotencyKey(empresaId, idempotencyKey)
