@@ -1,7 +1,7 @@
 # Cadastro de Cenarios para RH - Especificacao Atual
 
 > **Proposito:** orientar RH, produto, design e engenharia sobre como o Praxis cadastra, valida, publica e aplica simulacoes situacionais.
-> **Status:** alinhado ao codigo atual em 20/06/2026.
+> **Status:** alinhado ao codigo atual em 03/07/2026.
 > **Escopo:** produto implementado hoje + guardrails de uso + roadmap separado.
 
 ## Resumo executivo
@@ -98,56 +98,63 @@ Antes de publicar uma simulacao, RH deve confirmar:
 
 ## Fluxo operacional atual
 
+O assistente tem 4 passos canonicos (`frontend/src/lib/simulation-meta.ts`):
+`avaliacao -> personagem -> validador -> governanca`.
+
 ```text
-1. Criar rascunho
-   /nova/blueprint -> POST /api/v1/simulations/drafts
+1. Teste (criar rascunho e plano)
+   /nova/avaliacao -> POST /api/v1/simulations/drafts
+                   -> PATCH /api/v1/simulations/{id}/versions/{n}/blueprint
 
-2. Ajustar plano
-   /nova/objetivo -> PATCH /api/v1/simulations/{id}/versions/{n}/blueprint
+2. Cenario (personagem, dialogo e midias)
+   /nova/personagem -> CRUD de nodes/options
+   (editor de grafo detalhado tambem em /nova/dialogo)
 
-3. Montar personagem e dialogo
-   /nova/personagem
-   /nova/dialogo -> CRUD de nodes/options
-
-4. Validar
+3. Revisao (validar)
    /nova/validador -> GET /validation
 
-5. Revisar mapa e governanca
-   /nova/mapa
+4. Publicacao
    /nova/governanca -> audit, clone-draft, publish
 
-6. Conferir integracao Gupy
+Alternativa por modelo pronto:
+   /nova/rapido -> GET/POST /api/v1/simulations/quick-start*
+
+Conferir integracao Gupy (standalone):
    /nova/gupy -> GET /gupy-preflight e entregas
 
-7. Aplicar
+Aplicar:
    Gupy: POST /test/candidate
    Interno: POST /api/v1/candidate-links
 
-8. Monitorar e explicar
-   /monitoramento, /defensabilidade, /lgpd, /talent-match
+Monitorar e explicar:
+   /monitoramento, /results, /compliance, /talent-match
 ```
 
 ## Telas atuais
 
 | Tela | Rota | Objetivo |
 | --- | --- | --- |
+| Dashboard | `/dashboard` | Painel inicial de indicadores da empresa. |
 | Avaliações | `/avaliacoes` | Ver e editar avaliacoes: lista, status, metricas e acoes. |
-| Começar | `/comecar` | Entrada para criar nova avaliacao. |
-| Blueprint | `/nova/blueprint` | Cria rascunho com nome, descricao, situacao critica e competencias. |
-| Competencias | `/nova/competencias` | Configura catalogos do empresa. |
-| Objetivo | `/nova/objetivo` | Ajusta plano da avaliacao, pesos e uso do resultado. |
-| Personagem | `/nova/personagem` | Define primeiro no/personagem e midias acessiveis. |
-| Dialogo | `/nova/dialogo` | Edita grafo, alternativas, score e ramificacoes. |
-| Validador | `/nova/validador` | Mostra blockers, warnings e qualidade. |
-| Piloto | `/nova/piloto` | Exibe sinais de monitoramento da versao. |
-| Mapa | `/nova/mapa` | Visualiza grafo, destinos, criticidade e pesos. |
-| Governanca | `/nova/governanca` | Publica, clona e consulta auditoria. |
-| Gupy | `/nova/gupy` | Preflight e monitoramento de entregas. |
+| Começar | `/comecar` | Entrada explicativa; leva a `/nova/avaliacao` ou `/nova/rapido`. |
+| Teste (passo 1) | `/nova/avaliacao` | Cria rascunho com nome, descricao, situacao critica, competencias, pesos e uso do resultado. |
+| Cenário (passo 2) | `/nova/personagem` | Define personagem, turnos, alternativas e midias acessiveis. |
+| Revisão (passo 3) | `/nova/validador` | Mostra blockers, warnings e qualidade. |
+| Publicação (passo 4) | `/nova/governanca` | Publica, clona e consulta auditoria. |
+| Rápido | `/nova/rapido` | Cria avaliacao pre-preenchida a partir de um modelo pronto (quick-start). |
+| Diálogo | `/nova/dialogo` | Editor de grafo detalhado (standalone, fora dos 4 passos). |
+| Mapa | `/nova/mapa` | Visualiza grafo, destinos, criticidade e pesos (standalone). |
+| Piloto | `/nova/piloto` | Exibe sinais de monitoramento da versao (standalone). |
+| Gupy | `/nova/gupy` | Preflight e monitoramento de entregas (standalone). |
+| Competências | `/competencias` | Configura catalogos da empresa. |
 | Enviar link | `/enviar-link` | Cria links internos e acompanha tentativas ao vivo. |
+| Resultados | `/results` | Lista resultados; `/results/{attemptId}` detalha e registra a decisao do recrutador. |
 | Monitoramento | `/monitoramento` | Indicadores e entregas. |
+| Jornadas | `/jornadas` | Encadeia varias avaliacoes em um funil unico por candidato. |
 | Talent Match | `/talent-match` | Comparacao por competencias, nao ranking automatico. |
-| Defensabilidade | `/defensabilidade` | Explica evidencias e sustentacao do score. |
-| LGPD | `/lgpd` | Exibe politica de privacidade e explicabilidade. |
+| Integrações | `/integrations` | Central de integracoes (Gupy, Recrutei, API propria). |
+| Compliance | `/compliance` | Defensabilidade, evidencias, privacidade e explicabilidade (substitui `/defensabilidade` e `/lgpd`). |
+| Plano | `/billing` | Plano, uso e historico de cobranca. |
 | Candidato | `/candidato` e `/candidato/$token` | Fluxo publico de resposta. |
 
 ## Modelo conceitual de uma simulacao
@@ -447,4 +454,4 @@ Este documento substitui a especificacao antiga, que misturava:
 
 A regra atual e simples: o que for capacidade entregue fica em "implementado hoje"; o que for direcao de produto fica em "roadmap"; o que for risco de uso fica em "guardrails".
 
-Ultima revisao: 20/06/2026.
+Ultima revisao: 03/07/2026.
