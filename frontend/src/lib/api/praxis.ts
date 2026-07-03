@@ -348,14 +348,14 @@ export interface AuditEventResponse {
   createdAt: string;
 }
 
-export type AssessmentJourneyStatus = "DRAFT" | "PUBLISHED" | "ARCHIVED";
+export type AssessmentJourneyStatus = "draft" | "published" | "archived";
 export type AssessmentJourneyAttemptStatus =
-  | "CREATED"
-  | "IN_PROGRESS"
-  | "COMPLETED"
-  | "EXPIRED"
-  | "ABANDONED";
-export type AssessmentJourneyStepStatus = "PENDING" | "IN_PROGRESS" | "COMPLETED" | "SKIPPED";
+  | "created"
+  | "inProgress"
+  | "completed"
+  | "expired"
+  | "abandoned";
+export type AssessmentJourneyStepStatus = "pending" | "inProgress" | "completed";
 
 export interface JourneyStepResponse {
   id: number;
@@ -976,8 +976,8 @@ async function getDashboardFallback(): Promise<DashboardResponse> {
     ).length,
     assessmentJourneys: {
       total: journeys.length,
-      published: journeys.filter((journey) => journey.status === "PUBLISHED").length,
-      draft: journeys.filter((journey) => journey.status === "DRAFT").length,
+      published: journeys.filter((journey) => journey.status === "published").length,
+      draft: journeys.filter((journey) => journey.status === "draft").length,
     },
     candidatesInProgress,
     completedAttemptsLast30Days,
@@ -996,7 +996,7 @@ async function getDashboardFallback(): Promise<DashboardResponse> {
       name: journey.name,
       status: journey.status,
       candidatesInProgress: 0,
-      actionLabel: journey.status === "DRAFT" ? "Continuar edição" : "Ver jornada",
+      actionLabel: journey.status === "draft" ? "Continuar edição" : "Ver jornada",
       actionRoute: "/assessment-journeys",
     })),
     integrations: integrationStatusesFromTokens(integrationTokens),
@@ -1011,7 +1011,7 @@ async function getDashboardFallback(): Promise<DashboardResponse> {
     },
     recommendedActions: dashboardFallbackActions(
       simulations.length,
-      journeys.filter((journey) => journey.status === "DRAFT").length,
+      journeys.filter((journey) => journey.status === "draft").length,
       integrationTokens,
       completedAttemptsLast30Days,
     ),

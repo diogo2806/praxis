@@ -38,7 +38,7 @@ function CandidateJourneyPage() {
   const resultQuery = useQuery({
     queryKey: ["public-assessment-journey-result", attemptId],
     queryFn: () => getPublicAssessmentJourneyResult(attemptId),
-    enabled: attemptQuery.data?.status === "COMPLETED",
+    enabled: attemptQuery.data?.status === "completed",
     retry: false,
   });
   const startJourneyMutation = useMutation({
@@ -50,7 +50,7 @@ function CandidateJourneyPage() {
     onSuccess: async (attempt) => {
       await invalidateAttempt(queryClient, attemptId);
       const startedStep = attempt.steps.find(
-        (step) => step.status === "IN_PROGRESS" && step.candidateUrl,
+        (step) => step.status === "inProgress" && step.candidateUrl,
       );
       if (startedStep?.candidateUrl) {
         window.location.href = toParticipantPageUrl(startedStep.candidateUrl);
@@ -121,7 +121,7 @@ function CandidateJourneyPage() {
 
             <ProgressSummary attempt={attempt} />
 
-            {attempt.status === "CREATED" && (
+            {attempt.status === "created" && (
               <section className="rounded-md border border-border bg-card p-5">
                 <Button
                   type="button"
@@ -160,7 +160,7 @@ function CandidateJourneyPage() {
               </div>
             </section>
 
-            {attempt.status === "COMPLETED" && (
+            {attempt.status === "completed" && (
               <section className="rounded-md border border-border bg-card p-5">
                 <div className="flex items-center gap-2 text-success">
                   <CheckCircle2 className="h-5 w-5" />
@@ -191,7 +191,7 @@ function CandidateJourneyPage() {
 }
 
 function ProgressSummary({ attempt }: { attempt: AssessmentJourneyAttemptResponse }) {
-  const completed = attempt.steps.filter((step) => step.status === "COMPLETED").length;
+  const completed = attempt.steps.filter((step) => step.status === "completed").length;
   const total = attempt.steps.length;
   const percent = Math.round((completed / Math.max(total, 1)) * 100);
 
@@ -232,8 +232,8 @@ function CandidateJourneyStep({
   onComplete: () => void;
   completePending: boolean;
 }) {
-  const completed = step.status === "COMPLETED";
-  const inProgress = step.status === "IN_PROGRESS";
+  const completed = step.status === "completed";
+  const inProgress = step.status === "inProgress";
 
   return (
     <article className="flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between">
@@ -273,7 +273,7 @@ function CandidateJourneyStep({
             type="button"
             size="sm"
             className="h-9 gap-2"
-            disabled={!canStart || attempt.status === "COMPLETED" || startPending}
+            disabled={!canStart || attempt.status === "completed" || startPending}
             onClick={onStart}
           >
             <ClipboardCheck className="h-4 w-4" />
@@ -301,18 +301,17 @@ function canStartStep(
   attempt: AssessmentJourneyAttemptResponse,
   target: JourneyAttemptStepResponse,
 ) {
-  if (attempt.status === "COMPLETED") return false;
+  if (attempt.status === "completed") return false;
   return attempt.steps
     .filter((step) => step.orderIndex < target.orderIndex && step.required)
-    .every((step) => step.status === "COMPLETED");
+    .every((step) => step.status === "completed");
 }
 
 function stepStatusLabel(status: JourneyAttemptStepResponse["status"]) {
   const labels: Record<JourneyAttemptStepResponse["status"], string> = {
-    PENDING: "pendente",
-    IN_PROGRESS: "em andamento",
-    COMPLETED: "concluido",
-    SKIPPED: "ignorado",
+    pending: "pendente",
+    inProgress: "em andamento",
+    completed: "concluido",
   };
   return labels[status];
 }
