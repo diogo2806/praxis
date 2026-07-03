@@ -3,10 +3,12 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { KeyRound } from "lucide-react";
 import { useState } from "react";
 
+import { LanguageSelector } from "@/components/language-selector";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { PraxisApiError, requestPasswordReset } from "@/lib/api/praxis";
+import { useLanguage } from "@/lib/language-context";
 
 export const Route = createFileRoute("/recuperar-senha")({
   head: () => ({
@@ -22,6 +24,7 @@ export const Route = createFileRoute("/recuperar-senha")({
 });
 
 function ForgotPasswordPage() {
+  const { t } = useLanguage();
   const [email, setEmail] = useState("");
   const [empresaId, setEmpresaId] = useState("");
 
@@ -37,19 +40,20 @@ function ForgotPasswordPage() {
   });
 
   // Mensagem uniforme: o backend nunca revela se a conta existe.
-  const uniformMessage =
-    mutation.data?.message ??
-    "Se existir uma conta correspondente, enviaremos um e-mail com as instruções para redefinir sua senha.";
+  const uniformMessage = mutation.data?.message ?? t.auth.forgotUniformMessage;
 
   const errorMessage =
     mutation.error instanceof PraxisApiError
       ? mutation.error.message
       : mutation.isError
-        ? "Não foi possível processar a solicitação. Tente novamente."
+        ? t.auth.forgotError
         : null;
 
   return (
     <main className="min-h-screen bg-slate-50 px-4 py-10 text-slate-900">
+      <div className="mx-auto flex max-w-md justify-end pb-4">
+        <LanguageSelector />
+      </div>
       <div className="mx-auto flex min-h-[calc(100vh-5rem)] max-w-md items-center">
         <section className="w-full rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
           <div className="flex items-center gap-3">
@@ -57,10 +61,8 @@ function ForgotPasswordPage() {
               <KeyRound className="h-5 w-5" />
             </div>
             <div>
-              <h1 className="text-xl font-semibold">Esqueci minha senha</h1>
-              <p className="text-sm text-slate-500">
-                Informe seu e-mail para receber o link de redefinição.
-              </p>
+              <h1 className="text-xl font-semibold">{t.auth.forgotTitle}</h1>
+              <p className="text-sm text-slate-500">{t.auth.forgotSubtitle}</p>
             </div>
           </div>
 
@@ -77,7 +79,7 @@ function ForgotPasswordPage() {
               }}
             >
               <div className="space-y-2">
-                <Label htmlFor="email">E-mail</Label>
+                <Label htmlFor="email">{t.auth.forgotEmailLabel}</Label>
                 <Input
                   id="email"
                   type="email"
@@ -90,7 +92,7 @@ function ForgotPasswordPage() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="empresaId">Empresa (opcional)</Label>
+                <Label htmlFor="empresaId">{t.auth.forgotEmpresaLabel}</Label>
                 <Input
                   id="empresaId"
                   type="text"
@@ -99,10 +101,7 @@ function ForgotPasswordPage() {
                   onChange={(event) => setEmpresaId(event.target.value)}
                   disabled={mutation.isPending}
                 />
-                <p className="text-xs text-slate-500">
-                  Usuários de empresa informam o identificador da empresa. Operadores da
-                  plataforma podem deixar em branco.
-                </p>
+                <p className="text-xs text-slate-500">{t.auth.forgotEmpresaHelp}</p>
               </div>
 
               {errorMessage && (
@@ -112,15 +111,15 @@ function ForgotPasswordPage() {
               )}
 
               <Button type="submit" className="w-full" disabled={!canSubmit || mutation.isPending}>
-                {mutation.isPending ? "Enviando..." : "Enviar link de redefinição"}
+                {mutation.isPending ? t.auth.forgotSending : t.auth.forgotSubmit}
               </Button>
             </form>
           )}
 
           <p className="mt-5 text-center text-xs text-slate-500">
-            Lembrou a senha?{" "}
+            {t.auth.rememberedPassword}{" "}
             <Link to="/" className="font-medium text-primary hover:underline">
-              Voltar para a entrada
+              {t.auth.backToLogin}
             </Link>
           </p>
         </section>

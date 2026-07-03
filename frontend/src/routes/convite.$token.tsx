@@ -3,10 +3,12 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { KeyRound } from "lucide-react";
 import { useState } from "react";
 
+import { LanguageSelector } from "@/components/language-selector";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { acceptInvite, PraxisApiError } from "@/lib/api/praxis";
+import { useLanguage } from "@/lib/language-context";
 import { defaultAuthenticatedRoute, saveAuthenticatedSession } from "@/lib/session";
 
 export const Route = createFileRoute("/convite/$token")({
@@ -23,6 +25,7 @@ export const Route = createFileRoute("/convite/$token")({
 });
 
 function InviteAcceptPage() {
+  const { t } = useLanguage();
   const { token } = Route.useParams();
   const navigate = useNavigate();
 
@@ -55,11 +58,14 @@ function InviteAcceptPage() {
     mutation.error instanceof PraxisApiError
       ? mutation.error.message
       : mutation.isError
-        ? "Não foi possível ativar o convite."
+        ? t.auth.inviteError
         : null;
 
   return (
     <main className="min-h-screen bg-slate-50 px-4 py-10 text-slate-900">
+      <div className="mx-auto flex max-w-md justify-end pb-4">
+        <LanguageSelector />
+      </div>
       <div className="mx-auto flex min-h-[calc(100vh-5rem)] max-w-md items-center">
         <section className="w-full rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
           <div className="flex items-center gap-3">
@@ -67,8 +73,8 @@ function InviteAcceptPage() {
               <KeyRound className="h-5 w-5" />
             </div>
             <div>
-              <h1 className="text-xl font-semibold">Ativar acesso</h1>
-              <p className="text-sm text-slate-500">Defina sua senha para entrar no Praxis.</p>
+              <h1 className="text-xl font-semibold">{t.auth.inviteTitle}</h1>
+              <p className="text-sm text-slate-500">{t.auth.inviteSubtitle}</p>
             </div>
           </div>
 
@@ -80,7 +86,7 @@ function InviteAcceptPage() {
             }}
           >
             <div className="space-y-2">
-              <Label htmlFor="newPassword">Nova senha</Label>
+              <Label htmlFor="newPassword">{t.auth.resetNewPasswordLabel}</Label>
               <Input
                 id="newPassword"
                 type="password"
@@ -90,11 +96,11 @@ function InviteAcceptPage() {
                 disabled={mutation.isPending}
                 autoFocus
               />
-              <p className="text-xs text-slate-500">Use pelo menos 8 caracteres.</p>
+              <p className="text-xs text-slate-500">{t.auth.resetPasswordHelp}</p>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="confirmPassword">Confirmar senha</Label>
+              <Label htmlFor="confirmPassword">{t.auth.resetConfirmPasswordLabel}</Label>
               <Input
                 id="confirmPassword"
                 type="password"
@@ -104,7 +110,7 @@ function InviteAcceptPage() {
                 disabled={mutation.isPending}
               />
               {!passwordsMatch && (
-                <p className="text-xs text-rose-600">As senhas não conferem.</p>
+                <p className="text-xs text-rose-600">{t.auth.resetPasswordsDoNotMatch}</p>
               )}
             </div>
 
@@ -115,14 +121,14 @@ function InviteAcceptPage() {
             )}
 
             <Button type="submit" className="w-full" disabled={!canSubmit || mutation.isPending}>
-              {mutation.isPending ? "Ativando..." : "Ativar acesso"}
+              {mutation.isPending ? t.auth.inviteSubmitting : t.auth.inviteSubmit}
             </Button>
           </form>
 
           <p className="mt-5 text-center text-xs text-slate-500">
-            Já ativou o acesso?{" "}
+            {t.auth.inviteAlreadyActivated}{" "}
             <Link to="/" className="font-medium text-primary hover:underline">
-              Ir para a entrada
+              {t.auth.inviteGoToLogin}
             </Link>
           </p>
         </section>

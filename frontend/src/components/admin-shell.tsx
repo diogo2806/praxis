@@ -1,6 +1,8 @@
 import type { ReactNode } from "react";
 import { Link, useRouterState } from "@tanstack/react-router";
 import { LayoutDashboard, Building2, ShieldCheck } from "lucide-react";
+import { LanguageSelector } from "@/components/language-selector";
+import { useLanguage } from "@/lib/language-context";
 import { cn } from "@/lib/utils";
 
 /**
@@ -11,45 +13,45 @@ import { cn } from "@/lib/utils";
  */
 export function AdminShell({ children }: { children: ReactNode }) {
   const pathname = useRouterState({ select: (state) => state.location.pathname });
+  const { t } = useLanguage();
 
   const navItems = [
-    { to: "/admin", label: "Dashboard", icon: LayoutDashboard, exact: true },
-    { to: "/admin/empresas", label: "Clientes", icon: Building2, exact: false },
+    { to: "/admin", label: t.admin.dashboard, icon: LayoutDashboard, exact: true },
+    { to: "/admin/empresas", label: t.admin.clients, icon: Building2, exact: false },
   ];
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900">
       <header className="border-b border-slate-200 bg-white">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
+        <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-6 py-4">
           <div className="flex items-center gap-2 font-semibold">
             <ShieldCheck className="size-5 text-primary" />
             <span>Praxis</span>
             <span className="rounded bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
-              Admin da plataforma
+              {t.admin.header}
             </span>
           </div>
-          <nav className="flex items-center gap-1">
-            {navItems.map((item) => {
-              const active = item.exact
-                ? pathname === item.to
-                : pathname.startsWith(item.to);
-              return (
-                <Link
-                  key={item.to}
-                  to={item.to}
-                  className={cn(
-                    "flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium transition-colors",
-                    active
-                      ? "bg-primary/10 text-primary"
-                      : "text-slate-600 hover:bg-slate-100",
-                  )}
-                >
-                  <item.icon className="size-4" />
-                  {item.label}
-                </Link>
-              );
-            })}
-          </nav>
+          <div className="flex items-center gap-3">
+            <nav className="flex items-center gap-1">
+              {navItems.map((item) => {
+                const active = item.exact ? pathname === item.to : pathname.startsWith(item.to);
+                return (
+                  <Link
+                    key={item.to}
+                    to={item.to}
+                    className={cn(
+                      "flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium transition-colors",
+                      active ? "bg-primary/10 text-primary" : "text-slate-600 hover:bg-slate-100",
+                    )}
+                  >
+                    <item.icon className="size-4" />
+                    {item.label}
+                  </Link>
+                );
+              })}
+            </nav>
+            <LanguageSelector />
+          </div>
         </div>
       </header>
       <main className="mx-auto max-w-7xl px-6 py-8">{children}</main>
@@ -66,17 +68,20 @@ const STATUS_STYLES: Record<string, string> = {
   BLOQUEADO: "bg-rose-100 text-rose-700",
 };
 
-const STATUS_LABELS: Record<string, string> = {
-  ATIVO: "Ativo",
-  EM_TESTE: "Em teste",
-  SUSPENSO: "Suspenso",
-  CANCELADO: "Cancelado",
-  CONVIDADO: "Convidado",
-  BLOQUEADO: "Bloqueado",
+const STATUS_KEYS: Record<string, keyof ReturnType<typeof useLanguage>["t"]["admin"]> = {
+  ATIVO: "statusActive",
+  EM_TESTE: "statusInTest",
+  SUSPENSO: "statusSuspended",
+  CANCELADO: "statusCancelled",
+  CONVIDADO: "statusInvited",
+  BLOQUEADO: "statusBlocked",
 };
 
 /** Selo visual de status reutilizado nas telas de cliente e de acessos. */
 export function StatusBadge({ status }: { status: string }) {
+  const { t } = useLanguage();
+  const key = STATUS_KEYS[status];
+  const label = key ? t.admin[key] : status;
   return (
     <span
       className={cn(
@@ -84,7 +89,7 @@ export function StatusBadge({ status }: { status: string }) {
         STATUS_STYLES[status] ?? "bg-slate-100 text-slate-600",
       )}
     >
-      {STATUS_LABELS[status] ?? status}
+      {label}
     </span>
   );
 }
