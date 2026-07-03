@@ -66,22 +66,6 @@ type MatrixItem = {
   cobertura: number;
 };
 
-const STATUS_OPTIONS = [
-  "Todos os status",
-  "Rascunho",
-  "Em revisão",
-  "Bloqueado",
-  "Publicado",
-] as const;
-
-type StatusLabel = (typeof STATUS_OPTIONS)[number];
-
-const STATUS_TEXT: Record<SimulationSummaryResponse["status"], string> = {
-  draft: "Em revisão",
-  published: "Publicado",
-  archived: "Bloqueado",
-};
-
 const STATUS_BADGE_CLASS: Record<SimulationSummaryResponse["status"], string> = {
   draft: "bg-warning/15 text-warning-foreground border-warning/30",
   published: "bg-success/15 text-success border-success/30",
@@ -89,11 +73,11 @@ const STATUS_BADGE_CLASS: Record<SimulationSummaryResponse["status"], string> = 
 };
 
 const mapSearchStatusToQuery = (status: string): SimulationSummaryResponse["status"] | null =>
-  status === "Publicado"
+  status === "publicado"
     ? "published"
-    : status === "Bloqueado"
+    : status === "bloqueado"
       ? "archived"
-      : status === "Em revisão"
+      : status === "em-revisao"
         ? "draft"
         : null;
 
@@ -119,8 +103,21 @@ function CompliancePage() {
   const navigate = useNavigate({ from: "/compliance" });
   const hasContext = Boolean(search.simulationId && search.versionNumber);
   const [query, setQuery] = useState("");
-  const [status, setStatus] = useState<StatusLabel>("Todos os status");
+  const [status, setStatus] = useState<string>("all");
   const [page, setPage] = useState(0);
+
+  const STATUS_OPTIONS = [
+    { value: "all", label: t.compliance.statusAll },
+    { value: "rascunho", label: t.compliance.statusDraft },
+    { value: "em-revisao", label: t.compliance.statusInReview },
+    { value: "bloqueado", label: t.compliance.statusBlocked },
+    { value: "publicado", label: t.compliance.statusPublished },
+  ];
+  const STATUS_TEXT: Record<SimulationSummaryResponse["status"], string> = {
+    draft: t.compliance.statusInReview,
+    published: t.compliance.statusPublished,
+    archived: t.compliance.statusBlocked,
+  };
 
   const simulationsQuery = useQuery({
     queryKey: ["simulations"],
@@ -206,39 +203,41 @@ function CompliancePage() {
           </div>
           <h1 className="mt-1 font-serif text-3xl leading-tight">{t.common.compliance}</h1>
           <p className="mt-2 max-w-3xl text-sm text-muted-foreground">
-            Acompanhe se cada versão de avaliação está pronta para ir ao ar com segurança. Use a
-            busca e o filtro de status para encontrar uma versão e clique em{" "}
-            <span className="font-medium text-foreground">Detalhes</span> para ver pendências,
-            critérios, caminhos possíveis e o histórico de alterações.
+            {t.compliance.introBeforeDetails}
+            <span className="font-medium text-foreground">{t.compliance.detailsAction}</span>
+            {t.compliance.introAfterDetails}
           </p>
         </div>
 
         <section className="rounded-xl border border-border bg-card">
           <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border px-4 py-3">
             <div>
-              <div className="text-sm font-semibold">Versões</div>
+              <div className="text-sm font-semibold">{t.compliance.versionsHeading}</div>
               <div className="text-xs text-muted-foreground">
                 {rows.length === 0
-                  ? "Nenhuma versão para os filtros atuais"
-                  : `${rows.length} ${rows.length === 1 ? "versão" : "versões"} listada${
-                      rows.length === 1 ? "" : "s"
-                    }`}
+                  ? t.compliance.noVersionsForFilters
+                  : (rows.length === 1
+                      ? t.compliance.versionsListedSingular
+                      : t.compliance.versionsListedPlural
+                    ).replace("{count}", String(rows.length))}
               </div>
             </div>
             <div className="flex items-center gap-2">
               <input
                 value={query}
                 onChange={(event) => setQuery(event.target.value)}
-                placeholder="Buscar avaliação, autor..."
+                placeholder={t.compliance.searchPlaceholder}
                 className="rounded-md border border-border bg-background px-2.5 py-1.5 text-xs outline-none focus:ring-1 focus:ring-ring"
               />
               <select
                 value={status}
-                onChange={(event) => setStatus(event.target.value as StatusLabel)}
+                onChange={(event) => setStatus(event.target.value)}
                 className="rounded-md border border-border bg-background px-2 py-1.5 text-xs"
               >
                 {STATUS_OPTIONS.map((option) => (
-                  <option key={option}>{option}</option>
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
                 ))}
               </select>
             </div>
@@ -248,37 +247,37 @@ function CompliancePage() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Avaliação</TableHead>
-                  <TableHead>Versão</TableHead>
+                  <TableHead>{t.compliance.evaluationHeader}</TableHead>
+                  <TableHead>{t.compliance.versionHeader}</TableHead>
                   <TableHead>{t.common.status}</TableHead>
-                  <TableHead>Taxa de conclusão</TableHead>
-                  <TableHead>Bloqueios</TableHead>
-                  <TableHead>Tentativas</TableHead>
-                  <TableHead>Atualizado</TableHead>
-                  <TableHead className="text-right">Ações</TableHead>
+                  <TableHead>{t.compliance.completionRateHeader}</TableHead>
+                  <TableHead>{t.compliance.blockers}</TableHead>
+                  <TableHead>{t.compliance.attemptsHeader}</TableHead>
+                  <TableHead>{t.compliance.updatedHeader}</TableHead>
+                  <TableHead className="text-right">{t.compliance.actionsHeader}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {simulationsQuery.isLoading ? (
                   <TableRow>
                     <TableCell colSpan={8} className="p-4 text-sm text-muted-foreground">
-                      Carregando versões...
+                      {t.compliance.loadingVersions}
                     </TableCell>
                   </TableRow>
                 ) : simulationsQuery.isError ? (
                   <TableRow>
                     <TableCell colSpan={8} className="p-4">
-                      <StateBanner tone="danger" title="Não foi possível carregar as versões">
+                      <StateBanner tone="danger" title={t.compliance.versionsLoadError}>
                         {simulationsQuery.error instanceof Error
                           ? simulationsQuery.error.message
-                          : "Tente novamente em alguns instantes."}
+                          : t.compliance.tryAgainLater}
                       </StateBanner>
                     </TableCell>
                   </TableRow>
                 ) : rows.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={8} className="p-4 text-sm text-muted-foreground">
-                      Nenhuma avaliação encontrada.
+                      {t.compliance.noEvaluationsFound}
                     </TableCell>
                   </TableRow>
                 ) : (
@@ -318,11 +317,14 @@ function CompliancePage() {
                                   : "text-danger"
                             }`}
                           >
-                            {row.completionRate}/100
+                            {t.compliance.scoreOutOf100.replace(
+                              "{value}",
+                              String(row.completionRate),
+                            )}
                           </span>
                         </TableCell>
                         <TableCell className="px-4 py-2.5 text-sm text-muted-foreground">
-                          Sem dado
+                          {t.compliance.noData}
                         </TableCell>
                         <TableCell className="px-4 py-2.5">{row.attemptsCreated}</TableCell>
                         <TableCell className="px-4 py-2.5 text-muted-foreground">
@@ -335,7 +337,7 @@ function CompliancePage() {
                             className="inline-flex w-full items-center justify-center rounded-md border border-border bg-background px-2 py-1 text-xs hover:bg-accent"
                           >
                             <Eye className="mr-1.5 h-3 w-3" />
-                            Detalhes
+                            {t.compliance.detailsAction}
                           </Link>
                         </TableCell>
                       </TableRow>
@@ -403,7 +405,8 @@ function ComplianceDialog({
   errorMessage?: string;
   onClose: () => void;
 }) {
-  const versionTitle = row ? `${row.name} · v${row.versionNumber}` : "Versão";
+  const { t } = useLanguage();
+  const versionTitle = row ? `${row.name} · v${row.versionNumber}` : t.compliance.versionFallback;
 
   return (
     <Dialog open={open} onOpenChange={(value) => !value && onClose()}>
@@ -412,54 +415,53 @@ function ComplianceDialog({
           <div className="text-[11px] uppercase tracking-wider text-muted-foreground">
             {versionTitle}
           </div>
-          <DialogTitle className="font-serif text-xl">Detalhes da versão</DialogTitle>
-          <DialogDescription>
-            Um resumo claro do que esta versão avalia, o que falta para publicar e o histórico de
-            alterações.
-          </DialogDescription>
+          <DialogTitle className="font-serif text-xl">
+            {t.compliance.versionDetailsTitle}
+          </DialogTitle>
+          <DialogDescription>{t.compliance.versionDetailsDescription}</DialogDescription>
         </DialogHeader>
 
         <div className="space-y-8 p-5">
           {hasError ? (
-            <StateBanner tone="danger" title="Falha ao carregar os detalhes da versão">
-              {errorMessage ?? "Tente novamente em alguns instantes."}
+            <StateBanner tone="danger" title={t.compliance.versionDetailsLoadError}>
+              {errorMessage ?? t.compliance.tryAgainLater}
             </StateBanner>
           ) : null}
 
           <ResumoConformidade validation={validation} loading={loading} />
 
           <DialogSection
-            title="Pendências a resolver"
-            description="Itens encontrados na verificação automática. Bloqueios impedem a publicação; avisos são recomendações que valem a pena revisar."
+            title={t.compliance.pendingTitle}
+            description={t.compliance.pendingDescription}
           >
             <IssuesPanel validation={validation} version={version} loading={loading} />
           </DialogSection>
 
           <DialogSection
-            title="Como esta versão é avaliada"
-            description="Cada critério tem um peso na nota final. Quanto maior o peso, mais ele influencia o resultado do candidato."
+            title={t.compliance.howEvaluatedTitle}
+            description={t.compliance.howEvaluatedDescription}
           >
             {loading || !version ? (
-              <PanelSkeleton label="Carregando critérios de avaliação..." />
+              <PanelSkeleton label={t.compliance.loadingCriteria} />
             ) : (
               <CriteriosPanel version={version} />
             )}
           </DialogSection>
 
           <DialogSection
-            title="Caminhos possíveis"
-            description={`Cada caminho é uma rota que o candidato pode seguir na avaliação. Caminhos verdes alcançam a nota de corte (${CORTA}/100); os vermelhos ficam abaixo.`}
+            title={t.compliance.pathsTitle}
+            description={t.compliance.pathsDescription.replace("{cutoff}", String(CORTA))}
           >
             {loading || !version ? (
-              <PanelSkeleton label="Mapeando caminhos da avaliação..." />
+              <PanelSkeleton label={t.compliance.loadingPaths} />
             ) : (
               <CaminhosPanel version={version} cutoff={CORTA} />
             )}
           </DialogSection>
 
           <DialogSection
-            title="Trilha de auditoria"
-            description="Histórico de quem alterou o quê e quando, para rastreabilidade e conformidade."
+            title={t.compliance.auditTrailTitle}
+            description={t.compliance.auditTrailDescription}
           >
             <AuditoriaPanel events={auditEvents} loading={loading} />
           </DialogSection>
@@ -504,38 +506,40 @@ function ResumoConformidade({
   validation: SimulationValidationResponse | null;
   loading: boolean;
 }) {
+  const { t } = useLanguage();
   if (loading || !validation) {
-    return <PanelSkeleton label="Carregando resumo de conformidade..." />;
+    return <PanelSkeleton label={t.compliance.loadingSummary} />;
   }
 
   const cards = [
     {
-      label: "Pode publicar?",
-      value: validation.publishable ? "Sim, pronto" : "Ainda não",
-      hint: validation.publishable
-        ? "Nenhum bloqueio em aberto. A versão pode ir ao ar."
-        : "Há bloqueios que precisam ser resolvidos antes de publicar.",
+      label: t.compliance.canPublishLabel,
+      value: validation.publishable ? t.compliance.canPublishYes : t.compliance.canPublishNo,
+      hint: validation.publishable ? t.compliance.canPublishHintYes : t.compliance.canPublishHintNo,
       Icon: validation.publishable ? ShieldCheck : ShieldAlert,
       tone: validation.publishable ? "ok" : "danger",
     },
     {
-      label: "Bloqueios",
+      label: t.compliance.blockers,
       value: String(validation.blockerCount),
-      hint: "Problemas que impedem a publicação até serem corrigidos.",
+      hint: t.compliance.blockersHint,
       Icon: ShieldAlert,
       tone: validation.blockerCount > 0 ? "danger" : "ok",
     },
     {
-      label: "Avisos",
+      label: t.compliance.warnings,
       value: String(validation.warningCount),
-      hint: "Recomendações de melhoria. Não impedem a publicação.",
+      hint: t.compliance.warningsHint,
       Icon: AlertTriangle,
       tone: validation.warningCount > 0 ? "warn" : "ok",
     },
     {
-      label: "Qualidade",
-      value: `${Math.round(validation.qualityScore)}/100`,
-      hint: "Índice geral de qualidade calculado a partir das verificações.",
+      label: t.compliance.qualityLabel,
+      value: t.compliance.scoreOutOf100.replace(
+        "{value}",
+        String(Math.round(validation.qualityScore)),
+      ),
+      hint: t.compliance.qualityHint,
       Icon: Gauge,
       tone: validation.qualityScore >= CORTA ? "ok" : "warn",
     },
@@ -572,9 +576,6 @@ function ResumoConformidade({
   );
 }
 
-const ISSUE_FILTERS = ["Todas", "Bloqueios", "Avisos"] as const;
-type IssueFilter = (typeof ISSUE_FILTERS)[number];
-
 function IssuesPanel({
   validation,
   version,
@@ -584,21 +585,28 @@ function IssuesPanel({
   version: SimulationVersionDetailResponse | null;
   loading: boolean;
 }) {
-  const [filter, setFilter] = useState<IssueFilter>("Todas");
+  const { t } = useLanguage();
+  const [filter, setFilter] = useState<string>("all");
   const [page, setPage] = useState(0);
+
+  const ISSUE_FILTERS = [
+    { value: "all", label: t.compliance.filterAll },
+    { value: "blockers", label: t.compliance.blockers },
+    { value: "warnings", label: t.compliance.warnings },
+  ];
 
   // Mesmos rótulos do mapa do validador (1.0, 5.0…); o id interno (turno-N) não aparece.
   const stepLabels = useMemo(() => buildStepLabels(version?.nodes ?? []), [version]);
   const issueLocation = (nodeId: string | null) => {
-    if (!nodeId) return "Geral";
+    if (!nodeId) return t.compliance.general;
     const label = stepLabelOf(stepLabels, nodeId);
-    return label === nodeId ? label : `Etapa ${label}`;
+    return label === nodeId ? label : t.compliance.stepLabel.replace("{value}", label);
   };
 
   const issues = useMemo<ValidationIssueResponse[]>(() => {
     const all = validation?.issues ?? [];
-    if (filter === "Bloqueios") return all.filter((issue) => issue.severity === "blocker");
-    if (filter === "Avisos") return all.filter((issue) => issue.severity === "warning");
+    if (filter === "blockers") return all.filter((issue) => issue.severity === "blocker");
+    if (filter === "warnings") return all.filter((issue) => issue.severity === "warning");
     return all;
   }, [validation, filter]);
 
@@ -614,13 +622,13 @@ function IssuesPanel({
   const visible = issues.slice(from, to);
 
   if (loading || !validation) {
-    return <PanelSkeleton label="Carregando pendências..." />;
+    return <PanelSkeleton label={t.compliance.loadingPending} />;
   }
 
   if ((validation.issues ?? []).length === 0) {
     return (
-      <StateBanner tone="ok" title="Nenhuma pendência encontrada">
-        Esta versão passou em todas as verificações automáticas.
+      <StateBanner tone="ok" title={t.compliance.noPendingTitle}>
+        {t.compliance.noPendingDescription}
       </StateBanner>
     );
   }
@@ -629,16 +637,20 @@ function IssuesPanel({
     <div className="rounded-lg border border-border">
       <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border px-3 py-2">
         <div className="text-xs text-muted-foreground">
-          {validation.blockerCount} bloqueio(s) · {validation.warningCount} aviso(s)
+          {t.compliance.blockerWarningCount
+            .replace("{blockers}", String(validation.blockerCount))
+            .replace("{warnings}", String(validation.warningCount))}
         </div>
         <select
           value={filter}
-          onChange={(event) => setFilter(event.target.value as IssueFilter)}
+          onChange={(event) => setFilter(event.target.value)}
           className="rounded-md border border-border bg-background px-2 py-1 text-xs"
-          aria-label="Filtrar pendências"
+          aria-label={t.compliance.filterPendingAria}
         >
           {ISSUE_FILTERS.map((option) => (
-            <option key={option}>{option}</option>
+            <option key={option.value} value={option.value}>
+              {option.label}
+            </option>
           ))}
         </select>
       </div>
@@ -647,16 +659,16 @@ function IssuesPanel({
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead className="w-28">Tipo</TableHead>
-              <TableHead>O que precisa de atenção</TableHead>
-              <TableHead className="w-28">Onde</TableHead>
+              <TableHead className="w-28">{t.compliance.typeHeader}</TableHead>
+              <TableHead>{t.compliance.needsAttentionHeader}</TableHead>
+              <TableHead className="w-28">{t.compliance.whereHeader}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {visible.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={3} className="px-3 py-3 text-sm text-muted-foreground">
-                  Nenhuma pendência para este filtro.
+                  {t.compliance.noPendingForFilter}
                 </TableCell>
               </TableRow>
             ) : (
@@ -670,7 +682,9 @@ function IssuesPanel({
                           : "border-warning/30 bg-warning/15 text-warning-foreground"
                       }`}
                     >
-                      {issue.severity === "blocker" ? "Bloqueio" : "Aviso"}
+                      {issue.severity === "blocker"
+                        ? t.compliance.blockerBadge
+                        : t.compliance.warningBadge}
                     </span>
                   </TableCell>
                   <TableCell className="px-3 py-2 text-sm">
@@ -699,6 +713,7 @@ function IssuesPanel({
 }
 
 function CriteriosPanel({ version }: { version: SimulationVersionDetailResponse }) {
+  const { t } = useLanguage();
   const matrix = useMemo(() => buildMatrix(version), [version]);
   const totalWeight = matrix.reduce((sum, item) => sum + item.peso, 0);
 
@@ -707,16 +722,16 @@ function CriteriosPanel({ version }: { version: SimulationVersionDetailResponse 
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>Critério</TableHead>
-            <TableHead>% da pontuação</TableHead>
-            <TableHead>Avaliado em</TableHead>
+            <TableHead>{t.compliance.criterionHeader}</TableHead>
+            <TableHead>{t.compliance.scorePercentHeader}</TableHead>
+            <TableHead>{t.compliance.evaluatedInHeader}</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {matrix.length === 0 ? (
             <TableRow>
               <TableCell colSpan={3} className="px-3 py-3 text-sm text-muted-foreground">
-                Nenhum critério configurado.
+                {t.compliance.noCriteriaConfigured}
               </TableCell>
             </TableRow>
           ) : (
@@ -725,14 +740,20 @@ function CriteriosPanel({ version }: { version: SimulationVersionDetailResponse 
               return (
                 <TableRow key={item.criterio}>
                   <TableCell className="font-medium">{item.criterio}</TableCell>
-                  <TableCell title={`peso ${item.peso} de ${totalWeight}`}>
-                    {percentual}% da pontuação
+                  <TableCell
+                    title={t.compliance.weightTooltip
+                      .replace("{weight}", String(item.peso))
+                      .replace("{total}", String(totalWeight))}
+                  >
+                    {t.compliance.percentOfScore.replace("{percent}", String(percentual))}
                   </TableCell>
                   <TableCell
                     className="text-muted-foreground"
-                    title="Em quantas etapas da avaliação este critério é avaliado"
+                    title={t.compliance.evaluatedInTooltip}
                   >
-                    {item.cobertura === 1 ? "1 etapa" : `${item.cobertura} etapas`}
+                    {item.cobertura === 1
+                      ? t.compliance.stepCountSingular
+                      : t.compliance.stepCountPlural.replace("{count}", String(item.cobertura))}
                   </TableCell>
                 </TableRow>
               );
@@ -744,9 +765,6 @@ function CriteriosPanel({ version }: { version: SimulationVersionDetailResponse 
   );
 }
 
-const PATH_FILTERS = ["Todos", "Aprovados", "Reprovados"] as const;
-type PathFilter = (typeof PATH_FILTERS)[number];
-
 function CaminhosPanel({
   version,
   cutoff,
@@ -754,16 +772,23 @@ function CaminhosPanel({
   version: SimulationVersionDetailResponse;
   cutoff: number;
 }) {
-  const [filter, setFilter] = useState<PathFilter>("Todos");
+  const { t } = useLanguage();
+  const [filter, setFilter] = useState<string>("all");
   const [page, setPage] = useState(0);
   const [expanded, setExpanded] = useState<string | null>(null);
+
+  const PATH_FILTERS = [
+    { value: "all", label: t.compliance.pathFilterAll },
+    { value: "approved", label: t.compliance.pathFilterApproved },
+    { value: "failed", label: t.compliance.pathFilterFailed },
+  ];
 
   const matrix = useMemo(() => buildMatrix(version), [version]);
   const allPaths = useMemo(() => buildPaths(version, matrix), [version, matrix]);
 
   const paths = useMemo(() => {
-    if (filter === "Aprovados") return allPaths.filter((path) => path.total >= cutoff);
-    if (filter === "Reprovados") return allPaths.filter((path) => path.total < cutoff);
+    if (filter === "approved") return allPaths.filter((path) => path.total >= cutoff);
+    if (filter === "failed") return allPaths.filter((path) => path.total < cutoff);
     return allPaths;
   }, [allPaths, filter, cutoff]);
 
@@ -780,24 +805,28 @@ function CaminhosPanel({
   const visible = paths.slice(from, to);
 
   if (allPaths.length === 0) {
-    return <PanelSkeleton label="Sem caminhos mapeados para esta versão." />;
+    return <PanelSkeleton label={t.compliance.noPathsMapped} />;
   }
 
   return (
     <div className="rounded-lg border border-border">
       <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border px-3 py-2">
         <div className="text-xs text-muted-foreground">
-          {allPaths.length} caminho(s) · nota de corte{" "}
-          <span className="font-semibold text-foreground">{cutoff}/100</span>
+          {t.compliance.pathsCountCutoff.replace("{count}", String(allPaths.length))}{" "}
+          <span className="font-semibold text-foreground">
+            {t.compliance.scoreOutOf100.replace("{value}", String(cutoff))}
+          </span>
         </div>
         <select
           value={filter}
-          onChange={(event) => setFilter(event.target.value as PathFilter)}
+          onChange={(event) => setFilter(event.target.value)}
           className="rounded-md border border-border bg-background px-2 py-1 text-xs"
-          aria-label="Filtrar caminhos"
+          aria-label={t.compliance.filterPathsAria}
         >
           {PATH_FILTERS.map((option) => (
-            <option key={option}>{option}</option>
+            <option key={option.value} value={option.value}>
+              {option.label}
+            </option>
           ))}
         </select>
       </div>
@@ -806,17 +835,17 @@ function CaminhosPanel({
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Caminho</TableHead>
-              <TableHead className="w-32">Resultado</TableHead>
-              <TableHead className="w-24">Nota</TableHead>
-              <TableHead className="w-28 text-right">Detalhe</TableHead>
+              <TableHead>{t.compliance.pathHeader}</TableHead>
+              <TableHead className="w-32">{t.compliance.resultHeader}</TableHead>
+              <TableHead className="w-24">{t.compliance.scoreHeader}</TableHead>
+              <TableHead className="w-28 text-right">{t.compliance.detailHeader}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {visible.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={4} className="px-3 py-3 text-sm text-muted-foreground">
-                  Nenhum caminho para este filtro.
+                  {t.compliance.noPathsForFilter}
                 </TableCell>
               </TableRow>
             ) : (
@@ -828,7 +857,13 @@ function CaminhosPanel({
                   <Fragment key={path.sequence}>
                     <TableRow>
                       <TableCell className="px-3 py-2 text-xs text-muted-foreground">
-                        {path.steps.map((step) => `Etapa ${step.turnIndex}`).join(" → ")} → fim
+                        {path.steps
+                          .map((step) =>
+                            t.compliance.stepLabel.replace("{value}", String(step.turnIndex)),
+                          )
+                          .join(" → ")}
+                        {" → "}
+                        {t.compliance.pathEnd}
                       </TableCell>
                       <TableCell className="px-3 py-2">
                         <span
@@ -836,11 +871,11 @@ function CaminhosPanel({
                             isPass ? "bg-success/15 text-success" : "bg-danger/15 text-danger"
                           }`}
                         >
-                          {isPass ? "Aprovado" : "Reprovado"}
+                          {isPass ? t.compliance.approved : t.compliance.failed}
                         </span>
                       </TableCell>
                       <TableCell className="px-3 py-2 font-mono text-xs font-semibold">
-                        {path.total}/100
+                        {t.compliance.scoreOutOf100.replace("{value}", String(path.total))}
                       </TableCell>
                       <TableCell className="px-3 py-2 text-right">
                         <button
@@ -849,7 +884,9 @@ function CaminhosPanel({
                           onClick={() => setExpanded(isExpanded ? null : path.sequence)}
                           className="rounded-md border border-border px-2 py-0.5 text-xs text-muted-foreground hover:bg-accent hover:text-foreground"
                         >
-                          {isExpanded ? "Ocultar" : `Caminho #${globalIndex + 1}`}
+                          {isExpanded
+                            ? t.compliance.hide
+                            : t.compliance.pathNumber.replace("{n}", String(globalIndex + 1))}
                         </button>
                       </TableCell>
                     </TableRow>
@@ -881,6 +918,7 @@ function CaminhosPanel({
 }
 
 function PathBreakdown({ path, matrix }: { path: PathCandidate; matrix: MatrixItem[] }) {
+  const { t } = useLanguage();
   return (
     <div className="space-y-3">
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
@@ -891,25 +929,24 @@ function PathBreakdown({ path, matrix }: { path: PathCandidate; matrix: MatrixIt
               <div className="truncate text-[11px] text-muted-foreground">{item.criterio}</div>
               <div className="font-mono text-sm">
                 {gained}
-                <span className="text-muted-foreground"> pts</span>
+                <span className="text-muted-foreground">{t.compliance.pointsSuffix}</span>
               </div>
             </div>
           );
         })}
       </div>
-      <p className="text-[11px] text-muted-foreground">
-        Os pontos por critério somam a nota do caminho, limitada a 100.
-      </p>
+      <p className="text-[11px] text-muted-foreground">{t.compliance.pointsSumNote}</p>
       <PathAttemptDetails path={path} />
     </div>
   );
 }
 
 function PathAttemptDetails({ path }: { path: PathCandidate }) {
+  const { t } = useLanguage();
   return (
     <div className="space-y-2 border-t border-border pt-3">
       <div className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-        Passo a passo do caminho
+        {t.compliance.stepByStepTitle}
       </div>
       {path.steps.map((step, index) => (
         <div
@@ -917,13 +954,15 @@ function PathAttemptDetails({ path }: { path: PathCandidate }) {
           className="rounded-md bg-background p-2"
         >
           <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
-            <span className="text-muted-foreground">Etapa {step.turnIndex}</span>
             <span className="text-muted-foreground">
-              {step.nextNodeId ? "leva à próxima etapa" : "encerra a avaliação"}
+              {t.compliance.stepLabel.replace("{value}", String(step.turnIndex))}
+            </span>
+            <span className="text-muted-foreground">
+              {step.nextNodeId ? t.compliance.leadsToNextStep : t.compliance.endsEvaluation}
             </span>
           </div>
           <div className="mt-2 text-xs">
-            <div className="font-medium">{step.speaker || "Atendente"}</div>
+            <div className="font-medium">{step.speaker || t.compliance.attendant}</div>
             <div className="mt-0.5 text-muted-foreground">{step.clientMessage}</div>
           </div>
           <div className="mt-2 rounded-md border border-border bg-background p-2 text-xs">
@@ -952,6 +991,7 @@ export function AuditoriaPanel({
   events: AuditEventResponse[];
   loading?: boolean;
 }) {
+  const { t } = useLanguage();
   const [page, setPage] = useState(0);
   const perPage = 5;
   const totalPages = Math.max(1, Math.ceil(events.length / perPage));
@@ -961,7 +1001,7 @@ export function AuditoriaPanel({
   const visible = events.slice(from, to);
 
   if (loading) {
-    return <PanelSkeleton label="Carregando trilha de auditoria..." />;
+    return <PanelSkeleton label={t.compliance.loadingAuditTrail} />;
   }
 
   return (
@@ -970,16 +1010,16 @@ export function AuditoriaPanel({
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Quando</TableHead>
-              <TableHead>Quem</TableHead>
-              <TableHead>Evento</TableHead>
+              <TableHead>{t.compliance.whenHeader}</TableHead>
+              <TableHead>{t.compliance.whoHeader}</TableHead>
+              <TableHead>{t.compliance.eventHeader}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {visible.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={3} className="px-3 py-3 text-sm text-muted-foreground">
-                  Nenhum evento de auditoria.
+                  {t.compliance.noAuditEvents}
                 </TableCell>
               </TableRow>
             ) : (
@@ -989,7 +1029,7 @@ export function AuditoriaPanel({
                     {formatDate(event.createdAt)}
                   </TableCell>
                   <TableCell className="whitespace-nowrap px-3 py-2 text-xs">
-                    {parseWho(event.metadata)}
+                    {parseWho(event.metadata, t.compliance.systemActor)}
                   </TableCell>
                   <TableCell className="px-3 py-2">{formatAuditMessage(event.message)}</TableCell>
                 </TableRow>
@@ -1026,12 +1066,22 @@ function TablePager({
   totalPages: number;
   onPage: (page: number) => void;
 }) {
+  const { t } = useLanguage();
   return (
     <div className="flex items-center justify-between border-t border-border px-3 py-2 text-xs text-muted-foreground">
-      <span>{total === 0 ? "0–0 de 0" : `${from + 1}–${to} de ${total}`}</span>
+      <span>
+        {total === 0
+          ? t.compliance.pagerEmpty
+          : t.compliance.pagerRange
+              .replace("{from}", String(from + 1))
+              .replace("{to}", String(to))
+              .replace("{total}", String(total))}
+      </span>
       <div className="flex items-center gap-2">
         <span className="hidden sm:inline">
-          Página {page + 1} de {totalPages}
+          {t.compliance.pagerPage
+            .replace("{page}", String(page + 1))
+            .replace("{total}", String(totalPages))}
         </span>
         <div className="flex gap-1">
           <button
@@ -1040,7 +1090,7 @@ function TablePager({
             onClick={() => onPage(Math.max(0, page - 1))}
             disabled={page === 0}
           >
-            Anterior
+            {t.compliance.previous}
           </button>
           <button
             type="button"
@@ -1048,7 +1098,7 @@ function TablePager({
             onClick={() => onPage(Math.min(totalPages - 1, page + 1))}
             disabled={page >= totalPages - 1}
           >
-            Próxima
+            {t.compliance.next}
           </button>
         </div>
       </div>
@@ -1159,8 +1209,8 @@ function calculateTotal(byCriteria: Record<string, number>, matrix: MatrixItem[]
   return Math.min(total, 100);
 }
 
-function parseWho(metadata?: string | null) {
-  if (!metadata) return "Sistema";
+function parseWho(metadata: string | null | undefined, fallback: string) {
+  if (!metadata) return fallback;
   try {
     const value = JSON.parse(metadata) as { actor?: string; who?: string };
     if (typeof value === "object" && value !== null) {
@@ -1168,9 +1218,9 @@ function parseWho(metadata?: string | null) {
       if (typeof value.who === "string") return value.who;
     }
   } catch {
-    return "Sistema";
+    return fallback;
   }
-  return "Sistema";
+  return fallback;
 }
 
 function formatAuditMessage(message: string) {

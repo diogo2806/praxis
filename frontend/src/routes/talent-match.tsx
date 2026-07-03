@@ -55,13 +55,6 @@ export const Route = createFileRoute("/talent-match")({
 const MAX_SELECTED = 5;
 const palette = ["#0f766e", "#b45309", "#2563eb", "#be123c", "#6d28d9"];
 
-const DECISION_OPTIONS: { value: HumanDecision; label: string }[] = [
-  { value: "advanced", label: "Avançar" },
-  { value: "rejected", label: "Não avançar" },
-  { value: "hired", label: "Contratar" },
-  { value: "onHold", label: "Em espera" },
-];
-
 const BLIND_MODE_STORAGE_KEY = "praxis.talent-match.blindMode";
 
 function TalentMatchPage() {
@@ -138,18 +131,16 @@ function TalentMatchPage() {
       <div className="mb-5 flex flex-wrap items-end justify-between gap-4">
         <div>
           <div className="text-xs uppercase text-primary">{t.common.talentMatch}</div>
-          <h1 className="mt-1 text-3xl font-semibold">Comparação de participações</h1>
+          <h1 className="mt-1 text-3xl font-semibold">{t.talentMatchPage.pageTitle}</h1>
           <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
-            Evidência para análise: sobreponha até 5 participações no radar e compare cada
-            competência com a referência configurada para a avaliação. A pontuação é indicador de
-            apoio; a interpretação permanece com a equipe responsável.
+            {t.talentMatchPage.pageIntro}
           </p>
         </div>
         <Link
           to="/dashboard"
           className="rounded-md border border-border bg-card px-4 py-2 text-sm hover:bg-accent"
         >
-          Voltar ao painel
+          {t.talentMatchPage.backToDashboard}
         </Link>
       </div>
 
@@ -160,33 +151,29 @@ function TalentMatchPage() {
         />
       ) : (
         <div className="space-y-5">
-          <StateBanner tone="info" title="Evidência para análise — a decisão é sua">
-            Os números são indicadores de apoio, não um veredito automático. A Práxis não aprova nem
-            reprova pessoas: a decisão final é registrada por uma pessoa, e um erro crítico aciona
-            revisão humana.
+          <StateBanner tone="info" title={t.talentMatchPage.evidenceBannerTitle}>
+            {t.talentMatchPage.evidenceBannerBody}
           </StateBanner>
           {!isVersionPublished && (
-            <StateBanner tone="warn" title="Versão não disponível para comparação">
-              Esta versão ainda não está publicada. Selecione uma versão publicada para comparar
-              resultados.
+            <StateBanner tone="warn" title={t.talentMatchPage.versionUnavailableTitle}>
+              {t.talentMatchPage.versionUnavailableBody}
             </StateBanner>
           )}
           {isVersionPublished && completedCandidates.length === 0 && (
-            <StateBanner tone="info" title="Ainda não há participações concluídas">
-              Selecione ou aguarde tentativas concluídas para essa versão antes de comparar no
-              radar.
+            <StateBanner tone="info" title={t.talentMatchPage.noCompletedTitle}>
+              {t.talentMatchPage.noCompletedBody}
             </StateBanner>
           )}
           {selectedLimitReached && (
-            <StateBanner tone="warn" title="Limite visual atingido">
-              O radar aceita no máximo 5 participações por comparação para manter leitura clara.
+            <StateBanner tone="warn" title={t.talentMatchPage.visualLimitTitle}>
+              {t.talentMatchPage.visualLimitBody}
             </StateBanner>
           )}
           {talentMatchQuery.isError && (
-            <StateBanner tone="danger" title="Não foi possível carregar o comparativo">
+            <StateBanner tone="danger" title={t.talentMatchPage.loadComparisonErrorTitle}>
               {talentMatchQuery.error instanceof Error
                 ? talentMatchQuery.error.message
-                : "Revise as participações selecionadas e tente novamente."}
+                : t.talentMatchPage.loadComparisonErrorFallback}
             </StateBanner>
           )}
 
@@ -196,10 +183,12 @@ function TalentMatchPage() {
                 <div>
                   <div className="flex items-center gap-2 text-sm font-semibold">
                     <UsersRound className="h-4 w-4" />
-                    Participantes
+                    {t.talentMatchPage.participantsHeading}
                   </div>
                   <div className="mt-1 text-xs text-muted-foreground">
-                    {selectedAttemptIds.length}/{MAX_SELECTED} selecionados
+                    {t.talentMatchPage.selectedCount
+                      .replace("{count}", String(selectedAttemptIds.length))
+                      .replace("{max}", String(MAX_SELECTED))}
                   </div>
                 </div>
                 <button
@@ -207,7 +196,7 @@ function TalentMatchPage() {
                   onClick={() => setSelectedAttemptIds([])}
                   className="rounded-md border border-border bg-background px-3 py-1.5 text-xs hover:bg-accent"
                 >
-                  Limpar
+                  {t.talentMatchPage.clear}
                 </button>
               </div>
               <label className="mb-3 flex cursor-pointer items-start gap-2.5 rounded-md border border-border bg-background p-3">
@@ -220,11 +209,10 @@ function TalentMatchPage() {
                 <span className="min-w-0">
                   <span className="flex items-center gap-1.5 text-xs font-medium">
                     <EyeOff className="h-3.5 w-3.5" />
-                    Modo cego
+                    {t.talentMatchPage.blindMode}
                   </span>
                   <span className="mt-0.5 block text-[11px] text-muted-foreground">
-                    Oculta nome e e-mail para reduzir viés na análise. A identidade não é enviada
-                    pelo servidor enquanto ativo.
+                    {t.talentMatchPage.blindModeDescription}
                   </span>
                 </span>
               </label>
@@ -251,10 +239,12 @@ function TalentMatchPage() {
                 <div>
                   <div className="flex items-center gap-2 text-sm font-semibold">
                     <Target className="h-4 w-4" />
-                    Radar contra benchmark
+                    {t.talentMatchPage.radarVsBenchmark}
                   </div>
                   <div className="mt-1 text-xs text-muted-foreground">
-                    {search.simulationId} v{search.versionNumber}
+                    {t.talentMatchPage.simulationVersionLabel
+                      .replace("{id}", String(search.simulationId))
+                      .replace("{version}", String(search.versionNumber))}
                   </div>
                 </div>
                 <BenchmarkSummary benchmark={benchmark} />
@@ -270,8 +260,8 @@ function TalentMatchPage() {
           {isVersionPublished && completedCandidates.length > 0 ? (
             <CandidateLegend candidates={selectedCandidateRows} />
           ) : (
-            <StateBanner tone="info" title="Comparativo pendente">
-              A comparação aparece quando houver participações concluídas selecionadas.
+            <StateBanner tone="info" title={t.talentMatchPage.pendingComparisonTitle}>
+              {t.talentMatchPage.pendingComparisonBody}
             </StateBanner>
           )}
         </div>
@@ -291,16 +281,20 @@ function CandidateSelector({
   selectedAttemptIds: string[];
   onToggle: (attemptId: string) => void;
 }) {
+  const { t } = useLanguage();
+
   if (loading) {
     return (
-      <div className="rounded-md border border-border bg-background p-4 text-sm">Carregando...</div>
+      <div className="rounded-md border border-border bg-background p-4 text-sm">
+        {t.talentMatchPage.loading}
+      </div>
     );
   }
 
   if (candidates.length === 0) {
     return (
       <div className="rounded-md border border-border bg-background p-4 text-sm text-muted-foreground">
-        Nenhuma participação concluída encontrada para esta avaliação.
+        {t.talentMatchPage.noCompletedForAssessment}
       </div>
     );
   }
@@ -355,6 +349,7 @@ function RadarComparisonChart({
   data?: TalentMatchResponse;
   loading: boolean;
 }) {
+  const { t } = useLanguage();
   const chartData = benchmark.map((item) => {
     const row: Record<string, string | number> = {
       competency: item.competencyName,
@@ -371,14 +366,16 @@ function RadarComparisonChart({
   if (benchmark.length === 0) {
     return (
       <div className="flex min-h-[420px] items-center justify-center rounded-md border border-border bg-background text-sm text-muted-foreground">
-        Benchmark indisponível para esta versão.
+        {t.talentMatchPage.benchmarkUnavailable}
       </div>
     );
   }
 
   return (
     <div className="min-h-[440px]">
-      {loading && <div className="mb-2 text-xs text-muted-foreground">Atualizando radar...</div>}
+      {loading && (
+        <div className="mb-2 text-xs text-muted-foreground">{t.talentMatchPage.updatingRadar}</div>
+      )}
       <ResponsiveContainer width="100%" height={420}>
         <RadarChart data={chartData} outerRadius="72%">
           <PolarGrid stroke="hsl(var(--border))" />
@@ -389,7 +386,7 @@ function RadarComparisonChart({
           <PolarRadiusAxis angle={90} domain={[0, 100]} tick={{ fontSize: 10 }} />
           <RechartsTooltip content={<RadarTooltip candidates={data?.candidates ?? []} />} />
           <Radar
-            name="Referência configurada"
+            name={t.talentMatchPage.configuredReference}
             dataKey="benchmark"
             stroke="#52525b"
             strokeDasharray="5 4"
@@ -424,6 +421,8 @@ function RadarTooltip({
   payload?: Array<{ name: string; value: number; dataKey: string }>;
   candidates: CandidateRadarDto[];
 }) {
+  const { t } = useLanguage();
+
   if (!active || !payload?.length) return null;
 
   const candidateNames = new Map(
@@ -433,7 +432,7 @@ function RadarTooltip({
     .map((item) => ({
       name:
         item.dataKey === "benchmark"
-          ? "Referência configurada"
+          ? t.talentMatchPage.configuredReference
           : (candidateNames.get(String(item.dataKey)) ?? item.name),
       value: Number(item.value ?? 0),
       benchmark: item.dataKey === "benchmark",
@@ -458,6 +457,7 @@ function RadarTooltip({
 }
 
 function BenchmarkSummary({ benchmark }: { benchmark: CompetencyBenchmarkDto[] }) {
+  const { t } = useLanguage();
   const average =
     benchmark.length === 0
       ? 0
@@ -466,13 +466,14 @@ function BenchmarkSummary({ benchmark }: { benchmark: CompetencyBenchmarkDto[] }
   return (
     <div className="inline-flex items-center gap-2 rounded-md border border-border bg-background px-3 py-2 text-xs">
       <BarChart3 className="h-3.5 w-3.5 text-muted-foreground" />
-      <span className="text-muted-foreground">Referência média</span>
+      <span className="text-muted-foreground">{t.talentMatchPage.averageReference}</span>
       <span className="font-semibold tabular-nums">{average}</span>
     </div>
   );
 }
 
 function EvidenceReportButton({ attemptId }: { attemptId: string }) {
+  const { t } = useLanguage();
   const mutation = useMutation({
     mutationFn: async () => {
       const report = await getEvidenceReport(attemptId);
@@ -493,16 +494,16 @@ function EvidenceReportButton({ attemptId }: { attemptId: string }) {
         onClick={() => mutation.mutate()}
         disabled={mutation.isPending}
         className="inline-flex w-full items-center justify-center gap-1.5 rounded-md border border-border bg-background px-3 py-1.5 text-xs hover:bg-accent disabled:cursor-not-allowed disabled:opacity-50"
-        title="Declaração de scoring determinístico (sem IA), fórmula, caminho, competências e trilha."
+        title={t.talentMatchPage.evidenceReportTooltip}
       >
         <FileText className="h-3.5 w-3.5" />
-        {mutation.isPending ? "Gerando…" : "Relatório de evidência"}
+        {mutation.isPending ? t.talentMatchPage.generating : t.talentMatchPage.evidenceReport}
       </button>
       {mutation.isError && (
         <p className="mt-1.5 text-[11px] text-destructive">
           {mutation.error instanceof Error
             ? mutation.error.message
-            : "Não foi possível gerar o relatório."}
+            : t.talentMatchPage.evidenceReportErrorFallback}
         </p>
       )}
     </div>
@@ -510,6 +511,7 @@ function EvidenceReportButton({ attemptId }: { attemptId: string }) {
 }
 
 function CandidateDecisionControl({ attemptId }: { attemptId: string }) {
+  const { t } = useLanguage();
   const [decision, setDecision] = useState<HumanDecision | "">("");
   const [reason, setReason] = useState("");
   const mutation = useMutation({
@@ -520,10 +522,17 @@ function CandidateDecisionControl({ attemptId }: { attemptId: string }) {
       }),
   });
 
+  const decisionOptions: { value: HumanDecision; label: string }[] = [
+    { value: "advanced", label: t.talentMatchPage.decisionAdvanced },
+    { value: "rejected", label: t.talentMatchPage.decisionRejected },
+    { value: "hired", label: t.talentMatchPage.decisionHired },
+    { value: "onHold", label: t.talentMatchPage.decisionOnHold },
+  ];
+
   if (mutation.isSuccess) {
     return (
       <div className="mt-3 rounded-md border border-primary/40 bg-primary/5 p-2.5 text-[11px] text-muted-foreground">
-        Decisão registrada na trilha de auditoria. A pontuação é apenas apoio — a decisão é sua.
+        {t.talentMatchPage.decisionRecorded}
       </div>
     );
   }
@@ -531,15 +540,15 @@ function CandidateDecisionControl({ attemptId }: { attemptId: string }) {
   return (
     <div className="mt-3 border-t border-border pt-3">
       <label className="block text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
-        Registrar decisão
+        {t.talentMatchPage.registerDecision}
       </label>
       <select
         value={decision}
         onChange={(event) => setDecision(event.target.value as HumanDecision | "")}
         className="mt-1.5 w-full rounded-md border border-border bg-background px-2 py-1.5 text-xs"
       >
-        <option value="">Selecione a decisão…</option>
-        {DECISION_OPTIONS.map((option) => (
+        <option value="">{t.talentMatchPage.selectDecisionPlaceholder}</option>
+        {decisionOptions.map((option) => (
           <option key={option.value} value={option.value}>
             {option.label}
           </option>
@@ -550,7 +559,7 @@ function CandidateDecisionControl({ attemptId }: { attemptId: string }) {
         onChange={(event) => setReason(event.target.value)}
         rows={2}
         maxLength={1000}
-        placeholder="Justificativa (opcional, recomendada)"
+        placeholder={t.talentMatchPage.reasonPlaceholder}
         className="mt-2 w-full resize-none rounded-md border border-border bg-background px-2 py-1.5 text-xs"
       />
       <button
@@ -559,13 +568,13 @@ function CandidateDecisionControl({ attemptId }: { attemptId: string }) {
         onClick={() => mutation.mutate()}
         className="mt-2 w-full rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
       >
-        {mutation.isPending ? "Registrando…" : "Registrar decisão"}
+        {mutation.isPending ? t.talentMatchPage.registering : t.talentMatchPage.registerDecision}
       </button>
       {mutation.isError && (
         <p className="mt-1.5 text-[11px] text-destructive">
           {mutation.error instanceof Error
             ? mutation.error.message
-            : "Não foi possível registrar a decisão."}
+            : t.talentMatchPage.registerDecisionErrorFallback}
         </p>
       )}
     </div>
@@ -573,10 +582,12 @@ function CandidateDecisionControl({ attemptId }: { attemptId: string }) {
 }
 
 function CandidateLegend({ candidates }: { candidates: CandidateRadarDto[] }) {
+  const { t } = useLanguage();
+
   if (candidates.length === 0) {
     return (
-      <StateBanner tone="info" title="Benchmark visível">
-        Selecione participações concluídas para sobrepor os perfis individuais ao radar.
+      <StateBanner tone="info" title={t.talentMatchPage.benchmarkVisibleTitle}>
+        {t.talentMatchPage.benchmarkVisibleBody}
       </StateBanner>
     );
   }
@@ -600,7 +611,9 @@ function CandidateLegend({ candidates }: { candidates: CandidateRadarDto[] }) {
             </div>
             <div className="text-right">
               <div className="text-xl font-semibold tabular-nums">{candidate.generalScore}</div>
-              <div className="text-[10px] uppercase text-muted-foreground">pontuação · apoio</div>
+              <div className="text-[10px] uppercase text-muted-foreground">
+                {t.talentMatchPage.scoreSupportLabel}
+              </div>
             </div>
           </div>
           <EvidenceReportButton attemptId={candidate.attemptId} />
@@ -618,10 +631,12 @@ function SimulationSelectionTable({
   simulations: SimulationSummaryResponse[];
   loading: boolean;
 }) {
+  const { t } = useLanguage();
+
   if (loading) {
     return (
       <section className="rounded-md border border-border bg-card p-5">
-        <div className="text-sm text-muted-foreground">Carregando avaliações...</div>
+        <div className="text-sm text-muted-foreground">{t.talentMatchPage.loadingAssessments}</div>
       </section>
     );
   }
@@ -630,15 +645,15 @@ function SimulationSelectionTable({
     return (
       <section className="rounded-md border border-border bg-card p-8 text-center">
         <CircleAlert className="mx-auto h-6 w-6 text-muted-foreground" />
-        <h2 className="mt-3 text-lg font-semibold">Nenhuma avaliação cadastrada</h2>
+        <h2 className="mt-3 text-lg font-semibold">{t.talentMatchPage.noAssessmentsTitle}</h2>
         <p className="mx-auto mt-1 max-w-md text-sm text-muted-foreground">
-          Crie uma avaliação e conclua participações para comparar resultados.
+          {t.talentMatchPage.noAssessmentsBody}
         </p>
         <Link
           to="/nova/avaliacao"
           className="mt-5 inline-flex rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
         >
-          Criar avaliação
+          {t.talentMatchPage.createAssessment}
         </Link>
       </section>
     );
@@ -663,21 +678,25 @@ function SimulationSelectionTable({
   return (
     <section className="rounded-md border border-border bg-card">
       <div className="border-b border-border p-5">
-        <h2 className="text-xl font-semibold">Selecione uma avaliação para comparar resultados</h2>
+        <h2 className="text-xl font-semibold">{t.talentMatchPage.selectAssessmentTitle}</h2>
         <p className="mt-1 text-sm text-muted-foreground">
-          O painel usa participações concluídas e a referência configurada no plano da avaliação.
+          {t.talentMatchPage.selectAssessmentBody}
         </p>
       </div>
       <div className="overflow-x-auto">
         <table className="w-full min-w-[860px] text-left text-sm">
           <thead className="border-b border-border bg-muted/45 text-xs uppercase text-muted-foreground">
             <tr>
-              <th className="px-4 py-3 font-medium">Avaliação</th>
-              <th className="px-4 py-3 font-medium">Status</th>
-              <th className="px-4 py-3 font-medium">Versão</th>
-              <th className="px-4 py-3 text-right font-medium">Participações concluídas</th>
-              <th className="px-4 py-3 font-medium">Referência</th>
-              <th className="px-4 py-3 text-right font-medium">Ação</th>
+              <th className="px-4 py-3 font-medium">{t.talentMatchPage.tableHeaderAssessment}</th>
+              <th className="px-4 py-3 font-medium">{t.talentMatchPage.tableHeaderStatus}</th>
+              <th className="px-4 py-3 font-medium">{t.talentMatchPage.tableHeaderVersion}</th>
+              <th className="px-4 py-3 text-right font-medium">
+                {t.talentMatchPage.tableHeaderCompletedParticipations}
+              </th>
+              <th className="px-4 py-3 font-medium">{t.talentMatchPage.tableHeaderReference}</th>
+              <th className="px-4 py-3 text-right font-medium">
+                {t.talentMatchPage.tableHeaderAction}
+              </th>
             </tr>
           </thead>
           <tbody>
@@ -709,7 +728,10 @@ function SimulationSelectionTable({
                     />
                   </td>
                   <td className="px-4 py-3 font-mono text-xs text-muted-foreground">
-                    v{simulation.versionNumber}
+                    {t.talentMatchPage.versionShort.replace(
+                      "{version}",
+                      String(simulation.versionNumber),
+                    )}
                   </td>
                   <td className="px-4 py-3 text-right font-medium tabular-nums">
                     {simulation.attemptsCompleted.toLocaleString("pt-BR")}
@@ -717,11 +739,15 @@ function SimulationSelectionTable({
                   <td className="px-4 py-3">
                     {hasReference ? (
                       <span className="text-xs text-muted-foreground">
-                        {simulation.competencies.length} competência
-                        {simulation.competencies.length === 1 ? "" : "s"}
+                        {(simulation.competencies.length === 1
+                          ? t.talentMatchPage.competencyCountSingular
+                          : t.talentMatchPage.competencyCountPlural
+                        ).replace("{count}", String(simulation.competencies.length))}
                       </span>
                     ) : (
-                      <span className="text-xs text-warning">Configure a referência</span>
+                      <span className="text-xs text-warning">
+                        {t.talentMatchPage.configureReference}
+                      </span>
                     )}
                   </td>
                   <td className="px-4 py-3 text-right">
@@ -734,15 +760,15 @@ function SimulationSelectionTable({
                         }}
                         className="inline-flex rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary/90"
                       >
-                        Comparar participações
+                        {t.talentMatchPage.compareParticipations}
                       </Link>
                     ) : (
                       <span className="text-xs text-muted-foreground">
                         {simulation.status !== "published"
-                          ? "Publique a avaliação"
+                          ? t.talentMatchPage.publishAssessment
                           : !hasReference
-                            ? "Configure a referência"
-                            : "Sem dados suficientes"}
+                            ? t.talentMatchPage.configureReference
+                            : t.talentMatchPage.insufficientData}
                       </span>
                     )}
                   </td>
