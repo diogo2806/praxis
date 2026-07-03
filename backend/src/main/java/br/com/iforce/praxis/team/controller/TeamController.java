@@ -20,10 +20,18 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 
 /**
- * Gerenciamento de usuários da equipe pelo próprio cliente.
+ * Porta de entrada (API) da tela de "Equipe".
  *
- * <p>O tenant é obtido do JWT do usuário logado; o cliente nunca acessa usuários
- * de outro tenant. Usuários convidados recebem sempre o papel {@code EMPRESA}.</p>
+ * <p>Na visão do processo, é por aqui que o cliente administra os usuários da
+ * própria empresa: listar quem tem acesso, convidar novas pessoas, reenviar
+ * convites pendentes e bloquear ou desbloquear o acesso de alguém. Este
+ * componente apenas recebe o pedido vindo da tela — descobrindo a empresa e o
+ * usuário logados a partir do login — e repassa o trabalho para a regra de
+ * negócio ({@link TeamService}), que faz o trabalho de fato.</p>
+ *
+ * <p>A empresa é sempre determinada pelo login do usuário, de modo que ninguém
+ * consegue acessar usuários de outra empresa. Toda pessoa convidada por aqui
+ * entra com o perfil de acesso padrão de empresa ({@code EMPRESA}).</p>
  */
 @RestController
 @RequestMapping("/api/v1/team")
@@ -44,6 +52,11 @@ public class TeamController {
         this.currentUserService = currentUserService;
     }
 
+    /**
+     * Lista os usuários da equipe da empresa logada para exibir na tela.
+     *
+     * @return os usuários cadastrados na empresa, com nome, e-mail, perfis e situação
+     */
     @GetMapping
     @Operation(summary = "Lista usuários da equipe")
     public ResponseEntity<List<TeamUserResponse>> list() {
@@ -51,6 +64,12 @@ public class TeamController {
         return ResponseEntity.ok(teamService.listUsers(tenantId));
     }
 
+    /**
+     * Recebe o pedido para convidar uma nova pessoa para a equipe.
+     *
+     * @param request nome e e-mail da pessoa a convidar
+     * @return os dados do usuário criado junto com o link de convite a ser enviado
+     */
     @PostMapping("/invite")
     @Operation(summary = "Convida novo usuário EMPRESA")
     public ResponseEntity<InviteTeamUserResponse> invite(@Valid @RequestBody InviteTeamUserRequest request) {
@@ -59,6 +78,12 @@ public class TeamController {
         return ResponseEntity.ok(teamService.inviteUser(actorUserId, tenantId, request));
     }
 
+    /**
+     * Recebe o pedido para reenviar o convite de uma pessoa que ainda não entrou.
+     *
+     * @param userId identificador do usuário que receberá o novo convite
+     * @return os dados do usuário junto com o novo link de convite
+     */
     @PostMapping("/{userId}/resend-invite")
     @Operation(summary = "Reenvia convite pendente")
     public ResponseEntity<InviteTeamUserResponse> resendInvite(@PathVariable Long userId) {
@@ -67,6 +92,12 @@ public class TeamController {
         return ResponseEntity.ok(teamService.resendInvite(actorUserId, tenantId, userId));
     }
 
+    /**
+     * Recebe o pedido para bloquear o acesso de um usuário da equipe.
+     *
+     * @param userId identificador do usuário a ser bloqueado
+     * @return os dados do usuário já com a situação "bloqueado"
+     */
     @PostMapping("/{userId}/block")
     @Operation(summary = "Bloqueia usuário")
     public ResponseEntity<TeamUserResponse> block(@PathVariable Long userId) {
@@ -75,6 +106,12 @@ public class TeamController {
         return ResponseEntity.ok(teamService.blockUser(actorUserId, tenantId, userId));
     }
 
+    /**
+     * Recebe o pedido para reativar o acesso de um usuário bloqueado.
+     *
+     * @param userId identificador do usuário a ser desbloqueado
+     * @return os dados do usuário já com a situação "ativo"
+     */
     @PostMapping("/{userId}/unblock")
     @Operation(summary = "Desbloqueia usuário")
     public ResponseEntity<TeamUserResponse> unblock(@PathVariable Long userId) {
