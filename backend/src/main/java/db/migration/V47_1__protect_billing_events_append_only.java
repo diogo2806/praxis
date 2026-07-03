@@ -35,7 +35,10 @@ public class V47_1__protect_billing_events_append_only extends BaseJavaMigration
                     END;
                     $$ LANGUAGE plpgsql
                     """);
-            for (String table : new String[]{"empresa_billing_events", "empresa_credit_ledger"}) {
+            // Nomes físicos válidos NESTE ponto da cadeia (V47.1): as tabelas só são renomeadas
+            // para empresa_* no V66. Referenciar o nome novo aqui quebra a migração do zero
+            // ("relation empresa_billing_events does not exist"). Os triggers acompanham o rename.
+            for (String table : new String[]{"tenant_billing_events", "tenant_credit_ledger"}) {
                 statement.execute("DROP TRIGGER IF EXISTS trg_prevent_" + table + "_update ON " + table);
                 statement.execute(
                         "CREATE TRIGGER trg_prevent_" + table + "_update "
