@@ -327,25 +327,25 @@ function Page() {
               <div className="mb-3">
                 <input
                   className="input"
-                  placeholder="Buscar competência"
+                  placeholder={copy.searchCompetencyPlaceholder}
                   value={competencySearch}
                   onChange={(event) => setCompetencySearch(event.target.value)}
                   disabled={empresaConfigLoading || addCompetencyMutation.isPending}
                 />
                 <div className="mt-1 text-xs text-muted-foreground">
-                  {visibleCompetencies.length} de {competencies.length} disponíveis
+                  {copy.competenciesAvailable
+                    .replace("{visible}", String(visibleCompetencies.length))
+                    .replace("{total}", String(competencies.length))}
                 </div>
               </div>
               <div className="flex flex-wrap gap-2">
                 {visibleCompetencies.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">
-                    Nenhuma competência encontrada para esse filtro.
-                  </p>
+                  <p className="text-sm text-muted-foreground">{copy.noCompetencyFound}</p>
                 ) : (
                   visibleCompetencies.map((competency) => (
                     <label
                       key={competency.value}
-                      title={competencyHint(competency.label)}
+                      title={competencyHint(competency.label, copy.competencyHintTemplate)}
                       className={`cursor-pointer rounded-full border px-3 py-1.5 text-sm ${
                         selectedCompetencies.includes(competency.value)
                           ? "border-primary bg-primary/10 text-foreground"
@@ -621,8 +621,8 @@ function FieldMeta({ error, count, max }: { error?: string; count: number; max: 
   );
 }
 
-function competencyHint(label: string) {
-  return `Competência "${label}": esta competência descreve o que será cobrado durante a avaliação.`;
+function competencyHint(label: string, template: string) {
+  return template.replace("{label}", label);
 }
 
 function Help({ children }: { children: React.ReactNode }) {

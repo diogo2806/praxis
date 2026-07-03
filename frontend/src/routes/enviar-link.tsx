@@ -39,6 +39,7 @@ export const Route = createFileRoute("/enviar-link")({
 type Step = "select" | "form" | "share";
 
 function EnviarLinkPage() {
+  const { t } = useLanguage();
   const queryClient = useQueryClient();
   const [step, setStep] = useState<Step>("select");
   const [selectedSimulation, setSelectedSimulation] = useState<SimulationSummaryResponse | null>(
@@ -99,16 +100,22 @@ function EnviarLinkPage() {
   }
 
   function handleShareEmail() {
-    const subject = encodeURIComponent(`Avaliação: ${simulationName}`);
+    const subject = encodeURIComponent(
+      t.sendLinkPage.shareSubject.replace("{simulation}", simulationName),
+    );
     const body = encodeURIComponent(
-      `Olá ${candidateName},\n\nVocê foi convidado(a) para participar de uma avaliação situacional.\n\nAcesse o link abaixo para iniciar:\n${generatedLink}`,
+      t.sendLinkPage.shareEmailBody
+        .replace("{name}", candidateName)
+        .replace("{link}", generatedLink),
     );
     window.open(`mailto:${candidateEmail}?subject=${subject}&body=${body}`);
   }
 
   function handleShareWhatsApp() {
     const text = encodeURIComponent(
-      `Olá ${candidateName}! Você foi convidado(a) para uma avaliação situacional. Acesse: ${generatedLink}`,
+      t.sendLinkPage.shareWhatsAppText
+        .replace("{name}", candidateName)
+        .replace("{link}", generatedLink),
     );
     window.open(`https://wa.me/?text=${text}`, "_blank");
   }
@@ -127,35 +134,37 @@ function EnviarLinkPage() {
   return (
     <AppShell>
       <div className="mb-6">
-        <div className="text-xs uppercase text-primary">Envio direto</div>
-        <h1 className="mt-1 text-3xl font-semibold">Compartilhar acesso</h1>
-        <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
-          Selecione uma avaliação no ar, preencha os dados da pessoa participante e compartilhe o
-          link por e-mail ou WhatsApp.
-        </p>
+        <div className="text-xs uppercase text-primary">{t.sendLinkPage.headerEyebrow}</div>
+        <h1 className="mt-1 text-3xl font-semibold">{t.sendLinkPage.headerTitle}</h1>
+        <p className="mt-1 max-w-2xl text-sm text-muted-foreground">{t.sendLinkPage.headerLede}</p>
       </div>
 
       <div className="mb-6 flex gap-4">
         <StepIndicator
           number={1}
-          label="Avaliação"
+          label={t.sendLinkPage.stepEvaluation}
           active={step === "select"}
           done={step === "form" || step === "share"}
         />
         <StepIndicator
           number={2}
-          label="Participante"
+          label={t.sendLinkPage.stepParticipant}
           active={step === "form"}
           done={step === "share"}
         />
-        <StepIndicator number={3} label="Compartilhar" active={step === "share"} done={false} />
+        <StepIndicator
+          number={3}
+          label={t.sendLinkPage.stepShare}
+          active={step === "share"}
+          done={false}
+        />
       </div>
 
       {linkMutation.isError && (
-        <StateBanner tone="danger" title="Não foi possível gerar o link">
+        <StateBanner tone="danger" title={t.sendLinkPage.generateErrorTitle}>
           {linkMutation.error instanceof Error
             ? linkMutation.error.message
-            : "Verifique se o sistema está disponível e se a avaliação está no ar."}
+            : t.sendLinkPage.generateErrorFallback}
         </StateBanner>
       )}
 
@@ -269,8 +278,8 @@ function SelectSimulationStep({
 
   if (error) {
     return (
-      <StateBanner tone="danger" title="Não foi possível carregar as avaliações">
-        {errorMessage ?? "Verifique se o sistema está disponível e tente novamente."}
+      <StateBanner tone="danger" title={t.sendLinkPage.loadEvaluationsErrorTitle}>
+        {errorMessage ?? t.sendLinkPage.systemUnavailableRetry}
       </StateBanner>
     );
   }
@@ -278,14 +287,14 @@ function SelectSimulationStep({
   if (simulations.length === 0) {
     return (
       <EmptyState
-        title="Nenhuma avaliação no ar"
-        description="Coloque uma avaliação no ar antes de gerar links de participação."
+        title={t.sendLinkPage.noEvaluationsTitle}
+        description={t.sendLinkPage.noEvaluationsDescription}
         actions={
           <Link
             to="/nova/avaliacao"
             className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-3 text-sm font-medium text-primary-foreground hover:bg-primary/90"
           >
-            Criar avaliação
+            {t.sendLinkPage.createEvaluation}
           </Link>
         }
       />
@@ -294,18 +303,18 @@ function SelectSimulationStep({
 
   return (
     <div className="space-y-4">
-      <h2 className="text-lg font-semibold">Selecione a avaliação no ar</h2>
+      <h2 className="text-lg font-semibold">{t.sendLinkPage.selectEvaluationHeading}</h2>
       <section className="rounded-md border border-border bg-card">
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Avaliação</TableHead>
-              <TableHead>Descrição</TableHead>
+              <TableHead>{t.sendLinkPage.tableEvaluation}</TableHead>
+              <TableHead>{t.sendLinkPage.tableDescription}</TableHead>
               <TableHead>{t.common.status}</TableHead>
-              <TableHead className="text-right">Versão</TableHead>
-              <TableHead>Competências</TableHead>
-              <TableHead className="text-right">Tentativas</TableHead>
-              <TableHead className="text-right">Ação</TableHead>
+              <TableHead className="text-right">{t.sendLinkPage.tableVersion}</TableHead>
+              <TableHead>{t.sendLinkPage.tableCompetencies}</TableHead>
+              <TableHead className="text-right">{t.sendLinkPage.tableAttempts}</TableHead>
+              <TableHead className="text-right">{t.sendLinkPage.tableAction}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -350,7 +359,7 @@ function SelectSimulationStep({
                     onClick={() => onSelect(simulation)}
                     className="inline-flex items-center justify-center rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
                   >
-                    Selecionar
+                    {t.sendLinkPage.select}
                   </button>
                 </TableCell>
               </TableRow>
@@ -387,12 +396,15 @@ function getParticipantLink(link: CandidateLinkResponse) {
   return toParticipantPageUrl(link.candidateUrl);
 }
 
-function candidateStatusLabel(status: CandidateLinkResponse["status"]) {
+function candidateStatusLabel(
+  status: CandidateLinkResponse["status"],
+  t: ReturnType<typeof useLanguage>["t"],
+) {
   const labels: Record<CandidateLinkResponse["status"], string> = {
-    created: "Criado",
-    started: "Em andamento",
-    completed: "Concluído",
-    expired: "Expirado",
+    created: t.sendLinkPage.statusCreated,
+    started: t.sendLinkPage.statusStarted,
+    completed: t.sendLinkPage.statusCompleted,
+    expired: t.sendLinkPage.statusExpired,
   };
 
   return labels[status] ?? status;
@@ -409,6 +421,7 @@ function CandidateLinksTable({
   error: boolean;
   errorMessage?: string;
 }) {
+  const { t } = useLanguage();
   const [copiedAttemptId, setCopiedAttemptId] = useState<string | null>(null);
 
   async function copyLink(link: CandidateLinkResponse) {
@@ -419,11 +432,13 @@ function CandidateLinksTable({
 
   async function shareLink(link: CandidateLinkResponse) {
     const url = getParticipantLink(link);
-    const text = `${link.candidateName}, você foi convidado(a) para participar da avaliação "${link.simulationName}".`;
+    const text = t.sendLinkPage.shareText
+      .replace("{name}", link.candidateName)
+      .replace("{simulation}", link.simulationName);
 
     if (navigator.share) {
       await navigator.share({
-        title: `Avaliação: ${link.simulationName}`,
+        title: t.sendLinkPage.shareSubject.replace("{simulation}", link.simulationName),
         text,
         url,
       });
@@ -438,11 +453,8 @@ function CandidateLinksTable({
   return (
     <section className="mt-8 rounded-md border border-border bg-card">
       <div className="border-b border-border p-5">
-        <h2 className="text-xl font-semibold">Links de participação</h2>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Consulte os participantes, avaliações, links gerados e compartilhe o acesso novamente
-          quando necessário.
-        </p>
+        <h2 className="text-xl font-semibold">{t.sendLinkPage.linksHeading}</h2>
+        <p className="mt-1 text-sm text-muted-foreground">{t.sendLinkPage.linksDescription}</p>
       </div>
 
       {loading ? (
@@ -451,24 +463,22 @@ function CandidateLinksTable({
         </div>
       ) : error ? (
         <div className="p-5">
-          <StateBanner tone="danger" title="Não foi possível carregar os links">
-            {errorMessage ?? "Verifique se o sistema está disponível e tente novamente."}
+          <StateBanner tone="danger" title={t.sendLinkPage.loadLinksErrorTitle}>
+            {errorMessage ?? t.sendLinkPage.systemUnavailableRetry}
           </StateBanner>
         </div>
       ) : links.length === 0 ? (
-        <div className="p-5 text-sm text-muted-foreground">
-          Nenhum link de participação foi gerado ainda.
-        </div>
+        <div className="p-5 text-sm text-muted-foreground">{t.sendLinkPage.noLinksYet}</div>
       ) : (
         <div className="overflow-x-auto">
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Participante</TableHead>
-                <TableHead>Avaliação / fluxo</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Link</TableHead>
-                <TableHead className="text-right">Ações</TableHead>
+                <TableHead>{t.sendLinkPage.tableParticipant}</TableHead>
+                <TableHead>{t.sendLinkPage.tableEvaluationFlow}</TableHead>
+                <TableHead>{t.common.status}</TableHead>
+                <TableHead>{t.sendLinkPage.tableLink}</TableHead>
+                <TableHead className="text-right">{t.sendLinkPage.tableActions}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -494,7 +504,7 @@ function CandidateLinksTable({
                     </TableCell>
                     <TableCell>
                       <span className="rounded-md border border-border bg-background px-2 py-1 text-xs text-muted-foreground">
-                        {candidateStatusLabel(link.status)}
+                        {candidateStatusLabel(link.status, t)}
                       </span>
                     </TableCell>
                     <TableCell className="min-w-[280px] max-w-[420px]">
@@ -519,7 +529,7 @@ function CandidateLinksTable({
                           ) : (
                             <Copy className="h-3.5 w-3.5" />
                           )}
-                          {copied ? "Copiado" : "Copiar"}
+                          {copied ? t.sendLinkPage.copied : t.sendLinkPage.copy}
                         </button>
                         <button
                           type="button"
@@ -527,7 +537,7 @@ function CandidateLinksTable({
                           className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary/90"
                         >
                           <Send className="h-3.5 w-3.5" />
-                          Compartilhar
+                          {t.sendLinkPage.share}
                         </button>
                       </div>
                     </TableCell>
@@ -561,26 +571,27 @@ function CandidateFormStep({
   onBack: () => void;
   loading: boolean;
 }) {
+  const { t } = useLanguage();
   const valid = candidateName.trim().length > 0 && candidateEmail.trim().includes("@");
 
   return (
     <div className="space-y-6">
       <div className="rounded-md border border-border bg-card p-6">
-        <h2 className="text-lg font-semibold">Dados da pessoa participante</h2>
+        <h2 className="text-lg font-semibold">{t.sendLinkPage.participantDataHeading}</h2>
         <p className="mt-1 text-sm text-muted-foreground">
-          Preencha o nome e o e-mail da pessoa participante para gerar o link de acesso.
+          {t.sendLinkPage.participantDataDescription}
         </p>
 
         <div className="mt-5 space-y-4">
           <div>
             <label htmlFor="candidate-name" className="mb-1.5 block text-sm font-medium">
-              Nome da pessoa participante
+              {t.sendLinkPage.participantNameLabel}
             </label>
             <input
               id="candidate-name"
               type="text"
               className="input w-full"
-              placeholder="Ex: Maria Silva"
+              placeholder={t.sendLinkPage.participantNamePlaceholder}
               value={candidateName}
               onChange={(e) => onNameChange(e.target.value)}
             />
@@ -588,13 +599,13 @@ function CandidateFormStep({
 
           <div>
             <label htmlFor="candidate-email" className="mb-1.5 block text-sm font-medium">
-              E-mail da pessoa participante
+              {t.sendLinkPage.participantEmailLabel}
             </label>
             <input
               id="candidate-email"
               type="email"
               className="input w-full"
-              placeholder="Ex: maria@example.com"
+              placeholder={t.sendLinkPage.participantEmailPlaceholder}
               value={candidateEmail}
               onChange={(e) => onEmailChange(e.target.value)}
             />
@@ -607,7 +618,7 @@ function CandidateFormStep({
             onClick={onBack}
             className="rounded-md border border-border bg-card px-4 py-2 text-sm hover:bg-accent"
           >
-            Voltar
+            {t.sendLinkPage.back}
           </button>
           <button
             type="button"
@@ -616,13 +627,13 @@ function CandidateFormStep({
             className="inline-flex items-center gap-2 rounded-md bg-primary px-5 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-60"
           >
             <Link2 className="h-4 w-4" />
-            {loading ? "Gerando..." : "Gerar link"}
+            {loading ? t.sendLinkPage.generating : t.sendLinkPage.generateLink}
           </button>
         </div>
       </div>
 
       <aside className="rounded-md border border-border bg-card p-5">
-        <h3 className="text-sm font-semibold">Avaliação selecionada</h3>
+        <h3 className="text-sm font-semibold">{t.sendLinkPage.selectedEvaluationHeading}</h3>
         <div className="mt-3 space-y-2">
           <div className="font-medium text-foreground">{simulation.name}</div>
           <div className="text-xs text-muted-foreground">{simulation.description}</div>
@@ -638,8 +649,9 @@ function CandidateFormStep({
             ))}
           </div>
           <div className="mt-3 text-xs text-muted-foreground">
-            Versão v{simulation.versionNumber} -{" "}
-            {simulation.attemptsCreated.toLocaleString("pt-BR")} tentativas criadas
+            {t.sendLinkPage.versionAttempts
+              .replace("{version}", String(simulation.versionNumber))
+              .replace("{count}", simulation.attemptsCreated.toLocaleString("pt-BR"))}
           </div>
         </div>
       </aside>
@@ -668,19 +680,22 @@ function ShareStep({
   onShareWhatsApp: () => void;
   onReset: () => void;
 }) {
+  const { t } = useLanguage();
   return (
     <div className="space-y-6">
-      <StateBanner tone="ok" title="Link gerado com sucesso">
-        O link de acesso à avaliação "{simulationName}" foi criado para {candidateName} (
-        {candidateEmail}).
+      <StateBanner tone="ok" title={t.sendLinkPage.successTitle}>
+        {t.sendLinkPage.successBanner
+          .replace("{simulation}", simulationName)
+          .replace("{name}", candidateName)
+          .replace("{email}", candidateEmail)}
       </StateBanner>
 
       <div className="space-y-6">
         <div className="space-y-5">
           <div className="rounded-md border border-border bg-card p-6">
-            <h2 className="text-lg font-semibold">Link de participação</h2>
+            <h2 className="text-lg font-semibold">{t.sendLinkPage.participationLinkHeading}</h2>
             <p className="mt-1 text-sm text-muted-foreground">
-              Copie o link abaixo ou use os botões para compartilhar diretamente.
+              {t.sendLinkPage.participationLinkDescription}
             </p>
             <div className="mt-4 flex items-center gap-2">
               <div className="min-w-0 flex-1 rounded-md border border-border bg-background px-3 py-2.5">
@@ -697,15 +712,15 @@ function ShareStep({
                 )}
               >
                 {copied ? <CheckCircle2 className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-                {copied ? "Copiado" : "Copiar"}
+                {copied ? t.sendLinkPage.copied : t.sendLinkPage.copy}
               </button>
             </div>
           </div>
 
           <div className="rounded-md border border-border bg-card p-6">
-            <h2 className="text-lg font-semibold">Compartilhar</h2>
+            <h2 className="text-lg font-semibold">{t.sendLinkPage.share}</h2>
             <p className="mt-1 text-sm text-muted-foreground">
-              Envie o link diretamente para a pessoa participante pelo canal preferido.
+              {t.sendLinkPage.shareChannelDescription}
             </p>
             <div className="mt-4 flex flex-wrap gap-3">
               <button
@@ -714,7 +729,7 @@ function ShareStep({
                 className="inline-flex items-center gap-2 rounded-md border border-border bg-card px-5 py-3 text-sm font-medium transition hover:bg-accent"
               >
                 <Mail className="h-4 w-4" />
-                Enviar por e-mail
+                {t.sendLinkPage.sendByEmail}
               </button>
               <button
                 type="button"
@@ -722,15 +737,14 @@ function ShareStep({
                 className="inline-flex items-center gap-2 rounded-md border border-border bg-card px-5 py-3 text-sm font-medium transition hover:bg-accent"
               >
                 <MessageCircle className="h-4 w-4" />
-                Enviar por WhatsApp
+                {t.sendLinkPage.sendByWhatsApp}
               </button>
             </div>
           </div>
         </div>
 
-        <StateBanner tone="info" title="Um link por participação">
-          Se você gerar o link de novo com o mesmo e-mail e a mesma avaliação, o link retornado será
-          o mesmo. Pode reenviar sem duplicar.
+        <StateBanner tone="info" title={t.sendLinkPage.oneLinkTitle}>
+          {t.sendLinkPage.oneLinkDescription}
         </StateBanner>
       </div>
 
@@ -741,13 +755,13 @@ function ShareStep({
           className="inline-flex items-center gap-2 rounded-md bg-primary px-5 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
         >
           <Send className="h-4 w-4" />
-          Enviar para outra pessoa
+          {t.sendLinkPage.sendToAnother}
         </button>
         <Link
           to="/"
           className="rounded-md border border-border bg-card px-4 py-2 text-sm hover:bg-accent"
         >
-          Voltar ao painel
+          {t.sendLinkPage.backToDashboard}
         </Link>
       </div>
     </div>
