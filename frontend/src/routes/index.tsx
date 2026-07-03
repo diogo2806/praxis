@@ -361,6 +361,8 @@ const landingStyles = `
   .cycle{display:inline-flex;align-items:center;gap:.3rem;background:var(--surface);border:1px solid var(--line);border-radius:var(--r-pill);padding:5px;margin-top:1.4rem}
   .cyc{font-family:var(--font-sans);font-size:.9rem;font-weight:600;color:var(--muted);background:transparent;border:0;cursor:pointer;padding:.45rem 1.1rem;border-radius:var(--r-pill);min-height:2.4rem;transition:background .18s ease,color .18s ease}
   .cyc.on{background:var(--primary);color:#fff}
+  .cyc-tag{display:inline-block;margin-left:.4rem;font-size:.68rem;font-weight:700;letter-spacing:.01em;color:var(--primary);background:color-mix(in oklab, var(--primary) 14%, transparent);border-radius:var(--r-pill);padding:.1rem .45rem;vertical-align:middle}
+  .cyc.on .cyc-tag{color:#fff;background:rgba(255,255,255,.24)}
   .cycle-hint{font-size:.8rem;color:var(--faint);margin-top:.6rem}
   .cycle-cta{font-size:.95rem;color:var(--muted);text-align:center;margin-top:1.4rem}
   .cycle-cta a{color:var(--primary);font-weight:600;border-bottom:1px solid color-mix(in oklab, var(--primary) 35%, transparent)}
@@ -975,9 +977,9 @@ turno-3 ▸ <span class="ok">C</span>  +2 Comunicação
 
         <div class="cycle" role="group" aria-label="Ciclo de cobrança">
           <button id="cycMonthly" class="cyc on" aria-pressed="true">Mensal</button>
-          <button id="cycAnnual" class="cyc" aria-pressed="false">Anual</button>
+          <button id="cycAnnual" class="cyc" aria-pressed="false">Anual <span class="cyc-tag">2 meses grátis</span></button>
         </div>
-        <p class="cycle-hint">O ciclo muda o total exibido no plano Profissional.</p>
+        <p class="cycle-hint">No ciclo anual você ganha 2 meses grátis (economia de ~17%) no plano Profissional.</p>
       </div>
 
       <div class="plans">
@@ -1146,18 +1148,21 @@ function LandingPage() {
       return decimals ? parts[0] + "," + parts[1] : parts[0];
     };
 
+    // No ciclo anual o cliente paga 10 meses e leva 12 (2 meses grátis, ~17% de economia).
+    const ANNUAL_MONTHS_CHARGED = 10;
+
     const applyCycle = (annual: boolean) => {
       if (totalHeader) totalHeader.textContent = annual ? "Total/ano" : "Total/mês";
       tierRows.forEach((row) => {
         const qty = Number(row.dataset.qty);
         const unit = Number(row.dataset.unit);
-        const total = unit * qty * (annual ? 12 : 1);
+        const total = unit * qty * (annual ? ANNUAL_MONTHS_CHARGED : 1);
         const totalCell = row.querySelector<HTMLElement>(".t");
         if (totalCell) totalCell.textContent = "R$ " + formatBR(Math.round(total), 0);
       });
       if (tierNote) {
         tierNote.textContent = annual
-          ? "Cobrança uma vez por ano. As avaliações inclusas renovam a cada mês."
+          ? "Cobrança uma vez por ano, com 2 meses grátis. As avaliações inclusas renovam a cada mês."
           : "As avaliações inclusas renovam a cada mês. Precisa de mais volume? Veja o Enterprise.";
       }
       monthlyButton?.classList.toggle("on", !annual);
