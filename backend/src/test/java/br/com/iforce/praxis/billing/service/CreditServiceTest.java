@@ -18,6 +18,8 @@ import br.com.iforce.praxis.billing.persistence.repository.EmpresaCreditBalanceR
 
 import br.com.iforce.praxis.billing.persistence.repository.EmpresaCreditLedgerRepository;
 
+import br.com.iforce.praxis.gupy.persistence.repository.CandidateAttemptRepository;
+
 import org.junit.jupiter.api.BeforeEach;
 
 import org.junit.jupiter.api.Test;
@@ -46,6 +48,8 @@ import static org.mockito.ArgumentMatchers.any;
 
 import static org.mockito.ArgumentMatchers.anyString;
 
+import static org.mockito.ArgumentMatchers.eq;
+
 import static org.mockito.Mockito.lenient;
 
 import static org.mockito.Mockito.never;
@@ -64,12 +68,14 @@ class CreditServiceTest {
     private EmpresaCreditLedgerRepository ledgerRepository;
     @Mock
     private EmpresaRepository empresaRepository;
+    @Mock
+    private CandidateAttemptRepository candidateAttemptRepository;
 
     private CreditService service;
 
     @BeforeEach
     void setUp() {
-        service = new CreditService(balanceRepository, ledgerRepository, empresaRepository);
+        service = new CreditService(balanceRepository, ledgerRepository, empresaRepository, candidateAttemptRepository);
         lenient().when(ledgerRepository.save(any(EmpresaCreditLedgerEntity.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
         lenient().when(balanceRepository.save(any(EmpresaCreditBalanceEntity.class)))
@@ -175,18 +181,32 @@ class CreditServiceTest {
     @Test
     void assertCanStartBlocksAvulsoWithoutCredit() {
         when(empresaRepository.findById("t1")).thenReturn(Optional.of(empresa(CommercialPlanType.AVULSO, EmpresaStatus.SEM_CREDITO)));
-        when(balanceRepository.findById("t1")).thenReturn(Optional.of(balance(0)));
+        when(balanceRepository.findByEmpresaIdForUpdate("t1")).thenReturn(Optional.of(balance(0)));
+        when(candidateAttemptRepository.countByEmpresaIdAndStatusIn(eq("t1"), any())).thenReturn(0L);
 
         assertThatThrownBy(() -> service.assertCanStartNewAttempt("t1"))
                 .isInstanceOf(ResponseStatusException.class);
     }
 
     @Test
-    void assertCanStartAllowsAvulsoWithCredit() {
+    void assertCanStartAllowsAvulsoWithFreeCredit() {
         when(empresaRepository.findById("t1")).thenReturn(Optional.of(empresa(CommercialPlanType.AVULSO, EmpresaStatus.ATIVO)));
-        when(balanceRepository.findById("t1")).thenReturn(Optional.of(balance(5)));
+        when(balanceRepository.findByEmpresaIdForUpdate("t1")).thenReturn(Optional.of(balance(5)));
+        // 2 tentativas em andamento reservam 2 dos 5 créditos: ainda há vaga.
+        when(candidateAttemptRepository.countByEmpresaIdAndStatusIn(eq("t1"), any())).thenReturn(2L);
 
         service.assertCanStartNewAttempt("t1");
+    }
+
+    @Test
+    void assertCanStartBlocksWhenActiveAttemptsAlreadyReserveAllCredit() {
+        when(empresaRepository.findById("t1")).thenReturn(Optional.of(empresa(CommercialPlanType.AVULSO, EmpresaStatus.ATIVO)));
+        when(balanceRepository.findByEmpresaIdForUpdate("t1")).thenReturn(Optional.of(balance(2)));
+        // 2 tentativas em andamento já reservam os 2 créditos: não cria uma terceira.
+        when(candidateAttemptRepository.countByEmpresaIdAndStatusIn(eq("t1"), any())).thenReturn(2L);
+
+        assertThatThrownBy(() -> service.assertCanStartNewAttempt("t1"))
+                .isInstanceOf(ResponseStatusException.class);
     }
 
     @Test
@@ -194,7 +214,7 @@ class CreditServiceTest {
         when(empresaRepository.findById("t1")).thenReturn(Optional.of(empresa(CommercialPlanType.PROFISSIONAL, EmpresaStatus.ATIVO)));
 
         service.assertCanStartNewAttempt("t1");
-        verify(balanceRepository, never()).findById(anyString());
+        verify(balanceRepository, never()).findByEmpresaIdForUpdate(anyString());
     }
 
     @Test
