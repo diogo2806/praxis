@@ -63,6 +63,20 @@ public class AdminDashboardService {
         this.usagePeriodDays = usagePeriodDays;
     }
 
+    /**
+     * Monta o painel de indicadores que o operador vê ao abrir a área administrativa.
+     *
+     * <p>Na visão do processo: é a "tela de resumo" da operação. Em uma olhada, reúne
+     * quantos clientes existem em cada situação (ativos, em teste, suspensos, cancelados),
+     * o total de avaliações concluídas no período, o ranking dos clientes que mais usaram,
+     * os clientes cadastrados mais recentemente e — importante para a rotina — a lista de
+     * clientes que exigem atenção (suspensos ou cancelados). Se o operador não informar um
+     * período, considera-se os últimos dias do intervalo padrão.</p>
+     *
+     * @param periodStart início do período a considerar; nulo usa o período padrão
+     * @param periodEnd fim do período a considerar; nulo considera até agora
+     * @return os indicadores consolidados do painel administrativo
+     */
     @Transactional(readOnly = true)
     public AdminDashboardResponse dashboard(Instant periodStart, Instant periodEnd) {
         Instant end = periodEnd == null ? Instant.now() : periodEnd;

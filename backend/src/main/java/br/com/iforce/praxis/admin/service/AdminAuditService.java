@@ -47,6 +47,18 @@ public class AdminAuditService {
         this.auditMetadata = auditMetadata;
     }
 
+    /**
+     * Mostra o histórico de ações ligadas a um cliente específico.
+     *
+     * <p>Na visão do processo: é o "extrato de acontecimentos" daquele cliente — quem fez
+     * o quê e quando (criação, suspensão, convites, consultas de uso, etc.), do mais
+     * recente para o mais antigo. Serve para o operador entender o que aconteceu com um
+     * cliente ou prestar contas. É só leitura: nada aqui pode ser alterado ou apagado.</p>
+     *
+     * @param empresaId identificador do cliente
+     * @param limit quantidade máxima de eventos a trazer
+     * @return os eventos do cliente, do mais recente para o mais antigo
+     */
     @Transactional(readOnly = true)
     public List<AdminAuditEventResponse> listForEmpresa(String empresaId, int limit) {
         return auditEventRepository
@@ -55,6 +67,16 @@ public class AdminAuditService {
                 .toList();
     }
 
+    /**
+     * Mostra o histórico geral de ações de toda a plataforma.
+     *
+     * <p>Na visão do processo: é o "diário de bordo" completo — os últimos acontecimentos
+     * de todos os clientes juntos, do mais recente para o mais antigo. Útil para uma visão
+     * panorâmica de tudo o que está sendo feito na operação. Também é só leitura.</p>
+     *
+     * @param limit quantidade máxima de eventos a trazer
+     * @return os eventos de toda a plataforma, do mais recente para o mais antigo
+     */
     @Transactional(readOnly = true)
     public List<AdminAuditEventResponse> listAll(int limit) {
         return auditEventRepository
@@ -63,6 +85,17 @@ public class AdminAuditService {
                 .toList();
     }
 
+    /**
+     * Abre um evento de auditoria específico para ver todos os seus detalhes.
+     *
+     * <p>Na visão do processo: é o "zoom" em um acontecimento do histórico — o operador
+     * clica em uma linha do extrato e vê o registro completo (ator, cliente, tipo de ação,
+     * descrição e os detalhes adicionais). Se o evento não existir, o sistema avisa que não
+     * foi encontrado.</p>
+     *
+     * @param eventId identificador do evento de auditoria
+     * @return o detalhe completo do evento
+     */
     @Transactional(readOnly = true)
     public AdminAuditEventResponse getById(Long eventId) {
         return auditEventRepository.findById(eventId)
@@ -71,7 +104,17 @@ public class AdminAuditService {
                         HttpStatus.NOT_FOUND, "Evento de auditoria não encontrado."));
     }
 
-    /** Registra que o ADMIN consultou o uso de um cliente (evento obrigatório). */
+    /**
+     * Deixa registrado que o operador consultou o uso de um cliente.
+     *
+     * <p>Na visão do processo: consultar o consumo de um cliente é, por si só, uma ação que
+     * precisa ficar registrada — afinal, envolve olhar dados de negócio de terceiros. Por
+     * isso, toda vez que o uso de um cliente é aberto, grava-se um evento na trilha em nome
+     * do operador, garantindo transparência sobre quem acessou o quê.</p>
+     *
+     * @param actorUserId identificador do operador ADMIN que consultou
+     * @param empresaId identificador do cliente consultado
+     */
     @Transactional
     public void recordUsageViewed(String actorUserId, String empresaId) {
         auditEventService.auditAdminAction(

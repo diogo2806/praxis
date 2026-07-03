@@ -34,6 +34,17 @@ public class AdminDashboardController {
         this.adminDashboardService = adminDashboardService;
     }
 
+    /**
+     * Devolve os indicadores consolidados da tela inicial administrativa.
+     *
+     * <p>Na visão do processo: é a "tela de resumo" da operação — contagem de clientes por
+     * situação, uso total no período, ranking de uso, clientes recentes e os que exigem
+     * atenção. Sem período informado, usa o intervalo padrão.</p>
+     *
+     * @param periodStart início do período, em data/hora ISO (opcional)
+     * @param periodEnd fim do período, em data/hora ISO (opcional)
+     * @return os indicadores do painel administrativo
+     */
     @GetMapping
     @Operation(summary = "Indicadores do dashboard")
     public ResponseEntity<AdminDashboardResponse> dashboard(
