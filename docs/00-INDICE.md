@@ -70,6 +70,12 @@ Riscos altos:
 - Fail-fast de seguranca em producao: `SecurityStartupGuard` recusa subir com perfil `prod` e `PRAXIS_SECURITY_ENABLED=false` (risco alto #7; ver `IMPLANTACAO.md`).
 - [Marketplace, CDC e pagamentos](legal/TERMOS-MARKETPLACE-CDC.md) - consumidor, reembolso/disputa, KYC e intermediacao (risco alto #8).
 
+Riscos medios:
+
+- Hash do dado pessoal na chave de idempotencia: `IdempotencyKeyHasher` + migracao `V68` deixam de guardar CPF/e-mail em claro na coluna `idempotency_key` (risco medio #10).
+- [Plano de resposta a incidentes](legal/PLANO-RESPOSTA-INCIDENTES.md) - runbook LGPD arts. 46-48 (risco medio #11).
+- [Exposicao regulatoria internacional](legal/EXPOSICAO-REGULATORIA-INTERNACIONAL.md) - EU AI Act, NYC LL144, GDPR e recomendacao de geo-restricao (risco medio #9).
+
 ## Historico
 
 - [Usabilidade - implementacao](USABILIDADE_IMPLEMENTACAO.md) - historico de uma entrega de UX; nao e contrato atual completo.
