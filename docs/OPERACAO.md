@@ -134,7 +134,7 @@ sequenceDiagram
 
 ```mermaid
 flowchart TD
-  A["RH cria rascunho<br/>/nova/blueprint"] --> B["Objetivo, competências, pesos"]
+  A["RH cria rascunho<br/>/nova/avaliacao"] --> B["Objetivo, competências, pesos"]
   B --> C["Personagem, turnos, alternativas, mídia"]
   C --> D["Validador: blockers / warnings / quality"]
   D -->|publicável| E["Governança publica versão (imutável)"]

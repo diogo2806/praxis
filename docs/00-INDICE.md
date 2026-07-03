@@ -26,10 +26,12 @@
 
 ## Referencia tecnica
 
-- Backend real: codigo em `backend/src/main/java/br/com/iforce/praxis`.
+- Backend real: codigo em `backend/src/main/java/br/com/iforce/praxis` (dominios: `simulation`, `journey`, `results`, `dashboard`, `gupy`, `recrutei`, `shared.integration`, `marketplace`, `billing`, `admin`, `team`, `account`, `companyprofile`, `term`, `candidate`, `audit`, `tenantconfig`, `media`, `privacy`).
 - Migracoes: `backend/src/main/resources/db/migration`.
 - API frontend: `frontend/src/lib/api/praxis.ts`.
-- Rotas frontend: `frontend/src/routes`.
+- Rotas frontend: `frontend/src/routes`; menu principal em `frontend/src/components/app-shell.tsx`.
+- Passos do assistente de criacao: `frontend/src/lib/simulation-meta.ts` (`avaliacao -> personagem -> validador -> governanca`).
+- Documentacao in-app da integracao por API propria: rota `/docs/integracao-api-propria`.
 - Configuracao runtime frontend: `frontend/src/lib/runtime-config.ts`, `frontend/src/lib/runtime-config.server.ts` e `frontend/src/server.ts`.
 
 ## Fluxos por jornada
@@ -67,4 +69,4 @@
 - Links novos devem apontar para arquivos reais listados aqui.
 - Documentos com conteudo historico devem ser lidos como registro de decisao, nao como promessa de feature atual.
 
-Ultima revisao: 20/06/2026.
+Ultima revisao: 03/07/2026.
