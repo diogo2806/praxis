@@ -147,12 +147,6 @@ const getSettingsNav = (t: TranslationMap) =>
       icon: Settings,
       desc: t.descriptions.competencies,
     },
-    {
-      to: "/configuracoes/api",
-      label: "API e Webhooks",
-      icon: KeyRound,
-      desc: "Token de API e webhook de resultados",
-    },
   ] as const;
 
 function ShellLink({ children, closeOnSelect }: { children: ReactNode; closeOnSelect?: boolean }) {
@@ -363,7 +357,6 @@ function pageLabel(pathname: string, t: TranslationMap) {
   if (pathname === "/configuracoes" || pathname === "/configuracoes/perfil")
     return "Perfil da empresa";
   if (pathname === "/configuracoes/conta") return "Minha conta";
-  if (pathname === "/configuracoes/api") return "API e Webhooks";
   if (pathname === "/competencias") return t.common.competencies;
   if (pathname === "/comecar") return t.common.startHere;
   if (pathname === "/team") return "Minha equipe";
