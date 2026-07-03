@@ -155,6 +155,8 @@ public class ClientBillingService {
         List<String> actions = new ArrayList<>();
         if (plan == CommercialPlanType.AVULSO) {
             actions.add("BUY_CREDITS");
+            // Recarga automática (auto-top-up): repõe créditos sozinho ao cair abaixo do nível crítico.
+            actions.add("MANAGE_AUTO_RECHARGE");
             actions.add("VIEW_HISTORY");
         } else if (plan == CommercialPlanType.PROFISSIONAL) {
             actions.add("VIEW_SUBSCRIPTION");

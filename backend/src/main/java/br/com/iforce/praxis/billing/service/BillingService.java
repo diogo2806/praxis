@@ -16,6 +16,8 @@ import br.com.iforce.praxis.billing.dto.CheckoutResponse;
 
 import br.com.iforce.praxis.billing.dto.EmpresaBillingOverviewResponse;
 
+import br.com.iforce.praxis.billing.model.AutoRechargeStatus;
+
 import br.com.iforce.praxis.billing.model.BillingEventType;
 
 import br.com.iforce.praxis.billing.model.SubscriptionStatus;
@@ -27,6 +29,8 @@ import br.com.iforce.praxis.billing.persistence.entity.EmpresaBillingEventEntity
 import br.com.iforce.praxis.billing.persistence.entity.EmpresaSubscriptionEntity;
 
 import br.com.iforce.praxis.billing.persistence.repository.SubscriptionPlanRepository;
+
+import br.com.iforce.praxis.billing.persistence.repository.EmpresaAutoRechargeConfigRepository;
 
 import br.com.iforce.praxis.billing.persistence.repository.EmpresaBillingEventRepository;
 
@@ -80,6 +84,8 @@ public class BillingService {
     private static final Logger log = LoggerFactory.getLogger(BillingService.class);
     private static final String KIND_CREDIT = "credit";
     private static final String KIND_SUB = "sub";
+    /** Etiqueta de uma compra de créditos originada de recarga automática (cartão salvo). */
+    static final String KIND_AUTO_CREDIT = "autocredit";
 
     private final MercadoPagoClient mercadoPagoClient;
     private final MercadoPagoProperties properties;
@@ -89,6 +95,7 @@ public class BillingService {
     private final CreditService creditService;
     private final EmpresaRepository empresaRepository;
     private final BillingDunningService dunningService;
+    private final EmpresaAutoRechargeConfigRepository autoRechargeConfigRepository;
 
     public BillingService(
             MercadoPagoClient mercadoPagoClient,
@@ -98,7 +105,8 @@ public class BillingService {
             EmpresaSubscriptionRepository subscriptionRepository,
             CreditService creditService,
             EmpresaRepository empresaRepository,
-            BillingDunningService dunningService
+            BillingDunningService dunningService,
+            EmpresaAutoRechargeConfigRepository autoRechargeConfigRepository
     ) {
         this.mercadoPagoClient = mercadoPagoClient;
         this.properties = properties;
@@ -108,6 +116,7 @@ public class BillingService {
         this.creditService = creditService;
         this.empresaRepository = empresaRepository;
         this.dunningService = dunningService;
+        this.autoRechargeConfigRepository = autoRechargeConfigRepository;
     }
 
     // ------------------------------------------------------------------
@@ -250,15 +259,21 @@ public class BillingService {
         }
 
         if ("approved".equals(status)) {
-            if (KIND_CREDIT.equals(kind)) {
+            if (KIND_CREDIT.equals(kind) || KIND_AUTO_CREDIT.equals(kind)) {
+                boolean autoRecharge = KIND_AUTO_CREDIT.equals(kind);
                 if (eventRepository.existsByMpResourceIdAndEventType(paymentId, BillingEventType.CREDIT_PURCHASE_APPROVED)) {
                     return;
                 }
                 SubscriptionPlanEntity plan = requirePlan(planId);
                 EmpresaBillingEventEntity event = recordEvent(empresaId, BillingEventType.CREDIT_PURCHASE_APPROVED,
                         "payment", paymentId, externalReference, status, amountCents, "BRL", requestId, payment);
-                creditService.addCredits(empresaId, plan.getCreditAmount(), event.getId(),
-                        "Compra de créditos confirmada (pagamento " + paymentId + ")");
+                String note = (autoRecharge ? "Recarga automática confirmada" : "Compra de créditos confirmada")
+                        + " (pagamento " + paymentId + ")";
+                creditService.addCredits(empresaId, plan.getCreditAmount(), event.getId(), note);
+                if (autoRecharge) {
+                    // Recarga aprovada: libera o ciclo para uma futura recarga quando o saldo cair de novo.
+                    releaseAutoRecharge(empresaId, "Recarga automática aprovada (pagamento " + paymentId + ").");
+                }
             } else if (KIND_SUB.equals(kind)) {
                 if (eventRepository.existsByMpResourceIdAndEventType(paymentId, BillingEventType.SUBSCRIPTION_PAYMENT_APPROVED)) {
                     return;
@@ -272,6 +287,12 @@ public class BillingService {
                 recordEvent(empresaId, BillingEventType.SUBSCRIPTION_PAYMENT_REJECTED, "payment", paymentId,
                         externalReference, status, amountCents, "BRL", requestId, payment);
                 startDelinquency(empresaId);
+            } else if (KIND_AUTO_CREDIT.equals(kind)) {
+                // Cartão recusado na recarga automática: registra a falha e libera o ciclo (a janela
+                // de espera evita retentativa imediata sobre o mesmo cartão recusado).
+                recordEvent(empresaId, BillingEventType.CREDIT_AUTO_RECHARGE_FAILED, "payment", paymentId,
+                        externalReference, status, amountCents, "BRL", requestId, payment);
+                releaseAutoRecharge(empresaId, "Recarga automática recusada (pagamento " + paymentId + ").");
             } else {
                 recordEvent(empresaId, BillingEventType.PAYMENT_PENDING, "payment", paymentId,
                         externalReference, status, amountCents, "BRL", requestId, payment);
@@ -465,6 +486,20 @@ public class BillingService {
                 empresa.setStatus(EmpresaStatus.ATIVO);
                 empresa.setUpdatedAt(Instant.now());
             }
+        });
+    }
+
+    /**
+     * Devolve o ciclo de recarga automática ao estado ocioso quando a cobrança do cartão salvo se
+     * resolve (aprovada ou recusada), liberando uma futura recarga assim que o saldo cair de novo.
+     * Não faz nada se o cliente não usa recarga automática. Uso interno.
+     */
+    private void releaseAutoRecharge(String empresaId, String outcome) {
+        autoRechargeConfigRepository.findById(empresaId).ifPresent(config -> {
+            config.setStatus(AutoRechargeStatus.IDLE);
+            config.setPendingReference(null);
+            config.setLastOutcome(outcome);
+            config.setUpdatedAt(Instant.now());
         });
     }
 

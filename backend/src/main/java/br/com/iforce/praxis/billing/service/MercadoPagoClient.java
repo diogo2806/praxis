@@ -98,6 +98,54 @@ public class MercadoPagoClient {
         return post("/preapproval", body);
     }
 
+    /**
+     * Cobra um cartão já salvo do cliente para uma recarga automática de créditos (AVULSO).
+     *
+     * <p>É a cobrança "sem atrito humano": em vez de gerar um link para o cliente pagar, a
+     * plataforma usa o cartão que ele já cadastrou no Mercado Pago (referenciado por
+     * {@code customerId}/{@code cardId}) e faz a cobrança diretamente. O fluxo segue o padrão do
+     * Mercado Pago para cartão salvo: primeiro gera um token a partir do cartão salvo e depois
+     * cria o pagamento com esse token.</p>
+     *
+     * <p>A chave de idempotência ({@code idempotencyKey}) é enviada ao Mercado Pago para que, se a
+     * mesma recarga for tentada de novo (por exemplo, após uma falha de rede), o cartão não seja
+     * cobrado duas vezes: o Mercado Pago devolve o mesmo pagamento já criado.</p>
+     *
+     * @param plan pacote de créditos AVULSO que define o valor a cobrar
+     * @param customerId identificador do cliente/pagador salvo no Mercado Pago
+     * @param cardId identificador do cartão salvo no Mercado Pago
+     * @param externalReference etiqueta que permite reconhecer o pagamento quando voltar
+     * @param metadata dados extras para a trilha do Mercado Pago
+     * @param idempotencyKey chave que evita cobrança dupla em retentativas da mesma recarga
+     * @return o pagamento criado no Mercado Pago (com id e status)
+     */
+    public JsonNode chargeSavedCard(SubscriptionPlanEntity plan, String customerId, String cardId,
+                                    String externalReference, Map<String, Object> metadata,
+                                    String idempotencyKey) {
+        // 1) Gera um token de uso único a partir do cartão já salvo do cliente.
+        JsonNode token = post("/v1/card_tokens", Map.of("card_id", cardId));
+        String cardToken = text(token, "id");
+
+        // 2) Cria o pagamento cobrando o cartão salvo (uma parcela).
+        Map<String, Object> payer = new LinkedHashMap<>();
+        payer.put("type", "customer");
+        payer.put("id", customerId);
+
+        Map<String, Object> body = new LinkedHashMap<>();
+        body.put("transaction_amount", reais(plan.getPriceCents()));
+        body.put("description", plan.getName());
+        body.put("external_reference", externalReference);
+        body.put("installments", 1);
+        body.put("token", cardToken);
+        body.put("payer", payer);
+        if (notBlank(properties.notificationUrl())) {
+            body.put("notification_url", properties.notificationUrl());
+        }
+        body.put("metadata", metadata);
+
+        return post("/v1/payments", body, properties.accessToken(), idempotencyKey);
+    }
+
     /** Consulta um pagamento no Mercado Pago (fonte da verdade financeira). */
     public JsonNode getPayment(String paymentId) {
         return get("/v1/payments/" + paymentId);
@@ -110,23 +158,34 @@ public class MercadoPagoClient {
 
     /** Envia um pedido de escrita ao Mercado Pago usando a credencial padrão do vendedor. Uso interno. */
     private JsonNode post(String path, Object body) {
-        return post(path, body, properties.accessToken());
+        return post(path, body, properties.accessToken(), null);
+    }
+
+    /** Escreve no Mercado Pago com a credencial informada, sem chave de idempotência. Uso interno. */
+    private JsonNode post(String path, Object body, String accessToken) {
+        return post(path, body, accessToken, null);
     }
 
     /**
      * Faz a chamada de escrita ao Mercado Pago com a credencial informada, tratando falhas de rede
-     * como um erro claro de comunicação (sem vazar a credencial nos logs). Uso interno.
+     * como um erro claro de comunicação (sem vazar a credencial nos logs). Quando uma chave de
+     * idempotência é informada, ela vai no cabeçalho {@code X-Idempotency-Key} para que
+     * retentativas do mesmo pedido não gerem cobrança dupla. Uso interno.
      */
-    private JsonNode post(String path, Object body, String accessToken) {
+    private JsonNode post(String path, Object body, String accessToken, String idempotencyKey) {
         requireEnabled();
         if (accessToken == null || accessToken.isBlank()) {
             throw new ResponseStatusException(
                     HttpStatus.SERVICE_UNAVAILABLE, "Token Mercado Pago do vendedor nao esta configurado.");
         }
         try {
-            return restClient.post()
+            RestClient.RequestBodySpec request = restClient.post()
                     .uri(path)
-                    .header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken)
+                    .header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
+            if (notBlank(idempotencyKey)) {
+                request = request.header("X-Idempotency-Key", idempotencyKey);
+            }
+            return request
                     .body(body)
                     .retrieve()
                     .body(JsonNode.class);
@@ -173,5 +232,14 @@ public class MercadoPagoClient {
     /** Diz se um texto tem conteúdo (não é nulo nem vazio), usado para só enviar campos preenchidos. Uso interno. */
     private static boolean notBlank(String value) {
         return value != null && !value.isBlank();
+    }
+
+    /** Lê com segurança um campo de texto da resposta do Mercado Pago, tolerando ausências. Uso interno. */
+    private static String text(JsonNode node, String field) {
+        if (node == null) {
+            return null;
+        }
+        JsonNode value = node.get(field);
+        return value == null || value.isNull() ? null : value.asText();
     }
 }
