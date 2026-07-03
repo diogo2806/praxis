@@ -406,6 +406,17 @@ function JourneyComposer({
   const existingSequenceKeys = sequences.map((sequence) => sequence.sequenceKey);
   const draft = journey.status === "draft";
   const canPublish = draft && totalSteps > 0;
+  const trimmedSequenceKey = sequenceKey.trim() || DEFAULT_SEQUENCE;
+  const simulationsInCurrentSequence = new Set(
+    sequences
+      .find((sequence) => sequence.sequenceKey === trimmedSequenceKey)
+      ?.steps.map((step) => step.simulationId) ?? [],
+  );
+  const availableSimulations = simulations.filter(
+    (simulation) => !simulationsInCurrentSequence.has(simulation.id),
+  );
+  const selectedIsUnavailable =
+    Boolean(selectedSimulationId) && simulationsInCurrentSequence.has(selectedSimulationId);
 
   return (
     <section className="rounded-md border border-border bg-card">
@@ -470,11 +481,16 @@ function JourneyComposer({
               <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_minmax(0,220px)_160px_120px]">
                 <select
                   className="input w-full"
-                  value={selectedSimulationId}
+                  value={selectedIsUnavailable ? "" : selectedSimulationId}
                   onChange={(event) => onSimulationChange(event.target.value)}
+                  disabled={availableSimulations.length === 0}
                 >
-                  <option value="">Selecione uma avaliação publicada</option>
-                  {simulations.map((simulation) => (
+                  <option value="">
+                    {availableSimulations.length === 0
+                      ? "Todas as avaliações publicadas já estão nesta sequência"
+                      : "Selecione uma avaliação publicada"}
+                  </option>
+                  {availableSimulations.map((simulation) => (
                     <option key={simulation.id} value={simulation.id}>
                       {simulation.name} - v
                       {simulation.livePublishedVersionNumber ?? simulation.versionNumber}
@@ -504,7 +520,12 @@ function JourneyComposer({
                 <Button
                   type="button"
                   className="h-10 gap-2"
-                  disabled={!selectedSimulationId || !sequenceKey.trim() || addPending}
+                  disabled={
+                    !selectedSimulationId ||
+                    selectedIsUnavailable ||
+                    !sequenceKey.trim() ||
+                    addPending
+                  }
                   onClick={onAddStep}
                 >
                   <Plus className="h-4 w-4" />
@@ -512,8 +533,9 @@ function JourneyComposer({
                 </Button>
               </div>
               <p className="mt-2 text-xs text-muted-foreground">
-                Combine várias avaliações em uma mesma sequência ou crie sequências diferentes
-                digitando um novo nome. Cada candidato recebe o link de uma sequencia.
+                Combine avaliações diferentes em uma mesma sequência (cada avaliação só pode
+                entrar uma vez por sequência) ou crie sequências diferentes digitando um novo
+                nome. Cada candidato recebe o link de uma sequencia.
               </p>
             </>
           )}

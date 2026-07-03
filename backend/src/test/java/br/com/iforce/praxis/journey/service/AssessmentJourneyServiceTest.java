@@ -152,6 +152,33 @@ class AssessmentJourneyServiceTest {
     }
 
     @Test
+    void addStepRejectsSimulationAlreadyInSameSequence() {
+        AssessmentJourneyEntity journey = draftJourney();
+        journey.getSteps().add(step(journey, 1L, "sim-x", "principal", 0));
+        when(journeyRepository.findByEmpresaIdAndId("empresa-1", "j1")).thenReturn(Optional.of(journey));
+        when(simulationCatalogService.findPublishedById("empresa-1", "sim-x"))
+                .thenReturn(Optional.of(publishedSimulation("sim-x", 1)));
+
+        assertThatThrownBy(() -> service.addStep("j1", new AddJourneyStepRequest("sim-x", "principal", null, true)))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasMessageContaining("já foi adicionada");
+    }
+
+    @Test
+    void addStepAllowsSameSimulationInDifferentSequences() {
+        AssessmentJourneyEntity journey = draftJourney();
+        journey.getSteps().add(step(journey, 1L, "sim-x", "principal", 0));
+        when(journeyRepository.findByEmpresaIdAndId("empresa-1", "j1")).thenReturn(Optional.of(journey));
+        when(simulationCatalogService.findPublishedById("empresa-1", "sim-x"))
+                .thenReturn(Optional.of(publishedSimulation("sim-x", 1)));
+
+        AssessmentJourneyDetailResponse response =
+                service.addStep("j1", new AddJourneyStepRequest("sim-x", "alternativa", null, true));
+
+        assertThat(response.sequences()).hasSize(2);
+    }
+
+    @Test
     void cannotEditPublishedJourney() {
         AssessmentJourneyEntity journey = draftJourney();
         journey.setStatus(AssessmentJourneyStatus.PUBLISHED);

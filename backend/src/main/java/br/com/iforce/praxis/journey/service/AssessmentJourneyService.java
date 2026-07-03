@@ -220,6 +220,7 @@ public class AssessmentJourneyService {
                 ));
 
         String sequenceKey = normalizeSequenceKey(request.sequenceKey());
+        assertSimulationNotAlreadyInSequence(journey, sequenceKey, simulation.id());
         int orderIndex = resolveOrderIndex(journey, sequenceKey, request.orderIndex());
         boolean required = request.required() == null || request.required();
 
@@ -270,7 +271,11 @@ public class AssessmentJourneyService {
         int previousOrderIndex = step.getOrderIndex();
 
         if (request.sequenceKey() != null) {
-            step.setSequenceKey(normalizeSequenceKey(request.sequenceKey()));
+            String newSequenceKey = normalizeSequenceKey(request.sequenceKey());
+            if (!newSequenceKey.equals(previousSequenceKey)) {
+                assertSimulationNotAlreadyInSequence(journey, newSequenceKey, step.getSimulationId());
+            }
+            step.setSequenceKey(newSequenceKey);
         }
         if (request.orderIndex() != null) {
             if (request.orderIndex() < 0) {
@@ -440,6 +445,22 @@ public class AssessmentJourneyService {
                         "Há ordem duplicada na sequência '" + sequenceKey + "'."
                 );
             }
+        }
+    }
+
+    private void assertSimulationNotAlreadyInSequence(
+            AssessmentJourneyEntity journey,
+            String sequenceKey,
+            String simulationId
+    ) {
+        boolean alreadyPresent = journey.getSteps().stream()
+                .anyMatch(step -> step.getSequenceKey().equals(sequenceKey)
+                        && step.getSimulationId().equals(simulationId));
+        if (alreadyPresent) {
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "Esta avaliação já foi adicionada à sequência '" + sequenceKey + "'."
+            );
         }
     }
 
