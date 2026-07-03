@@ -16,5 +16,11 @@ public enum BillingEventType {
     SUBSCRIPTION_CANCELLED,
     PAYMENT_PENDING,
     PAYMENT_REFUNDED,
-    PAYMENT_CHARGEBACK
+    PAYMENT_CHARGEBACK,
+    /**
+     * Notificação educativa da régua de cobrança (retry) disparada ao cliente quando um pagamento
+     * falha ou enquanto ele está em atraso, antes da suspensão dura do acesso. Registra o toque,
+     * não um efeito financeiro.
+     */
+    DUNNING_NOTIFIED
 }

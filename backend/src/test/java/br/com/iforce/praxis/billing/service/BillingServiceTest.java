@@ -72,6 +72,7 @@ class BillingServiceTest {
     @Mock private EmpresaSubscriptionRepository subscriptionRepository;
     @Mock private CreditService creditService;
     @Mock private EmpresaRepository empresaRepository;
+    @Mock private BillingDunningService dunningService;
 
     private final ObjectMapper objectMapper = new ObjectMapper();
     private BillingService service;
@@ -90,7 +91,7 @@ class BillingServiceTest {
                         null
                 );
         service = new BillingService(mercadoPagoClient, properties, planRepository, eventRepository,
-                subscriptionRepository, creditService, empresaRepository);
+                subscriptionRepository, creditService, empresaRepository, dunningService);
         lenient().when(eventRepository.save(any(EmpresaBillingEventEntity.class))).thenAnswer(invocation -> {
             EmpresaBillingEventEntity event = invocation.getArgument(0);
             if (event.getId() == null) {

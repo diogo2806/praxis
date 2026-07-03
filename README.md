@@ -48,8 +48,9 @@ Principais dominios:
 - `gupy`: contrato externo `/test/**`, catalogo, tentativa e resultado.
 - `recrutei`: segundo provedor ATS integrado, com contrato externo proprio.
 - `shared.integration`: Central de Integracoes (`/api/v1/integrations`) que unifica Gupy, Recrutei e API propria, incluindo webhook e token de API publica.
-- `billing`: cobranca Mercado Pago (Parte B). AVULSO por credito pre-pago (saldo + ledger append-only), PROFISSIONAL por assinatura recorrente, ENTERPRISE por contrato manual. A leitura do plano/uso fica em `/api/v1/billing`; a criacao de cobrancas e sincronizacao com o Mercado Pago fica no painel ADMIN. Webhook publico (`POST /api/webhooks/mercado-pago`) com validacao de assinatura `x-signature`, idempotencia e consulta a API antes de aplicar mudanca financeira. Credenciais (`MP_ACCESS_TOKEN`, `MP_PUBLIC_KEY`, `MP_WEBHOOK_SECRET`) ficam apenas no backend, via variaveis de ambiente.
-- `admin`: painel administrativo da plataforma (perfil `ADMIN`) para cadastrar e governar clientes (empresas), acompanhar uso, suspender, reativar e cancelar, com auditoria append-only. Cliente = `EmpresaEntity`; nao existe `CustomerEntity`.
+- `billing`: cobranca Mercado Pago (Parte B). AVULSO por credito pre-pago (saldo + ledger append-only), PROFISSIONAL por assinatura recorrente, ENTERPRISE por contrato manual. A leitura do plano/uso fica em `/api/v1/billing`; a criacao de cobrancas e sincronizacao com o Mercado Pago fica no painel ADMIN. Webhook publico (`POST /api/webhooks/mercado-pago`) com validacao de assinatura `x-signature`, idempotencia e consulta a API antes de aplicar mudanca financeira. Credenciais (`MP_ACCESS_TOKEN`, `MP_PUBLIC_KEY`, `MP_WEBHOOK_SECRET`) ficam apenas no backend, via variaveis de ambiente. Inclui a **regua de cobranca inteligente** (dunning): quando um pagamento falha o cliente recebe um toque educativo de retry (e-mail/SMS) e lembretes recorrentes enquanto segue `PENDENTE_PAGAMENTO`/`INADIMPLENTE`, cobrindo os gaps antes da suspensao dura. Cada toque vira um evento append-only `DUNNING_NOTIFIED`.
+- `admin`: painel administrativo da plataforma (perfil `ADMIN`) para cadastrar e governar clientes (empresas), acompanhar uso, suspender, reativar e cancelar, com auditoria append-only. Cliente = `EmpresaEntity`; nao existe `CustomerEntity`. Inclui a **Saude do Cliente (Health Score)**: uma varredura diaria (`CustomerHealthScheduler`) compara as conclusoes dos ultimos 30 dias com o periodo anterior e monta a fila de atuacao proativa de Customer Success (`GET /api/admin/empresas/at-risk`), alertando o time sobre clientes ativos cuja utilizacao caiu alem do limite (por padrao, mais de 30%).
+- `engagement`: relatorios de engajamento automatizados. Um worker mensal (`EngagementReportScheduler`) envia ao e-mail corporativo (`corporateEmail`) dos clientes ativos as metricas agregadas do periodo, com destaque para as "Horas economizadas com avaliacoes Praxis este mes", reforcando o valor continuo do software.
 - `team`: gestao dos usuarios da propria empresa (convite, bloqueio, reenvio de convite).
 - `account`: conta do usuario logado (dados basicos e troca de senha).
 - `companyprofile`: dados cadastrais da empresa autenticada.
@@ -175,6 +176,7 @@ Versao publicada fica imutavel; edicoes futuras usam clone para novo rascunho. A
 | Perfil da empresa | `GET /api/v1/company-profile` |
 | Termos | `GET/POST /api/v1/terms/responsibility`, `GET/POST /api/v1/terms/health-use` |
 | Admin plataforma | `/api/admin/{dashboard,empresas,audit}` (perfil `ADMIN`) |
+| Fila de retencao (CS) | `GET /api/admin/empresas/at-risk` (perfil `ADMIN`) |
 
 ### Publicos e integracao
 
@@ -224,6 +226,12 @@ Observacao Gupy: o backend retorna `test_url` ja apontando para a pagina do cand
 | `PRAXIS_PUBLIC_BASE_URL` | Base publica usada em links e resultados. |
 | `PRAXIS_CANDIDATE_PAGE_BASE_URL` | Base publica do fluxo do candidato. |
 | `PRAXIS_PRIVACY_RETENTION_DAYS` | Retencao LGPD. |
+| `PRAXIS_RETENTION_CUSTOMER_HEALTH_ENABLED` | Liga/desliga a varredura diaria de Saude do Cliente e o alerta de CS (padrao `true`). |
+| `PRAXIS_RETENTION_AT_RISK_DROP_THRESHOLD` | Queda de uso (fracao) que coloca um cliente ativo em risco (padrao `0.30`). |
+| `PRAXIS_RETENTION_CS_TEAM_EMAIL` | Destino do alerta diario da fila de atuacao de Customer Success. |
+| `PRAXIS_ENGAGEMENT_REPORT_ENABLED` | Liga/desliga o worker mensal de relatorios de engajamento (padrao `true`). |
+| `PRAXIS_ENGAGEMENT_HOURS_SAVED_PER_EVALUATION` | Horas economizadas atribuidas a cada avaliacao concluida (padrao `1.5`). |
+| `PRAXIS_BILLING_DUNNING_ENABLED` | Liga/desliga os lembretes recorrentes da regua de cobranca (padrao `true`). |
 | `OBJECT_STORAGE_*` | Configuracao opcional de armazenamento de midia. |
 
 ### Frontend

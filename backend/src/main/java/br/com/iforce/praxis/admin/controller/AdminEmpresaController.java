@@ -12,6 +12,8 @@ import br.com.iforce.praxis.admin.dto.EmpresaAdminDetailResponse;
 
 import br.com.iforce.praxis.admin.dto.EmpresaAdminSummaryResponse;
 
+import br.com.iforce.praxis.admin.dto.EmpresaHealthResponse;
+
 import br.com.iforce.praxis.admin.dto.EmpresaUsageResponse;
 
 import br.com.iforce.praxis.admin.dto.GrantCreditsAdminRequest;
@@ -27,6 +29,8 @@ import br.com.iforce.praxis.admin.service.AdminAuditService;
 import br.com.iforce.praxis.admin.service.AdminEmpresaService;
 
 import br.com.iforce.praxis.admin.service.AdminUsageService;
+
+import br.com.iforce.praxis.admin.service.CustomerHealthService;
 
 import br.com.iforce.praxis.auth.service.CurrentUserService;
 
@@ -72,17 +76,20 @@ public class AdminEmpresaController {
     private final AdminEmpresaService adminEmpresaService;
     private final AdminUsageService adminUsageService;
     private final AdminAuditService adminAuditService;
+    private final CustomerHealthService customerHealthService;
     private final CurrentUserService currentUserService;
 
     public AdminEmpresaController(
             AdminEmpresaService adminEmpresaService,
             AdminUsageService adminUsageService,
             AdminAuditService adminAuditService,
+            CustomerHealthService customerHealthService,
             CurrentUserService currentUserService
     ) {
         this.adminEmpresaService = adminEmpresaService;
         this.adminUsageService = adminUsageService;
         this.adminAuditService = adminAuditService;
+        this.customerHealthService = customerHealthService;
         this.currentUserService = currentUserService;
     }
 
@@ -110,6 +117,15 @@ public class AdminEmpresaController {
     ) {
         return ResponseEntity.ok(adminEmpresaService.list(
                 search, status, plan, parseInstant(periodStart), parseInstant(periodEnd)));
+    }
+
+    @GetMapping("/at-risk")
+    @Operation(
+            summary = "Fila de atuação de Customer Success",
+            description = "Clientes ativos cuja utilização caiu além do limite configurado (por padrão, mais de 30%) "
+                    + "comparando os últimos 30 dias com o período anterior. Base da atuação proativa de retenção.")
+    public ResponseEntity<List<EmpresaHealthResponse>> atRisk() {
+        return ResponseEntity.ok(customerHealthService.atRiskEmpresas(Instant.now()));
     }
 
     /**
