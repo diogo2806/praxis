@@ -299,10 +299,6 @@ function resultStatusMeta(status: AttemptStatus) {
         label: "Em andamento",
         className: "border-primary/25 bg-primary/10 text-foreground",
       },
-      paused: {
-        label: "Pausado",
-        className: "border-warning/35 bg-warning/15 text-warning-foreground",
-      },
       completed: {
         label: "Concluído",
         className: "border-success/25 bg-success/10 text-foreground",
@@ -314,10 +310,6 @@ function resultStatusMeta(status: AttemptStatus) {
       expired: {
         label: "Expirado",
         className: "border-warning/35 bg-warning/15 text-warning-foreground",
-      },
-      failed: {
-        label: "Falhou",
-        className: "border-danger/25 bg-danger/10 text-foreground",
       },
     } satisfies Record<AttemptStatus, { label: string; className: string }>
   )[status];

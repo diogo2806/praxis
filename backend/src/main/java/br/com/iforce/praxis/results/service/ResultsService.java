@@ -362,7 +362,7 @@ public class ResultsService {
     private ResultsSummaryResponse summary(List<CandidateAttemptEntity> attempts) {
         long completed = attempts.stream().filter(attempt -> attempt.getStatus() == AttemptStatus.COMPLETED).count();
         long inProgress = attempts.stream()
-                .filter(attempt -> attempt.getStatus() == AttemptStatus.IN_PROGRESS || attempt.getStatus() == AttemptStatus.NOT_STARTED || attempt.getStatus() == AttemptStatus.PAUSED)
+                .filter(attempt -> attempt.getStatus() == AttemptStatus.IN_PROGRESS || attempt.getStatus() == AttemptStatus.NOT_STARTED)
                 .count();
         long expired = attempts.stream().filter(attempt -> attempt.getStatus() == AttemptStatus.EXPIRED).count();
         List<Integer> scores = attempts.stream()

@@ -336,7 +336,7 @@ public class CandidateAttemptService {
         Instant now = Instant.now();
         return candidateAttemptRepository.findByEmpresaIdAndStatusInOrderByCreatedAtDesc(
                         empresaId,
-                        List.of(AttemptStatus.IN_PROGRESS, AttemptStatus.PAUSED, AttemptStatus.COMPLETED),
+                        List.of(AttemptStatus.IN_PROGRESS, AttemptStatus.COMPLETED),
                         PageRequest.of(0, 200)
                 )
                 .stream()
@@ -1052,7 +1052,7 @@ public class CandidateAttemptService {
         if (statusAfterExpiration == AttemptStatus.NOT_STARTED && savedAttempt.status() != AttemptStatus.NOT_STARTED) {
             publishAttemptEngagementEvent(savedAttempt, ATTEMPT_STARTED_EVENT, savedAttempt.startedAt());
         }
-        if ((originalStatus == AttemptStatus.IN_PROGRESS || originalStatus == AttemptStatus.PAUSED)
+        if (originalStatus == AttemptStatus.IN_PROGRESS
                 && savedAttempt.status() == AttemptStatus.ABANDONED) {
             publishAttemptEngagementEvent(savedAttempt, ATTEMPT_ABANDONED_EVENT, savedAttempt.finishedAt());
         }
@@ -1212,19 +1212,17 @@ public class CandidateAttemptService {
         return switch (status) {
             case NOT_STARTED -> "nao_iniciada";
             case IN_PROGRESS -> "em_andamento";
-            case PAUSED -> "pausada";
             case COMPLETED -> "concluida";
             case ABANDONED -> "abandonada";
             case EXPIRED -> "expirada";
-            case FAILED -> "falhou";
         };
     }
 
     private String suggestedFrontendAction(AttemptStatus status) {
         return switch (status) {
             case NOT_STARTED -> "INICIAR";
-            case IN_PROGRESS, PAUSED -> "CONTINUAR_TESTE";
-            case COMPLETED, ABANDONED, EXPIRED, FAILED -> "VER_RESULTADOS";
+            case IN_PROGRESS -> "CONTINUAR_TESTE";
+            case COMPLETED, ABANDONED, EXPIRED -> "VER_RESULTADOS";
         };
     }
 

@@ -217,7 +217,7 @@ public class CreditService {
         int balance = lockOrCreateBalance(empresaId).getBalance();
         long activeReserved = candidateAttemptRepository.countByEmpresaIdAndStatusIn(
                 empresaId,
-                List.of(AttemptStatus.NOT_STARTED, AttemptStatus.IN_PROGRESS, AttemptStatus.PAUSED));
+                List.of(AttemptStatus.NOT_STARTED, AttemptStatus.IN_PROGRESS));
         if (balance <= activeReserved) {
             throw new ResponseStatusException(
                     HttpStatus.PAYMENT_REQUIRED,

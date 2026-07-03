@@ -108,8 +108,8 @@ public class RecruteiTestResultMapper {
     private String toRecruteiStatus(AttemptStatus status) {
         return switch (status) {
             case NOT_STARTED -> "pending";
-            case COMPLETED, ABANDONED, EXPIRED, FAILED -> "done";
-            case IN_PROGRESS, PAUSED -> "in_progress";
+            case COMPLETED, ABANDONED, EXPIRED -> "done";
+            case IN_PROGRESS -> "in_progress";
         };
     }
 
