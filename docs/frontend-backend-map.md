@@ -25,7 +25,7 @@
 ### Criacao e publicacao
 
 1. `/avaliacoes` lista simulacoes por `GET /api/v1/simulations`.
-2. `/nova/blueprint` cria rascunho por `POST /api/v1/simulations/drafts`.
+2. `/nova/avaliacao` cria rascunho por `POST /api/v1/simulations/drafts`.
 3. `/nova/objetivo`, `/nova/personagem` e `/nova/dialogo` editam plano, nos, alternativas e midias.
 4. `/nova/validador` consulta `GET /validation`.
 5. `/nova/governanca` publica por `POST /publish` ou clona por `POST /clone-draft`.
@@ -39,7 +39,7 @@
 ### Entrega Gupy
 
 1. `/test` lista simulacoes publicadas.
-2. `/test/candidate` cria tentativa e retorna `test_url` + `test_result_id`.
+2. `/test/candidate` cria tentativa e retorna `test_url` (pagina do candidato em `/candidato/{token}`) + `test_result_id`.
 3. `/test/result/{resultId}` consulta resultado.
 4. `result_webhook_url`, quando enviado, recebe resultado por outbox.
 
@@ -50,7 +50,7 @@
 | `/` | `frontend/src/routes/index.tsx` | Landing/entrada inicial; o painel operacional e `/avaliacoes`. |
 | `/avaliacoes` | `frontend/src/routes/avaliacoes.tsx` | Tela para ver e editar avaliacoes com `GET /api/v1/simulations` e exclusao definitiva por `DELETE /api/v1/simulations/{id}`. |
 | `/comecar` | `frontend/src/routes/comecar.tsx` | Inicio do fluxo de criacao. |
-| `/nova/blueprint` | `frontend/src/routes/nova.blueprint.tsx` | Cria rascunho com `POST /api/v1/simulations/drafts`; usa catalogos de `GET /api/v1/empresa-config`. |
+| `/nova/avaliacao` | `frontend/src/routes/nova.avaliacao.tsx` | Cria rascunho com `POST /api/v1/simulations/drafts`; usa catalogos de `GET /api/v1/empresa-config`. `/nova/blueprint` (`nova.blueprint.tsx`) apenas redireciona para ca por compatibilidade. |
 | `/nova/competencias` | `frontend/src/routes/nova.competencias.tsx` | Configuracao de competencias do empresa via `GET/PUT /api/v1/empresa-config`. |
 | `/nova/objetivo` | `frontend/src/routes/nova.objetivo.tsx` | Atualiza plano com `PATCH /api/v1/simulations/{id}/versions/{n}/blueprint`. |
 | `/nova/personagem` | `frontend/src/routes/nova.personagem.tsx` | Carrega versao e cria/atualiza o primeiro no por `POST/PUT /nodes`. |
@@ -60,11 +60,8 @@
 | `/nova/mapa` | `frontend/src/routes/nova.mapa.tsx` | Exibe grafo, pesos e destino das alternativas a partir de `GET /api/v1/simulations/{id}/versions/{n}`. |
 | `/nova/governanca` | `frontend/src/routes/nova.governanca.tsx` | Auditoria por `GET /api/v1/audit/simulations/{id}/versions/{n}`; clona e publica com `clone-draft` e `publish`. |
 | `/nova/gupy` | `frontend/src/routes/nova.gupy.tsx` | Preflight com `GET /api/v1/simulations/{id}/versions/{n}/gupy-preflight`; entregas com `GET /api/v1/gupy/result-deliveries`. Nao existe endpoint separado de ativacao Gupy e a UI atual apenas lista entregas. |
-| `/governanca` | `frontend/src/routes/governanca.tsx` | Lista simulacoes e permite acompanhar status `draft`, `published` e `archived`. |
 | `/monitoramento` | `frontend/src/routes/monitoramento.tsx` | Usa monitoramento da versao e entregas Gupy filtradas por simulacao/versao. |
-| `/defensabilidade` | `frontend/src/routes/defensabilidade.tsx` | Carrega versao e auditoria para explicar score e evidencias. |
-| `/lgpd` | `frontend/src/routes/lgpd.tsx` | Usa `GET /api/v1/privacy/compliance`, versao e auditoria quando ha contexto. |
-| `/compliance` | `frontend/src/routes/compliance.tsx` | Tela de analise operacional/compliance. |
+| `/compliance` | `frontend/src/routes/compliance.tsx` | Tela de analise operacional/compliance; usa `GET /api/v1/privacy/compliance`, versao, validacao e auditoria quando ha contexto. |
 | `/enviar-link` | `frontend/src/routes/enviar-link.tsx` | Lista e cria links com `GET/POST /api/v1/candidate-links`; acompanha `GET /api/v1/candidate-links/live-attempts`. |
 | `/talent-match` | `frontend/src/routes/talent-match.tsx` | Compara candidatos com `GET /api/v1/simulations/{id}/versions/{n}/talent-match?attemptIds=a,b`. |
 | `/candidato` | `frontend/src/routes/candidato.tsx` | Entrada por codigo/link recebido. |
@@ -91,7 +88,7 @@
 - `PRAXIS_SECURITY_ENABLED=false`: libera rotas e usa `PRAXIS_DEFAULT_EMPRESA_ID`.
 - `PRAXIS_SECURITY_ENABLED=true`: exige JWT nas rotas internas e valida role `EMPRESA`.
 - `/candidate/**`, `/candidato/**`, `/test/**`, `/api/v1/auth/login`, healthcheck e docs ficam permitidos pela configuracao Spring Security.
-- A integracao Gupy valida Bearer token em `GupyAuthService` por hash salvo em `empresas.integration_token_hash`.
+- A integracao Gupy/Recrutei valida Bearer token em `IntegrationAuthService` calculando o SHA-256 Base64URL do token e comparando com a tabela `integration_tokens` (por provider).
 
 ## Estados e entregas
 
@@ -107,7 +104,6 @@ Na API publica do candidato, alguns status sao traduzidos para portugues, por ex
 - `GET /api/v1/notifications` existe, mas nao ha tela de notificacoes.
 - Reprocessamento de DLQ existe no backend, mas a UI atual apenas lista entregas.
 - `DELETE /api/v1/simulations/{id}` remove definitivamente; nao e arquivamento/soft delete.
-- O `test_url` retornado por `POST /test/candidate` vem do backend como URL de API em `/candidate/attempts/{token}`; validar expectativa de browser na homologacao Gupy.
 
 ## Padroes de CSS e rotas
 

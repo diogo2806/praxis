@@ -51,6 +51,7 @@ Principais dominios:
 - `media`: upload de imagem/audio para nos e alternativas.
 - `privacy`: informacoes de conformidade LGPD.
 - `notification`: alertas internos, inclusive DLQ.
+- `marketplace`: psicometria, anuncios, orders/payouts e Mercado Pago Connect. Desativado por padrao via `praxis.marketplace.enabled=false` (env `PRAXIS_MARKETPLACE_ENABLED`).
 
 ### Frontend
 
@@ -60,7 +61,7 @@ Principais rotas:
 
 - `/avaliacoes`: tela para ver e editar as avaliações.
 - `/comecar`: entrada do fluxo de criacao.
-- `/nova/blueprint`: cria rascunho da avaliacao.
+- `/nova/avaliacao`: cria rascunho da avaliacao (`/nova/blueprint` apenas redireciona para ca).
 - `/nova/competencias`: configura catalogos do empresa.
 - `/nova/objetivo`: ajusta plano, competencias e pesos.
 - `/nova/personagem`: define o primeiro turno/personagem.
@@ -95,7 +96,7 @@ flowchart LR
 
 ### Criacao e publicacao
 
-1. RH cria um rascunho em `/nova/blueprint`.
+1. RH cria um rascunho em `/nova/avaliacao`.
 2. RH define objetivo, competencias, pesos e contexto.
 3. RH monta personagem, turnos, alternativas e midias.
 4. Validador calcula blockers, warnings e quality score.
@@ -158,7 +159,7 @@ flowchart LR
 | Enviar resposta | `POST /candidate/attempts/{attemptToken}/answers` |
 | Redirecionamento publico | `GET /candidato/{token}` |
 
-Observacao Gupy: o backend atual retorna `test_url` como URL de API em `/candidate/attempts/{token}`. Se a homologacao exigir URL de browser para o candidato, isso precisa ser ajustado no backend/configuracao para apontar para `/candidato/{token}` no frontend.
+Observacao Gupy: o backend retorna `test_url` ja apontando para a pagina do candidato em `/candidato/{token}` (base `PRAXIS_CANDIDATE_PAGE_BASE_URL`), pronta para abrir no navegador.
 
 ## Estados importantes
 
@@ -173,7 +174,7 @@ Observacao Gupy: o backend atual retorna `test_url` como URL de API em `/candida
 
 - `PRAXIS_SECURITY_ENABLED=true` exige JWT nas rotas internas.
 - `PRAXIS_SECURITY_ENABLED=false` libera rotas e usa `PRAXIS_DEFAULT_EMPRESA_ID`.
-- Rotas `/test/**` validam Bearer token de integracao comparando SHA-256 Base64URL do token com `empresas.integration_token_hash`.
+- Rotas `/test/**` (Gupy) e `/recrutei/test/**` validam o Bearer token de integracao calculando o SHA-256 Base64URL do token e comparando com a tabela `integration_tokens` (por provider), via `IntegrationAuthService`.
 - Rotas internas exigem role `EMPRESA` quando a seguranca esta ativa.
 - O empresa e carregado no contexto e usado para isolar simulacoes, tentativas, auditoria e entregas.
 
@@ -187,11 +188,12 @@ Observacao Gupy: o backend atual retorna `test_url` como URL de API em `/candida
 | `DB_SCHEMA` | Schema usado por Flyway/JPA. |
 | `PRAXIS_SECURITY_ENABLED` | Liga/desliga seguranca interna. |
 | `PRAXIS_DEFAULT_EMPRESA_ID` | Empresa usado quando seguranca esta desligada. |
-| `PRAXIS_INTEGRATION_TOKEN` | Exigida no `docker-compose.yml`, mas o backend atual nao le essa env diretamente para autenticar Gupy. Para `/test/**`, configure `empresas.integration_token_hash` no banco. |
+| `PRAXIS_INTEGRATION_TOKEN` | Exigida no `docker-compose.yml`, mas o backend atual nao le essa env para autenticar Gupy/Recrutei. Os tokens de `/test/**` sao cadastrados pela area de Integracoes da empresa e guardados hasheados em `integration_tokens`. |
 | `PRAXIS_JWT_SECRET` | Segredo para JWT. |
 | `PRAXIS_PUBLIC_BASE_URL` | Base publica usada em links e resultados. |
 | `PRAXIS_CANDIDATE_PAGE_BASE_URL` | Base publica do fluxo do candidato. |
 | `PRAXIS_PRIVACY_RETENTION_DAYS` | Retencao LGPD. |
+| `PRAXIS_MARKETPLACE_ENABLED` | Liga/desliga o modulo de marketplace. Padrao `false`; desligado bloqueia as rotas `/api/v1/marketplace/**` e `/api/v1/admin/marketplace/**`, o scheduler de repasse e o webhook de marketplace. |
 | `OBJECT_STORAGE_*` | Configuracao opcional de armazenamento de midia. |
 
 ### Frontend
@@ -248,17 +250,7 @@ PRAXIS_JWT_SECRET=troque-este-segredo-com-tamanho-suficiente
 PRAXIS_SECURITY_ENABLED=true
 ```
 
-Observacao importante: `PRAXIS_INTEGRATION_TOKEN` e exigida pelo Compose, mas a autenticacao real da Gupy usa o hash salvo em `empresas.integration_token_hash`. Para ambiente local, gere o hash e atualize o empresa:
-
-```bash
-node -e "const crypto=require('crypto'); console.log(crypto.createHash('sha256').update('troque-este-token').digest('base64url'))"
-```
-
-```sql
-UPDATE empresas
-SET integration_token_hash = '<hash-gerado>'
-WHERE id = 'empresa-1';
-```
+Observacao importante: `PRAXIS_INTEGRATION_TOKEN` e exigida pelo Compose, mas a autenticacao real de `/test/**` (Gupy) e `/recrutei/test/**` nao le essa env. O token de integracao e cadastrado pela area de Integracoes da empresa (por exemplo `POST /api/v1/integrations/{provider}/tokens`), que gera um token `prx_...`, retorna o valor em claro uma unica vez e guarda apenas o SHA-256 Base64URL dele na tabela `integration_tokens`. A cada requisicao, o backend calcula o mesmo hash do Bearer recebido e o compara com essa tabela.
 
 Suba:
 

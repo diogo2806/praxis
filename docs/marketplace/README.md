@@ -1,6 +1,11 @@
 # Módulo Marketplace de Psicometria — Especificação Técnica (reconciliada)
 
 > **Status:** especificação + fundação de persistência da Fase 1.
+> **Desativado por padrão:** o módulo fica desligado via `praxis.marketplace.enabled=false`
+> (env `PRAXIS_MARKETPLACE_ENABLED`) por decisão de risco jurídico/financeiro. Com o flag
+> desligado, as rotas `/api/v1/marketplace/**` e `/api/v1/admin/marketplace/**` ficam
+> bloqueadas, o scheduler de repasse não roda e o webhook do Mercado Pago ignora pagamentos
+> de marketplace. Ligue o flag apenas quando a operação de repasse for aprovada.
 > **Decisão de produto confirmada:** sem IA generativa em nenhuma parte do sistema.
 > **Objetivo:** profissionais de psicometria se cadastram gratuitamente, publicam testes
 > (simulações) prontos para venda, empresas compram e clonam o teste calibrado para a

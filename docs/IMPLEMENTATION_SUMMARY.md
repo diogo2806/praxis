@@ -8,7 +8,7 @@
 - PostgreSQL com Flyway.
 - Seguranca por JWT nas rotas internas quando `PRAXIS_SECURITY_ENABLED=true`.
 - Empresa resolvido por contexto de seguranca nas rotas internas.
-- Integracao Gupy por Bearer token validado contra `empresas.integration_token_hash`.
+- Integracao Gupy/Recrutei por Bearer token validado contra a tabela `integration_tokens` (SHA-256 Base64URL, via `IntegrationAuthService`).
 - Outbox transacional para entrega de resultados/eventos externos.
 - Auditoria por tentativa e por versao de simulacao.
 - Upload de midia por `/api/v1/media`.
@@ -49,8 +49,7 @@ Estas lacunas tambem aparecem no [Mapa Frontend-Backend](frontend-backend-map.md
 - `POST /api/v1/auth/login` existe, mas nao ha tela `/login`.
 - `GET /api/v1/notifications` existe, mas nao ha helper/tela dedicada no frontend.
 - Reprocessamento manual de DLQ existe no backend, mas a UI atual apenas lista entregas.
-- `PRAXIS_INTEGRATION_TOKEN` e exigida no `docker-compose.yml`, mas a autenticacao Gupy real usa `empresas.integration_token_hash`.
-- `test_url` da Gupy e montada como URL de API em `/candidate/attempts/{token}`; validar se a homologacao precisa de URL de browser.
+- `PRAXIS_INTEGRATION_TOKEN` e exigida no `docker-compose.yml`, mas a autenticacao real de `/test/**` usa a tabela `integration_tokens` (tokens cadastrados pela area de Integracoes).
 
 ## Verificacao recomendada
 

@@ -100,7 +100,7 @@ Antes de publicar uma simulacao, RH deve confirmar:
 
 ```text
 1. Criar rascunho
-   /nova/blueprint -> POST /api/v1/simulations/drafts
+   /nova/avaliacao -> POST /api/v1/simulations/drafts
 
 2. Ajustar plano
    /nova/objetivo -> PATCH /api/v1/simulations/{id}/versions/{n}/blueprint
@@ -133,7 +133,7 @@ Antes de publicar uma simulacao, RH deve confirmar:
 | --- | --- | --- |
 | Avaliações | `/avaliacoes` | Ver e editar avaliacoes: lista, status, metricas e acoes. |
 | Começar | `/comecar` | Entrada para criar nova avaliacao. |
-| Blueprint | `/nova/blueprint` | Cria rascunho com nome, descricao, situacao critica e competencias. |
+| Avaliacao | `/nova/avaliacao` | Cria rascunho com nome, descricao, situacao critica e competencias (`/nova/blueprint` apenas redireciona para ca). |
 | Competencias | `/nova/competencias` | Configura catalogos do empresa. |
 | Objetivo | `/nova/objetivo` | Ajusta plano da avaliacao, pesos e uso do resultado. |
 | Personagem | `/nova/personagem` | Define primeiro no/personagem e midias acessiveis. |

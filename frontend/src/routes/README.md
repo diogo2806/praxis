@@ -158,7 +158,8 @@ src/routes/
 ├── lgpd.tsx                             # Conformidade LGPD
 ├── nova/                                # Assistente de criação
 │   ├── _layout.tsx                      # Sidebar do wizard
-│   ├── blueprint.tsx                    # Passo 1: criar simulação
+│   ├── avaliacao.tsx                    # Passo 1: criar simulação
+│   ├── blueprint.tsx                    # Redirect de compatibilidade → /nova/avaliacao
 │   ├── objetivo.tsx                     # Passo 2: objetivo e competências
 │   ├── personagem.tsx                   # Passo 3: personagem principal
 │   ├── dialogo.tsx                      # Passo 4: diálogos/nós

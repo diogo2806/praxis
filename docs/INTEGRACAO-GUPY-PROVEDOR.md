@@ -23,22 +23,12 @@ Authorization: Bearer <token>
 
 O backend nao valida esse token diretamente por uma variavel `PRAXIS_INTEGRATION_TOKEN`. O fluxo atual e:
 
-1. `GupyAuthService` calcula SHA-256 do token recebido.
+1. `IntegrationAuthService` calcula SHA-256 do token recebido.
 2. O hash e codificado em Base64URL sem padding.
-3. O hash precisa existir em `empresas.integration_token_hash`.
+3. O hash precisa existir na tabela `integration_tokens` para o provider correspondente (`findFirstByProviderAndTokenHash`).
 4. O empresa e o `company_id` sao resolvidos a partir desse registro.
 
-Para configurar localmente:
-
-```bash
-node -e "const crypto=require('crypto'); console.log(crypto.createHash('sha256').update('token-local').digest('base64url'))"
-```
-
-```sql
-UPDATE empresas
-SET integration_token_hash = '<hash-gerado>'
-WHERE id = 'empresa-1';
-```
+Para cadastrar o token, use a area de Integracoes da empresa (`POST /api/v1/integrations/{provider}/tokens`, com provider `gupy` ou `recrutei`). O backend gera um token `prx_...`, retorna o valor em claro uma unica vez e guarda apenas o SHA-256 Base64URL dele em `integration_tokens`. Use esse valor retornado como `Bearer <token>` nas chamadas `/test/**`.
 
 ## Endpoints
 
@@ -117,12 +107,12 @@ Resposta real:
 
 ```json
 {
-  "test_url": "http://localhost:8080/candidate/attempts/<token-publico-da-tentativa>",
+  "test_url": "http://localhost/candidato/<token-publico-da-tentativa>",
   "test_result_id": "res_123"
 }
 ```
 
-Observacao operacional: no backend atual, `test_url` e montada com `PRAXIS_PUBLIC_BASE_URL + /candidate/attempts/{token}`. Esse endpoint retorna JSON da tentativa. Se a Gupy precisar abrir uma experiencia de browser para o candidato, o produto deve ajustar o backend/configuracao para devolver URL de frontend em `/candidato/{token}` ou usar `PRAXIS_CANDIDATE_PAGE_BASE_URL` em outro ponto do fluxo.
+Observacao operacional: no backend atual, `test_url` e montada com `PRAXIS_CANDIDATE_PAGE_BASE_URL + /candidato/{token}`, ou seja, ja aponta para a pagina do candidato no navegador. Quando `PRAXIS_CANDIDATE_PAGE_BASE_URL` nao e definida, ela usa `PRAXIS_PUBLIC_BASE_URL` como fallback. A Gupy pode repassar esse valor direto ao candidato, que abre a experiencia no browser.
 
 ## `GET /test/result/{resultId}`
 
@@ -214,10 +204,10 @@ Nao documentar como implementado:
 ## Checklist de homologacao
 
 - [ ] Definir URL publica real do backend.
-- [ ] Configurar hash do token em `empresas.integration_token_hash`.
+- [ ] Cadastrar o token de integracao pela area de Integracoes da empresa (guardado hasheado em `integration_tokens`).
 - [ ] Validar `GET /test` com `total_tests` e `payload`.
 - [ ] Validar `POST /test/candidate` com body snake_case.
-- [ ] Verificar se `test_url` atende a expectativa da Gupy para browser/API.
+- [ ] Verificar `test_url` apontando para a pagina do candidato em `/candidato/{token}`.
 - [ ] Completar uma tentativa.
 - [ ] Validar `GET /test/result/{resultId}?company_id=...`.
 - [ ] Testar `result_webhook_url` com sucesso.
