@@ -33,14 +33,37 @@ public class AdminUsageService {
         this.candidateAttemptRepository = candidateAttemptRepository;
     }
 
-    /** Total de avaliações concluídas de um empresa dentro do período informado. */
+    /**
+     * Conta quantas avaliações um cliente concluiu dentro de um período.
+     *
+     * <p>Na visão do processo: é a "medição de consumo" do cliente. Uso, aqui, significa
+     * prova efetivamente concluída por um candidato — não conta quem começou e abandonou.
+     * Esse número alimenta a lista de clientes, a ficha do cliente e o dashboard.</p>
+     *
+     * @param empresaId identificador do cliente
+     * @param periodStart início do período
+     * @param periodEnd fim do período
+     * @return o total de avaliações concluídas no período
+     */
     @Transactional(readOnly = true)
     public long countCompletedInPeriod(String empresaId, Instant periodStart, Instant periodEnd) {
         return candidateAttemptRepository.countByEmpresaIdAndStatusAndFinishedAtBetween(
                 empresaId, AttemptStatus.COMPLETED, periodStart, periodEnd);
     }
 
-    /** Detalhe de uso para a aba "Uso" do cliente. */
+    /**
+     * Monta o panorama de consumo de um cliente para a aba "Uso".
+     *
+     * <p>Na visão do processo: é o "raio-x de consumo" do cliente. Além do total dentro do
+     * período consultado, mostra atalhos úteis para a rotina — quanto o cliente usou nos
+     * últimos 7 e 30 dias, o total acumulado desde sempre e a data da última avaliação
+     * concluída. Ajuda o operador a perceber se um cliente está aquecendo ou esfriando.</p>
+     *
+     * @param empresaId identificador do cliente
+     * @param periodStart início do período consultado
+     * @param periodEnd fim do período consultado
+     * @return o panorama de consumo do cliente
+     */
     @Transactional(readOnly = true)
     public EmpresaUsageResponse usage(String empresaId, Instant periodStart, Instant periodEnd) {
         Instant now = Instant.now();

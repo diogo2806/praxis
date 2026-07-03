@@ -125,6 +125,22 @@ public class AdminEmpresaService {
     // Listagem e detalhe
     // ------------------------------------------------------------------
 
+    /**
+     * Monta a lista de clientes que o operador vê na tela inicial de gestão.
+     *
+     * <p>Na visão do processo: é a "agenda de clientes" da plataforma. O operador pode
+     * digitar um trecho do nome para procurar e filtrar por situação (em teste, ativo,
+     * suspenso, cancelado) e por tipo de plano comercial. Para cada cliente, a linha já
+     * traz o quanto ele usou (avaliações concluídas) dentro do período escolhido e o saldo
+     * de créditos, para o operador ter a fotografia do cliente sem precisar abrir o detalhe.</p>
+     *
+     * @param search trecho do nome para procurar; em branco lista todos
+     * @param status situação do cliente para filtrar; nulo não filtra por situação
+     * @param plan tipo de plano comercial para filtrar; nulo não filtra por plano
+     * @param periodStart início do período de uso a considerar; nulo usa o período padrão
+     * @param periodEnd fim do período de uso a considerar; nulo considera até agora
+     * @return o resumo de cada cliente encontrado
+     */
     @Transactional(readOnly = true)
     public List<EmpresaAdminSummaryResponse> list(
             String search,
@@ -143,6 +159,17 @@ public class AdminEmpresaService {
                 .toList();
     }
 
+    /**
+     * Abre a ficha completa de um cliente.
+     *
+     * <p>Na visão do processo: é o "prontuário" do cliente — dados cadastrais, plano e
+     * condição comercial, situação atual, uso no período padrão, saldo de créditos e a
+     * lista de usuários de acesso da empresa. É o que o operador vê ao clicar em um cliente
+     * na lista.</p>
+     *
+     * @param empresaId identificador do cliente
+     * @return a ficha completa do cliente
+     */
     @Transactional(readOnly = true)
     public EmpresaAdminDetailResponse detail(String empresaId) {
         EmpresaEntity empresa = requireClient(empresaId);
@@ -153,6 +180,20 @@ public class AdminEmpresaService {
     // Cadastro
     // ------------------------------------------------------------------
 
+    /**
+     * Cadastra um cliente novo e já cria o seu primeiro usuário responsável.
+     *
+     * <p>Na visão do processo: é a "abertura de conta" de um cliente na plataforma. Além
+     * de gravar os dados da empresa (nome, documento, contatos, plano e condição
+     * comercial), o processo já provisiona a pessoa responsável — normalmente enviando um
+     * convite por link para ela criar a própria senha. Se o operador não informar uma
+     * situação inicial, o cliente entra "em teste". A criação e o convite ficam registrados
+     * na trilha de auditoria, em nome do operador que os executou.</p>
+     *
+     * @param actorUserId identificador do operador ADMIN que está cadastrando
+     * @param request dados da empresa e do responsável a convidar
+     * @return a ficha do cliente recém-criado, o id do usuário responsável e o link de convite (quando houver)
+     */
     @Transactional
     public CreateEmpresaAdminResponse create(String actorUserId, CreateEmpresaAdminRequest request) {
         Instant now = Instant.now();
@@ -204,6 +245,20 @@ public class AdminEmpresaService {
     // Edição de dados / plano / condição comercial
     // ------------------------------------------------------------------
 
+    /**
+     * Atualiza os dados de um cliente, inclusive plano e condição comercial.
+     *
+     * <p>Na visão do processo: é a "edição do cadastro". Só muda o que foi informado — os
+     * campos deixados de fora permanecem como estavam. Duas mudanças têm peso especial e
+     * ganham registro próprio na trilha de auditoria: a troca do plano comercial (guardando
+     * de qual para qual plano) e a alteração da condição comercial. No fim, a própria
+     * atualização de cadastro também é registrada, sempre em nome do operador.</p>
+     *
+     * @param actorUserId identificador do operador ADMIN que está editando
+     * @param empresaId identificador do cliente
+     * @param request campos a atualizar (apenas os preenchidos são aplicados)
+     * @return a ficha atualizada do cliente
+     */
     @Transactional
     public EmpresaAdminDetailResponse update(
             String actorUserId,
@@ -269,6 +324,20 @@ public class AdminEmpresaService {
     // Suspensão / reativação / cancelamento
     // ------------------------------------------------------------------
 
+    /**
+     * Suspende um cliente, cortando temporariamente o acesso dele à plataforma.
+     *
+     * <p>Na visão do processo: é o "pausar" de um cliente — usado, por exemplo, em atraso
+     * de pagamento ou uso indevido. Enquanto suspenso, o cliente não consegue mais entrar
+     * nem usar os recursos protegidos, mas nada é apagado: é uma pausa, não um encerramento.
+     * O motivo é obrigatório e fica guardado na trilha de auditoria junto com a situação
+     * anterior, para que a decisão tenha dono e justificativa.</p>
+     *
+     * @param actorUserId identificador do operador ADMIN que está suspendendo
+     * @param empresaId identificador do cliente
+     * @param reason motivo da suspensão (registrado na auditoria)
+     * @return a ficha atualizada do cliente
+     */
     @Transactional
     public EmpresaAdminDetailResponse suspend(String actorUserId, String empresaId, String reason) {
         EmpresaEntity empresa = requireClient(empresaId);
@@ -284,6 +353,19 @@ public class AdminEmpresaService {
         return toDetail(empresa, resolvePeriod(null, null));
     }
 
+    /**
+     * Reativa um cliente que estava suspenso ou cancelado, devolvendo o acesso.
+     *
+     * <p>Na visão do processo: é o "religar" de um cliente. O operador escolhe para qual
+     * situação o cliente volta — pode voltar como ativo (operação normal) ou como em teste
+     * (período de avaliação); nenhuma outra situação é aceita nesta ação. Como toda decisão
+     * sensível, exige motivo e registra na trilha de auditoria a situação anterior e a nova.</p>
+     *
+     * @param actorUserId identificador do operador ADMIN que está reativando
+     * @param empresaId identificador do cliente
+     * @param request situação alvo (ativo ou em teste) e motivo da reativação
+     * @return a ficha atualizada do cliente
+     */
     @Transactional
     public EmpresaAdminDetailResponse reactivate(
             String actorUserId,
@@ -310,6 +392,20 @@ public class AdminEmpresaService {
         return toDetail(empresa, resolvePeriod(null, null));
     }
 
+    /**
+     * Cancela um cliente, encerrando a relação comercial, mas preservando o histórico.
+     *
+     * <p>Na visão do processo: é o "encerramento de contrato". Diferente da suspensão
+     * (que é uma pausa), o cancelamento marca o fim da relação com o cliente. Ainda assim,
+     * nada é apagado: todo o histórico de avaliações, usuários e auditoria continua
+     * disponível para consulta. O motivo é obrigatório e a situação anterior é registrada
+     * na trilha de auditoria.</p>
+     *
+     * @param actorUserId identificador do operador ADMIN que está cancelando
+     * @param empresaId identificador do cliente
+     * @param reason motivo do cancelamento (registrado na auditoria)
+     * @return a ficha atualizada do cliente
+     */
     @Transactional
     public EmpresaAdminDetailResponse cancel(String actorUserId, String empresaId, String reason) {
         EmpresaEntity empresa = requireClient(empresaId);
@@ -351,6 +447,16 @@ public class AdminEmpresaService {
     // Usuários do cliente
     // ------------------------------------------------------------------
 
+    /**
+     * Lista as pessoas que têm acesso ao sistema em nome de um cliente.
+     *
+     * <p>Na visão do processo: mostra quem, dentro daquela empresa, pode entrar na
+     * plataforma — com a situação de cada um (convidado, ativo, bloqueado) e quando fez o
+     * último acesso. É a base da aba "Acessos" do cliente.</p>
+     *
+     * @param empresaId identificador do cliente
+     * @return os usuários de acesso do cliente, do mais antigo para o mais novo
+     */
     @Transactional(readOnly = true)
     public List<AdminUserResponse> listUsers(String empresaId) {
         requireClient(empresaId);
@@ -359,6 +465,20 @@ public class AdminEmpresaService {
                 .toList();
     }
 
+    /**
+     * Convida uma nova pessoa para acessar a plataforma em nome de um cliente.
+     *
+     * <p>Na visão do processo: adiciona mais um "acesso" à empresa. A pessoa recebe um
+     * convite por link para criar a própria senha e entra sempre com o papel de usuário da
+     * empresa (nunca como operador da plataforma). Se já existir alguém com o mesmo e-mail
+     * naquele cliente, o convite é recusado, evitando acessos duplicados. A ação fica
+     * registrada na auditoria.</p>
+     *
+     * @param actorUserId identificador do operador ADMIN que está convidando
+     * @param empresaId identificador do cliente
+     * @param request nome e e-mail da pessoa a convidar
+     * @return os dados do usuário criado e o link de convite
+     */
     @Transactional
     public InviteUserAdminResponse inviteUser(
             String actorUserId,
@@ -376,6 +496,20 @@ public class AdminEmpresaService {
         return new InviteUserAdminResponse(toUserResponse(invited.user()), invited.inviteUrl());
     }
 
+    /**
+     * Reenvia o convite de acesso para uma pessoa que ainda não entrou.
+     *
+     * <p>Na visão do processo: reemite o link de convite para quem foi convidado mas ainda
+     * não criou a senha (por exemplo, se o e-mail se perdeu ou o prazo expirou). Por
+     * segurança, só vale para quem ainda está como "convidado": não é possível reenviar
+     * convite para um usuário já ativo, o que evitaria reabrir o acesso dele por um link.
+     * O reenvio fica registrado na auditoria.</p>
+     *
+     * @param actorUserId identificador do operador ADMIN que está reenviando
+     * @param empresaId identificador do cliente
+     * @param userId identificador do usuário convidado
+     * @return os dados do usuário e o novo link de convite
+     */
     @Transactional
     public InviteUserAdminResponse resendInvite(String actorUserId, String empresaId, Long userId) {
         requireClient(empresaId);
@@ -402,6 +536,18 @@ public class AdminEmpresaService {
         return new InviteUserAdminResponse(toUserResponse(user), inviteUrl(token));
     }
 
+    /**
+     * Bloqueia o acesso de uma pessoa de um cliente, sem apagar o cadastro dela.
+     *
+     * <p>Na visão do processo: "tira a chave" de um usuário — ele deixa de conseguir
+     * entrar, mas continua no cadastro e todo o seu histórico é preservado. É reversível
+     * pelo desbloqueio. O bloqueio fica registrado na auditoria.</p>
+     *
+     * @param actorUserId identificador do operador ADMIN que está bloqueando
+     * @param empresaId identificador do cliente
+     * @param userId identificador do usuário a bloquear
+     * @return os dados atualizados do usuário
+     */
     @Transactional
     public AdminUserResponse blockUser(String actorUserId, String empresaId, Long userId) {
         UserEntity user = requireEmpresaUser(empresaId, userId);
@@ -415,6 +561,17 @@ public class AdminEmpresaService {
         return toUserResponse(user);
     }
 
+    /**
+     * Desbloqueia uma pessoa que estava impedida de acessar, devolvendo o acesso.
+     *
+     * <p>Na visão do processo: "devolve a chave" de um usuário bloqueado, deixando-o ativo
+     * novamente. É o oposto do bloqueio. A ação fica registrada na auditoria.</p>
+     *
+     * @param actorUserId identificador do operador ADMIN que está desbloqueando
+     * @param empresaId identificador do cliente
+     * @param userId identificador do usuário a desbloquear
+     * @return os dados atualizados do usuário
+     */
     @Transactional
     public AdminUserResponse unblockUser(String actorUserId, String empresaId, Long userId) {
         UserEntity user = requireEmpresaUser(empresaId, userId);
