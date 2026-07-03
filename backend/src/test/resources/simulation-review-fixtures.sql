@@ -1,5 +1,9 @@
+-- audit_events e append-only (trigger criado em V13). Desabilita o trigger apenas para o
+-- reset de dados de teste destes aggregate_ids e reabilita em seguida.
+ALTER TABLE audit_events DISABLE TRIGGER USER;
 DELETE FROM audit_events
 WHERE aggregate_id IN ('sim-publish-gate:v1', 'sim-review-flow:v1', 'sim-clone-source:v1', 'sim-clone-source:v2');
+ALTER TABLE audit_events ENABLE TRIGGER USER;
 
 DELETE FROM simulations
 WHERE id IN ('sim-publish-gate', 'sim-review-flow', 'sim-clone-source');
@@ -39,6 +43,10 @@ VALUES
     (203, 'Empatia', 0.5),
     (203, 'Resolucao', 0.5);
 
+-- turno-1 de sim-publish-gate (201) e sim-clone-source (203) encaminham para uma etapa de
+-- encerramento, de forma a satisfazer o validador atual (respostas precisam de destino e a
+-- etapa com destino de resposta precisa de destino de tempo esgotado). sim-review-flow (202)
+-- e usada apenas pelos testes de edicao/CRUD e nao passa por validacao/publicacao.
 INSERT INTO simulation_nodes (
     id,
     simulation_version_id,
@@ -46,12 +54,17 @@ INSERT INTO simulation_nodes (
     turn_index,
     speaker,
     message,
-    time_limit_seconds
+    time_limit_seconds,
+    timeout_next_node_id,
+    is_final,
+    report_text
 )
 VALUES
-    (201, 201, 'turno-1', 1, 'Cliente ficticio', 'Mensagem do cliente para teste.', 45),
-    (202, 202, 'turno-1', 1, 'Cliente ficticio', 'Mensagem do cliente para teste.', 45),
-    (203, 203, 'turno-1', 1, 'Cliente ficticio', 'Mensagem do cliente para teste.', 45);
+    (201, 201, 'turno-1', 1, 'Cliente ficticio', 'Mensagem do cliente para teste.', 45, 'encerramento', FALSE, NULL),
+    (202, 202, 'turno-1', 1, 'Cliente ficticio', 'Mensagem do cliente para teste.', 45, NULL, FALSE, NULL),
+    (203, 203, 'turno-1', 1, 'Cliente ficticio', 'Mensagem do cliente para teste.', 45, 'encerramento', FALSE, NULL),
+    (251, 201, 'encerramento', 2, 'Sistema', 'Encerramento.', NULL, NULL, TRUE, 'Encerramento da avaliacao.'),
+    (253, 203, 'encerramento', 2, 'Sistema', 'Encerramento.', NULL, NULL, TRUE, 'Encerramento da avaliacao.');
 
 INSERT INTO simulation_options (
     id,
@@ -63,12 +76,12 @@ INSERT INTO simulation_options (
     audit_note
 )
 VALUES
-    (201, 201, 'opcao-a', 'Resposta A.', NULL, FALSE, 'Opcao valida para teste.'),
+    (201, 201, 'opcao-a', 'Resposta A.', 'encerramento', FALSE, 'Opcao valida para teste.'),
     (202, 202, 'opcao-a', 'Resposta A.', NULL, FALSE, 'Opcao valida para teste.'),
-    (203, 201, 'opcao-b', 'Resposta B.', NULL, FALSE, 'Opcao valida para teste.'),
+    (203, 201, 'opcao-b', 'Resposta B.', 'encerramento', FALSE, 'Opcao valida para teste.'),
     (204, 202, 'opcao-b', 'Resposta B.', NULL, FALSE, 'Opcao valida para teste.'),
-    (205, 203, 'opcao-a', 'Resposta A.', NULL, FALSE, 'Opcao valida para teste.'),
-    (206, 203, 'opcao-b', 'Resposta B.', NULL, FALSE, 'Opcao valida para teste.');
+    (205, 203, 'opcao-a', 'Resposta A.', 'encerramento', FALSE, 'Opcao valida para teste.'),
+    (206, 203, 'opcao-b', 'Resposta B.', 'encerramento', FALSE, 'Opcao valida para teste.');
 
 INSERT INTO option_competency_scores (simulation_option_id, competency_name, score)
 VALUES

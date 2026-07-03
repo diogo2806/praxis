@@ -43,7 +43,7 @@ Alternativa por modelo: `/nova/rapido` usa `GET /api/v1/simulations/quick-start/
 ### Entrega Gupy
 
 1. `/test` lista simulacoes publicadas.
-2. `/test/candidate` cria tentativa e retorna `test_url` + `test_result_id`.
+2. `/test/candidate` cria tentativa e retorna `test_url` (pagina do candidato em `/candidato/{token}`) + `test_result_id`.
 3. `/test/result/{resultId}` consulta resultado.
 4. `result_webhook_url`, quando enviado, recebe resultado por outbox.
 
@@ -148,7 +148,7 @@ O menu principal da empresa e definido em `frontend/src/components/app-shell.tsx
 - `PRAXIS_SECURITY_ENABLED=false`: libera rotas e usa `PRAXIS_DEFAULT_EMPRESA_ID`.
 - `PRAXIS_SECURITY_ENABLED=true`: exige JWT nas rotas internas e valida role `EMPRESA`.
 - `/candidate/**`, `/candidato/**`, `/test/**`, `/api/v1/auth/login`, `/api/webhooks/**`, healthcheck e docs ficam permitidos pela configuracao Spring Security.
-- A integracao Gupy valida Bearer token em `GupyAuthService` por hash salvo em `empresas.integration_token_hash`; a Recrutei e a API propria seguem o mesmo modelo de token por provedor.
+- A integracao Gupy/Recrutei valida Bearer token em `IntegrationAuthService` calculando o SHA-256 Base64URL do token e comparando com a tabela `integration_tokens` (por provider). A Recrutei e a API propria seguem o mesmo modelo de token por provedor.
 - O painel `/api/admin/**` e o marketplace `/api/v1/admin/marketplace` exigem role `ADMIN`.
 
 ## Estados e entregas
@@ -165,7 +165,6 @@ Na API publica do candidato, alguns status sao traduzidos para portugues, por ex
 - `GET /api/v1/notifications` existe, mas nao ha tela de notificacoes.
 - Reprocessamento de DLQ existe no backend, mas a UI atual apenas lista entregas.
 - `DELETE /api/v1/simulations/{id}` remove definitivamente; nao e arquivamento/soft delete.
-- O `test_url` retornado por `POST /test/candidate` vem do backend como URL de API em `/candidate/attempts/{token}`; validar expectativa de browser na homologacao Gupy.
 
 ## Padroes de CSS e rotas
 

@@ -33,8 +33,8 @@ class PrivacyControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.legalBases.length()").value(greaterThan(0)))
                 .andExpect(jsonPath("$.retentionDays").value(180))
-                .andExpect(jsonPath("$.controllerContact.controllerName").value("Controlador a ser informado pelo empresa"))
-                .andExpect(jsonPath("$.reviewChannel").value("Canal de privacidade nao configurado para este empresa. Configure PRAXIS_PRIVACY_SERVICE_EMAIL ou PRAXIS_PRIVACY_SERVICE_URL antes de operar processos reais."))
+                .andExpect(jsonPath("$.controllerContact.controllerName").value("Controlador a ser informado pela empresa"))
+                .andExpect(jsonPath("$.reviewChannel").value("Canal de privacidade não configurado para esta empresa. Configure PRAXIS_PRIVACY_SERVICE_EMAIL ou PRAXIS_PRIVACY_SERVICE_URL antes de operar processos reais."))
                 .andExpect(jsonPath("$.automatedDecisionWithoutReviewAllowed").value(false));
     }
 }

@@ -25,8 +25,6 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.time.Instant;
 
-import java.util.UUID;
-
 
 /**
  * Recebe e processa notificações do Mercado Pago.
@@ -45,19 +43,22 @@ public class MercadoPagoWebhookService {
     private final BillingService billingService;
     private final MercadoPagoClient mercadoPagoClient;
     private final MarketplaceOrderService marketplaceOrderService;
+    private final boolean marketplaceEnabled;
 
     public MercadoPagoWebhookService(
             MercadoPagoSignatureValidator signatureValidator,
             MpWebhookReceiptRepository receiptRepository,
             BillingService billingService,
             MercadoPagoClient mercadoPagoClient,
-            MarketplaceOrderService marketplaceOrderService
+            MarketplaceOrderService marketplaceOrderService,
+            @org.springframework.beans.factory.annotation.Value("${praxis.marketplace.enabled:false}") boolean marketplaceEnabled
     ) {
         this.signatureValidator = signatureValidator;
         this.receiptRepository = receiptRepository;
         this.billingService = billingService;
         this.mercadoPagoClient = mercadoPagoClient;
         this.marketplaceOrderService = marketplaceOrderService;
+        this.marketplaceEnabled = marketplaceEnabled;
     }
 
     /**
@@ -77,8 +78,10 @@ public class MercadoPagoWebhookService {
             return;
         }
 
-        String notificationId = (xRequestId != null && !xRequestId.isBlank() ? xRequestId : UUID.randomUUID().toString())
-                + ":" + topic + ":" + dataId;
+        // Idempotencia por (topico + id do recurso). NAO inclui x-request-id: o Mercado Pago
+        // gera um x-request-id novo a cada tentativa de entrega do MESMO evento, entao usa-lo na
+        // chave permitiria reprocessar o mesmo pagamento e, por exemplo, creditar em dobro.
+        String notificationId = topic + ":" + dataId;
         if (receiptRepository.existsByNotificationId(notificationId)) {
             log.debug("Webhook {} já processado; ignorado (idempotência).", notificationId);
             return;
@@ -110,6 +113,12 @@ public class MercadoPagoWebhookService {
         } else if (normalized.contains("payment")) {
             JsonNode payment = mercadoPagoClient.getPayment(dataId);
             if (isMarketplacePayment(payment)) {
+                if (!marketplaceEnabled) {
+                    // Marketplace desativado: nenhum checkout pode ter sido iniciado por aqui.
+                    // Ignoramos o pagamento em vez de criar pedido/repasse (zera risco financeiro).
+                    log.warn("Pagamento de marketplace recebido com a feature desativada; ignorado. dataId={}", dataId);
+                    return;
+                }
                 marketplaceOrderService.processApprovedPayment(payment, xRequestId);
                 return;
             }

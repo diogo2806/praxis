@@ -114,6 +114,19 @@
             <artifactId>postgresql</artifactId>
             <scope>runtime</scope>
         </dependency>
+        <!-- Testes de integração rodam contra PostgreSQL real via Testcontainers (as migrations
+             usam sintaxe exclusiva do PostgreSQL, incompatível com H2). Versões gerenciadas pelo
+             spring-boot-dependencies. -->
+        <dependency>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>postgresql</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <scope>test</scope>
+        </dependency>
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>

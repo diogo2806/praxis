@@ -14,13 +14,13 @@ DELETE FROM simulations
 WHERE id IN ('sim-atendimento-caos', 'sim-timeout-fallback');
 
 INSERT INTO empresas (id, name, company_id, integration_token_hash)
-SELECT 'empresa-1', 'Acme S.A.', 'empresa-123', 'mIpDNk36Ser0rI9x2CntfUygEZ8TN-9xe3Ux_VOl6xE'
+SELECT 'empresa-1', 'Acme S.A.', 'empresa-123', 'HQkNHnvADAg8tGffiSYY9Lx094NTkUZ9OLLSNKjSTGk'
 WHERE NOT EXISTS (
     SELECT 1 FROM empresas WHERE id = 'empresa-1'
 );
 
 UPDATE empresas
-SET integration_token_hash = 'mIpDNk36Ser0rI9x2CntfUygEZ8TN-9xe3Ux_VOl6xE'
+SET integration_token_hash = 'HQkNHnvADAg8tGffiSYY9Lx094NTkUZ9OLLSNKjSTGk'
 WHERE id = 'empresa-1';
 
 DELETE FROM integration_tokens
@@ -28,7 +28,7 @@ WHERE empresa_id = 'empresa-1'
   AND provider = 'gupy';
 
 INSERT INTO integration_tokens (empresa_id, provider, token_hash)
-VALUES ('empresa-1', 'gupy', 'mIpDNk36Ser0rI9x2CntfUygEZ8TN-9xe3Ux_VOl6xE');
+VALUES ('empresa-1', 'gupy', 'HQkNHnvADAg8tGffiSYY9Lx094NTkUZ9OLLSNKjSTGk');
 
 INSERT INTO simulations (id, empresa_id, name, description, created_at)
 VALUES (
@@ -58,11 +58,11 @@ VALUES (
     CURRENT_TIMESTAMP
 );
 
-INSERT INTO simulation_competencies (simulation_version_id, name, weight)
+INSERT INTO simulation_competencies (simulation_version_id, name, weight, tier)
 VALUES
-    (1, 'Empatia', 0.4),
-    (1, 'Resolucao de conflito', 0.4),
-    (1, 'Aderencia a politica', 0.2);
+    (1, 'Empatia', 0.4, 'MAJOR'),
+    (1, 'Resolucao de conflito', 0.4, 'MAJOR'),
+    (1, 'Aderencia a politica', 0.2, 'MINOR');
 
 INSERT INTO simulation_nodes (
     id,
@@ -71,17 +71,36 @@ INSERT INTO simulation_nodes (
     turn_index,
     speaker,
     message,
-    time_limit_seconds
+    time_limit_seconds,
+    timeout_next_node_id,
+    is_final,
+    report_text
 )
-VALUES (
-    1,
-    1,
-    'turno-1',
-    1,
-    'Cliente',
-    'Mensagem inicial do cliente para teste.',
-    45
-);
+VALUES
+    (
+        1,
+        1,
+        'turno-1',
+        1,
+        'Cliente',
+        'Mensagem inicial do cliente para teste.',
+        45,
+        'encerramento',
+        FALSE,
+        NULL
+    ),
+    (
+        2,
+        1,
+        'encerramento',
+        2,
+        'Sistema',
+        'Encerramento da avaliacao.',
+        NULL,
+        NULL,
+        TRUE,
+        'Participacao encerrada. Resumo gerado para a equipe responsavel.'
+    );
 
 INSERT INTO simulation_options (
     id,
@@ -98,7 +117,7 @@ VALUES
         1,
         'opcao-promete-estorno',
         'Resposta critica para validar revisao humana.',
-        NULL,
+        'encerramento',
         TRUE,
         'Exige revisao humana.'
     ),
@@ -107,7 +126,7 @@ VALUES
         1,
         'opcao-processo-frio',
         'Resposta orientada a processo.',
-        NULL,
+        'encerramento',
         FALSE,
         'Segue processo.'
     ),
@@ -116,7 +135,7 @@ VALUES
         1,
         'opcao-equilibrada',
         'Resposta equilibrada entre acolhimento e regra.',
-        NULL,
+        'encerramento',
         FALSE,
         'Equilibra acolhimento e limite de alcada.'
     );

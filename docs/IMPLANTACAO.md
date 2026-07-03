@@ -80,7 +80,7 @@ Fiel a `docker-compose.yml`, `backend/Dockerfile`, `backend/pom.xml`,
 
 > A variável `ADMIN_BOOTSTRAP_EMAIL`/`ADMIN_BOOTSTRAP_PASSWORD` do requisito corresponde a
 > `PRAXIS_ADMIN_BOOTSTRAP_EMAIL`/`PRAXIS_ADMIN_BOOTSTRAP_PASSWORD`. A Gupy não usa variável de
-> ambiente para autenticar: o token é validado contra `empresas.integration_token_hash` no banco.
+> ambiente para autenticar: o token é validado contra a tabela `integration_tokens` no banco.
 
 ---
 
@@ -174,15 +174,10 @@ Serviços resultantes:
 - Frontend: `http://localhost` (Nginx na porta 80).
 - PostgreSQL: rede interna do Compose, volume `postgres_data`.
 
-> O Compose exige `PRAXIS_INTEGRATION_TOKEN`, mas a autenticação real da Gupy usa o hash em
-> `empresas.integration_token_hash`. Gere e atualize o hash do empresa:
->
-> ```bash
-> node -e "const c=require('crypto');console.log(c.createHash('sha256').update('troque-este-token').digest('base64url'))"
-> ```
-> ```sql
-> UPDATE empresas SET integration_token_hash = '<hash-gerado>' WHERE id = 'empresa-1';
-> ```
+> O Compose exige `PRAXIS_INTEGRATION_TOKEN`, mas a autenticação real de `/test/**` (Gupy/Recrutei)
+> não lê essa variável. O token é cadastrado pela área de Integrações da empresa
+> (`POST /api/v1/integrations/{provider}/tokens`), que gera um token `prx_...`, o exibe uma única
+> vez e guarda apenas o SHA-256 Base64URL dele na tabela `integration_tokens`.
 
 ### 17.3 Cloud / homologação / produção
 
@@ -233,7 +228,7 @@ server {
 | Roles | `ADMIN` para `/api/admin/**`; `EMPRESA` para `/api/v1/**` protegidas (`SecurityConfig`). |
 | Empresa | Isolamento por empresa via JWT/token; `SUSPENSO`/`CANCELADO` bloqueiam acesso. |
 | Proteção de Webhook | `/api/webhooks/mercado-pago` valida assinatura `x-signature` (`MP_WEBHOOK_SECRET`), idempotência e consulta a API MP antes de aplicar mudança financeira. |
-| Tokens de integração (ATS) | Comparação por SHA-256 Base64URL contra `empresas.integration_token_hash`; o token em claro nunca é persistido. |
+| Tokens de integração (ATS) | Comparação por SHA-256 Base64URL contra a tabela `integration_tokens` (por provider); o token em claro nunca é persistido. |
 | Secrets | `PRAXIS_JWT_SECRET`, `DB_PASS`, `MP_*`, `OBJECT_STORAGE_*` só por variável de ambiente/secret manager. Nunca commitar. |
 
 > **Importante:** `PRAXIS_SECURITY_ENABLED=false` libera todas as rotas e usa
@@ -249,7 +244,7 @@ server {
 - [ ] Login funcionando (`POST /api/v1/auth/login`).
 - [ ] Upload de mídia funcionando (`POST /api/v1/media`) — se `OBJECT_STORAGE_*` configurado.
 - [ ] Mercado Pago conectado — se `MP_ENABLED=true` (webhook e `MP_*` válidos).
-- [ ] Gupy/Recrutei conectada — `integration_token_hash` do empresa configurado; `GET /test` responde.
+- [ ] Gupy/Recrutei conectada — token cadastrado pela área de Integrações (guardado em `integration_tokens`); `GET /test` responde.
 - [ ] Health Check `UP` (`GET /actuator/health`).
 - [ ] Auditoria funcionando (ações geram eventos em `audit_events`).
 - [ ] Backup configurado (banco + storage) — ver [OPERACAO.md §8](OPERACAO.md#8-backup).

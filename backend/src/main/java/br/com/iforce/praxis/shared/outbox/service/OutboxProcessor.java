@@ -181,9 +181,17 @@ public class OutboxProcessor {
      */
     public void reprocessEvent(Long eventId, String empresaId) {
         Long claimedId = txTemplate.execute(status -> {
-            OutboxEventEntity event = outboxEventRepository.findByIdAndEmpresaId(eventId, empresaId)
+            OutboxEventEntity event = outboxEventRepository.findByIdAndEmpresaIdForUpdate(eventId, empresaId)
                     .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Evento de entrega não encontrado."));
             if (event.getStatus() == OutboxEventEntity.OutboxEventStatus.SENT) {
+                return null;
+            }
+            // Não reivindicar um evento que o poller acabou de reivindicar e ainda está
+            // entregando (PROCESSING recente): reprocessá-lo agora causaria entrega duplicada.
+            // Só assume um PROCESSING quando ele está órfão (mais antigo que o timeout de stuck).
+            if (event.getStatus() == OutboxEventEntity.OutboxEventStatus.PROCESSING
+                    && event.getLastAttemptAt() != null
+                    && event.getLastAttemptAt().isAfter(stuckBefore())) {
                 return null;
             }
             markClaimed(event);
@@ -296,12 +304,33 @@ public class OutboxProcessor {
             outboundUrlValidator.validate(webhookUrl);
             log.debug("Enviando resultado para webhook: {}", webhookUrl);
             resultWebhookClient.postResult(webhookUrl, testResult);
-            integrationManagementService.recordActivity(event.getEmpresaId(), IntegrationProvider.GUPY);
+            // Best-effort: registrar atividade NÃO pode falhar a entrega. Se lançasse aqui, o
+            // evento inteiro iria para RETRYING e o POST da Gupy (já bem-sucedido) seria refeito
+            // na próxima tentativa — entrega duplicada que o consumidor não deduplica.
+            recordGupyActivityBestEffort(event.getEmpresaId());
         }
 
         // Entrega adicional (melhor esforço) ao webhook personalizado do cliente,
-        // se houver integração CUSTOM_API ativa. Nunca interrompe a entrega da Gupy.
-        deliverGenericWebhook(event);
+        // se houver integração CUSTOM_API ativa. Nunca interrompe nem faz o evento reentregar a
+        // Gupy: uma falha aqui é apenas logada; a reentrega do CUSTOM_API é responsabilidade do
+        // próprio GenericWebhookDeliveryService.
+        deliverGenericWebhookBestEffort(event);
+    }
+
+    private void recordGupyActivityBestEffort(String empresaId) {
+        try {
+            integrationManagementService.recordActivity(empresaId, IntegrationProvider.GUPY);
+        } catch (Exception ex) {
+            log.warn("Falha ao registrar atividade da integração Gupy (ignorada): {}", ex.getMessage());
+        }
+    }
+
+    private void deliverGenericWebhookBestEffort(OutboxEventEntity event) {
+        try {
+            deliverGenericWebhook(event);
+        } catch (Exception ex) {
+            log.warn("Falha na entrega best-effort ao webhook CUSTOM_API (ignorada): {}", ex.getMessage());
+        }
     }
 
     private void deliverGenericWebhook(OutboxEventEntity event) {
@@ -367,10 +396,15 @@ public class OutboxProcessor {
         event.setLastError(errorMessage);
         log.warn("Falha ao processar evento {} (tentativa {}): {}", event.getId(), event.getAttempts(), errorMessage);
 
-        boolean isContractError = exception instanceof RestClientResponseException responseException
-            && responseException.getStatusCode().is4xxClientError();
+        // Um 4xx normalmente indica erro de contrato (payload/URL/permissão) irrecuperável por
+        // retry → DLQ imediata. EXCEÇÃO: 408 (Request Timeout) e 429 (Too Many Requests) são
+        // transitórios e devem ser retentados com backoff, não descartados.
+        boolean isPermanentContractError = exception instanceof RestClientResponseException responseException
+            && responseException.getStatusCode().is4xxClientError()
+            && responseException.getStatusCode().value() != 408
+            && responseException.getStatusCode().value() != 429;
 
-        if (isContractError || event.getAttempts() >= MAX_ATTEMPT_COUNT) {
+        if (isPermanentContractError || event.getAttempts() >= MAX_ATTEMPT_COUNT) {
             event.setStatus(OutboxEventEntity.OutboxEventStatus.DLQ);
             event.setNextAttemptAt(null);
             log.error("Evento {} movido para DLQ após {} tentativas", event.getId(), event.getAttempts());

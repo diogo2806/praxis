@@ -92,10 +92,14 @@ public class CreditService {
         if (empresa == null || empresa.getCommercialPlanType() != CommercialPlanType.AVULSO) {
             return;
         }
+        // Trava o saldo ANTES de checar idempotencia. O lock serializa duas conclusoes
+        // concorrentes da MESMA tentativa: a segunda so prossegue apos o commit da primeira e,
+        // ai sim, enxerga o lancamento CONSUMPTION ja gravado. Checar antes do lock (como era)
+        // deixava ambas lerem "nao consumido" e debitarem o credito em dobro.
+        EmpresaCreditBalanceEntity balance = lockOrCreateBalance(empresaId);
         if (ledgerRepository.existsByAttemptIdAndReason(attemptId, CreditLedgerReason.CONSUMPTION)) {
             return;
         }
-        EmpresaCreditBalanceEntity balance = lockOrCreateBalance(empresaId);
         if (balance.getBalance() <= 0) {
             // Sem saldo para debitar: garante a marcação SEM_CREDITO e não cria saldo negativo.
             markOutOfCredit(empresa);
@@ -111,7 +115,17 @@ public class CreditService {
         }
     }
 
-    /** Bloqueia o início de nova avaliação quando um cliente AVULSO está sem crédito. */
+    /**
+     * Bloqueia o início de nova avaliação quando um cliente AVULSO está sem crédito.
+     *
+     * <p><b>Limitação conhecida (corrida):</b> esta verificação apenas LÊ o saldo; o débito só
+     * ocorre em {@link #consumeOnCompletion}. Sob criação concorrente de tentativas para o mesmo
+     * cliente, várias podem passar aqui com saldo 1 e depois só a primeira conclusão debita — as
+     * demais completam "de graça". Eliminar isso exige RESERVAR o crédito de forma atômica no
+     * início (débito com lock + liberação em abandono/expiração), o que muda a semântica de
+     * cobrança (hoje: cobra na conclusão) e é uma decisão de produto. Não alterar sem testes de
+     * integração cobrindo reserva, liberação e reembolso.</p>
+     */
     @Transactional(readOnly = true)
     public void assertCanStartNewAttempt(String empresaId) {
         EmpresaEntity empresa = empresaRepository.findById(empresaId).orElse(null);

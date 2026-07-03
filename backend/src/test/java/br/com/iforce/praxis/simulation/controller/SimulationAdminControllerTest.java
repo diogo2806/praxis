@@ -107,12 +107,12 @@ class SimulationAdminControllerTest {
                 .andExpect(jsonPath("$.status").value("published"))
                 .andExpect(jsonPath("$.publishedAt").exists());
 
+        // Republicar uma versão já publicada é um no-op idempotente: não recarimba publishedAt
+        // nem re-emite o evento de auditoria de publicação. A versão seedada já nasce publicada
+        // (sem passar pelo fluxo de publicação), então a trilha não contém esse evento.
         mockMvc.perform(get("/api/v1/audit/simulations/sim-atendimento-caos/versions/1"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[*].eventType").value(hasItem("simulationVersionPublished")))
-                .andExpect(jsonPath("$[*].aggregateType").value(hasItem("Versão da simulação")))
-                .andExpect(jsonPath("$[*].aggregateId").value(hasItem("sim-atendimento-caos:v1")))
-                .andExpect(jsonPath("$[*].metadata").value(hasItem(containsString("\"status\":\"published\""))));
+                .andExpect(jsonPath("$[?(@.eventType=='simulationVersionPublished')]").value(empty()));
     }
 
     @Test

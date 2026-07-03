@@ -305,7 +305,11 @@ public class SimulationAdminService {
      * @param versionNumber número da versão
      * @return o relatório de validação
      */
-    @Transactional
+    // readOnly: validar NÃO pode persistir nada. O validate() normaliza rootNodeId em memória
+    // (setRootNodeId) como rede de segurança para dados legados; sob uma transação de escrita o
+    // dirty-checking gravaria essa mudança — mutando silenciosamente uma versão PUBLICADA (que
+    // deve ser imutável). Com readOnly, o Hibernate usa FlushMode.MANUAL e nada é persistido.
+    @Transactional(readOnly = true)
     public SimulationValidationResponse validateVersion(String simulationId, int versionNumber) {
         SimulationVersionEntity simulationVersionEntity = findVersion(simulationId, versionNumber);
         return simulationValidationService.validate(simulationVersionEntity);
@@ -789,14 +793,26 @@ public class SimulationAdminService {
     @Transactional
     public PublishSimulationResponse publishVersion(String simulationId, int versionNumber) {
         SimulationVersionEntity simulationVersionEntity = findVersion(simulationId, versionNumber);
+
+        // Uma versão publicada é imutável. Republicá-la é idempotente: retorna o estado atual
+        // SEM recarimbar publishedAt nem re-arquivar as demais versões (o comportamento anterior
+        // sobrescrevia publishedAt = now, mutando a data de publicação de uma versão imutável).
+        if (simulationVersionEntity.getStatus() == SimulationVersionStatus.PUBLISHED) {
+            return new PublishSimulationResponse(
+                    simulationVersionEntity.getSimulation().getId(),
+                    simulationVersionEntity.getVersionNumber(),
+                    simulationVersionEntity.getStatus(),
+                    simulationVersionEntity.getPublishedAt()
+            );
+        }
+
         SimulationValidationResponse validationResponse = simulationValidationService.validate(simulationVersionEntity);
 
         if (!validationResponse.publishable()) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Publicação bloqueada por itens críticos do validador.");
         }
 
-        if (simulationVersionEntity.getStatus() != SimulationVersionStatus.DRAFT
-                && simulationVersionEntity.getStatus() != SimulationVersionStatus.PUBLISHED) {
+        if (simulationVersionEntity.getStatus() != SimulationVersionStatus.DRAFT) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Somente versões em rascunho podem ser publicadas.");
         }
 

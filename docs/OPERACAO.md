@@ -75,7 +75,7 @@ Pacote base `br.com.iforce.praxis`:
 - **Convite:** `POST /api/v1/auth/invite/accept` cria a senha e ativa o usuário convidado.
 - **Candidato:** sem usuário; usa token de tentativa (`attemptToken`) em rotas `/candidate/**`.
 - **Integração ATS (`/test/**`, `/recrutei/test/**`):** Bearer token de integração; o backend compara
-  o SHA-256 Base64URL do token com `empresas.integration_token_hash` (Gupy) ou o hash da Recrutei.
+  o SHA-256 Base64URL do token com a tabela `integration_tokens` (por provider), via `IntegrationAuthService`.
 - **Webhook Mercado Pago (`/api/webhooks/mercado-pago/**`):** público, validado por assinatura
   `x-signature` no próprio handler, sem JWT.
 
@@ -470,7 +470,7 @@ bootstrap), `ERROR` (falha que exige ação). Ajuste por `logging.level.<pacote>
 | Banco indisponível | `/actuator/health` `DOWN`, erros de conexão | Verificar PostgreSQL/credenciais/rede; o app não sobe sem banco (Flyway no startup). Restaurar do backup se necessário. |
 | S3 indisponível | Falha em `POST /api/v1/media` | Restante do sistema segue. Verificar `OBJECT_STORAGE_*`, credenciais e endpoint; reprocessar uploads. |
 | Mercado Pago indisponível | Checkout/sync falham | Cobrança é opcional; não bloqueia avaliação. Reprocessar após retorno; webhooks são idempotentes. |
-| Gupy/Recrutei indisponível | Erros em `/test/**` | Verificar token de integração (`integration_token_hash`). Tentativas em andamento não são afetadas. |
+| Gupy/Recrutei indisponível | Erros em `/test/**` | Verificar token de integração (tabela `integration_tokens`). Tentativas em andamento não são afetadas. |
 | Webhook atrasado | Resultado não chega ao ATS | Outbox aplica retry com backoff; acompanhar `GET /api/v1/gupy/result-deliveries`. |
 | Fila parada (outbox) | Eventos presos em `pending`/`retrying`, crescimento de `dlq` | Ver [ARQUITETURA_OUTBOX_PATTERN.md](ARQUITETURA_OUTBOX_PATTERN.md); reprocessar via `POST /api/v1/gupy/result-deliveries/{id}/reprocess`. |
 

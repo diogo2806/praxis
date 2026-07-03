@@ -36,14 +36,23 @@ public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtFilter;
     private final boolean securityEnabled;
+    private final boolean marketplaceEnabled;
 
     public SecurityConfig(
             JwtAuthenticationFilter jwtFilter,
-            @Value("${praxis.security.enabled:true}") boolean securityEnabled
+            @Value("${praxis.security.enabled:true}") boolean securityEnabled,
+            @Value("${praxis.marketplace.enabled:false}") boolean marketplaceEnabled
     ) {
         this.jwtFilter = jwtFilter;
         this.securityEnabled = securityEnabled;
+        this.marketplaceEnabled = marketplaceEnabled;
     }
+
+    /** Caminhos do marketplace bloqueados enquanto a feature esta desativada. */
+    private static final String[] MARKETPLACE_PATHS = {
+            "/api/v1/marketplace/**",
+            "/api/v1/admin/marketplace/**"
+    };
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
@@ -51,7 +60,12 @@ public class SecurityConfig {
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
 
         if (!securityEnabled) {
-            http.authorizeHttpRequests(auth -> auth.anyRequest().permitAll());
+            http.authorizeHttpRequests(auth -> {
+                if (!marketplaceEnabled) {
+                    auth.requestMatchers(MARKETPLACE_PATHS).denyAll();
+                }
+                auth.anyRequest().permitAll();
+            });
             http.headers(headers -> headers
                     .frameOptions(frame -> frame.deny())
                     .contentTypeOptions(contentType -> {})
@@ -59,7 +73,11 @@ public class SecurityConfig {
             return http.build();
         }
 
-        http.authorizeHttpRequests(auth -> auth
+        http.authorizeHttpRequests(auth -> {
+                if (!marketplaceEnabled) {
+                    auth.requestMatchers(MARKETPLACE_PATHS).denyAll();
+                }
+                auth
                         .requestMatchers(
                                 "/api/v1/auth/login",
                                 "/candidate/**",
@@ -132,8 +150,8 @@ public class SecurityConfig {
                         .requestMatchers("/api/v1/marketplace/messages/professional")
                         .hasRole("PROFESSIONAL")
                         .requestMatchers("/api/v1/marketplace/**").authenticated()
-                        .anyRequest().authenticated()
-                )
+                        .anyRequest().authenticated();
+                })
                 .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
         http.headers(headers -> headers
                 .frameOptions(frame -> frame.deny())

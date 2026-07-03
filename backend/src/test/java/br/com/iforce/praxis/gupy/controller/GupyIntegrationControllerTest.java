@@ -103,7 +103,7 @@ class GupyIntegrationControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(validCandidateRequest("candidate-document-1")))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.test_url").value(startsWith("http://localhost:8080/candidate/attempts/")))
+                .andExpect(jsonPath("$.test_url").value(startsWith("http://localhost:8080/candidato/")))
                 .andExpect(jsonPath("$.test_result_id").value(startsWith("res_")))
                 .andExpect(jsonPath("$.attemptId").doesNotExist());
     }
