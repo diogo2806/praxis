@@ -67,12 +67,6 @@ const getNav = (t: TranslationMap) =>
       desc: "Compartilhar uma avaliação com participantes",
     },
     {
-      to: "/integrations",
-      label: "Integrações",
-      icon: KeyRound,
-      desc: "Conexões com Gupy, Recrutei e API própria",
-    },
-    {
       to: "/monitoramento",
       label: t.common.monitoring,
       icon: BarChart3,
@@ -140,6 +134,12 @@ const getSettingsNav = (t: TranslationMap) =>
       icon: Settings,
       desc: t.descriptions.competencies,
     },
+    {
+      to: "/integrations",
+      label: "Integrações",
+      icon: KeyRound,
+      desc: "Conexões com Gupy, Recrutei e API própria",
+    },
   ] as const;
 
 function ShellLink({ children, closeOnSelect }: { children: ReactNode; closeOnSelect?: boolean }) {
@@ -169,6 +169,8 @@ function SidebarContent({
   const settingsActive =
     pathname === "/competencias" ||
     pathname === "/team" ||
+    pathname === "/integrations" ||
+    pathname.startsWith("/integrations/") ||
     pathname === "/configuracoes" ||
     pathname.startsWith("/configuracoes/");
   const [settingsOpen, setSettingsOpen] = useState(settingsActive);
@@ -269,7 +271,7 @@ function SidebarContent({
         {settingsOpen && (
           <div className="mb-2 ml-3 border-l border-border pl-2">
             {settingsNav.map((item) => {
-              const active = pathname === item.to;
+              const active = pathname === item.to || pathname.startsWith(item.to + "/");
               return (
                 <ShellLink key={item.to} closeOnSelect={closeOnSelect}>
                   <Link
