@@ -113,23 +113,22 @@ function CustomApiDocsPage() {
         </DocSection>
 
         <DocSection icon={ListChecks} title="Configuração no painel">
-          <p>Tudo é configurado dentro do Práxis, sem contato com o suporte:</p>
+          <p>
+            Tudo fica em um só lugar: a Central de{" "}
+            <Link to="/integrations" className="font-medium text-primary hover:underline">
+              Integrações
+            </Link>
+            , no card <strong>API própria</strong>. Sem contato com o suporte:
+          </p>
           <ul className="mt-3 list-disc space-y-2 pl-5">
             <li>
-              Em{" "}
-              <Link to="/integrations" className="font-medium text-primary hover:underline">
-                Integrações
-              </Link>
-              , no card <strong>API própria</strong>, informe a URL base do seu sistema e gere o
-              token de integração.
+              No card <strong>API própria</strong>, informe a URL base do seu sistema e gere o token
+              de integração.
             </li>
             <li>
-              Em{" "}
-              <Link to="/configuracoes/api" className="font-medium text-primary hover:underline">
-                Configurações → API e Webhooks
-              </Link>
-              , cadastre a URL do webhook, escolha os eventos, gere o segredo HMAC e dispare um
-              evento de teste.
+              Em <strong>Ver configuração</strong>, cadastre a URL do webhook, escolha os eventos,
+              gere o segredo HMAC e dispare um evento de teste. O token de API pública também fica
+              ali.
             </li>
           </ul>
           <p className="mt-3">

@@ -432,6 +432,16 @@ function CardActions({
           </Link>
         </Button>
       )}
+      {/* API própria: webhook e token de API pública vivem na página de detalhe.
+          Garante acesso a essa configuração em qualquer status, mesmo sem a ação VIEW. */}
+      {integration.provider === "CUSTOM_API" && !hasAction("VIEW") && (
+        <Button type="button" size="sm" variant="outline" asChild>
+          <Link to="/integrations/$provider" params={{ provider: slug }}>
+            <Eye className="h-4 w-4" />
+            Ver configuração
+          </Link>
+        </Button>
+      )}
       {hasAction("SYNC") && (
         <IntegrationSyncButton
           pending={syncing}
