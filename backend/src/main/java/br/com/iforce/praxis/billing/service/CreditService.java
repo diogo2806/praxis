@@ -18,6 +18,10 @@ import br.com.iforce.praxis.billing.persistence.repository.EmpresaCreditBalanceR
 
 import br.com.iforce.praxis.billing.persistence.repository.EmpresaCreditLedgerRepository;
 
+import br.com.iforce.praxis.gupy.model.AttemptStatus;
+
+import br.com.iforce.praxis.gupy.persistence.repository.CandidateAttemptRepository;
+
 import org.springframework.http.HttpStatus;
 
 import org.springframework.stereotype.Service;
@@ -28,6 +32,8 @@ import org.springframework.web.server.ResponseStatusException;
 
 
 import java.time.Instant;
+
+import java.util.List;
 
 
 /**
@@ -50,15 +56,18 @@ public class CreditService {
     private final EmpresaCreditBalanceRepository balanceRepository;
     private final EmpresaCreditLedgerRepository ledgerRepository;
     private final EmpresaRepository empresaRepository;
+    private final CandidateAttemptRepository candidateAttemptRepository;
 
     public CreditService(
             EmpresaCreditBalanceRepository balanceRepository,
             EmpresaCreditLedgerRepository ledgerRepository,
-            EmpresaRepository empresaRepository
+            EmpresaRepository empresaRepository,
+            CandidateAttemptRepository candidateAttemptRepository
     ) {
         this.balanceRepository = balanceRepository;
         this.ledgerRepository = ledgerRepository;
         this.empresaRepository = empresaRepository;
+        this.candidateAttemptRepository = candidateAttemptRepository;
     }
 
     /**
@@ -174,26 +183,34 @@ public class CreditService {
      * é barrada com um aviso de que faltam créditos. Para clientes de outros planos, não há bloqueio
      * aqui.</p>
      *
-     * <p><b>Limitação conhecida (corrida):</b> esta verificação apenas LÊ o saldo; o débito só
-     * ocorre em {@link #consumeOnCompletion}. Sob criação concorrente de tentativas para o mesmo
-     * cliente, várias podem passar aqui com saldo 1 e depois só a primeira conclusão debita — as
-     * demais completam "de graça". Eliminar isso exige RESERVAR o crédito de forma atômica no
-     * início (débito com lock + liberação em abandono/expiração), o que muda a semântica de
-     * cobrança (hoje: cobra na conclusão) e é uma decisão de produto. Não alterar sem testes de
-     * integração cobrindo reserva, liberação e reembolso.</p>
+     * <p><b>Reserva por tentativa em andamento:</b> cada tentativa ainda não concluída (não
+     * iniciada, em andamento ou pausada) reserva 1 crédito. O débito continua ocorrendo só na
+     * conclusão ({@link #consumeOnCompletion}), mas não se permite ter mais tentativas em
+     * andamento do que o saldo disponível — assim nunca se conclui mais avaliações do que os
+     * créditos comprados (antes, sob criação concorrente, conclusões excedentes saíam "de
+     * graça"). O saldo é travado durante a checagem, o que serializa criações concorrentes do
+     * mesmo cliente: como a criação da tentativa roda na mesma transação, a trava só é liberada
+     * após a nova tentativa ser persistida, então a próxima criação já a enxerga na contagem.
+     * Tentativas abandonadas/expiradas deixam de reservar e liberam a vaga.</p>
      *
      * @param empresaId identificador do cliente que quer iniciar uma avaliação
-     * @throws ResponseStatusException (402 · pagamento requerido) se o cliente AVULSO estiver sem créditos
+     * @throws ResponseStatusException (402 · pagamento requerido) se não houver crédito livre para reservar
      */
-    @Transactional(readOnly = true)
+    @Transactional
     public void assertCanStartNewAttempt(String empresaId) {
         EmpresaEntity empresa = empresaRepository.findById(empresaId).orElse(null);
         if (empresa == null || empresa.getCommercialPlanType() != CommercialPlanType.AVULSO) {
             return;
         }
-        if (getBalance(empresaId) <= 0) {
+        int balance = lockOrCreateBalance(empresaId).getBalance();
+        long activeReserved = candidateAttemptRepository.countByEmpresaIdAndStatusIn(
+                empresaId,
+                List.of(AttemptStatus.NOT_STARTED, AttemptStatus.IN_PROGRESS, AttemptStatus.PAUSED));
+        if (balance <= activeReserved) {
             throw new ResponseStatusException(
-                    HttpStatus.PAYMENT_REQUIRED, "Cliente sem créditos disponíveis para iniciar nova avaliação.");
+                    HttpStatus.PAYMENT_REQUIRED,
+                    "Créditos insuficientes: já há " + activeReserved
+                            + " avaliação(ões) em andamento para o saldo disponível (" + balance + ").");
         }
     }
 
