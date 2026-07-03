@@ -33,9 +33,14 @@ import java.util.List;
 
 
 /**
- * Suspende automaticamente clientes PROFISSIONAL cuja inadimplência ultrapassou a carência
- * configurável ({@code mp.grace-period-days}). A suspensão é registrada na auditoria como ação
- * do sistema. O histórico de assinatura é preservado.
+ * Cobrador automático — suspende quem ficou inadimplente além do prazo de carência.
+ *
+ * <p>Na visão do processo, quando a mensalidade de um assinante (plano PROFISSIONAL) é recusada,
+ * ele não é cortado na hora: ganha um prazo de carência para regularizar ({@code
+ * mp.grace-period-days}). Este serviço é o vigia que roda de tempos em tempos e, ao encontrar
+ * clientes cuja carência venceu sem pagamento, suspende o acesso deles. A suspensão fica registrada
+ * na auditoria como uma ação "do sistema" (não de uma pessoa), e o histórico da assinatura é
+ * preservado — nada é apagado.</p>
  */
 @Service
 public class DelinquencyService {
@@ -60,14 +65,31 @@ public class DelinquencyService {
         this.auditMetadata = auditMetadata;
     }
 
-    /** Roda periodicamente (configurável via {@code mp.delinquency-cron}). */
+    /**
+     * Tarefa agendada que dispara a varredura de inadimplentes de tempos em tempos.
+     *
+     * <p>Roda automaticamente na frequência configurada ({@code mp.delinquency-cron}, por padrão a
+     * cada hora) e simplesmente aciona a suspensão dos clientes cuja carência já venceu neste
+     * momento. Ninguém precisa clicar em nada para que aconteça.</p>
+     */
     @Scheduled(cron = "${mp.delinquency-cron:0 0 * * * *}")
     @Transactional
     public void suspendExpiredGracePeriods() {
         suspendDelinquentPastGrace(Instant.now());
     }
 
-    /** Núcleo testável: suspende inadimplentes cuja carência venceu antes de {@code moment}. */
+    /**
+     * Suspende os assinantes inadimplentes cuja carência venceu até o momento indicado.
+     *
+     * <p>Fluxo do processo: percorre as assinaturas em atraso cujo prazo de carência já passou e,
+     * para cada cliente que ainda não estava bloqueado, marca o acesso como suspenso e registra a
+     * ação na auditoria como uma decisão do sistema. Devolve quantos clientes foram efetivamente
+     * suspensos nesta passada. É o mesmo trabalho da tarefa agendada, mas recebendo o "momento" por
+     * fora — o que permite testá-lo com datas controladas.</p>
+     *
+     * @param moment instante de referência; suspende quem tem carência vencida antes dele
+     * @return a quantidade de clientes suspensos nesta execução
+     */
     @Transactional
     public int suspendDelinquentPastGrace(Instant moment) {
         List<EmpresaSubscriptionEntity> expired = subscriptionRepository

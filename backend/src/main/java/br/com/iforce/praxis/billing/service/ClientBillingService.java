@@ -40,7 +40,16 @@ import java.util.ArrayList;
 import java.util.List;
 
 
-/** Visão de cobrança do próprio empresa (cliente autenticado). */
+/**
+ * Página de cobrança que o próprio cliente vê (a empresa logada olhando a sua conta).
+ *
+ * <p>Enquanto o {@link BillingService} é o motor que movimenta o dinheiro e o painel do ADMIN
+ * enxerga qualquer cliente, este serviço monta a visão que o <em>próprio</em> cliente tem da sua
+ * situação: qual plano contratou, se está regular, quanto de crédito tem, quanto vem usando e o
+ * histórico das últimas movimentações financeiras. Também sugere quais botões fazem sentido para
+ * ele agora (comprar créditos, ver a assinatura, atualizar o pagamento...). É tudo leitura — este
+ * serviço não cobra nem altera nada.</p>
+ */
 @Service
 public class ClientBillingService {
 
@@ -62,6 +71,19 @@ public class ClientBillingService {
         this.creditService = creditService;
     }
 
+    /**
+     * Monta a tela de "Plano e cobrança" do cliente logado.
+     *
+     * <p>Reúne, em uma resposta só, tudo o que o cliente precisa ver sobre a própria conta: o plano
+     * contratado, a situação financeira em linguagem simples (regular, pendente, inadimplente, sem
+     * crédito ou cancelado), o saldo de créditos, um resumo de uso (avaliações concluídas nos
+     * últimos 7 e 30 dias e no total), os dados da assinatura quando houver, as ações sugeridas para
+     * ele e o histórico recente de eventos financeiros. É apenas leitura.</p>
+     *
+     * @param empresaId identificador do cliente logado
+     * @return a visão consolidada de plano, situação, saldo, uso, assinatura, ações e histórico
+     * @throws ResponseStatusException se o cliente não for encontrado
+     */
     @Transactional(readOnly = true)
     public ClientBillingResponse getBilling(String empresaId) {
         EmpresaEntity empresa = empresaRepository.findById(empresaId)
@@ -104,6 +126,16 @@ public class ClientBillingService {
                 events);
     }
 
+    /**
+     * Lista o histórico de eventos financeiros do cliente logado.
+     *
+     * <p>É o "extrato" que o cliente abre para conferir suas movimentações: compras de crédito,
+     * cobranças de mensalidade, estornos e afins, da mais recente para a mais antiga. Serve à tela
+     * de histórico e é apenas leitura.</p>
+     *
+     * @param empresaId identificador do cliente logado
+     * @return os eventos financeiros mais recentes, do mais novo para o mais antigo
+     */
     @Transactional(readOnly = true)
     public List<BillingEventResponse> getEvents(String empresaId) {
         return eventRepository
@@ -113,6 +145,12 @@ public class ClientBillingService {
                 .toList();
     }
 
+    /**
+     * Decide quais ações fazem sentido oferecer ao cliente conforme o plano e a situação: quem é
+     * pré-pago vê "comprar créditos"; quem é assinante vê "ver assinatura" e, se estiver
+     * inadimplente, "atualizar pagamento"; quem é enterprise é direcionado ao suporte. É o que
+     * transforma a situação financeira nos botões certos da tela. Uso interno.
+     */
     private static List<String> resolveActions(CommercialPlanType plan, EmpresaStatus status, int creditBalance) {
         List<String> actions = new ArrayList<>();
         if (plan == CommercialPlanType.AVULSO) {
@@ -129,6 +167,10 @@ public class ClientBillingService {
         return actions;
     }
 
+    /**
+     * Traduz a situação interna do cliente em um rótulo financeiro simples para exibir na tela
+     * (regular, pendente de pagamento, inadimplente, sem crédito ou cancelado). Uso interno.
+     */
     private static String financialStatusLabel(EmpresaStatus status) {
         return switch (status) {
             case ATIVO, EM_TESTE -> "REGULAR";

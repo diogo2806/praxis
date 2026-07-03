@@ -49,11 +49,21 @@ public class MercadoPagoWebhookService {
     }
 
     /**
+     * Confere e processa uma notificação recebida do Mercado Pago.
+     *
+     * <p>Fluxo do processo, na ordem: (1) confere a assinatura para ter certeza de que o aviso veio
+     * mesmo do Mercado Pago — se não bater, recusa; (2) ignora avisos de teste que não apontam para
+     * nenhum recurso; (3) aplica idempotência, guardando um "comprovante de recebimento" por
+     * tópico + recurso, de modo que a mesma notificação nunca seja processada duas vezes (o que
+     * evitaria, por exemplo, creditar em dobro); e (4) encaminha para o processamento, que consulta
+     * o Mercado Pago antes de aplicar qualquer efeito financeiro.</p>
+     *
      * @param topic      tipo da notificação (payment, subscription_preapproval, ...)
      * @param dataId     id do recurso referenciado
      * @param xSignature cabeçalho de assinatura
      * @param xRequestId cabeçalho de rastreio
      * @param rawPayload corpo bruto recebido
+     * @throws ResponseStatusException se a assinatura do webhook for inválida
      */
     @Transactional
     public void handle(String topic, String dataId, String xSignature, String xRequestId, String rawPayload) {
@@ -93,6 +103,11 @@ public class MercadoPagoWebhookService {
         receipt.setProcessed(true);
     }
 
+    /**
+     * Encaminha a notificação para o tratamento certo conforme o tópico: assinaturas
+     * (preapproval) e pagamentos (payment) seguem caminhos distintos; tópicos desconhecidos são
+     * apenas registrados. Uso interno.
+     */
     private void dispatch(String topic, String dataId, String xRequestId) {
         String normalized = topic.toLowerCase();
         if (normalized.contains("preapproval")) {
@@ -104,6 +119,7 @@ public class MercadoPagoWebhookService {
         }
     }
 
+    /** Limita o tamanho do corpo bruto guardado no comprovante de recebimento. Uso interno. */
     private static String truncate(String value) {
         if (value == null) {
             return null;

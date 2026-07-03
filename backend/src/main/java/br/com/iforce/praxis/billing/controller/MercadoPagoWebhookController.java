@@ -43,6 +43,25 @@ public class MercadoPagoWebhookController {
         this.objectMapper = objectMapper;
     }
 
+    /**
+     * Recebe a notificação enviada pelo Mercado Pago quando algo muda em um pagamento ou assinatura.
+     *
+     * <p>Na visão do processo, é a "campainha" que o Mercado Pago toca para avisar a plataforma.
+     * Como o aviso pode chegar em formatos diferentes, este método primeiro descobre de que tipo de
+     * evento se trata e a qual recurso ele se refere (olhando o corpo e os parâmetros da chamada), e
+     * então entrega tudo — inclusive os cabeçalhos de assinatura e rastreio — para a regra de
+     * negócio conferir a autenticidade e processar. Responde sempre {@code 200 OK} quando o
+     * recebimento ocorre bem, como o contrato do Mercado Pago exige.</p>
+     *
+     * @param body corpo da notificação (pode vir vazio em avisos de teste)
+     * @param typeParam tipo do evento informado por parâmetro de URL (alternativa ao corpo)
+     * @param topicParam tópico do evento informado por parâmetro de URL (alternativa ao corpo)
+     * @param idParam identificador do recurso informado por parâmetro de URL
+     * @param dataIdParam identificador do recurso no parâmetro {@code data.id}
+     * @param xSignature cabeçalho de assinatura usado para provar que o aviso veio mesmo do Mercado Pago
+     * @param xRequestId cabeçalho de rastreio da requisição
+     * @return {@code 200 OK} quando a notificação é recebida corretamente
+     */
     @PostMapping
     @Operation(summary = "Recebe notificação do Mercado Pago")
     public ResponseEntity<Void> receive(
@@ -64,6 +83,7 @@ public class MercadoPagoWebhookController {
         return ResponseEntity.ok().build();
     }
 
+    /** Transforma o corpo recebido em texto para ser guardado como comprovante. Uso interno. */
     private String serialize(Map<String, Object> body) {
         try {
             return objectMapper.writeValueAsString(body);
@@ -72,6 +92,7 @@ public class MercadoPagoWebhookController {
         }
     }
 
+    /** Pesca o identificador do recurso que vem aninhado dentro de {@code data.id} no corpo. Uso interno. */
     @SuppressWarnings("unchecked")
     private String nestedDataId(Map<String, Object> body) {
         if (body == null) {
@@ -85,6 +106,7 @@ public class MercadoPagoWebhookController {
         return null;
     }
 
+    /** Lê com segurança um campo de texto do corpo recebido, tolerando ausências. Uso interno. */
     private static String stringField(Map<String, Object> body, String key) {
         if (body == null) {
             return null;
@@ -93,6 +115,10 @@ public class MercadoPagoWebhookController {
         return value == null ? null : String.valueOf(value);
     }
 
+    /**
+     * Escolhe o primeiro valor preenchido entre várias fontes possíveis, já que o Mercado Pago pode
+     * mandar o mesmo dado ora no corpo, ora na URL. Uso interno.
+     */
     private static String firstNonBlank(String... values) {
         for (String value : values) {
             if (value != null && !value.isBlank()) {
