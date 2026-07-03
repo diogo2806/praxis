@@ -47,7 +47,7 @@ function InviteAcceptPage() {
       }),
     onSuccess: async (response) => {
       saveAuthenticatedSession(response);
-      await navigate({ to: defaultAuthenticatedRoute(response.roles) });
+      await navigate({ to: defaultAuthenticatedRoute() });
     },
   });
 

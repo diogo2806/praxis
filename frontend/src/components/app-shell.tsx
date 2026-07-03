@@ -18,7 +18,6 @@ import {
   Settings,
   ShieldCheck,
   Sparkles,
-  Store,
   Target,
   UserRound,
   Users,
@@ -83,12 +82,6 @@ const getNav = (t: TranslationMap) =>
       label: t.common.talentMatch,
       icon: Target,
       desc: t.descriptions.talentMatch,
-    },
-    {
-      to: "/marketplace",
-      label: "Marketplace",
-      icon: Store,
-      desc: "Avaliações prontas para compra",
     },
   ] as const;
 
@@ -346,7 +339,6 @@ function pageLabel(pathname: string, t: TranslationMap) {
   if (pathname === "/monitoramento") return t.common.monitoring;
   if (pathname === "/jornadas") return "Jornadas";
   if (pathname === "/talent-match") return t.common.talentMatch;
-  if (pathname === "/marketplace") return "Marketplace";
   if (pathname === "/billing") return "Plano";
   if (pathname === "/compliance") return t.common.compliance;
   if (pathname === "/configuracoes" || pathname === "/configuracoes/perfil")

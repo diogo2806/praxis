@@ -58,17 +58,6 @@ export const esMx = {
     governanceNav: "Historial, versiones y auditoría",
     complianceNav: "LGPD, transparencia y base técnica del resultado",
   },
-  marketplace: {
-    title: "Marketplace",
-    listings: "Anuncios",
-    purchases: "Mis compras",
-    professionalArea: "Area profesional",
-    publishTest: "Publicar evaluacion",
-    saveDraft: "Guardar borrador",
-    submitForReview: "Enviar a revision",
-    payouts: "Pagos",
-    disputes: "Disputas",
-  },
   wizard: {
     createTest: "Crear nueva evaluación",
     stepOf: "paso {current} de {total}",

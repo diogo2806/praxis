@@ -7,7 +7,6 @@ export type PraxisSession = {
   userName: string;
   userRole: string;
   roles: string[];
-  isProfessional: boolean;
 };
 
 const anonymousSession: PraxisSession = {
@@ -17,7 +16,6 @@ const anonymousSession: PraxisSession = {
   userName: "Usuário",
   userRole: "Operador",
   roles: [],
-  isProfessional: false,
 };
 
 export function getSession(): PraxisSession {
@@ -33,7 +31,6 @@ export function getSession(): PraxisSession {
     userName: localStorage.getItem("praxis.userName") ?? "Usuário",
     userRole: localStorage.getItem("praxis.userRole") ?? "Operador",
     roles,
-    isProfessional: isProfessionalRole(roles),
   };
 }
 
@@ -64,8 +61,8 @@ export function saveAuthenticatedSession(response: AuthenticatedSessionResponse)
   localStorage.setItem("praxis.userRole", response.roles.join(", "));
 }
 
-export function defaultAuthenticatedRoute(roles: string[]) {
-  return isProfessionalRole(roles) ? "/profissional" : "/avaliacoes";
+export function defaultAuthenticatedRoute() {
+  return "/avaliacoes";
 }
 
 function parseRoles(value: string | null) {
@@ -76,8 +73,4 @@ function parseRoles(value: string | null) {
     .split(",")
     .map((role) => role.trim())
     .filter(Boolean);
-}
-
-function isProfessionalRole(roles: string[]) {
-  return roles.includes("PROFESSIONAL") || roles.includes("ROLE_PROFESSIONAL");
 }

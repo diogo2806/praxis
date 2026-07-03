@@ -26,7 +26,7 @@
 
 ## Referencia tecnica
 
-- Backend real: codigo em `backend/src/main/java/br/com/iforce/praxis` (dominios: `simulation`, `journey`, `results`, `dashboard`, `gupy`, `recrutei`, `shared.integration`, `marketplace`, `billing`, `admin`, `team`, `account`, `companyprofile`, `term`, `candidate`, `audit`, `tenantconfig`, `media`, `privacy`).
+- Backend real: codigo em `backend/src/main/java/br/com/iforce/praxis` (dominios: `simulation`, `journey`, `results`, `dashboard`, `gupy`, `recrutei`, `shared.integration`, `billing`, `admin`, `team`, `account`, `companyprofile`, `term`, `candidate`, `audit`, `tenantconfig`, `media`, `privacy`).
 - Migracoes: `backend/src/main/resources/db/migration`.
 - API frontend: `frontend/src/lib/api/praxis.ts`.
 - Rotas frontend: `frontend/src/routes`; menu principal em `frontend/src/components/app-shell.tsx`.
@@ -68,7 +68,6 @@ Riscos altos:
 - [Politica de mitigacao de vies](legal/POLITICA-MITIGACAO-VIES.md) - guardrails antidiscriminacao, job-relatedness e monitoramento de impacto (risco alto #5).
 - [Vertical de Saude - ANVISA](legal/VERTICAL-SAUDE-ANVISA.md) - enquadramento SaMD e checklist de habilitacao (risco alto #6).
 - Fail-fast de seguranca em producao: `SecurityStartupGuard` recusa subir com perfil `prod` e `PRAXIS_SECURITY_ENABLED=false` (risco alto #7; ver `IMPLANTACAO.md`).
-- [Marketplace, CDC e pagamentos](legal/TERMOS-MARKETPLACE-CDC.md) - consumidor, reembolso/disputa, KYC e intermediacao (risco alto #8).
 
 ## Historico
 

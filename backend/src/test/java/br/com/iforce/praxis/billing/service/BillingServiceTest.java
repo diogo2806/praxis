@@ -82,14 +82,9 @@ class BillingServiceTest {
                 new MercadoPagoProperties(
                         true,
                         null,
-                        null,
                         "tok",
                         "pub",
                         "sec",
-                        null,
-                        null,
-                        null,
-                        null,
                         7,
                         null,
                         null
