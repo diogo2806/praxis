@@ -10,20 +10,16 @@ import {
 export type AttemptStatus =
   | "notStarted"
   | "inProgress"
-  | "paused"
   | "completed"
   | "abandoned"
-  | "expired"
-  | "failed";
+  | "expired";
 
 export type ParticipacaoStatus =
   | "nao_iniciada"
   | "em_andamento"
-  | "pausada"
   | "concluida"
   | "abandonada"
-  | "expirada"
-  | "falhou";
+  | "expirada";
 
 export type MediaType = "IMAGE" | "AUDIO";
 export type ResultTier = "major" | "minor";
@@ -119,11 +115,9 @@ export interface SimulationMonitoringResponse {
   attemptsCreated: number;
   attemptsNotStarted: number;
   attemptsInProgress: number;
-  attemptsPaused: number;
   attemptsCompleted: number;
   attemptsAbandoned: number;
   attemptsExpired: number;
-  attemptsFailed: number;
   completionRatePercent: number;
   dropOffRatePercent: number;
 }
@@ -959,7 +953,7 @@ async function getDashboardFallback(): Promise<DashboardResponse> {
   const now = Date.now();
   const last30Days = now - 30 * 24 * 60 * 60 * 1000;
   const candidatesInProgress = candidateLinks.filter((link) =>
-    ["notStarted", "inProgress", "paused"].includes(link.status),
+    ["notStarted", "inProgress"].includes(link.status),
   ).length;
   const completedAttemptsLast30Days = candidateLinks.filter((link) => {
     if (link.status !== "completed") return false;
@@ -1261,7 +1255,7 @@ async function listResultsFallback(filters: ResultsListFilters): Promise<Results
     }));
   const completed = allItems.filter((item) => item.status === "completed").length;
   const inProgress = allItems.filter((item) =>
-    ["notStarted", "inProgress", "paused"].includes(item.status),
+    ["notStarted", "inProgress"].includes(item.status),
   ).length;
   const expired = allItems.filter((item) => item.status === "expired").length;
 

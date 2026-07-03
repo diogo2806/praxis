@@ -88,17 +88,13 @@ function Page() {
         <>
           <div className="mt-5 grid gap-4 md:grid-cols-4">
             <Metric label="Criadas" value={monitoring.attemptsCreated} />
-            <Metric
-              label="Em andamento"
-              value={monitoring.attemptsInProgress + monitoring.attemptsPaused}
-            />
+            <Metric label="Em andamento" value={monitoring.attemptsInProgress} />
             <Metric label="Concluídas" value={monitoring.attemptsCompleted} />
             <Metric label="Conclusão" value={`${monitoring.completionRatePercent.toFixed(1)}%`} />
           </div>
           <div className="mt-5 grid gap-4 md:grid-cols-4">
             <Metric label="Abandonadas" value={monitoring.attemptsAbandoned} />
             <Metric label="Expiradas" value={monitoring.attemptsExpired} />
-            <Metric label="Falhas" value={monitoring.attemptsFailed} />
             <Metric label="Desistência" value={`${monitoring.dropOffRatePercent.toFixed(1)}%`} />
           </div>
           <section className="mt-8">

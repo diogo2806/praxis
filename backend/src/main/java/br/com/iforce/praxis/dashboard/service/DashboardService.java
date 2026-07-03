@@ -202,7 +202,7 @@ public class DashboardService {
 
         long candidatesInProgress = candidateAttemptRepository.countByEmpresaIdAndStatusIn(
                 empresaId,
-                List.of(AttemptStatus.NOT_STARTED, AttemptStatus.IN_PROGRESS, AttemptStatus.PAUSED)
+                List.of(AttemptStatus.NOT_STARTED, AttemptStatus.IN_PROGRESS)
         ) + journeyAttemptRepository.countByEmpresaIdAndStatusIn(
                 empresaId,
                 List.of(AssessmentJourneyAttemptStatus.CREATED, AssessmentJourneyAttemptStatus.IN_PROGRESS)

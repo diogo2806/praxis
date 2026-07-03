@@ -47,8 +47,7 @@ public class PrivacyRetentionService {
     private static final List<AttemptStatus> CLOSED_STATUSES = List.of(
             AttemptStatus.COMPLETED,
             AttemptStatus.ABANDONED,
-            AttemptStatus.EXPIRED,
-            AttemptStatus.FAILED
+            AttemptStatus.EXPIRED
     );
 
     private final CandidateAttemptRepository candidateAttemptRepository;

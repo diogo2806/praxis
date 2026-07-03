@@ -617,11 +617,9 @@ function planLabel(plan: string) {
 const attemptStatusMeta: Record<AttemptStatus, { label: string; cls: string }> = {
   notStarted: { label: "Não iniciada", cls: "border-border bg-muted text-foreground" },
   inProgress: { label: "Em andamento", cls: "border-primary/25 bg-primary/10 text-foreground" },
-  paused: { label: "Pausada", cls: "border-warning/35 bg-warning/15 text-warning-foreground" },
   completed: { label: "Concluída", cls: "border-success/25 bg-success/10 text-foreground" },
   abandoned: { label: "Abandonada", cls: "border-border bg-muted text-foreground" },
   expired: { label: "Expirada", cls: "border-border bg-muted text-foreground" },
-  failed: { label: "Falhou", cls: "border-danger/25 bg-danger/10 text-foreground" },
 };
 
 function AttemptStatusBadge({ status }: { status: AttemptStatus }) {

@@ -76,11 +76,9 @@ public class SimulationMonitoringService {
                 attemptsCreated,
                 countAttempts(simulationVersionId, AttemptStatus.NOT_STARTED),
                 countAttempts(simulationVersionId, AttemptStatus.IN_PROGRESS),
-                countAttempts(simulationVersionId, AttemptStatus.PAUSED),
                 attemptsCompleted,
                 attemptsAbandoned,
                 attemptsExpired,
-                countAttempts(simulationVersionId, AttemptStatus.FAILED),
                 percent(attemptsCompleted, attemptsCreated),
                 percent(attemptsAbandoned + attemptsExpired, attemptsCreated)
         );

@@ -65,7 +65,7 @@ public class AttemptStateMachine {
     }
 
     public boolean isTerminalBlocked(AttemptStatus status) {
-        return status == AttemptStatus.ABANDONED || status == AttemptStatus.EXPIRED || status == AttemptStatus.FAILED;
+        return status == AttemptStatus.ABANDONED || status == AttemptStatus.EXPIRED;
     }
 
     public CandidateAttempt expireIfNeeded(CandidateAttempt attempt) {
@@ -83,7 +83,7 @@ public class AttemptStateMachine {
             return blocked(attempt, AttemptStatus.EXPIRED, now);
         }
 
-        if ((attempt.status() == AttemptStatus.IN_PROGRESS || attempt.status() == AttemptStatus.PAUSED)
+        if (attempt.status() == AttemptStatus.IN_PROGRESS
                 && attempt.startedAt() != null
                 && attempt.startedAt().plusSeconds(praxisProperties.attemptSessionTtlHours() * 3600L).isBefore(now)) {
             auditEventService.appendCandidateAttemptEvent(

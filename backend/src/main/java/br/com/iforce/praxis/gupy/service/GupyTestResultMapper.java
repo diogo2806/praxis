@@ -135,8 +135,8 @@ public class GupyTestResultMapper {
     private String toGupyStatus(AttemptStatus status) {
         return switch (status) {
             case NOT_STARTED -> "notStarted";
-            case COMPLETED, ABANDONED, EXPIRED, FAILED -> "done";
-            case IN_PROGRESS, PAUSED -> "paused";
+            case COMPLETED, ABANDONED, EXPIRED -> "done";
+            case IN_PROGRESS -> "paused";
         };
     }
 

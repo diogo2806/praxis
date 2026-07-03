@@ -63,7 +63,7 @@ function MonitoringPage() {
   const failedDeliveries = deliveries.filter((delivery) => delivery.status === "dlq").length;
   const totals = buildTotals(candidateLinks);
   const filteredAttempts = liveAttempts.filter((attempt) => {
-    const openAttempt = attempt.status === "inProgress" || attempt.status === "paused";
+    const openAttempt = attempt.status === "inProgress";
     if (attemptFilter === "ativos" && !attempt.active) return false;
     if (attemptFilter === "finalizadas" && attempt.status !== "completed") return false;
     if (attemptFilter === "sem-sinal" && (!openAttempt || attempt.active)) return false;
@@ -320,12 +320,10 @@ function StatusBadge({ status, active }: { status: AttemptStatus; active: boolea
 
 function attemptStatusLabel(status: AttemptStatus, active: boolean) {
   if (status === "completed") return "Finalizada";
-  if (status === "paused") return "Pausada";
   if (status === "inProgress" && active) return "Ativa";
   if (status === "inProgress") return "Sem sinal";
   if (status === "abandoned") return "Abandonada";
   if (status === "expired") return "Expirada";
-  if (status === "failed") return "Falhou";
   return "Nao iniciada";
 }
 
