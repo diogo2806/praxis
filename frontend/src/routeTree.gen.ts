@@ -49,6 +49,7 @@ import { Route as NovaDialogoRouteImport } from './routes/nova.dialogo'
 import { Route as NovaCompetenciasRouteImport } from './routes/nova.competencias'
 import { Route as NovaBlueprintRouteImport } from './routes/nova.blueprint'
 import { Route as NovaAvaliacoesRouteImport } from './routes/nova.avaliacoes'
+import { Route as NovaAvaliacaoRouteImport } from './routes/nova.avaliacao'
 import { Route as MarketplaceListingIdRouteImport } from './routes/marketplace.$listingId'
 import { Route as JornadaAttemptIdRouteImport } from './routes/jornada.$attemptId'
 import { Route as IntegrationsProviderRouteImport } from './routes/integrations.$provider'
@@ -274,6 +275,11 @@ const NovaAvaliacoesRoute = NovaAvaliacoesRouteImport.update({
   path: '/nova/avaliacoes',
   getParentRoute: () => rootRouteImport,
 } as any)
+const NovaAvaliacaoRoute = NovaAvaliacaoRouteImport.update({
+  id: '/nova/avaliacao',
+  path: '/nova/avaliacao',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const MarketplaceListingIdRoute = MarketplaceListingIdRouteImport.update({
   id: '/$listingId',
   path: '/$listingId',
@@ -438,6 +444,7 @@ export interface FileRoutesByFullPath {
   '/integrations/$provider': typeof IntegrationsProviderRoute
   '/jornada/$attemptId': typeof JornadaAttemptIdRoute
   '/marketplace/$listingId': typeof MarketplaceListingIdRoute
+  '/nova/avaliacao': typeof NovaAvaliacaoRoute
   '/nova/avaliacoes': typeof NovaAvaliacoesRoute
   '/nova/blueprint': typeof NovaBlueprintRoute
   '/nova/competencias': typeof NovaCompetenciasRoute
@@ -504,6 +511,7 @@ export interface FileRoutesByTo {
   '/integrations/$provider': typeof IntegrationsProviderRoute
   '/jornada/$attemptId': typeof JornadaAttemptIdRoute
   '/marketplace/$listingId': typeof MarketplaceListingIdRoute
+  '/nova/avaliacao': typeof NovaAvaliacaoRoute
   '/nova/avaliacoes': typeof NovaAvaliacoesRoute
   '/nova/blueprint': typeof NovaBlueprintRoute
   '/nova/competencias': typeof NovaCompetenciasRoute
@@ -571,6 +579,7 @@ export interface FileRoutesById {
   '/integrations/$provider': typeof IntegrationsProviderRoute
   '/jornada/$attemptId': typeof JornadaAttemptIdRoute
   '/marketplace/$listingId': typeof MarketplaceListingIdRoute
+  '/nova/avaliacao': typeof NovaAvaliacaoRoute
   '/nova/avaliacoes': typeof NovaAvaliacoesRoute
   '/nova/blueprint': typeof NovaBlueprintRoute
   '/nova/competencias': typeof NovaCompetenciasRoute
@@ -639,6 +648,7 @@ export interface FileRouteTypes {
     | '/integrations/$provider'
     | '/jornada/$attemptId'
     | '/marketplace/$listingId'
+    | '/nova/avaliacao'
     | '/nova/avaliacoes'
     | '/nova/blueprint'
     | '/nova/competencias'
@@ -705,6 +715,7 @@ export interface FileRouteTypes {
     | '/integrations/$provider'
     | '/jornada/$attemptId'
     | '/marketplace/$listingId'
+    | '/nova/avaliacao'
     | '/nova/avaliacoes'
     | '/nova/blueprint'
     | '/nova/competencias'
@@ -771,6 +782,7 @@ export interface FileRouteTypes {
     | '/integrations/$provider'
     | '/jornada/$attemptId'
     | '/marketplace/$listingId'
+    | '/nova/avaliacao'
     | '/nova/avaliacoes'
     | '/nova/blueprint'
     | '/nova/competencias'
@@ -831,6 +843,7 @@ export interface RootRouteChildren {
   ConviteTokenRoute: typeof ConviteTokenRoute
   DocsIntegracaoApiPropriaRoute: typeof DocsIntegracaoApiPropriaRoute
   JornadaAttemptIdRoute: typeof JornadaAttemptIdRoute
+  NovaAvaliacaoRoute: typeof NovaAvaliacaoRoute
   NovaAvaliacoesRoute: typeof NovaAvaliacoesRoute
   NovaBlueprintRoute: typeof NovaBlueprintRoute
   NovaCompetenciasRoute: typeof NovaCompetenciasRoute
@@ -1136,6 +1149,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof NovaAvaliacoesRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/nova/avaliacao': {
+      id: '/nova/avaliacao'
+      path: '/nova/avaliacao'
+      fullPath: '/nova/avaliacao'
+      preLoaderRoute: typeof NovaAvaliacaoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/marketplace/$listingId': {
       id: '/marketplace/$listingId'
       path: '/$listingId'
@@ -1431,6 +1451,7 @@ const rootRouteChildren: RootRouteChildren = {
   ConviteTokenRoute: ConviteTokenRoute,
   DocsIntegracaoApiPropriaRoute: DocsIntegracaoApiPropriaRoute,
   JornadaAttemptIdRoute: JornadaAttemptIdRoute,
+  NovaAvaliacaoRoute: NovaAvaliacaoRoute,
   NovaAvaliacoesRoute: NovaAvaliacoesRoute,
   NovaBlueprintRoute: NovaBlueprintRoute,
   NovaCompetenciasRoute: NovaCompetenciasRoute,

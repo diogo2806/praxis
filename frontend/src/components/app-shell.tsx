@@ -7,7 +7,6 @@ import {
   BarChart3,
   Building2,
   ChevronDown,
-  ClipboardCheck,
   ClipboardList,
   CreditCard,
   HelpCircle,
@@ -54,12 +53,6 @@ const getNav = (t: TranslationMap) =>
       label: "Avaliações",
       icon: ListChecks,
       desc: "Ver e editar avaliações",
-    },
-    {
-      to: "/nova/blueprint",
-      label: "Criar avaliação",
-      icon: ClipboardCheck,
-      desc: "Criar uma nova avaliação por cenários",
     },
     {
       to: "/results",

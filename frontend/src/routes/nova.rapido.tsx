@@ -88,7 +88,7 @@ function QuickStartPage() {
 
       <div className="mt-8 text-sm text-muted-foreground">
         Prefere montar do zero?{" "}
-        <Link to="/nova/blueprint" className="font-medium text-primary hover:underline">
+        <Link to="/nova/avaliacao" className="font-medium text-primary hover:underline">
           Criar do início →
         </Link>
       </div>

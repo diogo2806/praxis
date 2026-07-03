@@ -217,7 +217,7 @@ function Navigation() {
     <nav>
       <Link to="/">Início</Link>
       <Link to="/users/$id" params={{ id: "123" }}>Usuário 123</Link>
-      <Link to="/nova/blueprint">Criar Simulação</Link>
+      <Link to="/nova/avaliacao">Criar Simulação</Link>
     </nav>
   )
 }

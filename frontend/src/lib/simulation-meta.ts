@@ -15,7 +15,7 @@ export const statusMeta: Record<
 };
 
 export const wizardSteps = [
-  { slug: "avaliacao", label: "Teste", n: 1, path: "/nova/blueprint" },
+  { slug: "avaliacao", label: "Teste", n: 1, path: "/nova/avaliacao" },
   { slug: "cenario", label: "Cenário", n: 2, path: "/nova/personagem" },
   { slug: "revisao", label: "Revisão", n: 3, path: "/nova/validador" },
   { slug: "publicacao", label: "Publicação", n: 4, path: "/nova/governanca" },
@@ -24,6 +24,7 @@ export const wizardSteps = [
 export type WizardSlug = (typeof wizardSteps)[number]["slug"];
 
 export const legacyWizardStepMap = {
+  avaliacao: "avaliacao",
   blueprint: "avaliacao",
   objetivo: "avaliacao",
   personagem: "cenario",

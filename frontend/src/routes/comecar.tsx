@@ -64,7 +64,7 @@ const startActions = [
     icon: Rocket,
     title: "Criar minha primeira avaliação",
     text: "Monte uma avaliação por cenários, passo a passo.",
-    to: "/nova/blueprint" as const,
+    to: "/nova/avaliacao" as const,
     primary: true,
   },
   {
