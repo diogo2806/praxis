@@ -31,12 +31,18 @@ import java.time.Instant;
 
 
 /**
- * Saldo e ledger de créditos do plano AVULSO.
+ * Carteira de créditos do plano pré-pago (AVULSO) — controla quanto o cliente ainda pode gastar.
  *
- * <p>Invariante central: o saldo NUNCA é alterado sem um lançamento correspondente no ledger
- * ({@code empresa_credit_ledger}). Compras somam créditos; cada avaliação concluída consome 1
- * crédito, de forma idempotente por tentativa. Sem crédito, o cliente não inicia nova avaliação
- * e fica em {@code SEM_CREDITO} (distinto de {@code INADIMPLENTE}).</p>
+ * <p>Na visão do processo, pense num cartão pré-pago: o cliente compra créditos e cada avaliação
+ * concluída "consome" um deles. Este serviço é quem soma os créditos comprados, debita os
+ * consumidos e impede que o cliente comece novas avaliações quando o saldo zera.</p>
+ *
+ * <p><b>Regra de ouro:</b> o saldo NUNCA muda sem deixar rastro. Toda alteração vem acompanhada de
+ * um lançamento no "extrato" (o ledger {@code empresa_credit_ledger}), que só acrescenta linhas e
+ * nunca apaga — exatamente como um extrato bancário. As compras somam; cada avaliação concluída
+ * debita 1 crédito, de forma idempotente por tentativa (uma mesma avaliação nunca cobra duas
+ * vezes). Ao zerar, o cliente fica {@code SEM_CREDITO} — situação diferente de {@code INADIMPLENTE},
+ * que é a do assinante que atrasou a mensalidade.</p>
  */
 @Service
 public class CreditService {
@@ -55,6 +61,15 @@ public class CreditService {
         this.empresaRepository = empresaRepository;
     }
 
+    /**
+     * Informa quantos créditos o cliente tem disponíveis agora.
+     *
+     * <p>É a consulta simples de "quanto ainda posso gastar". Um cliente que nunca comprou créditos
+     * é tratado como saldo zero. É apenas leitura.</p>
+     *
+     * @param empresaId identificador do cliente
+     * @return o saldo atual de créditos (zero se nunca houve movimentação)
+     */
     @Transactional(readOnly = true)
     public int getBalance(String empresaId) {
         return balanceRepository.findById(empresaId)
@@ -63,8 +78,20 @@ public class CreditService {
     }
 
     /**
-     * Adiciona créditos após uma compra confirmada. Reativa o cliente se ele estava sem crédito
-     * ou pendente de pagamento. Gera lançamento no ledger.
+     * Adiciona créditos ao cliente depois de uma compra confirmada.
+     *
+     * <p>Fluxo do processo: quando o Mercado Pago confirma o pagamento de um pacote de créditos, os
+     * créditos entram na carteira do cliente. O saldo é somado, o extrato ganha uma linha de compra
+     * e — se o cliente estava travado por falta de crédito ou aguardando pagamento — o acesso é
+     * reativado automaticamente. O saldo é travado durante a operação para que duas confirmações ao
+     * mesmo tempo não se atrapalhem.</p>
+     *
+     * @param empresaId identificador do cliente que receberá os créditos
+     * @param amount quantidade de créditos a adicionar (precisa ser positiva)
+     * @param billingEventId identificador do evento financeiro que originou a compra (para o extrato)
+     * @param note observação livre registrada na linha do extrato
+     * @return o novo saldo do cliente após a soma
+     * @throws IllegalArgumentException se a quantidade informada não for positiva
      */
     @Transactional
     public int addCredits(String empresaId, int amount, Long billingEventId, String note) {
@@ -83,8 +110,17 @@ public class CreditService {
     }
 
     /**
-     * Consome 1 crédito quando uma avaliação é concluída, de forma idempotente por tentativa.
-     * Aplica-se apenas a clientes AVULSO. Ao zerar, o cliente passa a {@code SEM_CREDITO}.
+     * Debita 1 crédito quando uma avaliação é concluída.
+     *
+     * <p>Fluxo do processo: assim que um candidato termina uma avaliação, o cliente que a aplicou
+     * "paga" por ela com 1 crédito. A cobrança vale apenas para clientes do plano pré-pago (AVULSO)
+     * e é idempotente por tentativa — se o mesmo término for processado duas vezes, o crédito é
+     * debitado uma vez só. Se o cliente já estiver sem saldo, nada é debitado (o saldo nunca fica
+     * negativo) e ele é marcado como {@code SEM_CREDITO}. Ao zerar com este débito, também passa a
+     * {@code SEM_CREDITO}, o que o impede de iniciar novas avaliações até comprar mais.</p>
+     *
+     * @param empresaId identificador do cliente dono da avaliação
+     * @param attemptId identificador da tentativa concluída (garante que ela seja cobrada uma só vez)
      */
     @Transactional
     public void consumeOnCompletion(String empresaId, String attemptId) {
@@ -116,7 +152,12 @@ public class CreditService {
     }
 
     /**
-     * Bloqueia o início de nova avaliação quando um cliente AVULSO está sem crédito.
+     * Verifica, antes de começar, se o cliente pode iniciar mais uma avaliação.
+     *
+     * <p>Fluxo do processo: é o "porteiro" do consumo. Antes de uma nova avaliação começar, o
+     * sistema confere se o cliente pré-pago (AVULSO) ainda tem saldo; se estiver zerado, a criação
+     * é barrada com um aviso de que faltam créditos. Para clientes de outros planos, não há bloqueio
+     * aqui.</p>
      *
      * <p><b>Limitação conhecida (corrida):</b> esta verificação apenas LÊ o saldo; o débito só
      * ocorre em {@link #consumeOnCompletion}. Sob criação concorrente de tentativas para o mesmo
@@ -125,6 +166,9 @@ public class CreditService {
      * início (débito com lock + liberação em abandono/expiração), o que muda a semântica de
      * cobrança (hoje: cobra na conclusão) e é uma decisão de produto. Não alterar sem testes de
      * integração cobrindo reserva, liberação e reembolso.</p>
+     *
+     * @param empresaId identificador do cliente que quer iniciar uma avaliação
+     * @throws ResponseStatusException (402 · pagamento requerido) se o cliente AVULSO estiver sem créditos
      */
     @Transactional(readOnly = true)
     public void assertCanStartNewAttempt(String empresaId) {
@@ -138,6 +182,11 @@ public class CreditService {
         }
     }
 
+    /**
+     * Abre a carteira do cliente para alteração com segurança: trava a linha do saldo (para evitar
+     * corridas entre operações simultâneas) e, se o cliente ainda não tinha carteira, cria uma
+     * zerada. Uso interno.
+     */
     private EmpresaCreditBalanceEntity lockOrCreateBalance(String empresaId) {
         return balanceRepository.findByEmpresaIdForUpdate(empresaId).orElseGet(() -> {
             EmpresaCreditBalanceEntity created = new EmpresaCreditBalanceEntity();
@@ -148,6 +197,11 @@ public class CreditService {
         });
     }
 
+    /**
+     * Escreve uma linha no extrato de créditos: quanto entrou ou saiu, por qual motivo, qual saldo
+     * ficou depois e a que compra ou avaliação a linha se refere. É o registro que sustenta a regra
+     * de que nenhum crédito muda sem rastro. Uso interno.
+     */
     private void appendLedger(String empresaId, int delta, CreditLedgerReason reason, int balanceAfter,
                               String attemptId, Long billingEventId, String note) {
         EmpresaCreditLedgerEntity entry = new EmpresaCreditLedgerEntity();
@@ -162,6 +216,11 @@ public class CreditService {
         ledgerRepository.save(entry);
     }
 
+    /**
+     * Reativa o cliente quando ele volta a ter saldo: quem estava travado por falta de crédito ou
+     * aguardando pagamento volta a ficar ativo. Não mexe em quem foi suspenso ou cancelado por
+     * decisão administrativa. Uso interno.
+     */
     private void reactivateIfRecovered(String empresaId, int balance) {
         if (balance <= 0) {
             return;
@@ -175,6 +234,11 @@ public class CreditService {
         });
     }
 
+    /**
+     * Marca o cliente como "sem crédito" quando o saldo zera, o que passa a impedir novas
+     * avaliações. Só afeta quem estava ativo ou em teste — não rebaixa quem já tinha uma situação
+     * mais grave. Uso interno.
+     */
     private void markOutOfCredit(EmpresaEntity empresa) {
         if (empresa.getStatus() == EmpresaStatus.ATIVO || empresa.getStatus() == EmpresaStatus.EM_TESTE) {
             empresa.setStatus(EmpresaStatus.SEM_CREDITO);

@@ -85,6 +85,11 @@ public class MercadoPagoSignatureValidator {
         return constantTimeEquals(expected, v1.toLowerCase());
     }
 
+    /**
+     * Calcula a "impressão digital" (HMAC-SHA256) da mensagem usando o segredo do webhook. É esse
+     * cálculo, refeito do nosso lado, que precisa bater com o que o Mercado Pago enviou para provar
+     * a autenticidade do aviso. Uso interno.
+     */
     private static String hmacSha256Hex(String secret, String message) {
         try {
             Mac mac = Mac.getInstance("HmacSHA256");
@@ -96,6 +101,11 @@ public class MercadoPagoSignatureValidator {
         }
     }
 
+    /**
+     * Compara as duas assinaturas em tempo constante — sem "desistir" na primeira diferença —, uma
+     * proteção conhecida contra ataques que medem o tempo de resposta para adivinhar o segredo.
+     * Uso interno.
+     */
     private static boolean constantTimeEquals(String a, String b) {
         if (a.length() != b.length()) {
             return false;

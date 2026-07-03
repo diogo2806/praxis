@@ -19,7 +19,16 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 
-/** API de cobrança visível ao próprio cliente (empresa autenticado). */
+/**
+ * Porta de entrada (API) da tela de "Plano e cobrança" do próprio cliente.
+ *
+ * <p>Na visão do processo, é por aqui que a empresa logada consulta a sua própria conta: o plano,
+ * a situação, o saldo de créditos, o uso e o histórico financeiro. Este componente só recebe o
+ * pedido vindo da tela — descobrindo qual é a empresa a partir do login, de modo que ninguém veja
+ * a cobrança de outra — e repassa o trabalho para a regra de negócio ({@link ClientBillingService}).
+ * São endpoints apenas de leitura: nada é cobrado ou alterado por aqui (isso fica no painel
+ * ADMIN).</p>
+ */
 @RestController
 @RequestMapping("/api/v1/billing")
 @Tag(name = "Billing · Cliente", description = "Visão de plano e uso para o cliente autenticado.")
@@ -34,6 +43,12 @@ public class ClientBillingController {
         this.clientBillingService = clientBillingService;
     }
 
+    /**
+     * Devolve a visão completa de plano, situação, saldo, uso e histórico do cliente logado, para
+     * montar a tela de "Plano e cobrança".
+     *
+     * @return a visão consolidada de cobrança do próprio cliente
+     */
     @GetMapping
     @Operation(summary = "Plano, uso e cobrança do empresa autenticado")
     public ResponseEntity<ClientBillingResponse> getBilling() {
@@ -41,6 +56,11 @@ public class ClientBillingController {
         return ResponseEntity.ok(clientBillingService.getBilling(empresaId));
     }
 
+    /**
+     * Devolve apenas o extrato de eventos financeiros do cliente logado, para a tela de histórico.
+     *
+     * @return os eventos financeiros do próprio cliente, do mais recente para o mais antigo
+     */
     @GetMapping("/events")
     @Operation(summary = "Histórico de eventos financeiros do empresa autenticado")
     public ResponseEntity<java.util.List<br.com.iforce.praxis.billing.dto.BillingEventResponse>> getEvents() {

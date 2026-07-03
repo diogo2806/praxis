@@ -20,9 +20,17 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Cliente HTTP do Mercado Pago. O Access Token vive apenas no backend (nunca no frontend) e é
- * mascarado em logs. Quando a integração está desabilitada ({@code mp.enabled=false}), as chamadas
- * que exigem rede falham de forma explícita.
+ * Ponte de comunicação com o Mercado Pago — quem realmente "conversa" com a operadora de pagamento.
+ *
+ * <p>Na visão do processo, sempre que a plataforma precisa criar uma cobrança ou conferir um
+ * pagamento, é este componente que faz a chamada pela internet até o Mercado Pago e traz a
+ * resposta. Ele concentra os quatro diálogos possíveis: abrir a compra de créditos, abrir a
+ * assinatura mensal, consultar um pagamento e consultar uma assinatura.</p>
+ *
+ * <p>Cuidados de segurança embutidos: a credencial de acesso (Access Token) vive apenas no backend,
+ * nunca chega ao navegador, e aparece mascarada nos registros de log. Quando a integração está
+ * desligada ({@code mp.enabled=false}) ou sem credencial, as chamadas que dependem de internet
+ * falham de forma explícita, em vez de fingir sucesso.</p>
  */
 @Component
 public class MercadoPagoClient {
@@ -100,10 +108,15 @@ public class MercadoPagoClient {
         return get("/preapproval/" + preapprovalId);
     }
 
+    /** Envia um pedido de escrita ao Mercado Pago usando a credencial padrão do vendedor. Uso interno. */
     private JsonNode post(String path, Object body) {
         return post(path, body, properties.accessToken());
     }
 
+    /**
+     * Faz a chamada de escrita ao Mercado Pago com a credencial informada, tratando falhas de rede
+     * como um erro claro de comunicação (sem vazar a credencial nos logs). Uso interno.
+     */
     private JsonNode post(String path, Object body, String accessToken) {
         requireEnabled();
         if (accessToken == null || accessToken.isBlank()) {
@@ -123,6 +136,10 @@ public class MercadoPagoClient {
         }
     }
 
+    /**
+     * Faz uma consulta de leitura ao Mercado Pago (por exemplo, o estado de um pagamento), tratando
+     * falhas de rede como um erro claro de comunicação. Uso interno.
+     */
     private JsonNode get(String path) {
         requireEnabled();
         try {
@@ -137,6 +154,10 @@ public class MercadoPagoClient {
         }
     }
 
+    /**
+     * Garante que a integração está ligada e com credencial antes de qualquer chamada; caso
+     * contrário, interrompe com um aviso claro de que o Mercado Pago não está habilitado. Uso interno.
+     */
     private void requireEnabled() {
         if (!properties.enabled() || properties.accessToken() == null || properties.accessToken().isBlank()) {
             throw new ResponseStatusException(
@@ -144,10 +165,12 @@ public class MercadoPagoClient {
         }
     }
 
+    /** Converte o valor guardado em centavos para reais, no formato que o Mercado Pago espera. Uso interno. */
     private static BigDecimal reais(long cents) {
         return BigDecimal.valueOf(cents).divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP);
     }
 
+    /** Diz se um texto tem conteúdo (não é nulo nem vazio), usado para só enviar campos preenchidos. Uso interno. */
     private static boolean notBlank(String value) {
         return value != null && !value.isBlank();
     }

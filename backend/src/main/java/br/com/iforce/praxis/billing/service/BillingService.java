@@ -59,12 +59,20 @@ import java.util.UUID;
 
 
 /**
- * Orquestra a cobrança via Mercado Pago.
+ * Maestro da cobrança via Mercado Pago — o serviço central que conduz todo o dinheiro do cliente.
  *
- * <p>Princípio: o Mercado Pago é a fonte da verdade financeira. Nenhum pagamento é marcado como
- * aprovado por ação manual — toda confirmação vem de uma consulta à API do MP (disparada por
- * webhook ou por sincronização manual). Todo efeito financeiro gera evento append-only e é
- * idempotente por recurso do MP.</p>
+ * <p>Na visão do processo, é aqui que a plataforma cria as cobranças (um pacote de créditos ou uma
+ * assinatura mensal), escuta o que o Mercado Pago responde sobre cada pagamento e traduz isso em
+ * consequências reais: somar créditos, ativar a assinatura, liberar ou bloquear o acesso do
+ * cliente. Este serviço não desenha telas nem calcula notas de candidato; ele só cuida da relação
+ * financeira entre a empresa cliente e a plataforma.</p>
+ *
+ * <p><b>Princípio inegociável:</b> o Mercado Pago é a fonte da verdade financeira. Nenhum pagamento
+ * é dado como aprovado porque alguém clicou num botão — toda confirmação nasce de uma consulta à
+ * API do Mercado Pago, disparada por uma notificação (webhook) ou por uma sincronização manual do
+ * ADMIN. Além disso, cada efeito financeiro vira um evento que só acrescenta e nunca apaga
+ * (append-only) e é idempotente por recurso do Mercado Pago — ou seja, se a mesma notificação
+ * chegar duas vezes, o crédito não é lançado em dobro.</p>
  */
 @Service
 public class BillingService {
@@ -103,7 +111,22 @@ public class BillingService {
     // Criação de cobranças (ADMIN)
     // ------------------------------------------------------------------
 
-    /** AVULSO: cria o checkout de compra de um pacote de créditos. */
+    /**
+     * Abre a compra de um pacote de créditos (plano AVULSO).
+     *
+     * <p>Fluxo do processo: o ADMIN escolhe um cliente e um pacote de créditos; o sistema confere
+     * que o pacote realmente é do tipo pré-pago (AVULSO) e pede ao Mercado Pago um "checkout" — a
+     * página onde o cliente vai efetivamente pagar. O pedido é registrado como um evento financeiro
+     * e o link de pagamento é devolvido para ser enviado ao cliente. Repare que aqui <em>nada</em>
+     * de crédito é adicionado ainda: os créditos só entram quando o pagamento for confirmado pelo
+     * Mercado Pago.</p>
+     *
+     * @param empresaId identificador do cliente que vai comprar os créditos
+     * @param planId identificador do pacote de créditos escolhido
+     * @return o checkout criado, com o link de pagamento do Mercado Pago
+     * @throws ResponseStatusException se o cliente ou o pacote não existirem, ou se o pacote não for
+     *         um pacote de créditos AVULSO válido
+     */
     @Transactional
     public CheckoutResponse createCreditCheckout(String empresaId, Long planId) {
         requireEmpresa(empresaId);
@@ -123,7 +146,23 @@ public class BillingService {
         return new CheckoutResponse(KIND_CREDIT, preferenceId, initPoint, externalReference);
     }
 
-    /** PROFISSIONAL: cria a assinatura recorrente no Mercado Pago. */
+    /**
+     * Abre uma assinatura mensal recorrente (plano PROFISSIONAL).
+     *
+     * <p>Fluxo do processo: o ADMIN contrata a mensalidade para um cliente. Antes de criar qualquer
+     * coisa, o sistema garante que o cliente ainda não tem uma assinatura ativa, pendente ou
+     * inadimplente — para não gerar cobrança duplicada — e confere que o plano escolhido é mesmo do
+     * tipo PROFISSIONAL. Em seguida pede ao Mercado Pago para criar a assinatura recorrente, guarda
+     * essa assinatura como "pendente" (aguardando o primeiro pagamento), registra o evento e, se o
+     * cliente ainda não estava bloqueado, marca-o como "aguardando pagamento". O link de pagamento é
+     * devolvido para o cliente autorizar a cobrança recorrente.</p>
+     *
+     * @param empresaId identificador do cliente que vai assinar
+     * @param planId identificador do plano de assinatura escolhido
+     * @return o checkout criado, com o link para o cliente autorizar a assinatura no Mercado Pago
+     * @throws ResponseStatusException se o cliente já tiver assinatura ativa/pendente/inadimplente,
+     *         se o cliente ou o plano não existirem, ou se o plano não for PROFISSIONAL
+     */
     @Transactional
     public CheckoutResponse createSubscription(String empresaId, Long planId) {
         EmpresaEntity empresa = requireEmpresa(empresaId);
@@ -170,6 +209,27 @@ public class BillingService {
     // Processamento de notificações (consulta o MP antes de aplicar)
     // ------------------------------------------------------------------
 
+    /**
+     * Trata um aviso de pagamento vindo do Mercado Pago e aplica o efeito financeiro correspondente.
+     *
+     * <p>Este é o momento em que o dinheiro "acontece de verdade". Fluxo do processo: em vez de
+     * confiar no aviso recebido, o sistema consulta o pagamento real no Mercado Pago (a fonte da
+     * verdade) e olha o resultado:</p>
+     * <ul>
+     *   <li><b>aprovado</b> — se era compra de créditos, soma os créditos ao saldo do cliente; se
+     *       era mensalidade, marca a assinatura como paga e reativa o acesso;</li>
+     *   <li><b>recusado ou cancelado</b> — se era mensalidade, inicia a inadimplência (carência);</li>
+     *   <li><b>estornado ou contestado (chargeback)</b> — apenas registra o fato para a trilha
+     *       financeira;</li>
+     *   <li><b>qualquer outro estado</b> — registra como pagamento pendente.</li>
+     * </ul>
+     *
+     * <p>Tudo é idempotente: se o mesmo pagamento aprovado chegar duas vezes, o crédito é lançado
+     * uma vez só. Avisos sem cliente identificável são ignorados com segurança.</p>
+     *
+     * @param paymentId identificador do pagamento no Mercado Pago a ser consultado
+     * @param requestId identificador de rastreio da requisição (para a trilha financeira), pode ser nulo
+     */
     @Transactional
     public void processPaymentNotification(String paymentId, String requestId) {
         JsonNode payment = mercadoPagoClient.getPayment(paymentId);
@@ -225,6 +285,25 @@ public class BillingService {
         }
     }
 
+    /**
+     * Trata um aviso sobre a assinatura (preapproval) vindo do Mercado Pago.
+     *
+     * <p>Enquanto o método de pagamento cuida de cada cobrança individual, este cuida do
+     * "contrato" da mensalidade em si. Fluxo do processo: o sistema consulta a assinatura no
+     * Mercado Pago, localiza a assinatura correspondente do cliente e atualiza a situação dela:</p>
+     * <ul>
+     *   <li><b>autorizada</b> — a assinatura passa a valer, some qualquer prazo de carência e o
+     *       acesso do cliente é reativado;</li>
+     *   <li><b>pausada</b> — a assinatura fica pausada no Mercado Pago;</li>
+     *   <li><b>cancelada</b> — a assinatura é encerrada.</li>
+     * </ul>
+     *
+     * <p>Avisos sobre assinaturas que não conseguem ser vinculadas a nenhum cliente são ignorados
+     * com segurança.</p>
+     *
+     * @param preapprovalId identificador da assinatura no Mercado Pago a ser consultada
+     * @param requestId identificador de rastreio da requisição (para a trilha financeira), pode ser nulo
+     */
     @Transactional
     public void processPreapprovalNotification(String preapprovalId, String requestId) {
         JsonNode preapproval = mercadoPagoClient.getPreapproval(preapprovalId);
@@ -264,7 +343,21 @@ public class BillingService {
         }
     }
 
-    /** Sincronização manual disparada pelo ADMIN: também consulta o MP antes de aplicar. */
+    /**
+     * Refaz manualmente a leitura de um recurso do Mercado Pago (rede de segurança do ADMIN).
+     *
+     * <p>Fluxo do processo: às vezes uma notificação automática se perde no caminho. Para não
+     * deixar o cliente com a situação errada, o ADMIN pode pedir ao sistema que vá conferir de novo,
+     * diretamente no Mercado Pago, um pagamento ou uma assinatura específicos. O sistema apenas
+     * encaminha para o mesmo tratamento das notificações automáticas — ou seja, também consulta a
+     * fonte da verdade antes de aplicar qualquer efeito, e continua sendo idempotente.</p>
+     *
+     * @param resourceType tipo do recurso a reconferir: {@code payment} (pagamento) ou
+     *        {@code preapproval}/{@code subscription} (assinatura)
+     * @param resourceId identificador do recurso no Mercado Pago
+     * @param requestId identificador de rastreio da requisição (para a trilha financeira), pode ser nulo
+     * @throws ResponseStatusException se o tipo de recurso informado não for reconhecido
+     */
     @Transactional
     public void manualSync(String resourceType, String resourceId, String requestId) {
         if ("payment".equalsIgnoreCase(resourceType)) {
@@ -280,6 +373,18 @@ public class BillingService {
     // Visão consolidada
     // ------------------------------------------------------------------
 
+    /**
+     * Monta a visão consolidada de cobrança de um cliente para o painel do ADMIN.
+     *
+     * <p>Reúne, em um só lugar, tudo o que o ADMIN precisa para entender a situação financeira do
+     * cliente: o plano contratado, a situação atual (ativo, sem crédito, inadimplente...), o saldo
+     * de créditos, os dados da assinatura (quando houver) e o histórico recente de eventos
+     * financeiros. É apenas leitura — não altera nada.</p>
+     *
+     * @param empresaId identificador do cliente a consultar
+     * @return a visão consolidada de plano, situação, saldo, assinatura e histórico
+     * @throws ResponseStatusException se o cliente não for encontrado
+     */
     @Transactional(readOnly = true)
     public EmpresaBillingOverviewResponse overview(String empresaId) {
         EmpresaEntity empresa = requireEmpresa(empresaId);
@@ -306,6 +411,10 @@ public class BillingService {
     // Internos
     // ------------------------------------------------------------------
 
+    /**
+     * Marca a assinatura do cliente como paga e em dia: registra o pagamento, estende o período
+     * vigente por 30 dias, limpa qualquer carência e reativa o acesso. Uso interno.
+     */
     private void markSubscriptionPaid(String empresaId) {
         subscriptionRepository.findFirstByEmpresaIdOrderByCreatedAtDesc(empresaId).ifPresent(subscription -> {
             subscription.setStatus(SubscriptionStatus.AUTHORIZED);
@@ -317,6 +426,11 @@ public class BillingService {
         activateEmpresa(empresaId);
     }
 
+    /**
+     * Inicia a inadimplência quando uma mensalidade é recusada: coloca a assinatura em carência
+     * (um prazo configurável para o cliente regularizar) e marca o cliente como inadimplente, sem
+     * ainda cortar o acesso. Uso interno.
+     */
     private void startDelinquency(String empresaId) {
         Instant graceUntil = Instant.now().plus(properties.gracePeriodDays(), ChronoUnit.DAYS);
         subscriptionRepository.findFirstByEmpresaIdOrderByCreatedAtDesc(empresaId).ifPresent(subscription -> {
@@ -332,6 +446,11 @@ public class BillingService {
         });
     }
 
+    /**
+     * Reativa o acesso do cliente quando ele volta a ficar regular: só tira do "aguardando
+     * pagamento", "inadimplente" ou "sem crédito", sem mexer em quem já estava suspenso ou
+     * cancelado por decisão administrativa. Uso interno.
+     */
     private void activateEmpresa(String empresaId) {
         empresaRepository.findById(empresaId).ifPresent(empresa -> {
             if (empresa.getStatus() == EmpresaStatus.PENDENTE_PAGAMENTO
@@ -343,6 +462,11 @@ public class BillingService {
         });
     }
 
+    /**
+     * Grava um fato financeiro na trilha append-only ({@code empresa_billing_events}): guarda o
+     * tipo do evento, o recurso do Mercado Pago envolvido, o valor e o retorno bruto. É o que dá
+     * rastreabilidade a toda movimentação de dinheiro do cliente. Uso interno.
+     */
     private EmpresaBillingEventEntity recordEvent(String empresaId, BillingEventType type, String resourceType,
                                                  String resourceId, String externalReference, String mpStatus,
                                                  Long amountCents, String currency, String requestId, JsonNode raw) {
@@ -361,11 +485,16 @@ public class BillingService {
         return eventRepository.save(event);
     }
 
+    /** Localiza o cliente pelo identificador ou falha com "cliente não encontrado". Uso interno. */
     private EmpresaEntity requireEmpresa(String empresaId) {
         return empresaRepository.findById(empresaId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Cliente não encontrado."));
     }
 
+    /**
+     * Localiza o plano/pacote pelo identificador, garantindo que ele existe e continua ativo (não
+     * é possível cobrar por um plano desativado). Uso interno.
+     */
     private SubscriptionPlanEntity requirePlan(Long planId) {
         if (planId == null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Plano não informado.");
@@ -378,11 +507,19 @@ public class BillingService {
         return plan;
     }
 
+    /**
+     * Cria a "etiqueta" única que viaja junto da cobrança no Mercado Pago e permite reconhecer,
+     * quando o pagamento voltar, de qual cliente, qual plano e qual tipo (crédito ou assinatura)
+     * ele era. Uso interno.
+     */
     private static String reference(String kind, String empresaId, Long planId) {
         return kind + ":" + empresaId + ":" + planId + ":" + UUID.randomUUID().toString().substring(0, 8);
     }
 
-    /** Retorna {kind, empresaId, planId} a partir de "kind:empresaId:planId:nonce". */
+    /**
+     * Lê de volta a etiqueta criada em {@link #reference}, devolvendo {tipo, cliente, plano}. É
+     * assim que um pagamento que chega do Mercado Pago é atribuído ao cliente certo. Uso interno.
+     */
     private static String[] parseReference(String externalReference) {
         if (externalReference == null) {
             return new String[]{null, null, null};
@@ -394,6 +531,7 @@ public class BillingService {
         return new String[]{parts[0], parts[1], parts[2]};
     }
 
+    /** Lê com segurança um campo de texto da resposta do Mercado Pago, tolerando ausências. Uso interno. */
     private static String text(JsonNode node, String field) {
         if (node == null) {
             return null;
@@ -402,6 +540,7 @@ public class BillingService {
         return value == null || value.isNull() ? null : value.asText();
     }
 
+    /** Converte o valor do pagamento (em reais) para centavos, o formato guardado na trilha. Uso interno. */
     private static Long cents(JsonNode payment) {
         if (payment == null) {
             return null;
@@ -413,6 +552,7 @@ public class BillingService {
         return Math.round(amount.asDouble() * 100);
     }
 
+    /** Limita o tamanho do retorno bruto guardado, evitando que a trilha cresça sem controle. Uso interno. */
     private static String truncate(String value) {
         if (value == null) {
             return null;
