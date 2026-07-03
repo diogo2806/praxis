@@ -90,9 +90,25 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 
+/**
+ * Motor da Central de Resultados.
+ *
+ * <p>Depois que um candidato faz uma avaliação, tudo o que ele respondeu, quanto
+ * pontuou e onde se destacou passa a ser acompanhado aqui. Esta classe reúne,
+ * filtra e apresenta essas avaliações para o time de recrutamento e guarda a
+ * decisão final tomada por uma pessoa (avançar, reprovar, contratar ou deixar em
+ * espera).</p>
+ *
+ * <p>Importante: aqui a plataforma apenas <em>organiza e mostra</em> avaliações que
+ * já aconteceram. Ela não aplica a prova nem recalcula a nota do candidato — esse
+ * cálculo é feito no momento da avaliação. O objetivo é dar ao recrutador uma visão
+ * comparável de todos os candidatos para que a decisão de contratação continue sendo
+ * humana.</p>
+ */
 @Service
 public class ResultsService {
 
+    /** Teto de candidatos exibidos por página, para não sobrecarregar a tela. */
     private static final int MAX_PAGE_SIZE = 100;
 
     private final CandidateAttemptRepository candidateAttemptRepository;
@@ -121,6 +137,25 @@ public class ResultsService {
         this.objectMapper = objectMapper;
     }
 
+    /**
+     * Monta a lista de candidatos avaliados que o recrutador vê na Central de Resultados.
+     *
+     * <p>Aplica os filtros escolhidos na tela e devolve tanto a página atual de
+     * candidatos quanto o resumo que aparece no topo (quantos concluíram, quantos
+     * ainda estão em andamento, quantos expiraram e a nota média). A lista vem
+     * ordenada dos mais recentes para os mais antigos e é entregue em páginas, para
+     * funcionar bem mesmo com muitos candidatos.</p>
+     *
+     * @param search texto para buscar por nome ou e-mail do candidato (opcional)
+     * @param simulationId filtra por uma avaliação específica (opcional)
+     * @param status filtra pela situação da avaliação — ex.: concluída, em andamento (opcional)
+     * @param integrationProvider filtra pela origem do candidato — Manual, Gupy, Recrutei ou API (opcional)
+     * @param periodStart considera apenas avaliações a partir desta data (opcional)
+     * @param periodEnd considera apenas avaliações até esta data (opcional)
+     * @param page número da página desejada, começando em zero
+     * @param size quantos candidatos por página (limitado a 100)
+     * @return a página de resultados com os candidatos, o resumo do topo e os dados de paginação
+     */
     @Transactional(readOnly = true)
     public ResultsPageResponse list(
             String search,
@@ -164,6 +199,19 @@ public class ResultsService {
         );
     }
 
+    /**
+     * Abre o resultado completo de um candidato em uma avaliação.
+     *
+     * <p>Reúne, em um só lugar, tudo o que o recrutador precisa para analisar o
+     * candidato: seus dados, qual avaliação fez, a situação, a nota geral, o
+     * desempenho competência por competência, o que ele escolheu em cada situação da
+     * prova e a última decisão humana já registrada sobre ele. É a tela de detalhe
+     * que embasa a decisão de contratação.</p>
+     *
+     * @param attemptId identificador da avaliação do candidato
+     * @return o detalhe completo do resultado
+     * @throws org.springframework.web.server.ResponseStatusException se o resultado não existir para a empresa
+     */
     @Transactional(readOnly = true)
     public ResultDetailResponse get(String attemptId) {
         String empresaId = currentEmpresaService.requiredEmpresaId();
@@ -195,6 +243,17 @@ public class ResultsService {
         );
     }
 
+    /**
+     * Registra a decisão que uma pessoa tomou sobre o candidato.
+     *
+     * <p>É aqui que o "humano no controle" fica formalizado: o recrutador diz o que
+     * fazer com o candidato (avançar, reprovar, contratar ou deixar em espera) e pode
+     * anexar uma observação justificando. A decisão é encaminhada para ser gravada de
+     * forma auditável, ficando registrado quem decidiu, o quê e quando.</p>
+     *
+     * @param attemptId identificador da avaliação do candidato
+     * @param request a decisão tomada e uma observação opcional
+     */
     @Transactional
     public void registerDecision(String attemptId, RegisterResultDecisionRequest request) {
         candidateDispositionService.register(attemptId, new RegisterDispositionRequest(
@@ -203,6 +262,14 @@ public class ResultsService {
         ));
     }
 
+    /**
+     * Traduz os filtros escolhidos na tela em uma única consulta ao banco.
+     *
+     * <p>Combina todos os filtros ativos (busca, avaliação, situação, origem e
+     * período) e garante que só apareçam candidatos da empresa de quem está logado.
+     * Para o filtro de origem, entende "Manual" (sem integração), "API" (integração
+     * genérica) ou o nome de um parceiro específico como Gupy/Recrutei.</p>
+     */
     private Specification<CandidateAttemptEntity> buildSpec(
             String empresaId,
             String search,
@@ -259,6 +326,7 @@ public class ResultsService {
         };
     }
 
+    /** Resume um candidato em uma linha da lista, com nome da avaliação, nota e competência de destaque. */
     private ResultListItemResponse toListItem(
             CandidateAttemptEntity attempt,
             Map<String, String> simulationTitles
@@ -278,11 +346,19 @@ public class ResultsService {
         );
     }
 
+    /** Busca os nomes das avaliações para que a lista mostre títulos legíveis em vez de códigos internos. */
     private Map<String, String> simulationTitles(String empresaId) {
         return simulationRepository.findByEmpresaIdOrderByCreatedAtDesc(empresaId).stream()
                 .collect(Collectors.toMap(SimulationEntity::getId, SimulationEntity::getName, (left, right) -> left));
     }
 
+    /**
+     * Calcula os números-resumo exibidos no topo da Central.
+     *
+     * <p>Conta quantos candidatos concluíram, quantos ainda estão em andamento (ou
+     * nem começaram / pausaram) e quantos expiraram, além da nota média entre os que
+     * concluíram. A média fica em branco quando ninguém concluiu ainda.</p>
+     */
     private ResultsSummaryResponse summary(List<CandidateAttemptEntity> attempts) {
         long completed = attempts.stream().filter(attempt -> attempt.getStatus() == AttemptStatus.COMPLETED).count();
         long inProgress = attempts.stream()
@@ -300,6 +376,7 @@ public class ResultsService {
         return new ResultsSummaryResponse(completed, inProgress, expired, averageScore);
     }
 
+    /** Descobre a competência em que o candidato foi melhor, para destacá-la já na lista. */
     private String highlightCompetency(CandidateAttemptEntity attempt) {
         return attempt.getResultItems().stream()
                 .max(Comparator.comparingInt(ResultItemEntity::getScore))
@@ -307,6 +384,13 @@ public class ResultsService {
                 .orElse(null);
     }
 
+    /**
+     * Detalha o desempenho do candidato competência por competência.
+     *
+     * <p>Para cada competência avaliada, informa a nota, classifica em nível
+     * (alto/médio/baixo) e traz uma frase que ajuda o recrutador a interpretar o
+     * resultado sem precisar decorar faixas de pontuação.</p>
+     */
     private List<ResultDetailResponse.Competency> competencies(CandidateAttemptEntity attempt) {
         return attempt.getResultItems().stream()
                 .sorted(Comparator.comparing(ResultItemEntity::getName))
@@ -319,6 +403,14 @@ public class ResultsService {
                 .toList();
     }
 
+    /**
+     * Reconstrói, situação a situação, o caminho que o candidato percorreu na avaliação.
+     *
+     * <p>Na ordem em que respondeu, mostra o que foi apresentado e qual alternativa ele
+     * escolheu — inclusive marcando quando o tempo esgotou. Quando a versão da avaliação
+     * está disponível, apresenta os textos como o candidato os viu; caso contrário, cai
+     * em uma versão mais enxuta com os códigos das etapas.</p>
+     */
     private List<ResultDetailResponse.Answer> answers(
             CandidateAttemptEntity attempt,
             PublishedSimulation simulation
@@ -343,6 +435,7 @@ public class ResultsService {
                 .toList();
     }
 
+    /** Converte uma resposta técnica em algo legível: a situação, a pergunta, a alternativa escolhida e quantos pontos ela valeu. */
     private ResultDetailResponse.Answer answerResponse(AttemptAnswerEntity answer, ScenarioNode node) {
         if (node == null) {
             return new ResultDetailResponse.Answer(
@@ -368,6 +461,7 @@ public class ResultsService {
         );
     }
 
+    /** Localiza a versão exata da avaliação que o candidato respondeu, para exibir as perguntas como ele as viu. */
     private Optional<PublishedSimulation> resolveSimulation(CandidateAttemptEntity attempt, String empresaId) {
         if (attempt.getSimulationVersionId() != null) {
             return simulationCatalogService.findByVersionId(attempt.getSimulationVersionId());
@@ -375,6 +469,7 @@ public class ResultsService {
         return simulationCatalogService.findPublishedById(empresaId, attempt.getSimulationId());
     }
 
+    /** Recupera a decisão humana mais recente já registrada sobre o candidato (ou uma decisão vazia, se ainda não houve nenhuma). */
     private ResultDetailResponse.HumanDecision latestHumanDecision(List<AuditEventResponse> auditTrail) {
         return auditTrail.stream()
                 .filter(event -> event.eventType() == AuditEventType.HUMAN_DECISION)
@@ -383,6 +478,7 @@ public class ResultsService {
                 .orElse(new ResultDetailResponse.HumanDecision(null, null, null, null));
     }
 
+    /** Extrai do registro de auditoria os dados da decisão: qual foi, quem tomou, quando e por quê. */
     private ResultDetailResponse.HumanDecision humanDecision(AuditEventResponse event) {
         try {
             JsonNode metadata = objectMapper.readTree(event.metadata());
@@ -402,6 +498,13 @@ public class ResultsService {
         return value == null || value.isNull() ? null : value.asText();
     }
 
+    /**
+     * Identifica por onde o candidato entrou no processo.
+     *
+     * <p>Diferencia candidatos cadastrados manualmente ("MANUAL") daqueles que chegaram
+     * por uma integração — reconhecendo parceiros conhecidos como Gupy e Recrutei, ou
+     * tratando o restante como integração via API pública ("API").</p>
+     */
     private String integrationProvider(CandidateAttemptEntity attempt) {
         String webhook = attempt.getResultWebhookUrl();
         if (webhook == null || webhook.isBlank()) {
@@ -417,6 +520,7 @@ public class ResultsService {
         return "API";
     }
 
+    /** Classifica uma nota em nível de leitura rápida: alto (80+), médio (60–79) ou baixo. */
     private String competencyLevel(int score) {
         if (score >= 80) {
             return "ALTO";
@@ -427,6 +531,7 @@ public class ResultsService {
         return "BAIXO";
     }
 
+    /** Gera a frase que interpreta o desempenho na competência, orientando inclusive quando é preciso análise humana mais cuidadosa. */
     private String competencySummary(String name, int score) {
         return switch (competencyLevel(score)) {
             case "ALTO" -> "Demonstrou forte aderência em " + name + ".";
