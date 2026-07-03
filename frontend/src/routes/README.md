@@ -143,33 +143,47 @@ src/routes/routeTree.gen.ts  ← AUTO-GERADO
 
 ---
 
-## 🏗️ Estrutura Recomendada (Praxis)
+## 🏗️ Estrutura Atual (Praxis)
+
+O menu principal da empresa fica em `src/components/app-shell.tsx`. O assistente de
+criação de avaliações tem **4 passos**, definidos em `src/lib/simulation-meta.ts`
+(`avaliacao → personagem → validador → governanca`).
 
 ```
 src/routes/
-├── __root.tsx                           # Header, footer, estilos globais
-├── index.tsx                            # Tela inicial (/simulations)
-├── candidato.tsx                        # Entrada por token (/candidato)
-├── candidato/
-│   └── $token.tsx                       # Tela pública do candidato
-├── monitoramento.tsx                    # Dashboard operacional
-├── governanca.tsx                       # Auditoria e governança
-├── defensabilidade.tsx                  # Explicabilidade de score
-├── lgpd.tsx                             # Conformidade LGPD
-├── nova/                                # Assistente de criação
-│   ├── _layout.tsx                      # Sidebar do wizard
-│   ├── avaliacao.tsx                    # Passo 1: criar simulação
-│   ├── blueprint.tsx                    # Redirect de compatibilidade → /nova/avaliacao
-│   ├── objetivo.tsx                     # Passo 2: objetivo e competências
-│   ├── personagem.tsx                   # Passo 3: personagem principal
-│   ├── dialogo.tsx                      # Passo 4: diálogos/nós
-│   ├── validador.tsx                    # Passo 5: validação
-│   ├── piloto.tsx                       # Passo 6: calibração
-│   ├── mapa.tsx                         # Passo 7: mapa de score
-│   ├── governanca.tsx                   # Passo 8: governança
-│   └── gupy.tsx                         # Passo 9: ativar Gupy
+├── __root.tsx                           # Shell global (header, estilos)
+├── index.tsx                            # Tela inicial
+├── dashboard.tsx                        # Painel de indicadores
+├── avaliacoes.tsx                       # Ver/editar avaliações
+├── results.tsx / results.$attemptId.tsx # Resultados e decisão do recrutador
+├── enviar-link.tsx                      # Links internos de candidato
+├── integrations.tsx                     # Central de Integrações
+│   └── integrations.$provider.tsx       # Detalhe/config (gupy, recrutei, custom-api)
+├── monitoramento.tsx                    # Monitoramento operacional
+├── jornadas.tsx / jornada.$attemptId    # Jornadas de avaliação
+├── talent-match.tsx                     # Comparação de candidatos
+├── marketplace.tsx (+ filhos)           # Marketplace de profissionais
+├── billing.tsx                          # Plano, uso e cobrança
+├── compliance.tsx                       # Defensabilidade e LGPD (substitui /defensabilidade e /lgpd)
+├── competencias.tsx                     # Catálogos da empresa
+├── configuracoes.perfil / .conta        # Perfil da empresa / conta do usuário
+├── team.tsx / convite.$token.tsx        # Equipe e aceite de convite
+├── candidato.tsx / candidato.$token.tsx # Fluxo público do candidato
+├── admin*.tsx                           # Painel ADMIN da plataforma
+├── nova.avaliacao.tsx                   # Passo 1: Teste (cria rascunho)
+├── nova.personagem.tsx                  # Passo 2: Cenário (nós/alternativas)
+├── nova.validador.tsx                   # Passo 3: Revisão (validação)
+├── nova.governanca.tsx                  # Passo 4: Publicação
+├── nova.rapido.tsx                      # Quick-start por modelo pronto
+├── nova.objetivo / .dialogo / .mapa /   # Telas standalone fora dos 4 passos
+│   .piloto / .gupy.tsx
 └── README.md                            # Este arquivo
 ```
+
+> Rotas legadas redirecionam: `nova.blueprint.tsx → /nova/avaliacao`,
+> `nova.competencias.tsx → /competencias`, `configuracoes.integracoes.tsx → /integrations`,
+> `configuracoes.api.tsx → /integrations/custom-api`. Não há `nova/_layout.tsx`;
+> o passo atual é renderizado pelo componente `WizardStepper`.
 
 ---
 
@@ -249,4 +263,4 @@ function Navigation() {
 
 ---
 
-**Última atualização:** 18/06/2026 | Tradução: PT-BR
+**Última atualização:** 03/07/2026 | Tradução: PT-BR

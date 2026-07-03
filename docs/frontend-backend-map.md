@@ -24,11 +24,15 @@
 
 ### Criacao e publicacao
 
+O assistente tem 4 passos canonicos (`frontend/src/lib/simulation-meta.ts`): `avaliacao -> personagem -> validador -> governanca`.
+
 1. `/avaliacoes` lista simulacoes por `GET /api/v1/simulations`.
-2. `/nova/avaliacao` cria rascunho por `POST /api/v1/simulations/drafts`.
-3. `/nova/objetivo`, `/nova/personagem` e `/nova/dialogo` editam plano, nos, alternativas e midias.
-4. `/nova/validador` consulta `GET /validation`.
-5. `/nova/governanca` publica por `POST /publish` ou clona por `POST /clone-draft`.
+2. `/nova/avaliacao` (Teste) cria rascunho por `POST /api/v1/simulations/drafts` e ajusta o plano por `PATCH /blueprint`.
+3. `/nova/personagem` (Cenario) carrega a versao e cria/edita nos, alternativas e midias.
+4. `/nova/validador` (Revisao) consulta `GET /validation`.
+5. `/nova/governanca` (Publicacao) publica por `POST /publish` ou clona por `POST /clone-draft`.
+
+Alternativa por modelo: `/nova/rapido` usa `GET /api/v1/simulations/quick-start/templates` e `POST /api/v1/simulations/quick-start`, caindo no editor `/nova/mapa`. As rotas `/nova/objetivo`, `/nova/dialogo`, `/nova/mapa`, `/nova/piloto` e `/nova/gupy` continuam existindo como paginas standalone, fora dos 4 passos do assistente.
 
 ### Execucao do candidato
 
@@ -45,25 +49,72 @@
 
 ## Rotas frontend
 
+O menu principal da empresa e definido em `frontend/src/components/app-shell.tsx`.
+
+### Nucleo operacional
+
 | Rota | Arquivo | Integracao atual |
 | --- | --- | --- |
-| `/` | `frontend/src/routes/index.tsx` | Landing/entrada inicial; o painel operacional e `/avaliacoes`. |
-| `/avaliacoes` | `frontend/src/routes/avaliacoes.tsx` | Tela para ver e editar avaliacoes com `GET /api/v1/simulations` e exclusao definitiva por `DELETE /api/v1/simulations/{id}`. |
-| `/comecar` | `frontend/src/routes/comecar.tsx` | Inicio do fluxo de criacao. |
-| `/nova/avaliacao` | `frontend/src/routes/nova.avaliacao.tsx` | Cria rascunho com `POST /api/v1/simulations/drafts`; usa catalogos de `GET /api/v1/empresa-config`. `/nova/blueprint` (`nova.blueprint.tsx`) apenas redireciona para ca por compatibilidade. |
-| `/nova/competencias` | `frontend/src/routes/nova.competencias.tsx` | Configuracao de competencias do empresa via `GET/PUT /api/v1/empresa-config`. |
-| `/nova/objetivo` | `frontend/src/routes/nova.objetivo.tsx` | Atualiza plano com `PATCH /api/v1/simulations/{id}/versions/{n}/blueprint`. |
-| `/nova/personagem` | `frontend/src/routes/nova.personagem.tsx` | Carrega versao e cria/atualiza o primeiro no por `POST/PUT /nodes`. |
-| `/nova/dialogo` | `frontend/src/routes/nova.dialogo.tsx` | Editor de grafo com CRUD de nos e alternativas; upload por `POST /api/v1/media`. |
-| `/nova/validador` | `frontend/src/routes/nova.validador.tsx` | Valida com `GET /api/v1/simulations/{id}/versions/{n}/validation`. |
-| `/nova/piloto` | `frontend/src/routes/nova.piloto.tsx` | Usa `GET /api/v1/simulations/{id}/versions/{n}/monitoring`. |
-| `/nova/mapa` | `frontend/src/routes/nova.mapa.tsx` | Exibe grafo, pesos e destino das alternativas a partir de `GET /api/v1/simulations/{id}/versions/{n}`. |
-| `/nova/governanca` | `frontend/src/routes/nova.governanca.tsx` | Auditoria por `GET /api/v1/audit/simulations/{id}/versions/{n}`; clona e publica com `clone-draft` e `publish`. |
-| `/nova/gupy` | `frontend/src/routes/nova.gupy.tsx` | Preflight com `GET /api/v1/simulations/{id}/versions/{n}/gupy-preflight`; entregas com `GET /api/v1/gupy/result-deliveries`. Nao existe endpoint separado de ativacao Gupy e a UI atual apenas lista entregas. |
-| `/monitoramento` | `frontend/src/routes/monitoramento.tsx` | Usa monitoramento da versao e entregas Gupy filtradas por simulacao/versao. |
-| `/compliance` | `frontend/src/routes/compliance.tsx` | Tela de analise operacional/compliance; usa `GET /api/v1/privacy/compliance`, versao, validacao e auditoria quando ha contexto. |
+| `/` | `frontend/src/routes/index.tsx` | Landing/entrada inicial. |
+| `/dashboard` | `frontend/src/routes/dashboard.tsx` | Painel de indicadores por `GET /api/v1/dashboard`. |
+| `/avaliacoes` | `frontend/src/routes/avaliacoes.tsx` | Ver e editar avaliacoes com `GET /api/v1/simulations` e exclusao definitiva por `DELETE /api/v1/simulations/{id}`. |
+| `/results` | `frontend/src/routes/results.tsx` | Lista resultados por `GET /api/v1/results`. |
+| `/results/$attemptId` | `frontend/src/routes/results.$attemptId.tsx` | Detalhe por `GET /api/v1/results/{attemptId}` e decisao por `POST /api/v1/results/{attemptId}/decision`. |
 | `/enviar-link` | `frontend/src/routes/enviar-link.tsx` | Lista e cria links com `GET/POST /api/v1/candidate-links`; acompanha `GET /api/v1/candidate-links/live-attempts`. |
+| `/monitoramento` | `frontend/src/routes/monitoramento.tsx` | Monitoramento da versao e entregas filtradas por simulacao/versao. |
 | `/talent-match` | `frontend/src/routes/talent-match.tsx` | Compara candidatos com `GET /api/v1/simulations/{id}/versions/{n}/talent-match?attemptIds=a,b`. |
+| `/compliance` | `frontend/src/routes/compliance.tsx` | Analise operacional, defensabilidade e LGPD; usa `GET /api/v1/privacy/compliance`, versao e auditoria. Substitui as antigas `/defensabilidade` e `/lgpd`. |
+| `/competencias` | `frontend/src/routes/competencias.tsx` | Catalogos da empresa via `GET/PUT /api/v1/empresa-config`. |
+| `/configuracoes/perfil` | `frontend/src/routes/configuracoes.perfil.tsx` | Perfil da empresa por `GET /api/v1/company-profile`. |
+| `/configuracoes/conta` | `frontend/src/routes/configuracoes.conta.tsx` | Conta do usuario por `GET /api/v1/account/me` e `POST /api/v1/account/password`. |
+| `/team` | `frontend/src/routes/team.tsx` | Equipe da empresa via `/api/v1/team` (convite, bloqueio). |
+| `/convite/$token` | `frontend/src/routes/convite.$token.tsx` | Aceite de convite de equipe por token. |
+
+### Assistente de criacao (`/nova/**`)
+
+| Rota | Arquivo | Integracao atual |
+| --- | --- | --- |
+| `/comecar` | `frontend/src/routes/comecar.tsx` | Pagina explicativa de entrada; sem chamadas de backend. Leva a `/nova/avaliacao` ou `/nova/rapido`. |
+| `/nova/avaliacao` | `frontend/src/routes/nova.avaliacao.tsx` | Passo 1 (Teste): cria rascunho com `POST /api/v1/simulations/drafts` e ajusta plano por `PATCH /blueprint`; usa catalogos de `GET /api/v1/empresa-config`. |
+| `/nova/personagem` | `frontend/src/routes/nova.personagem.tsx` | Passo 2 (Cenario): carrega versao e cria/edita nos por `POST/PUT /nodes` e alternativas. |
+| `/nova/validador` | `frontend/src/routes/nova.validador.tsx` | Passo 3 (Revisao): valida com `GET /api/v1/simulations/{id}/versions/{n}/validation`. |
+| `/nova/governanca` | `frontend/src/routes/nova.governanca.tsx` | Passo 4 (Publicacao): auditoria por `GET /api/v1/audit/...`; clona e publica com `clone-draft` e `publish`. |
+| `/nova/rapido` | `frontend/src/routes/nova.rapido.tsx` | Quick-start: `GET /api/v1/simulations/quick-start/templates` e `POST /api/v1/simulations/quick-start`; cai no editor `/nova/mapa`. |
+| `/nova/objetivo` | `frontend/src/routes/nova.objetivo.tsx` | Standalone (fora dos 4 passos): plano por `PATCH /blueprint`. |
+| `/nova/dialogo` | `frontend/src/routes/nova.dialogo.tsx` | Standalone: editor de grafo com CRUD de nos/alternativas; upload por `POST /api/v1/media`. |
+| `/nova/mapa` | `frontend/src/routes/nova.mapa.tsx` | Standalone: exibe grafo, pesos e destino das alternativas a partir de `GET /api/v1/simulations/{id}/versions/{n}`. |
+| `/nova/piloto` | `frontend/src/routes/nova.piloto.tsx` | Standalone: usa `GET /api/v1/simulations/{id}/versions/{n}/monitoring`. |
+| `/nova/gupy` | `frontend/src/routes/nova.gupy.tsx` | Standalone: preflight com `GET /gupy-preflight`; entregas com `GET /api/v1/gupy/result-deliveries`. Nao existe endpoint separado de ativacao Gupy. |
+
+### Integracoes
+
+| Rota | Arquivo | Integracao atual |
+| --- | --- | --- |
+| `/integrations` | `frontend/src/routes/integrations.tsx` | Central de Integracoes (Gupy, Recrutei, API propria) por `GET /api/v1/integrations` e acoes (`configure`, `sync`, `tokens`...). |
+| `/integrations/$provider` | `frontend/src/routes/integrations.$provider.tsx` | Detalhe/config do provedor (`gupy`, `recrutei`, `custom-api`). No `custom-api`, exibe webhook (`/api/v1/integrations/custom-api/webhook`) e token de API publica (`/api/v1/integrations/custom-api/api-token`). |
+| `/docs/integracao-api-propria` | `frontend/src/routes/docs.integracao-api-propria.tsx` | Pagina de documentacao da integracao por API propria (HMAC, payload de webhook, endpoints). |
+
+### Jornadas de avaliacao
+
+| Rota | Arquivo | Integracao atual |
+| --- | --- | --- |
+| `/jornadas` | `frontend/src/routes/jornadas.tsx` | Lista/gestao de jornadas por `/api/v1/assessment-journeys`. |
+| `/assessment-journeys/` e `/assessment-journeys/new` | `frontend/src/routes/assessment-journeys/*.tsx` | Autoria de jornada (encadeia avaliacoes publicadas). |
+| `/jornada/$attemptId` | `frontend/src/routes/jornada.$attemptId.tsx` | Execucao publica da jornada por `/candidate/journey-attempts/{attemptId}`. |
+
+### Marketplace, plano e admin
+
+| Rota | Arquivo | Integracao atual |
+| --- | --- | --- |
+| `/marketplace` e filhos | `frontend/src/routes/marketplace*.tsx` | Vitrine de profissionais, detalhe, checkout e pedidos por `/api/v1/marketplace/**`. |
+| `/profissional` e filhos | `frontend/src/routes/profissional.*.tsx` | Area do profissional (cadastro, perfil, anuncios, mensagens, financeiro Mercado Pago Connect). |
+| `/billing` | `frontend/src/routes/billing.tsx` | Plano, uso e historico por `GET /api/v1/billing` e `GET /api/v1/billing/events`. |
+| `/admin` e filhos | `frontend/src/routes/admin*.tsx` | Painel ADMIN da plataforma por `/api/admin/**` e `/api/v1/admin/marketplace`. |
+
+### Fluxo publico do candidato
+
+| Rota | Arquivo | Integracao atual |
+| --- | --- | --- |
 | `/candidato` | `frontend/src/routes/candidato.tsx` | Entrada por codigo/link recebido. |
 | `/candidato/$token` | `frontend/src/routes/candidato.$token.tsx` | Experiencia publica com `GET /candidate/attempts/{attemptToken}` e `POST /candidate/attempts/{attemptToken}/answers`. |
 
@@ -72,23 +123,33 @@
 | Area | Endpoint base | Uso |
 | --- | --- | --- |
 | Auth | `/api/v1/auth/login` | API de login e emissao de JWT. Nao ha rota `/login` dedicada no frontend atual. |
-| Simulacoes | `/api/v1/simulations` | Listagem, criacao, edicao de grafo, validacao, clone, publicacao, preflight, monitoramento, Talent Match e exclusao. |
+| Dashboard | `/api/v1/dashboard` | Indicadores da empresa autenticada. |
+| Simulacoes | `/api/v1/simulations` | Listagem, criacao, edicao de grafo, validacao, clone, publicacao, quick-start, preflight, monitoramento, Talent Match e exclusao. |
+| Resultados | `/api/v1/results` | Lista e detalha resultados de tentativas; `POST /{attemptId}/decision` registra a decisao do recrutador. |
+| Jornadas | `/api/v1/assessment-journeys`, `/api/v1/assessment-journey-attempts` | Autoria e execucao de jornadas que encadeiam avaliacoes publicadas. |
 | Empresa config | `/api/v1/empresa-config` | Catalogos de competencias, senioridade, idiomas, usos de resultado e tempos de resposta. |
 | Midia | `/api/v1/media` | Upload de imagem/audio para nos e alternativas. |
 | Links de candidato | `/api/v1/candidate-links` | Geracao e listagem de links internos de candidato. |
-| Candidato publico | `/candidate/attempts` | Estado da tentativa e envio de respostas. |
+| Candidato publico | `/candidate/attempts`, `/candidate/journey-attempts` | Estado da tentativa, envio de respostas e execucao publica de jornadas. |
+| Integracoes | `/api/v1/integrations` | Central que unifica Gupy, Recrutei e API propria; inclui webhook e token de API publica em `/api/v1/integrations/custom-api/**`. |
 | Auditoria | `/api/v1/audit` | Eventos por tentativa ou versao de simulacao. |
 | Privacidade | `/api/v1/privacy/compliance` | Bases legais, retencao e politica de decisao automatizada. |
-| Entregas Gupy | `/api/v1/gupy/result-deliveries` | Outbox de entrega, status, retry, DLQ e reprocessamento no backend. A camada `praxis.ts` lista entregas; reprocessamento manual ainda nao tem helper/tela. |
-| Notificacoes | `/api/v1/notifications` | API existe no backend para alertas internos, inclusive DLQ. O frontend ainda nao possui helper/tela dedicada. |
+| Entregas Gupy | `/api/v1/gupy/result-deliveries` | Outbox de entrega, status, retry, DLQ e reprocessamento no backend. |
+| Notificacoes | `/api/v1/notifications` | API para alertas internos, inclusive DLQ. O frontend ainda nao possui tela dedicada. |
+| Equipe/Conta | `/api/v1/team`, `/api/v1/account`, `/api/v1/company-profile`, `/api/v1/terms` | Usuarios da empresa, conta do usuario, perfil cadastral e aceite de termos. |
+| Plano/cobranca | `/api/v1/billing` | Leitura de plano, uso e eventos; criacao de cobranca fica no painel ADMIN. |
+| Marketplace | `/api/v1/marketplace/**` | Anuncios, profissionais, pedidos, mensagens e avaliacoes; moderacao em `/api/v1/admin/marketplace`. |
+| Admin plataforma | `/api/admin/**` | Dashboard, clientes (empresas), usuarios e auditoria da plataforma (perfil `ADMIN`). |
 | Integracao Gupy | `/test`, `/test/candidate`, `/test/result/{resultId}` | Contrato externo consumido pela Gupy. |
+| Webhook Mercado Pago | `/api/webhooks/mercado-pago` | Notificacoes de pagamento/assinatura com validacao de assinatura. |
 
 ## Seguranca
 
 - `PRAXIS_SECURITY_ENABLED=false`: libera rotas e usa `PRAXIS_DEFAULT_EMPRESA_ID`.
 - `PRAXIS_SECURITY_ENABLED=true`: exige JWT nas rotas internas e valida role `EMPRESA`.
-- `/candidate/**`, `/candidato/**`, `/test/**`, `/api/v1/auth/login`, healthcheck e docs ficam permitidos pela configuracao Spring Security.
-- A integracao Gupy/Recrutei valida Bearer token em `IntegrationAuthService` calculando o SHA-256 Base64URL do token e comparando com a tabela `integration_tokens` (por provider).
+- `/candidate/**`, `/candidato/**`, `/test/**`, `/api/v1/auth/login`, `/api/webhooks/**`, healthcheck e docs ficam permitidos pela configuracao Spring Security.
+- A integracao Gupy/Recrutei valida Bearer token em `IntegrationAuthService` calculando o SHA-256 Base64URL do token e comparando com a tabela `integration_tokens` (por provider). A Recrutei e a API propria seguem o mesmo modelo de token por provedor.
+- O painel `/api/admin/**` e o marketplace `/api/v1/admin/marketplace` exigem role `ADMIN`.
 
 ## Estados e entregas
 
@@ -120,4 +181,4 @@ Na API publica do candidato, alguns status sao traduzidos para portugues, por ex
 - `--chart-1` a `--chart-5` derivam da marca: petroleo, teal, dourado, verde e ardosia. Evite recolocar a sequencia padrao do shadcn.
 - Estados semanticos usam `--success`, `--warning`, `--danger` e `--destructive`; nao codifique cores fixas nas rotas.
 
-Ultima revisao: 20/06/2026.
+Ultima revisao: 03/07/2026.
