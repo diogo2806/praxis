@@ -111,7 +111,8 @@ class CreditServiceTest {
 
     @Test
     void consumeDecrementsAndMarksOutOfCreditWhenZero() {
-        when(empresaRepository.findById("t1")).thenReturn(Optional.of(empresa(CommercialPlanType.AVULSO, EmpresaStatus.ATIVO)));
+        EmpresaEntity empresa = empresa(CommercialPlanType.AVULSO, EmpresaStatus.ATIVO);
+        when(empresaRepository.findById("t1")).thenReturn(Optional.of(empresa));
         when(ledgerRepository.existsByAttemptIdAndReason("att1", CreditLedgerReason.CONSUMPTION)).thenReturn(false);
         when(balanceRepository.findByEmpresaIdForUpdate("t1")).thenReturn(Optional.of(balance(1)));
 
@@ -122,6 +123,34 @@ class CreditServiceTest {
         assertThat(ledger.getValue().getDelta()).isEqualTo(-1);
         assertThat(ledger.getValue().getAttemptId()).isEqualTo("att1");
         assertThat(ledger.getValue().getBalanceAfter()).isZero();
+        assertThat(empresa.getStatus()).isEqualTo(EmpresaStatus.SEM_CREDITO);
+    }
+
+    @Test
+    void consumeMarksOutOfCreditEvenWhenBalanceWasAlreadyZero() {
+        EmpresaEntity empresa = empresa(CommercialPlanType.AVULSO, EmpresaStatus.ATIVO);
+        when(empresaRepository.findById("t1")).thenReturn(Optional.of(empresa));
+        when(ledgerRepository.existsByAttemptIdAndReason("att1", CreditLedgerReason.CONSUMPTION)).thenReturn(false);
+        when(balanceRepository.findByEmpresaIdForUpdate("t1")).thenReturn(Optional.of(balance(0)));
+
+        service.consumeOnCompletion("t1", "att1");
+
+        // Sem saldo para debitar: não escreve ledger e não deixa saldo negativo, mas ainda marca SEM_CREDITO.
+        verify(ledgerRepository, never()).save(any());
+        assertThat(empresa.getStatus()).isEqualTo(EmpresaStatus.SEM_CREDITO);
+    }
+
+    @Test
+    void consumeDoesNotDowngradeSuspensoEmpresa() {
+        EmpresaEntity empresa = empresa(CommercialPlanType.AVULSO, EmpresaStatus.SUSPENSO);
+        when(empresaRepository.findById("t1")).thenReturn(Optional.of(empresa));
+        when(ledgerRepository.existsByAttemptIdAndReason("att1", CreditLedgerReason.CONSUMPTION)).thenReturn(false);
+        when(balanceRepository.findByEmpresaIdForUpdate("t1")).thenReturn(Optional.of(balance(1)));
+
+        service.consumeOnCompletion("t1", "att1");
+
+        // O débito acontece, mas o status SUSPENSO NÃO deve ser rebaixado para SEM_CREDITO.
+        assertThat(empresa.getStatus()).isEqualTo(EmpresaStatus.SUSPENSO);
     }
 
     @Test
@@ -166,5 +195,54 @@ class CreditServiceTest {
 
         service.assertCanStartNewAttempt("t1");
         verify(balanceRepository, never()).findById(anyString());
+    }
+
+    @Test
+    void grantAdjustmentCreditsWritesAdjustmentLedgerAndReactivatesSemCredito() {
+        when(balanceRepository.findByEmpresaIdForUpdate("t1")).thenReturn(Optional.of(balance(0)));
+        EmpresaEntity empresa = empresa(CommercialPlanType.AVULSO, EmpresaStatus.SEM_CREDITO);
+        when(empresaRepository.findById("t1")).thenReturn(Optional.of(empresa));
+
+        int newBalance = service.grantAdjustmentCredits("t1", 10, "cortesia");
+
+        assertThat(newBalance).isEqualTo(10);
+        ArgumentCaptor<EmpresaCreditLedgerEntity> ledger = ArgumentCaptor.forClass(EmpresaCreditLedgerEntity.class);
+        verify(ledgerRepository).save(ledger.capture());
+        assertThat(ledger.getValue().getDelta()).isEqualTo(10);
+        assertThat(ledger.getValue().getReason()).isEqualTo(CreditLedgerReason.ADJUSTMENT);
+        assertThat(ledger.getValue().getBillingEventId()).isNull();
+        assertThat(ledger.getValue().getNote()).isEqualTo("cortesia");
+        assertThat(empresa.getStatus()).isEqualTo(EmpresaStatus.ATIVO);
+    }
+
+    @Test
+    void grantAdjustmentCreditsReactivatesPendentePagamento() {
+        when(balanceRepository.findByEmpresaIdForUpdate("t1")).thenReturn(Optional.of(balance(0)));
+        EmpresaEntity empresa = empresa(CommercialPlanType.AVULSO, EmpresaStatus.PENDENTE_PAGAMENTO);
+        when(empresaRepository.findById("t1")).thenReturn(Optional.of(empresa));
+
+        service.grantAdjustmentCredits("t1", 3, "liberação");
+
+        assertThat(empresa.getStatus()).isEqualTo(EmpresaStatus.ATIVO);
+    }
+
+    @Test
+    void grantAdjustmentCreditsDoesNotOverrideSuspensoOrCancelado() {
+        when(balanceRepository.findByEmpresaIdForUpdate("t1")).thenReturn(Optional.of(balance(0)));
+        EmpresaEntity empresa = empresa(CommercialPlanType.AVULSO, EmpresaStatus.SUSPENSO);
+        when(empresaRepository.findById("t1")).thenReturn(Optional.of(empresa));
+
+        service.grantAdjustmentCredits("t1", 5, "cortesia");
+
+        // Empresa suspensa administrativamente não volta a ATIVO só porque ganhou crédito.
+        assertThat(empresa.getStatus()).isEqualTo(EmpresaStatus.SUSPENSO);
+    }
+
+    @Test
+    void grantAdjustmentCreditsRejectsNonPositiveAmount() {
+        assertThatThrownBy(() -> service.grantAdjustmentCredits("t1", 0, "erro"))
+                .isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> service.grantAdjustmentCredits("t1", -1, "erro"))
+                .isInstanceOf(IllegalArgumentException.class);
     }
 }
