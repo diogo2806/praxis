@@ -48,7 +48,6 @@ Principais dominios:
 - `gupy`: contrato externo `/test/**`, catalogo, tentativa e resultado.
 - `recrutei`: segundo provedor ATS integrado, com contrato externo proprio.
 - `shared.integration`: Central de Integracoes (`/api/v1/integrations`) que unifica Gupy, Recrutei e API propria, incluindo webhook e token de API publica.
-- `marketplace`: marketplace de profissionais (anuncios, pedidos, mensagens, avaliacoes) com pagamentos Mercado Pago e moderacao pelo admin.
 - `billing`: cobranca Mercado Pago (Parte B). AVULSO por credito pre-pago (saldo + ledger append-only), PROFISSIONAL por assinatura recorrente, ENTERPRISE por contrato manual. A leitura do plano/uso fica em `/api/v1/billing`; a criacao de cobrancas e sincronizacao com o Mercado Pago fica no painel ADMIN. Webhook publico (`POST /api/webhooks/mercado-pago`) com validacao de assinatura `x-signature`, idempotencia e consulta a API antes de aplicar mudanca financeira. Credenciais (`MP_ACCESS_TOKEN`, `MP_PUBLIC_KEY`, `MP_WEBHOOK_SECRET`) ficam apenas no backend, via variaveis de ambiente.
 - `admin`: painel administrativo da plataforma (perfil `ADMIN`) para cadastrar e governar clientes (empresas), acompanhar uso, suspender, reativar e cancelar, com auditoria append-only. Cliente = `EmpresaEntity`; nao existe `CustomerEntity`.
 - `team`: gestao dos usuarios da propria empresa (convite, bloqueio, reenvio de convite).
@@ -61,7 +60,6 @@ Principais dominios:
 - `media`: upload de imagem/audio para nos e alternativas.
 - `privacy`: informacoes de conformidade LGPD.
 - `shared.notification`: alertas internos, inclusive DLQ.
-- `marketplace`: psicometria, anuncios, orders/payouts e Mercado Pago Connect. Desativado por padrao via `praxis.marketplace.enabled=false` (env `PRAXIS_MARKETPLACE_ENABLED`).
 
 ### Frontend
 
@@ -77,7 +75,6 @@ Navegacao principal da empresa (menu lateral em `frontend/src/components/app-she
 - `/monitoramento`: acompanha tentativas e entregas.
 - `/jornadas`: jornadas de avaliacao que encadeiam varias avaliacoes.
 - `/talent-match`: compara candidatos contra benchmark da versao.
-- `/marketplace`: marketplace de profissionais.
 - `/billing`: plano, uso e historico de cobranca.
 - `/compliance`: analise operacional, defensabilidade e conformidade LGPD.
 - `/competencias`: catalogos configuraveis da empresa.
@@ -177,8 +174,7 @@ Versao publicada fica imutavel; edicoes futuras usam clone para novo rascunho. A
 | Conta | `GET /api/v1/account/me`, `POST /api/v1/account/password` |
 | Perfil da empresa | `GET /api/v1/company-profile` |
 | Termos | `GET/POST /api/v1/terms/responsibility`, `GET/POST /api/v1/terms/health-use` |
-| Marketplace | `/api/v1/marketplace/{listings,professionals,orders,messages,reviews}` |
-| Admin plataforma | `/api/admin/{dashboard,empresas,audit}` e `/api/v1/admin/marketplace` (perfil `ADMIN`) |
+| Admin plataforma | `/api/admin/{dashboard,empresas,audit}` (perfil `ADMIN`) |
 
 ### Publicos e integracao
 
@@ -228,7 +224,6 @@ Observacao Gupy: o backend retorna `test_url` ja apontando para a pagina do cand
 | `PRAXIS_PUBLIC_BASE_URL` | Base publica usada em links e resultados. |
 | `PRAXIS_CANDIDATE_PAGE_BASE_URL` | Base publica do fluxo do candidato. |
 | `PRAXIS_PRIVACY_RETENTION_DAYS` | Retencao LGPD. |
-| `PRAXIS_MARKETPLACE_ENABLED` | Liga/desliga o modulo de marketplace. Padrao `false`; desligado bloqueia as rotas `/api/v1/marketplace/**` e `/api/v1/admin/marketplace/**`, o scheduler de repasse e o webhook de marketplace. |
 | `OBJECT_STORAGE_*` | Configuracao opcional de armazenamento de midia. |
 
 ### Frontend

@@ -10,8 +10,6 @@ import org.springframework.context.annotation.Bean;
 
 import org.springframework.context.annotation.Configuration;
 
-import org.springframework.http.HttpMethod;
-
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
@@ -28,31 +26,20 @@ import org.springframework.security.web.SecurityFilterChain;
 
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
-import org.springframework.security.web.util.matcher.RegexRequestMatcher;
-
 
 @Configuration
 public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtFilter;
     private final boolean securityEnabled;
-    private final boolean marketplaceEnabled;
 
     public SecurityConfig(
             JwtAuthenticationFilter jwtFilter,
-            @Value("${praxis.security.enabled:true}") boolean securityEnabled,
-            @Value("${praxis.marketplace.enabled:false}") boolean marketplaceEnabled
+            @Value("${praxis.security.enabled:true}") boolean securityEnabled
     ) {
         this.jwtFilter = jwtFilter;
         this.securityEnabled = securityEnabled;
-        this.marketplaceEnabled = marketplaceEnabled;
     }
-
-    /** Caminhos do marketplace bloqueados enquanto a feature esta desativada. */
-    private static final String[] MARKETPLACE_PATHS = {
-            "/api/v1/marketplace/**",
-            "/api/v1/admin/marketplace/**"
-    };
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
@@ -60,12 +47,7 @@ public class SecurityConfig {
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
 
         if (!securityEnabled) {
-            http.authorizeHttpRequests(auth -> {
-                if (!marketplaceEnabled) {
-                    auth.requestMatchers(MARKETPLACE_PATHS).denyAll();
-                }
-                auth.anyRequest().permitAll();
-            });
+            http.authorizeHttpRequests(auth -> auth.anyRequest().permitAll());
             http.headers(headers -> headers
                     .frameOptions(frame -> frame.deny())
                     .contentTypeOptions(contentType -> {})
@@ -73,11 +55,7 @@ public class SecurityConfig {
             return http.build();
         }
 
-        http.authorizeHttpRequests(auth -> {
-                if (!marketplaceEnabled) {
-                    auth.requestMatchers(MARKETPLACE_PATHS).denyAll();
-                }
-                auth
+        http.authorizeHttpRequests(auth -> auth
                         .requestMatchers(
                                 "/api/v1/auth/login",
                                 "/candidate/**",
@@ -96,23 +74,11 @@ public class SecurityConfig {
                                 "/api/v1/auth/password/**",
                                 // Webhook do Mercado Pago (Parte B): público, validado por
                                 // assinatura no próprio handler, sem JWT de usuário.
-                                "/api/webhooks/mercado-pago/**",
-                                "/api/v1/marketplace/professionals/register",
-                                "/api/v1/marketplace/professionals/me/mercadopago/callback"
+                                "/api/webhooks/mercado-pago/**"
                         ).permitAll()
-                        .requestMatchers(new RegexRequestMatcher("/api/v1/marketplace/professionals/[0-9]+", "GET"))
-                        .permitAll()
-                        .requestMatchers(
-                                HttpMethod.GET,
-                                "/api/v1/marketplace/listings",
-                                "/api/v1/marketplace/listings/**",
-                                "/api/v1/marketplace/reviews"
-                        )
-                        .permitAll()
                         // Painel administrativo da plataforma: exige operador ADMIN e não
                         // depende do empresa do usuário logado (empresa alvo vem na rota).
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
-                        .requestMatchers("/api/v1/admin/marketplace/**").hasRole("ADMIN")
                         .requestMatchers("/api/v1/account/**").hasAnyRole("EMPRESA", "ADMIN")
                         .requestMatchers("/api/v1/company-profile/**").hasRole("EMPRESA")
                         .requestMatchers("/api/v1/dashboard/**").hasRole("EMPRESA")
@@ -130,28 +96,8 @@ public class SecurityConfig {
                         .requestMatchers("/api/v1/candidate-links", "/api/v1/candidate-links/**").hasRole("EMPRESA")
                         .requestMatchers("/api/v1/billing", "/api/v1/billing/**").hasRole("EMPRESA")
                         .requestMatchers("/api/v1/team", "/api/v1/team/**").hasRole("EMPRESA")
-                        .requestMatchers(
-                                "/api/v1/marketplace/professionals/me",
-                                "/api/v1/marketplace/professionals/me/**"
-                        ).hasRole("PROFESSIONAL")
-                        .requestMatchers(
-                                HttpMethod.POST,
-                                "/api/v1/marketplace/listings",
-                                "/api/v1/marketplace/listings/*/submit"
-                        ).hasRole("PROFESSIONAL")
-                        .requestMatchers(HttpMethod.PUT, "/api/v1/marketplace/listings/*")
-                        .hasRole("PROFESSIONAL")
-                        .requestMatchers("/api/v1/marketplace/orders", "/api/v1/marketplace/orders/**")
-                        .hasRole("EMPRESA")
-                        .requestMatchers(HttpMethod.POST, "/api/v1/marketplace/reviews")
-                        .hasRole("EMPRESA")
-                        .requestMatchers("/api/v1/marketplace/messages/tenant")
-                        .hasRole("EMPRESA")
-                        .requestMatchers("/api/v1/marketplace/messages/professional")
-                        .hasRole("PROFESSIONAL")
-                        .requestMatchers("/api/v1/marketplace/**").authenticated()
-                        .anyRequest().authenticated();
-                })
+                        .anyRequest().authenticated()
+                )
                 .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
         http.headers(headers -> headers
                 .frameOptions(frame -> frame.deny())

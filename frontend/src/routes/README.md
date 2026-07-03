@@ -162,7 +162,6 @@ src/routes/
 ├── monitoramento.tsx                    # Monitoramento operacional
 ├── jornadas.tsx / jornada.$attemptId    # Jornadas de avaliação
 ├── talent-match.tsx                     # Comparação de candidatos
-├── marketplace.tsx (+ filhos)           # Marketplace de profissionais
 ├── billing.tsx                          # Plano, uso e cobrança
 ├── compliance.tsx                       # Defensabilidade e LGPD (substitui /defensabilidade e /lgpd)
 ├── competencias.tsx                     # Catálogos da empresa

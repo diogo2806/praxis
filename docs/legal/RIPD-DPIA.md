@@ -56,8 +56,7 @@ risco). Por isso, um RIPD é a peça de conformidade adequada.
 
 - Isolamento multi-tenant por empresa (não usar `PRAXIS_SECURITY_ENABLED=false`
   em produção).
-- Segredos por variável de ambiente; tokens de integração em hash SHA-256;
-  token do Mercado Pago criptografado (`MarketplaceTokenCryptoService`).
+- Segredos por variável de ambiente; tokens de integração em hash SHA-256.
 - Anonimização automática por `PrivacyRetentionService`/`PrivacyRetentionScheduler`,
   registrada como evento `attemptAnonymized`.
 

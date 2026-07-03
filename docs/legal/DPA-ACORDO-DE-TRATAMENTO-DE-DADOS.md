@@ -48,7 +48,7 @@ comunica alterações com antecedência razoável.
 | Suboperador | Função | Local do tratamento |
 | --- | --- | --- |
 | Provedor de hospedagem/infra | Execução da aplicação e banco de dados | preencher |
-| Mercado Pago | Pagamentos (billing e marketplace) | Brasil |
+| Mercado Pago | Pagamentos (billing) | Brasil |
 | Gupy / Recrutei | ATS integrados que criam tentativas e recebem resultados | preencher |
 | Armazenamento de objetos (`OBJECT_STORAGE_*`) | Mídia de avaliações, quando configurado | preencher |
 

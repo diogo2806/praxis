@@ -47,9 +47,9 @@ A plataforma, o código e a marca são de titularidade da iForce (ver `LICENSE`)
 O conteúdo das avaliações cadastradas pelo cliente permanece de sua titularidade,
 concedendo-se à iForce licença para operá-lo na prestação do serviço.
 
-## 7. Pagamentos (billing e marketplace)
+## 7. Pagamentos (billing)
 
-Planos, cobrança e marketplace seguem as condições comerciais aplicáveis e a
+Planos e cobrança seguem as condições comerciais aplicáveis e a
 legislação consumerista quando cabível. Pagamentos são processados pelo Mercado
 Pago. Condições de reembolso/estorno e disputas serão definidas em política
 específica.

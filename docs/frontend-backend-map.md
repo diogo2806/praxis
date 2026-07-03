@@ -102,14 +102,12 @@ O menu principal da empresa e definido em `frontend/src/components/app-shell.tsx
 | `/assessment-journeys/` e `/assessment-journeys/new` | `frontend/src/routes/assessment-journeys/*.tsx` | Autoria de jornada (encadeia avaliacoes publicadas). |
 | `/jornada/$attemptId` | `frontend/src/routes/jornada.$attemptId.tsx` | Execucao publica da jornada por `/candidate/journey-attempts/{attemptId}`. |
 
-### Marketplace, plano e admin
+### Plano e admin
 
 | Rota | Arquivo | Integracao atual |
 | --- | --- | --- |
-| `/marketplace` e filhos | `frontend/src/routes/marketplace*.tsx` | Vitrine de profissionais, detalhe, checkout e pedidos por `/api/v1/marketplace/**`. |
-| `/profissional` e filhos | `frontend/src/routes/profissional.*.tsx` | Area do profissional (cadastro, perfil, anuncios, mensagens, financeiro Mercado Pago Connect). |
 | `/billing` | `frontend/src/routes/billing.tsx` | Plano, uso e historico por `GET /api/v1/billing` e `GET /api/v1/billing/events`. |
-| `/admin` e filhos | `frontend/src/routes/admin*.tsx` | Painel ADMIN da plataforma por `/api/admin/**` e `/api/v1/admin/marketplace`. |
+| `/admin` e filhos | `frontend/src/routes/admin*.tsx` | Painel ADMIN da plataforma por `/api/admin/**`. |
 
 ### Fluxo publico do candidato
 
@@ -138,7 +136,6 @@ O menu principal da empresa e definido em `frontend/src/components/app-shell.tsx
 | Notificacoes | `/api/v1/notifications` | API para alertas internos, inclusive DLQ. O frontend ainda nao possui tela dedicada. |
 | Equipe/Conta | `/api/v1/team`, `/api/v1/account`, `/api/v1/company-profile`, `/api/v1/terms` | Usuarios da empresa, conta do usuario, perfil cadastral e aceite de termos. |
 | Plano/cobranca | `/api/v1/billing` | Leitura de plano, uso e eventos; criacao de cobranca fica no painel ADMIN. |
-| Marketplace | `/api/v1/marketplace/**` | Anuncios, profissionais, pedidos, mensagens e avaliacoes; moderacao em `/api/v1/admin/marketplace`. |
 | Admin plataforma | `/api/admin/**` | Dashboard, clientes (empresas), usuarios e auditoria da plataforma (perfil `ADMIN`). |
 | Integracao Gupy | `/test`, `/test/candidate`, `/test/result/{resultId}` | Contrato externo consumido pela Gupy. |
 | Webhook Mercado Pago | `/api/webhooks/mercado-pago` | Notificacoes de pagamento/assinatura com validacao de assinatura. |
@@ -149,7 +146,7 @@ O menu principal da empresa e definido em `frontend/src/components/app-shell.tsx
 - `PRAXIS_SECURITY_ENABLED=true`: exige JWT nas rotas internas e valida role `EMPRESA`.
 - `/candidate/**`, `/candidato/**`, `/test/**`, `/api/v1/auth/login`, `/api/webhooks/**`, healthcheck e docs ficam permitidos pela configuracao Spring Security.
 - A integracao Gupy/Recrutei valida Bearer token em `IntegrationAuthService` calculando o SHA-256 Base64URL do token e comparando com a tabela `integration_tokens` (por provider). A Recrutei e a API propria seguem o mesmo modelo de token por provedor.
-- O painel `/api/admin/**` e o marketplace `/api/v1/admin/marketplace` exigem role `ADMIN`.
+- O painel `/api/admin/**` exige role `ADMIN`.
 
 ## Estados e entregas
 

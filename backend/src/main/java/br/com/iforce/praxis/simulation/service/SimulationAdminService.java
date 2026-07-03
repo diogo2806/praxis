@@ -732,50 +732,6 @@ public class SimulationAdminService {
         );
     }
 
-    @Transactional
-    public CloneSimulationVersionResponse cloneVersionToTenant(Long sourceVersionId, String destinationEmpresaId) {
-        SimulationVersionEntity sourceVersionEntity = simulationVersionRepository.findById(sourceVersionId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Versao de origem nao encontrada."));
-        requireStatus(
-                sourceVersionEntity,
-                "Somente versoes publicadas podem ser clonadas para outro tenant.",
-                SimulationVersionStatus.PUBLISHED
-        );
-
-        SimulationEntity sourceSimulationEntity = sourceVersionEntity.getSimulation();
-        SimulationEntity destinationSimulationEntity = new SimulationEntity();
-        destinationSimulationEntity.setId(generateSimulationId(sourceSimulationEntity.getName()));
-        destinationSimulationEntity.setEmpresaId(destinationEmpresaId);
-        destinationSimulationEntity.setName(sourceSimulationEntity.getName());
-        destinationSimulationEntity.setDescription(sourceSimulationEntity.getDescription());
-        destinationSimulationEntity.setCriticalSituation(sourceSimulationEntity.getCriticalSituation());
-        destinationSimulationEntity.setResultUse(sourceSimulationEntity.getResultUse());
-        destinationSimulationEntity.setCreatedAt(Instant.now());
-
-        SimulationVersionEntity clonedVersionEntity = cloneVersion(sourceVersionEntity, 1);
-        clonedVersionEntity.setSimulation(destinationSimulationEntity);
-        destinationSimulationEntity.getVersions().add(clonedVersionEntity);
-
-        SimulationEntity savedSimulationEntity = simulationRepository.save(destinationSimulationEntity);
-        auditEventService.appendSimulationVersionEvent(
-                destinationEmpresaId,
-                savedSimulationEntity.getId(),
-                clonedVersionEntity.getVersionNumber(),
-                AuditEventType.SIMULATION_VERSION_CLONED,
-                "Versao de marketplace clonada para tenant comprador.",
-                "{\"sourceVersionId\":" + sourceVersionEntity.getId()
-                        + ",\"sourceSimulationId\":\"" + escapeJson(sourceSimulationEntity.getId()) + "\"}"
-        );
-
-        return new CloneSimulationVersionResponse(
-                savedSimulationEntity.getId(),
-                sourceVersionEntity.getVersionNumber(),
-                clonedVersionEntity.getVersionNumber(),
-                clonedVersionEntity.getStatus()
-        );
-    }
-
-
     /**
      * Publica uma versão da prova, tornando-a disponível para uso real.
      *

@@ -3,9 +3,6 @@ package br.com.iforce.praxis.billing.service;
 import br.com.iforce.praxis.billing.persistence.entity.MpWebhookReceiptEntity;
 
 import br.com.iforce.praxis.billing.persistence.repository.MpWebhookReceiptRepository;
-import br.com.iforce.praxis.marketplace.service.MarketplaceOrderService;
-
-import com.fasterxml.jackson.databind.ObjectMapper;
 
 import org.junit.jupiter.api.BeforeEach;
 
@@ -41,21 +38,15 @@ class MercadoPagoWebhookServiceTest {
     @Mock private MercadoPagoSignatureValidator signatureValidator;
     @Mock private MpWebhookReceiptRepository receiptRepository;
     @Mock private BillingService billingService;
-    @Mock private MercadoPagoClient mercadoPagoClient;
-    @Mock private MarketplaceOrderService marketplaceOrderService;
 
     private MercadoPagoWebhookService service;
-    private final ObjectMapper objectMapper = new ObjectMapper();
 
     @BeforeEach
     void setUp() {
         service = new MercadoPagoWebhookService(
                 signatureValidator,
                 receiptRepository,
-                billingService,
-                mercadoPagoClient,
-                marketplaceOrderService,
-                true // marketplace habilitado para exercitar o roteamento; o caso desativado tem teste próprio
+                billingService
         );
         lenient().when(receiptRepository.saveAndFlush(any(MpWebhookReceiptEntity.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
@@ -75,11 +66,9 @@ class MercadoPagoWebhookServiceTest {
     void dispatchesPaymentOnce() {
         when(signatureValidator.isValid(any(), any(), any())).thenReturn(true);
         when(receiptRepository.existsByNotificationId("payment:123")).thenReturn(false);
-        when(mercadoPagoClient.getPayment("123")).thenReturn(objectMapper.createObjectNode());
 
         service.handle("payment", "123", "sig", "req", "{}");
 
-        verify(mercadoPagoClient).getPayment("123");
         verify(billingService).processPaymentNotification("123", "req");
     }
 
@@ -102,43 +91,5 @@ class MercadoPagoWebhookServiceTest {
         service.handle("subscription_preapproval", "pa1", "sig", "req", "{}");
 
         verify(billingService).processPreapprovalNotification("pa1", "req");
-    }
-
-    @Test
-    void routesMarketplacePaymentToMarketplaceOrderService() throws Exception {
-        when(signatureValidator.isValid(any(), any(), any())).thenReturn(true);
-        when(receiptRepository.existsByNotificationId("payment:mp1")).thenReturn(false);
-        var payment = objectMapper.readTree(
-                "{\"metadata\":{\"order_type\":\"marketplace\"},\"external_reference\":\"marketplace:10\"}"
-        );
-        when(mercadoPagoClient.getPayment("mp1")).thenReturn(payment);
-
-        service.handle("payment", "mp1", "sig", "req", "{}");
-
-        verify(marketplaceOrderService).processApprovedPayment(payment, "req");
-        verify(billingService, never()).processPaymentNotification(anyString(), anyString());
-    }
-
-    @Test
-    void ignoresMarketplacePaymentWhenMarketplaceDisabled() throws Exception {
-        MercadoPagoWebhookService disabledService = new MercadoPagoWebhookService(
-                signatureValidator,
-                receiptRepository,
-                billingService,
-                mercadoPagoClient,
-                marketplaceOrderService,
-                false // marketplace desativado (padrão de produção): pagamentos de marketplace são ignorados
-        );
-        when(signatureValidator.isValid(any(), any(), any())).thenReturn(true);
-        when(receiptRepository.existsByNotificationId("payment:mp2")).thenReturn(false);
-        var payment = objectMapper.readTree(
-                "{\"metadata\":{\"order_type\":\"marketplace\"},\"external_reference\":\"marketplace:11\"}"
-        );
-        when(mercadoPagoClient.getPayment("mp2")).thenReturn(payment);
-
-        disabledService.handle("payment", "mp2", "sig", "req", "{}");
-
-        verify(marketplaceOrderService, never()).processApprovedPayment(any(), anyString());
-        verify(billingService, never()).processPaymentNotification(anyString(), anyString());
     }
 }

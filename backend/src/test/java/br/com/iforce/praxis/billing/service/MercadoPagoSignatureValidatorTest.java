@@ -25,14 +25,9 @@ class MercadoPagoSignatureValidatorTest {
         return new MercadoPagoProperties(
                 true,
                 null,
-                null,
                 "token",
                 "pub",
                 secret,
-                null,
-                null,
-                null,
-                null,
                 7,
                 null,
                 null
@@ -71,14 +66,9 @@ class MercadoPagoSignatureValidatorTest {
         var validator = new MercadoPagoSignatureValidator(new MercadoPagoProperties(
                 false,
                 null,
-                null,
                 "token",
                 "pub",
                 "",
-                null,
-                null,
-                null,
-                null,
                 7,
                 null,
                 null
