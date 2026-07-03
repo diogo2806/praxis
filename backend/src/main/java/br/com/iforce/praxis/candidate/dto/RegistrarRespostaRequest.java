@@ -11,7 +11,9 @@ import java.time.Instant;
 @Schema(description = "Resposta escolhida pelo candidato na etapa atual.")
 public record RegistrarRespostaRequest(
         @JsonAlias("nodeId")
-        @Schema(example = "turno-1", description = "Campo opcional para compatibilidade com clientes antigos.")
+        @Schema(example = "turno-1", description = "Etapa da resposta (aceita o alias nodeId). "
+                + "Obrigatória para garantir idempotência: informe etapaId/nodeId ou etapaNumero. "
+                + "Sem identificação de etapa, um reenvio poderia ser aplicado à etapa seguinte.")
         String etapaId,
 
         @JsonAlias("optionId")

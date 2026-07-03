@@ -7,7 +7,7 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 @Component
-@ConditionalOnProperty(name = "praxis.marketplace-payout-scheduler-enabled", havingValue = "true", matchIfMissing = true)
+@ConditionalOnProperty(name = "praxis.marketplace.enabled", havingValue = "true", matchIfMissing = false)
 /**
  * Agenda a liberação periódica dos repasses que já cumpriram o prazo de retenção.
  *

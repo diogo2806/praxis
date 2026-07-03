@@ -89,4 +89,15 @@ public interface OutboxEventRepository extends JpaRepository<OutboxEventEntity, 
     );
 
     Optional<OutboxEventEntity> findByIdAndEmpresaId(Long id, String empresaId);
+
+    /**
+     * Variante com trava de linha ({@code FOR UPDATE}) para o reprocessamento manual, de modo que
+     * ele não corra com o claim do poller sobre o mesmo evento (evita dupla entrega).
+     */
+    @Query(value = """
+        SELECT * FROM outbox_events
+        WHERE id = :id AND empresa_id = :empresaId
+        FOR UPDATE
+        """, nativeQuery = true)
+    Optional<OutboxEventEntity> findByIdAndEmpresaIdForUpdate(@Param("id") Long id, @Param("empresaId") String empresaId);
 }

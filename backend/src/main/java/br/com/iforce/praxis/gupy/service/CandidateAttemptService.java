@@ -208,8 +208,11 @@ public class CandidateAttemptService {
                 .orElseGet(() -> createAndAuditAttemptSafely(empresaId, idempotencyKey, request, publishedSimulation));
         recordIncomingActivity(empresaContext);
 
+        // test_url deve ser a PAGINA do candidato (browser), nao a URL da API JSON. A Gupy repassa
+        // este valor direto ao candidato; devolver /candidate/attempts/{token} (RestController JSON)
+        // mostraria JSON cru e ainda dispararia o inicio da tentativa ao ser aberto no navegador.
         return new CreateCandidateResponse(
-                candidateApiUrl(candidateAttemptEntity),
+                candidatePageUrl(candidateAttemptEntity),
                 candidateAttemptEntity.getResultId()
         );
     }
@@ -500,6 +503,14 @@ public class CandidateAttemptService {
     @Transactional(noRollbackFor = ResponseStatusException.class)
     public RegistrarRespostaResponse submitAnswer(String attemptToken, RegistrarRespostaRequest request) {
         Instant receivedAt = Instant.now();
+        // Idempotência por etapa: a resposta precisa identificar explicitamente a etapa
+        // (etapaId/nodeId ou etapaNumero). Sem isso, um reenvio (rede/duplo clique) cairia em
+        // findCurrentNode — que, após a 1ª resposta ter avançado o fluxo, aponta para a etapa
+        // SEGUINTE — e a resposta seria aplicada à etapa errada em vez de tratada como duplicata.
+        if ((request.etapaId() == null || request.etapaId().isBlank()) && request.etapaNumero() == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "Informe a etapa da resposta (etapaId/nodeId ou etapaNumero).");
+        }
         String empresaId = EmpresaSecurity.requiredEmpresa();
         String attemptId = resolveAttemptId(attemptToken);
         CandidateAttemptEntity candidateAttemptEntity = candidateAttemptRepository
@@ -1181,10 +1192,6 @@ public class CandidateAttemptService {
         return simulationCatalogService.findNode(simulation, nodeId)
                 .map(ScenarioNode::isFinal)
                 .orElse(false);
-    }
-
-    private String candidateApiUrl(CandidateAttemptEntity candidateAttemptEntity) {
-        return praxisProperties.publicBaseUrl() + "/candidate/attempts/" + publicCandidateToken(candidateAttemptEntity);
     }
 
     private String candidatePageUrl(CandidateAttemptEntity candidateAttemptEntity) {

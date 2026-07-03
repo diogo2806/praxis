@@ -801,6 +801,7 @@ function isAdminPath(path: string) {
     path.startsWith("/api/v1/assessment-journey-attempts") ||
     path.startsWith("/api/v1/candidate-links") ||
     path.startsWith("/api/v1/billing") ||
+    path.startsWith("/api/v1/team") ||
     path.startsWith("/api/v1/marketplace")
   );
 }

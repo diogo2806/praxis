@@ -157,13 +157,25 @@ public class ResultScoringService {
                 .mapToDouble(competency -> simulation.competencyWeights().getOrDefault(competency, 0.0))
                 .sum();
 
+        int coveredCompetencyCount = normalizedByCompetency.size();
         double weighted = 0.0;
         List<ResultItem> resultItems = new ArrayList<>();
         for (Map.Entry<String, Double> entry : normalizedByCompetency.entrySet()) {
             String competency = entry.getKey();
-            double renormalizedWeight = weightSum == 0
-                    ? 0.0
-                    : simulation.competencyWeights().getOrDefault(competency, 0.0) / weightSum;
+            double baseWeight = simulation.competencyWeights().getOrDefault(competency, 0.0);
+            // Renormaliza o peso sobre as competências efetivamente cobertas por este caminho.
+            // Caso degenerado: quando TODAS as competências cobertas têm peso 0 (weightSum == 0),
+            // o comportamento anterior zerava o score — um candidato perfeito tirava 0. Aqui
+            // distribuímos peso uniforme entre as competências cobertas, mantendo o score
+            // determinístico e proporcional ao desempenho em vez de colapsá-lo.
+            double renormalizedWeight;
+            if (weightSum > 0) {
+                renormalizedWeight = baseWeight / weightSum;
+            } else if (coveredCompetencyCount > 0) {
+                renormalizedWeight = 1.0 / coveredCompetencyCount;
+            } else {
+                renormalizedWeight = 0.0;
+            }
             weighted += entry.getValue() * renormalizedWeight;
             resultItems.add(new ResultItem(
                     competency,
