@@ -10,6 +10,8 @@ import br.com.iforce.praxis.auth.persistence.entity.EmpresaEntity;
 
 import br.com.iforce.praxis.auth.persistence.repository.EmpresaRepository;
 
+import br.com.iforce.praxis.billing.service.CreditService;
+
 import br.com.iforce.praxis.gupy.model.AttemptStatus;
 
 import br.com.iforce.praxis.gupy.persistence.repository.CandidateAttemptRepository;
@@ -44,17 +46,20 @@ public class AdminDashboardService {
     private final EmpresaRepository empresaRepository;
     private final CandidateAttemptRepository candidateAttemptRepository;
     private final AdminUsageService adminUsageService;
+    private final CreditService creditService;
     private final int usagePeriodDays;
 
     public AdminDashboardService(
             EmpresaRepository empresaRepository,
             CandidateAttemptRepository candidateAttemptRepository,
             AdminUsageService adminUsageService,
+            CreditService creditService,
             @Value("${praxis.admin.usage-period-days:30}") int usagePeriodDays
     ) {
         this.empresaRepository = empresaRepository;
         this.candidateAttemptRepository = candidateAttemptRepository;
         this.adminUsageService = adminUsageService;
+        this.creditService = creditService;
         this.usagePeriodDays = usagePeriodDays;
     }
 
@@ -115,6 +120,7 @@ public class AdminDashboardService {
                 empresa.getCommercialPlanType(),
                 empresa.getStatus(),
                 adminUsageService.countCompletedInPeriod(empresa.getId(), start, end),
+                creditService.getBalance(empresa.getId()),
                 empresa.getCreatedAt()
         );
     }

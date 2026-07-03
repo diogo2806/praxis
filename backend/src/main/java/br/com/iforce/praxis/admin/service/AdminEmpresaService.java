@@ -30,6 +30,8 @@ import br.com.iforce.praxis.audit.service.AuditEventService;
 
 import br.com.iforce.praxis.audit.service.AuditMetadata;
 
+import br.com.iforce.praxis.billing.service.CreditService;
+
 import br.com.iforce.praxis.auth.persistence.entity.EmpresaEntity;
 
 import br.com.iforce.praxis.auth.persistence.entity.UserEntity;
@@ -90,6 +92,7 @@ public class AdminEmpresaService {
     private final AuditEventService auditEventService;
     private final AuditMetadata auditMetadata;
     private final AdminUsageService adminUsageService;
+    private final CreditService creditService;
     private final String publicBaseUrl;
     private final int inviteTtlHours;
     private final int usagePeriodDays;
@@ -101,6 +104,7 @@ public class AdminEmpresaService {
             AuditEventService auditEventService,
             AuditMetadata auditMetadata,
             AdminUsageService adminUsageService,
+            CreditService creditService,
             @Value("${praxis.public-base-url:http://localhost:8080}") String publicBaseUrl,
             @Value("${praxis.admin.invite-ttl-hours:168}") int inviteTtlHours,
             @Value("${praxis.admin.usage-period-days:30}") int usagePeriodDays
@@ -111,6 +115,7 @@ public class AdminEmpresaService {
         this.auditEventService = auditEventService;
         this.auditMetadata = auditMetadata;
         this.adminUsageService = adminUsageService;
+        this.creditService = creditService;
         this.publicBaseUrl = publicBaseUrl;
         this.inviteTtlHours = inviteTtlHours;
         this.usagePeriodDays = usagePeriodDays;
@@ -320,6 +325,28 @@ public class AdminEmpresaService {
         return toDetail(empresa, resolvePeriod(null, null));
     }
 
+    /**
+     * Concede créditos de cortesia a um cliente para liberar testes. Soma ao saldo (ledger
+     * append-only com motivo ADJUSTMENT), reativa o cliente se estava sem crédito e registra a
+     * ação na trilha de auditoria. Não altera o plano comercial.
+     */
+    @Transactional
+    public EmpresaAdminDetailResponse grantCredits(String actorUserId, String empresaId, int amount, String note) {
+        EmpresaEntity empresa = requireClient(empresaId);
+        String trimmedNote = blankToNull(note);
+        String ledgerNote = "Crédito de cortesia concedido pelo ADMIN"
+                + (trimmedNote == null ? "." : ": " + trimmedNote);
+        int newBalance = creditService.grantAdjustmentCredits(empresa.getId(), amount, ledgerNote);
+
+        auditEventService.auditAdminAction(
+                actorUserId, empresa.getId(), AuditEventType.ADMIN_EMPRESA_CREDITS_GRANTED,
+                "Concedidos " + amount + " credito(s) de cortesia. Saldo atual: " + newBalance + ".",
+                auditMetadata.of("amount", String.valueOf(amount), "newBalance", String.valueOf(newBalance),
+                        "note", trimmedNote == null ? "" : trimmedNote));
+
+        return toDetail(empresa, resolvePeriod(null, null));
+    }
+
     // ------------------------------------------------------------------
     // Usuários do cliente
     // ------------------------------------------------------------------
@@ -505,6 +532,7 @@ public class AdminEmpresaService {
                 empresa.getCommercialPlanType(),
                 empresa.getStatus(),
                 adminUsageService.countCompletedInPeriod(empresa.getId(), period.start(), period.end()),
+                creditService.getBalance(empresa.getId()),
                 empresa.getCreatedAt()
         );
     }
@@ -528,6 +556,7 @@ public class AdminEmpresaService {
                 empresa.getCommercialCondition(),
                 empresa.getStatus(),
                 adminUsageService.countCompletedInPeriod(empresa.getId(), period.start(), period.end()),
+                creditService.getBalance(empresa.getId()),
                 users,
                 empresa.getCreatedAt(),
                 empresa.getUpdatedAt()
