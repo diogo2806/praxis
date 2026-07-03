@@ -43,27 +43,27 @@ const getNav = (t: TranslationMap) =>
   [
     {
       to: "/dashboard",
-      label: "Dashboard",
+      label: t.common.dashboard,
       icon: Home,
-      desc: "Centro da operação",
+      desc: t.common.operationCenter,
     },
     {
       to: "/avaliacoes",
-      label: "Avaliações",
+      label: t.common.situationalAssessment,
       icon: ListChecks,
-      desc: "Ver e editar avaliações",
+      desc: t.common.seeAndEdit,
     },
     {
       to: "/results",
-      label: "Resultados",
+      label: t.common.results,
       icon: ClipboardList,
-      desc: "Resultados, competências e decisões humanas",
+      desc: t.common.resultsAndDecisions,
     },
     {
       to: "/enviar-link",
       label: t.common.sendLink,
       icon: Link2,
-      desc: "Compartilhar uma avaliação com participantes",
+      desc: t.common.sendLinkDesc,
     },
     {
       to: "/monitoramento",
@@ -73,9 +73,9 @@ const getNav = (t: TranslationMap) =>
     },
     {
       to: "/jornadas",
-      label: "Jornadas",
+      label: t.common.journeys,
       icon: Workflow,
-      desc: "Processos com múltiplas avaliações",
+      desc: t.common.journeysDesc,
     },
     {
       to: "/talent-match",
@@ -89,9 +89,9 @@ const getSecondary = (t: TranslationMap) =>
   [
     {
       to: "/billing",
-      label: "Plano",
+      label: t.common.plan,
       icon: CreditCard,
-      desc: "Plano, uso e cobrança",
+      desc: t.common.planDesc,
     },
     {
       to: "/compliance",
@@ -105,21 +105,21 @@ const getSettingsNav = (t: TranslationMap) =>
   [
     {
       to: "/configuracoes/perfil",
-      label: "Perfil da empresa",
+      label: t.common.profile,
       icon: Building2,
       desc: t.descriptions.settings,
     },
     {
       to: "/configuracoes/conta",
-      label: "Minha conta",
+      label: t.common.myAccount,
       icon: UserRound,
-      desc: "Dados de acesso",
+      desc: t.common.accountAccess,
     },
     {
       to: "/team",
-      label: "Minha equipe",
+      label: t.common.myTeam,
       icon: Users,
-      desc: "Gerencie os usuários da sua empresa",
+      desc: t.common.teamDesc,
     },
     {
       to: "/competencias",
@@ -129,9 +129,9 @@ const getSettingsNav = (t: TranslationMap) =>
     },
     {
       to: "/integrations",
-      label: "Integrações",
+      label: t.common.integrations,
       icon: KeyRound,
-      desc: "Conexões com Gupy, Recrutei e API própria",
+      desc: t.common.integrationsDesc,
     },
   ] as const;
 
@@ -182,7 +182,7 @@ function SidebarContent({
           </Link>
         </ShellLink>
         <div className="mt-3 text-[11px] uppercase leading-relaxed text-muted-foreground">
-          Avaliações situacionais com critérios rastreáveis
+          {t.common.tagline}
         </div>
       </div>
 
@@ -310,7 +310,7 @@ function SidebarContent({
       <div className="border-t border-border p-4">
         <div
           className="rounded-md border border-border bg-accent/40 p-3 text-xs text-muted-foreground"
-          title="A pontuação da participação é calculada por regras declaradas (critérios de pontuação, peso e cálculo). Nenhum modelo de IA decide ou julga o resultado."
+          title={t.common.scoringTooltip}
         >
           <div className="font-medium text-foreground">{t.common.rulesBasedScoring}</div>
           <p className="mt-1 text-muted-foreground">{t.common.noSubjectiveAnswers}</p>
@@ -330,23 +330,24 @@ function SidebarContent({
 }
 
 function pageLabel(pathname: string, t: TranslationMap) {
-  if (pathname === "/dashboard") return "Dashboard";
-  if (pathname === "/avaliacoes") return "Avaliações";
-  if (pathname.startsWith("/nova")) return "Criar avaliação";
-  if (pathname === "/results" || pathname.startsWith("/results/")) return "Resultados";
+  if (pathname === "/dashboard") return t.common.dashboard;
+  if (pathname === "/avaliacoes") return t.common.situationalAssessment;
+  if (pathname.startsWith("/nova")) return t.common.createAssessment;
+  if (pathname === "/results" || pathname.startsWith("/results/")) return t.common.results;
   if (pathname === "/enviar-link") return t.common.sendLink;
-  if (pathname === "/integrations" || pathname.startsWith("/integrations/")) return "Integrações";
+  if (pathname === "/integrations" || pathname.startsWith("/integrations/"))
+    return t.common.integrations;
   if (pathname === "/monitoramento") return t.common.monitoring;
-  if (pathname === "/jornadas") return "Jornadas";
+  if (pathname === "/jornadas") return t.common.journeys;
   if (pathname === "/talent-match") return t.common.talentMatch;
-  if (pathname === "/billing") return "Plano";
+  if (pathname === "/billing") return t.common.plan;
   if (pathname === "/compliance") return t.common.compliance;
   if (pathname === "/configuracoes" || pathname === "/configuracoes/perfil")
-    return "Perfil da empresa";
-  if (pathname === "/configuracoes/conta") return "Minha conta";
+    return t.common.profile;
+  if (pathname === "/configuracoes/conta") return t.common.myAccount;
   if (pathname === "/competencias") return t.common.competencies;
   if (pathname === "/comecar") return t.common.startHere;
-  if (pathname === "/team") return "Minha equipe";
+  if (pathname === "/team") return t.common.myTeam;
   if (pathname === "/candidato" || pathname.startsWith("/candidato/"))
     return t.common.candidateView;
   return "Práxis";
@@ -378,7 +379,7 @@ export function AppShell({ children }: { children: ReactNode }) {
               <button
                 type="button"
                 className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-border bg-card text-foreground hover:bg-accent lg:hidden"
-                aria-label="Abrir menu"
+                aria-label={t.common.openMenu}
               >
                 <Menu className="h-4 w-4" />
               </button>
@@ -388,8 +389,8 @@ export function AppShell({ children }: { children: ReactNode }) {
               className="flex w-[18rem] max-w-[85vw] flex-col overflow-hidden bg-background p-0 text-foreground sm:max-w-sm"
             >
               <SheetHeader className="sr-only">
-                <SheetTitle>Menu</SheetTitle>
-                <SheetDescription>Navegação principal do Práxis.</SheetDescription>
+                <SheetTitle>{t.common.menu}</SheetTitle>
+                <SheetDescription>{t.common.menuDescription}</SheetDescription>
               </SheetHeader>
               <SidebarContent
                 pathname={pathname}
@@ -411,7 +412,7 @@ export function AppShell({ children }: { children: ReactNode }) {
               className="inline-flex items-center gap-1.5 rounded-md border border-border bg-card px-2.5 py-1 text-muted-foreground hover:bg-accent"
             >
               <HelpCircle className="h-3.5 w-3.5" />
-              <span className="hidden sm:inline">Ajuda</span>
+              <span className="hidden sm:inline">{t.common.help}</span>
             </Link>
           </div>
         </header>

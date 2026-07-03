@@ -3,14 +3,12 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { KeyRound } from "lucide-react";
 import { type ReactNode, useState } from "react";
 
+import { LanguageSelector } from "@/components/language-selector";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  PraxisApiError,
-  resetPassword,
-  validatePasswordResetToken,
-} from "@/lib/api/praxis";
+import { PraxisApiError, resetPassword, validatePasswordResetToken } from "@/lib/api/praxis";
+import { useLanguage } from "@/lib/language-context";
 
 export const Route = createFileRoute("/reset-password/$token")({
   head: () => ({
@@ -26,6 +24,7 @@ export const Route = createFileRoute("/reset-password/$token")({
 });
 
 function ResetPasswordPage() {
+  const { t } = useLanguage();
   const { token } = Route.useParams();
   const navigate = useNavigate();
 
@@ -56,30 +55,25 @@ function ResetPasswordPage() {
 
   if (tokenQuery.isLoading) {
     return (
-      <CenteredCard title="Redefinir senha" subtitle="Validando o link...">
-        <p className="mt-6 text-sm text-slate-500">Aguarde um instante.</p>
+      <CenteredCard title={t.auth.resetTitle} subtitle={t.auth.resetValidating}>
+        <p className="mt-6 text-sm text-slate-500">{t.auth.resetWaitMoment}</p>
       </CenteredCard>
     );
   }
 
   if (tokenQuery.isError) {
-    const expired =
-      tokenQuery.error instanceof PraxisApiError && tokenQuery.error.status === 410;
+    const expired = tokenQuery.error instanceof PraxisApiError && tokenQuery.error.status === 410;
     return (
       <CenteredCard
-        title="Link indisponível"
-        subtitle={
-          expired
-            ? "Este link de redefinição expirou."
-            : "Este link de redefinição é inválido ou já foi utilizado."
-        }
+        title={t.auth.resetLinkUnavailable}
+        subtitle={expired ? t.auth.resetLinkExpired : t.auth.resetLinkInvalid}
       >
         <div className="mt-6 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">
-          Solicite um novo link na página de recuperação de senha.
+          {t.auth.resetRequestNewLink}
         </div>
         <p className="mt-5 text-center text-xs text-slate-500">
           <Link to="/recuperar-senha" className="font-medium text-primary hover:underline">
-            Solicitar novo link
+            {t.auth.resetRequestNewLinkCta}
           </Link>
         </p>
       </CenteredCard>
@@ -90,16 +84,16 @@ function ResetPasswordPage() {
     mutation.error instanceof PraxisApiError
       ? mutation.error.message
       : mutation.isError
-        ? "Não foi possível redefinir a senha."
+        ? t.auth.resetError
         : null;
 
   return (
     <CenteredCard
-      title="Redefinir senha"
+      title={t.auth.resetTitle}
       subtitle={
         tokenQuery.data?.userName
-          ? `Olá, ${tokenQuery.data.userName}. Defina sua nova senha.`
-          : "Defina sua nova senha."
+          ? t.auth.resetSubtitleWithName.replace("{name}", tokenQuery.data.userName)
+          : t.auth.resetSubtitleDefault
       }
     >
       <form
@@ -110,7 +104,7 @@ function ResetPasswordPage() {
         }}
       >
         <div className="space-y-2">
-          <Label htmlFor="newPassword">Nova senha</Label>
+          <Label htmlFor="newPassword">{t.auth.resetNewPasswordLabel}</Label>
           <Input
             id="newPassword"
             type="password"
@@ -120,11 +114,11 @@ function ResetPasswordPage() {
             disabled={mutation.isPending}
             autoFocus
           />
-          <p className="text-xs text-slate-500">Use pelo menos 8 caracteres.</p>
+          <p className="text-xs text-slate-500">{t.auth.resetPasswordHelp}</p>
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="confirmPassword">Confirmar senha</Label>
+          <Label htmlFor="confirmPassword">{t.auth.resetConfirmPasswordLabel}</Label>
           <Input
             id="confirmPassword"
             type="password"
@@ -133,7 +127,9 @@ function ResetPasswordPage() {
             onChange={(event) => setConfirmPassword(event.target.value)}
             disabled={mutation.isPending}
           />
-          {!passwordsMatch && <p className="text-xs text-rose-600">As senhas não conferem.</p>}
+          {!passwordsMatch && (
+            <p className="text-xs text-rose-600">{t.auth.resetPasswordsDoNotMatch}</p>
+          )}
         </div>
 
         {errorMessage && (
@@ -143,14 +139,14 @@ function ResetPasswordPage() {
         )}
 
         <Button type="submit" className="w-full" disabled={!canSubmit || mutation.isPending}>
-          {mutation.isPending ? "Redefinindo..." : "Redefinir senha"}
+          {mutation.isPending ? t.auth.resetSubmitting : t.auth.resetSubmit}
         </Button>
       </form>
 
       <p className="mt-5 text-center text-xs text-slate-500">
-        Lembrou a senha?{" "}
+        {t.auth.rememberedPassword}{" "}
         <Link to="/" className="font-medium text-primary hover:underline">
-          Voltar para a entrada
+          {t.auth.backToLogin}
         </Link>
       </p>
     </CenteredCard>
@@ -168,6 +164,9 @@ function CenteredCard({
 }) {
   return (
     <main className="min-h-screen bg-slate-50 px-4 py-10 text-slate-900">
+      <div className="mx-auto flex max-w-md justify-end pb-4">
+        <LanguageSelector />
+      </div>
       <div className="mx-auto flex min-h-[calc(100vh-5rem)] max-w-md items-center">
         <section className="w-full rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
           <div className="flex items-center gap-3">
