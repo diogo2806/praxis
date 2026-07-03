@@ -585,7 +585,7 @@ function ValidatorPage() {
               onClick={() => {
                 if (!canPublish) return;
                 void navigate({
-                  to: "/nova/piloto",
+                  to: "/nova/governanca",
                   search: {
                     simulationId: search.simulationId,
                     versionNumber: search.versionNumber,
