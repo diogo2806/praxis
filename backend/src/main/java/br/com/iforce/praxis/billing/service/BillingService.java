@@ -88,6 +88,7 @@ public class BillingService {
     private final EmpresaSubscriptionRepository subscriptionRepository;
     private final CreditService creditService;
     private final EmpresaRepository empresaRepository;
+    private final BillingDunningService dunningService;
 
     public BillingService(
             MercadoPagoClient mercadoPagoClient,
@@ -96,7 +97,8 @@ public class BillingService {
             EmpresaBillingEventRepository eventRepository,
             EmpresaSubscriptionRepository subscriptionRepository,
             CreditService creditService,
-            EmpresaRepository empresaRepository
+            EmpresaRepository empresaRepository,
+            BillingDunningService dunningService
     ) {
         this.mercadoPagoClient = mercadoPagoClient;
         this.properties = properties;
@@ -105,6 +107,7 @@ public class BillingService {
         this.subscriptionRepository = subscriptionRepository;
         this.creditService = creditService;
         this.empresaRepository = empresaRepository;
+        this.dunningService = dunningService;
     }
 
     // ------------------------------------------------------------------
@@ -429,7 +432,9 @@ public class BillingService {
     /**
      * Inicia a inadimplência quando uma mensalidade é recusada: coloca a assinatura em carência
      * (um prazo configurável para o cliente regularizar) e marca o cliente como inadimplente, sem
-     * ainda cortar o acesso. Uso interno.
+     * ainda cortar o acesso. Em seguida aciona a régua de cobrança para avisar o cliente com um
+     * toque educativo de retry (e-mail/SMS), abrindo caminho para a regularização antes da suspensão
+     * dura. Uso interno.
      */
     private void startDelinquency(String empresaId) {
         Instant graceUntil = Instant.now().plus(properties.gracePeriodDays(), ChronoUnit.DAYS);
@@ -444,6 +449,7 @@ public class BillingService {
                 empresa.setUpdatedAt(Instant.now());
             }
         });
+        dunningService.notifyPaymentFailure(empresaId);
     }
 
     /**
