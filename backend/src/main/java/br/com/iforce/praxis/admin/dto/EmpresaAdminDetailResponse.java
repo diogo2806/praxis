@@ -25,6 +25,7 @@ public record EmpresaAdminDetailResponse(
         String commercialCondition,
         EmpresaStatus status,
         long completedAttemptsInPeriod,
+        int creditBalance,
         List<AdminUserResponse> users,
         Instant createdAt,
         Instant updatedAt

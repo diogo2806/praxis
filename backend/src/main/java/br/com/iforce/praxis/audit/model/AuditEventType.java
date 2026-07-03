@@ -41,6 +41,7 @@ public enum AuditEventType implements DescribedEnum {
     ADMIN_EMPRESA_SUSPENDED("adminEmpresaSuspended"),
     ADMIN_EMPRESA_REACTIVATED("adminEmpresaReactivated"),
     ADMIN_EMPRESA_CANCELED("adminEmpresaCanceled"),
+    ADMIN_EMPRESA_CREDITS_GRANTED("adminEmpresaCreditsGranted"),
     ADMIN_COMMERCIAL_PLAN_CHANGED("adminCommercialPlanChanged"),
     ADMIN_COMMERCIAL_CONDITION_CHANGED("adminCommercialConditionChanged"),
     ADMIN_USER_INVITED("adminUserInvited"),

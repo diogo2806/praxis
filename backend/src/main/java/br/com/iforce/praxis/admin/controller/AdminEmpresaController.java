@@ -14,6 +14,8 @@ import br.com.iforce.praxis.admin.dto.EmpresaAdminSummaryResponse;
 
 import br.com.iforce.praxis.admin.dto.EmpresaUsageResponse;
 
+import br.com.iforce.praxis.admin.dto.GrantCreditsAdminRequest;
+
 import br.com.iforce.praxis.admin.dto.UpdateEmpresaAdminRequest;
 
 import br.com.iforce.praxis.admin.model.CommercialPlanType;
@@ -147,6 +149,16 @@ public class AdminEmpresaController {
     ) {
         return ResponseEntity.ok(adminEmpresaService.cancel(
                 currentUserService.requiredUserId(), empresaId, request.reason()));
+    }
+
+    @PostMapping("/{empresaId}/credits")
+    @Operation(summary = "Concede créditos de cortesia", description = "Adiciona créditos ao saldo do cliente para liberar testes. Registra evento de auditoria.")
+    public ResponseEntity<EmpresaAdminDetailResponse> grantCredits(
+            @PathVariable String empresaId,
+            @Valid @RequestBody GrantCreditsAdminRequest request
+    ) {
+        return ResponseEntity.ok(adminEmpresaService.grantCredits(
+                currentUserService.requiredUserId(), empresaId, request.amount(), request.note()));
     }
 
     @GetMapping("/{empresaId}/usage")

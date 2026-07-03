@@ -95,6 +95,22 @@ public class CreditService {
      */
     @Transactional
     public int addCredits(String empresaId, int amount, Long billingEventId, String note) {
+        return applyCredits(empresaId, amount, CreditLedgerReason.PURCHASE, billingEventId, note);
+    }
+
+    /**
+     * Concede créditos de cortesia/ajuste manual (motivo {@link CreditLedgerReason#ADJUSTMENT}),
+     * usado pela operação ADMIN para liberar empresas para teste. Igual a uma compra do ponto de
+     * vista do saldo (soma + lançamento no ledger + reativação se estava sem crédito), mas sem
+     * vínculo a evento de cobrança do Mercado Pago. O chamador é responsável por auditar a ação.
+     */
+    @Transactional
+    public int grantAdjustmentCredits(String empresaId, int amount, String note) {
+        return applyCredits(empresaId, amount, CreditLedgerReason.ADJUSTMENT, null, note);
+    }
+
+    private int applyCredits(String empresaId, int amount, CreditLedgerReason reason,
+                             Long billingEventId, String note) {
         if (amount <= 0) {
             throw new IllegalArgumentException("Quantidade de créditos deve ser positiva.");
         }
@@ -102,8 +118,7 @@ public class CreditService {
         balance.setBalance(balance.getBalance() + amount);
         balance.setUpdatedAt(Instant.now());
 
-        appendLedger(empresaId, amount, CreditLedgerReason.PURCHASE, balance.getBalance(), null,
-                billingEventId, note);
+        appendLedger(empresaId, amount, reason, balance.getBalance(), null, billingEventId, note);
 
         reactivateIfRecovered(empresaId, balance.getBalance());
         return balance.getBalance();

@@ -2167,6 +2167,7 @@ export interface EmpresaAdminSummary {
   commercialPlanType: CommercialPlanType;
   status: EmpresaStatus;
   completedAttemptsInPeriod: number;
+  creditBalance: number;
   createdAt: string;
 }
 
@@ -2194,6 +2195,7 @@ export interface EmpresaAdminDetail {
   commercialCondition: string | null;
   status: EmpresaStatus;
   completedAttemptsInPeriod: number;
+  creditBalance: number;
   users: AdminUser[];
   createdAt: string;
   updatedAt: string;
@@ -2339,6 +2341,20 @@ export function cancelAdminEmpresa(empresaId: string, reason: string) {
     method: "POST",
     body: JSON.stringify({ reason }),
   });
+}
+
+export function grantAdminEmpresaCredits(
+  empresaId: string,
+  amount: number,
+  note?: string,
+) {
+  return request<EmpresaAdminDetail>(
+    `/api/admin/empresas/${encodeURIComponent(empresaId)}/credits`,
+    {
+      method: "POST",
+      body: JSON.stringify({ amount, note: note?.trim() ? note.trim() : undefined }),
+    },
+  );
 }
 
 export function getAdminEmpresaUsage(empresaId: string) {

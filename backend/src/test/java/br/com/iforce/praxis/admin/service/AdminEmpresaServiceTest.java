@@ -22,6 +22,8 @@ import br.com.iforce.praxis.audit.model.AuditEventType;
 
 import br.com.iforce.praxis.audit.service.AuditEventService;
 
+import br.com.iforce.praxis.billing.service.CreditService;
+
 import br.com.iforce.praxis.audit.service.AuditMetadata;
 
 import br.com.iforce.praxis.auth.persistence.entity.EmpresaEntity;
@@ -88,6 +90,8 @@ class AdminEmpresaServiceTest {
     private AuditEventService auditEventService;
     @Mock
     private AdminUsageService adminUsageService;
+    @Mock
+    private CreditService creditService;
 
     private AdminEmpresaService service;
 
@@ -100,12 +104,14 @@ class AdminEmpresaServiceTest {
                 auditEventService,
                 new AuditMetadata(new ObjectMapper()),
                 adminUsageService,
+                creditService,
                 "http://localhost:8080",
                 168,
                 30
         );
         lenient().when(passwordEncoder.encode(anyString())).thenReturn("hashed");
         lenient().when(adminUsageService.countCompletedInPeriod(anyString(), any(), any())).thenReturn(0L);
+        lenient().when(creditService.getBalance(anyString())).thenReturn(0);
         lenient().when(empresaRepository.existsById(anyString())).thenReturn(false);
         lenient().when(empresaRepository.findFirstByCompanyId(anyString())).thenReturn(Optional.empty());
         lenient().when(empresaRepository.save(any(EmpresaEntity.class)))
@@ -188,6 +194,24 @@ class AdminEmpresaServiceTest {
         assertThat(empresa.getStatus()).isEqualTo(EmpresaStatus.CANCELADO);
         verify(auditEventService).auditAdminAction(
                 eq(ACTOR), eq("tnt_2"), eq(AuditEventType.ADMIN_EMPRESA_CANCELED), anyString(), anyString());
+    }
+
+    @Test
+    void grantCreditsAddsAdjustmentAndAudits() {
+        EmpresaEntity empresa = existingEmpresa("tnt_credit", EmpresaStatus.EM_TESTE);
+        when(empresaRepository.findById("tnt_credit")).thenReturn(Optional.of(empresa));
+        when(userRepository.findByEmpresaIdOrderByCreatedAtAsc("tnt_credit")).thenReturn(List.of());
+        when(creditService.grantAdjustmentCredits(eq("tnt_credit"), eq(25), anyString())).thenReturn(25);
+        // toDetail reflete o saldo via getBalance; simula o saldo pós-concessão.
+        when(creditService.getBalance("tnt_credit")).thenReturn(25);
+
+        var detail = service.grantCredits(ACTOR, "tnt_credit", 25, "liberacao para teste");
+
+        assertThat(detail.creditBalance()).isEqualTo(25);
+        verify(creditService).grantAdjustmentCredits(eq("tnt_credit"), eq(25), anyString());
+        verify(auditEventService).auditAdminAction(
+                eq(ACTOR), eq("tnt_credit"), eq(AuditEventType.ADMIN_EMPRESA_CREDITS_GRANTED),
+                anyString(), anyString());
     }
 
     @Test

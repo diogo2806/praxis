@@ -17,6 +17,7 @@ import {
 import {
   cancelAdminEmpresa,
   createAdminEmpresa,
+  grantAdminEmpresaCredits,
   listAdminEmpresas,
   reactivateAdminEmpresa,
   suspendAdminEmpresa,
@@ -44,6 +45,7 @@ function AdminEmpresasPage() {
     | { kind: "suspend" | "cancel" | "reactivate"; empresa: EmpresaAdminSummary }
     | null
   >(null);
+  const [creditEmpresa, setCreditEmpresa] = useState<EmpresaAdminSummary | null>(null);
 
   const empresasQuery = useQuery({
     queryKey: ["admin-empresas", search, status, plan],
@@ -58,7 +60,7 @@ function AdminEmpresasPage() {
   const empresas = empresasQuery.data ?? [];
 
   function exportCsv() {
-    const header = ["Nome", "CNPJ", "E-mail", "Plano", "Status", "Uso no período", "Criado em"];
+    const header = ["Nome", "CNPJ", "E-mail", "Plano", "Status", "Uso no período", "Créditos", "Criado em"];
     const rows = empresas.map((t) => [
       t.name,
       t.taxId ?? "",
@@ -66,6 +68,7 @@ function AdminEmpresasPage() {
       t.commercialPlanType,
       t.status,
       String(t.completedAttemptsInPeriod),
+      String(t.creditBalance),
       t.createdAt,
     ]);
     const csv = [header, ...rows]
@@ -150,6 +153,7 @@ function AdminEmpresasPage() {
               <th className="px-4 py-3">Plano</th>
               <th className="px-4 py-3">Status</th>
               <th className="px-4 py-3">Uso</th>
+              <th className="px-4 py-3">Créditos</th>
               <th className="px-4 py-3">Criado em</th>
               <th className="px-4 py-3 text-right">Ações</th>
             </tr>
@@ -157,13 +161,13 @@ function AdminEmpresasPage() {
           <tbody className="divide-y divide-slate-100">
             {empresasQuery.isLoading ? (
               <tr>
-                <td colSpan={8} className="px-4 py-8 text-center text-slate-500">
+                <td colSpan={9} className="px-4 py-8 text-center text-slate-500">
                   Carregando…
                 </td>
               </tr>
             ) : empresas.length === 0 ? (
               <tr>
-                <td colSpan={8} className="px-4 py-8 text-center text-slate-500">
+                <td colSpan={9} className="px-4 py-8 text-center text-slate-500">
                   Nenhum cliente encontrado.
                 </td>
               </tr>
@@ -186,6 +190,11 @@ function AdminEmpresasPage() {
                     <StatusBadge status={empresa.status} />
                   </td>
                   <td className="px-4 py-3 text-slate-600">{empresa.completedAttemptsInPeriod}</td>
+                  <td className="px-4 py-3">
+                    <span className="font-medium tabular-nums text-slate-700">
+                      {empresa.creditBalance}
+                    </span>
+                  </td>
                   <td className="px-4 py-3 text-slate-600">
                     {new Date(empresa.createdAt).toLocaleDateString("pt-BR")}
                   </td>
@@ -199,6 +208,15 @@ function AdminEmpresasPage() {
                           Ver
                         </Button>
                       </Link>
+                      {empresa.status !== "CANCELADO" && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setCreditEmpresa(empresa)}
+                        >
+                          Créditos
+                        </Button>
+                      )}
                       {empresa.status === "SUSPENSO" || empresa.status === "CANCELADO" ? (
                         <Button
                           variant="outline"
@@ -246,7 +264,88 @@ function AdminEmpresasPage() {
         onClose={() => setReasonAction(null)}
         onDone={() => queryClient.invalidateQueries({ queryKey: ["admin-empresas"] })}
       />
+
+      <GrantCreditsDialog
+        empresa={creditEmpresa}
+        onClose={() => setCreditEmpresa(null)}
+        onDone={() => queryClient.invalidateQueries({ queryKey: ["admin-empresas"] })}
+      />
     </AdminShell>
+  );
+}
+
+function GrantCreditsDialog({
+  empresa,
+  onClose,
+  onDone,
+}: {
+  empresa: EmpresaAdminSummary | null;
+  onClose: () => void;
+  onDone: () => void;
+}) {
+  const [amount, setAmount] = useState("10");
+  const [note, setNote] = useState("");
+
+  const parsedAmount = Number(amount);
+  const validAmount = Number.isInteger(parsedAmount) && parsedAmount > 0 && parsedAmount <= 100000;
+
+  const mutation = useMutation({
+    mutationFn: async () => {
+      if (!empresa) return;
+      return grantAdminEmpresaCredits(empresa.empresaId, parsedAmount, note);
+    },
+    onSuccess: () => {
+      onDone();
+      setAmount("10");
+      setNote("");
+      onClose();
+    },
+  });
+
+  return (
+    <Dialog open={empresa !== null} onOpenChange={(open) => !open && onClose()}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Dar créditos de cortesia</DialogTitle>
+          <DialogDescription>
+            {empresa?.name} — os créditos são somados ao saldo atual ({empresa?.creditBalance ?? 0})
+            para liberar testes. A ação fica registrada na auditoria.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="space-y-3">
+          <div>
+            <Label>Quantidade de créditos</Label>
+            <Input
+              type="number"
+              min={1}
+              max={100000}
+              value={amount}
+              onChange={(e) => setAmount(e.target.value)}
+              autoFocus
+            />
+          </div>
+          <div>
+            <Label>Observação (opcional)</Label>
+            <Input
+              value={note}
+              onChange={(e) => setNote(e.target.value)}
+              placeholder="Ex.: liberação para teste"
+            />
+          </div>
+          {mutation.isError && (
+            <p className="text-sm text-rose-600">Falha ao conceder créditos. Tente novamente.</p>
+          )}
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose}>
+            Cancelar
+          </Button>
+          <Button disabled={!validAmount || mutation.isPending} onClick={() => mutation.mutate()}>
+            Conceder
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
 

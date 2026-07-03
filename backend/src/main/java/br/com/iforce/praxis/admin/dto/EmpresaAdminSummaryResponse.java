@@ -18,6 +18,7 @@ public record EmpresaAdminSummaryResponse(
         CommercialPlanType commercialPlanType,
         EmpresaStatus status,
         long completedAttemptsInPeriod,
+        int creditBalance,
         Instant createdAt
 ) {
 }
