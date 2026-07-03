@@ -16,6 +16,8 @@ import org.junit.jupiter.api.Test;
 
 import org.springframework.beans.factory.annotation.Autowired;
 
+import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
+
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -29,6 +31,9 @@ import java.time.Instant;
 import static org.junit.jupiter.api.Assertions.*;
 
 @DataJpaTest
+// Não substituir o datasource por um embutido (H2): as migrations Flyway usam sintaxe
+// exclusiva do PostgreSQL, então o teste precisa rodar contra o Postgres real (Testcontainers).
+@AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @TestPropertySource(properties = {
         "praxis.security.enabled=false",
         "praxis.default-empresa-id=empresa-1"

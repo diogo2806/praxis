@@ -14,13 +14,13 @@ DELETE FROM simulations
 WHERE id IN ('sim-atendimento-caos', 'sim-timeout-fallback');
 
 INSERT INTO empresas (id, name, company_id, integration_token_hash)
-SELECT 'empresa-1', 'Acme S.A.', 'empresa-123', 'mIpDNk36Ser0rI9x2CntfUygEZ8TN-9xe3Ux_VOl6xE'
+SELECT 'empresa-1', 'Acme S.A.', 'empresa-123', 'HQkNHnvADAg8tGffiSYY9Lx094NTkUZ9OLLSNKjSTGk'
 WHERE NOT EXISTS (
     SELECT 1 FROM empresas WHERE id = 'empresa-1'
 );
 
 UPDATE empresas
-SET integration_token_hash = 'mIpDNk36Ser0rI9x2CntfUygEZ8TN-9xe3Ux_VOl6xE'
+SET integration_token_hash = 'HQkNHnvADAg8tGffiSYY9Lx094NTkUZ9OLLSNKjSTGk'
 WHERE id = 'empresa-1';
 
 DELETE FROM integration_tokens
@@ -28,7 +28,7 @@ WHERE empresa_id = 'empresa-1'
   AND provider = 'gupy';
 
 INSERT INTO integration_tokens (empresa_id, provider, token_hash)
-VALUES ('empresa-1', 'gupy', 'mIpDNk36Ser0rI9x2CntfUygEZ8TN-9xe3Ux_VOl6xE');
+VALUES ('empresa-1', 'gupy', 'HQkNHnvADAg8tGffiSYY9Lx094NTkUZ9OLLSNKjSTGk');
 
 INSERT INTO simulations (id, empresa_id, name, description, created_at)
 VALUES (

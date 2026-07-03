@@ -1,5 +1,9 @@
+-- audit_events e append-only (trigger criado em V13). Desabilita o trigger apenas para o
+-- reset de dados de teste destes aggregate_ids e reabilita em seguida.
+ALTER TABLE audit_events DISABLE TRIGGER USER;
 DELETE FROM audit_events
 WHERE aggregate_id IN ('sim-publish-gate:v1', 'sim-review-flow:v1', 'sim-clone-source:v1', 'sim-clone-source:v2');
+ALTER TABLE audit_events ENABLE TRIGGER USER;
 
 DELETE FROM simulations
 WHERE id IN ('sim-publish-gate', 'sim-review-flow', 'sim-clone-source');
