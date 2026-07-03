@@ -147,8 +147,13 @@ por:
 
 ## 8. Implementação (entregue)
 
-> **Status: implementado** (validação jurídica registrada). A vertical permanece
-> **desligada por padrão** em todos os empresas; habilite-a conscientemente por empresa.
+> **Status: implementação técnica entregue; validação jurídica ainda PENDENTE.**
+> O código abaixo está pronto, mas os textos das minutas (A, B e C) **continuam
+> como minuta** e não devem ir a produção sem revisão de advogado(a) — coerente
+> com o status do cabeçalho deste documento. A vertical permanece **desligada por
+> padrão** em todas as empresas; só habilite após a validação jurídica e por
+> empresa. Ver o checklist e o enquadramento ANVISA em
+> [`legal/VERTICAL-SAUDE-ANVISA.md`](legal/VERTICAL-SAUDE-ANVISA.md).
 
 O que foi construído:
 

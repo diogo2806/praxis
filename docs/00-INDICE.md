@@ -53,13 +53,22 @@
 ## Compliance e juridico
 
 > Documentos em `docs/legal/` sao **minutas para validacao juridica** e nao
-> constituem aconselhamento juridico. Enderecam os riscos juridicos criticos.
+> constituem aconselhamento juridico. Enderecam os riscos juridicos criticos e altos.
+
+Riscos criticos:
 
 - [Minuta de consentimento e termos para a vertical de Saude](PROPOSTA-CONSENTIMENTO-SAUDE.md) - propostas de texto (LGPD dado sensivel, uso educativo) para validacao juridica antes de habilitar a vertical.
 - [RIPD / DPIA](legal/RIPD-DPIA.md) - relatorio de impacto do tratamento automatizado (LGPD art. 20 - risco critico #1).
 - [Direitos do titular (LGPD art. 18)](legal/DIREITOS-DO-TITULAR-LGPD.md) - canal in-product `data-request`, prazos e retencao (risco critico #2).
 - [DPA - Acordo de Tratamento de Dados](legal/DPA-ACORDO-DE-TRATAMENTO-DE-DADOS.md) - controlador x operador e mapa de suboperadores (LGPD art. 39 - risco critico #3).
 - [Politica de Privacidade](legal/POLITICA-DE-PRIVACIDADE.md), [Termos de Uso](legal/TERMOS-DE-USO.md) e [Politica de Cookies](legal/POLITICA-DE-COOKIES.md) - documentos publicos da plataforma (risco critico #4).
+
+Riscos altos:
+
+- [Politica de mitigacao de vies](legal/POLITICA-MITIGACAO-VIES.md) - guardrails antidiscriminacao, job-relatedness e monitoramento de impacto (risco alto #5).
+- [Vertical de Saude - ANVISA](legal/VERTICAL-SAUDE-ANVISA.md) - enquadramento SaMD e checklist de habilitacao (risco alto #6).
+- Fail-fast de seguranca em producao: `SecurityStartupGuard` recusa subir com perfil `prod` e `PRAXIS_SECURITY_ENABLED=false` (risco alto #7; ver `IMPLANTACAO.md`).
+- [Marketplace, CDC e pagamentos](legal/TERMOS-MARKETPLACE-CDC.md) - consumidor, reembolso/disputa, KYC e intermediacao (risco alto #8).
 
 ## Historico
 
