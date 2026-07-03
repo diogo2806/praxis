@@ -33,6 +33,11 @@
  *       (soma créditos, ativa a assinatura, reativa o cliente).</li>
  *   <li><b>Controlar o consumo</b> — a cada avaliação concluída, um crédito é debitado do cliente
  *       AVULSO; ao zerar o saldo, ele fica "sem crédito" e é impedido de começar novas provas.</li>
+ *   <li><b>Recarregar sozinho (AVULSO)</b> — o cliente pré-pago pode ligar a <em>recarga
+ *       automática</em>: quando o saldo cai abaixo de um nível crítico que ele define, a plataforma
+ *       cobra o cartão salvo no Mercado Pago e libera um novo lote de créditos sem intervenção
+ *       humana — com trava contra cobrança dupla, chave de idempotência e janela de espera entre
+ *       tentativas.</li>
  *   <li><b>Cobrar quem atrasa</b> — assinaturas com pagamento recusado entram em carência e, se a
  *       carência vencer sem regularização, o cliente é suspenso automaticamente.</li>
  *   <li><b>Mostrar a situação</b> — o próprio cliente vê seu plano, saldo, uso e histórico; o

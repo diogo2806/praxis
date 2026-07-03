@@ -14,6 +14,8 @@ import br.com.iforce.praxis.billing.persistence.entity.EmpresaCreditBalanceEntit
 
 import br.com.iforce.praxis.billing.persistence.entity.EmpresaCreditLedgerEntity;
 
+import br.com.iforce.praxis.billing.event.CreditConsumedEvent;
+
 import br.com.iforce.praxis.billing.persistence.repository.EmpresaCreditBalanceRepository;
 
 import br.com.iforce.praxis.billing.persistence.repository.EmpresaCreditLedgerRepository;
@@ -21,6 +23,8 @@ import br.com.iforce.praxis.billing.persistence.repository.EmpresaCreditLedgerRe
 import br.com.iforce.praxis.gupy.model.AttemptStatus;
 
 import br.com.iforce.praxis.gupy.persistence.repository.CandidateAttemptRepository;
+
+import org.springframework.context.ApplicationEventPublisher;
 
 import org.springframework.http.HttpStatus;
 
@@ -57,17 +61,20 @@ public class CreditService {
     private final EmpresaCreditLedgerRepository ledgerRepository;
     private final EmpresaRepository empresaRepository;
     private final CandidateAttemptRepository candidateAttemptRepository;
+    private final ApplicationEventPublisher eventPublisher;
 
     public CreditService(
             EmpresaCreditBalanceRepository balanceRepository,
             EmpresaCreditLedgerRepository ledgerRepository,
             EmpresaRepository empresaRepository,
-            CandidateAttemptRepository candidateAttemptRepository
+            CandidateAttemptRepository candidateAttemptRepository,
+            ApplicationEventPublisher eventPublisher
     ) {
         this.balanceRepository = balanceRepository;
         this.ledgerRepository = ledgerRepository;
         this.empresaRepository = empresaRepository;
         this.candidateAttemptRepository = candidateAttemptRepository;
+        this.eventPublisher = eventPublisher;
     }
 
     /**
@@ -173,6 +180,11 @@ public class CreditService {
         if (balance.getBalance() <= 0) {
             markOutOfCredit(empresa);
         }
+
+        // Anuncia o novo saldo para a recarga automática. O aviso é entregue apenas depois que esta
+        // transação de consumo é confirmada (AFTER_COMMIT), então quem escuta já enxerga o saldo
+        // definitivo e nunca dispara uma recarga sobre um débito que acabou revertido.
+        eventPublisher.publishEvent(new CreditConsumedEvent(empresaId, balance.getBalance()));
     }
 
     /**

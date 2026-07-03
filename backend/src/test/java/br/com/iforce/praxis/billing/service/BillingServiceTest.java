@@ -10,9 +10,13 @@ import br.com.iforce.praxis.auth.persistence.repository.EmpresaRepository;
 
 import br.com.iforce.praxis.billing.config.MercadoPagoProperties;
 
+import br.com.iforce.praxis.billing.model.AutoRechargeStatus;
+
 import br.com.iforce.praxis.billing.model.BillingEventType;
 
 import br.com.iforce.praxis.billing.model.SubscriptionStatus;
+
+import br.com.iforce.praxis.billing.persistence.entity.EmpresaAutoRechargeConfigEntity;
 
 import br.com.iforce.praxis.billing.persistence.entity.SubscriptionPlanEntity;
 
@@ -21,6 +25,8 @@ import br.com.iforce.praxis.billing.persistence.entity.EmpresaBillingEventEntity
 import br.com.iforce.praxis.billing.persistence.entity.EmpresaSubscriptionEntity;
 
 import br.com.iforce.praxis.billing.persistence.repository.SubscriptionPlanRepository;
+
+import br.com.iforce.praxis.billing.persistence.repository.EmpresaAutoRechargeConfigRepository;
 
 import br.com.iforce.praxis.billing.persistence.repository.EmpresaBillingEventRepository;
 
@@ -33,6 +39,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import org.junit.jupiter.api.extension.ExtendWith;
+
+import org.mockito.ArgumentCaptor;
 
 import org.mockito.Mock;
 
@@ -73,6 +81,7 @@ class BillingServiceTest {
     @Mock private CreditService creditService;
     @Mock private EmpresaRepository empresaRepository;
     @Mock private BillingDunningService dunningService;
+    @Mock private EmpresaAutoRechargeConfigRepository autoRechargeConfigRepository;
 
     private final ObjectMapper objectMapper = new ObjectMapper();
     private BillingService service;
@@ -91,7 +100,8 @@ class BillingServiceTest {
                         null
                 );
         service = new BillingService(mercadoPagoClient, properties, planRepository, eventRepository,
-                subscriptionRepository, creditService, empresaRepository, dunningService);
+                subscriptionRepository, creditService, empresaRepository, dunningService,
+                autoRechargeConfigRepository);
         lenient().when(eventRepository.save(any(EmpresaBillingEventEntity.class))).thenAnswer(invocation -> {
             EmpresaBillingEventEntity event = invocation.getArgument(0);
             if (event.getId() == null) {
@@ -188,5 +198,49 @@ class BillingServiceTest {
         assertThat(subscription.getStatus()).isEqualTo(SubscriptionStatus.AUTHORIZED);
         assertThat(subscription.getLastPaymentAt()).isNotNull();
         assertThat(empresa.getStatus()).isEqualTo(EmpresaStatus.ATIVO);
+    }
+
+    @Test
+    void approvedAutoRechargePaymentAddsCreditsAndReleasesCycle() throws Exception {
+        var payment = objectMapper.readTree(
+                "{\"status\":\"approved\",\"external_reference\":\"autocredit:t1:5:abc\",\"transaction_amount\":499.0}");
+        when(mercadoPagoClient.getPayment("pay-auto")).thenReturn(payment);
+        when(eventRepository.existsByMpResourceIdAndEventType("pay-auto", BillingEventType.CREDIT_PURCHASE_APPROVED))
+                .thenReturn(false);
+        when(planRepository.findById(5L)).thenReturn(Optional.of(plan(CommercialPlanType.AVULSO, 100)));
+        EmpresaAutoRechargeConfigEntity config = new EmpresaAutoRechargeConfigEntity();
+        config.setEmpresaId("t1");
+        config.setStatus(AutoRechargeStatus.PENDING);
+        config.setPendingReference("autocredit:t1:5:abc");
+        when(autoRechargeConfigRepository.findById("t1")).thenReturn(Optional.of(config));
+
+        service.processPaymentNotification("pay-auto", "req-auto");
+
+        // Soma os créditos como qualquer compra confirmada...
+        verify(creditService).addCredits(eq("t1"), eq(100), anyLong(), anyString());
+        // ...e libera o ciclo de recarga para uma futura reposição.
+        assertThat(config.getStatus()).isEqualTo(AutoRechargeStatus.IDLE);
+        assertThat(config.getPendingReference()).isNull();
+    }
+
+    @Test
+    void rejectedAutoRechargePaymentRecordsFailureAndReleasesCycle() throws Exception {
+        var payment = objectMapper.readTree(
+                "{\"status\":\"rejected\",\"external_reference\":\"autocredit:t1:5:abc\",\"transaction_amount\":499.0}");
+        when(mercadoPagoClient.getPayment("pay-auto")).thenReturn(payment);
+        EmpresaAutoRechargeConfigEntity config = new EmpresaAutoRechargeConfigEntity();
+        config.setEmpresaId("t1");
+        config.setStatus(AutoRechargeStatus.PENDING);
+        config.setPendingReference("autocredit:t1:5:abc");
+        when(autoRechargeConfigRepository.findById("t1")).thenReturn(Optional.of(config));
+
+        service.processPaymentNotification("pay-auto", "req-auto");
+
+        // Cartão recusado não soma créditos, registra a falha e libera o ciclo.
+        verify(creditService, never()).addCredits(anyString(), anyInt(), any(), anyString());
+        ArgumentCaptor<EmpresaBillingEventEntity> event = ArgumentCaptor.forClass(EmpresaBillingEventEntity.class);
+        verify(eventRepository).save(event.capture());
+        assertThat(event.getValue().getEventType()).isEqualTo(BillingEventType.CREDIT_AUTO_RECHARGE_FAILED);
+        assertThat(config.getStatus()).isEqualTo(AutoRechargeStatus.IDLE);
     }
 }

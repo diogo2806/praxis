@@ -8,6 +8,8 @@ import br.com.iforce.praxis.auth.persistence.entity.EmpresaEntity;
 
 import br.com.iforce.praxis.auth.persistence.repository.EmpresaRepository;
 
+import br.com.iforce.praxis.billing.event.CreditConsumedEvent;
+
 import br.com.iforce.praxis.billing.model.CreditLedgerReason;
 
 import br.com.iforce.praxis.billing.persistence.entity.EmpresaCreditBalanceEntity;
@@ -31,6 +33,8 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 
 import org.mockito.junit.jupiter.MockitoExtension;
+
+import org.springframework.context.ApplicationEventPublisher;
 
 import org.springframework.web.server.ResponseStatusException;
 
@@ -70,12 +74,15 @@ class CreditServiceTest {
     private EmpresaRepository empresaRepository;
     @Mock
     private CandidateAttemptRepository candidateAttemptRepository;
+    @Mock
+    private ApplicationEventPublisher eventPublisher;
 
     private CreditService service;
 
     @BeforeEach
     void setUp() {
-        service = new CreditService(balanceRepository, ledgerRepository, empresaRepository, candidateAttemptRepository);
+        service = new CreditService(balanceRepository, ledgerRepository, empresaRepository,
+                candidateAttemptRepository, eventPublisher);
         lenient().when(ledgerRepository.save(any(EmpresaCreditLedgerEntity.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
         lenient().when(balanceRepository.save(any(EmpresaCreditBalanceEntity.class)))
@@ -264,5 +271,43 @@ class CreditServiceTest {
                 .isInstanceOf(IllegalArgumentException.class);
         assertThatThrownBy(() -> service.grantAdjustmentCredits("t1", -1, "erro"))
                 .isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @Test
+    void consumePublishesCreditConsumedEventWithRemainingBalance() {
+        EmpresaEntity empresa = empresa(CommercialPlanType.AVULSO, EmpresaStatus.ATIVO);
+        when(empresaRepository.findById("t1")).thenReturn(Optional.of(empresa));
+        when(ledgerRepository.existsByAttemptIdAndReason("att1", CreditLedgerReason.CONSUMPTION)).thenReturn(false);
+        when(balanceRepository.findByEmpresaIdForUpdate("t1")).thenReturn(Optional.of(balance(4)));
+
+        service.consumeOnCompletion("t1", "att1");
+
+        ArgumentCaptor<CreditConsumedEvent> event = ArgumentCaptor.forClass(CreditConsumedEvent.class);
+        verify(eventPublisher).publishEvent(event.capture());
+        assertThat(event.getValue().empresaId()).isEqualTo("t1");
+        assertThat(event.getValue().balance()).isEqualTo(3);
+    }
+
+    @Test
+    void consumeDoesNotPublishWhenAlreadyOutOfCredit() {
+        EmpresaEntity empresa = empresa(CommercialPlanType.AVULSO, EmpresaStatus.ATIVO);
+        when(empresaRepository.findById("t1")).thenReturn(Optional.of(empresa));
+        when(ledgerRepository.existsByAttemptIdAndReason("att1", CreditLedgerReason.CONSUMPTION)).thenReturn(false);
+        when(balanceRepository.findByEmpresaIdForUpdate("t1")).thenReturn(Optional.of(balance(0)));
+
+        service.consumeOnCompletion("t1", "att1");
+
+        // Sem débito não há mudança de saldo para anunciar à recarga automática.
+        verify(eventPublisher, never()).publishEvent(any());
+    }
+
+    @Test
+    void consumeDoesNotPublishForNonAvulso() {
+        when(empresaRepository.findById("t1"))
+                .thenReturn(Optional.of(empresa(CommercialPlanType.PROFISSIONAL, EmpresaStatus.ATIVO)));
+
+        service.consumeOnCompletion("t1", "att1");
+
+        verify(eventPublisher, never()).publishEvent(any());
     }
 }

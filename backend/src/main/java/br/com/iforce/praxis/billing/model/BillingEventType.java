@@ -9,6 +9,10 @@ package br.com.iforce.praxis.billing.model;
 public enum BillingEventType {
     CREDIT_CHECKOUT_CREATED,
     CREDIT_PURCHASE_APPROVED,
+    /** Recarga automática (AVULSO) disparada: cobrança do cartão salvo iniciada no Mercado Pago. */
+    CREDIT_AUTO_RECHARGE_TRIGGERED,
+    /** Recarga automática (AVULSO) não concluída: cobrança recusada ou falha de comunicação. */
+    CREDIT_AUTO_RECHARGE_FAILED,
     SUBSCRIPTION_CREATED,
     SUBSCRIPTION_AUTHORIZED,
     SUBSCRIPTION_PAYMENT_APPROVED,
