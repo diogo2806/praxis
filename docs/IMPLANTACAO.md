@@ -233,6 +233,13 @@ server {
 
 > **Importante:** `PRAXIS_SECURITY_ENABLED=false` libera todas as rotas e usa
 > `PRAXIS_DEFAULT_EMPRESA_ID`. Use **apenas em desenvolvimento**, nunca em produção.
+>
+> **Trava de inicialização (fail-fast):** com o perfil `prod` ativo
+> (`SPRING_PROFILES_ACTIVE=prod`, como no `docker-compose`) **e**
+> `PRAXIS_SECURITY_ENABLED=false`, a aplicação **recusa iniciar**
+> (`SecurityStartupGuard`), evitando expor produção sem autenticação e sem
+> isolamento multi-tenant. Fora de produção, a mesma combinação apenas registra
+> um alerta no log.
 
 ---
 
