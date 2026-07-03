@@ -642,9 +642,9 @@ function AttemptStatusBadge({ status }: { status: AttemptStatus }) {
 }
 
 const journeyStatusMeta: Record<AssessmentJourneyStatus, { label: string; cls: string }> = {
-  DRAFT: { label: "Rascunho", cls: "border-border bg-muted text-foreground" },
-  PUBLISHED: { label: "Publicada", cls: "border-success/25 bg-success/10 text-foreground" },
-  ARCHIVED: { label: "Arquivada", cls: "border-border bg-muted text-foreground" },
+  draft: { label: "Rascunho", cls: "border-border bg-muted text-foreground" },
+  published: { label: "Publicada", cls: "border-success/25 bg-success/10 text-foreground" },
+  archived: { label: "Arquivada", cls: "border-border bg-muted text-foreground" },
 };
 
 function JourneyStatusBadge({ status }: { status: AssessmentJourneyStatus }) {

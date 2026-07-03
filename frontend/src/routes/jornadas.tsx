@@ -404,7 +404,7 @@ function JourneyComposer({
   const sequences = journey.sequences;
   const totalSteps = sequences.reduce((total, sequence) => total + sequence.steps.length, 0);
   const existingSequenceKeys = sequences.map((sequence) => sequence.sequenceKey);
-  const draft = journey.status === "DRAFT";
+  const draft = journey.status === "draft";
   const canPublish = draft && totalSteps > 0;
 
   return (
@@ -441,7 +441,7 @@ function JourneyComposer({
             variant="outline"
             size="sm"
             className="h-9 gap-2 bg-card"
-            disabled={journey.status === "ARCHIVED" || archivePending}
+            disabled={journey.status === "archived" || archivePending}
             onClick={onArchive}
           >
             <Archive className="h-4 w-4" />
@@ -633,7 +633,7 @@ function JourneyAttempts({
   copiedAttemptId: string | null;
   onCopy: (attempt: AssessmentJourneyAttemptResponse) => void;
 }) {
-  const published = journey.status === "PUBLISHED";
+  const published = journey.status === "published";
   const sequences = journey.sequences;
   const hasMultipleSequences = sequences.length > 1;
 
@@ -724,7 +724,7 @@ function JourneyAttempts({
             <tbody>
               {attempts.map((attempt) => {
                 const completed = attempt.steps.filter(
-                  (step) => step.status === "COMPLETED",
+                  (step) => step.status === "completed",
                 ).length;
                 const link = journeyAttemptUrl(attempt.id);
                 const copied = copiedAttemptId === attempt.id;
@@ -795,14 +795,14 @@ function JourneyAttempts({
 
 function JourneyStatusBadge({ status }: { status: AssessmentJourneyStatus }) {
   const map: Record<AssessmentJourneyStatus, string> = {
-    DRAFT: "Rascunho",
-    PUBLISHED: "Publicada",
-    ARCHIVED: "Arquivada",
+    draft: "Rascunho",
+    published: "Publicada",
+    archived: "Arquivada",
   };
   const tone =
-    status === "PUBLISHED"
+    status === "published"
       ? "border-success/30 bg-success/10 text-success"
-      : status === "ARCHIVED"
+      : status === "archived"
         ? "border-muted bg-muted text-muted-foreground"
         : "border-warning/30 bg-warning/10 text-warning";
   return (
@@ -812,16 +812,16 @@ function JourneyStatusBadge({ status }: { status: AssessmentJourneyStatus }) {
 
 function AttemptStatusBadge({ status }: { status: AssessmentJourneyAttemptResponse["status"] }) {
   const map: Record<AssessmentJourneyAttemptResponse["status"], string> = {
-    CREATED: "Criada",
-    IN_PROGRESS: "Em andamento",
-    COMPLETED: "Concluida",
-    EXPIRED: "Expirada",
-    ABANDONED: "Abandonada",
+    created: "Criada",
+    inProgress: "Em andamento",
+    completed: "Concluida",
+    expired: "Expirada",
+    abandoned: "Abandonada",
   };
   const tone =
-    status === "COMPLETED"
+    status === "completed"
       ? "border-success/30 bg-success/10 text-success"
-      : status === "IN_PROGRESS"
+      : status === "inProgress"
         ? "border-primary/30 bg-primary/10 text-primary"
         : "border-border bg-background text-muted-foreground";
   return (
