@@ -105,7 +105,7 @@ function AvaliacoesPage() {
           </p>
         </div>
         <Link
-          to="/nova/blueprint"
+          to="/nova/avaliacao"
           className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
         >
           <FilePlus2 className="h-4 w-4" />
@@ -129,7 +129,7 @@ function AvaliacoesPage() {
           description="Crie uma avaliação para que ela apareça aqui e possa ser acompanhada pelo Dashboard."
           actions={
             <Link
-              to="/nova/blueprint"
+              to="/nova/avaliacao"
               className="inline-flex items-center justify-between rounded-md border border-primary bg-primary px-4 py-3 text-sm font-medium text-primary-foreground hover:bg-primary/90"
             >
               Criar primeira avaliação

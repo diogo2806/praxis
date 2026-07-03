@@ -635,7 +635,7 @@ function SimulationSelectionTable({
           Crie uma avaliação e conclua participações para comparar resultados.
         </p>
         <Link
-          to="/nova/blueprint"
+          to="/nova/avaliacao"
           className="mt-5 inline-flex rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
         >
           Criar avaliação
