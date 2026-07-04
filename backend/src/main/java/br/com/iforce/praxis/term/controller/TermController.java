@@ -30,11 +30,12 @@ import org.springframework.web.bind.annotation.RestController;
 /**
  * Porta de entrada (API) dos termos e seus aceites.
  *
- * <p>Na visão do processo, cuida de dois termos que o recrutador precisa
- * aceitar: o termo de responsabilidade (que reforça que a decisão final sobre
- * o candidato é humana) e o termo de uso da vertical de saúde (para tratar
- * dados sensíveis). É por aqui que a tela mostra o texto e a versão de cada
- * termo, consulta se o usuário atual já aceitou e registra o aceite.</p>
+ * <p>Na visão do processo, este controller funciona como o balcão onde o produto
+ * apresenta os termos obrigatórios ao recrutador, confirma se ele já assumiu as
+ * responsabilidades necessárias e registra formalmente o aceite. Isso cobre dois
+ * cuidados de governança: deixar claro que a decisão final sobre candidatos é
+ * humana e, quando houver uso na vertical de saúde, reforçar as regras de uso de
+ * dados sensíveis.</p>
  */
 @RestController
 @RequestMapping("/api/v1/terms")
@@ -43,14 +44,24 @@ public class TermController {
 
     private final TermAcceptanceService termAcceptanceService;
 
+    /**
+     * Conecta a API de termos ao serviço que conhece as regras de exibição,
+     * consulta e registro dos aceites.
+     *
+     * @param termAcceptanceService serviço responsável pelo processo de aceite dos termos
+     */
     public TermController(TermAcceptanceService termAcceptanceService) {
         this.termAcceptanceService = termAcceptanceService;
     }
 
     /**
-     * Devolve o texto e a versão atual do termo de responsabilidade.
+     * Entrega para a tela o texto vigente do termo de responsabilidade.
      *
-     * @return o conteúdo do termo de responsabilidade
+     * <p>No processo, este é o passo em que o usuário lê a declaração que reforça
+     * que a Práxis apoia a avaliação, mas não substitui a decisão humana da
+     * empresa.</p>
+     *
+     * @return o conteúdo e a versão atual do termo de responsabilidade
      */
     @GetMapping("/responsibility")
     @Operation(summary = "Texto e versão do termo de responsabilidade")
@@ -59,9 +70,13 @@ public class TermController {
     }
 
     /**
-     * Informa se o usuário logado já aceitou o termo de responsabilidade.
+     * Informa para a tela se o usuário atual já aceitou o termo de responsabilidade.
      *
-     * @return a situação de aceite do usuário atual
+     * <p>No processo, evita pedir um novo aceite quando a pessoa já aceitou a
+     * versão vigente e permite bloquear ou orientar o usuário quando ainda falta
+     * concluir essa etapa.</p>
+     *
+     * @return a situação de aceite do usuário atual para a versão vigente
      */
     @GetMapping("/responsibility/acceptance")
     @Operation(summary = "Situação de aceite do usuário atual")
@@ -70,10 +85,14 @@ public class TermController {
     }
 
     /**
-     * Registra o aceite do termo de responsabilidade pelo usuário logado.
+     * Registra que o usuário logado aceitou o termo de responsabilidade.
      *
-     * @param request dados do aceite (incluindo a versão aceita)
-     * @return a situação de aceite atualizada
+     * <p>No processo, este é o momento em que a plataforma guarda a evidência de
+     * que uma pessoa autorizada leu e assumiu a versão exibida do termo, com data,
+     * usuário e empresa vinculados ao registro.</p>
+     *
+     * @param request versão do termo exibida e confirmada pelo usuário
+     * @return a situação de aceite atualizada após o registro
      */
     @PostMapping("/responsibility/acceptance")
     @Operation(summary = "Registra o aceite do termo de responsabilidade")
@@ -84,9 +103,13 @@ public class TermController {
     }
 
     /**
-     * Devolve o texto e a versão atual do termo de uso na vertical de saúde.
+     * Entrega para a tela o texto vigente do termo de uso na vertical de saúde.
      *
-     * @return o conteúdo do termo de uso em saúde
+     * <p>No processo, apresenta os compromissos adicionais exigidos quando a
+     * empresa usa a plataforma em cenários que podem envolver dados sensíveis de
+     * saúde.</p>
+     *
+     * @return o conteúdo e a versão atual do termo de uso em saúde
      */
     @GetMapping("/health-use")
     @Operation(summary = "Texto e versão do termo de uso na vertical de saúde")
@@ -95,9 +118,13 @@ public class TermController {
     }
 
     /**
-     * Informa se o usuário logado já aceitou o termo de uso em saúde.
+     * Informa para a tela se o usuário atual já aceitou o termo de uso em saúde.
      *
-     * @return a situação de aceite do usuário atual
+     * <p>No processo, permite liberar a continuidade da operação quando o aceite
+     * já existe ou sinalizar que o usuário ainda precisa confirmar as regras antes
+     * de publicar avaliações nessa vertical.</p>
+     *
+     * @return a situação de aceite do usuário atual para o termo de uso em saúde
      */
     @GetMapping("/health-use/acceptance")
     @Operation(summary = "Situação de aceite do termo de uso em saúde pelo usuário atual")
@@ -106,10 +133,14 @@ public class TermController {
     }
 
     /**
-     * Registra o aceite do termo de uso em saúde pelo usuário logado.
+     * Registra que o usuário logado aceitou o termo de uso em saúde.
      *
-     * @param request dados do aceite (incluindo a versão aceita)
-     * @return a situação de aceite atualizada
+     * <p>No processo, cria a comprovação de que a empresa reconheceu os cuidados
+     * adicionais de uso de dados sensíveis antes de seguir com avaliações da
+     * vertical de saúde.</p>
+     *
+     * @param request versão do termo de saúde exibida e confirmada pelo usuário
+     * @return a situação de aceite atualizada após o registro
      */
     @PostMapping("/health-use/acceptance")
     @Operation(summary = "Registra o aceite do termo de uso em saúde")
