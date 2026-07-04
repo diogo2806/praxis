@@ -14,6 +14,7 @@ import appCss from "../styles/app.css?url";
 import { reportAppError } from "../lib/app-error-reporting";
 import { resolveRuntimeConfigFromEnv } from "../lib/runtime-config.server";
 import { LanguageProvider, useLanguage } from "../lib/language-context";
+import { clearAuthenticatedSession } from "../lib/session";
 
 // Runs only on the server. Reads the public runtime config from env per request
 // so it can be injected into the page and picked up by the browser bundle.
@@ -163,7 +164,38 @@ function RootComponent() {
 
   return (
     <QueryClientProvider client={queryClient}>
+      <SessionExpiryRedirect />
       <Outlet />
     </QueryClientProvider>
   );
+}
+
+function SessionExpiryRedirect() {
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const originalFetch = window.fetch.bind(window);
+    window.fetch = async (...args) => {
+      const response = await originalFetch(...args);
+      if (response.status === 401 && shouldHandleApiFailure(args[0])) {
+        clearAuthenticatedSession();
+        const pathname = window.location.pathname;
+        if (!pathname.startsWith("/login") && !pathname.startsWith("/candidato")) {
+          window.location.assign("/login");
+        }
+      }
+      return response;
+    };
+
+    return () => {
+      window.fetch = originalFetch;
+    };
+  }, []);
+
+  return null;
+}
+
+function shouldHandleApiFailure(input: RequestInfo | URL) {
+  const url = typeof input === "string" ? input : input instanceof URL ? input.toString() : input.url;
+  return url.includes("/api/");
 }
