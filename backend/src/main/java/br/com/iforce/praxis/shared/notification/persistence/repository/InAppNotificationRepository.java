@@ -9,6 +9,8 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;
 
+import java.util.Optional;
+
 
 public interface InAppNotificationRepository extends JpaRepository<InAppNotificationEntity, Long> {
 
@@ -20,4 +22,8 @@ public interface InAppNotificationRepository extends JpaRepository<InAppNotifica
     );
 
     List<InAppNotificationEntity> findByEmpresaIdOrderByCreatedAtDesc(String empresaId);
+
+    Optional<InAppNotificationEntity> findByEmpresaIdAndId(String empresaId, Long id);
+
+    long countByEmpresaIdAndReadAtIsNull(String empresaId);
 }
