@@ -95,9 +95,7 @@ public class AssessmentJourneyService {
     @Transactional
     public AssessmentJourneyDetailResponse updateJourney(String journeyId, UpdateAssessmentJourneyRequest request) {
         AssessmentJourneyEntity journey = findJourney(journeyId);
-        if (journey.getStatus() == AssessmentJourneyStatus.ARCHIVED) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "Jornadas arquivadas não podem ser editadas.");
-        }
+        assertNotArchived(journey);
         if (request.name() != null) {
             if (request.name().isBlank()) {
                 throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "O nome da jornada não pode ser vazio.");
@@ -118,7 +116,7 @@ public class AssessmentJourneyService {
     @Transactional
     public AssessmentJourneyDetailResponse addStep(String journeyId, AddJourneyStepRequest request) {
         AssessmentJourneyEntity journey = findJourney(journeyId);
-        assertDraft(journey);
+        assertNotArchived(journey);
         String empresaId = journey.getEmpresaId();
         PublishedSimulation simulation = simulationCatalogService.findPublishedById(empresaId, request.simulationId())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.CONFLICT,
@@ -149,7 +147,7 @@ public class AssessmentJourneyService {
     @Transactional
     public AssessmentJourneyDetailResponse updateStep(String journeyId, Long stepId, UpdateJourneyStepRequest request) {
         AssessmentJourneyEntity journey = findJourney(journeyId);
-        assertDraft(journey);
+        assertNotArchived(journey);
         AssessmentJourneyStepEntity step = findStep(journey, stepId);
         String previousSequenceKey = step.getSequenceKey();
         int previousOrderIndex = step.getOrderIndex();
@@ -191,7 +189,7 @@ public class AssessmentJourneyService {
     @Transactional
     public void removeStep(String journeyId, Long stepId) {
         AssessmentJourneyEntity journey = findJourney(journeyId);
-        assertDraft(journey);
+        assertNotArchived(journey);
         AssessmentJourneyStepEntity step = findStep(journey, stepId);
         journey.getSteps().remove(step);
         journey.setUpdatedAt(Instant.now());
@@ -301,6 +299,12 @@ public class AssessmentJourneyService {
         if (journey.getStatus() != AssessmentJourneyStatus.DRAFT) {
             throw new ResponseStatusException(HttpStatus.CONFLICT,
                     "Apenas jornadas em rascunho podem ser editadas. Crie uma nova versão para alterar uma jornada publicada.");
+        }
+    }
+
+    private void assertNotArchived(AssessmentJourneyEntity journey) {
+        if (journey.getStatus() == AssessmentJourneyStatus.ARCHIVED) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Jornadas arquivadas não podem ser editadas.");
         }
     }
 
