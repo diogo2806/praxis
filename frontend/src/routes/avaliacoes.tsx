@@ -2,6 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState, type CSSProperties } from "react";
 import {
+  Archive,
   CircleHelp,
   ExternalLink,
   FilePlus2,
@@ -9,18 +10,17 @@ import {
   PlayCircle,
   Search,
   Target,
-  Trash2,
 } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
 import { Termo } from "@/components/glossario";
 import { EmptyState, SkeletonRows, StateBanner, StatusBadge } from "@/components/praxis-ui";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import {
-  deleteSimulation,
   listSimulations,
   type SimulationSummaryResponse,
   type SimulationVersionStatus,
 } from "@/lib/api/praxis";
+import { archiveSimulation } from "@/lib/api/archive-simulation";
 import { maturityForStatus } from "@/lib/simulation-meta";
 import { cn } from "@/lib/utils";
 
@@ -61,26 +61,24 @@ function AvaliacoesPage() {
     queryFn: listSimulations,
     retry: false,
   });
-  const simulations = useMemo(() => simulationsQuery.data ?? [], [simulationsQuery.data]);
-  const deleteMutation = useMutation({
-    mutationFn: deleteSimulation,
+  const archiveMutation = useMutation({
+    mutationFn: archiveSimulation,
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ["simulations"] });
     },
   });
 
+  const simulations = useMemo(() => simulationsQuery.data ?? [], [simulationsQuery.data]);
   const totals = {
     noAr: simulations.filter(isLive).length,
-    rascunhos: simulations.filter((s) => s.status === "draft").length,
-    arquivadas: simulations.filter((s) => s.status === "archived").length,
-    tentativas: simulations.reduce((a, s) => a + s.attemptsCreated, 0),
+    rascunhos: simulations.filter((simulation) => simulation.status === "draft").length,
+    arquivadas: simulations.filter((simulation) => simulation.status === "archived").length,
+    tentativas: simulations.reduce((total, simulation) => total + simulation.attemptsCreated, 0),
   };
 
   const filtered = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();
     return simulations.filter((simulation) => {
-      // O filtro "No Ar" também inclui rascunhos que mantêm uma versão publicada ativa,
-      // já que essa avaliação continua acessível por link mesmo em edição.
       const byStatus =
         filter === "todas" ||
         simulation.status === filter ||
@@ -105,7 +103,7 @@ function AvaliacoesPage() {
           </p>
         </div>
         <Link
-          to="/nova/avaliacao"
+          to="/comecar"
           className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
         >
           <FilePlus2 className="h-4 w-4" />
@@ -129,55 +127,34 @@ function AvaliacoesPage() {
           description="Crie uma avaliação para que ela apareça aqui e possa ser acompanhada pelo Dashboard."
           actions={
             <Link
-              to="/nova/avaliacao"
+              to="/comecar"
               className="inline-flex items-center justify-between rounded-md border border-primary bg-primary px-4 py-3 text-sm font-medium text-primary-foreground hover:bg-primary/90"
             >
-              Criar primeira avaliação
+              Começar agora
               <FilePlus2 className="h-4 w-4" />
             </Link>
           }
         />
       ) : (
         <div className="space-y-6">
-          {deleteMutation.isError && (
-            <StateBanner tone="danger" title="Não foi possível excluir a avaliação">
-              {deleteMutation.error instanceof Error
-                ? deleteMutation.error.message
-                : "Tente novamente."}
+          {archiveMutation.isError && (
+            <StateBanner tone="danger" title="Não foi possível arquivar a avaliação">
+              {archiveMutation.error instanceof Error ? archiveMutation.error.message : "Tente novamente."}
             </StateBanner>
           )}
+
           <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-            <Stat
-              label="No ar"
-              value={totals.noAr}
-              hint="Em aplicações ativas"
-              onClick={() => setFilter("published")}
-            />
-            <Stat
-              label="Arquivadas"
-              value={totals.arquivadas}
-              hint="Fora de uso"
-              onClick={() => setFilter("archived")}
-            />
-            <Stat
-              label="Rascunhos"
-              value={totals.rascunhos}
-              hint="Em construção"
-              onClick={() => setFilter("draft")}
-            />
-            <Stat
-              label="Tentativas"
-              value={totals.tentativas}
-              hint="Total registrado"
-              onClick={() => setFilter("todas")}
-            />
+            <Stat label="No ar" value={totals.noAr} hint="Em aplicações ativas" onClick={() => setFilter("published")} />
+            <Stat label="Arquivadas" value={totals.arquivadas} hint="Fora de uso, com histórico preservado" onClick={() => setFilter("archived")} />
+            <Stat label="Rascunhos" value={totals.rascunhos} hint="Em construção" onClick={() => setFilter("draft")} />
+            <Stat label="Tentativas" value={totals.tentativas} hint="Total registrado" onClick={() => setFilter("todas")} />
           </div>
 
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
               <h2 className="text-xl font-semibold">Avaliações</h2>
               <p className="text-xs text-muted-foreground">
-                Status, prontidão, competências e tentativas organizados por coluna.
+                O arquivamento substitui a exclusão definitiva: o teste sai de uso, mas evidências, versões e auditoria permanecem preservadas.
               </p>
             </div>
             <div className="flex min-w-0 flex-wrap gap-2">
@@ -240,15 +217,13 @@ function AvaliacoesPage() {
                       <th className="px-4 py-3 text-left font-medium">Status</th>
                       <th className="px-4 py-3 text-left font-medium">Prontidão</th>
                       <th className="px-4 py-3 text-left font-medium">Conclusão</th>
+                      <th className="px-4 py-3 text-left font-medium">Tentativas</th>
                       <th className="px-4 py-3 text-right font-medium">Ações</th>
                     </tr>
                   </thead>
                   <tbody>
                     {filtered.map((simulation) => (
-                      <tr
-                        key={simulation.id}
-                        className="border-b border-border last:border-0 hover:bg-accent/35"
-                      >
+                      <tr key={simulation.id} className="border-b border-border last:border-0 hover:bg-accent/35">
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-2">
                             <div className="font-medium text-foreground">{simulation.name}</div>
@@ -286,18 +261,9 @@ function AvaliacoesPage() {
                         <td className="px-4 py-3">
                           <StatusBadge status={simulation.status} variant="status" />
                           {hasLiveVersionBehind(simulation) && (
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <span className="mt-1 inline-flex items-center gap-1 rounded-md border border-success/40 bg-success/10 px-1.5 py-0.5 text-[10px] font-medium text-success">
-                                  <PlayCircle className="h-3 w-3" />v
-                                  {simulation.livePublishedVersionNumber} no ar
-                                </span>
-                              </TooltipTrigger>
-                              <TooltipContent>
-                                A versão v{simulation.livePublishedVersionNumber} continua publicada
-                                e acessível por link enquanto este rascunho é editado.
-                              </TooltipContent>
-                            </Tooltip>
+                            <span className="mt-1 inline-flex items-center gap-1 rounded-md border border-success/40 bg-success/10 px-1.5 py-0.5 text-[10px] font-medium text-success">
+                              <PlayCircle className="h-3 w-3" />v{simulation.livePublishedVersionNumber} no ar
+                            </span>
                           )}
                         </td>
                         <td className="px-4 py-3">
@@ -338,28 +304,24 @@ function AvaliacoesPage() {
                           </div>
                         </td>
                         <td className="px-4 py-3 text-right">
-                          <div className="flex justify-end gap-2">
+                          <div className="inline-flex gap-1">
                             <Tooltip>
                               <TooltipTrigger asChild>
                                 <button
                                   type="button"
-                                  aria-label={`Excluir ${simulation.name}`}
+                                  aria-label={`Arquivar ${simulation.name}`}
                                   onClick={() => {
-                                    if (
-                                      window.confirm(
-                                        `Excluir "${simulation.name}" definitivamente?`,
-                                      )
-                                    ) {
-                                      deleteMutation.mutate(simulation.id);
+                                    if (window.confirm(`Arquivar "${simulation.name}"? O histórico será preservado.`)) {
+                                      archiveMutation.mutate(simulation.id);
                                     }
                                   }}
-                                  disabled={deleteMutation.isPending}
-                                  className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-border bg-background text-danger hover:bg-danger/10 disabled:cursor-not-allowed disabled:opacity-50"
+                                  disabled={archiveMutation.isPending || simulation.status === "archived"}
+                                  className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-border bg-background text-warning hover:bg-warning/10 disabled:cursor-not-allowed disabled:opacity-50"
                                 >
-                                  <Trash2 className="h-3.5 w-3.5" />
+                                  <Archive className="h-3.5 w-3.5" />
                                 </button>
                               </TooltipTrigger>
-                              <TooltipContent>Excluir</TooltipContent>
+                              <TooltipContent>Arquivar sem apagar histórico</TooltipContent>
                             </Tooltip>
                             <Tooltip>
                               <TooltipTrigger asChild>
@@ -402,18 +364,10 @@ function AvaliacoesPage() {
   );
 }
 
-/**
- * Uma avaliação está "no ar" quando a versão exibida já é publicada ou quando
- * existe uma versão publicada anterior ainda ativa por trás de um rascunho em edição.
- */
 function isLive(simulation: SimulationSummaryResponse) {
   return simulation.status === "published" || simulation.livePublishedVersionNumber != null;
 }
 
-/**
- * Verdadeiro quando a versão exibida não é a publicada, mas há uma versão publicada
- * no ar atendendo candidatos — ex.: rascunho criado para editar uma versão já publicada.
- */
 function hasLiveVersionBehind(simulation: SimulationSummaryResponse) {
   return simulation.status !== "published" && simulation.livePublishedVersionNumber != null;
 }
