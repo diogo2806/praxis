@@ -151,27 +151,21 @@ public class AssessmentJourneyService {
         AssessmentJourneyStepEntity step = findStep(journey, stepId);
         String previousSequenceKey = step.getSequenceKey();
         int previousOrderIndex = step.getOrderIndex();
+        String targetSequenceKey = previousSequenceKey;
         if (request.sequenceKey() != null) {
-            String newSequenceKey = normalizeSequenceKey(request.sequenceKey());
-            if (!newSequenceKey.equals(previousSequenceKey)) {
-                assertSimulationNotAlreadyInSequence(journey, newSequenceKey, step.getSimulationId());
+            targetSequenceKey = normalizeSequenceKey(request.sequenceKey());
+            if (!targetSequenceKey.equals(previousSequenceKey)) {
+                assertSimulationNotAlreadyInSequence(journey, targetSequenceKey, step.getSimulationId());
             }
-            step.setSequenceKey(newSequenceKey);
         }
         if (request.orderIndex() != null) {
             if (request.orderIndex() < 0) {
                 throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "A ordem do teste não pode ser negativa.");
             }
-            journey.getSteps().stream()
-                    .filter(other -> other != step)
-                    .filter(other -> other.getSequenceKey().equals(step.getSequenceKey()))
-                    .filter(other -> other.getOrderIndex() == request.orderIndex())
-                    .findFirst()
-                    .ifPresent(other -> {
-                        other.setSequenceKey(previousSequenceKey);
-                        other.setOrderIndex(previousOrderIndex);
-                    });
-            step.setOrderIndex(request.orderIndex());
+            applyStepPositionUpdate(journey, step, previousSequenceKey, previousOrderIndex,
+                    targetSequenceKey, request.orderIndex());
+        } else if (request.sequenceKey() != null) {
+            step.setSequenceKey(targetSequenceKey);
         }
         if (request.required() != null) {
             step.setRequired(request.required());
@@ -251,6 +245,43 @@ public class AssessmentJourneyService {
                         "O teste '" + step.getSimulationId() + "' não possui versão publicada.");
             }
         }
+    }
+
+    private void applyStepPositionUpdate(AssessmentJourneyEntity journey,
+                                         AssessmentJourneyStepEntity step,
+                                         String previousSequenceKey,
+                                         int previousOrderIndex,
+                                         String targetSequenceKey,
+                                         int targetOrderIndex) {
+        if (previousSequenceKey.equals(targetSequenceKey) && previousOrderIndex == targetOrderIndex) {
+            return;
+        }
+        Optional<AssessmentJourneyStepEntity> displacedStep = journey.getSteps().stream()
+                .filter(other -> other != step)
+                .filter(other -> other.getSequenceKey().equals(targetSequenceKey))
+                .filter(other -> other.getOrderIndex() == targetOrderIndex)
+                .findFirst();
+        if (displacedStep.isPresent()) {
+            step.setOrderIndex(nextTemporaryOrderIndex(journey));
+            journeyRepository.flush();
+
+            AssessmentJourneyStepEntity displaced = displacedStep.get();
+            displaced.setSequenceKey(previousSequenceKey);
+            displaced.setOrderIndex(previousOrderIndex);
+            journeyRepository.flush();
+        }
+        step.setSequenceKey(targetSequenceKey);
+        step.setOrderIndex(targetOrderIndex);
+    }
+
+    private int nextTemporaryOrderIndex(AssessmentJourneyEntity journey) {
+        java.util.Set<Integer> usedOrderIndices = new java.util.HashSet<>();
+        journey.getSteps().forEach(step -> usedOrderIndices.add(step.getOrderIndex()));
+        int candidate = -1;
+        while (usedOrderIndices.contains(candidate)) {
+            candidate--;
+        }
+        return candidate;
     }
 
     private void assertUniqueOrderIndices(String sequenceKey, List<AssessmentJourneyStepEntity> steps) {

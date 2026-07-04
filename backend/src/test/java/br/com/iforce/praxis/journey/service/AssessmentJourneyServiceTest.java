@@ -7,9 +7,7 @@ import br.com.iforce.praxis.audit.service.AuditEventService;
 import br.com.iforce.praxis.audit.service.AuditMetadata;
 
 import br.com.iforce.praxis.auth.service.CurrentEmpresaService;
-
 import br.com.iforce.praxis.auth.service.CurrentUserService;
-
 import br.com.iforce.praxis.gupy.model.PublishedSimulation;
 
 import br.com.iforce.praxis.gupy.model.ResultTier;
@@ -21,6 +19,7 @@ import br.com.iforce.praxis.journey.dto.AddJourneyStepRequest;
 import br.com.iforce.praxis.journey.dto.AssessmentJourneyDetailResponse;
 
 import br.com.iforce.praxis.journey.dto.CreateAssessmentJourneyRequest;
+import br.com.iforce.praxis.journey.dto.UpdateJourneyStepRequest;
 
 import br.com.iforce.praxis.journey.model.AssessmentJourneyStatus;
 
@@ -63,6 +62,7 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 
 import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.times;
 
 import static org.mockito.Mockito.verify;
 
@@ -176,6 +176,30 @@ class AssessmentJourneyServiceTest {
                 service.addStep("j1", new AddJourneyStepRequest("sim-x", "alternativa", null, true));
 
         assertThat(response.sequences()).hasSize(2);
+    }
+
+    @Test
+    void updateStepSwapsOrderWithoutPersistingDuplicateOrder() {
+        AssessmentJourneyEntity journey = draftJourney();
+        AssessmentJourneyStepEntity first = step(journey, 1L, "sim-a", "principal", 0);
+        AssessmentJourneyStepEntity second = step(journey, 2L, "sim-b", "principal", 1);
+        journey.getSteps().add(first);
+        journey.getSteps().add(second);
+        when(journeyRepository.findByEmpresaIdAndId("empresa-1", "j1")).thenReturn(Optional.of(journey));
+        when(simulationCatalogService.findPublishedById(eq("empresa-1"), anyString()))
+                .thenAnswer(inv -> Optional.of(publishedSimulation(inv.getArgument(1), 1)));
+
+        AssessmentJourneyDetailResponse response =
+                service.updateStep("j1", 1L, new UpdateJourneyStepRequest(null, 1, null));
+
+        assertThat(first.getOrderIndex()).isEqualTo(1);
+        assertThat(second.getOrderIndex()).isEqualTo(0);
+        assertThat(response.sequences().get(0).steps()).hasSize(2);
+        assertThat(response.sequences().get(0).steps().get(0).id()).isEqualTo(2L);
+        assertThat(response.sequences().get(0).steps().get(0).orderIndex()).isEqualTo(0);
+        assertThat(response.sequences().get(0).steps().get(1).id()).isEqualTo(1L);
+        assertThat(response.sequences().get(0).steps().get(1).orderIndex()).isEqualTo(1);
+        verify(journeyRepository, times(2)).flush();
     }
 
     @Test
