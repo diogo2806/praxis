@@ -1,6 +1,6 @@
 # Resumo de Implementacao
 
-> Estado tecnico resumido do Praxis em 20/06/2026.
+> Estado tecnico resumido do Praxis em 04/07/2026.
 
 ## Backend
 
@@ -18,7 +18,9 @@
 
 - React 19 + TanStack Start/Router.
 - Rotas em `frontend/src/routes`.
+- Tela `/login` conectada ao endpoint real `POST /api/v1/auth/login`, salvando token, empresa, nome e roles na sessão local.
 - Camada HTTP central em `frontend/src/lib/api/praxis.ts`.
+- Cliente de autenticação em `frontend/src/lib/api/auth.ts`.
 - SSR/proxy em `frontend/src/server.ts`.
 - Configuracao runtime em `runtime-config.ts` e `runtime-config.server.ts`.
 - CSS global em `frontend/src/styles/app.css`.
@@ -46,7 +48,6 @@
 
 Estas lacunas tambem aparecem no [Mapa Frontend-Backend](frontend-backend-map.md#lacunas-conhecidas-entre-backend-e-ui).
 
-- `POST /api/v1/auth/login` existe, mas nao ha tela `/login`.
 - `GET /api/v1/notifications` existe, mas nao ha helper/tela dedicada no frontend.
 - Reprocessamento manual de DLQ existe no backend, mas a UI atual apenas lista entregas.
 - `PRAXIS_INTEGRATION_TOKEN` e exigida no `docker-compose.yml`, mas a autenticacao real de `/test/**` usa a tabela `integration_tokens` (tokens cadastrados pela area de Integracoes).
