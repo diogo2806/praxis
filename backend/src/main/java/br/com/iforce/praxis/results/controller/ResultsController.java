@@ -3,6 +3,7 @@ package br.com.iforce.praxis.results.controller;
 import br.com.iforce.praxis.gupy.model.AttemptStatus;
 import br.com.iforce.praxis.results.dto.RegisterResultDecisionRequest;
 import br.com.iforce.praxis.results.dto.ResultDetailResponse;
+import br.com.iforce.praxis.results.dto.ResultListItemResponse;
 import br.com.iforce.praxis.results.dto.ResultsPageResponse;
 import br.com.iforce.praxis.results.service.ResultsService;
 import jakarta.validation.Valid;
@@ -65,14 +66,17 @@ public class ResultsController {
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant periodStart,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant periodEnd
     ) {
-        byte[] content = resultsService.exportCsv(
+        ResultsPageResponse page = resultsService.list(
                 search,
                 simulationId,
                 status,
                 integrationProvider,
                 periodStart,
-                periodEnd
-        ).getBytes(StandardCharsets.UTF_8);
+                periodEnd,
+                0,
+                100
+        );
+        byte[] content = toCsv(page).getBytes(StandardCharsets.UTF_8);
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(new MediaType("text", "csv", StandardCharsets.UTF_8));
         headers.setContentDisposition(ContentDisposition.attachment().filename("praxis-resultados.csv").build());
@@ -91,5 +95,25 @@ public class ResultsController {
     ) {
         resultsService.registerDecision(attemptId, request);
         return ResponseEntity.noContent().build();
+    }
+
+    private String toCsv(ResultsPageResponse page) {
+        StringBuilder builder = new StringBuilder("attempt_id,candidate_name,simulation,status,score,highlight_competency,integration_provider,finished_at\n");
+        for (ResultListItemResponse item : page.items()) {
+            builder.append(csv(item.attemptId())).append(',')
+                    .append(csv(item.candidateName())).append(',')
+                    .append(csv(item.simulationTitle())).append(',')
+                    .append(csv(String.valueOf(item.status()))).append(',')
+                    .append(csv(item.overallScore() == null ? "" : String.valueOf(item.overallScore()))).append(',')
+                    .append(csv(item.highlightCompetency())).append(',')
+                    .append(csv(item.integrationProvider())).append(',')
+                    .append(csv(item.finishedAt() == null ? "" : item.finishedAt().toString())).append('\n');
+        }
+        return builder.toString();
+    }
+
+    private String csv(String value) {
+        String text = value == null ? "" : value;
+        return "\"" + text.replace("\"", "\"\"") + "\"";
     }
 }
