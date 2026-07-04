@@ -13,14 +13,19 @@
 - Auditoria por tentativa e por versao de simulacao.
 - Upload de midia por `/api/v1/media`.
 - Empresa config por `/api/v1/empresa-config`.
+- Notificacoes internas por `GET /api/v1/notifications`.
+- Reprocessamento operacional de entregas por `/api/v1/gupy/result-deliveries`.
 
 ## Frontend
 
 - React 19 + TanStack Start/Router.
 - Rotas em `frontend/src/routes`.
 - Tela `/login` conectada ao endpoint real `POST /api/v1/auth/login`, salvando token, empresa, nome e roles na sessão local.
+- Tela `/notifications` dedicada a alertas internos, consulta `GET /api/v1/notifications`, lista entregas em DLQ e permite reprocessamento manual.
+- Tela `/monitoramento` consolida o happy path operacional, tentativas, notificacoes e entregas.
 - Camada HTTP central em `frontend/src/lib/api/praxis.ts`.
 - Cliente de autenticação em `frontend/src/lib/api/auth.ts`.
+- Cliente operacional de notificacoes/DLQ em `frontend/src/lib/api/operations.ts`.
 - SSR/proxy em `frontend/src/server.ts`.
 - Configuracao runtime em `runtime-config.ts` e `runtime-config.server.ts`.
 - CSS global em `frontend/src/styles/app.css`.
@@ -32,7 +37,7 @@
 - As telas operacionais usam a camada HTTP em `frontend/src/lib/api/praxis.ts`.
 - Catalogos de empresa sao carregados por `GET /api/v1/empresa-config`.
 - A criacao de rascunho usa `POST /api/v1/simulations/drafts`.
-- Edicao de fluxo, validacao, governanca, monitoramento, LGPD, envio de link, Talent Match e candidato consomem endpoints reais do backend.
+- Edicao de fluxo, validacao, governanca, monitoramento, LGPD, envio de link, Talent Match, candidato, notificacoes e DLQ consomem endpoints reais do backend.
 - Nao ha fallback local de catalogo, sessao demo ou server function de exemplo no frontend.
 
 ## Integracao Gupy
@@ -48,9 +53,9 @@
 
 Estas lacunas tambem aparecem no [Mapa Frontend-Backend](frontend-backend-map.md#lacunas-conhecidas-entre-backend-e-ui).
 
-- `GET /api/v1/notifications` existe, mas nao ha helper/tela dedicada no frontend.
-- Reprocessamento manual de DLQ existe no backend, mas a UI atual apenas lista entregas.
 - `PRAXIS_INTEGRATION_TOKEN` e exigida no `docker-compose.yml`, mas a autenticacao real de `/test/**` usa a tabela `integration_tokens` (tokens cadastrados pela area de Integracoes).
+- `/billing` segue parcialmente self-service: cliente consulta plano, uso e eventos; criacao/sincronizacao de cobranca fica no painel ADMIN/Mercado Pago.
+- O menu lateral ainda pode destacar melhor `/notifications`, embora a rota e a tela dedicada ja existam.
 
 ## Verificacao recomendada
 
@@ -71,5 +76,5 @@ pnpm build
 Documentacao:
 
 ```bash
-rg -n "api key antiga|callback de retorno" README.md docs frontend/src/routes/README.md
+rg -n "api key antiga|callback de retorno|nao ha helper/tela dedicada|UI atual apenas lista entregas" README.md docs frontend/src/routes/README.md
 ```
