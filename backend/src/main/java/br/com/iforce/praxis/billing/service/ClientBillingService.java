@@ -10,11 +10,19 @@ import br.com.iforce.praxis.auth.persistence.repository.EmpresaRepository;
 
 import br.com.iforce.praxis.billing.dto.BillingEventResponse;
 
+import br.com.iforce.praxis.billing.dto.CheckoutResponse;
+
 import br.com.iforce.praxis.billing.dto.ClientBillingResponse;
+
+import br.com.iforce.praxis.billing.dto.SubscriptionPlanResponse;
+
+import br.com.iforce.praxis.billing.persistence.entity.EmpresaSubscriptionEntity;
 
 import br.com.iforce.praxis.billing.persistence.repository.EmpresaBillingEventRepository;
 
 import br.com.iforce.praxis.billing.persistence.repository.EmpresaSubscriptionRepository;
+
+import br.com.iforce.praxis.billing.persistence.repository.SubscriptionPlanRepository;
 
 import br.com.iforce.praxis.gupy.model.AttemptStatus;
 
@@ -47,8 +55,8 @@ import java.util.List;
  * enxerga qualquer cliente, este serviço monta a visão que o <em>próprio</em> cliente tem da sua
  * situação: qual plano contratou, se está regular, quanto de crédito tem, quanto vem usando e o
  * histórico das últimas movimentações financeiras. Também sugere quais botões fazem sentido para
- * ele agora (comprar créditos, ver a assinatura, atualizar o pagamento...). É tudo leitura — este
- * serviço não cobra nem altera nada.</p>
+ * ele agora e executa as ações de self-service permitidas: gerar checkout de créditos, gerar
+ * autorização de assinatura e reconferir a assinatura já vinculada ao cliente.</p>
  */
 @Service
 public class ClientBillingService {
@@ -58,17 +66,23 @@ public class ClientBillingService {
     private final EmpresaBillingEventRepository eventRepository;
     private final CandidateAttemptRepository attemptRepository;
     private final CreditService creditService;
+    private final SubscriptionPlanRepository planRepository;
+    private final BillingService billingService;
 
     public ClientBillingService(EmpresaRepository empresaRepository,
                                 EmpresaSubscriptionRepository subscriptionRepository,
                                 EmpresaBillingEventRepository eventRepository,
                                 CandidateAttemptRepository attemptRepository,
-                                CreditService creditService) {
+                                CreditService creditService,
+                                SubscriptionPlanRepository planRepository,
+                                BillingService billingService) {
         this.empresaRepository = empresaRepository;
         this.subscriptionRepository = subscriptionRepository;
         this.eventRepository = eventRepository;
         this.attemptRepository = attemptRepository;
         this.creditService = creditService;
+        this.planRepository = planRepository;
+        this.billingService = billingService;
     }
 
     /**
@@ -78,7 +92,8 @@ public class ClientBillingService {
      * contratado, a situação financeira em linguagem simples (regular, pendente, inadimplente, sem
      * crédito ou cancelado), o saldo de créditos, um resumo de uso (avaliações concluídas nos
      * últimos 7 e 30 dias e no total), os dados da assinatura quando houver, as ações sugeridas para
-     * ele e o histórico recente de eventos financeiros. É apenas leitura.</p>
+     * ele e o histórico recente de eventos financeiros. Também expõe o link atual da assinatura
+     * quando o Mercado Pago já devolveu uma página de autorização.</p>
      *
      * @param empresaId identificador do cliente logado
      * @return a visão consolidada de plano, situação, saldo, uso, assinatura, ações e histórico
@@ -101,6 +116,7 @@ public class ClientBillingService {
         ClientBillingResponse.SubscriptionInfo subscriptionInfo = subscription == null ? null
                 : new ClientBillingResponse.SubscriptionInfo(
                 subscription.getStatus(),
+                subscription.getInitPoint(),
                 subscription.getCurrentPeriodEnd(),
                 subscription.getLastPaymentAt(),
                 subscription.getGraceUntil());
@@ -127,6 +143,88 @@ public class ClientBillingService {
     }
 
     /**
+     * Lista os planos ativos que o próprio cliente pode escolher na tela de cobrança.
+     *
+     * <p>É a vitrine de self-service: pacotes AVULSO aparecem para compra de créditos e planos
+     * PROFISSIONAL aparecem para autorização de mensalidade. O cliente só recebe planos ativos e
+     * ordenados por preço, sem depender do painel ADMIN para descobrir o que pode contratar.</p>
+     *
+     * @return planos e pacotes ativos disponíveis para checkout
+     */
+    @Transactional(readOnly = true)
+    public List<SubscriptionPlanResponse> getAvailablePlans() {
+        return planRepository.findByActiveTrueOrderByPriceCentsAsc().stream()
+                .map(plan -> new SubscriptionPlanResponse(plan.getId(), plan.getCode(), plan.getName(),
+                        plan.getPlanType(), plan.getPriceCents(), plan.getCurrency(), plan.getCreditAmount()))
+                .toList();
+    }
+
+    /**
+     * Cria um checkout de compra de créditos para a empresa logada.
+     *
+     * <p>O cliente escolhe um pacote AVULSO e recebe o link do Mercado Pago para pagar. O saldo não
+     * muda neste momento: os créditos continuam entrando apenas quando o Mercado Pago confirmar o
+     * pagamento por webhook ou sincronização, mantendo a fonte da verdade financeira fora da tela.</p>
+     *
+     * @param empresaId identificador do cliente logado
+     * @param planId pacote de créditos escolhido
+     * @return link de checkout do Mercado Pago
+     */
+    @Transactional
+    public CheckoutResponse createCreditCheckout(String empresaId, Long planId) {
+        EmpresaEntity empresa = requireEmpresa(empresaId);
+        if (empresa.getCommercialPlanType() != CommercialPlanType.AVULSO) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "Compra de créditos disponível apenas para clientes AVULSO.");
+        }
+        return billingService.createCreditCheckout(empresaId, planId);
+    }
+
+    /**
+     * Cria um checkout de autorização de assinatura para a empresa logada.
+     *
+     * <p>O cliente PROFISSIONAL recebe o link do Mercado Pago para autorizar a cobrança recorrente.
+     * A assinatura fica pendente até o Mercado Pago confirmar a autorização ou o primeiro pagamento.</p>
+     *
+     * @param empresaId identificador do cliente logado
+     * @param planId plano recorrente escolhido
+     * @return link de autorização da assinatura no Mercado Pago
+     */
+    @Transactional
+    public CheckoutResponse createSubscriptionCheckout(String empresaId, Long planId) {
+        EmpresaEntity empresa = requireEmpresa(empresaId);
+        if (empresa.getCommercialPlanType() != CommercialPlanType.PROFISSIONAL) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "Assinatura self-service disponível apenas para clientes PROFISSIONAL.");
+        }
+        return billingService.createSubscription(empresaId, planId);
+    }
+
+    /**
+     * Reconfere a assinatura atual do próprio cliente diretamente no Mercado Pago.
+     *
+     * <p>Substitui a dependência operacional de pedir para o ADMIN sincronizar uma assinatura após
+     * autorização ou correção de pagamento. O cliente só consegue reconferir a assinatura vinculada
+     * à sua própria empresa, e o efeito aplicado continua passando pelo mesmo motor idempotente de
+     * cobrança.</p>
+     *
+     * @param empresaId identificador do cliente logado
+     * @return visão de cobrança atualizada após a reconferência
+     */
+    @Transactional
+    public ClientBillingResponse syncCurrentSubscription(String empresaId) {
+        EmpresaSubscriptionEntity subscription = subscriptionRepository.findFirstByEmpresaIdOrderByCreatedAtDesc(empresaId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
+                        "Nenhuma assinatura encontrada para sincronizar."));
+        if (subscription.getMpPreapprovalId() == null || subscription.getMpPreapprovalId().isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "Assinatura ainda não possui identificador do Mercado Pago para sincronizar.");
+        }
+        billingService.manualSync("preapproval", subscription.getMpPreapprovalId(), null);
+        return getBilling(empresaId);
+    }
+
+    /**
      * Lista o histórico de eventos financeiros do cliente logado.
      *
      * <p>É o "extrato" que o cliente abre para conferir suas movimentações: compras de crédito,
@@ -145,6 +243,12 @@ public class ClientBillingService {
                 .toList();
     }
 
+    /** Localiza o cliente pelo identificador ou falha com "cliente não encontrado". Uso interno. */
+    private EmpresaEntity requireEmpresa(String empresaId) {
+        return empresaRepository.findById(empresaId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Cliente não encontrado."));
+    }
+
     /**
      * Decide quais ações fazem sentido oferecer ao cliente conforme o plano e a situação: quem é
      * pré-pago vê "comprar créditos"; quem é assinante vê "ver assinatura" e, se estiver
@@ -160,6 +264,7 @@ public class ClientBillingService {
             actions.add("VIEW_HISTORY");
         } else if (plan == CommercialPlanType.PROFISSIONAL) {
             actions.add("VIEW_SUBSCRIPTION");
+            actions.add("SYNC_SUBSCRIPTION");
             if (status == EmpresaStatus.INADIMPLENTE || status == EmpresaStatus.PENDENTE_PAGAMENTO) {
                 actions.add("UPDATE_PAYMENT");
             }

@@ -1,60 +1,60 @@
-# P0 - Prontidao de Produto antes de venda ou demonstracao
+# P0 - Prontidão de Produto antes de venda ou demonstração
 
 > Fonte de verdade complementar para README, `frontend-backend-map.md` e `cadastro_cenarios_rh.md`.
-> Objetivo: deixar claro o que esta pronto para demonstracao, o que e operacao interna e quais promessas comerciais sao seguras.
+> Objetivo: deixar claro o que está pronto para demonstração, o que é operação interna e quais promessas comerciais são seguras.
 
 ## Posicionamento seguro
 
 Frase principal recomendada:
 
-> Praxis adiciona ao ATS uma camada de avaliacao situacional estruturada, com criterios explicitos, pesos cadastrados, score deterministico e trilha auditavel — sem IA julgando candidato.
+> Praxis adiciona ao ATS uma camada de avaliação situacional estruturada, com critérios explícitos, pesos cadastrados, score determinístico e trilha auditável — sem IA julgando candidato.
 
-Evitar em venda, tela ou documentacao publica:
+Evitar em venda, tela ou documentação pública:
 
-- "sem vies" como promessa absoluta;
-- "livre de discriminacao" sem estudo local;
-- "prediz performance" sem validacao estatistica da empresa;
-- "decisao automatica" ou ranking eliminatorio.
+- "sem viés" como promessa absoluta;
+- "livre de discriminação" sem estudo local;
+- "prediz performance" sem validação estatística da empresa;
+- "decisão automática" ou ranking eliminatório.
 
 Usar no lugar:
 
-- criterios explicitos, auditaveis e revisaveis;
+- critérios explícitos, auditáveis e revisáveis;
 - score calculado por regra cadastrada;
-- apoio a triagem e entrevista estruturada;
-- decisao final humana documentada;
+- apoio à triagem e entrevista estruturada;
+- decisão final humana documentada;
 - sem IA/LLM julgando resposta de candidato.
 
 ## Estado real do produto
 
-### Producao / demonstracao principal
+### Produção / demonstração principal
 
-| Area | Estado | Observacao |
+| Área | Estado | Observação |
 | --- | --- | --- |
-| Login | Implementado | Ha rota frontend `/login` integrada ao `POST /api/v1/auth/login`. |
-| Entrada `/comecar` | Implementado como redirecionamento | Com seguranca ativa, leva para `/login`; em modo publico de teste, leva para `/avaliacoes`. Nao deve ser descrita como tela de autoria. |
-| Dashboard | Implementado | Consolida indicadores e acoes recomendadas da empresa. |
-| Avaliacoes | Implementado | Lista avaliacoes, mostra status, competencias, tentativas e arquiva em vez de incentivar exclusao definitiva. |
-| Criacao do zero | Implementado | `/nova/avaliacao` inicia o assistente de 4 passos. |
-| Modelo rapido | Implementado | `/nova/rapido` cria rascunho a partir de modelo pronto. |
-| Assistente de 4 passos | Implementado | Caminho canonico: Teste -> Cenario -> Revisao -> Publicacao. |
+| Login | Implementado | Há rota frontend `/login` integrada ao `POST /api/v1/auth/login`. |
+| Dashboard | Implementado | Consolida indicadores e ações recomendadas da empresa. |
+| Avaliações | Implementado | Lista avaliações, mostra status, competências, tentativas e agora arquiva em vez de excluir definitivamente. |
+| Começar | Implementado | Entrada recomendada para RH antes de criar uma avaliação. |
+| Modelo rápido | Implementado | `/nova/rapido` cria rascunho a partir de modelo pronto. |
+| Assistente de 4 passos | Implementado | Caminho canônico: Teste -> Cenário -> Revisão -> Publicação. |
 | Enviar link | Implementado | Gera links internos e acompanha tentativas ao vivo. |
 | Gupy | Implementado | Contrato externo `/test/**`, preflight e entregas por outbox. |
-| Resultados | Implementado | Lista/detalha tentativa e registra decisao humana. |
-| Compliance | Implementado | Reune defensabilidade, LGPD e explicabilidade operacional. |
-| Notificacoes/DLQ | Implementado | Rota `/notifications` lista alertas internos e permite reprocessar entregas em DLQ. |
+| Resultados | Implementado | Lista/detalha tentativa e registra decisão humana. |
+| Compliance | Implementado | Reúne defensabilidade, LGPD e explicabilidade operacional. |
+| Notificações/DLQ | Implementado | Nova rota `/notifications` lista alertas internos e permite reprocessar entregas em DLQ. |
+| Billing self-service | Implementado nesta entrega | `/billing` lista planos, gera checkout de créditos/assinatura no Mercado Pago e permite sincronizar a assinatura do próprio cliente. |
 
-### Operacao/admin
+### Operação/admin
 
-| Area | Estado | Observacao |
+| Área | Estado | Observação |
 | --- | --- | --- |
 | Admin plataforma | Implementado | Rotas `/admin*` no frontend e `/api/admin/**` no backend exigem perfil `ADMIN`. |
-| Billing | Parcialmente self-service | Cliente consulta plano/uso/eventos em `/billing`; criacao/sincronizacao de cobranca segue no painel ADMIN/Mercado Pago. Botoes sem URL operacional nao devem ser vendidos como checkout completo. |
-| Health Score / CS | Implementado como operacao interna | Fila admin de empresas em risco, nao fluxo principal de RH. |
-| Engagement mensal | Implementado como worker | Apoia retencao e percepcao de valor, nao altera o fluxo de avaliacao. |
+| Billing admin | Implementado | ADMIN continua com visão consolidada, criação assistida de cobranças e sincronização manual como operação de suporte. |
+| Health Score / CS | Implementado como operação interna | Fila admin de empresas em risco, não fluxo principal de RH. |
+| Engagement mensal | Implementado como worker | Apoia retenção e percepção de valor, não altera o fluxo de avaliação. |
 
-### Rotas standalone secundarias
+### Rotas standalone secundárias
 
-Estas rotas continuam uteis para manutencao, power users ou diagnostico, mas nao devem ser apresentadas como caminho principal de onboarding:
+Estas rotas continuam úteis para manutenção, power users ou diagnóstico, mas não devem ser apresentadas como caminho principal de onboarding:
 
 - `/nova/objetivo`
 - `/nova/dialogo`
@@ -62,27 +62,28 @@ Estas rotas continuam uteis para manutencao, power users ou diagnostico, mas nao
 - `/nova/piloto`
 - `/nova/gupy`
 
-O caminho recomendado para RH autenticado e:
+O caminho recomendado para RH é:
 
 ```text
-Avaliacoes -> Nova avaliacao do zero ou Modelo rapido -> 4 passos -> Publicar -> Enviar link/Gupy -> Ver resultados
+Começar -> Modelo rápido ou Do zero -> 4 passos -> Publicar -> Enviar link/Gupy -> Ver resultados
 ```
 
-## Lacunas P0 fechadas
+## Lacunas P0 fechadas nesta entrega
 
-1. **Notificacoes operacionais:** tela dedicada em `/notifications` consome `GET /api/v1/notifications`.
+1. **Notificações operacionais:** nova tela dedicada em `/notifications` consome `GET /api/v1/notifications`.
 2. **Reprocessamento de DLQ:** a mesma tela lista entregas com status `dlq` e chama `POST /api/v1/gupy/result-deliveries/{deliveryId}/reprocess`.
-3. **Arquivamento seguro:** a lista de avaliacoes usa arquivamento, preservando historico e auditoria, em vez de incentivar exclusao definitiva.
-4. **Mensagem de produto:** este documento consolida a promessa segura: criterios explicitos, auditaveis e revisaveis, sem IA julgando candidato.
+3. **Arquivamento seguro:** a lista de avaliações passou a usar arquivamento, preservando histórico e auditoria, em vez de incentivar exclusão definitiva.
+4. **Mensagem de produto:** este documento consolida a promessa segura: critérios explícitos, auditáveis e revisáveis, sem IA julgando candidato.
+5. **Billing self-service:** o cliente passa a gerar checkout de créditos/assinatura e sincronizar a própria assinatura sem depender do ADMIN para a ação operacional básica.
 
-## Proxima revisao de documentacao
+## Próxima revisão de documentação
 
 Ao editar README, `frontend-backend-map.md` ou `cadastro_cenarios_rh.md`, manter esta verdade:
 
 - `/login` existe.
-- `/comecar` e redirecionamento de entrada/autenticacao, nao uma tela de autoria.
-- `/admin*` existe e e operacao de plataforma, nao fluxo de RH.
-- `/billing` e leitura de plano/uso e historico para cliente; checkout completo ainda depende das acoes administrativas disponiveis.
-- `/notifications` e a tela dedicada para alertas internos e DLQ.
-- O assistente de 4 passos e o fluxo principal de criacao; as rotas standalone sao secundarias.
-- Nunca prometer ausencia absoluta de vies; prometer criterio explicito, auditavel e revisavel.
+- `/admin*` existe e é operação de plataforma, não fluxo de RH.
+- `/billing` é o self-service do cliente para plano, uso, histórico, checkout de créditos/assinatura e sincronização da assinatura atual.
+- `/api/admin/**` continua sendo a operação de suporte para visão consolidada, criação assistida e sincronização manual quando necessário.
+- `/notifications` é a tela dedicada para alertas internos e DLQ.
+- O assistente de 4 passos é o fluxo principal; as rotas standalone são secundárias.
+- Nunca prometer ausência absoluta de viés; prometer critério explícito, auditável e revisável.

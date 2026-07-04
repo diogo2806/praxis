@@ -34,6 +34,7 @@ public record ClientBillingResponse(
 
     public record SubscriptionInfo(
             SubscriptionStatus status,
+            String initPoint,
             Instant currentPeriodEnd,
             Instant lastPaymentAt,
             Instant graceUntil
