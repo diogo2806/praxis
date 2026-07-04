@@ -31,14 +31,18 @@ import java.util.List;
 
 
 /**
- * Gerencia a política de retenção de dados e conformidade com LGPD (Lei Geral de Proteção de Dados).
+ * Conduz a etapa de retenção e anonimização de dados pessoais dos candidatos.
  *
- * Automaticamente anonimiza dados de candidatos após um período pré-configurado (padrão: 180 dias).
- * Quando um processo de seleção é finalizado, o candidato tem direto de esquecimento: seus dados
- * pessoais (nome, email) são removidos e substituídos por informações genéricas. Isso garante
- * que apenas dados estritamente necessários são mantidos, em conformidade com a LGPD brasileira.
+ * <p>Na visão do processo, este serviço é o responsável por cumprir a regra de
+ * privacidade depois que uma tentativa de avaliação já não precisa mais manter
+ * nome, e-mail, chave de idempotência original ou URL de retorno. Ele identifica
+ * tentativas encerradas que ultrapassaram o prazo de retenção, substitui os
+ * dados pessoais por valores anônimos e registra a ação na auditoria para que a
+ * empresa consiga demonstrar quando e por que a anonimização aconteceu.</p>
  *
- * Registra todas as anonimizações no histórico de auditoria para rastreabilidade.
+ * <p>O objetivo não é apagar a história operacional da avaliação. O sistema
+ * mantém o identificador técnico da tentativa para rastreabilidade, mas remove
+ * os dados que permitem reconhecer diretamente a pessoa candidata.</p>
  */
 @Service
 public class PrivacyRetentionService {
@@ -55,6 +59,18 @@ public class PrivacyRetentionService {
     private final Clock clock;
     private final int retentionDays;
 
+    /**
+     * Monta o serviço de retenção usando o relógio real do sistema.
+     *
+     * <p>Este é o caminho usado pela aplicação em produção: o sistema injeta o
+     * repositório das tentativas, o serviço de auditoria e o prazo de retenção
+     * configurado. Quando a configuração não informa outro valor, o processo usa
+     * 180 dias como prazo padrão antes de anonimizar dados pessoais.</p>
+     *
+     * @param candidateAttemptRepository local onde o sistema consulta as tentativas dos candidatos
+     * @param auditEventService serviço que registra a evidência de anonimização na auditoria
+     * @param retentionDays quantidade de dias que os dados pessoais podem permanecer identificáveis
+     */
     @Autowired
     public PrivacyRetentionService(
             CandidateAttemptRepository candidateAttemptRepository,
@@ -64,6 +80,19 @@ public class PrivacyRetentionService {
         this(candidateAttemptRepository, auditEventService, Clock.systemUTC(), retentionDays);
     }
 
+    /**
+     * Monta o serviço permitindo controlar o relógio usado no cálculo de vencimento.
+     *
+     * <p>Na prática do processo, tem o mesmo papel do construtor principal. A
+     * diferença é que permite informar um relógio específico para validar cenários
+     * de retenção em testes, como simular que determinada tentativa já passou do
+     * prazo de anonimização.</p>
+     *
+     * @param candidateAttemptRepository local onde o sistema consulta as tentativas dos candidatos
+     * @param auditEventService serviço que registra a evidência de anonimização na auditoria
+     * @param clock referência de data e hora usada para calcular o vencimento da retenção
+     * @param retentionDays quantidade de dias que os dados pessoais podem permanecer identificáveis
+     */
     PrivacyRetentionService(
             CandidateAttemptRepository candidateAttemptRepository,
             AuditEventService auditEventService,
@@ -77,20 +106,20 @@ public class PrivacyRetentionService {
     }
 
     /**
-     * Anonimiza os dados de candidatos cuja retenção expirou.
+     * Executa a rotina de anonimização para uma empresa específica.
      *
-     * Busca todos os candidatos que:
-     * - Tiveram seus processos de seleção finalizados (completado, abandonado, expirado ou falhou)
-     * - Passaram mais tempo que o período de retenção configurado (padrão: 180 dias)
+     * <p>Na visão do usuário de negócio, este método representa a varredura de
+     * LGPD de uma empresa: ele procura candidatos cujas avaliações já terminaram
+     * e cujo prazo de retenção venceu. Para cada tentativa encontrada, remove os
+     * dados pessoais, mantém apenas a rastreabilidade técnica e registra o evento
+     * na trilha de auditoria.</p>
      *
-     * Para cada candidato encontrado, substitui o nome e email por informações genéricas,
-     * mantendo apenas o ID para rastreabilidade. Registra a anonimização no histórico para
-     * conformidade regulatória.
+     * <p>A rotina trabalha em lotes para proteger a estabilidade do sistema. Em
+     * uma execução, trata até 100 tentativas vencidas da empresa informada; novas
+     * execuções continuam processando o restante.</p>
      *
-     * Processa em lotes de 100 registros para não sobrecarregar o banco de dados.
-     *
-     * @param empresaId A empresa para a qual executar a anonimização
-     * @return Quantidade de candidatos que tiveram seus dados anonimizados
+     * @param empresaId empresa cuja base de tentativas será verificada
+     * @return quantidade de tentativas anonimizadas nesta execução
      */
     @Transactional
     public int anonymizeExpiredAttemptsForEmpresa(String empresaId) {
@@ -108,19 +137,21 @@ public class PrivacyRetentionService {
     }
 
     /**
-     * Executa a anonimização de um candidato específico.
+     * Aplica a anonimização em uma tentativa de candidato já selecionada pela rotina.
      *
-     * Remove as informações pessoais do candidato:
-     * - Nome é substituído por um valor genérico
-     * - Email é substituído por um identificador anônimo único
-     * - URL do webhook (usada para enviar resultados) é removida
-     * - ID idempotente é marcado como anonimizado
+     * <p>Este passo é o momento em que o sistema deixa a tentativa segura para
+     * retenção histórica: o nome vira um texto genérico, o e-mail vira um endereço
+     * técnico anônimo, a chave de idempotência passa a indicar que o registro já
+     * foi tratado e a URL de webhook é removida para evitar novas entregas com
+     * dados antigos.</p>
      *
-     * Em seguida, registra o evento de anonimização no histórico de auditoria
-     * com informações sobre quando ocorreu e qual política foi aplicada.
+     * <p>Depois da alteração, o processo grava um evento de auditoria. Assim, uma
+     * pessoa de suporte, compliance ou operação consegue explicar que a tentativa
+     * foi anonimizada por política de retenção, com a data aplicada e o prazo de
+     * retenção usado.</p>
      *
-     * @param candidate Dados do candidato a ser anonimizado
-     * @param anonymizedAt Momento da anonimização
+     * @param candidate tentativa do candidato que terá os dados pessoais substituídos
+     * @param anonymizedAt data e hora registradas como momento oficial da anonimização
      */
     private void anonymize(CandidateAttemptEntity candidate, Instant anonymizedAt) {
         String attemptId = candidate.getId();
