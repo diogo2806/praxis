@@ -1,46 +1,26 @@
 package br.com.iforce.praxis.simulation.service;
 
 import br.com.iforce.praxis.config.PraxisProperties;
-
 import br.com.iforce.praxis.simulation.dto.CompetencyWeightDto;
-
-import br.com.iforce.praxis.simulation.dto.UpdateBlueprintRequest;
-
 import br.com.iforce.praxis.simulation.dto.SimulationValidationResponse;
-
+import br.com.iforce.praxis.simulation.dto.UpdateBlueprintRequest;
 import br.com.iforce.praxis.simulation.dto.ValidationIssueResponse;
-
 import br.com.iforce.praxis.simulation.model.ValidationIssueSeverity;
-
 import br.com.iforce.praxis.simulation.persistence.entity.OptionCompetencyScoreEntity;
-
 import br.com.iforce.praxis.simulation.persistence.entity.SimulationCompetencyEntity;
-
 import br.com.iforce.praxis.simulation.persistence.entity.SimulationNodeEntity;
-
 import br.com.iforce.praxis.simulation.persistence.entity.SimulationOptionEntity;
-
 import br.com.iforce.praxis.simulation.persistence.entity.SimulationVersionEntity;
-
 import org.springframework.http.HttpStatus;
-
 import org.springframework.stereotype.Service;
-
 import org.springframework.web.server.ResponseStatusException;
 
-
 import java.util.ArrayList;
-
 import java.util.HashMap;
-
 import java.util.HashSet;
-
 import java.util.List;
-
 import java.util.Map;
-
 import java.util.Set;
-
 
 /**
  * Verifica a qualidade e a integridade de uma prova antes da publicação.
@@ -57,8 +37,8 @@ import java.util.Set;
 @Service
 public class SimulationValidationService {
 
-    private static final int MAX_DEPTH_TURNS = 10;
-    private static final int LARGE_GRAPH_NODE_THRESHOLD = 8;
+    private static final int MAX_DEPTH_TURNS = 20;
+    private static final int LARGE_GRAPH_NODE_THRESHOLD = 20;
 
     private final PraxisProperties praxisProperties;
 
@@ -498,7 +478,7 @@ public class SimulationValidationService {
             issues.add(new ValidationIssueResponse(
                     ValidationIssueSeverity.WARNING,
                     simulationVersionEntity.getRootNodeId(),
-                    "Este teste tem muitas etapas. A validação pode demorar um pouco mais; se estiver difícil revisar, divida o fluxo ou remova etapas redundantes."
+                    "Este teste passou de " + LARGE_GRAPH_NODE_THRESHOLD + " etapas. A validação continua liberada, mas revise se o fluxo ainda está simples para a pessoa candidata."
             ));
         }
     }
@@ -513,7 +493,7 @@ public class SimulationValidationService {
         collectTerminalNodePaths(rootNodeId, nodesById, new HashSet<>(), new ArrayList<>(), paths);
 
         for (List<SimulationNodeEntity> path : paths) {
-            SimulationNodeEntity terminalNode = path.getLast();
+            SimulationNodeEntity terminalNode = path.get(path.size() - 1);
             for (SimulationCompetencyEntity competency : simulationVersionEntity.getCompetencies()) {
                 int maxForCompetency = calculateMaxPathScoreForCompetency(path, competency.getName());
                 if (maxForCompetency <= 0) {
@@ -568,7 +548,7 @@ public class SimulationValidationService {
             }
         }
 
-        currentPath.removeLast();
+        currentPath.remove(currentPath.size() - 1);
         visiting.remove(nodeId);
     }
 
