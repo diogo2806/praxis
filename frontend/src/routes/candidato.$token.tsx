@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 
@@ -189,7 +189,7 @@ function CandidateTerminalStatus({ status }: { status: TerminalStatusCopy }) {
   );
 }
 
-function CandidateShell({ children }: { children: React.ReactNode }) {
+function CandidateShell({ children }: { children: ReactNode }) {
   return (
     <main className="flex min-h-screen items-center justify-center bg-background px-4 py-10 text-foreground">
       <div className="w-full max-w-2xl">{children}</div>
