@@ -40,7 +40,13 @@ import java.util.Optional;
 @Service
 public class TermAcceptanceService {
 
-    /** Descritor de um termo: tipo e versão correntes exibidos ao usuário. */
+    /**
+     * Descritor de um termo: tipo, versão corrente e texto exibidos ao usuário.
+     *
+     * @param type identificador do termo no processo de aceite
+     * @param version versão vigente que precisa ser confirmada
+     * @param text conteúdo apresentado para leitura antes do aceite
+     */
     private record TermDescriptor(String type, String version, String text) {
     }
 
@@ -53,6 +59,14 @@ public class TermAcceptanceService {
     private final CurrentEmpresaService currentEmpresaService;
     private final CurrentUserService currentUserService;
 
+    /**
+     * Prepara o serviço com os recursos necessários para saber qual empresa e
+     * qual usuário estão realizando o processo de aceite.
+     *
+     * @param termAcceptanceRepository acesso ao histórico de aceites registrados
+     * @param currentEmpresaService identificação da empresa em operação
+     * @param currentUserService identificação do usuário responsável pela ação
+     */
     public TermAcceptanceService(
             TermAcceptanceRepository termAcceptanceRepository,
             CurrentEmpresaService currentEmpresaService,
@@ -135,6 +149,8 @@ public class TermAcceptanceService {
     /**
      * Indica se o usuário atual aceitou a versão corrente do termo de uso em saúde. Usado como
      * trava de publicação quando o empresa opera na vertical de saúde.
+     *
+     * @return {@code true} quando a versão vigente já foi aceita pelo usuário atual
      */
     @Transactional(readOnly = true)
     public boolean isHealthUseAcceptedByCurrentUser() {
@@ -145,16 +161,36 @@ public class TermAcceptanceService {
                 .orElse(false);
     }
 
+    /**
+     * Monta a resposta com o conteúdo do termo para a tela apresentar ao usuário.
+     *
+     * @param descriptor termo que será exibido
+     * @return tipo, versão e texto do termo em formato de resposta
+     */
     private TermResponse termResponse(TermDescriptor descriptor) {
         return new TermResponse(descriptor.type(), descriptor.version(), descriptor.text());
     }
 
+    /**
+     * Consulta a situação de aceite do termo para a empresa e o usuário logados.
+     *
+     * @param descriptor termo cuja aceitação será verificada
+     * @return resumo indicando se a versão atual já foi aceita
+     */
     private TermAcceptanceStatusResponse statusFor(TermDescriptor descriptor) {
         String empresaId = currentEmpresaService.requiredEmpresaId();
         String userId = currentUserService.requiredUserId();
         return toStatus(descriptor, latestAcceptance(descriptor, empresaId, userId));
     }
 
+    /**
+     * Registra um novo aceite depois de confirmar que a versão enviada pela tela
+     * é a mesma versão vigente do termo.
+     *
+     * @param descriptor termo que está sendo aceito
+     * @param request dados informados pela tela de confirmação
+     * @return situação atualizada após o registro do aceite
+     */
     private TermAcceptanceStatusResponse accept(TermDescriptor descriptor, AcceptTermRequest request) {
         if (!descriptor.version().equals(request.version())) {
             throw new ResponseStatusException(
@@ -176,6 +212,15 @@ public class TermAcceptanceService {
         return toStatus(descriptor, Optional.of(acceptance));
     }
 
+    /**
+     * Busca o registro mais recente de aceite para uma empresa, usuário e tipo de
+     * termo.
+     *
+     * @param descriptor termo consultado
+     * @param empresaId empresa dona do processo
+     * @param userId usuário que pode ter aceitado o termo
+     * @return último aceite encontrado, quando existir
+     */
     private Optional<TermAcceptanceEntity> latestAcceptance(
             TermDescriptor descriptor, String empresaId, String userId) {
         return termAcceptanceRepository
@@ -183,6 +228,13 @@ public class TermAcceptanceService {
                         empresaId, userId, descriptor.type());
     }
 
+    /**
+     * Traduz o histórico encontrado em uma resposta simples para a interface.
+     *
+     * @param descriptor termo cuja versão vigente será comparada
+     * @param acceptance último aceite encontrado para o usuário
+     * @return situação do aceite pronta para exibição
+     */
     private TermAcceptanceStatusResponse toStatus(
             TermDescriptor descriptor, Optional<TermAcceptanceEntity> acceptance) {
         return acceptance
