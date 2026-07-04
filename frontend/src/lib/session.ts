@@ -61,7 +61,17 @@ export function saveAuthenticatedSession(response: AuthenticatedSessionResponse)
   localStorage.setItem("praxis.userRole", response.roles.join(", "));
 }
 
-export function defaultAuthenticatedRoute() {
+export function clearAuthenticatedSession() {
+  if (typeof window === "undefined") return;
+
+  localStorage.removeItem("praxis.token");
+  localStorage.removeItem("praxis.empresaId");
+  localStorage.removeItem("praxis.workspaceName");
+  localStorage.removeItem("praxis.userName");
+  localStorage.removeItem("praxis.userRole");
+}
+
+export function defaultAuthenticatedRoute(): "/avaliacoes" {
   return "/avaliacoes";
 }
 
