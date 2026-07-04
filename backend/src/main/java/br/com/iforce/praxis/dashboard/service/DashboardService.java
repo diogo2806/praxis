@@ -32,6 +32,10 @@ import br.com.iforce.praxis.dashboard.dto.DashboardResponse.RecommendedActionSev
 
 import br.com.iforce.praxis.dashboard.dto.DashboardResponse.RecommendedActionType;
 
+import br.com.iforce.praxis.gupy.delivery.model.ResultDeliveryStatus;
+
+import br.com.iforce.praxis.gupy.delivery.service.OutboxResultDeliveryService;
+
 import br.com.iforce.praxis.gupy.model.AttemptStatus;
 
 import br.com.iforce.praxis.gupy.persistence.entity.CandidateAttemptEntity;
@@ -91,8 +95,6 @@ import java.util.Locale;
 
 import java.util.Map;
 
-import java.util.Set;
-
 import java.util.function.Function;
 
 import java.util.stream.Collectors;
@@ -119,7 +121,8 @@ import java.util.stream.Collectors;
  *   <li><b>Uso do plano</b>: plano contratado, saldo de créditos e consumo dos
  *       últimos 30 dias.</li>
  *   <li><b>Ações recomendadas</b>: sugestões do que fazer a seguir (criar a
- *       primeira avaliação, publicar rascunho, comprar créditos, etc.).</li>
+ *       primeira avaliação, publicar rascunho, comprar créditos, revisar DLQ,
+ *       etc.).</li>
  * </ul>
  *
  * <p>Todos os números são sempre calculados apenas para a empresa logada, de
@@ -143,6 +146,7 @@ public class DashboardService {
     private final IntegrationTokenRepository integrationTokenRepository;
     private final EmpresaIntegrationRepository empresaIntegrationRepository;
     private final BillingService billingService;
+    private final OutboxResultDeliveryService resultDeliveryService;
 
     public DashboardService(
             CurrentEmpresaService currentEmpresaService,
@@ -153,7 +157,8 @@ public class DashboardService {
             CandidateAttemptRepository candidateAttemptRepository,
             IntegrationTokenRepository integrationTokenRepository,
             EmpresaIntegrationRepository empresaIntegrationRepository,
-            BillingService billingService
+            BillingService billingService,
+            OutboxResultDeliveryService resultDeliveryService
     ) {
         this.currentEmpresaService = currentEmpresaService;
         this.empresaRepository = empresaRepository;
@@ -164,6 +169,7 @@ public class DashboardService {
         this.integrationTokenRepository = integrationTokenRepository;
         this.empresaIntegrationRepository = empresaIntegrationRepository;
         this.billingService = billingService;
+        this.resultDeliveryService = resultDeliveryService;
     }
 
     /**
@@ -175,8 +181,8 @@ public class DashboardService {
      * (publicadas e em rascunho), quantos candidatos estão respondendo agora e
      * quantas avaliações foram concluídas nos últimos 30 dias. Em seguida junta
      * os últimos resultados, as jornadas em destaque, a situação das
-     * integrações, o uso do plano de cobrança e as ações recomendadas, e
-     * entrega tudo pronto para a tela exibir.</p>
+     * integrações, o uso do plano de cobrança, eventuais entregas em DLQ e as
+     * ações recomendadas, e entrega tudo pronto para a tela exibir.</p>
      *
      * @return o resumo completo do painel da empresa logada
      * @throws ResponseStatusException se a empresa logada não for encontrada
@@ -224,6 +230,7 @@ public class DashboardService {
                 billingOverview.subscription() == null ? null : billingOverview.subscription().currentPeriodEnd(),
                 empresa.getCommercialCondition()
         );
+        long dlqDeliveryCount = resultDeliveryService.listDeliveries(ResultDeliveryStatus.DLQ, null, null).size();
 
         return new DashboardResponse(
                 empresaId,
@@ -236,7 +243,7 @@ public class DashboardService {
                 journeyItems(empresaId, journeys),
                 integrations,
                 billing,
-                recommendedActions(simulations, journeys, integrations, billing, completedAttemptsLast30Days)
+                recommendedActions(simulations, journeys, integrations, billing, completedAttemptsLast30Days, dlqDeliveryCount)
         );
     }
 
@@ -360,18 +367,20 @@ public class DashboardService {
      * <p>Fluxo do processo: olha o estado da operação e propõe o que fazer a
      * seguir. Se não há avaliações, sugere criar a primeira; se não há jornadas,
      * sugere montar uma; se existem jornadas em rascunho, lembra de publicá-las;
-     * se alguma integração está sem configurar, sugere configurá-la; e, no plano
-     * avulso sem saldo, alerta para comprar créditos — caso contrário, confirma
-     * que a operação está ativa e leva aos resultados. As sugestões são
-     * ordenadas por urgência (primeiro as mais críticas) e limitadas a quatro,
-     * para não sobrecarregar a tela.</p>
+     * se alguma integração está sem configurar, sugere configurá-la; se há
+     * entregas em DLQ, alerta para reprocessar; e, no plano avulso sem saldo,
+     * alerta para comprar créditos — caso contrário, confirma que a operação está
+     * ativa e leva aos resultados. As sugestões são ordenadas por urgência
+     * (primeiro as mais críticas) e limitadas a quatro, para não sobrecarregar a
+     * tela.</p>
      */
     private List<RecommendedAction> recommendedActions(
             List<SimulationEntity> simulations,
             List<AssessmentJourneyEntity> journeys,
             List<IntegrationStatusItem> integrations,
             BillingUsage billing,
-            long completedAttemptsLast30Days
+            long completedAttemptsLast30Days,
+            long dlqDeliveryCount
     ) {
         List<RecommendedAction> actions = new ArrayList<>();
         if (simulations.isEmpty()) {
@@ -418,6 +427,17 @@ public class DashboardService {
                         "Configurar integração",
                         "/integrations"
                 )));
+
+        if (dlqDeliveryCount > 0) {
+            actions.add(new RecommendedAction(
+                    RecommendedActionType.CHECK_DLQ,
+                    dlqDeliveryCount + " entrega" + (dlqDeliveryCount == 1 ? "" : "s") + " em DLQ",
+                    "Há resultados que não foram entregues ao ATS/webhook após as retentativas. Reprocesse para normalizar a operação.",
+                    RecommendedActionSeverity.danger,
+                    "Abrir DLQ",
+                    "/notifications"
+            ));
+        }
 
         if (billing.plan() == CommercialPlanType.AVULSO && billing.creditBalance() <= 0) {
             actions.add(new RecommendedAction(
