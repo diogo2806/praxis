@@ -43,8 +43,9 @@ import java.util.stream.Collectors;
 /**
  * Gerencia os tokens de segurança para integração com sistemas externos.
  *
- * Empresas que desejam integrar com a Praxis (por exemplo, para sincronizar dados com Gupy)
- * precisam de um token de segurança único. Este serviço permite criar, listar e renovar esses tokens.
+ * Empresas que desejam integrar com a Praxis (por exemplo, para sincronizar dados com Gupy
+ * ou expor uma API própria) precisam de um token de segurança único. Este serviço permite
+ * criar, listar e renovar esses tokens.
  *
  * Cada token é único por empresa e plataforma de integração. O token é guardado de forma
  * encriptada: apenas o hash dele é armazenado, nunca o valor real. Assim, mesmo que alguém
@@ -56,7 +57,7 @@ import java.util.stream.Collectors;
 @Service
 public class IntegrationTokenAdminService {
 
-    private static final Set<String> SUPPORTED_PROVIDERS = Set.of("gupy", "recrutei");
+    private static final Set<String> SUPPORTED_PROVIDERS = Set.of("custom_api", "gupy", "recrutei");
     private static final int TOKEN_BYTES = 32;
 
     private final SecureRandom secureRandom = new SecureRandom();
@@ -84,7 +85,7 @@ public class IntegrationTokenAdminService {
      * Não expõe o token em si, apenas seu status e data. Os valores dos tokens
      * nunca são retornados à interface, por questões de segurança.
      *
-     * @return Lista com status de cada integração disponível (Gupy, Recrutei, etc)
+     * @return Lista com status de cada integração disponível (API própria, Gupy, Recrutei, etc)
      */
     @Transactional(readOnly = true)
     public List<IntegrationTokenResponse> listTokens() {
@@ -116,7 +117,7 @@ public class IntegrationTokenAdminService {
      *
      * O token antigo é imediatamente descartado e não funciona mais para autenticar.
      *
-     * @param provider Nome da plataforma (Gupy, Recrutei, etc)
+     * @param provider Nome da plataforma (API própria, Gupy, Recrutei, etc)
      * @return O novo token gerado, que deve ser salvo com cuidado. Não será retornado novamente.
      * @throws ResponseStatusException se a plataforma não é suportada
      */
@@ -153,7 +154,7 @@ public class IntegrationTokenAdminService {
      * Qualquer tentativa posterior de usar aquela integração será rejeitada até
      * que um novo token seja gerado.
      *
-     * @param provider Nome da plataforma (Gupy, Recrutei, etc)
+     * @param provider Nome da plataforma (API própria, Gupy, Recrutei, etc)
      * @throws ResponseStatusException se a plataforma não é suportada
      */
     @Transactional
