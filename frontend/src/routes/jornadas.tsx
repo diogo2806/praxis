@@ -432,6 +432,7 @@ function JourneyComposer({
   const totalSteps = sequences.reduce((total, sequence) => total + sequence.steps.length, 0);
   const existingSequenceKeys = sequences.map((sequence) => sequence.sequenceKey);
   const draft = journey.status === "draft";
+  const canEditMetadata = journey.status !== "archived";
   const canPublish = draft && totalSteps > 0;
   const trimmedSequenceKey = sequenceKey.trim() || DEFAULT_SEQUENCE;
   const simulationsInCurrentSequence = new Set(
@@ -469,7 +470,7 @@ function JourneyComposer({
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
-          {draft && (
+          {canEditMetadata && (
             <Button
               type="button"
               variant="outline"
@@ -506,7 +507,7 @@ function JourneyComposer({
         </div>
       </div>
 
-      {editing && draft && (
+      {editing && canEditMetadata && (
         <div className="border-b border-border bg-muted/20 p-5">
           <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto]">
             <input
@@ -551,7 +552,7 @@ function JourneyComposer({
             </p>
           )}
           <p className="mt-2 text-xs text-muted-foreground">
-            A edição de nome e descrição fica disponível apenas enquanto a jornada está em rascunho.
+            Nome e descrição podem ser editados em jornadas rascunho ou publicadas. As etapas continuam editáveis apenas em rascunho.
           </p>
         </div>
       )}
