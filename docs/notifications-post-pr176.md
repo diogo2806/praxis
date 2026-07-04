@@ -20,3 +20,7 @@ Este documento complementa a prontidao P0 do produto com os detalhes entregues n
 ## Regra de produto
 
 A rota de notificacoes e o badge existem para tornar falhas operacionais descobriveis. O alerta no dashboard deve levar o usuario para `/notifications`, onde a revisao e o reprocessamento acontecem.
+
+## Implementacao pendente
+
+Conectar o banner visual no shell ou na rota de dashboard.
