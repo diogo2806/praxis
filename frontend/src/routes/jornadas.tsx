@@ -433,6 +433,7 @@ function JourneyComposer({
   const existingSequenceKeys = sequences.map((sequence) => sequence.sequenceKey);
   const draft = journey.status === "draft";
   const canEditMetadata = journey.status !== "archived";
+  const canEditStructure = journey.status !== "archived";
   const canPublish = draft && totalSteps > 0;
   const trimmedSequenceKey = sequenceKey.trim() || DEFAULT_SEQUENCE;
   const simulationsInCurrentSequence = new Set(
@@ -552,12 +553,12 @@ function JourneyComposer({
             </p>
           )}
           <p className="mt-2 text-xs text-muted-foreground">
-            Nome e descrição podem ser editados em jornadas rascunho ou publicadas. As etapas continuam editáveis apenas em rascunho.
+            Nome, descrição e avaliações podem ser editados em jornadas rascunho ou publicadas.
           </p>
         </div>
       )}
 
-      {draft && (
+      {canEditStructure && (
         <div className="border-b border-border p-5">
           {simulations.length === 0 ? (
             <EmptyState
@@ -672,7 +673,7 @@ function JourneyComposer({
                         </td>
                         <td className="px-4 py-3">{step.required ? "Sim" : "Opcional"}</td>
                         <td className="px-4 py-3 text-right">
-                          {draft && (
+                          {canEditStructure && (
                             <div className="flex justify-end gap-2">
                               <Button
                                 type="button"
