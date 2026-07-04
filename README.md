@@ -4,6 +4,10 @@ Praxis e uma plataforma para criar, validar, publicar, aplicar, auditar e monito
 
 O sistema funciona como uma camada complementar a um ATS, hoje com integracao Gupy: a Gupy organiza o funil, o Praxis adiciona evidencia comportamental auditavel antes da entrevista.
 
+Frase segura de produto:
+
+> Avaliacao situacional estruturada para recrutamento, com criterios explicitos, auditaveis e revisaveis, score deterministico e trilha auditavel — sem IA julgando candidato.
+
 ## O que o sistema faz
 
 - Permite que RH crie simulacoes situacionais para cargos e contextos reais.
@@ -13,17 +17,20 @@ O sistema funciona como uma camada complementar a um ATS, hoje com integracao Gu
 - Gera links publicos de candidato, por integracao Gupy ou pela area interna da empresa.
 - Aplica a simulacao em fluxo publico com token de tentativa.
 - Calcula score deterministico por alternativa escolhida, competencia e peso.
-- Mantem auditoria de criacao, edicao, publicacao, tentativa e resposta.
+- Mantem auditoria de criacao, edicao, publicacao, tentativa, resposta e arquivamento.
+- Arquiva avaliacoes fora de uso sem apagar historico operacional.
 - Envia resultado para webhook externo por outbox transacional com retry e DLQ.
-- Exibe monitoramento, governanca, LGPD, defensabilidade e comparacao de candidatos.
+- Exibe monitoramento, notificacoes, DLQ, governanca, LGPD, defensabilidade e comparacao de candidatos.
 
 ## O que o sistema nao promete
 
+- Nao promete ausencia absoluta de vies; promete criterios explicitos, auditaveis e revisaveis.
 - Nao avalia texto livre automaticamente.
 - Nao usa LLM ou IA generativa para julgar candidato.
 - Nao substitui decisao humana em contexto sensivel.
 - Nao e um ATS completo; integra-se a um ATS.
 - Nao possui endpoint separado de "ativacao Gupy"; hoje existe preflight e publicacao.
+- Nao possui checkout completo self-service de billing; o cliente consulta plano/uso/eventos e a operacao de cobranca segue pelo ADMIN/Mercado Pago.
 
 ## Modulos
 
@@ -40,7 +47,7 @@ Pacote base: `br.com.iforce.praxis`.
 Principais dominios:
 
 - `auth`: login, JWT, empresa e roles.
-- `simulation`: criacao, versoes, grafo, validacao, publicacao, monitoramento, quick-start e Talent Match.
+- `simulation`: criacao, versoes, grafo, validacao, publicacao, monitoramento, quick-start, Talent Match e arquivamento seguro.
 - `journey`: jornadas de avaliacao (assessment journeys) que encadeiam varias simulacoes publicadas em um funil unico por candidato.
 - `candidate`: fluxo publico do candidato e links internos.
 - `results`: listagem e detalhe de resultados de tentativas, com registro da decisao do recrutador.
@@ -48,19 +55,19 @@ Principais dominios:
 - `gupy`: contrato externo `/test/**`, catalogo, tentativa e resultado.
 - `recrutei`: segundo provedor ATS integrado, com contrato externo proprio.
 - `shared.integration`: Central de Integracoes (`/api/v1/integrations`) que unifica Gupy, Recrutei e API propria, incluindo webhook e token de API publica.
-- `billing`: cobranca Mercado Pago (Parte B). AVULSO por credito pre-pago (saldo + ledger append-only), PROFISSIONAL por assinatura recorrente, ENTERPRISE por contrato manual. A leitura do plano/uso fica em `/api/v1/billing`; a criacao de cobrancas e sincronizacao com o Mercado Pago fica no painel ADMIN. Webhook publico (`POST /api/webhooks/mercado-pago`) com validacao de assinatura `x-signature`, idempotencia e consulta a API antes de aplicar mudanca financeira. Credenciais (`MP_ACCESS_TOKEN`, `MP_PUBLIC_KEY`, `MP_WEBHOOK_SECRET`) ficam apenas no backend, via variaveis de ambiente. Inclui a **regua de cobranca inteligente** (dunning): quando um pagamento falha o cliente recebe um toque educativo de retry (e-mail/SMS) e lembretes recorrentes enquanto segue `PENDENTE_PAGAMENTO`/`INADIMPLENTE`, cobrindo os gaps antes da suspensao dura. Cada toque vira um evento append-only `DUNNING_NOTIFIED`.
-- `admin`: painel administrativo da plataforma (perfil `ADMIN`) para cadastrar e governar clientes (empresas), acompanhar uso, suspender, reativar e cancelar, com auditoria append-only. Cliente = `EmpresaEntity`; nao existe `CustomerEntity`. Inclui a **Saude do Cliente (Health Score)**: uma varredura diaria (`CustomerHealthScheduler`) compara as conclusoes dos ultimos 30 dias com o periodo anterior e monta a fila de atuacao proativa de Customer Success (`GET /api/admin/empresas/at-risk`), alertando o time sobre clientes ativos cuja utilizacao caiu alem do limite (por padrao, mais de 30%).
-- `engagement`: relatorios de engajamento automatizados. Um worker mensal (`EngagementReportScheduler`) envia ao e-mail corporativo (`corporateEmail`) dos clientes ativos as metricas agregadas do periodo, com destaque para as "Horas economizadas com avaliacoes Praxis este mes", reforcando o valor continuo do software.
+- `billing`: cobranca Mercado Pago (Parte B). AVULSO por credito pre-pago (saldo + ledger append-only), PROFISSIONAL por assinatura recorrente, ENTERPRISE por contrato manual. A leitura do plano/uso fica em `/api/v1/billing`; a criacao de cobrancas e sincronizacao com o Mercado Pago fica no painel ADMIN. Webhook publico (`POST /api/webhooks/mercado-pago`) com validacao de assinatura `x-signature`, idempotencia e consulta a API antes de aplicar mudanca financeira.
+- `admin`: painel administrativo da plataforma (perfil `ADMIN`) para cadastrar e governar clientes (empresas), acompanhar uso, suspender, reativar e cancelar, com auditoria append-only. Cliente = `EmpresaEntity`; nao existe `CustomerEntity`.
+- `engagement`: relatorios de engajamento automatizados. Um worker mensal (`EngagementReportScheduler`) envia ao e-mail corporativo (`corporateEmail`) dos clientes ativos as metricas agregadas do periodo.
 - `team`: gestao dos usuarios da propria empresa (convite, bloqueio, reenvio de convite).
 - `account`: conta do usuario logado (dados basicos e troca de senha).
 - `companyprofile`: dados cadastrais da empresa autenticada.
 - `term`: termo de responsabilidade do recrutador e termo de uso da vertical de Saude, com registro de aceite.
 - `shared.outbox`: entrega assincrona de eventos/resultados.
+- `shared.notification`: alertas internos, inclusive DLQ.
 - `audit`: trilha de eventos.
 - `tenantconfig`: catalogos configuraveis por empresa (endpoint `/api/v1/empresa-config`).
 - `media`: upload de imagem/audio para nos e alternativas.
 - `privacy`: informacoes de conformidade LGPD.
-- `shared.notification`: alertas internos, inclusive DLQ.
 
 ### Frontend
 
@@ -68,12 +75,14 @@ As telas ficam em `frontend/src/routes` e usam TanStack Router.
 
 Navegacao principal da empresa (menu lateral em `frontend/src/components/app-shell.tsx`):
 
+- `/login`: autenticacao da empresa por `POST /api/v1/auth/login`.
 - `/dashboard`: painel inicial com indicadores da empresa.
-- `/avaliacoes`: ver e editar as avaliacoes.
+- `/avaliacoes`: ver, editar e arquivar as avaliacoes.
 - `/results`: lista de resultados de tentativas; `/results/{attemptId}` detalha e registra a decisao do recrutador.
 - `/enviar-link`: cria links internos para candidatos e acompanha tentativas ao vivo.
 - `/integrations`: Central de Integracoes (Gupy, Recrutei e API propria); `/integrations/{provider}` detalha e configura cada provedor.
 - `/monitoramento`: acompanha tentativas e entregas.
+- `/notifications`: alertas internos e reprocessamento de entregas em DLQ.
 - `/jornadas`: jornadas de avaliacao que encadeiam varias avaliacoes.
 - `/talent-match`: compara candidatos contra benchmark da versao.
 - `/billing`: plano, uso e historico de cobranca.
@@ -81,9 +90,10 @@ Navegacao principal da empresa (menu lateral em `frontend/src/components/app-she
 - `/competencias`: catalogos configuraveis da empresa.
 - `/configuracoes/perfil`, `/configuracoes/conta` e `/team`: perfil da empresa, conta do usuario e equipe.
 
-Fluxo de criacao (`/comecar` e assistente `/nova/**`):
+Entrada e criacao:
 
-- `/comecar`: pagina explicativa de entrada; leva a `/nova/avaliacao` (do zero) ou `/nova/rapido` (modelo pronto).
+- `/comecar`: entrada/redirecionamento. Com seguranca ativa leva para `/login`; em modo publico de teste leva para `/avaliacoes`.
+- `/nova/avaliacao`: cria uma avaliacao do zero e inicia o assistente de 4 passos.
 - `/nova/rapido`: cria uma avaliacao pre-preenchida a partir de um modelo (quick-start) e abre o editor.
 - Assistente de 4 passos (`frontend/src/lib/simulation-meta.ts`): `/nova/avaliacao` (Teste), `/nova/personagem` (Cenario), `/nova/validador` (Revisao) e `/nova/governanca` (Publicacao).
 - Rotas secundarias `/nova/objetivo`, `/nova/dialogo`, `/nova/mapa`, `/nova/piloto` e `/nova/gupy` seguem existindo, mas fora dos 4 passos do assistente; sao acessadas por links internos das telas ou pela URL direta.
@@ -111,6 +121,12 @@ flowchart LR
 
 ## Fluxos principais
 
+O caminho recomendado para RH autenticado e:
+
+```text
+Avaliacoes -> Nova avaliacao do zero ou Modelo rapido -> 4 passos -> Publicar -> Enviar link/Gupy -> Ver resultados
+```
+
 O assistente tem 4 passos (ver `frontend/src/lib/simulation-meta.ts`):
 
 1. `/nova/avaliacao` (Teste): RH cria o rascunho e define objetivo, competencias, pesos e contexto.
@@ -135,6 +151,7 @@ Versao publicada fica imutavel; edicoes futuras usam clone para novo rascunho. A
 3. Gupy pode consultar resultado com `GET /test/result/{resultId}?company_id=...`.
 4. Quando ha `result_webhook_url`, o resultado tambem e enviado por outbox.
 5. O outbox tenta entregar, aplica backoff e move para DLQ quando necessario.
+6. A operacao acompanha alertas e pode reprocessar entregas em `/notifications`.
 
 ## Endpoints principais
 
@@ -146,6 +163,7 @@ Versao publicada fica imutavel; edicoes futuras usam clone para novo rascunho. A
 | Dashboard | `GET /api/v1/dashboard` |
 | Simulacoes | `GET /api/v1/simulations` |
 | Criar rascunho | `POST /api/v1/simulations/drafts` |
+| Arquivar avaliacao | `POST /api/v1/simulations/{id}/archive` |
 | Detalhar versao | `GET /api/v1/simulations/{id}/versions/{n}` |
 | Atualizar blueprint | `PATCH /api/v1/simulations/{id}/versions/{n}/blueprint` |
 | CRUD de nos | `/api/v1/simulations/{id}/versions/{n}/nodes` |
@@ -317,12 +335,13 @@ pnpm build
 Para uma checagem rapida de documentacao:
 
 ```bash
-rg -n "api key antiga|callback de retorno" README.md docs frontend/src/routes/README.md
+rg -n "api key antiga|callback de retorno|exclusao definitiva|nao ha rota /login" README.md docs frontend/src/routes/README.md
 ```
 
 ## Documentacao
 
 - [Indice de documentacao](docs/00-INDICE.md)
+- [Prontidao P0 de produto](docs/P0_PRODUCT_READINESS.md)
 - [Documentacao operacional](docs/OPERACAO.md)
 - [Documentacao de implantacao](docs/IMPLANTACAO.md)
 - [Cadastro de cenarios para RH](docs/cadastro_cenarios_rh.md)
@@ -332,4 +351,4 @@ rg -n "api key antiga|callback de retorno" README.md docs frontend/src/routes/RE
 - [Rotas TanStack Start](frontend/src/routes/README.md)
 - [Resumo de implementacao](docs/IMPLEMENTATION_SUMMARY.md)
 
-Ultima revisao operacional: 03/07/2026.
+Ultima revisao operacional: 04/07/2026.
