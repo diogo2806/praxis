@@ -2,7 +2,9 @@ import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { ArrowRight, CheckCircle2, LockKeyhole, ShieldCheck } from "lucide-react";
 
+import { LanguageSelector } from "@/components/language-selector";
 import { login } from "@/lib/api/auth";
+import { useLanguage } from "@/lib/language-context";
 import { PraxisApiError } from "@/lib/api/praxis";
 import { defaultAuthenticatedRoute, getSession, saveAuthenticatedSession } from "@/lib/session";
 
@@ -32,11 +34,103 @@ const initialForm: LoginFormState = {
   password: "",
 };
 
+const loginCopy = {
+  "pt-BR": {
+    headTitle: "Entrar - Práxis",
+    secureAccess: "Acesso seguro",
+    heroTitle: "Entre para acompanhar avaliações, candidatos e evidências comportamentais.",
+    heroDescription:
+      "Use as credenciais da sua empresa para acessar o painel operacional, criar simulações, publicar versões e revisar resultados auditáveis.",
+    securityItems: [
+      "JWT nas rotas internas quando a segurança está ativa.",
+      "Sessão isolada por empresa para operação multi-tenant.",
+      "Acesso direto ao painel depois da autenticação.",
+    ],
+    panelTitle: "Entrar no painel",
+    panelDescription: "Informe empresa, e-mail e senha para continuar.",
+    companyLabel: "Empresa",
+    companyPlaceholder: "ex: empresa-1",
+    emailLabel: "E-mail",
+    emailPlaceholder: "voce@empresa.com",
+    passwordLabel: "Senha",
+    passwordPlaceholder: "Digite sua senha",
+    submitting: "Entrando...",
+    submit: "Entrar",
+    backToSite: "Voltar ao site",
+    companyIdHint: "Use o ID da empresa cadastrado no backend.",
+    invalidCredentials: "Credenciais inválidas ou usuário sem permissão para esta empresa.",
+    invalidFields: "Confira empresa, e-mail e senha antes de tentar novamente.",
+    genericError: "Não foi possível entrar agora. Verifique sua conexão e tente novamente.",
+  },
+  en: {
+    headTitle: "Sign in - Práxis",
+    secureAccess: "Secure access",
+    heroTitle: "Sign in to track assessments, candidates, and behavioral evidence.",
+    heroDescription:
+      "Use your company credentials to access the operations panel, create simulations, publish versions, and review auditable results.",
+    securityItems: [
+      "JWT on internal routes when security is enabled.",
+      "Company-isolated session for multi-tenant operation.",
+      "Direct access to the dashboard after authentication.",
+    ],
+    panelTitle: "Sign in to the dashboard",
+    panelDescription: "Enter company, email, and password to continue.",
+    companyLabel: "Company",
+    companyPlaceholder: "e.g. company-1",
+    emailLabel: "Email",
+    emailPlaceholder: "you@company.com",
+    passwordLabel: "Password",
+    passwordPlaceholder: "Enter your password",
+    submitting: "Signing in...",
+    submit: "Sign in",
+    backToSite: "Back to site",
+    companyIdHint: "Use the company ID registered in the backend.",
+    invalidCredentials: "Invalid credentials or user without permission for this company.",
+    invalidFields: "Check company, email, and password before trying again.",
+    genericError: "Could not sign in right now. Check your connection and try again.",
+  },
+  "es-MX": {
+    headTitle: "Iniciar sesión - Práxis",
+    secureAccess: "Acceso seguro",
+    heroTitle: "Inicia sesión para acompañar evaluaciones, candidatos y evidencias conductuales.",
+    heroDescription:
+      "Usa las credenciales de tu empresa para acceder al panel operativo, crear simulaciones, publicar versiones y revisar resultados auditables.",
+    securityItems: [
+      "JWT en rutas internas cuando la seguridad está activa.",
+      "Sesión aislada por empresa para operación multi-tenant.",
+      "Acceso directo al panel después de la autenticación.",
+    ],
+    panelTitle: "Iniciar sesión en el panel",
+    panelDescription: "Ingresa empresa, correo y contraseña para continuar.",
+    companyLabel: "Empresa",
+    companyPlaceholder: "ej.: empresa-1",
+    emailLabel: "Correo",
+    emailPlaceholder: "tu@empresa.com",
+    passwordLabel: "Contraseña",
+    passwordPlaceholder: "Ingresa tu contraseña",
+    submitting: "Ingresando...",
+    submit: "Iniciar sesión",
+    backToSite: "Volver al sitio",
+    companyIdHint: "Usa el ID de empresa registrado en el backend.",
+    invalidCredentials: "Credenciales inválidas o usuario sin permiso para esta empresa.",
+    invalidFields: "Revisa empresa, correo y contraseña antes de intentarlo nuevamente.",
+    genericError: "No fue posible iniciar sesión ahora. Revisa tu conexión e inténtalo nuevamente.",
+  },
+} as const;
+
+type LoginCopy = (typeof loginCopy)[keyof typeof loginCopy];
+
 function LoginPage() {
   const navigate = useNavigate();
+  const { language } = useLanguage();
+  const copy = loginCopy[language];
   const [form, setForm] = useState<LoginFormState>(initialForm);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    document.title = copy.headTitle;
+  }, [copy.headTitle]);
 
   useEffect(() => {
     if (getSession().token) {
@@ -65,7 +159,7 @@ function LoginPage() {
       saveAuthenticatedSession(session);
       await navigate({ to: defaultAuthenticatedRoute(), replace: true });
     } catch (error) {
-      setErrorMessage(resolveLoginError(error));
+      setErrorMessage(resolveLoginError(error, copy));
     } finally {
       setIsSubmitting(false);
     }
@@ -85,23 +179,18 @@ function LoginPage() {
 
             <div className="mt-16 max-w-xl">
               <span className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/10 px-3 py-1 text-xs font-medium uppercase tracking-[0.22em] text-primary">
-                <ShieldCheck className="h-3.5 w-3.5" /> Acesso seguro
+                <ShieldCheck className="h-3.5 w-3.5" /> {copy.secureAccess}
               </span>
               <h1 className="mt-6 text-4xl font-semibold tracking-tight text-foreground xl:text-5xl">
-                Entre para acompanhar avaliações, candidatos e evidências comportamentais.
+                {copy.heroTitle}
               </h1>
               <p className="mt-5 text-base leading-7 text-muted-foreground">
-                Use as credenciais da sua empresa para acessar o painel operacional, criar simulações,
-                publicar versões e revisar resultados auditáveis.
+                {copy.heroDescription}
               </p>
             </div>
 
             <div className="mt-12 grid gap-3 text-sm text-muted-foreground">
-              {[
-                "JWT nas rotas internas quando a segurança está ativa.",
-                "Sessão isolada por empresa para operação multi-tenant.",
-                "Acesso direto ao painel depois da autenticação.",
-              ].map((item) => (
+              {copy.securityItems.map((item) => (
                 <div
                   key={item}
                   className="flex items-center gap-3 rounded-2xl border border-border/70 bg-background/70 p-4"
@@ -120,39 +209,42 @@ function LoginPage() {
                   Práxis
                 </Link>
                 <h2 className="mt-4 text-2xl font-semibold tracking-tight text-foreground">
-                  Entrar no painel
+                  {copy.panelTitle}
                 </h2>
                 <p className="mt-2 text-sm text-muted-foreground">
-                  Informe empresa, e-mail e senha para continuar.
+                  {copy.panelDescription}
                 </p>
               </div>
-              <div className="grid h-11 w-11 place-items-center rounded-2xl bg-primary/10 text-primary">
-                <LockKeyhole className="h-5 w-5" />
+              <div className="flex shrink-0 flex-col items-end gap-3">
+                <LanguageSelector className="bg-background" />
+                <div className="grid h-11 w-11 place-items-center rounded-2xl bg-primary/10 text-primary">
+                  <LockKeyhole className="h-5 w-5" />
+                </div>
               </div>
             </div>
 
             <form className="space-y-4" onSubmit={handleSubmit}>
               <Field
-                label="Empresa"
+                label={copy.companyLabel}
                 value={form.empresaId}
                 autoComplete="organization"
-                placeholder="ex: empresa-1"
+                placeholder={copy.companyPlaceholder}
                 onChange={(empresaId) => setForm((current) => ({ ...current, empresaId }))}
               />
               <Field
-                label="E-mail"
+                label={copy.emailLabel}
                 type="email"
                 value={form.email}
                 autoComplete="email"
-                placeholder="voce@empresa.com"
+                placeholder={copy.emailPlaceholder}
                 onChange={(email) => setForm((current) => ({ ...current, email }))}
               />
               <Field
-                label="Senha"
+                label={copy.passwordLabel}
                 type="password"
                 value={form.password}
                 autoComplete="current-password"
-                placeholder="Digite sua senha"
+                placeholder={copy.passwordPlaceholder}
                 onChange={(password) => setForm((current) => ({ ...current, password }))}
               />
 
@@ -167,16 +259,16 @@ function LoginPage() {
                 disabled={!canSubmit || isSubmitting}
                 className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground transition hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-60"
               >
-                {isSubmitting ? "Entrando..." : "Entrar"}
+                {isSubmitting ? copy.submitting : copy.submit}
                 {!isSubmitting ? <ArrowRight className="h-4 w-4" /> : null}
               </button>
             </form>
 
             <div className="mt-6 flex flex-wrap items-center justify-between gap-3 text-sm text-muted-foreground">
               <Link to="/" className="hover:text-foreground hover:underline">
-                Voltar ao site
+                {copy.backToSite}
               </Link>
-              <span>Use o ID da empresa cadastrado no backend.</span>
+              <span>{copy.companyIdHint}</span>
             </div>
           </section>
         </div>
@@ -215,16 +307,16 @@ function Field({
   );
 }
 
-function resolveLoginError(error: unknown) {
+function resolveLoginError(error: unknown, copy: LoginCopy) {
   if (error instanceof PraxisApiError) {
     if (error.status === 401 || error.status === 403) {
-      return "Credenciais inválidas ou usuário sem permissão para esta empresa.";
+      return copy.invalidCredentials;
     }
     if (error.status === 400) {
-      return error.message || "Confira empresa, e-mail e senha antes de tentar novamente.";
+      return error.message || copy.invalidFields;
     }
     return error.message;
   }
 
-  return "Não foi possível entrar agora. Verifique sua conexão e tente novamente.";
+  return copy.genericError;
 }
