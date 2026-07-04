@@ -40,6 +40,9 @@ import { useLanguage } from "@/lib/language-context";
 import { useSession } from "@/lib/session";
 import { cn } from "@/lib/utils";
 
+type TranslationMap = ReturnType<typeof useLanguage>["t"];
+type CopyMap = (typeof appShellCopy)[keyof typeof appShellCopy];
+
 function ShellLink({ children, closeOnSelect }: { children: ReactNode; closeOnSelect?: boolean }) {
   return closeOnSelect ? <SheetClose asChild>{children}</SheetClose> : <>{children}</>;
 }
@@ -173,9 +176,7 @@ function SidebarContent({
   );
 }
 
-function pageLabel(pathname: string) {
-  const { language, t } = useLanguage();
-  const copy = appShellCopy[language];
+function pageLabel(pathname: string, t: TranslationMap, copy: CopyMap) {
   if (pathname === "/dashboard") return t.common.dashboard;
   if (pathname === "/avaliacoes") return t.common.situationalAssessment;
   if (pathname.startsWith("/nova")) return t.common.createAssessment;
@@ -199,6 +200,7 @@ function pageLabel(pathname: string) {
 export function AppShell({ children }: { children: ReactNode }) {
   const pathname = useRouterState({ select: (state) => state.location.pathname });
   const { language, t } = useLanguage();
+  const copy = appShellCopy[language];
   const unreadNotificationsQuery = useQuery({
     queryKey: ["notifications", "unread-count"],
     queryFn: getUnreadNotificationsCount,
@@ -229,7 +231,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             </SheetContent>
           </Sheet>
           <div className="min-w-0 truncate text-sm text-muted-foreground">
-            {t.common.workspace} <span className="text-foreground">/ {pageLabel(pathname)}</span>
+            {t.common.workspace} <span className="text-foreground">/ {pageLabel(pathname, t, copy)}</span>
           </div>
           <div className="ml-auto flex shrink-0 items-center justify-end gap-2 text-xs">
             <LanguageSelector />
