@@ -10,11 +10,11 @@ export type AppShellCopy = {
 
 export const appShellCopy: Record<Language, AppShellCopy> = {
   "pt-BR": {
-    notificationsLabel: "Notificacoes",
+    notificationsLabel: "Notificações",
     notificationsDescription: "Alertas internos e DLQ",
-    dlqTitle: "Entregas em DLQ precisam de atencao",
-    dlqBody: "Ha resultados aguardando reprocessamento. Revise em Notificacoes antes de considerar a integracao saudavel.",
-    dlqCta: "Abrir notificacoes",
+    dlqTitle: "Entregas em DLQ precisam de atenção",
+    dlqBody: "Há resultados aguardando reprocessamento. Revise em Notificações antes de considerar a integração saudável.",
+    dlqCta: "Abrir notificações",
   },
   en: {
     notificationsLabel: "Notifications",
@@ -26,8 +26,8 @@ export const appShellCopy: Record<Language, AppShellCopy> = {
   "es-MX": {
     notificationsLabel: "Notificaciones",
     notificationsDescription: "Alertas internos y DLQ",
-    dlqTitle: "Entregas en DLQ requieren atencion",
-    dlqBody: "Hay resultados esperando reprocesamiento. Revisalos en Notificaciones antes de considerar saludable la integracion.",
+    dlqTitle: "Entregas en DLQ requieren atención",
+    dlqBody: "Hay resultados esperando reprocesamiento. Revísalos en Notificaciones antes de considerar saludable la integración.",
     dlqCta: "Abrir notificaciones",
   },
 };
