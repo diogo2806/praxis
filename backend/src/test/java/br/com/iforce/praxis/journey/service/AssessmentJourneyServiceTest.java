@@ -54,7 +54,6 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.assertj.core.api.Assertions.tuple;
 
 import static org.mockito.ArgumentMatchers.any;
 
@@ -195,9 +194,11 @@ class AssessmentJourneyServiceTest {
 
         assertThat(first.getOrderIndex()).isEqualTo(1);
         assertThat(second.getOrderIndex()).isEqualTo(0);
-        assertThat(response.sequences().get(0).steps())
-                .extracting("id", "orderIndex")
-                .containsExactly(tuple(2L, 0), tuple(1L, 1));
+        assertThat(response.sequences().get(0).steps()).hasSize(2);
+        assertThat(response.sequences().get(0).steps().get(0).id()).isEqualTo(2L);
+        assertThat(response.sequences().get(0).steps().get(0).orderIndex()).isEqualTo(0);
+        assertThat(response.sequences().get(0).steps().get(1).id()).isEqualTo(1L);
+        assertThat(response.sequences().get(0).steps().get(1).orderIndex()).isEqualTo(1);
         verify(journeyRepository, times(2)).flush();
     }
 
