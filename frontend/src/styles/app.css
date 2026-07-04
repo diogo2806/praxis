@@ -239,6 +239,16 @@
 }
 
 @layer components {
+  /*
+   * FlowCanvas uses inline width/height based on existing cards. Keep a large
+   * minimum workspace so complex validator trees have room before every card is
+   * already created or manually dragged into place.
+   */
+  .vx-content {
+    min-width: 14000px !important;
+    min-height: 12000px !important;
+  }
+
   .praxis-progress-track {
     width: 100%;
     overflow: hidden;
