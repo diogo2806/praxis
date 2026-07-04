@@ -41,10 +41,17 @@ import java.util.Base64;
 
 
 /**
- * Geração e rotação do token de API pública (formato {@code prx_live_…}) que o
- * cliente usa para CONSUMIR a API da Práxis (consultar resultados etc.), em
- * complemento ao webhook que ele RECEBE. Guarda apenas o hash do token; o valor
- * completo só aparece na geração/rotação.
+ * Cuida do token que permite ao cliente consumir a API pública da Práxis.
+ *
+ * <p>Na visão do processo, este serviço atende a tela de integrações quando o
+ * cliente precisa gerar, trocar ou cancelar a chave de acesso usada por sistemas
+ * externos. A chave completa aparece somente no momento da geração ou rotação;
+ * depois disso o sistema guarda apenas uma versão protegida, evitando que alguém
+ * recupere o segredo original pelo banco de dados.</p>
+ *
+ * <p>O token público é independente do webhook: o webhook é o canal pelo qual a
+ * Práxis envia eventos para o cliente, enquanto este token é o canal pelo qual o
+ * cliente consulta a Práxis.</p>
  */
 @Service
 public class PublicApiTokenService {
@@ -56,6 +63,14 @@ public class PublicApiTokenService {
     private final EmpresaRepository empresaRepository;
     private final CurrentEmpresaService currentEmpresaService;
 
+    /**
+     * Prepara o serviço com os acessos necessários para localizar a empresa
+     * logada e salvar a configuração da integração pública.
+     *
+     * @param empresaIntegrationRepository repositório onde a configuração da integração é armazenada
+     * @param empresaRepository repositório usado para confirmar a existência da empresa
+     * @param currentEmpresaService serviço que identifica a empresa do usuário logado
+     */
     public PublicApiTokenService(
             EmpresaIntegrationRepository empresaIntegrationRepository,
             EmpresaRepository empresaRepository,
@@ -66,7 +81,17 @@ public class PublicApiTokenService {
         this.currentEmpresaService = currentEmpresaService;
     }
 
-    /** Gera (ou rotaciona) o token de API pública do cliente. */
+    /**
+     * Gera uma nova chave de API pública para a empresa logada.
+     *
+     * <p>Fluxo do processo: quando o cliente clica para gerar ou rotacionar o
+     * token, o sistema cria uma chave nova, substitui qualquer chave anterior e
+     * devolve o valor completo apenas nessa resposta. Para as próximas telas, o
+     * sistema mostra somente uma prévia mascarada, suficiente para o cliente
+     * reconhecer qual chave está ativa sem expor o segredo.</p>
+     *
+     * @return token completo para cópia imediata e prévia mascarada para exibição futura
+     */
     @Transactional
     public PublicApiTokenResponse generateToken() {
         String empresaId = currentEmpresaService.requiredEmpresaId();
@@ -81,7 +106,14 @@ public class PublicApiTokenService {
         return new PublicApiTokenResponse(token, preview(token));
     }
 
-    /** Revoga o token de API pública, sem desligar o webhook. */
+    /**
+     * Cancela a chave de API pública ativa da empresa logada.
+     *
+     * <p>Fluxo do processo: quando o cliente revoga o token, qualquer sistema
+     * externo que usava aquela chave deixa de conseguir consumir a API pública.
+     * A configuração de webhook permanece intacta, porque ela representa outro
+     * caminho de integração.</p>
+     */
     @Transactional
     public void revokeToken() {
         String empresaId = currentEmpresaService.requiredEmpresaId();
@@ -94,6 +126,18 @@ public class PublicApiTokenService {
                 });
     }
 
+    /**
+     * Localiza o cadastro de integração pública da empresa ou cria um registro
+     * inicial quando o cliente ainda não configurou esse canal.
+     *
+     * <p>Uso interno para garantir que a geração do token sempre tenha um lugar
+     * correto para salvar a configuração, sem exigir que outro fluxo tenha sido
+     * executado antes.</p>
+     *
+     * @param empresaId empresa dona da integração pública
+     * @return configuração existente ou recém-criada para a API pública
+     * @throws ResponseStatusException se a empresa informada não existir
+     */
     private EmpresaIntegrationEntity findOrCreate(String empresaId) {
         return empresaIntegrationRepository.findFirstByEmpresaIdAndProvider(empresaId, IntegrationProvider.CUSTOM_API)
                 .orElseGet(() -> {
@@ -111,17 +155,41 @@ public class PublicApiTokenService {
                 });
     }
 
+    /**
+     * Cria a parte aleatória e imprevisível do token.
+     *
+     * <p>Uso interno para garantir que cada chave entregue ao cliente seja única
+     * e difícil de adivinhar.</p>
+     *
+     * @return trecho aleatório que será combinado ao prefixo público do token
+     */
     private static String randomToken() {
         byte[] bytes = new byte[24];
         RANDOM.nextBytes(bytes);
         return Base64.getUrlEncoder().withoutPadding().encodeToString(bytes);
     }
 
+    /**
+     * Monta a versão mascarada do token para aparecer na tela sem revelar o
+     * segredo completo.
+     *
+     * @param token token completo recém-gerado
+     * @return prévia segura, com prefixo e apenas os últimos caracteres visíveis
+     */
     private static String preview(String token) {
         String suffix = token.length() <= 4 ? token : token.substring(token.length() - 4);
         return TOKEN_PREFIX + "••••" + suffix;
     }
 
+    /**
+     * Converte o token completo em uma impressão digital segura para gravação.
+     *
+     * <p>Uso interno para permitir validações futuras sem guardar a chave em
+     * texto aberto no banco de dados.</p>
+     *
+     * @param value token completo que precisa ser protegido
+     * @return hash em Base64 URL-safe
+     */
     private static String sha256(String value) {
         try {
             MessageDigest digest = MessageDigest.getInstance("SHA-256");
