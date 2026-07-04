@@ -1,13 +1,6 @@
 package br.com.iforce.praxis.auth.service;
 
-/**
- * Envia o e-mail de recuperação de senha com o link temporário.
- *
- * <p>A abstração isola o fluxo de recuperação do mecanismo concreto de entrega: hoje o sistema
- * ainda não possui um provedor SMTP configurado, então a implementação padrão apenas registra o
- * envio em log. Quando um provedor real for adicionado, basta fornecer outra implementação deste
- * contrato sem alterar o serviço de recuperação.</p>
- */
+/** Envia mensagens de acesso da plataforma. */
 public interface PasswordResetEmailSender {
 
     /**
@@ -15,8 +8,13 @@ public interface PasswordResetEmailSender {
      *
      * @param recipientEmail e-mail cadastrado do usuário
      * @param userName       nome do usuário, usado na saudação
-     * @param resetLink      link temporário completo para redefinição
-     * @param ttlHours       validade do link em horas
+     * @param resetLink      endereço temporário completo para redefinição
+     * @param ttlHours       validade em horas
      */
     void sendPasswordResetEmail(String recipientEmail, String userName, String resetLink, int ttlHours);
+
+    /** Envia a mensagem de convite para uma pessoa entrar na equipe. */
+    default void sendTeamInviteEmail(String recipientEmail, String userName, String inviteUrl, int ttlHours) {
+        sendPasswordResetEmail(recipientEmail, userName, inviteUrl, ttlHours);
+    }
 }
