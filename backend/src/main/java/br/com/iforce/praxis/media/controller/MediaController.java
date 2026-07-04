@@ -24,11 +24,12 @@ import org.springframework.web.multipart.MultipartFile;
 
 
 /**
- * Porta de entrada (API) para envio de mídias usadas nas provas.
+ * Porta de entrada (API) para envio de mídias usadas nas avaliações.
  *
- * <p>Na visão do processo, é por aqui que a tela de cadastro de provas envia
- * as imagens e áudios que ilustram os cenários. O arquivo é armazenado e o
- * sistema devolve o endereço público para ser usado na prova.</p>
+ * <p>Na visão do processo, é por aqui que a tela de cadastro envia imagens e
+ * áudios que ajudam a contextualizar uma etapa ou alternativa da avaliação. A
+ * API recebe o arquivo, delega a validação e o armazenamento, e devolve para a
+ * tela um endereço público que pode ser salvo no roteiro da avaliação.</p>
  */
 @RestController
 @RequestMapping("/api/v1/media")
@@ -37,15 +38,30 @@ public class MediaController {
 
     private final MediaStorageService mediaStorageService;
 
+    /**
+     * Conecta a porta de entrada de mídia ao serviço que faz a validação e o armazenamento.
+     *
+     * <p>Para o processo, este construtor apenas prepara o controller para
+     * encaminhar cada arquivo recebido ao responsável por verificar tipo,
+     * tamanho, empresa de origem e gravação no storage.</p>
+     *
+     * @param mediaStorageService serviço que valida, armazena e devolve os dados da mídia enviada
+     */
     public MediaController(MediaStorageService mediaStorageService) {
         this.mediaStorageService = mediaStorageService;
     }
 
     /**
-     * Recebe o arquivo de mídia enviado pela tela e o armazena.
+     * Recebe o arquivo de mídia enviado pela tela e devolve os dados para cadastro.
      *
-     * @param file a imagem ou áudio enviado pelo usuário
-     * @return o endereço público da mídia e seus dados (tipo e tamanho)
+     * <p>Na jornada de criação da avaliação, este método é usado quando a pessoa
+     * responsável pelo conteúdo anexa uma imagem ou áudio a um cenário. Ele não
+     * decide como a mídia será usada na avaliação; apenas recebe o arquivo,
+     * solicita o armazenamento e devolve a URL e os metadados necessários para a
+     * tela salvar a referência no passo correto.</p>
+     *
+     * @param file imagem ou áudio enviado pelo usuário no formulário da tela
+     * @return endereço público, tipo identificado, formato do arquivo e tamanho armazenado
      */
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @Operation(
