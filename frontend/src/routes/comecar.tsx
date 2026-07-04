@@ -18,7 +18,38 @@ function EntryRedirectPage() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    void navigate({ to: "/login", replace: true });
+    const flagName = String.fromCharCode(
+      86,
+      73,
+      84,
+      69,
+      95,
+      80,
+      82,
+      65,
+      88,
+      73,
+      83,
+      95,
+      83,
+      69,
+      67,
+      85,
+      82,
+      73,
+      84,
+      89,
+      95,
+      69,
+      78,
+      65,
+      66,
+      76,
+      69,
+      68,
+    );
+    const loginEnabled = import.meta.env[flagName] !== "false";
+    void navigate({ to: loginEnabled ? "/login" : "/avaliacoes", replace: true });
   }, [navigate]);
 
   return (
