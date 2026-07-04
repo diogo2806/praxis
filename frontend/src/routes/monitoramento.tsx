@@ -40,10 +40,10 @@ import { cn } from "@/lib/utils";
 export const Route = createFileRoute("/monitoramento")({
   head: () => ({
     meta: [
-      { title: "Monitoramento - Práxis" },
+      { title: "Monitoramento operacional - Práxis" },
       {
         name: "description",
-        content: "Central operacional para acompanhar convites, tentativas e entregas.",
+        content: "Central operacional para acompanhar saúde de convites, tentativas e entregas.",
       },
     ],
   }),
@@ -114,12 +114,19 @@ function MonitoringPage() {
             <div className="text-xs font-semibold uppercase tracking-normal text-foreground">Monitoramento</div>
             <h1 className="mt-1 font-display text-3xl leading-tight text-foreground">Central operacional</h1>
             <p className="mt-3 text-sm leading-6 text-muted-foreground">
-              Convites, tentativas em andamento, resultados, notificações e falhas operacionais que
-              a automação não conseguiu resolver sozinha.
+              Acompanhe a saúde da operação: convites, tentativas ativas ou sem sinal,
+              notificações internas e entregas que exigem reprocessamento. A pontuação e a
+              decisão humana ficam centralizadas em Resultados.
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
-            <Button type="button" variant="outline" size="sm" className="h-8 min-h-8 gap-1.5 bg-card text-xs" onClick={() => setRevealed((current) => !current)}>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="h-8 min-h-8 gap-1.5 bg-card text-xs"
+              onClick={() => setRevealed((current) => !current)}
+            >
               <Eye className="h-3.5 w-3.5" />
               {revealed ? "Ocultar nomes" : "Revelar nomes"}
             </Button>
@@ -133,7 +140,7 @@ function MonitoringPage() {
         <section className="grid grid-cols-2 gap-3 md:grid-cols-5">
           <MetricCard icon={<Send className="h-4 w-4" />} label="Convites enviados" value={totals.invites} detail="Total histórico" tone="ok" />
           <MetricCard icon={<Activity className="h-4 w-4" />} label="Tentativas iniciadas" value={totals.started} detail={`${totals.adherence}% de adesão`} tone="ok" />
-          <MetricCard icon={<CheckCircle2 className="h-4 w-4" />} label="Conclusões" value={totals.completed} detail={`${totals.completion}% de finalização`} tone="ok" />
+          <MetricCard icon={<CheckCircle2 className="h-4 w-4" />} label="Fluxos concluídos" value={totals.completed} detail={`${totals.completion}% de finalização`} tone="ok" />
           <MetricCard icon={<Bell className="h-4 w-4" />} label="Notificações" value={unreadNotifications} detail="Não lidas" tone={unreadNotifications > 0 ? "danger" : "ok"} />
           <MetricCard icon={<XCircle className="h-4 w-4" />} label="Falhas de entrega" value={failedDeliveries} detail="DLQ pendente" tone={failedDeliveries > 0 ? "danger" : "ok"} />
         </section>
@@ -167,10 +174,10 @@ function MonitoringPage() {
               <div>
                 <div className="flex items-center gap-2 text-sm font-semibold">
                   <span className="h-2 w-2 rounded-full bg-success" />
-                  Tentativas monitoradas
+                  Tentativas em operação
                 </div>
                 <p className="mt-1 text-xs text-muted-foreground">
-                  {filteredAttempts.length} de {liveAttempts.length} participações acompanhadas
+                  {filteredAttempts.length} de {liveAttempts.length} participações acompanhadas por sinal de atividade
                 </p>
               </div>
               <div className="flex flex-wrap items-center gap-2">
@@ -189,7 +196,7 @@ function MonitoringPage() {
                   <tr>
                     <th className="px-4 py-3 font-medium">Participante</th>
                     <th className="px-4 py-3 font-medium">Avaliação</th>
-                    <th className="px-4 py-3 font-medium">Status</th>
+                    <th className="px-4 py-3 font-medium">Status operacional</th>
                     <th className="px-4 py-3 font-medium">Etapa</th>
                     <th className="px-4 py-3 font-medium">Tempo</th>
                     <th className="px-4 py-3 font-medium">Último sinal</th>
@@ -220,8 +227,8 @@ function MonitoringPage() {
 
           <section className="overflow-hidden rounded-xl border border-border bg-card">
             <div className="border-b border-border px-4 py-4">
-              <h2 className="text-sm font-semibold">Avaliações no ar</h2>
-              <p className="mt-1 text-xs text-muted-foreground">Versões publicadas com dados de tentativas</p>
+              <h2 className="text-sm font-semibold">Avaliações publicadas</h2>
+              <p className="mt-1 text-xs text-muted-foreground">Versões no ar com volume, adesão e finalização operacional</p>
             </div>
             <div>
               {simulations.slice(0, 4).map((simulation) => (<ProductionSimulation key={simulation.id} simulation={simulation} />))}
@@ -238,14 +245,14 @@ function AttemptAction({ attempt }: { attempt: CandidateAttemptMonitoringRespons
   if (attempt.status === "completed") {
     return (
       <Button asChild variant="outline" size="sm" className="h-8 min-h-8 bg-background text-xs">
-        <a href={`/results/${encodeURIComponent(attempt.attemptId)}`}>Ver resultado</a>
+        <a href={`/results/${encodeURIComponent(attempt.attemptId)}`}>Abrir em Resultados</a>
       </Button>
     );
   }
   const search = new URLSearchParams({ simulationId: attempt.simulationId, versionNumber: String(attempt.versionNumber) });
   return (
     <Button asChild variant="outline" size="sm" className="h-8 min-h-8 bg-background text-xs">
-      <a href={`/compliance?${search.toString()}`}>Acompanhar</a>
+      <a href={`/compliance?${search.toString()}`}>Acompanhar sinal</a>
     </Button>
   );
 }
@@ -256,11 +263,21 @@ function refreshOperationalQueries(queryClient: ReturnType<typeof useQueryClient
   void queryClient.invalidateQueries({ queryKey: ["dashboard"] });
 }
 
-function OperationalChecklist({ publishedSimulations, generatedLinks, completedAttempts, failedDeliveries }: { publishedSimulations: number; generatedLinks: number; completedAttempts: number; failedDeliveries: number }) {
+function OperationalChecklist({
+  publishedSimulations,
+  generatedLinks,
+  completedAttempts,
+  failedDeliveries,
+}: {
+  publishedSimulations: number;
+  generatedLinks: number;
+  completedAttempts: number;
+  failedDeliveries: number;
+}) {
   const items = [
     { label: "Criar e publicar avaliação", done: publishedSimulations > 0, detail: `${publishedSimulations} avaliação(ões) publicada(s)`, href: "/nova/avaliacao", action: publishedSimulations > 0 ? "Criar outra" : "Criar agora" },
     { label: "Gerar link para candidato", done: generatedLinks > 0, detail: `${generatedLinks} convite(s) gerado(s)`, href: "/enviar-link", action: "Gerar link" },
-    { label: "Candidato conclui e resultado aparece", done: completedAttempts > 0, detail: `${completedAttempts} conclusão(ões) com resultado`, href: "/results", action: "Ver resultados" },
+    { label: "Candidato conclui a participação", done: completedAttempts > 0, detail: `${completedAttempts} participação(ões) concluída(s)`, href: "/results", action: "Abrir Resultados" },
     { label: "Fila de entrega sem DLQ pendente", done: failedDeliveries === 0, detail: failedDeliveries === 0 ? "Sem falhas definitivas" : `${failedDeliveries} falha(s) para tratar`, href: "/monitoramento", action: "Tratar fila" },
   ];
   return (
@@ -268,7 +285,9 @@ function OperationalChecklist({ publishedSimulations, generatedLinks, completedA
       <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
         <div>
           <h2 className="text-sm font-semibold">Happy path operacional</h2>
-          <p className="mt-1 text-xs text-muted-foreground">Caminho mínimo para garantir que empresa cria, publica, candidato responde e o resultado aparece.</p>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Caminho mínimo para garantir que a empresa publica, convida, o candidato responde e a entrega não trava.
+          </p>
         </div>
         <a href="/comecar" className="text-xs font-medium text-primary hover:underline">Ver guia completo -&gt;</a>
       </div>
@@ -318,7 +337,7 @@ function NotificationsPanel({ notifications, loading, error }: { notifications: 
                 </div>
                 <time className="shrink-0 text-[11px] text-muted-foreground">{formatRelativeTime(notification.createdAt)}</time>
               </div>
-              {notification.candidateAttemptId && <a href={`/results/${encodeURIComponent(notification.candidateAttemptId)}`} className="mt-2 inline-flex text-xs font-medium text-primary hover:underline">Ver resultado -&gt;</a>}
+              {notification.candidateAttemptId && <a href={`/results/${encodeURIComponent(notification.candidateAttemptId)}`} className="mt-2 inline-flex text-xs font-medium text-primary hover:underline">Abrir em Resultados -&gt;</a>}
             </article>
           ))}
         </div>
@@ -327,7 +346,29 @@ function NotificationsPanel({ notifications, loading, error }: { notifications: 
   );
 }
 
-function DeliveryQueuePanel({ deliveries, allDeliveries, filter, onFilterChange, loading, error, processingReady, reprocessingId, onProcessReady, onReprocess }: { deliveries: ResultDeliveryResponse[]; allDeliveries: ResultDeliveryResponse[]; filter: DeliveryFilter; onFilterChange: (filter: DeliveryFilter) => void; loading: boolean; error: boolean; processingReady: boolean; reprocessingId: number | null; onProcessReady: () => void; onReprocess: (deliveryId: number) => void }) {
+function DeliveryQueuePanel({
+  deliveries,
+  allDeliveries,
+  filter,
+  onFilterChange,
+  loading,
+  error,
+  processingReady,
+  reprocessingId,
+  onProcessReady,
+  onReprocess,
+}: {
+  deliveries: ResultDeliveryResponse[];
+  allDeliveries: ResultDeliveryResponse[];
+  filter: DeliveryFilter;
+  onFilterChange: (filter: DeliveryFilter) => void;
+  loading: boolean;
+  error: boolean;
+  processingReady: boolean;
+  reprocessingId: number | null;
+  onProcessReady: () => void;
+  onReprocess: (deliveryId: number) => void;
+}) {
   const readyCount = allDeliveries.filter((delivery) => isReadyForRetry(delivery)).length;
   const dlqCount = allDeliveries.filter((delivery) => delivery.status === "dlq").length;
   const filters: Array<[DeliveryFilter, string]> = [["dlq", `DLQ (${dlqCount})`], ["retrying", "Retentativa"], ["pending", "Pendente"], ["sent", "Enviada"], ["todos", "Todas"]];
@@ -336,7 +377,9 @@ function DeliveryQueuePanel({ deliveries, allDeliveries, filter, onFilterChange,
       <div className="flex flex-col gap-3 border-b border-border px-4 py-4 md:flex-row md:items-center md:justify-between">
         <div>
           <h2 className="flex items-center gap-2 text-sm font-semibold"><AlertTriangle className={cn("h-4 w-4", dlqCount > 0 ? "text-danger" : "text-primary")} />Entregas e DLQ</h2>
-          <p className="mt-1 text-xs text-muted-foreground">Reprocessamento manual de resultados que falharam ou já estão prontos para nova tentativa.</p>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Reprocessamento manual de entregas que falharam ou estão prontas para nova tentativa. Use Resultados apenas para análise do candidato.
+          </p>
         </div>
         <Button type="button" variant="outline" size="sm" className="h-8 min-h-8 gap-1.5 bg-background text-xs" disabled={processingReady || readyCount === 0} onClick={onProcessReady}>
           <PlayCircle className="h-3.5 w-3.5" />{processingReady ? "Processando..." : `Processar prontas (${readyCount})`}
@@ -360,7 +403,7 @@ function DeliveryQueuePanel({ deliveries, allDeliveries, filter, onFilterChange,
                   <td className="px-4 py-3"><DeliveryStatusBadge status={delivery.status} />{delivery.nextAttemptAt && <div className="mt-1 text-[11px] text-muted-foreground">Próxima: {formatDateTime(delivery.nextAttemptAt)}</div>}</td>
                   <td className="px-4 py-3 tabular-nums text-muted-foreground">{delivery.attemptCount}</td>
                   <td className="max-w-[260px] px-4 py-3 text-xs text-muted-foreground"><span className="line-clamp-2">{delivery.lastError ?? "-"}</span></td>
-                  <td className="px-4 py-3 text-right"><div className="flex justify-end gap-2"><Button asChild variant="outline" size="sm" className="h-8 min-h-8 bg-background text-xs"><a href={`/results/${encodeURIComponent(delivery.attemptId)}`}>Resultado</a></Button><Button type="button" variant="outline" size="sm" className="h-8 min-h-8 gap-1.5 bg-background text-xs" disabled={reprocessingId === delivery.id} onClick={() => onReprocess(delivery.id)}><RotateCcw className="h-3.5 w-3.5" />{reprocessingId === delivery.id ? "Reenviando..." : "Reprocessar"}</Button></div></td>
+                  <td className="px-4 py-3 text-right"><div className="flex justify-end gap-2"><Button asChild variant="outline" size="sm" className="h-8 min-h-8 bg-background text-xs"><a href={`/results/${encodeURIComponent(delivery.attemptId)}`}>Abrir análise</a></Button><Button type="button" variant="outline" size="sm" className="h-8 min-h-8 gap-1.5 bg-background text-xs" disabled={reprocessingId === delivery.id} onClick={() => onReprocess(delivery.id)}><RotateCcw className="h-3.5 w-3.5" />{reprocessingId === delivery.id ? "Reenviando..." : "Reprocessar"}</Button></div></td>
                 </tr>
               ))}
             </tbody>
@@ -410,7 +453,7 @@ function ProductionSimulation({ simulation }: { simulation: SimulationSummaryRes
   const volume = simulation.attemptsCreated || 0;
   const pending = Math.max(0, 100 - completion);
   const complianceSearch = new URLSearchParams({ simulationId: simulation.id, versionNumber: String(simulation.versionNumber) });
-  return <article className="border-b border-border px-4 py-4 last:border-0"><div className="flex items-start justify-between gap-3"><div className="min-w-0"><h3 className="truncate text-sm font-semibold">{simulation.name}</h3><div className="mt-1 text-[11px] text-muted-foreground">v{simulation.versionNumber}</div></div><div className="flex shrink-0 gap-3 text-[11px]"><a href="/enviar-link" className="text-primary hover:underline">Enviar link</a><a href={`/compliance?${complianceSearch.toString()}`} className="text-primary hover:underline">Compliance -&gt;</a></div></div><div className="mt-3 grid grid-cols-3 gap-3 text-[11px] uppercase text-muted-foreground"><div>Volume<strong className="mt-1 block text-sm text-foreground">{volume}</strong></div><div>Conclusão<strong className="mt-1 block text-sm text-foreground">{completion}%</strong></div><div>Concluídas<strong className="mt-1 block text-sm text-foreground">{simulation.attemptsCompleted}</strong></div></div><div className="mt-3 flex h-1.5 overflow-hidden rounded-full bg-muted"><span className="bg-success" style={{ width: `${completion}%` }} /><span className="bg-muted-foreground/20" style={{ width: `${pending}%` }} /></div><div className="mt-2 grid grid-cols-2 text-[10px] text-muted-foreground"><span>Finalização {completion}%</span><span className="text-right">Em aberto {pending}%</span></div></article>;
+  return <article className="border-b border-border px-4 py-4 last:border-0"><div className="flex items-start justify-between gap-3"><div className="min-w-0"><h3 className="truncate text-sm font-semibold">{simulation.name}</h3><div className="mt-1 text-[11px] text-muted-foreground">v{simulation.versionNumber}</div></div><div className="flex shrink-0 gap-3 text-[11px]"><a href="/enviar-link" className="text-primary hover:underline">Enviar link</a><a href={`/compliance?${complianceSearch.toString()}`} className="text-primary hover:underline">Compliance -&gt;</a></div></div><div className="mt-3 grid grid-cols-3 gap-3 text-[11px] uppercase text-muted-foreground"><div>Convites<strong className="mt-1 block text-sm text-foreground">{volume}</strong></div><div>Finalização<strong className="mt-1 block text-sm text-foreground">{completion}%</strong></div><div>Finalizadas<strong className="mt-1 block text-sm text-foreground">{simulation.attemptsCompleted}</strong></div></div><div className="mt-3 flex h-1.5 overflow-hidden rounded-full bg-muted"><span className="bg-success" style={{ width: `${completion}%` }} /><span className="bg-muted-foreground/20" style={{ width: `${pending}%` }} /></div><div className="mt-2 grid grid-cols-2 text-[10px] text-muted-foreground"><span>Concluído {completion}%</span><span className="text-right">Em aberto {pending}%</span></div></article>;
 }
 
 function buildTotals(candidateLinks: CandidateLinkResponse[]) {
