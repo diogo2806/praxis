@@ -33,14 +33,25 @@ import java.util.Optional;
 
 
 /**
- * Termos aceitos pelo recrutador: termo de responsabilidade (REQ-L5) e termo de uso em saúde
- * (Minuta C). Expõe o texto/versão corrente e registra o aceite (quem, quando, qual versão) de
- * forma insert-only, para comprovar que o cliente assumiu as responsabilidades aplicáveis.
+ * Orquestra o processo de aceite dos termos que protegem a empresa, o candidato e a
+ * plataforma.
+ *
+ * <p>Na visão de negócio, este serviço entrega para a tela o termo vigente, confere se
+ * a pessoa usuária já aceitou a versão atual e grava um novo registro quando o aceite
+ * acontece. O histórico é mantido de forma insert-only para permitir auditoria: quem
+ * aceitou, por qual empresa, em qual data e qual versão estava valendo naquele momento.</p>
  */
 @Service
 public class TermAcceptanceService {
 
-    /** Descritor de um termo: tipo e versão correntes exibidos ao usuário. */
+    /**
+     * Agrupa os dados fixos de um termo para que o mesmo fluxo sirva tanto para o termo
+     * de responsabilidade quanto para o termo de uso da vertical de saúde.
+     *
+     * @param type identificador usado pelo sistema para diferenciar o tipo de termo
+     * @param version versão vigente que deve ser aceita pelo usuário
+     * @param text texto apresentado na interface antes do aceite
+     */
     private record TermDescriptor(String type, String version, String text) {
     }
 
@@ -53,6 +64,14 @@ public class TermAcceptanceService {
     private final CurrentEmpresaService currentEmpresaService;
     private final CurrentUserService currentUserService;
 
+    /**
+     * Prepara o serviço com os acessos necessários para consultar o usuário atual,
+     * identificar a empresa em operação e gravar o histórico de aceites.
+     *
+     * @param termAcceptanceRepository repositório onde o histórico de aceites é consultado e salvo
+     * @param currentEmpresaService serviço que identifica a empresa ativa no processo
+     * @param currentUserService serviço que identifica o usuário autenticado no processo
+     */
     public TermAcceptanceService(
             TermAcceptanceRepository termAcceptanceRepository,
             CurrentEmpresaService currentEmpresaService,
@@ -66,7 +85,10 @@ public class TermAcceptanceService {
     /**
      * Devolve o texto e a versão atual do termo de responsabilidade.
      *
-     * @return o conteúdo do termo de responsabilidade
+     * <p>Esse é o conteúdo exibido ao recrutador antes de ele confirmar que entende que
+     * a Práxis apoia a decisão, mas não substitui a revisão humana.</p>
+     *
+     * @return o conteúdo vigente do termo de responsabilidade
      */
     public TermResponse responsibilityTerm() {
         return termResponse(RESPONSIBILITY);
@@ -101,7 +123,10 @@ public class TermAcceptanceService {
     /**
      * Devolve o texto e a versão atual do termo de uso na vertical de saúde.
      *
-     * @return o conteúdo do termo de uso em saúde
+     * <p>Esse conteúdo é apresentado quando a empresa usa a plataforma em um contexto
+     * sensível de saúde e precisa reconhecer as responsabilidades adicionais do processo.</p>
+     *
+     * @return o conteúdo vigente do termo de uso em saúde
      */
     public TermResponse healthUseTerm() {
         return termResponse(HEALTH_USE);
@@ -133,8 +158,12 @@ public class TermAcceptanceService {
     }
 
     /**
-     * Indica se o usuário atual aceitou a versão corrente do termo de uso em saúde. Usado como
-     * trava de publicação quando o empresa opera na vertical de saúde.
+     * Confere se o usuário atual já aceitou a versão vigente do termo de uso em saúde.
+     *
+     * <p>Na prática, funciona como uma trava de segurança: sem esse aceite atualizado,
+     * o processo de publicação na vertical de saúde não deve avançar.</p>
+     *
+     * @return {@code true} quando o aceite mais recente corresponde à versão vigente
      */
     @Transactional(readOnly = true)
     public boolean isHealthUseAcceptedByCurrentUser() {
@@ -145,16 +174,45 @@ public class TermAcceptanceService {
                 .orElse(false);
     }
 
+    /**
+     * Transforma o termo configurado no formato usado pela API e pela tela.
+     *
+     * <p>Assim, a interface recebe sempre o mesmo conjunto de informações: tipo do termo,
+     * versão vigente e texto que deve ser exibido ao usuário antes do aceite.</p>
+     *
+     * @param descriptor termo configurado no backend
+     * @return resposta pronta para ser exibida no produto
+     */
     private TermResponse termResponse(TermDescriptor descriptor) {
         return new TermResponse(descriptor.type(), descriptor.version(), descriptor.text());
     }
 
+    /**
+     * Monta a fotografia atual do aceite para o usuário e a empresa em operação.
+     *
+     * <p>Esse método centraliza a consulta usada pelas telas de status, evitando que cada
+     * endpoint precise repetir a regra de buscar o último aceite registrado.</p>
+     *
+     * @param descriptor termo cujo status será consultado
+     * @return situação do aceite para a versão vigente do termo
+     */
     private TermAcceptanceStatusResponse statusFor(TermDescriptor descriptor) {
         String empresaId = currentEmpresaService.requiredEmpresaId();
         String userId = currentUserService.requiredUserId();
         return toStatus(descriptor, latestAcceptance(descriptor, empresaId, userId));
     }
 
+    /**
+     * Executa o registro de aceite de um termo.
+     *
+     * <p>Primeiro confirma que a versão aceita pelo usuário é a mesma que está vigente no
+     * backend. Depois registra uma nova linha de histórico com empresa, usuário, tipo,
+     * versão e data do aceite. Isso preserva a trilha de auditoria do processo.</p>
+     *
+     * @param descriptor termo que está sendo aceito
+     * @param request dados informados pela tela no momento do aceite
+     * @return situação atualizada do aceite logo após a gravação
+     */
     private TermAcceptanceStatusResponse accept(TermDescriptor descriptor, AcceptTermRequest request) {
         if (!descriptor.version().equals(request.version())) {
             throw new ResponseStatusException(
@@ -176,6 +234,17 @@ public class TermAcceptanceService {
         return toStatus(descriptor, Optional.of(acceptance));
     }
 
+    /**
+     * Localiza o aceite mais recente de um termo para uma combinação de empresa e usuário.
+     *
+     * <p>O histórico nunca é sobrescrito. Por isso, o estado atual é definido pelo último
+     * registro encontrado para o mesmo tipo de termo.</p>
+     *
+     * @param descriptor termo pesquisado no histórico
+     * @param empresaId empresa responsável pelo processo em andamento
+     * @param userId usuário que está operando o sistema
+     * @return aceite mais recente, quando existir
+     */
     private Optional<TermAcceptanceEntity> latestAcceptance(
             TermDescriptor descriptor, String empresaId, String userId) {
         return termAcceptanceRepository
@@ -183,6 +252,16 @@ public class TermAcceptanceService {
                         empresaId, userId, descriptor.type());
     }
 
+    /**
+     * Converte o registro salvo no banco em uma resposta de status fácil de entender pela tela.
+     *
+     * <p>Além de informar se o termo está aceito, a resposta também mostra qual versão foi
+     * aceita e quando isso aconteceu. Quando não há aceite, os campos históricos ficam vazios.</p>
+     *
+     * @param descriptor termo vigente que serve de referência para a comparação
+     * @param acceptance aceite mais recente encontrado no histórico
+     * @return status consolidado para exibição e decisão do fluxo
+     */
     private TermAcceptanceStatusResponse toStatus(
             TermDescriptor descriptor, Optional<TermAcceptanceEntity> acceptance) {
         return acceptance
