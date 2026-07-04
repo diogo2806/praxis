@@ -49,7 +49,7 @@ function ResetPasswordPage() {
   const mutation = useMutation({
     mutationFn: () => resetPassword({ token, newPassword, confirmPassword }),
     onSuccess: async () => {
-      await navigate({ to: "/" });
+      await navigate({ to: "/login" });
     },
   });
 
@@ -145,7 +145,7 @@ function ResetPasswordPage() {
 
       <p className="mt-5 text-center text-xs text-slate-500">
         {t.auth.rememberedPassword}{" "}
-        <Link to="/" className="font-medium text-primary hover:underline">
+        <Link to="/login" className="font-medium text-primary hover:underline">
           {t.auth.backToLogin}
         </Link>
       </p>
