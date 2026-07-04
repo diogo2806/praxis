@@ -64,7 +64,6 @@ function SidebarContent({
     { to: "/avaliacoes", label: t.common.situationalAssessment, icon: ListChecks },
     { to: "/results", label: t.common.results, icon: ClipboardList },
     { to: "/enviar-link", label: t.common.sendLink, icon: Link2 },
-    { to: "/monitoramento", label: t.common.monitoring, icon: BarChart3 },
     { to: "/notifications", label: copy.notificationsLabel, icon: Bell, badge: unreadNotifications },
     { to: "/jornadas", label: t.common.journeys, icon: Workflow },
     { to: "/talent-match", label: t.common.talentMatch, icon: Target },
@@ -72,6 +71,7 @@ function SidebarContent({
   const secondary = [
     { to: "/billing", label: t.common.plan, icon: CreditCard },
     { to: "/compliance", label: t.common.compliance, icon: ShieldCheck },
+    { to: "/monitoramento", label: t.common.operationCenter, icon: BarChart3 },
     { to: "/configuracoes/perfil", label: t.common.profile, icon: Building2 },
     { to: "/configuracoes/conta", label: t.common.myAccount, icon: UserRound },
     { to: "/team", label: t.common.myTeam, icon: Users },
@@ -137,7 +137,7 @@ function SidebarContent({
           );
         })}
         <div className="mt-6 px-3 pb-2 text-[10px] font-semibold uppercase text-muted-foreground">
-          {t.common.compliance}
+          {t.common.settings}
         </div>
         {secondary.map((item) => {
           const active = pathname === item.to || pathname.startsWith(item.to + "/");
@@ -182,7 +182,7 @@ function pageLabel(pathname: string, t: TranslationMap, copy: CopyMap) {
   if (pathname.startsWith("/nova")) return t.common.createAssessment;
   if (pathname === "/results" || pathname.startsWith("/results/")) return t.common.results;
   if (pathname === "/enviar-link") return t.common.sendLink;
-  if (pathname === "/monitoramento") return t.common.monitoring;
+  if (pathname === "/monitoramento") return t.common.operationCenter;
   if (pathname === "/notifications") return copy.notificationsLabel;
   if (pathname === "/jornadas") return t.common.journeys;
   if (pathname === "/talent-match") return t.common.talentMatch;
