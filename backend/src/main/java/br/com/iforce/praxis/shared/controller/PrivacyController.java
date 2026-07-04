@@ -1,34 +1,23 @@
 package br.com.iforce.praxis.shared.controller;
 
+import br.com.iforce.praxis.auth.service.CurrentEmpresaService;
+import br.com.iforce.praxis.auth.service.CurrentUserService;
 import br.com.iforce.praxis.shared.dto.PrivacyComplianceResponse;
-
+import br.com.iforce.praxis.shared.privacy.service.PrivacyRetentionService;
 import io.swagger.v3.oas.annotations.Operation;
-
 import io.swagger.v3.oas.annotations.tags.Tag;
-
 import org.springframework.beans.factory.annotation.Value;
-
 import org.springframework.http.ResponseEntity;
-
 import org.springframework.web.bind.annotation.GetMapping;
-
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
-
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-
 
 import java.util.List;
 
-
-/**
- * Porta de entrada (API) das informações de privacidade exibidas ao usuário.
- *
- * <p>Na visão do processo, é por aqui que a tela mostra ao candidato as
- * informações de privacidade do processo seletivo: finalidades do uso dos
- * dados, por quanto tempo são guardados, contato do responsável e como pedir
- * revisão. O conteúdo vem de configurações definidas pela empresa
- * responsável, sem expor dados técnicos internos.</p>
- */
+/** Porta de entrada (API) das informações de privacidade exibidas ao usuário. */
 @RestController
 @RequestMapping("/api/v1/privacy")
 @Tag(name = "Privacy", description = "Informacoes operacionais de privacidade, explicabilidade e revisao.")
@@ -40,6 +29,9 @@ public class PrivacyController {
     private final String serviceUrl;
     private final String dataProtectionOfficerContact;
     private final String reviewInstructions;
+    private final PrivacyRetentionService privacyRetentionService;
+    private final CurrentEmpresaService currentEmpresaService;
+    private final CurrentUserService currentUserService;
 
     public PrivacyController(
             @Value("${praxis.privacy-retention-days:180}") int retentionDays,
@@ -47,7 +39,10 @@ public class PrivacyController {
             @Value("${praxis.privacy.service-email:}") String serviceEmail,
             @Value("${praxis.privacy.service-url:}") String serviceUrl,
             @Value("${praxis.privacy.dpo-contact:}") String dataProtectionOfficerContact,
-            @Value("${praxis.privacy.review-instructions:Solicite revisao pelo canal de atendimento configurado pela empresa responsavel pelo processo seletivo.}") String reviewInstructions
+            @Value("${praxis.privacy.review-instructions:Solicite revisao pelo canal de atendimento configurado pela empresa responsavel pelo processo seletivo.}") String reviewInstructions,
+            PrivacyRetentionService privacyRetentionService,
+            CurrentEmpresaService currentEmpresaService,
+            CurrentUserService currentUserService
     ) {
         this.retentionDays = retentionDays;
         this.controllerName = controllerName;
@@ -55,21 +50,13 @@ public class PrivacyController {
         this.serviceUrl = serviceUrl;
         this.dataProtectionOfficerContact = dataProtectionOfficerContact;
         this.reviewInstructions = reviewInstructions;
+        this.privacyRetentionService = privacyRetentionService;
+        this.currentEmpresaService = currentEmpresaService;
+        this.currentUserService = currentUserService;
     }
 
-    /**
-     * Devolve as informações de privacidade para exibir na tela.
-     *
-     * <p>Reúne as bases legais, o prazo de retenção, o contato do responsável
-     * e o canal/orientações para solicitar revisão.</p>
-     *
-     * @return o pacote de informações de privacidade do processo
-     */
     @GetMapping("/compliance")
-    @Operation(
-            summary = "Retorna informacoes operacionais de privacidade",
-            description = "Exibe finalidades, retencao e orientacoes de revisao informadas para o frontend."
-    )
+    @Operation(summary = "Retorna informacoes operacionais de privacidade")
     public ResponseEntity<PrivacyComplianceResponse> getCompliance() {
         return ResponseEntity.ok(new PrivacyComplianceResponse(
                 List.of(
@@ -101,11 +88,21 @@ public class PrivacyController {
         ));
     }
 
-    /**
-     * Define qual canal de privacidade mostrar ao candidato: prioriza o site
-     * configurado, depois o e-mail; se nada estiver configurado, devolve um
-     * aviso orientando a configuração. Uso interno.
-     */
+    @PostMapping("/attempts/{attemptId}/action")
+    @Operation(summary = "Executa tratamento manual de privacidade para uma tentativa")
+    public ResponseEntity<Void> applyManualPrivacyAction(
+            @PathVariable String attemptId,
+            @RequestParam(required = false) String reason
+    ) {
+        privacyRetentionService.anonymizeAttemptNow(
+                currentEmpresaService.requiredEmpresaId(),
+                attemptId,
+                currentUserService.requiredUserId(),
+                reason
+        );
+        return ResponseEntity.noContent().build();
+    }
+
     private String reviewChannel() {
         if (serviceUrl != null && !serviceUrl.isBlank()) {
             return serviceUrl;
@@ -116,7 +113,6 @@ public class PrivacyController {
         return "Canal de privacidade não configurado para esta empresa. Configure PRAXIS_PRIVACY_SERVICE_EMAIL ou PRAXIS_PRIVACY_SERVICE_URL antes de operar processos reais.";
     }
 
-    /** Trata texto em branco como ausência de valor (nulo). Uso interno. */
     private String blankToNull(String value) {
         return value == null || value.isBlank() ? null : value;
     }
