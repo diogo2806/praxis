@@ -1,8 +1,20 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { ReactNode } from "react";
 import { useMemo, useState } from "react";
-import { Activity, CheckCircle2, Eye, RefreshCw, Send, XCircle } from "lucide-react";
+import {
+  Activity,
+  AlertTriangle,
+  Bell,
+  CheckCircle2,
+  Clock3,
+  Eye,
+  PlayCircle,
+  RefreshCw,
+  RotateCcw,
+  Send,
+  XCircle,
+} from "lucide-react";
 import { AppShell } from "@/components/app-shell";
 import { Button } from "@/components/ui/button";
 import {
@@ -12,8 +24,16 @@ import {
   listSimulations,
   type AttemptStatus,
   type CandidateLinkResponse,
+  type ResultDeliveryResponse,
+  type ResultDeliveryStatus,
   type SimulationSummaryResponse,
 } from "@/lib/api/praxis";
+import {
+  listNotifications,
+  processReadyResultDeliveries,
+  reprocessResultDelivery,
+  type InAppNotificationResponse,
+} from "@/lib/api/operations";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/monitoramento")({
@@ -30,10 +50,13 @@ export const Route = createFileRoute("/monitoramento")({
 });
 
 type AttemptFilter = "todos" | "ativos" | "finalizadas" | "sem-sinal";
+type DeliveryFilter = "todos" | ResultDeliveryStatus;
 
 function MonitoringPage() {
+  const queryClient = useQueryClient();
   const [revealed, setRevealed] = useState(false);
   const [attemptFilter, setAttemptFilter] = useState<AttemptFilter>("todos");
+  const [deliveryFilter, setDeliveryFilter] = useState<DeliveryFilter>("dlq");
   const [simulationFilter, setSimulationFilter] = useState<string>("todos");
 
   const simulationsQuery = useQuery({
@@ -44,6 +67,10 @@ function MonitoringPage() {
     queryKey: ["result-deliveries"],
     queryFn: () => listResultDeliveries(),
   });
+  const notificationsQuery = useQuery({
+    queryKey: ["notifications"],
+    queryFn: listNotifications,
+  });
   const liveAttemptsQuery = useQuery({
     queryKey: ["live-attempts"],
     queryFn: listLiveAttempts,
@@ -53,14 +80,26 @@ function MonitoringPage() {
     queryFn: () => listCandidateLinks(),
   });
 
+  const processReadyMutation = useMutation({
+    mutationFn: processReadyResultDeliveries,
+    onSuccess: () => refreshOperationalQueries(queryClient),
+  });
+
+  const reprocessMutation = useMutation({
+    mutationFn: reprocessResultDelivery,
+    onSuccess: () => refreshOperationalQueries(queryClient),
+  });
+
   const simulations = useMemo(
     () => (simulationsQuery.data ?? []).filter((simulation) => simulation.status === "published"),
     [simulationsQuery.data],
   );
   const deliveries = deliveriesQuery.data ?? [];
+  const notifications = notificationsQuery.data ?? [];
   const liveAttempts = liveAttemptsQuery.data ?? [];
   const candidateLinks = candidateLinksQuery.data ?? [];
   const failedDeliveries = deliveries.filter((delivery) => delivery.status === "dlq").length;
+  const unreadNotifications = notifications.filter((notification) => !notification.readAt).length;
   const totals = buildTotals(candidateLinks);
   const filteredAttempts = liveAttempts.filter((attempt) => {
     const openAttempt = attempt.status === "inProgress";
@@ -70,6 +109,17 @@ function MonitoringPage() {
     if (simulationFilter !== "todos" && attempt.simulationId !== simulationFilter) return false;
     return true;
   });
+  const filteredDeliveries = deliveries.filter((delivery) =>
+    deliveryFilter === "todos" ? true : delivery.status === deliveryFilter,
+  );
+
+  function refreshAll() {
+    void simulationsQuery.refetch();
+    void deliveriesQuery.refetch();
+    void notificationsQuery.refetch();
+    void liveAttemptsQuery.refetch();
+    void candidateLinksQuery.refetch();
+  }
 
   return (
     <AppShell>
@@ -83,8 +133,8 @@ function MonitoringPage() {
               Central operacional
             </h1>
             <p className="mt-3 text-sm leading-6 text-muted-foreground">
-              Convites, tentativas em andamento, finalizadas e falhas operacionais que a automacao
-              nao conseguiu resolver sozinha.
+              Convites, tentativas em andamento, resultados, notificações e falhas operacionais que
+              a automação não conseguiu resolver sozinha.
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
@@ -103,12 +153,7 @@ function MonitoringPage() {
               variant="outline"
               size="sm"
               className="h-8 min-h-8 gap-1.5 bg-card text-xs"
-              onClick={() => {
-                void simulationsQuery.refetch();
-                void deliveriesQuery.refetch();
-                void liveAttemptsQuery.refetch();
-                void candidateLinksQuery.refetch();
-              }}
+              onClick={refreshAll}
             >
               <RefreshCw className="h-3.5 w-3.5" />
               Atualizar
@@ -116,27 +161,34 @@ function MonitoringPage() {
           </div>
         </section>
 
-        <section className="grid grid-cols-2 gap-3 md:grid-cols-4">
+        <section className="grid grid-cols-2 gap-3 md:grid-cols-5">
           <MetricCard
             icon={<Send className="h-4 w-4" />}
             label="Convites enviados"
             value={totals.invites}
-            detail="Total historico"
+            detail="Total histórico"
             tone="ok"
           />
           <MetricCard
             icon={<Activity className="h-4 w-4" />}
             label="Tentativas iniciadas"
             value={totals.started}
-            detail={`${totals.adherence}% de adesao`}
+            detail={`${totals.adherence}% de adesão`}
             tone="ok"
           />
           <MetricCard
             icon={<CheckCircle2 className="h-4 w-4" />}
-            label="Conclusoes"
+            label="Conclusões"
             value={totals.completed}
-            detail={`${totals.completion}% de finalizacao`}
+            detail={`${totals.completion}% de finalização`}
             tone="ok"
+          />
+          <MetricCard
+            icon={<Bell className="h-4 w-4" />}
+            label="Notificações"
+            value={unreadNotifications}
+            detail="Não lidas"
+            tone={unreadNotifications > 0 ? "danger" : "ok"}
           />
           <MetricCard
             icon={<XCircle className="h-4 w-4" />}
@@ -147,6 +199,33 @@ function MonitoringPage() {
           />
         </section>
 
+        <OperationalChecklist
+          publishedSimulations={simulations.length}
+          generatedLinks={totals.invites}
+          completedAttempts={totals.completed}
+          failedDeliveries={failedDeliveries}
+        />
+
+        <div className="grid gap-5 xl:grid-cols-[1fr_0.9fr]">
+          <NotificationsPanel
+            notifications={notifications}
+            loading={notificationsQuery.isLoading}
+            error={notificationsQuery.isError}
+          />
+          <DeliveryQueuePanel
+            deliveries={filteredDeliveries}
+            allDeliveries={deliveries}
+            filter={deliveryFilter}
+            onFilterChange={setDeliveryFilter}
+            loading={deliveriesQuery.isLoading}
+            error={deliveriesQuery.isError}
+            processingReady={processReadyMutation.isPending}
+            reprocessingId={reprocessMutation.variables ?? null}
+            onProcessReady={() => processReadyMutation.mutate()}
+            onReprocess={(deliveryId) => reprocessMutation.mutate(deliveryId)}
+          />
+        </div>
+
         <div className="space-y-5">
           <section className="overflow-hidden rounded-xl border border-border bg-card">
             <div className="flex flex-col gap-3 border-b border-border px-4 py-4 md:flex-row md:items-center md:justify-between">
@@ -156,7 +235,7 @@ function MonitoringPage() {
                   Tentativas monitoradas
                 </div>
                 <p className="mt-1 text-xs text-muted-foreground">
-                  {filteredAttempts.length} de {liveAttempts.length} participacoes acompanhadas
+                  {filteredAttempts.length} de {liveAttempts.length} participações acompanhadas
                 </p>
               </div>
               <div className="flex flex-wrap items-center gap-2">
@@ -180,12 +259,12 @@ function MonitoringPage() {
                 <thead className="border-b border-border bg-muted/50 text-[11px] uppercase text-muted-foreground">
                   <tr>
                     <th className="px-4 py-3 font-medium">Participante</th>
-                    <th className="px-4 py-3 font-medium">Avaliacao</th>
+                    <th className="px-4 py-3 font-medium">Avaliação</th>
                     <th className="px-4 py-3 font-medium">Status</th>
                     <th className="px-4 py-3 font-medium">Etapa</th>
                     <th className="px-4 py-3 font-medium">Tempo</th>
-                    <th className="px-4 py-3 font-medium">Ultimo sinal</th>
-                    <th className="px-4 py-3 text-right font-medium">Acao</th>
+                    <th className="px-4 py-3 font-medium">Último sinal</th>
+                    <th className="px-4 py-3 text-right font-medium">Ação</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -217,13 +296,22 @@ function MonitoringPage() {
                           className="h-8 min-h-8 bg-background text-xs"
                         >
                           <Link
-                            to="/compliance"
-                            search={{
-                              simulationId: attempt.simulationId,
-                              versionNumber: attempt.versionNumber,
-                            }}
+                            to={attempt.status === "completed" ? "/results/$attemptId" : "/compliance"}
+                            params={
+                              attempt.status === "completed"
+                                ? { attemptId: attempt.attemptId }
+                                : undefined
+                            }
+                            search={
+                              attempt.status === "completed"
+                                ? undefined
+                                : {
+                                    simulationId: attempt.simulationId,
+                                    versionNumber: attempt.versionNumber,
+                                  }
+                            }
                           >
-                            Acompanhar
+                            {attempt.status === "completed" ? "Ver resultado" : "Acompanhar"}
                           </Link>
                         </Button>
                       </td>
@@ -248,7 +336,7 @@ function MonitoringPage() {
             <div className="border-b border-border px-4 py-4">
               <h2 className="text-sm font-semibold">Avaliações no ar</h2>
               <p className="mt-1 text-xs text-muted-foreground">
-                Versoes publicadas com dados de tentativas
+                Versões publicadas com dados de tentativas
               </p>
             </div>
             <div>
@@ -265,6 +353,311 @@ function MonitoringPage() {
         </div>
       </div>
     </AppShell>
+  );
+}
+
+function refreshOperationalQueries(queryClient: ReturnType<typeof useQueryClient>) {
+  void queryClient.invalidateQueries({ queryKey: ["result-deliveries"] });
+  void queryClient.invalidateQueries({ queryKey: ["notifications"] });
+  void queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+}
+
+function OperationalChecklist({
+  publishedSimulations,
+  generatedLinks,
+  completedAttempts,
+  failedDeliveries,
+}: {
+  publishedSimulations: number;
+  generatedLinks: number;
+  completedAttempts: number;
+  failedDeliveries: number;
+}) {
+  const items = [
+    {
+      label: "Criar e publicar avaliação",
+      done: publishedSimulations > 0,
+      detail: `${publishedSimulations} avaliação(ões) publicada(s)`,
+      to: "/nova/avaliacao" as const,
+      action: publishedSimulations > 0 ? "Criar outra" : "Criar agora",
+    },
+    {
+      label: "Gerar link para candidato",
+      done: generatedLinks > 0,
+      detail: `${generatedLinks} convite(s) gerado(s)`,
+      to: "/enviar-link" as const,
+      action: "Gerar link",
+    },
+    {
+      label: "Candidato conclui e resultado aparece",
+      done: completedAttempts > 0,
+      detail: `${completedAttempts} conclusão(ões) com resultado`,
+      to: "/results" as const,
+      action: "Ver resultados",
+    },
+    {
+      label: "Fila de entrega sem DLQ pendente",
+      done: failedDeliveries === 0,
+      detail: failedDeliveries === 0 ? "Sem falhas definitivas" : `${failedDeliveries} falha(s) para tratar`,
+      to: "/monitoramento" as const,
+      action: "Tratar fila",
+    },
+  ];
+
+  return (
+    <section className="rounded-xl border border-border bg-card p-4">
+      <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+        <div>
+          <h2 className="text-sm font-semibold">Happy path operacional</h2>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Caminho mínimo para garantir que empresa cria, publica, candidato responde e o resultado aparece.
+          </p>
+        </div>
+        <Link to="/comecar" className="text-xs font-medium text-primary hover:underline">
+          Ver guia completo -&gt;
+        </Link>
+      </div>
+      <div className="mt-4 grid gap-3 md:grid-cols-4">
+        {items.map((item) => (
+          <div key={item.label} className="rounded-lg border border-border bg-background p-3">
+            <div className="flex items-start gap-2">
+              {item.done ? (
+                <CheckCircle2 className="mt-0.5 h-4 w-4 text-success" />
+              ) : (
+                <Clock3 className="mt-0.5 h-4 w-4 text-warning" />
+              )}
+              <div className="min-w-0">
+                <div className="text-sm font-medium">{item.label}</div>
+                <div className="mt-1 text-xs text-muted-foreground">{item.detail}</div>
+                <Link to={item.to} className="mt-2 inline-block text-xs font-medium text-primary hover:underline">
+                  {item.action}
+                </Link>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function NotificationsPanel({
+  notifications,
+  loading,
+  error,
+}: {
+  notifications: InAppNotificationResponse[];
+  loading: boolean;
+  error: boolean;
+}) {
+  const recentNotifications = notifications.slice(0, 6);
+  return (
+    <section className="overflow-hidden rounded-xl border border-border bg-card">
+      <div className="flex items-center justify-between border-b border-border px-4 py-4">
+        <div>
+          <h2 className="flex items-center gap-2 text-sm font-semibold">
+            <Bell className="h-4 w-4 text-primary" />
+            Notificações operacionais
+          </h2>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Alertas internos gerados pela operação, incluindo falhas definitivas de entrega.
+          </p>
+        </div>
+      </div>
+      {loading ? (
+        <div className="px-4 py-8 text-sm text-muted-foreground">Carregando notificações...</div>
+      ) : error ? (
+        <div className="px-4 py-8 text-sm text-danger">Não foi possível carregar notificações.</div>
+      ) : recentNotifications.length === 0 ? (
+        <div className="px-4 py-8 text-sm text-muted-foreground">Nenhuma notificação operacional.</div>
+      ) : (
+        <div className="divide-y divide-border">
+          {recentNotifications.map((notification) => (
+            <article key={notification.id} className="px-4 py-3">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2 text-sm font-medium">
+                    {!notification.readAt && <span className="h-2 w-2 rounded-full bg-primary" />}
+                    {notification.title}
+                  </div>
+                  <p className="mt-1 line-clamp-2 text-xs leading-5 text-muted-foreground">
+                    {notification.message}
+                  </p>
+                  {notification.candidateName && (
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      Candidato: {notification.candidateName}
+                    </p>
+                  )}
+                </div>
+                <time className="shrink-0 text-[11px] text-muted-foreground">
+                  {formatRelativeTime(notification.createdAt)}
+                </time>
+              </div>
+              {notification.candidateAttemptId && (
+                <Link
+                  to="/results/$attemptId"
+                  params={{ attemptId: notification.candidateAttemptId }}
+                  className="mt-2 inline-flex text-xs font-medium text-primary hover:underline"
+                >
+                  Ver resultado -&gt;
+                </Link>
+              )}
+            </article>
+          ))}
+        </div>
+      )}
+    </section>
+  );
+}
+
+function DeliveryQueuePanel({
+  deliveries,
+  allDeliveries,
+  filter,
+  onFilterChange,
+  loading,
+  error,
+  processingReady,
+  reprocessingId,
+  onProcessReady,
+  onReprocess,
+}: {
+  deliveries: ResultDeliveryResponse[];
+  allDeliveries: ResultDeliveryResponse[];
+  filter: DeliveryFilter;
+  onFilterChange: (filter: DeliveryFilter) => void;
+  loading: boolean;
+  error: boolean;
+  processingReady: boolean;
+  reprocessingId: number | null;
+  onProcessReady: () => void;
+  onReprocess: (deliveryId: number) => void;
+}) {
+  const readyCount = allDeliveries.filter((delivery) => isReadyForRetry(delivery)).length;
+  const dlqCount = allDeliveries.filter((delivery) => delivery.status === "dlq").length;
+  const filters: Array<[DeliveryFilter, string]> = [
+    ["dlq", `DLQ (${dlqCount})`],
+    ["retrying", "Retentativa"],
+    ["pending", "Pendente"],
+    ["sent", "Enviada"],
+    ["todos", "Todas"],
+  ];
+
+  return (
+    <section className="overflow-hidden rounded-xl border border-border bg-card">
+      <div className="flex flex-col gap-3 border-b border-border px-4 py-4 md:flex-row md:items-center md:justify-between">
+        <div>
+          <h2 className="flex items-center gap-2 text-sm font-semibold">
+            <AlertTriangle className={cn("h-4 w-4", dlqCount > 0 ? "text-danger" : "text-primary")} />
+            Entregas e DLQ
+          </h2>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Reprocessamento manual de resultados que falharam ou já estão prontos para nova tentativa.
+          </p>
+        </div>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          className="h-8 min-h-8 gap-1.5 bg-background text-xs"
+          disabled={processingReady || readyCount === 0}
+          onClick={onProcessReady}
+        >
+          <PlayCircle className="h-3.5 w-3.5" />
+          {processingReady ? "Processando..." : `Processar prontas (${readyCount})`}
+        </Button>
+      </div>
+      <div className="border-b border-border px-4 py-3">
+        <div className="flex flex-wrap gap-2">
+          {filters.map(([id, label]) => (
+            <button
+              key={id}
+              type="button"
+              onClick={() => onFilterChange(id)}
+              className={cn(
+                "rounded-md border px-2.5 py-1 text-xs transition",
+                filter === id
+                  ? "border-primary bg-primary text-primary-foreground"
+                  : "border-border bg-background text-muted-foreground hover:bg-accent",
+              )}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+      </div>
+      {loading ? (
+        <div className="px-4 py-8 text-sm text-muted-foreground">Carregando entregas...</div>
+      ) : error ? (
+        <div className="px-4 py-8 text-sm text-danger">Não foi possível carregar entregas.</div>
+      ) : deliveries.length === 0 ? (
+        <div className="px-4 py-8 text-sm text-muted-foreground">Nenhuma entrega para este filtro.</div>
+      ) : (
+        <div className="max-h-[420px] overflow-auto">
+          <table className="w-full min-w-[720px] text-left text-sm">
+            <thead className="sticky top-0 border-b border-border bg-muted/80 text-[11px] uppercase text-muted-foreground backdrop-blur">
+              <tr>
+                <th className="px-4 py-3 font-medium">Entrega</th>
+                <th className="px-4 py-3 font-medium">Status</th>
+                <th className="px-4 py-3 font-medium">Tentativas</th>
+                <th className="px-4 py-3 font-medium">Último erro</th>
+                <th className="px-4 py-3 text-right font-medium">Ação</th>
+              </tr>
+            </thead>
+            <tbody>
+              {deliveries.map((delivery) => (
+                <tr key={delivery.id} className="border-b border-border last:border-0">
+                  <td className="px-4 py-3">
+                    <div className="font-medium">#{delivery.id}</div>
+                    <div className="mt-0.5 text-xs text-muted-foreground">Attempt: {delivery.attemptId}</div>
+                    <div className="mt-0.5 text-xs text-muted-foreground">Result: {delivery.resultId}</div>
+                  </td>
+                  <td className="px-4 py-3">
+                    <DeliveryStatusBadge status={delivery.status} />
+                    {delivery.nextAttemptAt && (
+                      <div className="mt-1 text-[11px] text-muted-foreground">
+                        Próxima: {formatDateTime(delivery.nextAttemptAt)}
+                      </div>
+                    )}
+                  </td>
+                  <td className="px-4 py-3 tabular-nums text-muted-foreground">
+                    {delivery.attemptCount}
+                  </td>
+                  <td className="max-w-[260px] px-4 py-3 text-xs text-muted-foreground">
+                    <span className="line-clamp-2">{delivery.lastError ?? "-"}</span>
+                  </td>
+                  <td className="px-4 py-3 text-right">
+                    <div className="flex justify-end gap-2">
+                      <Button
+                        asChild
+                        variant="outline"
+                        size="sm"
+                        className="h-8 min-h-8 bg-background text-xs"
+                      >
+                        <Link to="/results/$attemptId" params={{ attemptId: delivery.attemptId }}>
+                          Resultado
+                        </Link>
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="h-8 min-h-8 gap-1.5 bg-background text-xs"
+                        disabled={reprocessingId === delivery.id}
+                        onClick={() => onReprocess(delivery.id)}
+                      >
+                        <RotateCcw className="h-3.5 w-3.5" />
+                        {reprocessingId === delivery.id ? "Reenviando..." : "Reprocessar"}
+                      </Button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </section>
   );
 }
 
@@ -318,13 +711,27 @@ function StatusBadge({ status, active }: { status: AttemptStatus; active: boolea
   );
 }
 
+function DeliveryStatusBadge({ status }: { status: ResultDeliveryStatus }) {
+  const config: Record<ResultDeliveryStatus, { label: string; className: string }> = {
+    pending: { label: "Pendente", className: "border-warning/30 bg-warning/10 text-warning" },
+    retrying: { label: "Retentativa", className: "border-primary/30 bg-primary/10 text-primary" },
+    sent: { label: "Enviada", className: "border-success/30 bg-success/10 text-success" },
+    dlq: { label: "DLQ", className: "border-danger/30 bg-danger/10 text-danger" },
+  };
+  return (
+    <span className={cn("inline-flex rounded-full border px-2 py-0.5 text-[11px]", config[status].className)}>
+      {config[status].label}
+    </span>
+  );
+}
+
 function attemptStatusLabel(status: AttemptStatus, active: boolean) {
   if (status === "completed") return "Finalizada";
   if (status === "inProgress" && active) return "Ativa";
   if (status === "inProgress") return "Sem sinal";
   if (status === "abandoned") return "Abandonada";
   if (status === "expired") return "Expirada";
-  return "Nao iniciada";
+  return "Não iniciada";
 }
 
 function MetricCard({
@@ -375,13 +782,21 @@ function ProductionSimulation({ simulation }: { simulation: SimulationSummaryRes
           <h3 className="truncate text-sm font-semibold">{simulation.name}</h3>
           <div className="mt-1 text-[11px] text-muted-foreground">v{simulation.versionNumber}</div>
         </div>
-        <Link
-          to="/compliance"
-          search={{ simulationId: simulation.id, versionNumber: simulation.versionNumber }}
-          className="shrink-0 text-[11px] text-primary hover:underline"
-        >
-          Compliance -&gt;
-        </Link>
+        <div className="flex shrink-0 gap-3 text-[11px]">
+          <Link
+            to="/enviar-link"
+            className="text-primary hover:underline"
+          >
+            Enviar link
+          </Link>
+          <Link
+            to="/compliance"
+            search={{ simulationId: simulation.id, versionNumber: simulation.versionNumber }}
+            className="text-primary hover:underline"
+          >
+            Compliance -&gt;
+          </Link>
+        </div>
       </div>
       <div className="mt-3 grid grid-cols-3 gap-3 text-[11px] uppercase text-muted-foreground">
         <div>
@@ -389,11 +804,11 @@ function ProductionSimulation({ simulation }: { simulation: SimulationSummaryRes
           <strong className="mt-1 block text-sm text-foreground">{volume}</strong>
         </div>
         <div>
-          Conclusao
+          Conclusão
           <strong className="mt-1 block text-sm text-foreground">{completion}%</strong>
         </div>
         <div>
-          Concluidas
+          Concluídas
           <strong className="mt-1 block text-sm text-foreground">
             {simulation.attemptsCompleted}
           </strong>
@@ -404,7 +819,7 @@ function ProductionSimulation({ simulation }: { simulation: SimulationSummaryRes
         <span className="bg-muted-foreground/20" style={{ width: `${pending}%` }} />
       </div>
       <div className="mt-2 grid grid-cols-2 text-[10px] text-muted-foreground">
-        <span>Finalizacao {completion}%</span>
+        <span>Finalização {completion}%</span>
         <span className="text-right">Em aberto {pending}%</span>
       </div>
     </article>
@@ -412,9 +827,7 @@ function ProductionSimulation({ simulation }: { simulation: SimulationSummaryRes
 }
 
 function buildTotals(candidateLinks: CandidateLinkResponse[]) {
-  // "Convites enviados" = links de candidato efetivamente gerados (fonte da verdade).
   const invites = candidateLinks.length;
-  // Tentativas iniciadas = candidatos que sairam do estado "notStarted".
   const started = candidateLinks.filter((link) => link.status !== "notStarted").length;
   const completed = candidateLinks.filter((link) => link.status === "completed").length;
   const completion = Math.round((completed / Math.max(started, 1)) * 100);
@@ -451,12 +864,35 @@ function formatRelativeTime(value: string) {
   }
   const seconds = Math.max(0, Math.round((Date.now() - timestamp) / 1000));
   if (seconds < 60) {
-    return `ha ${seconds}s`;
+    return `há ${seconds}s`;
   }
   const minutes = Math.round(seconds / 60);
   if (minutes < 60) {
-    return `ha ${minutes} min`;
+    return `há ${minutes} min`;
   }
   const hours = Math.round(minutes / 60);
-  return `ha ${hours} h`;
+  return `há ${hours} h`;
+}
+
+function formatDateTime(value: string) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return "-";
+  }
+  return new Intl.DateTimeFormat("pt-BR", {
+    day: "2-digit",
+    month: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(date);
+}
+
+function isReadyForRetry(delivery: ResultDeliveryResponse) {
+  if (delivery.status !== "pending" && delivery.status !== "retrying") {
+    return false;
+  }
+  if (!delivery.nextAttemptAt) {
+    return true;
+  }
+  return new Date(delivery.nextAttemptAt).getTime() <= Date.now();
 }
