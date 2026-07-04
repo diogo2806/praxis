@@ -1,16 +1,19 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   Archive,
   CheckCircle2,
   Copy,
+  Edit3,
   ExternalLink,
   Plus,
   RefreshCw,
+  Save,
   Send,
   Trash2,
   Workflow,
+  X,
 } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
 import { EmptyState, SkeletonRows, StateBanner } from "@/components/praxis-ui";
@@ -26,6 +29,7 @@ import {
   listAssessmentJourneys,
   listSimulations,
   publishAssessmentJourney,
+  updateAssessmentJourney,
   updateAssessmentJourneyStep,
   type AssessmentJourneyAttemptResponse,
   type AssessmentJourneyDetailResponse,
@@ -401,6 +405,29 @@ function JourneyComposer({
   onRemoveStep: (stepId: number) => void;
   onMoveStep: (step: JourneyStepResponse, direction: -1 | 1) => void;
 }) {
+  const queryClient = useQueryClient();
+  const [editing, setEditing] = useState(false);
+  const [editName, setEditName] = useState(journey.name);
+  const [editDescription, setEditDescription] = useState(journey.description ?? "");
+
+  useEffect(() => {
+    setEditing(false);
+    setEditName(journey.name);
+    setEditDescription(journey.description ?? "");
+  }, [journey.id, journey.name, journey.description]);
+
+  const updateJourneyMutation = useMutation({
+    mutationFn: () =>
+      updateAssessmentJourney(journey.id, {
+        name: editName.trim(),
+        description: editDescription.trim() || null,
+      }),
+    onSuccess: async (updatedJourney) => {
+      setEditing(false);
+      await invalidateJourney(queryClient, updatedJourney.id);
+    },
+  });
+
   const sequences = journey.sequences;
   const totalSteps = sequences.reduce((total, sequence) => total + sequence.steps.length, 0);
   const existingSequenceKeys = sequences.map((sequence) => sequence.sequenceKey);
@@ -418,11 +445,17 @@ function JourneyComposer({
   const selectedIsUnavailable =
     Boolean(selectedSimulationId) && simulationsInCurrentSequence.has(selectedSimulationId);
 
+  function resetEditForm() {
+    setEditName(journey.name);
+    setEditDescription(journey.description ?? "");
+    setEditing(false);
+  }
+
   return (
     <section className="rounded-md border border-border bg-card">
       <div className="flex flex-col gap-3 border-b border-border p-5 lg:flex-row lg:items-start lg:justify-between">
         <div>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <Workflow className="h-4 w-4 text-primary" />
             <h2 className="text-xl font-semibold">{journey.name}</h2>
             <JourneyStatusBadge status={journey.status} />
@@ -436,6 +469,18 @@ function JourneyComposer({
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
+          {draft && (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="h-9 gap-2 bg-card"
+              onClick={() => setEditing((current) => !current)}
+            >
+              <Edit3 className="h-4 w-4" />
+              {editing ? "Fechar edição" : "Editar"}
+            </Button>
+          )}
           <Button
             type="button"
             variant="outline"
@@ -460,6 +505,56 @@ function JourneyComposer({
           </Button>
         </div>
       </div>
+
+      {editing && draft && (
+        <div className="border-b border-border bg-muted/20 p-5">
+          <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto]">
+            <input
+              className="input w-full"
+              placeholder="Nome da jornada"
+              value={editName}
+              onChange={(event) => setEditName(event.target.value)}
+            />
+            <textarea
+              className="input min-h-10 w-full resize-y"
+              placeholder="Descricao opcional"
+              value={editDescription}
+              onChange={(event) => setEditDescription(event.target.value)}
+            />
+            <div className="flex gap-2">
+              <Button
+                type="button"
+                className="h-10 gap-2"
+                disabled={!editName.trim() || updateJourneyMutation.isPending}
+                onClick={() => updateJourneyMutation.mutate()}
+              >
+                <Save className="h-4 w-4" />
+                Salvar
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                className="h-10 gap-2 bg-card"
+                disabled={updateJourneyMutation.isPending}
+                onClick={resetEditForm}
+              >
+                <X className="h-4 w-4" />
+                Cancelar
+              </Button>
+            </div>
+          </div>
+          {updateJourneyMutation.error && (
+            <p className="mt-2 text-sm text-danger">
+              {updateJourneyMutation.error instanceof Error
+                ? updateJourneyMutation.error.message
+                : "Nao foi possivel salvar a jornada."}
+            </p>
+          )}
+          <p className="mt-2 text-xs text-muted-foreground">
+            A edição de nome e descrição fica disponível apenas enquanto a jornada está em rascunho.
+          </p>
+        </div>
+      )}
 
       {draft && (
         <div className="border-b border-border p-5">
@@ -521,10 +616,7 @@ function JourneyComposer({
                   type="button"
                   className="h-10 gap-2"
                   disabled={
-                    !selectedSimulationId ||
-                    selectedIsUnavailable ||
-                    !sequenceKey.trim() ||
-                    addPending
+                    !selectedSimulationId || selectedIsUnavailable || !sequenceKey.trim() || addPending
                   }
                   onClick={onAddStep}
                 >
@@ -533,9 +625,9 @@ function JourneyComposer({
                 </Button>
               </div>
               <p className="mt-2 text-xs text-muted-foreground">
-                Combine avaliações diferentes em uma mesma sequência (cada avaliação só pode
-                entrar uma vez por sequência) ou crie sequências diferentes digitando um novo
-                nome. Cada candidato recebe o link de uma sequencia.
+                Combine avaliações diferentes em uma mesma sequência (cada avaliação só pode entrar
+                uma vez por sequência) ou crie sequências diferentes digitando um novo nome. Cada
+                candidato recebe o link de uma sequencia.
               </p>
             </>
           )}
@@ -653,7 +745,7 @@ function JourneyAttempts({
   onCreateAttempt: () => void;
   createPending: boolean;
   copiedAttemptId: string | null;
-  onCopy: (attempt: AssessmentJourneyAttemptResponse) => void;
+  onCopy: (attempt: AssessmentJourneyAttemptResponse) => Promise<void>;
 }) {
   const published = journey.status === "published";
   const sequences = journey.sequences;
@@ -709,9 +801,7 @@ function JourneyAttempts({
         <Button
           type="button"
           className="h-10 gap-2"
-          disabled={
-            !published || !candidateName.trim() || !candidateEmail.includes("@") || createPending
-          }
+          disabled={!published || !candidateName.trim() || !candidateEmail.includes("@") || createPending}
           onClick={onCreateAttempt}
         >
           <Send className="h-4 w-4" />
@@ -745,9 +835,7 @@ function JourneyAttempts({
             </thead>
             <tbody>
               {attempts.map((attempt) => {
-                const completed = attempt.steps.filter(
-                  (step) => step.status === "completed",
-                ).length;
+                const completed = attempt.steps.filter((step) => step.status === "completed").length;
                 const link = journeyAttemptUrl(attempt.id);
                 const copied = copiedAttemptId === attempt.id;
                 return (
