@@ -95,7 +95,9 @@ public class AssessmentJourneyService {
     @Transactional
     public AssessmentJourneyDetailResponse updateJourney(String journeyId, UpdateAssessmentJourneyRequest request) {
         AssessmentJourneyEntity journey = findJourney(journeyId);
-        assertDraft(journey);
+        if (journey.getStatus() == AssessmentJourneyStatus.ARCHIVED) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Jornadas arquivadas não podem ser editadas.");
+        }
         if (request.name() != null) {
             if (request.name().isBlank()) {
                 throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "O nome da jornada não pode ser vazio.");
