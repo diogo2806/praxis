@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   AlertCircle,
   AlertTriangle,
@@ -24,8 +24,13 @@ import {
   type ClientBillingResponse,
   type CommercialPlanType,
   type FinancialStatus,
+  type SubscriptionPlan,
+  createClientCreditCheckout,
+  createClientSubscriptionCheckout,
   getClientBilling,
-} from "@/lib/api/praxis";
+  listClientBillingPlans,
+  syncClientSubscription,
+} from "@/lib/api/client-billing";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/billing")({
@@ -40,10 +45,36 @@ export const Route = createFileRoute("/billing")({
 // ---------------------------------------------------------------------------
 
 function BillingPage() {
+  const queryClient = useQueryClient();
   const query = useQuery({
     queryKey: ["billing"],
     queryFn: getClientBilling,
     retry: false,
+  });
+  const plansQuery = useQuery({
+    queryKey: ["billing", "plans"],
+    queryFn: listClientBillingPlans,
+    retry: false,
+  });
+  const creditCheckout = useMutation({
+    mutationFn: createClientCreditCheckout,
+    onSuccess: (checkout) => {
+      openCheckout(checkout.initPoint);
+      void queryClient.invalidateQueries({ queryKey: ["billing"] });
+    },
+  });
+  const subscriptionCheckout = useMutation({
+    mutationFn: createClientSubscriptionCheckout,
+    onSuccess: (checkout) => {
+      openCheckout(checkout.initPoint);
+      void queryClient.invalidateQueries({ queryKey: ["billing"] });
+    },
+  });
+  const syncSubscription = useMutation({
+    mutationFn: syncClientSubscription,
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["billing"] });
+    },
   });
 
   return (
@@ -51,7 +82,7 @@ function BillingPage() {
       <div className="space-y-2 mb-6">
         <h1 className="text-2xl font-semibold">Plano e uso</h1>
         <p className="text-sm text-muted-foreground">
-          Acompanhe o plano da sua empresa e o consumo no Práxis.
+          Acompanhe o plano da sua empresa e resolva créditos ou assinatura sem acionar o suporte.
         </p>
       </div>
 
@@ -60,7 +91,17 @@ function BillingPage() {
       ) : query.isError ? (
         <ErrorState onRetry={() => query.refetch()} />
       ) : query.data ? (
-        <BillingContent data={query.data} />
+        <BillingContent
+          data={query.data}
+          plans={plansQuery.data ?? []}
+          plansLoading={plansQuery.isLoading}
+          checkoutPending={creditCheckout.isPending || subscriptionCheckout.isPending}
+          syncPending={syncSubscription.isPending}
+          checkoutError={messageFromError(creditCheckout.error ?? subscriptionCheckout.error ?? syncSubscription.error)}
+          onCreditCheckout={(planId) => creditCheckout.mutate(planId)}
+          onSubscriptionCheckout={(planId) => subscriptionCheckout.mutate(planId)}
+          onSyncSubscription={() => syncSubscription.mutate()}
+        />
       ) : null}
     </AppShell>
   );
@@ -70,7 +111,27 @@ function BillingPage() {
 // Content
 // ---------------------------------------------------------------------------
 
-function BillingContent({ data }: { data: ClientBillingResponse }) {
+function BillingContent({
+  data,
+  plans,
+  plansLoading,
+  checkoutPending,
+  syncPending,
+  checkoutError,
+  onCreditCheckout,
+  onSubscriptionCheckout,
+  onSyncSubscription,
+}: {
+  data: ClientBillingResponse;
+  plans: SubscriptionPlan[];
+  plansLoading: boolean;
+  checkoutPending: boolean;
+  syncPending: boolean;
+  checkoutError: string | null;
+  onCreditCheckout: (planId: number) => void;
+  onSubscriptionCheckout: (planId: number) => void;
+  onSyncSubscription: () => void;
+}) {
   const hasNoSetup =
     data.plan == null &&
     data.subscription == null &&
@@ -87,10 +148,19 @@ function BillingContent({ data }: { data: ClientBillingResponse }) {
       <UsageSummaryCard data={data} />
       {data.plan === "AVULSO" && <CreditBalanceCard data={data} />}
       {data.plan === "PROFISSIONAL" && data.subscription && (
-        <SubscriptionCard data={data} />
+        <SubscriptionCard data={data} onSync={onSyncSubscription} syncPending={syncPending} />
       )}
       {data.plan === "ENTERPRISE" && <EnterpriseCard data={data} />}
-      <BillingActionPanel actions={data.availableActions} />
+      <CheckoutSelfServiceCard
+        data={data}
+        plans={plans}
+        loading={plansLoading}
+        pending={checkoutPending}
+        error={checkoutError}
+        onCreditCheckout={onCreditCheckout}
+        onSubscriptionCheckout={onSubscriptionCheckout}
+      />
+      <BillingActionPanel actions={data.availableActions} subscriptionUrl={data.subscription?.initPoint ?? null} />
       {data.events.length > 0 && <BillingEventsTable events={data.events} />}
     </div>
   );
@@ -106,17 +176,9 @@ function CurrentPlanCard({ data }: { data: ClientBillingResponse }) {
       <CardHeader icon={<BadgeCheck className="h-4 w-4" />} title="Plano atual" />
       <div className="grid gap-3 sm:grid-cols-2">
         <InfoRow label="Plano" value={planLabel(data.plan)} />
-        <InfoRow
-          label="Status"
-          value={
-            <EmpresaStatusBadge status={data.empresaStatus} />
-          }
-        />
+        <InfoRow label="Status" value={<EmpresaStatusBadge status={data.empresaStatus} />} />
         {data.plan === "PROFISSIONAL" && data.subscription?.currentPeriodEnd && (
-          <InfoRow
-            label="Próxima renovação"
-            value={formatDate(data.subscription.currentPeriodEnd)}
-          />
+          <InfoRow label="Próxima renovação" value={formatDate(data.subscription.currentPeriodEnd)} />
         )}
         {data.plan === "AVULSO" && (
           <InfoRow label="Saldo de créditos" value={`${data.creditBalance} crédito${data.creditBalance !== 1 ? "s" : ""}`} />
@@ -163,26 +225,37 @@ function CreditBalanceCard({ data }: { data: ClientBillingResponse }) {
   );
 }
 
-function SubscriptionCard({ data }: { data: ClientBillingResponse }) {
+function SubscriptionCard({
+  data,
+  onSync,
+  syncPending,
+}: {
+  data: ClientBillingResponse;
+  onSync: () => void;
+  syncPending: boolean;
+}) {
   const sub = data.subscription!;
   return (
     <Card>
-      <CardHeader icon={<CalendarClock className="h-4 w-4" />} title="Cobrança" />
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <CardHeader icon={<CalendarClock className="h-4 w-4" />} title="Cobrança" />
+        <button
+          type="button"
+          onClick={onSync}
+          disabled={syncPending}
+          className="inline-flex items-center justify-center gap-2 rounded-md border border-border bg-card px-3 py-2 text-sm hover:bg-accent disabled:opacity-60"
+        >
+          {syncPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+          Sincronizar assinatura
+        </button>
+      </div>
       <div className="grid gap-3 sm:grid-cols-2">
         <InfoRow label="Status financeiro" value={<FinancialStatusBadge status={data.financialStatus} />} />
-        {sub.lastPaymentAt && (
-          <InfoRow label="Último pagamento" value={formatDate(sub.lastPaymentAt)} />
-        )}
-        {sub.currentPeriodEnd && (
-          <InfoRow label="Próxima cobrança" value={formatDate(sub.currentPeriodEnd)} />
-        )}
+        <InfoRow label="Status da assinatura" value={subscriptionStatusLabel(sub.status)} />
+        {sub.lastPaymentAt && <InfoRow label="Último pagamento" value={formatDate(sub.lastPaymentAt)} />}
+        {sub.currentPeriodEnd && <InfoRow label="Próxima cobrança" value={formatDate(sub.currentPeriodEnd)} />}
         {sub.graceUntil && (
-          <InfoRow
-            label="Carência até"
-            value={
-              <span className="text-amber-600 font-medium">{formatDate(sub.graceUntil)}</span>
-            }
-          />
+          <InfoRow label="Carência até" value={<span className="text-amber-600 font-medium">{formatDate(sub.graceUntil)}</span>} />
         )}
       </div>
     </Card>
@@ -194,15 +267,112 @@ function EnterpriseCard({ data }: { data: ClientBillingResponse }) {
     <Card>
       <CardHeader icon={<Building2 className="h-4 w-4" />} title="Contrato Enterprise" />
       <p className="text-sm text-muted-foreground">
-        Seu plano é gerenciado comercialmente pela equipe Práxis. Entre em
-        contato com o suporte para dúvidas sobre condições ou faturamento.
+        Seu plano é gerenciado comercialmente pela equipe Práxis. Entre em contato com o suporte para dúvidas sobre condições ou faturamento.
       </p>
       <InfoRow label="Status" value={<FinancialStatusBadge status={data.financialStatus} />} />
     </Card>
   );
 }
 
-function BillingActionPanel({ actions }: { actions: BillingAction[] }) {
+function CheckoutSelfServiceCard({
+  data,
+  plans,
+  loading,
+  pending,
+  error,
+  onCreditCheckout,
+  onSubscriptionCheckout,
+}: {
+  data: ClientBillingResponse;
+  plans: SubscriptionPlan[];
+  loading: boolean;
+  pending: boolean;
+  error: string | null;
+  onCreditCheckout: (planId: number) => void;
+  onSubscriptionCheckout: (planId: number) => void;
+}) {
+  const creditPlans = plans.filter((plan) => plan.planType === "AVULSO");
+  const subscriptionPlans = plans.filter((plan) => plan.planType === "PROFISSIONAL");
+
+  if (data.plan === "ENTERPRISE") return null;
+
+  return (
+    <Card id="checkout">
+      <CardHeader icon={<ShoppingCart className="h-4 w-4" />} title="Self-service de cobrança" />
+      <p className="text-sm text-muted-foreground">
+        Gere o checkout no Mercado Pago pela própria conta. Créditos e regularização só entram após confirmação financeira.
+      </p>
+      {error && (
+        <div className="rounded-md border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm text-destructive">
+          {error}
+        </div>
+      )}
+      {loading ? (
+        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          <Loader2 className="h-4 w-4 animate-spin" />
+          Carregando opções de cobrança...
+        </div>
+      ) : data.plan === "AVULSO" ? (
+        <PlanButtons plans={creditPlans} pending={pending} emptyText="Nenhum pacote de créditos ativo." onSelect={onCreditCheckout} />
+      ) : (
+        <div className="space-y-3">
+          {data.subscription?.initPoint && (
+            <a
+              href={data.subscription.initPoint}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center gap-2 rounded-md border border-primary bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
+            >
+              <ExternalLink className="h-4 w-4" />
+              Abrir autorização atual
+            </a>
+          )}
+          <PlanButtons plans={subscriptionPlans} pending={pending} emptyText="Nenhum plano profissional ativo." onSelect={onSubscriptionCheckout} />
+        </div>
+      )}
+    </Card>
+  );
+}
+
+function PlanButtons({
+  plans,
+  pending,
+  emptyText,
+  onSelect,
+}: {
+  plans: SubscriptionPlan[];
+  pending: boolean;
+  emptyText: string;
+  onSelect: (planId: number) => void;
+}) {
+  if (plans.length === 0) {
+    return <p className="text-sm text-muted-foreground">{emptyText}</p>;
+  }
+
+  return (
+    <div className="grid gap-2 sm:grid-cols-2">
+      {plans.map((plan) => (
+        <button
+          key={plan.id}
+          type="button"
+          onClick={() => onSelect(plan.id)}
+          disabled={pending}
+          className="rounded-md border border-border bg-card p-4 text-left hover:bg-accent disabled:opacity-60"
+        >
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <p className="text-sm font-semibold">{plan.name}</p>
+              {plan.creditAmount != null && <p className="text-xs text-muted-foreground">{plan.creditAmount} créditos</p>}
+            </div>
+            <span className="text-sm font-semibold whitespace-nowrap">{formatCurrency(plan.priceCents, plan.currency)}</span>
+          </div>
+        </button>
+      ))}
+    </div>
+  );
+}
+
+function BillingActionPanel({ actions, subscriptionUrl }: { actions: BillingAction[]; subscriptionUrl: string | null }) {
   if (actions.length === 0) return null;
 
   return (
@@ -210,68 +380,41 @@ function BillingActionPanel({ actions }: { actions: BillingAction[] }) {
       <CardHeader icon={<Info className="h-4 w-4" />} title="Ações disponíveis" />
       <div className="flex flex-wrap gap-2">
         {actions.map((action) => (
-          <ActionButton key={action} action={action} />
+          <ActionButton key={action} action={action} subscriptionUrl={subscriptionUrl} />
         ))}
       </div>
     </Card>
   );
 }
 
-function ActionButton({ action }: { action: BillingAction }) {
+function ActionButton({ action, subscriptionUrl }: { action: BillingAction; subscriptionUrl: string | null }) {
   const config: Record<BillingAction, { label: string; icon: React.ReactNode; href?: string; variant?: "primary" | "default" }> = {
-    BUY_CREDITS: {
-      label: "Comprar créditos",
-      icon: <ShoppingCart className="h-4 w-4" />,
-      variant: "primary",
-    },
-    VIEW_HISTORY: {
-      label: "Ver histórico",
-      icon: <History className="h-4 w-4" />,
-    },
-    VIEW_SUBSCRIPTION: {
-      label: "Ver assinatura",
-      icon: <ExternalLink className="h-4 w-4" />,
-    },
-    UPDATE_PAYMENT: {
-      label: "Atualizar pagamento",
-      icon: <CreditCard className="h-4 w-4" />,
-      variant: "primary",
-    },
-    CONTACT_SUPPORT: {
-      label: "Falar com suporte",
-      icon: <HeadphonesIcon className="h-4 w-4" />,
-      href: "mailto:suporte@praxis.com.br",
-    },
+    BUY_CREDITS: { label: "Comprar créditos", icon: <ShoppingCart className="h-4 w-4" />, href: "#checkout", variant: "primary" },
+    MANAGE_AUTO_RECHARGE: { label: "Recarga automática", icon: <RefreshCw className="h-4 w-4" />, href: "#checkout" },
+    VIEW_HISTORY: { label: "Ver histórico", icon: <History className="h-4 w-4" />, href: "#historico" },
+    VIEW_SUBSCRIPTION: { label: "Ver assinatura", icon: <ExternalLink className="h-4 w-4" />, href: subscriptionUrl ?? "#checkout" },
+    SYNC_SUBSCRIPTION: { label: "Sincronizar assinatura", icon: <RefreshCw className="h-4 w-4" />, href: "#checkout" },
+    UPDATE_PAYMENT: { label: "Atualizar pagamento", icon: <CreditCard className="h-4 w-4" />, href: subscriptionUrl ?? "#checkout", variant: "primary" },
+    CONTACT_SUPPORT: { label: "Falar com suporte", icon: <HeadphonesIcon className="h-4 w-4" />, href: "mailto:suporte@praxis.com.br" },
   };
 
   const { label, icon, href, variant } = config[action];
-  const base =
-    "inline-flex items-center gap-2 rounded-md border px-4 py-2 text-sm font-medium transition-colors";
-  const cls =
-    variant === "primary"
-      ? cn(base, "border-primary bg-primary text-primary-foreground hover:bg-primary/90")
-      : cn(base, "border-border bg-card hover:bg-accent");
-
-  if (href) {
-    return (
-      <a href={href} className={cls}>
-        {icon}
-        {label}
-      </a>
-    );
-  }
+  const base = "inline-flex items-center gap-2 rounded-md border px-4 py-2 text-sm font-medium transition-colors";
+  const cls = variant === "primary"
+    ? cn(base, "border-primary bg-primary text-primary-foreground hover:bg-primary/90")
+    : cn(base, "border-border bg-card hover:bg-accent");
 
   return (
-    <button type="button" className={cls} disabled>
+    <a href={href} target={href?.startsWith("http") ? "_blank" : undefined} rel={href?.startsWith("http") ? "noreferrer" : undefined} className={cls}>
       {icon}
       {label}
-    </button>
+    </a>
   );
 }
 
 function BillingEventsTable({ events }: { events: BillingEvent[] }) {
   return (
-    <Card>
+    <Card id="historico">
       <CardHeader icon={<History className="h-4 w-4" />} title="Histórico financeiro" />
       <div className="overflow-x-auto -mx-6 px-6">
         <table className="w-full text-sm">
@@ -286,21 +429,13 @@ function BillingEventsTable({ events }: { events: BillingEvent[] }) {
           <tbody>
             {events.map((event) => (
               <tr key={event.id} className="border-b border-border/50 last:border-0">
-                <td className="py-2 pr-4 text-muted-foreground whitespace-nowrap">
-                  {formatDate(event.createdAt)}
-                </td>
+                <td className="py-2 pr-4 text-muted-foreground whitespace-nowrap">{formatDate(event.createdAt)}</td>
                 <td className="py-2 pr-4">{eventTypeLabel(event.eventType)}</td>
                 <td className="py-2 pr-4">
-                  {event.mpStatus ? (
-                    <span className="text-muted-foreground capitalize">{event.mpStatus}</span>
-                  ) : (
-                    <span className="text-muted-foreground">—</span>
-                  )}
+                  {event.mpStatus ? <span className="text-muted-foreground capitalize">{event.mpStatus}</span> : <span className="text-muted-foreground">—</span>}
                 </td>
                 <td className="py-2 text-right">
-                  {event.amountCents != null
-                    ? formatCurrency(event.amountCents, event.currency ?? "BRL")
-                    : <span className="text-muted-foreground">—</span>}
+                  {event.amountCents != null ? formatCurrency(event.amountCents, event.currency ?? "BRL") : <span className="text-muted-foreground">—</span>}
                 </td>
               </tr>
             ))}
@@ -312,7 +447,7 @@ function BillingEventsTable({ events }: { events: BillingEvent[] }) {
 }
 
 // ---------------------------------------------------------------------------
-// Badges
+// Badges and primitives
 // ---------------------------------------------------------------------------
 
 function EmpresaStatusBadge({ status }: { status: string }) {
@@ -326,100 +461,43 @@ function EmpresaStatusBadge({ status }: { status: string }) {
     CANCELADO: { label: "Cancelado", cls: "bg-gray-100 text-gray-600" },
   };
   const cfg = map[status] ?? { label: status, cls: "bg-gray-100 text-gray-600" };
-  return (
-    <span className={cn("inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium", cfg.cls)}>
-      {cfg.label}
-    </span>
-  );
+  return <span className={cn("inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium", cfg.cls)}>{cfg.label}</span>;
 }
 
 function FinancialStatusBadge({ status }: { status: FinancialStatus }) {
   const map: Record<FinancialStatus, { label: string; cls: string; icon: React.ReactNode }> = {
-    REGULAR: {
-      label: "Regular",
-      cls: "text-emerald-700",
-      icon: <CheckCircle2 className="h-4 w-4 text-emerald-600" />,
-    },
-    PENDENTE_PAGAMENTO: {
-      label: "Pagamento pendente",
-      cls: "text-amber-700",
-      icon: <AlertTriangle className="h-4 w-4 text-amber-500" />,
-    },
-    INADIMPLENTE: {
-      label: "Pagamento em atraso",
-      cls: "text-red-700",
-      icon: <AlertCircle className="h-4 w-4 text-red-600" />,
-    },
-    SEM_CREDITO: {
-      label: "Sem créditos",
-      cls: "text-orange-700",
-      icon: <AlertCircle className="h-4 w-4 text-orange-500" />,
-    },
-    CANCELADO: {
-      label: "Cancelado",
-      cls: "text-gray-500",
-      icon: <XCircle className="h-4 w-4 text-gray-400" />,
-    },
+    REGULAR: { label: "Regular", cls: "text-emerald-700", icon: <CheckCircle2 className="h-4 w-4 text-emerald-600" /> },
+    PENDENTE_PAGAMENTO: { label: "Pagamento pendente", cls: "text-amber-700", icon: <AlertTriangle className="h-4 w-4 text-amber-500" /> },
+    INADIMPLENTE: { label: "Pagamento em atraso", cls: "text-red-700", icon: <AlertCircle className="h-4 w-4 text-red-600" /> },
+    SEM_CREDITO: { label: "Sem créditos", cls: "text-orange-700", icon: <AlertCircle className="h-4 w-4 text-orange-500" /> },
+    CANCELADO: { label: "Cancelado", cls: "text-gray-500", icon: <XCircle className="h-4 w-4 text-gray-400" /> },
   };
   const cfg = map[status] ?? { label: status, cls: "text-gray-600", icon: null };
-  return (
-    <span className={cn("inline-flex items-center gap-1 text-sm font-medium", cfg.cls)}>
-      {cfg.icon}
-      {cfg.label}
-    </span>
-  );
+  return <span className={cn("inline-flex items-center gap-1 text-sm font-medium", cfg.cls)}>{cfg.icon}{cfg.label}</span>;
 }
 
-// ---------------------------------------------------------------------------
-// Primitives
-// ---------------------------------------------------------------------------
-
-function Card({ children, className }: { children: React.ReactNode; className?: string }) {
-  return (
-    <section className={cn("rounded-md border border-border bg-card p-6 space-y-4", className)}>
-      {children}
-    </section>
-  );
+function Card({ children, className, id }: { children: React.ReactNode; className?: string; id?: string }) {
+  return <section id={id} className={cn("rounded-md border border-border bg-card p-6 space-y-4", className)}>{children}</section>;
 }
 
 function CardHeader({ icon, title }: { icon: React.ReactNode; title: string }) {
-  return (
-    <div className="flex items-center gap-2">
-      <span className="text-muted-foreground">{icon}</span>
-      <h2 className="text-base font-semibold">{title}</h2>
-    </div>
-  );
+  return <div className="flex items-center gap-2"><span className="text-muted-foreground">{icon}</span><h2 className="text-base font-semibold">{title}</h2></div>;
 }
 
 function InfoRow({ label, value }: { label: string; value: React.ReactNode }) {
-  return (
-    <div className="space-y-0.5">
-      <p className="text-xs text-muted-foreground">{label}</p>
-      <div className="text-sm font-medium">{value}</div>
-    </div>
-  );
+  return <div className="space-y-0.5"><p className="text-xs text-muted-foreground">{label}</p><div className="text-sm font-medium">{value}</div></div>;
 }
 
 function StatBox({ label, value }: { label: string; value: number }) {
-  return (
-    <div className="rounded-md border border-border/60 bg-muted/30 p-4 text-center">
-      <p className="text-2xl font-bold">{value}</p>
-      <p className="text-xs text-muted-foreground mt-1">{label}</p>
-    </div>
-  );
+  return <div className="rounded-md border border-border/60 bg-muted/30 p-4 text-center"><p className="text-2xl font-bold">{value}</p><p className="text-xs text-muted-foreground mt-1">{label}</p></div>;
 }
 
 // ---------------------------------------------------------------------------
-// States
+// States and helpers
 // ---------------------------------------------------------------------------
 
 function LoadingState() {
-  return (
-    <div className="flex items-center gap-2 text-muted-foreground py-12 justify-center">
-      <Loader2 className="h-5 w-5 animate-spin" />
-      <span className="text-sm">Carregando plano e uso...</span>
-    </div>
-  );
+  return <div className="flex items-center gap-2 text-muted-foreground py-12 justify-center"><Loader2 className="h-5 w-5 animate-spin" /><span className="text-sm">Carregando plano e uso...</span></div>;
 }
 
 function ErrorState({ onRetry }: { onRetry: () => void }) {
@@ -427,11 +505,7 @@ function ErrorState({ onRetry }: { onRetry: () => void }) {
     <section className="rounded-md border border-destructive/40 bg-destructive/5 p-6 space-y-3 text-center">
       <AlertCircle className="h-6 w-6 text-destructive mx-auto" />
       <p className="text-sm font-medium">Não foi possível carregar as informações do plano.</p>
-      <button
-        type="button"
-        onClick={onRetry}
-        className="inline-flex items-center gap-2 rounded-md border border-border bg-card px-4 py-2 text-sm hover:bg-accent"
-      >
+      <button type="button" onClick={onRetry} className="inline-flex items-center gap-2 rounded-md border border-border bg-card px-4 py-2 text-sm hover:bg-accent">
         <RefreshCw className="h-4 w-4" />
         Tentar novamente
       </button>
@@ -444,16 +518,10 @@ function EmptySetupState() {
     <section className="rounded-md border border-border bg-card p-8 text-center space-y-2">
       <CreditCard className="h-8 w-8 text-muted-foreground mx-auto" />
       <p className="text-sm font-medium">Seu plano ainda não possui cobrança configurada.</p>
-      <p className="text-sm text-muted-foreground">
-        Entre em contato com o suporte para ativar seu plano.
-      </p>
+      <p className="text-sm text-muted-foreground">Entre em contato com o suporte para ativar seu plano.</p>
     </section>
   );
 }
-
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
 
 function planLabel(plan: CommercialPlanType | null): string {
   if (plan === "AVULSO") return "Avulso";
@@ -462,10 +530,22 @@ function planLabel(plan: CommercialPlanType | null): string {
   return "Não informado";
 }
 
+function subscriptionStatusLabel(status: string): string {
+  const map: Record<string, string> = {
+    PENDING: "Pendente",
+    AUTHORIZED: "Autorizada",
+    DELINQUENT: "Inadimplente",
+    PAUSED: "Pausada",
+    CANCELLED: "Cancelada",
+  };
+  return map[status] ?? status;
+}
+
 function eventTypeLabel(type: string): string {
   const map: Record<string, string> = {
     CREDIT_CHECKOUT_CREATED: "Compra de créditos criada",
     CREDIT_PURCHASE_APPROVED: "Compra aprovada",
+    CREDIT_AUTO_RECHARGE_FAILED: "Recarga automática recusada",
     SUBSCRIPTION_CREATED: "Assinatura criada",
     SUBSCRIPTION_AUTHORIZED: "Assinatura autorizada",
     SUBSCRIPTION_PAYMENT_APPROVED: "Pagamento aprovado",
@@ -479,16 +559,21 @@ function eventTypeLabel(type: string): string {
 }
 
 function formatDate(value: string): string {
-  return new Intl.DateTimeFormat("pt-BR", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-  }).format(new Date(value));
+  return new Intl.DateTimeFormat("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric" }).format(new Date(value));
 }
 
 function formatCurrency(cents: number, currency: string): string {
-  return new Intl.NumberFormat("pt-BR", {
-    style: "currency",
-    currency: currency,
-  }).format(cents / 100);
+  return new Intl.NumberFormat("pt-BR", { style: "currency", currency }).format(cents / 100);
+}
+
+function openCheckout(initPoint: string | null) {
+  if (initPoint) {
+    window.open(initPoint, "_blank", "noopener,noreferrer");
+  }
+}
+
+function messageFromError(error: unknown): string | null {
+  if (!error) return null;
+  if (error instanceof Error) return error.message;
+  return "Não foi possível criar ou sincronizar a cobrança.";
 }
