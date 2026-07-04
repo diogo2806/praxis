@@ -1,0 +1,1 @@
+-- Moved from V69 to V70 to avoid duplicate Flyway migration version.
