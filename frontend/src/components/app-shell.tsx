@@ -76,9 +76,9 @@ const getNav = (t: TranslationMap, unreadNotifications = 0) =>
     },
     {
       to: "/notifications",
-      label: t.common.notifications,
+      label: "Notificações",
       icon: Bell,
-      desc: t.common.notificationsDesc,
+      desc: "Alertas internos e DLQ",
       badge: unreadNotifications,
     },
     {
@@ -354,7 +354,7 @@ function pageLabel(pathname: string, t: TranslationMap) {
   if (pathname === "/integrations" || pathname.startsWith("/integrations/"))
     return t.common.integrations;
   if (pathname === "/monitoramento") return t.common.monitoring;
-  if (pathname === "/notifications") return t.common.notifications;
+  if (pathname === "/notifications") return "Notificações";
   if (pathname === "/jornadas") return t.common.journeys;
   if (pathname === "/talent-match") return t.common.talentMatch;
   if (pathname === "/billing") return t.common.plan;
