@@ -22,13 +22,15 @@ import lombok.NoArgsConstructor;
 
 import lombok.Setter;
 
-
 import java.time.Instant;
 
 
 /**
- * Aceite de um termo por um usuário do empresa (REQ-L5). Insert-only: cada aceite é uma linha;
- * o estado atual é o registro mais recente para (empresa, usuário, tipo de termo).
+ * Registro histórico de aceite de termo por usuário e empresa.
+ *
+ * <p>Na visão do processo, cada linha representa uma confirmação feita na tela:
+ * quem confirmou, para qual empresa, qual termo, qual versão e em que momento.
+ * O histórico é preservado para consulta e comprovação posterior.</p>
  */
 @Getter
 @Setter
@@ -40,23 +42,29 @@ import java.time.Instant;
 )
 public class TermAcceptanceEntity implements EmpresaAwareEntity {
 
+    /** Identificador técnico do registro de aceite. */
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id", nullable = false)
     private Long id;
 
+    /** Empresa à qual o aceite pertence. */
     @Column(name = "empresa_id", nullable = false, length = 120)
     private String empresaId;
 
+    /** Usuário que confirmou o termo. */
     @Column(name = "user_id", nullable = false, length = 120)
     private String userId;
 
+    /** Tipo de termo confirmado no processo. */
     @Column(name = "term_type", nullable = false, length = 80)
     private String termType;
 
+    /** Versão do termo que estava vigente no momento da confirmação. */
     @Column(name = "term_version", nullable = false, length = 40)
     private String termVersion;
 
+    /** Data e hora em que o aceite foi registrado. */
     @Column(name = "accepted_at", nullable = false)
     private Instant acceptedAt;
 }
