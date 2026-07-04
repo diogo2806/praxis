@@ -1,10 +1,12 @@
-﻿"use client";
+"use client";
 
 import { Link, useRouterState } from "@tanstack/react-router";
+import { useQuery } from "@tanstack/react-query";
 import type { ReactNode } from "react";
 import { useEffect, useState } from "react";
 import {
   BarChart3,
+  Bell,
   Building2,
   ChevronDown,
   ClipboardList,
@@ -33,13 +35,14 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
+import { getUnreadNotificationsCount } from "@/lib/api/notifications";
 import { useSession } from "@/lib/session";
 import { useLanguage } from "@/lib/language-context";
 import { cn } from "@/lib/utils";
 
 type TranslationMap = ReturnType<typeof useLanguage>["t"];
 
-const getNav = (t: TranslationMap) =>
+const getNav = (t: TranslationMap, unreadNotifications = 0) =>
   [
     {
       to: "/dashboard",
@@ -70,6 +73,13 @@ const getNav = (t: TranslationMap) =>
       label: t.common.monitoring,
       icon: BarChart3,
       desc: t.descriptions.monitoring,
+    },
+    {
+      to: "/notifications",
+      label: "Notificações",
+      icon: Bell,
+      desc: "Alertas internos e DLQ",
+      badge: unreadNotifications,
     },
     {
       to: "/jornadas",
@@ -215,6 +225,7 @@ function SidebarContent({
             item.to === "/dashboard"
               ? pathname === "/dashboard"
               : pathname === item.to || pathname.startsWith(item.to + "/");
+          const badge = "badge" in item ? item.badge : 0;
           return (
             <ShellLink key={item.to} closeOnSelect={closeOnSelect}>
               <Link
@@ -233,6 +244,11 @@ function SidebarContent({
                     {active && <span className="h-1.5 w-1.5 rounded-full bg-primary" />}
                   </span>
                 </span>
+                {badge > 0 && (
+                  <span className="rounded-full bg-danger px-1.5 py-0.5 text-[10px] font-semibold leading-none text-danger-foreground">
+                    {badge > 99 ? "99+" : badge}
+                  </span>
+                )}
               </Link>
             </ShellLink>
           );
@@ -338,6 +354,7 @@ function pageLabel(pathname: string, t: TranslationMap) {
   if (pathname === "/integrations" || pathname.startsWith("/integrations/"))
     return t.common.integrations;
   if (pathname === "/monitoramento") return t.common.monitoring;
+  if (pathname === "/notifications") return "Notificações";
   if (pathname === "/jornadas") return t.common.journeys;
   if (pathname === "/talent-match") return t.common.talentMatch;
   if (pathname === "/billing") return t.common.plan;
@@ -357,7 +374,14 @@ export function AppShell({ children }: { children: ReactNode }) {
   const pathname = useRouterState({ select: (state) => state.location.pathname });
   const session = useSession();
   const { t } = useLanguage();
-  const nav = getNav(t);
+  const unreadNotificationsQuery = useQuery({
+    queryKey: ["notifications", "unread-count"],
+    queryFn: getUnreadNotificationsCount,
+    retry: false,
+    refetchInterval: 60_000,
+  });
+  const unreadNotifications = unreadNotificationsQuery.data?.count ?? 0;
+  const nav = getNav(t, unreadNotifications);
   const secondary = getSecondary(t);
 
   return (
