@@ -192,6 +192,7 @@ public record DashboardResponse(
      *   <li>{@code CONFIGURE_INTEGRATION} — configurar um canal de integração pendente.</li>
      *   <li>{@code PUBLISH_DRAFT_JOURNEY} — publicar uma jornada em rascunho.</li>
      *   <li>{@code BUY_CREDITS} — comprar créditos quando o saldo zera.</li>
+     *   <li>{@code CHECK_DLQ} — revisar entregas de resultados que caíram em DLQ.</li>
      *   <li>{@code VIEW_RESULTS} — acompanhar os resultados quando está tudo em ordem.</li>
      * </ul>
      */
@@ -201,6 +202,7 @@ public record DashboardResponse(
         CONFIGURE_INTEGRATION,
         PUBLISH_DRAFT_JOURNEY,
         BUY_CREDITS,
+        CHECK_DLQ,
         VIEW_RESULTS
     }
 
