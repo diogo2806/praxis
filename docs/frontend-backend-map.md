@@ -10,7 +10,7 @@
 - Camada HTTP central em `frontend/src/lib/api/praxis.ts`.
 - Configuracao de runtime em `frontend/src/lib/runtime-config.ts` e `frontend/src/lib/runtime-config.server.ts`.
 - CSS global em `frontend/src/styles/app.css`, importado por `frontend/src/routes/__root.tsx`.
-- Sessao local em `frontend/src/lib/session.ts`; o token JWT e anexado apenas nas rotas administrativas.
+- Sessao local em `frontend/src/lib/session.ts`; quando ha token JWT, ele e anexado nas chamadas autenticadas.
 
 **Backend**
 
@@ -26,7 +26,7 @@
 
 O assistente tem 4 passos canonicos (`frontend/src/lib/simulation-meta.ts`): `avaliacao -> personagem -> validador -> governanca`.
 
-1. `/avaliacoes` lista simulacoes por `GET /api/v1/simulations`.
+1. `/avaliacoes` lista simulacoes por `GET /api/v1/simulations` e permite arquivar sem apagar historico.
 2. `/nova/avaliacao` (Teste) cria rascunho por `POST /api/v1/simulations/drafts` e ajusta o plano por `PATCH /blueprint`.
 3. `/nova/personagem` (Cenario) carrega a versao e cria/edita nos, alternativas e midias.
 4. `/nova/validador` (Revisao) consulta `GET /validation`.
@@ -56,12 +56,14 @@ O menu principal da empresa e definido em `frontend/src/components/app-shell.tsx
 | Rota | Arquivo | Integracao atual |
 | --- | --- | --- |
 | `/` | `frontend/src/routes/index.tsx` | Landing/entrada inicial. |
+| `/login` | `frontend/src/routes/login.tsx` | Login da empresa por `POST /api/v1/auth/login`. |
 | `/dashboard` | `frontend/src/routes/dashboard.tsx` | Painel de indicadores por `GET /api/v1/dashboard`. |
-| `/avaliacoes` | `frontend/src/routes/avaliacoes.tsx` | Ver e editar avaliacoes com `GET /api/v1/simulations` e exclusao definitiva por `DELETE /api/v1/simulations/{id}`. |
+| `/avaliacoes` | `frontend/src/routes/avaliacoes.tsx` | Ver e editar avaliacoes com `GET /api/v1/simulations`; arquiva por `POST /api/v1/simulations/{id}/archive` preservando historico. |
 | `/results` | `frontend/src/routes/results.tsx` | Lista resultados por `GET /api/v1/results`. |
 | `/results/$attemptId` | `frontend/src/routes/results.$attemptId.tsx` | Detalhe por `GET /api/v1/results/{attemptId}` e decisao por `POST /api/v1/results/{attemptId}/decision`. |
 | `/enviar-link` | `frontend/src/routes/enviar-link.tsx` | Lista e cria links com `GET/POST /api/v1/candidate-links`; acompanha `GET /api/v1/candidate-links/live-attempts`. |
 | `/monitoramento` | `frontend/src/routes/monitoramento.tsx` | Monitoramento da versao e entregas filtradas por simulacao/versao. |
+| `/notifications` | `frontend/src/routes/notifications.tsx` | Alertas internos por `GET /api/v1/notifications`; lista DLQ e reprocessa por `POST /api/v1/gupy/result-deliveries/{deliveryId}/reprocess`. |
 | `/talent-match` | `frontend/src/routes/talent-match.tsx` | Compara candidatos com `GET /api/v1/simulations/{id}/versions/{n}/talent-match?attemptIds=a,b`. |
 | `/compliance` | `frontend/src/routes/compliance.tsx` | Analise operacional, defensabilidade e LGPD; usa `GET /api/v1/privacy/compliance`, versao e auditoria. Substitui as antigas `/defensabilidade` e `/lgpd`. |
 | `/competencias` | `frontend/src/routes/competencias.tsx` | Catalogos da empresa via `GET/PUT /api/v1/empresa-config`. |
@@ -74,7 +76,7 @@ O menu principal da empresa e definido em `frontend/src/components/app-shell.tsx
 
 | Rota | Arquivo | Integracao atual |
 | --- | --- | --- |
-| `/comecar` | `frontend/src/routes/comecar.tsx` | Pagina explicativa de entrada; sem chamadas de backend. Leva a `/nova/avaliacao` ou `/nova/rapido`. |
+| `/comecar` | `frontend/src/routes/comecar.tsx` | Entrada de landing/autenticacao. Com seguranca ativa redireciona para `/login`; em modo publico de teste redireciona para `/avaliacoes`. A criacao real segue por `/nova/avaliacao` ou `/nova/rapido`. |
 | `/nova/avaliacao` | `frontend/src/routes/nova.avaliacao.tsx` | Passo 1 (Teste): cria rascunho com `POST /api/v1/simulations/drafts` e ajusta plano por `PATCH /blueprint`; usa catalogos de `GET /api/v1/empresa-config`. |
 | `/nova/personagem` | `frontend/src/routes/nova.personagem.tsx` | Passo 2 (Cenario): carrega versao e cria/edita nos por `POST/PUT /nodes` e alternativas. |
 | `/nova/validador` | `frontend/src/routes/nova.validador.tsx` | Passo 3 (Revisao): valida com `GET /api/v1/simulations/{id}/versions/{n}/validation`. |
@@ -120,9 +122,9 @@ O menu principal da empresa e definido em `frontend/src/components/app-shell.tsx
 
 | Area | Endpoint base | Uso |
 | --- | --- | --- |
-| Auth | `/api/v1/auth/login` | API de login e emissao de JWT. Nao ha rota `/login` dedicada no frontend atual. |
+| Auth | `/api/v1/auth/login` | API de login e emissao de JWT, usada pela rota frontend `/login`. |
 | Dashboard | `/api/v1/dashboard` | Indicadores da empresa autenticada. |
-| Simulacoes | `/api/v1/simulations` | Listagem, criacao, edicao de grafo, validacao, clone, publicacao, quick-start, preflight, monitoramento, Talent Match e exclusao. |
+| Simulacoes | `/api/v1/simulations` | Listagem, criacao, edicao de grafo, validacao, clone, publicacao, quick-start, preflight, monitoramento, Talent Match e arquivamento seguro por `/archive`. |
 | Resultados | `/api/v1/results` | Lista e detalha resultados de tentativas; `POST /{attemptId}/decision` registra a decisao do recrutador. |
 | Jornadas | `/api/v1/assessment-journeys`, `/api/v1/assessment-journey-attempts` | Autoria e execucao de jornadas que encadeiam avaliacoes publicadas. |
 | Empresa config | `/api/v1/empresa-config` | Catalogos de competencias, senioridade, idiomas, usos de resultado e tempos de resposta. |
@@ -133,7 +135,7 @@ O menu principal da empresa e definido em `frontend/src/components/app-shell.tsx
 | Auditoria | `/api/v1/audit` | Eventos por tentativa ou versao de simulacao. |
 | Privacidade | `/api/v1/privacy/compliance` | Bases legais, retencao e politica de decisao automatizada. |
 | Entregas Gupy | `/api/v1/gupy/result-deliveries` | Outbox de entrega, status, retry, DLQ e reprocessamento no backend. |
-| Notificacoes | `/api/v1/notifications` | API para alertas internos, inclusive DLQ. O frontend ainda nao possui tela dedicada. |
+| Notificacoes | `/api/v1/notifications` | API para alertas internos, inclusive DLQ; a tela dedicada fica em `/notifications`. |
 | Equipe/Conta | `/api/v1/team`, `/api/v1/account`, `/api/v1/company-profile`, `/api/v1/terms` | Usuarios da empresa, conta do usuario, perfil cadastral e aceite de termos. |
 | Plano/cobranca | `/api/v1/billing` | Leitura de plano, uso e eventos; criacao de cobranca fica no painel ADMIN. |
 | Admin plataforma | `/api/admin/**` | Dashboard, clientes (empresas), usuarios e auditoria da plataforma (perfil `ADMIN`). |
@@ -158,10 +160,10 @@ Na API publica do candidato, alguns status sao traduzidos para portugues, por ex
 
 ## Lacunas conhecidas entre backend e UI
 
-- `POST /api/v1/auth/login` existe, mas nao ha rota `/login`.
-- `GET /api/v1/notifications` existe, mas nao ha tela de notificacoes.
-- Reprocessamento de DLQ existe no backend, mas a UI atual apenas lista entregas.
-- `DELETE /api/v1/simulations/{id}` remove definitivamente; nao e arquivamento/soft delete.
+- `/comecar` e uma entrada/redirecionamento, nao uma tela de autoria: com seguranca ativa leva para `/login`; em modo publico de teste leva para `/avaliacoes`.
+- O menu lateral ainda pode destacar melhor `/notifications`, mas a rota e a tela dedicada ja existem.
+- Billing segue parcialmente self-service: cliente consulta plano/uso/eventos, enquanto criacao/sincronizacao de cobranca fica no painel ADMIN/Mercado Pago.
+- O endpoint legado `DELETE /api/v1/simulations/{id}` ainda existe para administracao tecnica, mas a jornada principal de RH usa arquivamento por `POST /api/v1/simulations/{id}/archive`.
 
 ## Padroes de CSS e rotas
 
@@ -178,4 +180,4 @@ Na API publica do candidato, alguns status sao traduzidos para portugues, por ex
 - `--chart-1` a `--chart-5` derivam da marca: petroleo, teal, dourado, verde e ardosia. Evite recolocar a sequencia padrao do shadcn.
 - Estados semanticos usam `--success`, `--warning`, `--danger` e `--destructive`; nao codifique cores fixas nas rotas.
 
-Ultima revisao: 03/07/2026.
+Ultima revisao: 04/07/2026.
