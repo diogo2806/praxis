@@ -60,6 +60,8 @@ public enum AuditEventType implements DescribedEnum {
     ASSESSMENT_JOURNEY_STEP_STARTED("assessmentJourneyStepStarted"),
     ASSESSMENT_JOURNEY_STEP_COMPLETED("assessmentJourneyStepCompleted"),
     ASSESSMENT_JOURNEY_ATTEMPT_COMPLETED("assessmentJourneyAttemptCompleted"),
+    ASSESSMENT_JOURNEY_ATTEMPT_ABANDONED("assessmentJourneyAttemptAbandoned"),
+    ASSESSMENT_JOURNEY_ATTEMPT_EXPIRED("assessmentJourneyAttemptExpired"),
     INTEGRATION_CONFIGURED("integrationConfigured"),
     INTEGRATION_UPDATED("integrationUpdated"),
     INTEGRATION_DISABLED("integrationDisabled"),
