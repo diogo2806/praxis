@@ -1,18 +1,13 @@
 package br.com.iforce.praxis.billing.dto;
 
 import br.com.iforce.praxis.admin.model.CommercialPlanType;
-
 import br.com.iforce.praxis.admin.model.EmpresaStatus;
-
 import br.com.iforce.praxis.billing.model.SubscriptionStatus;
 
-
 import java.time.Instant;
-
 import java.util.List;
 
-
-/** Visão consolidada de cobrança exibida ao próprio cliente (empresa). */
+/** Visão consolidada de cobrança exibida à própria empresa. */
 public record ClientBillingResponse(
         String empresaId,
         CommercialPlanType plan,
@@ -22,7 +17,8 @@ public record ClientBillingResponse(
         UsageSummary usage,
         SubscriptionInfo subscription,
         List<String> availableActions,
-        List<BillingEventResponse> events
+        List<BillingEventResponse> events,
+        List<CreditMovementResponse> creditMovements
 ) {
 
     public record UsageSummary(
