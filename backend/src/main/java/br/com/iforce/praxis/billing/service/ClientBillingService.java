@@ -185,7 +185,7 @@ public class ClientBillingService {
         }
         if (subscription.getMpPreapprovalId() == null || subscription.getMpPreapprovalId().isBlank()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                    "Assinatura ainda não possui identificador do Mercado Pago para cancelar."));
+                    "Assinatura ainda não possui identificador do Mercado Pago para cancelar.");
         }
         mercadoPagoClient.cancelPreapproval(subscription.getMpPreapprovalId());
         billingService.manualSync("preapproval", subscription.getMpPreapprovalId(), null);
