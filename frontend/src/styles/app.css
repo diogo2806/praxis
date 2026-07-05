@@ -1,22 +1,9 @@
 @import "tailwindcss" source(none);
 @source "..";
 @import "tw-animate-css";
+@import "./tables.css";
 
 @custom-variant dark (&:is(.dark *));
-
-/*
- * Design system definition.
- *
- * The @theme inline block maps CSS custom properties to Tailwind utility
- * classes (e.g. --color-primary -> bg-primary, text-primary).
- *
- * The :root and .dark blocks define the actual color values using oklch.
- * All colors MUST use oklch format.
- *
- * To add a new semantic color:
- * 1. Add the variable to :root (light value) and .dark (dark value)
- * 2. Register it in @theme inline as --color-<name>: var(--<name>)
- */
 
 @theme inline {
   --radius-sm: calc(var(--radius) - 4px);
@@ -101,7 +88,7 @@
   --warning: oklch(0.76 0.14 78);
   --warning-foreground: oklch(0.25 0.035 78);
   --danger: oklch(0.57 0.18 28);
-  --danger-foreground: oklch(0.99 0 0);
+  --danger-foreground: oklch(0.99 0.005 28);
   --ink: oklch(0.24 0.02 240);
   --gold: oklch(0.74 0.13 80);
   --chart-1: oklch(0.5 0.09 230);
@@ -173,6 +160,7 @@
     font-family: var(--font-sans);
     font-feature-settings: "cv11", "ss01";
   }
+
   h1,
   h2,
   h3,
@@ -229,30 +217,23 @@
   transition:
     border-color 120ms,
     box-shadow 120ms;
+
   &:focus {
     border-color: var(--color-ring);
     box-shadow: 0 0 0 3px color-mix(in oklab, var(--color-ring) 18%, transparent);
   }
+
   &::placeholder {
     color: var(--color-muted-foreground);
   }
 }
 
 @layer components {
-  /*
-   * FlowCanvas uses inline width/height based on existing cards. Keep a large
-   * minimum workspace so complex validator trees have room before every card is
-   * already created or manually dragged into place.
-   */
   .vx-content {
     min-width: 14000px !important;
     min-height: 12000px !important;
   }
 
-  /*
-   * The empty inspector only repeats "select a card" and steals horizontal
-   * room from the canvas. Hide it until a card is selected.
-   */
   .vx-stage:has(.vx-insp-empty) {
     grid-template-columns: 280px minmax(0, 1fr) !important;
   }
