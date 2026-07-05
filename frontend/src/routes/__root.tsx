@@ -11,6 +11,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { useEffect, type ReactNode } from "react";
 
 import appCss from "../styles/app.css?url";
+import tablesCss from "../styles/tables.css?url";
 import { reportAppError } from "../lib/app-error-reporting";
 import { resolveRuntimeConfigFromEnv } from "../lib/runtime-config.server";
 import { LanguageProvider, useLanguage } from "../lib/language-context";
@@ -111,6 +112,10 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       {
         rel: "stylesheet",
         href: appCss,
+      },
+      {
+        rel: "stylesheet",
+        href: tablesCss,
       },
     ],
   }),
