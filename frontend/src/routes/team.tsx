@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { z } from "zod";
 import { Ban, CheckCircle2, Clock, Plus, RefreshCw, ShieldOff, Users } from "lucide-react";
 
@@ -62,6 +62,14 @@ function InviteUserModal({ open, onClose }: { open: boolean; onClose: () => void
   const [email, setEmail] = useState("");
   const [fieldErrors, setFieldErrors] = useState<InviteUserErrors>({});
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    setName("");
+    setEmail("");
+    setFieldErrors({});
+    setError(null);
+  }, [open]);
 
   const mutation = useMutation({
     mutationFn: () => inviteTeamUser({ name: name.trim(), email: email.trim() }),
