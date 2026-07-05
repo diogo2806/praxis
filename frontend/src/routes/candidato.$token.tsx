@@ -2,17 +2,18 @@ import { useMemo, useState, type ReactNode } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { LanguageSelector } from "@/components/language-selector";
-import { candidateAccessCopy, type CandidateAccessCopy } from "@/lib/candidate-access-copy";
 import { getCandidateAttempt, type CandidateAttemptResponse } from "@/lib/api/praxis";
 import { useLanguage } from "@/lib/language-context";
 import { CandidateExperience } from "@/routes/candidato";
+
+type CandidateAccessCopy = ReturnType<typeof useLanguage>["t"]["candidateAccess"];
 
 export const Route = createFileRoute("/candidato/$token")({ component: TokenCandidatePage });
 
 function TokenCandidatePage() {
   const { token } = Route.useParams();
-  const { language } = useLanguage();
-  const copy = candidateAccessCopy[language];
+  const { t } = useLanguage();
+  const copy = t.candidateAccess;
   const [ready, setReady] = useState(false);
   const attempt = useQuery({ queryKey: ["candidate-attempt", token], queryFn: () => getCandidateAttempt(token), enabled: ready });
   const terminal = useMemo(() => !attempt.data || attempt.data.etapaAtual ? null : statusCopy(attempt.data, copy), [attempt.data, copy]);
