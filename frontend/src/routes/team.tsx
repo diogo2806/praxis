@@ -1,11 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Ban,
   CheckCircle2,
   Clock,
-  Mail,
   MoreHorizontal,
   Plus,
   RefreshCw,
@@ -48,10 +47,6 @@ export const Route = createFileRoute("/team")({
   component: TeamPage,
 });
 
-// ---------------------------------------------------------------------------
-// Status badge
-// ---------------------------------------------------------------------------
-
 function UserStatusBadge({ status }: { status: TeamUser["status"] }) {
   if (status === "ATIVO") {
     return (
@@ -77,9 +72,9 @@ function UserStatusBadge({ status }: { status: TeamUser["status"] }) {
   );
 }
 
-// ---------------------------------------------------------------------------
-// Invite modal
-// ---------------------------------------------------------------------------
+function isValidEmail(value: string) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim());
+}
 
 function InviteUserModal({
   open,
@@ -91,7 +86,19 @@ function InviteUserModal({
   const queryClient = useQueryClient();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
+  const [nameError, setNameError] = useState<string | null>(null);
+  const [emailError, setEmailError] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (open) {
+      setName("");
+      setEmail("");
+      setNameError(null);
+      setEmailError(null);
+      setError(null);
+    }
+  }, [open]);
 
   const mutation = useMutation({
     mutationFn: () => inviteTeamUser({ name: name.trim(), email: email.trim() }),
@@ -99,6 +106,8 @@ function InviteUserModal({
       await queryClient.invalidateQueries({ queryKey: ["team"] });
       setName("");
       setEmail("");
+      setNameError(null);
+      setEmailError(null);
       setError(null);
       onClose();
     },
@@ -107,12 +116,32 @@ function InviteUserModal({
     },
   });
 
+  function validate() {
+    const nextNameError = name.trim() ? null : "Informe o nome do usuário.";
+    const nextEmailError = !email.trim()
+      ? "Informe o e-mail do usuário."
+      : !isValidEmail(email)
+        ? "Informe um e-mail válido."
+        : null;
+    setNameError(nextNameError);
+    setEmailError(nextEmailError);
+    return !nextNameError && !nextEmailError;
+  }
+
   function handleClose() {
     if (mutation.isPending) return;
     setName("");
     setEmail("");
+    setNameError(null);
+    setEmailError(null);
     setError(null);
     onClose();
+  }
+
+  function handleSubmit() {
+    setError(null);
+    if (!validate()) return;
+    mutation.mutate();
   }
 
   return (
@@ -131,10 +160,15 @@ function InviteUserModal({
             <Input
               id="invite-name"
               value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="Ana Souza"
+              onChange={(e) => {
+                setName(e.target.value);
+                if (nameError) setNameError(null);
+              }}
+              placeholder="Digite o nome do usuário"
               disabled={mutation.isPending}
+              aria-invalid={Boolean(nameError)}
             />
+            {nameError && <p className="text-xs text-destructive">{nameError}</p>}
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="invite-email">E-mail</Label>
@@ -142,10 +176,15 @@ function InviteUserModal({
               id="invite-email"
               type="email"
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="ana@empresa.com"
+              onChange={(e) => {
+                setEmail(e.target.value);
+                if (emailError) setEmailError(null);
+              }}
+              placeholder="Digite o e-mail corporativo"
               disabled={mutation.isPending}
+              aria-invalid={Boolean(emailError)}
             />
+            {emailError && <p className="text-xs text-destructive">{emailError}</p>}
           </div>
           {error && <p className="text-sm text-destructive">{error}</p>}
         </div>
@@ -154,10 +193,7 @@ function InviteUserModal({
           <Button variant="outline" onClick={handleClose} disabled={mutation.isPending}>
             Cancelar
           </Button>
-          <Button
-            onClick={() => mutation.mutate()}
-            disabled={mutation.isPending || !name.trim() || !email.trim()}
-          >
+          <Button onClick={handleSubmit} disabled={mutation.isPending}>
             {mutation.isPending ? "Enviando..." : "Enviar convite"}
           </Button>
         </DialogFooter>
@@ -165,10 +201,6 @@ function InviteUserModal({
     </Dialog>
   );
 }
-
-// ---------------------------------------------------------------------------
-// Block / Unblock confirmation dialog
-// ---------------------------------------------------------------------------
 
 function BlockUserDialog({
   user,
@@ -212,10 +244,6 @@ function BlockUserDialog({
   );
 }
 
-// ---------------------------------------------------------------------------
-// Team users table
-// ---------------------------------------------------------------------------
-
 function TeamUsersTable({
   users,
   onInviteClick,
@@ -237,9 +265,7 @@ function TeamUsersTable({
   });
 
   if (users.length === 0) {
-    return (
-      <TeamEmptyState onInviteClick={onInviteClick} />
-    );
+    return <TeamEmptyState onInviteClick={onInviteClick} />;
   }
 
   return (
@@ -310,6 +336,7 @@ function TeamUsersTable({
                         Desbloquear
                       </button>
                     )}
+                    <MoreHorizontal className="h-4 w-4 text-muted-foreground" />
                   </div>
                 </td>
               </tr>
@@ -320,10 +347,6 @@ function TeamUsersTable({
     </>
   );
 }
-
-// ---------------------------------------------------------------------------
-// Empty state
-// ---------------------------------------------------------------------------
 
 function TeamEmptyState({ onInviteClick }: { onInviteClick: () => void }) {
   return (
@@ -340,10 +363,6 @@ function TeamEmptyState({ onInviteClick }: { onInviteClick: () => void }) {
     </div>
   );
 }
-
-// ---------------------------------------------------------------------------
-// Page
-// ---------------------------------------------------------------------------
 
 function TeamPage() {
   const [inviteOpen, setInviteOpen] = useState(false);
@@ -391,10 +410,7 @@ function TeamPage() {
             <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
               Usuários
             </h2>
-            <TeamUsersTable
-              users={teamQuery.data ?? []}
-              onInviteClick={() => setInviteOpen(true)}
-            />
+            <TeamUsersTable users={teamQuery.data ?? []} onInviteClick={() => setInviteOpen(true)} />
           </div>
         )}
       </div>
