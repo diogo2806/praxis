@@ -193,7 +193,8 @@ function IntegrationsPage() {
             <div className="text-xs uppercase text-primary">Práxis</div>
             <h1 className="mt-1 text-3xl font-semibold">Integrações</h1>
             <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
-              Conecte o Práxis aos sistemas que sua empresa já utiliza.
+              Automatize entrada de candidatos, retorno de resultados e webhooks para os sistemas
+              que sua empresa já utiliza.
             </p>
           </div>
           <Button
@@ -206,6 +207,21 @@ function IntegrationsPage() {
             Atualizar
           </Button>
         </header>
+
+        <section className="mb-6 grid gap-3 md:grid-cols-3">
+          <SummaryCard
+            title="Candidatos"
+            description="Receba candidatos do ATS ou de sistemas internos com link público de avaliação."
+          />
+          <SummaryCard
+            title="Resultados"
+            description="Devolva score, competências e evidências para o fluxo operacional do cliente."
+          />
+          <SummaryCard
+            title="Webhooks"
+            description="Use callback assinado quando o fluxo precisar passar por middleware ou API própria."
+          />
+        </section>
 
         {integrationsQuery.isLoading && <SkeletonRows rows={3} />}
 
@@ -227,7 +243,7 @@ function IntegrationsPage() {
         )}
 
         {!integrationsQuery.isLoading && !integrationsQuery.isError && hasOnlyUnconfigured && (
-          <IntegrationEmptyState firstIntegration={integrations[0]} onConfigure={setConfiguring} />
+          <IntegrationEmptyState integrations={integrations} onConfigure={setConfiguring} />
         )}
 
         {!integrationsQuery.isLoading && !integrationsQuery.isError && (
@@ -288,6 +304,15 @@ function IntegrationsPage() {
   );
 }
 
+function SummaryCard({ title, description }: { title: string; description: string }) {
+  return (
+    <div className="rounded-md border border-border bg-card p-4">
+      <div className="text-sm font-medium">{title}</div>
+      <p className="mt-1 text-xs leading-5 text-muted-foreground">{description}</p>
+    </div>
+  );
+}
+
 function IntegrationCard({
   integration,
   pendingAction,
@@ -325,10 +350,7 @@ function IntegrationCard({
           </div>
           <p className="mt-1 max-w-3xl text-sm text-muted-foreground">{integration.description}</p>
           <p className="mt-3 text-sm">
-            <span className="font-medium">Como funciona:</span>{" "}
-            {integration.provider === "CUSTOM_API"
-              ? "Sistema interno envia candidatos via API -> Praxis avalia -> webhook recebe o resultado."
-              : "ATS envia candidato -> Praxis avalia -> Praxis devolve o resultado."}
+            <span className="font-medium">Como funciona:</span> {getIntegrationFlow(integration)}
           </p>
         </div>
         <div className="flex shrink-0 flex-wrap gap-2">
@@ -348,6 +370,8 @@ function IntegrationCard({
           />
         </div>
       </div>
+
+      <IntegrationModeSummary integration={integration} />
 
       <div className="mt-4 grid gap-3 text-sm md:grid-cols-3">
         <InfoItem label="Última atividade" value={formatDateTime(integration.lastSyncAt)} />
@@ -370,6 +394,31 @@ function IntegrationCard({
         </div>
       )}
     </article>
+  );
+}
+
+function IntegrationModeSummary({ integration }: { integration: IntegrationCenterItem }) {
+  if (integration.provider !== "GUPY") {
+    return null;
+  }
+
+  return (
+    <div className="mt-4 grid gap-3 md:grid-cols-2">
+      <div className="rounded-md border border-border bg-background p-3 text-sm">
+        <div className="font-medium">Modo 1 · Dentro da Gupy</div>
+        <p className="mt-1 text-muted-foreground">
+          Gere um token no Práxis e configure esse token no painel da Gupy para receber candidatos e
+          devolver resultados pelo fluxo do ATS.
+        </p>
+      </div>
+      <div className="rounded-md border border-border bg-background p-3 text-sm">
+        <div className="font-medium">Modo 2 · Webhook/API própria</div>
+        <p className="mt-1 text-muted-foreground">
+          Use quando houver middleware, automação interna ou necessidade de receber eventos por
+          webhook assinado antes de atualizar a Gupy.
+        </p>
+      </div>
+    </div>
   );
 }
 
@@ -434,11 +483,19 @@ function CardActions({
       )}
       {/* API própria: webhook e token de API pública vivem na página de detalhe.
           Garante acesso a essa configuração em qualquer status, mesmo sem a ação VIEW. */}
-      {integration.provider === "CUSTOM_API" && !hasAction("VIEW") && (
+      {(integration.provider === "CUSTOM_API" || integration.provider === "GUPY") && !hasAction("VIEW") && (
         <Button type="button" size="sm" variant="outline" asChild>
           <Link to="/integrations/$provider" params={{ provider: slug }}>
             <Eye className="h-4 w-4" />
             Ver configuração
+          </Link>
+        </Button>
+      )}
+      {integration.provider === "GUPY" && (
+        <Button type="button" size="sm" variant="outline" asChild>
+          <Link to="/integrations/$provider" params={{ provider: "custom-api" }}>
+            <ExternalLink className="h-4 w-4" />
+            Webhook/API
           </Link>
         </Button>
       )}
@@ -601,6 +658,7 @@ function IntegrationConfigModal({
         </DialogHeader>
 
         <div className="grid gap-4">
+          {provider === "GUPY" && <GupyIntegrationModeHelp />}
           {usesToken && integration && (
             <ol className="grid gap-3 text-sm">
               <TokenStep number={1}>
@@ -610,8 +668,8 @@ function IntegrationConfigModal({
                 Copie o token e cole no painel de integrações do {integration.name}.
               </TokenStep>
               <TokenStep number={3}>
-                Pronto: o {integration.name} passa a enviar candidatos automaticamente e o Práxis
-                devolve o resultado da avaliação.
+                Depois de configurado no {integration.name}, o ATS poderá enviar candidatos e receber
+                resultados do Práxis conforme a configuração ativa no provedor.
               </TokenStep>
             </ol>
           )}
@@ -688,6 +746,16 @@ function IntegrationConfigModal({
         </DialogFooter>
       </DialogContent>
     </Dialog>
+  );
+}
+
+function GupyIntegrationModeHelp() {
+  return (
+    <StateBanner tone="info" title="A Gupy pode operar de dois jeitos">
+      Use o token para configurar o Práxis dentro da Gupy. Se o cliente usar middleware, sistema
+      interno ou quiser receber callbacks antes de atualizar o ATS, configure também o modo
+      Webhook/API própria na central de integrações.
+    </StateBanner>
   );
 }
 
@@ -808,25 +876,35 @@ function IntegrationSyncButton({
 }
 
 function IntegrationEmptyState({
-  firstIntegration,
+  integrations,
   onConfigure,
 }: {
-  firstIntegration: IntegrationCenterItem | undefined;
+  integrations: IntegrationCenterItem[];
   onConfigure: (integration: IntegrationCenterItem) => void;
 }) {
+  const preferred = integrations.find((integration) => integration.provider === "GUPY") ?? integrations[0];
+
   return (
     <EmptyState
       title="Nenhuma integração configurada ainda."
-      description="Conecte o Práxis aos sistemas que sua empresa já utiliza para automatizar o envio de candidatos e resultados."
+      description="Escolha o caminho mais adequado: configurar o ATS diretamente, usar API própria ou receber eventos por webhook."
       actions={
-        <Button
-          type="button"
-          disabled={!firstIntegration}
-          onClick={() => firstIntegration && onConfigure(firstIntegration)}
-        >
-          <Settings className="h-4 w-4" />
-          Configurar primeira integração
-        </Button>
+        <div className="flex flex-wrap justify-center gap-2">
+          <Button
+            type="button"
+            disabled={!preferred}
+            onClick={() => preferred && onConfigure(preferred)}
+          >
+            <Settings className="h-4 w-4" />
+            Configurar ATS
+          </Button>
+          <Button type="button" variant="outline" asChild>
+            <Link to="/integrations/$provider" params={{ provider: "custom-api" }}>
+              <ExternalLink className="h-4 w-4" />
+              Webhook/API própria
+            </Link>
+          </Button>
+        </div>
       }
     />
   );
@@ -856,6 +934,16 @@ function InfoItem({ label, value }: { label: string; value: string }) {
       <div className="mt-1 font-medium">{value}</div>
     </div>
   );
+}
+
+function getIntegrationFlow(integration: IntegrationCenterItem) {
+  if (integration.provider === "GUPY") {
+    return "Configure dentro da Gupy por token ou use Webhook/API própria quando houver middleware entre Gupy e Práxis.";
+  }
+  if (integration.provider === "CUSTOM_API") {
+    return "Sistema interno envia candidatos via API -> Práxis avalia -> webhook recebe o resultado.";
+  }
+  return "ATS envia candidato -> Práxis avalia -> Práxis devolve o resultado.";
 }
 
 function formatDateTime(value: string | null) {
