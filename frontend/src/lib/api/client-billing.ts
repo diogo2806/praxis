@@ -39,7 +39,19 @@ async function billingRequest<T>(path: string, init?: RequestInit): Promise<T> {
 
 export const getClientBilling = () => billingRequest<ClientBillingResponse>("/api/v1/billing");
 export const listClientBillingPlans = () => billingRequest<SubscriptionPlan[]>("/api/v1/billing/plans");
-export const getClientPlanManagement = () => billingRequest<PlanManagementResponse>("/api/v1/billing/plan-management");
+
+/**
+ * A tela de cobrança já consulta /billing. Reutilizar esse resumo evita quebrar o carregamento
+ * quando o frontend é publicado antes do backend que expõe as rotas de gestão de plano.
+ */
+export async function getClientPlanManagement(): Promise<PlanManagementResponse> {
+  const billing = await getClientBilling();
+  if (!billing.plan) {
+    throw new PraxisApiError("Plano da empresa ainda não está definido.", 409);
+  }
+  return { currentPlan: billing.plan, enterpriseRequests: [] };
+}
+
 export const createClientCreditCheckout = (planId: number) => billingRequest<CheckoutResult>(`/api/v1/billing/credits/checkout?planId=${planId}`, { method: "POST" });
 export const createClientSubscriptionCheckout = (planId: number) => billingRequest<CheckoutResult>(`/api/v1/billing/subscription/checkout?planId=${planId}`, { method: "POST" });
 export const changeClientPlan = (planId: number) => billingRequest<CheckoutResult>(`/api/v1/billing/plan/change?planId=${planId}`, { method: "POST" });
