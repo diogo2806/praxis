@@ -1,11 +1,16 @@
 package br.com.iforce.praxis.billing.controller;
 
+import br.com.iforce.praxis.admin.model.CommercialPlanType;
 import br.com.iforce.praxis.auth.service.CurrentEmpresaService;
 import br.com.iforce.praxis.billing.dto.BillingEventResponse;
 import br.com.iforce.praxis.billing.dto.CheckoutResponse;
 import br.com.iforce.praxis.billing.dto.ClientBillingResponse;
+import br.com.iforce.praxis.billing.dto.PlanChangeRequestResponse;
+import br.com.iforce.praxis.billing.dto.PlanManagementResponse;
 import br.com.iforce.praxis.billing.dto.SubscriptionPlanResponse;
+import br.com.iforce.praxis.billing.model.PlanChangeRequestType;
 import br.com.iforce.praxis.billing.service.ClientBillingService;
+import br.com.iforce.praxis.billing.service.ClientPlanManagementService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.ResponseEntity;
@@ -20,16 +25,19 @@ import java.util.List;
 /** API de plano, pagamentos, créditos e assinatura da empresa autenticada. */
 @RestController
 @RequestMapping("/api/v1/billing")
-@Tag(name = "Billing · Cliente", description = "Visão de plano, uso, histórico e checkout para o cliente autenticado.")
+@Tag(name = "Billing · Cliente", description = "Visão, contratação, mudança e cancelamento de plano para o cliente autenticado.")
 public class ClientBillingController {
 
     private final CurrentEmpresaService currentEmpresaService;
     private final ClientBillingService clientBillingService;
+    private final ClientPlanManagementService clientPlanManagementService;
 
     public ClientBillingController(CurrentEmpresaService currentEmpresaService,
-                                   ClientBillingService clientBillingService) {
+                                   ClientBillingService clientBillingService,
+                                   ClientPlanManagementService clientPlanManagementService) {
         this.currentEmpresaService = currentEmpresaService;
         this.clientBillingService = clientBillingService;
+        this.clientPlanManagementService = clientPlanManagementService;
     }
 
     @GetMapping
@@ -42,6 +50,30 @@ public class ClientBillingController {
     @Operation(summary = "Lista planos e pacotes disponíveis para contratação self-service")
     public ResponseEntity<List<SubscriptionPlanResponse>> plans() {
         return ResponseEntity.ok(clientBillingService.getAvailablePlans());
+    }
+
+    @GetMapping("/plan-management")
+    @Operation(summary = "Dados para gerir mudança ou cancelamento de plano")
+    public ResponseEntity<PlanManagementResponse> planManagement() {
+        return ResponseEntity.ok(clientPlanManagementService.getManagement(currentEmpresaService.requiredEmpresaId()));
+    }
+
+    @PostMapping("/plan/change")
+    @Operation(summary = "Muda para um plano self-service e abre o checkout correspondente")
+    public ResponseEntity<CheckoutResponse> changePlan(@RequestParam Long planId) {
+        return ResponseEntity.ok(clientPlanManagementService.changePlan(
+                currentEmpresaService.requiredEmpresaId(), planId));
+    }
+
+    @PostMapping("/enterprise-request")
+    @Operation(summary = "Solicita alteração ou cancelamento de um contrato Enterprise")
+    public ResponseEntity<PlanChangeRequestResponse> enterpriseRequest(
+            @RequestParam PlanChangeRequestType type,
+            @RequestParam(required = false) CommercialPlanType requestedPlan,
+            @RequestParam(required = false) String note
+    ) {
+        return ResponseEntity.ok(clientPlanManagementService.requestEnterpriseChange(
+                currentEmpresaService.requiredEmpresaId(), type, requestedPlan, note));
     }
 
     @PostMapping("/credits/checkout")
