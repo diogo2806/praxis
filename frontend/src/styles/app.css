@@ -313,4 +313,12 @@
     max-width: var(--skeleton-width);
     flex: 1 1 0%;
   }
+
+  /*
+   * O selo de versão publicada mantém cor de apoio no ícone, borda e fundo.
+   * O texto usa a cor principal para cumprir contraste AA sobre o fundo verde suave.
+   */
+  body table > tbody > tr > td > span.mt-1[class~="bg-success/10"][class~="text-success"] {
+    color: var(--color-foreground);
+  }
 }
