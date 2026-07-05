@@ -125,7 +125,7 @@ function ResultsHeader({ onReload }: { onReload: () => void }) {
         <div className="text-xs uppercase text-primary">Práxis / Resultados</div>
         <h1 className="mt-1 text-3xl font-semibold">Resultados</h1>
         <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
-          Acompanhe os candidatos avaliados, veja status, pontuação geral e aderência por competência.
+          Acompanhe candidatos, status da avaliação e resultados finais quando eles estiverem disponíveis.
         </p>
       </div>
       <button
@@ -178,45 +178,21 @@ function ResultsFilters({
             className="h-10 w-full rounded-md border border-border bg-background pl-9 pr-3 text-sm"
           />
         </label>
-        <select
-          value={simulationId}
-          onChange={(event) => onSimulationId(event.target.value)}
-          className="h-10 rounded-md border border-border bg-background px-3 text-sm"
-        >
+        <select value={simulationId} onChange={(event) => onSimulationId(event.target.value)} className="h-10 rounded-md border border-border bg-background px-3 text-sm">
           <option value="">Avaliação</option>
-          {simulations.map((simulation) => (
-            <option key={simulation.id} value={simulation.id}>
-              {simulation.name}
-            </option>
-          ))}
+          {simulations.map((simulation) => <option key={simulation.id} value={simulation.id}>{simulation.name}</option>)}
         </select>
-        <select
-          value={status}
-          onChange={(event) => onStatus(event.target.value as AttemptStatus | "")}
-          className="h-10 rounded-md border border-border bg-background px-3 text-sm"
-        >
+        <select value={status} onChange={(event) => onStatus(event.target.value as AttemptStatus | "")} className="h-10 rounded-md border border-border bg-background px-3 text-sm">
           <option value="">Status</option>
-          {statusOptions.map((option) => (
-            <option key={option.value} value={option.value}>
-              {option.label}
-            </option>
-          ))}
+          {statusOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
         </select>
-        <select
-          value={period}
-          onChange={(event) => onPeriod(event.target.value)}
-          className="h-10 rounded-md border border-border bg-background px-3 text-sm"
-        >
+        <select value={period} onChange={(event) => onPeriod(event.target.value)} className="h-10 rounded-md border border-border bg-background px-3 text-sm">
           <option value="">Período</option>
           <option value="7">Últimos 7 dias</option>
           <option value="30">Últimos 30 dias</option>
           <option value="90">Últimos 90 dias</option>
         </select>
-        <select
-          value={integrationProvider}
-          onChange={(event) => onIntegrationProvider(event.target.value)}
-          className="h-10 rounded-md border border-border bg-background px-3 text-sm"
-        >
+        <select value={integrationProvider} onChange={(event) => onIntegrationProvider(event.target.value)} className="h-10 rounded-md border border-border bg-background px-3 text-sm">
           <option value="">Integração</option>
           <option value="GUPY">Gupy</option>
           <option value="RECRUTEI">Recrutei</option>
@@ -228,15 +204,7 @@ function ResultsFilters({
   );
 }
 
-function ResultsContent({
-  data,
-  page,
-  onPageChange,
-}: {
-  data: ResultsPageResponse;
-  page: number;
-  onPageChange: (page: number) => void;
-}) {
+function ResultsContent({ data, page, onPageChange }: { data: ResultsPageResponse; page: number; onPageChange: (page: number) => void }) {
   if (data.items.length === 0) {
     return (
       <>
@@ -244,15 +212,7 @@ function ResultsContent({
         <EmptyState
           title="Nenhum resultado encontrado."
           description="Assim que candidatos concluírem avaliações, os resultados aparecerão aqui."
-          actions={
-            <Link
-              to="/candidate-links/new"
-              className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
-            >
-              Gerar link de avaliação
-              <ExternalLink className="h-4 w-4" />
-            </Link>
-          }
+          actions={<Link to="/candidate-links/new" className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90">Gerar link de avaliação<ExternalLink className="h-4 w-4" /></Link>}
         />
       </>
     );
@@ -274,7 +234,7 @@ function ResultsSummaryCards({ data }: { data: ResultsPageResponse }) {
     { title: "Expirados", value: data.summary.expired, icon: TimerOff },
     {
       title: "Média geral",
-      value: data.summary.averageScore == null ? "-" : `${data.summary.averageScore}%`,
+      value: data.summary.averageScore == null ? "Sem resultado final" : `${data.summary.averageScore}%`,
       icon: BarChart3,
     },
   ];
@@ -316,25 +276,14 @@ function ResultsTable({ items }: { items: ResultListItemResponse[] }) {
           <tbody>
             {items.map((item) => (
               <tr key={item.attemptId} className="border-b border-border last:border-0 hover:bg-accent/35">
-                <td className="px-4 py-3">
-                  <div className="font-medium">{item.candidateName}</div>
-                  <div className="mt-0.5 text-xs text-muted-foreground">{item.candidateEmail}</div>
-                </td>
+                <td className="px-4 py-3"><div className="font-medium">{item.candidateName}</div><div className="mt-0.5 text-xs text-muted-foreground">{item.candidateEmail}</div></td>
                 <td className="px-4 py-3 text-muted-foreground">{item.simulationTitle}</td>
-                <td className="px-4 py-3">
-                  <ResultStatusBadge status={item.status} />
-                </td>
-                <td className="px-4 py-3">{item.highlightCompetency ?? "-"}</td>
-                <td className="px-4 py-3 font-medium tabular-nums">
-                  {item.overallScore == null ? "-" : `${item.overallScore}%`}
-                </td>
+                <td className="px-4 py-3"><ResultStatusBadge status={item.status} /></td>
+                <td className="px-4 py-3">{isFinalResultStatus(item.status) ? item.highlightCompetency ?? "-" : "Sem resultado final"}</td>
+                <td className="px-4 py-3 font-medium tabular-nums">{formatResultScore(item.status, item.overallScore)}</td>
                 <td className="px-4 py-3 text-muted-foreground">{providerLabel(item.integrationProvider)}</td>
                 <td className="px-4 py-3 text-right">
-                  <Link
-                    to="/results/$attemptId"
-                    params={{ attemptId: item.attemptId }}
-                    className="text-sm font-medium text-primary hover:underline"
-                  >
+                  <Link to="/results/$attemptId" params={{ attemptId: item.attemptId }} className="text-sm font-medium text-primary hover:underline">
                     {item.status === "completed" ? "Ver detalhes" : "Acompanhar"}
                   </Link>
                 </td>
@@ -347,125 +296,57 @@ function ResultsTable({ items }: { items: ResultListItemResponse[] }) {
   );
 }
 
-function ResultsPagination({
-  data,
-  page,
-  onPageChange,
-}: {
-  data: ResultsPageResponse;
-  page: number;
-  onPageChange: (page: number) => void;
-}) {
+function ResultsPagination({ data, page, onPageChange }: { data: ResultsPageResponse; page: number; onPageChange: (page: number) => void }) {
   return (
     <div className="flex flex-wrap items-center justify-between gap-3 text-sm">
-      <div className="text-muted-foreground">
-        {data.totalItems.toLocaleString("pt-BR")} resultado{data.totalItems === 1 ? "" : "s"}
-      </div>
+      <div className="text-muted-foreground">{data.totalItems.toLocaleString("pt-BR")} resultado{data.totalItems === 1 ? "" : "s"}</div>
       <div className="flex items-center gap-2">
-        <button
-          type="button"
-          disabled={page <= 0}
-          onClick={() => onPageChange(page - 1)}
-          className="rounded-md border border-border bg-card px-3 py-2 disabled:cursor-not-allowed disabled:opacity-50"
-        >
-          Anterior
-        </button>
-        <span className="text-muted-foreground">
-          Página {data.totalPages === 0 ? 0 : page + 1} de {data.totalPages}
-        </span>
-        <button
-          type="button"
-          disabled={page + 1 >= data.totalPages}
-          onClick={() => onPageChange(page + 1)}
-          className="rounded-md border border-border bg-card px-3 py-2 disabled:cursor-not-allowed disabled:opacity-50"
-        >
-          Próxima
-        </button>
+        <button type="button" disabled={page <= 0} onClick={() => onPageChange(page - 1)} className="rounded-md border border-border bg-card px-3 py-2 disabled:cursor-not-allowed disabled:opacity-50">Anterior</button>
+        <span className="text-muted-foreground">Página {data.totalPages === 0 ? 0 : page + 1} de {data.totalPages}</span>
+        <button type="button" disabled={page + 1 >= data.totalPages} onClick={() => onPageChange(page + 1)} className="rounded-md border border-border bg-card px-3 py-2 disabled:cursor-not-allowed disabled:opacity-50">Próxima</button>
       </div>
     </div>
   );
 }
 
 function ResultsLoadingState() {
-  return (
-    <section className="rounded-md border border-border bg-card p-6">
-      <div className="text-sm font-medium">Carregando resultados...</div>
-      <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        {Array.from({ length: 4 }).map((_, index) => (
-          <div key={index} className="h-24 animate-pulse rounded-md bg-muted" />
-        ))}
-      </div>
-    </section>
-  );
+  return <section className="rounded-md border border-border bg-card p-6"><div className="text-sm font-medium">Carregando resultados...</div><div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">{Array.from({ length: 4 }).map((_, index) => <div key={index} className="h-24 animate-pulse rounded-md bg-muted" />)}</div></section>;
 }
 
 function ResultsErrorState({ onReload }: { onReload: () => void }) {
-  return (
-    <StateBanner
-      tone="danger"
-      title="Não foi possível carregar os resultados."
-      action={
-        <button
-          type="button"
-          onClick={onReload}
-          className="rounded-md border border-current/20 bg-background/60 px-3 py-1.5 text-xs font-medium"
-        >
-          Recarregar
-        </button>
-      }
-    >
-      Tente novamente.
-    </StateBanner>
-  );
+  return <StateBanner tone="danger" title="Não foi possível carregar os resultados." action={<button type="button" onClick={onReload} className="rounded-md border border-current/20 bg-background/60 px-3 py-1.5 text-xs font-medium">Recarregar</button>}>Tente novamente.</StateBanner>;
 }
 
 function ResultStatusBadge({ status }: { status: AttemptStatus }) {
   const meta = resultStatusMeta(status);
-  return (
-    <span
-      className={`inline-flex items-center gap-1.5 rounded-md border px-2 py-1 text-[11px] font-medium ${meta.className}`}
-    >
-      <span className="h-1.5 w-1.5 rounded-full bg-current" />
-      {meta.label}
-    </span>
-  );
+  return <span className={`inline-flex items-center gap-1.5 rounded-md border px-2 py-1 text-[11px] font-medium ${meta.className}`}><span className="h-1.5 w-1.5 rounded-full bg-current" />{meta.label}</span>;
 }
 
 function resultStatusMeta(status: AttemptStatus) {
-  return (
-    {
-      notStarted: {
-        label: "Criado",
-        className: "border-border bg-muted text-foreground",
-      },
-      inProgress: {
-        label: "Em andamento",
-        className: "border-primary/25 bg-primary/10 text-foreground",
-      },
-      completed: {
-        label: "Concluído",
-        className: "border-success/25 bg-success/10 text-foreground",
-      },
-      abandoned: {
-        label: "Abandonado",
-        className: "border-danger/25 bg-danger/10 text-foreground",
-      },
-      expired: {
-        label: "Expirado",
-        className: "border-warning/35 bg-warning/15 text-warning-foreground",
-      },
-    } satisfies Record<AttemptStatus, { label: string; className: string }>
-  )[status];
+  return ({
+    notStarted: { label: "Criado", className: "border-border bg-muted text-foreground" },
+    inProgress: { label: "Em andamento", className: "border-primary/25 bg-primary/10 text-foreground" },
+    completed: { label: "Concluído", className: "border-success/25 bg-success/10 text-foreground" },
+    abandoned: { label: "Abandonado", className: "border-danger/25 bg-danger/10 text-foreground" },
+    expired: { label: "Expirado", className: "border-warning/35 bg-warning/15 text-warning-foreground" },
+  } satisfies Record<AttemptStatus, { label: string; className: string }>)[status];
+}
+
+function isFinalResultStatus(status: AttemptStatus) {
+  return status === "completed";
+}
+
+function formatResultScore(status: AttemptStatus, score: number | null) {
+  if (!isFinalResultStatus(status) || score == null) {
+    return "Sem resultado final";
+  }
+  return `${score}%`;
 }
 
 function rangeForPeriod(period: string) {
-  if (!period) {
-    return { start: undefined, end: undefined };
-  }
+  if (!period) return { start: undefined, end: undefined };
   const days = Number(period);
-  if (!Number.isFinite(days)) {
-    return { start: undefined, end: undefined };
-  }
+  if (!Number.isFinite(days)) return { start: undefined, end: undefined };
   const end = new Date();
   const start = new Date(end);
   start.setDate(start.getDate() - days);
@@ -473,10 +354,5 @@ function rangeForPeriod(period: string) {
 }
 
 function providerLabel(value: string | null) {
-  return {
-    GUPY: "Gupy",
-    RECRUTEI: "Recrutei",
-    API: "API",
-    MANUAL: "Manual",
-  }[value ?? ""] ?? "-";
+  return { GUPY: "Gupy", RECRUTEI: "Recrutei", API: "API", MANUAL: "Manual" }[value ?? ""] ?? "-";
 }
