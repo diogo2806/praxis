@@ -1,11 +1,75 @@
-main table { width: 100%; border-collapse: collapse; background-color: var(--color-card); color: var(--color-foreground); font-size: 0.875rem; }
-main table thead { border-bottom: 1px solid var(--color-border); background-color: color-mix(in oklab, var(--color-muted) 72%, transparent); color: var(--color-muted-foreground); font-size: 0.75rem; letter-spacing: 0.045em; text-transform: uppercase; }
-main table th { height: 2.75rem; padding: 0.75rem 1rem; vertical-align: middle; text-align: left; font-weight: 600; }
-main table th.text-center, main table td.text-center { text-align: center; }
-main table th.text-right, main table td.text-right { text-align: right; }
-main table td { padding: 0.75rem 1rem; vertical-align: middle; }
-main table tbody > tr { border-bottom: 1px solid var(--color-border); transition: background-color 150ms ease; }
-main table tbody > tr:hover { background-color: color-mix(in oklab, var(--color-accent) 70%, transparent); }
-main table tbody > tr:last-child { border-bottom: 0; }
-main table :is(a, button, input, select, textarea):focus-visible { position: relative; z-index: 1; }
-@media (max-width: 639px) { main table th, main table td { padding: 0.6875rem 0.875rem; } }
+/*
+ * Padrão único para todas as tabelas do produto.
+ * Cores de status continuam nos badges; cabeçalhos, linhas, bordas e espaçamentos
+ * deixam de depender das classes locais de cada tela.
+ */
+body table {
+  width: 100% !important;
+  border-collapse: collapse !important;
+  background-color: var(--color-card) !important;
+  color: var(--color-foreground) !important;
+  font-size: 0.875rem;
+}
+
+body table > thead,
+body table > thead > tr {
+  border-bottom: 1px solid var(--color-border) !important;
+  background-color: color-mix(in oklab, var(--color-muted) 72%, transparent) !important;
+  color: var(--color-muted-foreground) !important;
+}
+
+body table > thead > tr > th {
+  height: 2.75rem;
+  padding: 0.75rem 1rem !important;
+  vertical-align: middle;
+  background-color: transparent !important;
+  color: var(--color-muted-foreground) !important;
+  font-size: 0.75rem !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.045em;
+  text-align: left;
+  text-transform: uppercase;
+}
+
+body table > tbody > tr {
+  border-bottom: 1px solid var(--color-border) !important;
+  background-color: transparent !important;
+  transition: background-color 150ms ease;
+}
+
+body table > tbody > tr:hover {
+  background-color: color-mix(in oklab, var(--color-accent) 70%, transparent) !important;
+}
+
+body table > tbody > tr:last-child {
+  border-bottom: 0 !important;
+}
+
+body table > :is(thead, tbody, tfoot) > tr > :is(th, td) {
+  padding: 0.75rem 1rem !important;
+  vertical-align: middle;
+}
+
+body table > tfoot {
+  border-top: 1px solid var(--color-border) !important;
+  background-color: color-mix(in oklab, var(--color-muted) 55%, transparent) !important;
+}
+
+body table :is(th, td).text-center {
+  text-align: center !important;
+}
+
+body table :is(th, td).text-right {
+  text-align: right !important;
+}
+
+body table :is(a, button, input, select, textarea):focus-visible {
+  position: relative;
+  z-index: 1;
+}
+
+@media (max-width: 639px) {
+  body table > :is(thead, tbody, tfoot) > tr > :is(th, td) {
+    padding: 0.6875rem 0.875rem !important;
+  }
+}
