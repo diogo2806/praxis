@@ -11,13 +11,12 @@ import { createServerFn } from "@tanstack/react-start";
 import { useEffect, type ReactNode } from "react";
 
 import appCss from "../styles/app.css?url";
+import tablesCss from "../styles/tables.css?url";
 import { reportAppError } from "../lib/app-error-reporting";
 import { resolveRuntimeConfigFromEnv } from "../lib/runtime-config.server";
 import { LanguageProvider, useLanguage } from "../lib/language-context";
 import { clearAuthenticatedSession } from "../lib/session";
 
-// Runs only on the server. Reads the public runtime config from env per request
-// so it can be injected into the page and picked up by the browser bundle.
 const getRuntimeConfig = createServerFn({ method: "GET" }).handler(() =>
   resolveRuntimeConfigFromEnv(),
 );
@@ -112,6 +111,10 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         rel: "stylesheet",
         href: appCss,
       },
+      {
+        rel: "stylesheet",
+        href: tablesCss,
+      },
     ],
   }),
   shellComponent: RootShell,
@@ -128,7 +131,6 @@ function RootShell({ children }: { children: ReactNode }) {
       <html lang="pt-BR">
         <head>
           <HeadContent />
-          {/* Must run before the app bundle so getRuntimeConfig() sees it. */}
           <script
             dangerouslySetInnerHTML={{
               __html: `window.__PRAXIS_CONFIG__=${JSON.stringify(runtimeConfig)};
