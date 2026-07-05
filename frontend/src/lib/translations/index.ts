@@ -2,12 +2,14 @@ import { ptBr } from "./pt-br";
 import { en } from "./en";
 import { esMx } from "./es-mx";
 import { candidateAccessTranslations } from "./candidate-access";
+import { documentMetadataTranslations } from "./document-metadata";
 
 export type Language = "pt-BR" | "en" | "es-MX";
 
 const withSharedTranslations = <T extends typeof ptBr>(language: Language, translation: T) => ({
   ...translation,
   candidateAccess: candidateAccessTranslations[language],
+  documentMetadata: documentMetadataTranslations[language],
 });
 
 export const translations = {
