@@ -13,14 +13,6 @@ export type EmpresaStatus =
   | "CANCELADO";
 export type SubscriptionStatus = "PENDING" | "AUTHORIZED" | "DELINQUENT" | "PAUSED" | "CANCELLED";
 export type FinancialStatus = "REGULAR" | "PENDENTE_PAGAMENTO" | "INADIMPLENTE" | "SEM_CREDITO" | "CANCELADO";
-export type BillingAction =
-  | "BUY_CREDITS"
-  | "MANAGE_AUTO_RECHARGE"
-  | "VIEW_HISTORY"
-  | "VIEW_SUBSCRIPTION"
-  | "SYNC_SUBSCRIPTION"
-  | "UPDATE_PAYMENT"
-  | "CONTACT_SUPPORT";
 
 export interface SubscriptionPlan {
   id: number;
@@ -40,6 +32,15 @@ export interface BillingEvent {
   mpStatus: string | null;
   amountCents: number | null;
   currency: string | null;
+  createdAt: string;
+}
+
+export interface CreditMovement {
+  id: number;
+  delta: number;
+  reason: string;
+  balanceAfter: number;
+  note: string | null;
   createdAt: string;
 }
 
@@ -72,8 +73,9 @@ export interface ClientBillingResponse {
   creditBalance: number;
   usage: ClientBillingUsage;
   subscription: ClientBillingSubscription | null;
-  availableActions: BillingAction[];
+  availableActions: string[];
   events: BillingEvent[];
+  creditMovements: CreditMovement[];
 }
 
 async function billingRequest<T>(path: string, init?: RequestInit): Promise<T> {
@@ -103,7 +105,7 @@ async function billingRequest<T>(path: string, init?: RequestInit): Promise<T> {
       };
       message = body.mensagem ?? body.message ?? body.error ?? message;
     } catch {
-      // Mantem a mensagem HTTP padrao quando a resposta nao vem em JSON.
+      // Mantém a mensagem HTTP padrão quando a resposta não vem em JSON.
     }
     throw new PraxisApiError(message, response.status);
   }
@@ -143,6 +145,12 @@ export function createClientSubscriptionCheckout(planId: number) {
 
 export function syncClientSubscription() {
   return billingRequest<ClientBillingResponse>("/api/v1/billing/subscription/sync", {
+    method: "POST",
+  });
+}
+
+export function cancelClientSubscription() {
+  return billingRequest<ClientBillingResponse>("/api/v1/billing/subscription/cancel", {
     method: "POST",
   });
 }
