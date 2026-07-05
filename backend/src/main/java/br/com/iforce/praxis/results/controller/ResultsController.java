@@ -38,7 +38,7 @@ public class ResultsController {
     public ResponseEntity<ResultsPageResponse> list(
             @RequestParam(required = false) String search,
             @RequestParam(required = false) String simulationId,
-            @RequestParam(required = false) AttemptStatus status,
+            @RequestParam(required = false) String status,
             @RequestParam(required = false) String integrationProvider,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant periodStart,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant periodEnd,
@@ -48,7 +48,7 @@ public class ResultsController {
         return ResponseEntity.ok(resultsService.list(
                 search,
                 simulationId,
-                status,
+                parseStatus(status),
                 integrationProvider,
                 periodStart,
                 periodEnd,
@@ -61,7 +61,7 @@ public class ResultsController {
     public ResponseEntity<byte[]> exportCsv(
             @RequestParam(required = false) String search,
             @RequestParam(required = false) String simulationId,
-            @RequestParam(required = false) AttemptStatus status,
+            @RequestParam(required = false) String status,
             @RequestParam(required = false) String integrationProvider,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant periodStart,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant periodEnd
@@ -69,7 +69,7 @@ public class ResultsController {
         ResultsPageResponse page = resultsService.list(
                 search,
                 simulationId,
-                status,
+                parseStatus(status),
                 integrationProvider,
                 periodStart,
                 periodEnd,
@@ -95,6 +95,13 @@ public class ResultsController {
     ) {
         resultsService.registerDecision(attemptId, request);
         return ResponseEntity.noContent().build();
+    }
+
+    private AttemptStatus parseStatus(String status) {
+        if (status == null || status.isBlank()) {
+            return null;
+        }
+        return AttemptStatus.fromString(status);
     }
 
     private String toCsv(ResultsPageResponse page) {
