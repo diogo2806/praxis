@@ -1,13 +1,19 @@
 import { ptBr } from "./pt-br";
 import { en } from "./en";
 import { esMx } from "./es-mx";
+import { candidateAccessTranslations } from "./candidate-access";
 
 export type Language = "pt-BR" | "en" | "es-MX";
 
-export const translations: Record<Language, typeof ptBr> = {
-  "pt-BR": ptBr,
-  en,
-  "es-MX": esMx,
+const withSharedTranslations = <T extends typeof ptBr>(language: Language, translation: T) => ({
+  ...translation,
+  candidateAccess: candidateAccessTranslations[language],
+});
+
+export const translations = {
+  "pt-BR": withSharedTranslations("pt-BR", ptBr),
+  en: withSharedTranslations("en", en),
+  "es-MX": withSharedTranslations("es-MX", esMx),
 };
 
 export const languages: Array<{ code: Language; label: string }> = [

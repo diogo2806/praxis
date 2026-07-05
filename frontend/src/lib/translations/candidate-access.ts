@@ -1,6 +1,6 @@
-import type { Language } from "@/lib/translations";
+import type { Language } from "./index";
 
-export type CandidateAccessCopy = {
+export type CandidateAccessTranslation = {
   loadingLabel: string;
   loadingTitle: string;
   loadingDescription: string;
@@ -18,7 +18,7 @@ export type CandidateAccessCopy = {
   privacyNotice: string;
 };
 
-export const candidateAccessCopy: Record<Language, CandidateAccessCopy> = {
+export const candidateAccessTranslations: Record<Language, CandidateAccessTranslation> = {
   "pt-BR": {
     loadingLabel: "Preparando",
     loadingTitle: "Abrindo sua avaliação.",
