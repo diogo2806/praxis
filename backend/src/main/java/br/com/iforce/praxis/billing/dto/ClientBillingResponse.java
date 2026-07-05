@@ -18,7 +18,8 @@ public record ClientBillingResponse(
         SubscriptionInfo subscription,
         List<String> availableActions,
         List<BillingEventResponse> events,
-        List<CreditMovementResponse> creditMovements
+        List<CreditMovementResponse> creditMovements,
+        List<PlanChangeRequestResponse> planChangeRequests
 ) {
 
     public record UsageSummary(
@@ -29,6 +30,7 @@ public record ClientBillingResponse(
     }
 
     public record SubscriptionInfo(
+            Long planId,
             SubscriptionStatus status,
             String initPoint,
             Instant currentPeriodEnd,
