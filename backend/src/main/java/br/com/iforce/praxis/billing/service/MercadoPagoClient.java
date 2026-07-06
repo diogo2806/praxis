@@ -33,7 +33,7 @@ public class MercadoPagoClient {
 
     /** Cria uma preferência de checkout de pagamento único para créditos avulsos. */
     public JsonNode createCreditPreference(SubscriptionPlanEntity plan, String externalReference,
-                                           Map<String, Object> metadata) {
+                                            Map<String, Object> metadata) {
         Map<String, Object> item = new LinkedHashMap<>();
         item.put("title", plan.getName());
         item.put("quantity", 1);
@@ -56,11 +56,21 @@ public class MercadoPagoClient {
         return post("/checkout/preferences", body);
     }
 
-    /** Cria uma assinatura mensal recorrente para o plano PROFISSIONAL. */
+    /**
+     * Cria uma assinatura recorrente conforme a periodicidade comercial do plano.
+     * Planos mensais usam frequência 1; planos anuais usam frequência 12. O preço
+     * enviado é o total do ciclo, já com o desconto comercial aplicado na tabela.
+     */
     public JsonNode createPreapproval(SubscriptionPlanEntity plan, String payerEmail,
                                       String externalReference) {
+        int intervalMonths = plan.getBillingIntervalMonths();
+        if (intervalMonths != 1 && intervalMonths != 12) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "Periodicidade de assinatura inválida. Use mensal ou anual.");
+        }
+
         Map<String, Object> autoRecurring = new LinkedHashMap<>();
-        autoRecurring.put("frequency", 1);
+        autoRecurring.put("frequency", intervalMonths);
         autoRecurring.put("frequency_type", "months");
         autoRecurring.put("transaction_amount", reais(plan.getPriceCents()));
         autoRecurring.put("currency_id", plan.getCurrency());
