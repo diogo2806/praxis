@@ -12,6 +12,7 @@ import { useEffect, type ReactNode } from "react";
 
 import appCss from "../styles/app.css?url";
 import tablesCss from "../styles/tables.css?url";
+import landingAccessibilityCss from "../styles/landing-accessibility.css?url";
 import { reportAppError } from "../lib/app-error-reporting";
 import { resolveRuntimeConfigFromEnv } from "../lib/runtime-config.server";
 import { LanguageProvider, useLanguage } from "../lib/language-context";
@@ -115,6 +116,10 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         rel: "stylesheet",
         href: tablesCss,
       },
+      {
+        rel: "stylesheet",
+        href: landingAccessibilityCss,
+      },
     ],
   }),
   shellComponent: RootShell,
@@ -152,7 +157,11 @@ function RootShell({ children }: { children: ReactNode }) {
           <script src="https://vlibras.gov.br/app/vlibras-plugin.js" defer />
           <script
             dangerouslySetInnerHTML={{
-              __html: `document.addEventListener('DOMContentLoaded', function() { if (window.VLibras) new window.VLibras.Widget('https://vlibras.gov.br/app'); });`,
+              __html: `document.addEventListener('DOMContentLoaded', function() {
+                if (window.VLibras) new window.VLibras.Widget('https://vlibras.gov.br/app');
+                var brand = document.querySelector('a.brand');
+                if (brand) brand.removeAttribute('aria-label');
+              });`,
             }}
           />
         </body>
