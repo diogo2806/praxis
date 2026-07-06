@@ -15,7 +15,7 @@ export const Route = createFileRoute("/login")({
       {
         name: "description",
         content:
-          "Acesse o painel da empresa no Práxis para criar avaliações, acompanhar candidatos e revisar resultados.",
+          "Acesse as avaliações e os resultados da sua empresa no Práxis, com critérios claros e histórico auditável.",
       },
     ],
   }),
@@ -37,19 +37,19 @@ const initialForm: LoginFormState = {
 const loginCopy = {
   "pt-BR": {
     headTitle: "Entrar - Práxis",
-    secureAccess: "Acesso seguro",
-    heroTitle: "Entre para acompanhar avaliações, candidatos e evidências comportamentais.",
+    secureAccess: "Acesso da empresa",
+    heroTitle: "Acesse as avaliações e os resultados da sua empresa.",
     heroDescription:
-      "Use as credenciais da sua empresa para acessar o painel operacional, criar simulações, publicar versões e revisar resultados auditáveis.",
+      "Crie avaliações situacionais, acompanhe candidatos e revise resultados por competência, com critérios claros e histórico auditável.",
     securityItems: [
-      "JWT nas rotas internas quando a segurança está ativa.",
-      "Sessão isolada por empresa para operação multi-tenant.",
-      "Acesso direto ao painel depois da autenticação.",
+      "Seus dados ficam separados dos dados de outras empresas.",
+      "Critérios e resultados preservam o histórico da avaliação.",
+      "Decisões de contratação continuam sob responsabilidade humana.",
     ],
     panelTitle: "Entrar no painel",
-    panelDescription: "Informe empresa, e-mail e senha para continuar.",
-    companyLabel: "Empresa",
-    companyPlaceholder: "ex: empresa-1",
+    panelDescription: "Informe o código da empresa, seu e-mail e senha para continuar.",
+    companyLabel: "Código da empresa",
+    companyPlaceholder: "ex.: minha-empresa",
     emailLabel: "E-mail",
     emailPlaceholder: "voce@empresa.com",
     passwordLabel: "Senha",
@@ -57,26 +57,29 @@ const loginCopy = {
     submitting: "Entrando...",
     submit: "Entrar",
     backToSite: "Voltar ao site",
-    companyIdHint: "Use o ID da empresa cadastrado no backend.",
+    companyIdHint: "Use o código recebido no convite ou informado pela pessoa administradora da sua empresa.",
+    forgotPassword: "Esqueci minha senha",
+    firstAccess: "Primeiro acesso?",
+    inviteInstruction: "Use o link de convite enviado para seu e-mail para definir sua senha.",
     invalidCredentials: "Credenciais inválidas ou usuário sem permissão para esta empresa.",
-    invalidFields: "Confira empresa, e-mail e senha antes de tentar novamente.",
+    invalidFields: "Confira o código da empresa, e-mail e senha antes de tentar novamente.",
     genericError: "Não foi possível entrar agora. Verifique sua conexão e tente novamente.",
   },
   en: {
     headTitle: "Sign in - Práxis",
-    secureAccess: "Secure access",
-    heroTitle: "Sign in to track assessments, candidates, and behavioral evidence.",
+    secureAccess: "Company access",
+    heroTitle: "Access your company’s assessments and results.",
     heroDescription:
-      "Use your company credentials to access the operations panel, create simulations, publish versions, and review auditable results.",
+      "Create situational assessments, follow candidates, and review competency results with clear criteria and an auditable history.",
     securityItems: [
-      "JWT on internal routes when security is enabled.",
-      "Company-isolated session for multi-tenant operation.",
-      "Direct access to the dashboard after authentication.",
+      "Your data is kept separate from other companies’ data.",
+      "Criteria and results preserve each assessment’s history.",
+      "Hiring decisions remain under human responsibility.",
     ],
     panelTitle: "Sign in to the dashboard",
-    panelDescription: "Enter company, email, and password to continue.",
-    companyLabel: "Company",
-    companyPlaceholder: "e.g. company-1",
+    panelDescription: "Enter your company code, email, and password to continue.",
+    companyLabel: "Company code",
+    companyPlaceholder: "e.g. my-company",
     emailLabel: "Email",
     emailPlaceholder: "you@company.com",
     passwordLabel: "Password",
@@ -84,26 +87,29 @@ const loginCopy = {
     submitting: "Signing in...",
     submit: "Sign in",
     backToSite: "Back to site",
-    companyIdHint: "Use the company ID registered in the backend.",
+    companyIdHint: "Use the code from your invitation or provided by your company administrator.",
+    forgotPassword: "Forgot your password?",
+    firstAccess: "First access?",
+    inviteInstruction: "Use the invitation link sent to your email to set your password.",
     invalidCredentials: "Invalid credentials or user without permission for this company.",
-    invalidFields: "Check company, email, and password before trying again.",
+    invalidFields: "Check the company code, email, and password before trying again.",
     genericError: "Could not sign in right now. Check your connection and try again.",
   },
   "es-MX": {
     headTitle: "Iniciar sesión - Práxis",
-    secureAccess: "Acceso seguro",
-    heroTitle: "Inicia sesión para acompañar evaluaciones, candidatos y evidencias conductuales.",
+    secureAccess: "Acceso de la empresa",
+    heroTitle: "Accede a las evaluaciones y resultados de tu empresa.",
     heroDescription:
-      "Usa las credenciales de tu empresa para acceder al panel operativo, crear simulaciones, publicar versiones y revisar resultados auditables.",
+      "Crea evaluaciones situacionales, acompaña candidatos y revisa resultados por competencia, con criterios claros e historial auditable.",
     securityItems: [
-      "JWT en rutas internas cuando la seguridad está activa.",
-      "Sesión aislada por empresa para operación multi-tenant.",
-      "Acceso directo al panel después de la autenticación.",
+      "Tus datos permanecen separados de los datos de otras empresas.",
+      "Los criterios y resultados conservan el historial de cada evaluación.",
+      "Las decisiones de contratación siguen bajo responsabilidad humana.",
     ],
     panelTitle: "Iniciar sesión en el panel",
-    panelDescription: "Ingresa empresa, correo y contraseña para continuar.",
-    companyLabel: "Empresa",
-    companyPlaceholder: "ej.: empresa-1",
+    panelDescription: "Ingresa el código de la empresa, tu correo y contraseña para continuar.",
+    companyLabel: "Código de la empresa",
+    companyPlaceholder: "ej.: mi-empresa",
     emailLabel: "Correo",
     emailPlaceholder: "tu@empresa.com",
     passwordLabel: "Contraseña",
@@ -111,9 +117,12 @@ const loginCopy = {
     submitting: "Ingresando...",
     submit: "Iniciar sesión",
     backToSite: "Volver al sitio",
-    companyIdHint: "Usa el ID de empresa registrado en el backend.",
+    companyIdHint: "Usa el código recibido en la invitación o informado por la persona administradora de tu empresa.",
+    forgotPassword: "¿Olvidaste tu contraseña?",
+    firstAccess: "¿Primer acceso?",
+    inviteInstruction: "Usa el enlace de invitación enviado a tu correo para definir tu contraseña.",
     invalidCredentials: "Credenciales inválidas o usuario sin permiso para esta empresa.",
-    invalidFields: "Revisa empresa, correo y contraseña antes de intentarlo nuevamente.",
+    invalidFields: "Revisa el código de la empresa, correo y contraseña antes de intentarlo nuevamente.",
     genericError: "No fue posible iniciar sesión ahora. Revisa tu conexión e inténtalo nuevamente.",
   },
 } as const;
@@ -203,6 +212,16 @@ function LoginPage() {
           </section>
 
           <section className="mx-auto w-full max-w-md rounded-[2rem] border border-border bg-card p-6 shadow-xl sm:p-8">
+            <div className="mb-8 lg:hidden">
+              <span className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/10 px-3 py-1 text-xs font-medium uppercase tracking-[0.22em] text-primary">
+                <ShieldCheck className="h-3.5 w-3.5" /> {copy.secureAccess}
+              </span>
+              <h1 className="mt-4 text-2xl font-semibold tracking-tight text-foreground">
+                {copy.heroTitle}
+              </h1>
+              <p className="mt-3 text-sm leading-6 text-muted-foreground">{copy.heroDescription}</p>
+            </div>
+
             <div className="mb-8 flex items-start justify-between gap-4">
               <div>
                 <Link to="/" className="text-sm font-semibold text-primary hover:underline">
@@ -264,11 +283,20 @@ function LoginPage() {
               </button>
             </form>
 
-            <div className="mt-6 flex flex-wrap items-center justify-between gap-3 text-sm text-muted-foreground">
-              <Link to="/" className="hover:text-foreground hover:underline">
+            <div className="mt-4 flex flex-wrap items-center justify-between gap-3 text-sm">
+              <Link to="/recuperar-senha" className="font-medium text-primary hover:underline">
+                {copy.forgotPassword}
+              </Link>
+              <Link to="/" className="text-muted-foreground hover:text-foreground hover:underline">
                 {copy.backToSite}
               </Link>
-              <span>{copy.companyIdHint}</span>
+            </div>
+
+            <div className="mt-6 rounded-xl border border-border/70 bg-muted/30 p-4 text-sm text-muted-foreground">
+              <p>{copy.companyIdHint}</p>
+              <p className="mt-3">
+                <span className="font-medium text-foreground">{copy.firstAccess}</span> {copy.inviteInstruction}
+              </p>
             </div>
           </section>
         </div>
