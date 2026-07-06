@@ -1,6 +1,5 @@
 package br.com.iforce.praxis.commercial.controller;
 
-import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -14,7 +13,7 @@ import java.util.Map;
 import java.util.regex.Pattern;
 
 @RestController
-@RequestMapping("/api/public/demo-requests")
+@RequestMapping("/candidate/demo-requests")
 public class DemoRequestController {
 
     private static final Pattern EMAIL_PATTERN = Pattern.compile("^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$");
@@ -25,14 +24,13 @@ public class DemoRequestController {
     }
 
     @PostMapping
-    public ResponseEntity<?> create(@RequestBody DemoRequestRequest request, HttpServletRequest httpRequest) {
+    public ResponseEntity<?> create(@RequestBody DemoRequestRequest request) {
         if (request == null || !isValid(request)) {
             return ResponseEntity.badRequest().body(Map.of(
                     "message", "Informe nome, empresa e um e-mail corporativo válido."
             ));
         }
 
-        // Campo invisível para humanos. Envios preenchidos por robôs são descartados.
         if (notBlank(request.website())) {
             return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
         }
