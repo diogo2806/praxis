@@ -12,7 +12,7 @@ export const Route = createFileRoute("/admin/")({
 
 function Card({ label, value, accent }: { label: string; value: number; accent?: string }) {
   return (
-    <div className="rounded-xl border border-slate-200 bg-white p-5">
+    <div className="rounded-xl border border-slate-200 bg-white p-4 sm:p-5">
       <p className="text-sm text-slate-500">{label}</p>
       <p className={`mt-2 text-3xl font-semibold ${accent ?? "text-slate-900"}`}>{value}</p>
     </div>
@@ -47,7 +47,7 @@ function AdminDashboardPage() {
         Visão consolidada da plataforma no período corrente.
       </p>
 
-      <div className="mt-6 grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-6">
+      <div className="mt-6 grid gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6">
         <Card label="Total de clientes" value={data.totalEmpresas} />
         <Card label="Ativos" value={data.activeEmpresas} accent="text-emerald-600" />
         <Card label="Em teste" value={data.trialEmpresas} accent="text-sky-600" />
@@ -57,7 +57,7 @@ function AdminDashboardPage() {
       </div>
 
       <div className="mt-8 grid gap-6 lg:grid-cols-2">
-        <section className="rounded-xl border border-slate-200 bg-white p-5">
+        <section className="min-w-0 rounded-xl border border-slate-200 bg-white p-4 sm:p-5">
           <h2 className="font-semibold">Clientes que exigem atenção</h2>
           <p className="mb-3 text-xs text-slate-500">Suspensos e cancelados recentemente.</p>
           {data.attentionEmpresas.length === 0 ? (
@@ -65,15 +65,15 @@ function AdminDashboardPage() {
           ) : (
             <ul className="divide-y divide-slate-100">
               {data.attentionEmpresas.map((empresa) => (
-                <li key={empresa.empresaId} className="flex items-center justify-between py-2.5">
+                <li key={empresa.empresaId} className="flex flex-col gap-2 py-3 sm:flex-row sm:items-center sm:justify-between">
                   <Link
                     to="/admin/empresas/$empresaId"
                     params={{ empresaId: empresa.empresaId }}
-                    className="text-sm font-medium text-primary hover:underline"
+                    className="break-words text-sm font-medium text-primary hover:underline"
                   >
                     {empresa.name}
                   </Link>
-                  <div className="flex items-center gap-3">
+                  <div className="flex flex-wrap items-center gap-2 sm:justify-end">
                     <span className="text-xs text-slate-500">{planLabel(empresa.commercialPlanType)}</span>
                     <StatusBadge status={empresa.status} />
                   </div>
@@ -83,7 +83,7 @@ function AdminDashboardPage() {
           )}
         </section>
 
-        <section className="rounded-xl border border-slate-200 bg-white p-5">
+        <section className="min-w-0 rounded-xl border border-slate-200 bg-white p-4 sm:p-5">
           <h2 className="font-semibold">Clientes com maior uso</h2>
           <p className="mb-3 text-xs text-slate-500">Avaliações concluídas no período.</p>
           {data.topUsageEmpresas.length === 0 ? (
@@ -91,15 +91,15 @@ function AdminDashboardPage() {
           ) : (
             <ul className="divide-y divide-slate-100">
               {data.topUsageEmpresas.map((empresa) => (
-                <li key={empresa.empresaId} className="flex items-center justify-between py-2.5">
+                <li key={empresa.empresaId} className="flex items-start justify-between gap-3 py-3 sm:items-center">
                   <Link
                     to="/admin/empresas/$empresaId"
                     params={{ empresaId: empresa.empresaId }}
-                    className="text-sm font-medium text-primary hover:underline"
+                    className="min-w-0 break-words text-sm font-medium text-primary hover:underline"
                   >
                     {empresa.name}
                   </Link>
-                  <span className="text-sm font-semibold">{empresa.completedAttempts}</span>
+                  <span className="shrink-0 text-sm font-semibold">{empresa.completedAttempts}</span>
                 </li>
               ))}
             </ul>
@@ -107,22 +107,22 @@ function AdminDashboardPage() {
         </section>
       </div>
 
-      <section className="mt-6 rounded-xl border border-slate-200 bg-white p-5">
+      <section className="mt-6 min-w-0 rounded-xl border border-slate-200 bg-white p-4 sm:p-5">
         <h2 className="font-semibold">Clientes criados recentemente</h2>
         {data.recentEmpresas.length === 0 ? (
           <p className="mt-3 text-sm text-slate-500">Nenhum cliente cadastrado ainda.</p>
         ) : (
           <ul className="mt-3 divide-y divide-slate-100">
             {data.recentEmpresas.map((empresa) => (
-              <li key={empresa.empresaId} className="flex items-center justify-between py-2.5">
+              <li key={empresa.empresaId} className="flex flex-col gap-2 py-3 sm:flex-row sm:items-center sm:justify-between">
                 <Link
                   to="/admin/empresas/$empresaId"
                   params={{ empresaId: empresa.empresaId }}
-                  className="text-sm font-medium text-primary hover:underline"
+                  className="break-words text-sm font-medium text-primary hover:underline"
                 >
                   {empresa.name}
                 </Link>
-                <div className="flex items-center gap-3 text-xs text-slate-500">
+                <div className="flex flex-wrap items-center gap-2 text-xs text-slate-500 sm:justify-end">
                   <span>{planLabel(empresa.commercialPlanType)}</span>
                   <StatusBadge status={empresa.status} />
                 </div>
