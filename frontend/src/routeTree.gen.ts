@@ -13,7 +13,9 @@ import { Route as TeamRouteImport } from './routes/team'
 import { Route as TalentMatchRouteImport } from './routes/talent-match'
 import { Route as ResultsRouteImport } from './routes/results'
 import { Route as RecuperarSenhaRouteImport } from './routes/recuperar-senha'
+import { Route as NotificationsRouteImport } from './routes/notifications'
 import { Route as MonitoramentoRouteImport } from './routes/monitoramento'
+import { Route as LoginRouteImport } from './routes/login'
 import { Route as JornadasRouteImport } from './routes/jornadas'
 import { Route as IntegrationsRouteImport } from './routes/integrations'
 import { Route as EnviarLinkRouteImport } from './routes/enviar-link'
@@ -78,9 +80,19 @@ const RecuperarSenhaRoute = RecuperarSenhaRouteImport.update({
   path: '/recuperar-senha',
   getParentRoute: () => rootRouteImport,
 } as any)
+const NotificationsRoute = NotificationsRouteImport.update({
+  id: '/notifications',
+  path: '/notifications',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const MonitoramentoRoute = MonitoramentoRouteImport.update({
   id: '/monitoramento',
   path: '/monitoramento',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LoginRoute = LoginRouteImport.update({
+  id: '/login',
+  path: '/login',
   getParentRoute: () => rootRouteImport,
 } as any)
 const JornadasRoute = JornadasRouteImport.update({
@@ -314,7 +326,9 @@ export interface FileRoutesByFullPath {
   '/enviar-link': typeof EnviarLinkRoute
   '/integrations': typeof IntegrationsRouteWithChildren
   '/jornadas': typeof JornadasRoute
+  '/login': typeof LoginRoute
   '/monitoramento': typeof MonitoramentoRoute
+  '/notifications': typeof NotificationsRoute
   '/recuperar-senha': typeof RecuperarSenhaRoute
   '/results': typeof ResultsRouteWithChildren
   '/talent-match': typeof TalentMatchRoute
@@ -364,7 +378,9 @@ export interface FileRoutesByTo {
   '/enviar-link': typeof EnviarLinkRoute
   '/integrations': typeof IntegrationsRouteWithChildren
   '/jornadas': typeof JornadasRoute
+  '/login': typeof LoginRoute
   '/monitoramento': typeof MonitoramentoRoute
+  '/notifications': typeof NotificationsRoute
   '/recuperar-senha': typeof RecuperarSenhaRoute
   '/results': typeof ResultsRouteWithChildren
   '/talent-match': typeof TalentMatchRoute
@@ -415,7 +431,9 @@ export interface FileRoutesById {
   '/enviar-link': typeof EnviarLinkRoute
   '/integrations': typeof IntegrationsRouteWithChildren
   '/jornadas': typeof JornadasRoute
+  '/login': typeof LoginRoute
   '/monitoramento': typeof MonitoramentoRoute
+  '/notifications': typeof NotificationsRoute
   '/recuperar-senha': typeof RecuperarSenhaRoute
   '/results': typeof ResultsRouteWithChildren
   '/talent-match': typeof TalentMatchRoute
@@ -467,7 +485,9 @@ export interface FileRouteTypes {
     | '/enviar-link'
     | '/integrations'
     | '/jornadas'
+    | '/login'
     | '/monitoramento'
+    | '/notifications'
     | '/recuperar-senha'
     | '/results'
     | '/talent-match'
@@ -517,7 +537,9 @@ export interface FileRouteTypes {
     | '/enviar-link'
     | '/integrations'
     | '/jornadas'
+    | '/login'
     | '/monitoramento'
+    | '/notifications'
     | '/recuperar-senha'
     | '/results'
     | '/talent-match'
@@ -567,7 +589,9 @@ export interface FileRouteTypes {
     | '/enviar-link'
     | '/integrations'
     | '/jornadas'
+    | '/login'
     | '/monitoramento'
+    | '/notifications'
     | '/recuperar-senha'
     | '/results'
     | '/talent-match'
@@ -618,7 +642,9 @@ export interface RootRouteChildren {
   EnviarLinkRoute: typeof EnviarLinkRoute
   IntegrationsRoute: typeof IntegrationsRouteWithChildren
   JornadasRoute: typeof JornadasRoute
+  LoginRoute: typeof LoginRoute
   MonitoramentoRoute: typeof MonitoramentoRoute
+  NotificationsRoute: typeof NotificationsRoute
   RecuperarSenhaRoute: typeof RecuperarSenhaRoute
   ResultsRoute: typeof ResultsRouteWithChildren
   TalentMatchRoute: typeof TalentMatchRoute
@@ -679,11 +705,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof RecuperarSenhaRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/notifications': {
+      id: '/notifications'
+      path: '/notifications'
+      fullPath: '/notifications'
+      preLoaderRoute: typeof NotificationsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/monitoramento': {
       id: '/monitoramento'
       path: '/monitoramento'
       fullPath: '/monitoramento'
       preLoaderRoute: typeof MonitoramentoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/login': {
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/jornadas': {
@@ -1056,7 +1096,9 @@ const rootRouteChildren: RootRouteChildren = {
   EnviarLinkRoute: EnviarLinkRoute,
   IntegrationsRoute: IntegrationsRouteWithChildren,
   JornadasRoute: JornadasRoute,
+  LoginRoute: LoginRoute,
   MonitoramentoRoute: MonitoramentoRoute,
+  NotificationsRoute: NotificationsRoute,
   RecuperarSenhaRoute: RecuperarSenhaRoute,
   ResultsRoute: ResultsRouteWithChildren,
   TalentMatchRoute: TalentMatchRoute,
