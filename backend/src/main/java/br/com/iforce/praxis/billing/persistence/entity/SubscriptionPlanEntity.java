@@ -1,37 +1,24 @@
 package br.com.iforce.praxis.billing.persistence.entity;
 
 import br.com.iforce.praxis.admin.model.CommercialPlanType;
-
 import jakarta.persistence.Column;
-
 import jakarta.persistence.Entity;
-
 import jakarta.persistence.EnumType;
-
 import jakarta.persistence.Enumerated;
-
 import jakarta.persistence.GeneratedValue;
-
 import jakarta.persistence.GenerationType;
-
 import jakarta.persistence.Id;
-
 import jakarta.persistence.Table;
-
 import lombok.Getter;
-
 import lombok.NoArgsConstructor;
-
 import lombok.Setter;
-
 
 import java.time.Instant;
 
-
 /**
- * Plano real de cobrança da Parte B. Representa tanto pacotes de crédito (AVULSO, com
- * {@code creditAmount}) quanto a assinatura recorrente (PROFISSIONAL). ENTERPRISE é contrato
- * manual e normalmente não usa esta entidade.
+ * Plano comercial real. AVULSO representa crédito pré-pago; PROFISSIONAL representa
+ * assinatura recorrente. A periodicidade é mantida no próprio plano para que preço,
+ * checkout e comunicação comercial usem a mesma regra.
  */
 @Getter
 @Setter
@@ -61,11 +48,18 @@ public class SubscriptionPlanEntity {
     @Column(name = "currency", nullable = false, length = 8)
     private String currency = "BRL";
 
-    /** Quantidade de créditos concedidos por compra (apenas AVULSO). */
+    /** Quantidade de créditos concedidos por compra (somente AVULSO). */
     @Column(name = "credit_amount")
     private Integer creditAmount;
 
-    /** Identificador do plano de preapproval no Mercado Pago, quando aplicável. */
+    /**
+     * Intervalo de recorrência em meses. Para planos avulsos não há cobrança recorrente;
+     * o valor padrão de 1 preserva compatibilidade com registros históricos.
+     */
+    @Column(name = "billing_interval_months", nullable = false)
+    private int billingIntervalMonths = 1;
+
+    /** Identificador opcional do plano de preapproval no Mercado Pago. */
     @Column(name = "mp_preapproval_plan_id", length = 120)
     private String mpPreapprovalPlanId;
 
