@@ -177,12 +177,28 @@ class CreditServiceTest {
     }
 
     @Test
-    void consumeIsNoOpForNonAvulso() {
-        when(empresaRepository.findById("t1")).thenReturn(Optional.of(empresa(CommercialPlanType.PROFISSIONAL, EmpresaStatus.ATIVO)));
+    void consumeIsNoOpForEnterprise() {
+        when(empresaRepository.findById("t1")).thenReturn(Optional.of(empresa(CommercialPlanType.ENTERPRISE, EmpresaStatus.ATIVO)));
 
         service.consumeOnCompletion("t1", "att1");
 
         verify(ledgerRepository, never()).save(any());
+    }
+
+    @Test
+    void consumeDecrementsProfissionalPool() {
+        EmpresaEntity empresa = empresa(CommercialPlanType.PROFISSIONAL, EmpresaStatus.ATIVO);
+        when(empresaRepository.findById("t1")).thenReturn(Optional.of(empresa));
+        when(ledgerRepository.existsByAttemptIdAndReason("att1", CreditLedgerReason.CONSUMPTION)).thenReturn(false);
+        when(balanceRepository.findByEmpresaIdForUpdate("t1")).thenReturn(Optional.of(balance(360)));
+
+        service.consumeOnCompletion("t1", "att1");
+
+        ArgumentCaptor<EmpresaCreditLedgerEntity> ledger = ArgumentCaptor.forClass(EmpresaCreditLedgerEntity.class);
+        verify(ledgerRepository).save(ledger.capture());
+        assertThat(ledger.getValue().getDelta()).isEqualTo(-1);
+        assertThat(ledger.getValue().getBalanceAfter()).isEqualTo(359);
+        assertThat(empresa.getStatus()).isEqualTo(EmpresaStatus.ATIVO);
     }
 
     @Test
@@ -217,11 +233,21 @@ class CreditServiceTest {
     }
 
     @Test
-    void assertCanStartAllowsNonAvulsoAlways() {
-        when(empresaRepository.findById("t1")).thenReturn(Optional.of(empresa(CommercialPlanType.PROFISSIONAL, EmpresaStatus.ATIVO)));
+    void assertCanStartAllowsEnterpriseAlways() {
+        when(empresaRepository.findById("t1")).thenReturn(Optional.of(empresa(CommercialPlanType.ENTERPRISE, EmpresaStatus.ATIVO)));
 
         service.assertCanStartNewAttempt("t1");
         verify(balanceRepository, never()).findByEmpresaIdForUpdate(anyString());
+    }
+
+    @Test
+    void assertCanStartBlocksProfissionalWithExhaustedPool() {
+        when(empresaRepository.findById("t1")).thenReturn(Optional.of(empresa(CommercialPlanType.PROFISSIONAL, EmpresaStatus.ATIVO)));
+        when(balanceRepository.findByEmpresaIdForUpdate("t1")).thenReturn(Optional.of(balance(0)));
+        when(candidateAttemptRepository.countByEmpresaIdAndStatusIn(eq("t1"), any())).thenReturn(0L);
+
+        assertThatThrownBy(() -> service.assertCanStartNewAttempt("t1"))
+                .isInstanceOf(ResponseStatusException.class);
     }
 
     @Test
@@ -302,9 +328,9 @@ class CreditServiceTest {
     }
 
     @Test
-    void consumeDoesNotPublishForNonAvulso() {
+    void consumeDoesNotPublishForEnterprise() {
         when(empresaRepository.findById("t1"))
-                .thenReturn(Optional.of(empresa(CommercialPlanType.PROFISSIONAL, EmpresaStatus.ATIVO)));
+                .thenReturn(Optional.of(empresa(CommercialPlanType.ENTERPRISE, EmpresaStatus.ATIVO)));
 
         service.consumeOnCompletion("t1", "att1");
 

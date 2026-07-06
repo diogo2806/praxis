@@ -48,7 +48,11 @@ public class SubscriptionPlanEntity {
     @Column(name = "currency", nullable = false, length = 8)
     private String currency = "BRL";
 
-    /** Quantidade de créditos concedidos por compra (somente AVULSO). */
+    /**
+     * Quantidade de créditos concedidos por cobrança confirmada: no AVULSO é o tamanho do pacote
+     * comprado; no PROFISSIONAL é o volume do ciclo (a cota do mês no plano mensal, o pool do ano
+     * inteiro no plano anual).
+     */
     @Column(name = "credit_amount")
     private Integer creditAmount;
 
