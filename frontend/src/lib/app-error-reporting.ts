@@ -1,5 +1,16 @@
 import "../components/demo-request-dialog";
 
+if (typeof window !== "undefined") {
+  const nativeFetch = window.fetch.bind(window);
+  window.fetch = (input, init) => {
+    const url = typeof input === "string" ? input : input instanceof URL ? input.toString() : input.url;
+    if (url === "/api/public/demo-requests") {
+      return nativeFetch("/candidate/demo-requests", init);
+    }
+    return nativeFetch(input, init);
+  };
+}
+
 type ErrorReportOptions = {
   mechanism?: "manual" | "onerror" | "unhandledrejection" | "react_error_boundary";
   handled?: boolean;
