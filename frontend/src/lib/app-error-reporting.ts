@@ -1,3 +1,5 @@
+import "../components/demo-request-dialog";
+
 type ErrorReportOptions = {
   mechanism?: "manual" | "onerror" | "unhandledrejection" | "react_error_boundary";
   handled?: boolean;
