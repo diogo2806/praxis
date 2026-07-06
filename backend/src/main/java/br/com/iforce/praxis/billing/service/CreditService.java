@@ -41,11 +41,14 @@ import java.util.List;
 
 
 /**
- * Carteira de créditos do plano pré-pago (AVULSO) — controla quanto o cliente ainda pode gastar.
+ * Carteira de créditos dos planos medidos (AVULSO e PROFISSIONAL) — controla quanto o cliente
+ * ainda pode gastar.
  *
- * <p>Na visão do processo, pense num cartão pré-pago: o cliente compra créditos e cada avaliação
- * concluída "consome" um deles. Este serviço é quem soma os créditos comprados, debita os
- * consumidos e impede que o cliente comece novas avaliações quando o saldo zera.</p>
+ * <p>Na visão do processo, pense num cartão pré-pago: o cliente ganha créditos (comprando pacotes
+ * no AVULSO, ou a cada ciclo pago da assinatura no PROFISSIONAL — o plano anual credita o pool do
+ * ano inteiro de uma vez) e cada avaliação concluída "consome" um deles. Este serviço é quem soma
+ * os créditos recebidos, debita os consumidos e impede que o cliente comece novas avaliações
+ * quando o saldo zera. Créditos não expiram: o que não for usado permanece no saldo.</p>
  *
  * <p><b>Regra de ouro:</b> o saldo NUNCA muda sem deixar rastro. Toda alteração vem acompanhada de
  * um lançamento no "extrato" (o ledger {@code empresa_credit_ledger}), que só acrescenta linhas e
@@ -144,7 +147,7 @@ public class CreditService {
      * Debita 1 crédito quando uma avaliação é concluída.
      *
      * <p>Fluxo do processo: assim que um candidato termina uma avaliação, o cliente que a aplicou
-     * "paga" por ela com 1 crédito. A cobrança vale apenas para clientes do plano pré-pago (AVULSO)
+     * "paga" por ela com 1 crédito. A cobrança vale para os planos medidos (AVULSO e PROFISSIONAL)
      * e é idempotente por tentativa — se o mesmo término for processado duas vezes, o crédito é
      * debitado uma vez só. Se o cliente já estiver sem saldo, nada é debitado (o saldo nunca fica
      * negativo) e ele é marcado como {@code SEM_CREDITO}. Ao zerar com este débito, também passa a
@@ -156,7 +159,7 @@ public class CreditService {
     @Transactional
     public void consumeOnCompletion(String empresaId, String attemptId) {
         EmpresaEntity empresa = empresaRepository.findById(empresaId).orElse(null);
-        if (empresa == null || empresa.getCommercialPlanType() != CommercialPlanType.AVULSO) {
+        if (empresa == null || !isMetered(empresa.getCommercialPlanType())) {
             return;
         }
         // Trava o saldo ANTES de checar idempotencia. O lock serializa duas conclusoes
@@ -191,9 +194,9 @@ public class CreditService {
      * Verifica, antes de começar, se o cliente pode iniciar mais uma avaliação.
      *
      * <p>Fluxo do processo: é o "porteiro" do consumo. Antes de uma nova avaliação começar, o
-     * sistema confere se o cliente pré-pago (AVULSO) ainda tem saldo; se estiver zerado, a criação
-     * é barrada com um aviso de que faltam créditos. Para clientes de outros planos, não há bloqueio
-     * aqui.</p>
+     * sistema confere se o cliente de plano medido (AVULSO ou PROFISSIONAL) ainda tem saldo; se
+     * estiver zerado, a criação é barrada com um aviso de que faltam créditos. Para clientes
+     * ENTERPRISE (contrato manual), não há bloqueio aqui.</p>
      *
      * <p><b>Reserva por tentativa em andamento:</b> cada tentativa ainda não concluída (não
      * iniciada, em andamento ou pausada) reserva 1 crédito. O débito continua ocorrendo só na
@@ -211,7 +214,7 @@ public class CreditService {
     @Transactional
     public void assertCanStartNewAttempt(String empresaId) {
         EmpresaEntity empresa = empresaRepository.findById(empresaId).orElse(null);
-        if (empresa == null || empresa.getCommercialPlanType() != CommercialPlanType.AVULSO) {
+        if (empresa == null || !isMetered(empresa.getCommercialPlanType())) {
             return;
         }
         int balance = lockOrCreateBalance(empresaId).getBalance();
@@ -224,6 +227,15 @@ public class CreditService {
                     "Créditos insuficientes: já há " + activeReserved
                             + " avaliação(ões) em andamento para o saldo disponível (" + balance + ").");
         }
+    }
+
+    /**
+     * Planos cujo consumo é medido em créditos: AVULSO (pacotes pré-pagos) e PROFISSIONAL (cota
+     * creditada a cada ciclo pago da assinatura). ENTERPRISE segue contrato manual, sem medição
+     * aqui. Uso interno.
+     */
+    private static boolean isMetered(CommercialPlanType planType) {
+        return planType == CommercialPlanType.AVULSO || planType == CommercialPlanType.PROFISSIONAL;
     }
 
     /**

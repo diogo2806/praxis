@@ -177,14 +177,19 @@ class BillingServiceTest {
     }
 
     @Test
-    void approvedSubscriptionPaymentReactivatesEmpresa() throws Exception {
+    void approvedSubscriptionPaymentReactivatesEmpresaAndGrantsMonthlyQuota() throws Exception {
         var payment = objectMapper.readTree(
                 "{\"status\":\"approved\",\"external_reference\":\"sub:t1:9:abc\",\"transaction_amount\":299.0}");
         when(mercadoPagoClient.getPayment("pay9")).thenReturn(payment);
         when(eventRepository.existsByMpResourceIdAndEventType("pay9", BillingEventType.SUBSCRIPTION_PAYMENT_APPROVED))
                 .thenReturn(false);
+        SubscriptionPlanEntity plan = plan(CommercialPlanType.PROFISSIONAL, 30);
+        plan.setId(9L);
+        plan.setBillingIntervalMonths(1);
+        when(planRepository.findById(9L)).thenReturn(Optional.of(plan));
         EmpresaSubscriptionEntity subscription = new EmpresaSubscriptionEntity();
         subscription.setEmpresaId("t1");
+        subscription.setPlanId(9L);
         subscription.setStatus(SubscriptionStatus.PENDING);
         when(subscriptionRepository.findFirstByEmpresaIdOrderByCreatedAtDesc("t1"))
                 .thenReturn(Optional.of(subscription));
@@ -198,6 +203,42 @@ class BillingServiceTest {
         assertThat(subscription.getStatus()).isEqualTo(SubscriptionStatus.AUTHORIZED);
         assertThat(subscription.getLastPaymentAt()).isNotNull();
         assertThat(empresa.getStatus()).isEqualTo(EmpresaStatus.ATIVO);
+        // A mensalidade aprovada credita a cota do mês no saldo do cliente.
+        verify(creditService).addCredits(eq("t1"), eq(30), anyLong(), anyString());
+        // O período vigente é estendido por 1 mês (~30 dias, nunca chega perto de 1 ano).
+        assertThat(subscription.getCurrentPeriodEnd())
+                .isBefore(java.time.Instant.now().plus(45, java.time.temporal.ChronoUnit.DAYS));
+    }
+
+    @Test
+    void approvedAnnualSubscriptionPaymentGrantsFullYearPool() throws Exception {
+        var payment = objectMapper.readTree(
+                "{\"status\":\"approved\",\"external_reference\":\"sub:t1:9:abc\",\"transaction_amount\":17787.6}");
+        when(mercadoPagoClient.getPayment("pay9")).thenReturn(payment);
+        when(eventRepository.existsByMpResourceIdAndEventType("pay9", BillingEventType.SUBSCRIPTION_PAYMENT_APPROVED))
+                .thenReturn(false);
+        SubscriptionPlanEntity plan = plan(CommercialPlanType.PROFISSIONAL, 360);
+        plan.setId(9L);
+        plan.setBillingIntervalMonths(12);
+        when(planRepository.findById(9L)).thenReturn(Optional.of(plan));
+        EmpresaSubscriptionEntity subscription = new EmpresaSubscriptionEntity();
+        subscription.setEmpresaId("t1");
+        subscription.setPlanId(9L);
+        subscription.setStatus(SubscriptionStatus.PENDING);
+        when(subscriptionRepository.findFirstByEmpresaIdOrderByCreatedAtDesc("t1"))
+                .thenReturn(Optional.of(subscription));
+        EmpresaEntity empresa = new EmpresaEntity();
+        empresa.setId("t1");
+        empresa.setStatus(EmpresaStatus.PENDENTE_PAGAMENTO);
+        when(empresaRepository.findById("t1")).thenReturn(Optional.of(empresa));
+
+        service.processPaymentNotification("pay9", "req-9");
+
+        // O pagamento anual credita o pool do ano inteiro de uma vez...
+        verify(creditService).addCredits(eq("t1"), eq(360), anyLong(), anyString());
+        // ...e o período vigente é estendido por 12 meses.
+        assertThat(subscription.getCurrentPeriodEnd())
+                .isAfter(java.time.Instant.now().plus(300, java.time.temporal.ChronoUnit.DAYS));
     }
 
     @Test

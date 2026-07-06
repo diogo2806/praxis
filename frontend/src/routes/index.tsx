@@ -987,7 +987,7 @@ turno-3 ▸ <span class="ok">C</span>  +2 Comunicação
           <button id="cycMonthly" class="cyc on" aria-pressed="true">Mensal</button>
           <button id="cycAnnual" class="cyc" aria-pressed="false">Anual <span class="cyc-tag">até 20% OFF</span></button>
         </div>
-        <p class="cycle-hint">No ciclo anual, o Profissional tem desconto de 10%, 15% ou 20% conforme a faixa, cobrado em um único ciclo de 12 meses.</p>
+        <p class="cycle-hint">No ciclo anual, o Profissional tem desconto de 10%, 15% ou 20% conforme a faixa — e o pool do ano inteiro entra de uma vez, para usar no seu ritmo.</p>
       </div>
 
       <div class="plans">
@@ -1010,15 +1010,15 @@ turno-3 ▸ <span class="ok">C</span>  +2 Comunicação
 
           <table class="tiers" aria-label="Pacotes por volume">
             <thead>
-              <tr><th>Avaliações/mês</th><th class="r">Cada</th><th class="r" id="thTotal">Total/mês</th></tr>
+              <tr><th id="thQty">Avaliações/mês</th><th class="r">Cada</th><th class="r" id="thTotal">Total/mês</th></tr>
             </thead>
             <tbody>
-              <tr data-monthly-unit="54,90" data-monthly-total="1.647,00" data-annual-unit="49,41" data-annual-total="17.787,60" data-off="10"><td>30</td><td class="u">R$ 54,90</td><td class="t">R$ 1.647,00</td></tr>
-              <tr data-monthly-unit="49,90" data-monthly-total="2.994,00" data-annual-unit="42,42" data-annual-total="30.538,80" data-off="15"><td>60</td><td class="u">R$ 49,90</td><td class="t">R$ 2.994,00</td></tr>
-              <tr data-monthly-unit="44,90" data-monthly-total="4.490,00" data-annual-unit="35,92" data-annual-total="43.104,00" data-off="20"><td>100</td><td class="u">R$ 44,90</td><td class="t">R$ 4.490,00</td></tr>
+              <tr data-monthly-qty="30" data-annual-pool="360" data-monthly-unit="54,90" data-monthly-total="1.647,00" data-annual-unit="49,41" data-annual-total="17.787,60" data-off="10"><td class="q">30</td><td class="u">R$ 54,90</td><td class="t">R$ 1.647,00</td></tr>
+              <tr data-monthly-qty="60" data-annual-pool="720" data-monthly-unit="49,90" data-monthly-total="2.994,00" data-annual-unit="42,42" data-annual-total="30.538,80" data-off="15"><td class="q">60</td><td class="u">R$ 49,90</td><td class="t">R$ 2.994,00</td></tr>
+              <tr data-monthly-qty="100" data-annual-pool="1.200" data-monthly-unit="44,90" data-monthly-total="4.490,00" data-annual-unit="35,92" data-annual-total="43.104,00" data-off="20"><td class="q">100</td><td class="u">R$ 44,90</td><td class="t">R$ 4.490,00</td></tr>
             </tbody>
           </table>
-          <p class="tier-note" id="tierNote">As avaliações inclusas renovam a cada mês. Precisa de mais volume? Veja o Enterprise.</p>
+          <p class="tier-note" id="tierNote">A cota entra no seu saldo a cada mensalidade paga — e o que não usar acumula enquanto a assinatura estiver ativa.</p>
 
           <a class="btn btn-primary" href="/billing">Contratar Profissional <span class="btn-arrow">→</span></a>
         </div>
@@ -1063,7 +1063,7 @@ turno-3 ▸ <span class="ok">C</span>  +2 Comunicação
         </div>
         <div class="qa">
           <button aria-expanded="false"><span class="q">Como funciona a contratação?</span><span class="ic"></span></button>
-          <div class="ans"><p>Há planos com preço aberto para uso avulso e para volumes recorrentes no Profissional, em ciclo mensal ou anual — o anual é cobrado de uma vez, com desconto de 10%, 15% ou 20% conforme a faixa. Operações Enterprise, integrações, suporte específico e condições contratuais ficam sob consulta conforme volume e escopo.</p></div>
+          <div class="ans"><p>Há planos com preço aberto para uso avulso e para volumes recorrentes no Profissional, em ciclo mensal ou anual. O anual é cobrado de uma vez e libera o pool do ano inteiro de uma só vez (360, 720 ou 1.200 avaliações), com desconto de 10%, 15% ou 20% conforme a faixa; no mensal, a cota entra a cada mensalidade e o que não for usado acumula enquanto a assinatura estiver ativa. Operações Enterprise, integrações, suporte específico e condições contratuais ficam sob consulta conforme volume e escopo.</p></div>
         </div>
         <div class="qa">
           <button aria-expanded="false"><span class="q">Quanto tempo leva para colocar no ar?</span><span class="ic"></span></button>
@@ -1152,13 +1152,18 @@ function LandingPage() {
 
     // Valores mensais e anuais espelham os planos cadastrados no módulo de cobrança
     // (Profissional mensal e anual, com desconto de 10%, 15% e 20% por faixa).
+    const qtyHeader = document.getElementById("thQty");
     const applyCycle = (annual: boolean) => {
       if (totalHeader) totalHeader.textContent = annual ? "Total/ano" : "Total/mês";
+      if (qtyHeader) qtyHeader.textContent = annual ? "Pool anual" : "Avaliações/mês";
       tierRows.forEach((row) => {
+        const qty = annual ? row.dataset.annualPool : row.dataset.monthlyQty;
         const unit = annual ? row.dataset.annualUnit : row.dataset.monthlyUnit;
         const total = annual ? row.dataset.annualTotal : row.dataset.monthlyTotal;
+        const qtyCell = row.querySelector<HTMLElement>(".q");
         const unitCell = row.querySelector<HTMLElement>(".u");
         const totalCell = row.querySelector<HTMLElement>(".t");
+        if (qtyCell) qtyCell.textContent = qty ?? "";
         if (unitCell) {
           unitCell.innerHTML =
             "R$ " + unit + (annual ? ' <span class="tier-off">' + row.dataset.off + "% OFF</span>" : "");
@@ -1167,8 +1172,8 @@ function LandingPage() {
       });
       if (tierNote) {
         tierNote.textContent = annual
-          ? "Cobrança única para 12 meses, já com o desconto da faixa. O valor por avaliação é aproximado; o total anual é o valor cobrado."
-          : "As avaliações inclusas renovam a cada mês. Precisa de mais volume? Veja o Enterprise.";
+          ? "Cobrança única para 12 meses: o pool do ano inteiro entra de uma vez no seu saldo, já com o desconto da faixa, para usar no seu ritmo."
+          : "A cota entra no seu saldo a cada mensalidade paga — e o que não usar acumula enquanto a assinatura estiver ativa.";
       }
       monthlyButton?.classList.toggle("on", !annual);
       annualButton?.classList.toggle("on", annual);

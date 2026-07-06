@@ -55,9 +55,13 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.time.Instant;
 
+import java.time.ZoneOffset;
+
 import java.time.temporal.ChronoUnit;
 
 import java.util.List;
+
+import java.util.Optional;
 
 import java.util.UUID;
 
@@ -278,9 +282,10 @@ public class BillingService {
                 if (eventRepository.existsByMpResourceIdAndEventType(paymentId, BillingEventType.SUBSCRIPTION_PAYMENT_APPROVED)) {
                     return;
                 }
-                recordEvent(empresaId, BillingEventType.SUBSCRIPTION_PAYMENT_APPROVED, "payment", paymentId,
-                        externalReference, status, amountCents, "BRL", requestId, payment);
+                EmpresaBillingEventEntity event = recordEvent(empresaId, BillingEventType.SUBSCRIPTION_PAYMENT_APPROVED,
+                        "payment", paymentId, externalReference, status, amountCents, "BRL", requestId, payment);
                 markSubscriptionPaid(empresaId);
+                grantSubscriptionCredits(empresaId, planId, event.getId(), paymentId);
             }
         } else if ("rejected".equals(status) || "cancelled".equals(status)) {
             if (KIND_SUB.equals(kind)) {
@@ -437,17 +442,43 @@ public class BillingService {
 
     /**
      * Marca a assinatura do cliente como paga e em dia: registra o pagamento, estende o período
-     * vigente por 30 dias, limpa qualquer carência e reativa o acesso. Uso interno.
+     * vigente pela duração do ciclo do plano (1 mês na assinatura mensal, 12 meses na anual),
+     * limpa qualquer carência e reativa o acesso. Uso interno.
      */
     private void markSubscriptionPaid(String empresaId) {
         subscriptionRepository.findFirstByEmpresaIdOrderByCreatedAtDesc(empresaId).ifPresent(subscription -> {
+            int intervalMonths = Optional.ofNullable(subscription.getPlanId())
+                    .flatMap(planRepository::findById)
+                    .map(SubscriptionPlanEntity::getBillingIntervalMonths)
+                    .orElse(1);
             subscription.setStatus(SubscriptionStatus.AUTHORIZED);
             subscription.setLastPaymentAt(Instant.now());
-            subscription.setCurrentPeriodEnd(Instant.now().plus(30, ChronoUnit.DAYS));
+            subscription.setCurrentPeriodEnd(
+                    Instant.now().atOffset(ZoneOffset.UTC).plusMonths(intervalMonths).toInstant());
             subscription.setGraceUntil(null);
             subscription.setUpdatedAt(Instant.now());
         });
         activateEmpresa(empresaId);
+    }
+
+    /**
+     * Credita no saldo do cliente o volume de avaliações incluído no ciclo pago da assinatura
+     * PROFISSIONAL: o plano mensal credita a cota do mês a cada mensalidade aprovada; o plano
+     * anual credita o pool do ano inteiro de uma só vez. A idempotência por pagamento é garantida
+     * pelo registro único de {@code SUBSCRIPTION_PAYMENT_APPROVED} feito antes da chamada. Planos
+     * sem volume configurado não creditam nada. Uso interno.
+     */
+    private void grantSubscriptionCredits(String empresaId, Long planId, Long billingEventId, String paymentId) {
+        if (planId == null) {
+            return;
+        }
+        planRepository.findById(planId).ifPresent(plan -> {
+            if (plan.getCreditAmount() == null || plan.getCreditAmount() <= 0) {
+                return;
+            }
+            creditService.addCredits(empresaId, plan.getCreditAmount(), billingEventId,
+                    "Créditos do ciclo da assinatura (pagamento " + paymentId + ")");
+        });
     }
 
     /**
