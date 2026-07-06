@@ -1,13 +1,9 @@
 package br.com.iforce.praxis.audit.model;
 
 import br.com.iforce.praxis.shared.model.DescribedEnum;
-
 import br.com.iforce.praxis.shared.model.DescribedEnums;
-
 import com.fasterxml.jackson.annotation.JsonCreator;
-
 import com.fasterxml.jackson.annotation.JsonValue;
-
 
 public enum AuditEventType implements DescribedEnum {
 
@@ -19,7 +15,8 @@ public enum AuditEventType implements DescribedEnum {
     ATTEMPT_COMPLETED("attemptCompleted"),
     ATTEMPT_ANONYMIZED("attemptAnonymized"),
     SIMULATION_VERSION_DRAFT_CREATED("simulationVersionDraftCreated"),
-    SIMULATION_VERSION_BLUEPRINT_UPDATED("simulationVersionBlueprintUpdated"),
+    /** Estrutura e critérios da avaliação atualizados. */
+    SIMULATION_VERSION_BLUEPRINT_UPDATED("simulationVersionAssessmentUpdated"),
     SIMULATION_NODE_ADDED("simulationNodeAdded"),
     SIMULATION_NODE_UPDATED("simulationNodeUpdated"),
     SIMULATION_NODE_DELETED("simulationNodeDeleted"),
@@ -91,6 +88,9 @@ public enum AuditEventType implements DescribedEnum {
 
     @JsonCreator
     public static AuditEventType fromString(String valor) {
+        if ("simulationVersionBlueprintUpdated".equals(valor)) {
+            return SIMULATION_VERSION_BLUEPRINT_UPDATED;
+        }
         return DescribedEnums.fromValue(AuditEventType.class, valor);
     }
 }
