@@ -33,6 +33,15 @@ jobs:
       - name: Build & test (verify)
         run: mvn -B -ntp verify
 
+      - name: Upload test reports on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-surefire-reports
+          path: backend/target/surefire-reports
+          if-no-files-found: warn
+          retention-days: 7
+
   frontend-build:
     name: Frontend — typecheck & build
     runs-on: ubuntu-latest
