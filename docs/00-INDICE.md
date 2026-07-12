@@ -1,93 +1,85 @@
-# Indice de Documentacao - Praxis
+# Índice de Documentação — Praxis
 
-> Trilha para entender o produto, rodar o projeto e aprofundar nos contratos tecnicos.
+> Trilha para entender o produto, executar o projeto e consultar contratos técnicos sem confundir implementação local com homologação externa.
 
 ## Comece aqui
 
-1. [README principal](../README.md) - visao do sistema, arquitetura, execucao local, variaveis e fluxos.
-2. [Mapa Frontend-Backend](frontend-backend-map.md) - rotas, APIs consumidas e lacunas conhecidas.
-3. [Cadastro de cenarios para RH](cadastro_cenarios_rh.md) - especificacao atual de produto e guardrails para RH.
-4. [Integracao Gupy](INTEGRACAO-GUPY-PROVEDOR.md) - contrato externo real da Gupy.
-5. [Arquitetura Outbox](ARQUITETURA_OUTBOX_PATTERN.md) - retry, DLQ e entrega assincrona.
-6. [Rotas TanStack Start](../frontend/src/routes/README.md) - convencoes de rotas do frontend.
+1. [README principal](../README.md) — visão do sistema, arquitetura e execução local.
+2. [Documentação técnica](documentacao-tecnica.md) — componentes, ambiente, segurança e integrações.
+3. [Mapa Frontend-Backend](frontend-backend-map.md) — rotas, APIs consumidas e lacunas conhecidas.
+4. [Cadastro de cenários para RH](cadastro_cenarios_rh.md) — regras de produto e guardrails.
+5. [Integração Gupy](INTEGRACAO-GUPY-PROVEDOR.md) — contrato implementado, comparação oficial e bloqueadores de homologação.
+6. [Arquitetura Outbox](ARQUITETURA_OUTBOX_PATTERN.md) — retry, DLQ e entrega assíncrona.
+7. [Rotas TanStack Start](../frontend/src/routes/README.md) — convenções do frontend.
 
-## Documentacao operacional atual
+## Documentação operacional atual
 
-| Documento | Quando usar | Publico | Status |
+| Documento | Quando usar | Público | Estado |
 | --- | --- | --- | --- |
-| [README principal](../README.md) | Entender e rodar o sistema. | Todos | Atual |
-| [Operacao em producao](OPERACAO.md) | Operar, monitorar, auditar, atualizar e tratar incidentes. | DevOps, Operacao, Suporte, Admin | Atual |
-| [Implantacao do zero](IMPLANTACAO.md) | Instalar, configurar variaveis, deploy, SSL e checklist pos-deploy. | DevOps, Engenharia | Atual |
-| [Cadastro de cenarios para RH](cadastro_cenarios_rh.md) | Entender produto, limites e regras de cadastro. | RH, Produto, Compliance, Engenharia | Atual |
-| [Mapa Frontend-Backend](frontend-backend-map.md) | Ver rotas, APIs e lacunas UI/backend. | Frontend, Backend, QA | Atual |
-| [Integracao Gupy](INTEGRACAO-GUPY-PROVEDOR.md) | Homologar contrato `/test/**`. | Backend, Integracao, Gupy | Atual |
-| [Arquitetura Outbox](ARQUITETURA_OUTBOX_PATTERN.md) | Operar entrega, retry e DLQ. | Backend, DevOps | Atual |
-| [Rotas TanStack Start](../frontend/src/routes/README.md) | Criar/manter telas. | Frontend | Atual |
+| [README principal](../README.md) | Entender o produto e iniciar localmente. | Todos | Atual |
+| [Documentação técnica](documentacao-tecnica.md) | Entender arquitetura, configuração e integrações. | Engenharia, DevOps | Atual |
+| [Operação em produção](OPERACAO.md) | Operar, monitorar, auditar e tratar incidentes. | DevOps, Operação, Suporte | Atual |
+| [Implantação do zero](IMPLANTACAO.md) | Instalar, configurar, publicar e validar. | DevOps, Engenharia | Atual |
+| [Cadastro de cenários para RH](cadastro_cenarios_rh.md) | Entender regras de cadastro e produto. | RH, Produto, Compliance | Atual |
+| [Mapa Frontend-Backend](frontend-backend-map.md) | Ver rotas e contratos internos. | Frontend, Backend, QA | Atual |
+| [Integração Gupy](INTEGRACAO-GUPY-PROVEDOR.md) | Implementar e homologar `/test/**`. | Backend, Integrações | **Compatibilidade parcial; homologação pendente** |
+| [Arquitetura Outbox](ARQUITETURA_OUTBOX_PATTERN.md) | Operar retry, DLQ e entrega. | Backend, DevOps | Atual |
+| [Rotas TanStack Start](../frontend/src/routes/README.md) | Criar e manter telas. | Frontend | Atual |
 
-## Referencia tecnica
+## Fontes de verdade
 
-- Backend real: codigo em `backend/src/main/java/br/com/iforce/praxis` (dominios: `simulation`, `journey`, `results`, `dashboard`, `gupy`, `recrutei`, `shared.integration`, `billing`, `admin`, `team`, `account`, `companyprofile`, `term`, `candidate`, `audit`, `tenantconfig`, `media`, `privacy`).
-- Migracoes: `backend/src/main/resources/db/migration`.
-- API frontend: `frontend/src/lib/api/praxis.ts`.
-- Rotas frontend: `frontend/src/routes`; menu principal em `frontend/src/components/app-shell.tsx`.
-- Passos do assistente de criacao: `frontend/src/lib/simulation-meta.ts` (`avaliacao -> personagem -> validador -> governanca`).
-- Documentacao in-app da integracao por API propria: rota `/docs/integracao-api-propria`.
-- Configuracao runtime frontend: `frontend/src/lib/runtime-config.ts`, `frontend/src/lib/runtime-config.server.ts` e `frontend/src/server.ts`.
+- Backend: `backend/src/main/java/br/com/iforce/praxis`.
+- Migrações: `backend/src/main/resources/db/migration`.
+- API do frontend: `frontend/src/lib/api/praxis.ts`.
+- Rotas: `frontend/src/routes`.
+- Menu: `frontend/src/components/app-shell.tsx`.
+- Assistente: `frontend/src/lib/simulation-meta.ts`.
+- Runtime: `frontend/src/lib/runtime-config.ts`, `runtime-config.server.ts` e `server.ts`.
 
 ## Fluxos por jornada
 
 | Jornada | Ler |
 | --- | --- |
-| RH cria simulacao | [Cadastro de cenarios](cadastro_cenarios_rh.md) e [Mapa Frontend-Backend](frontend-backend-map.md#fluxos-principais) |
-| RH publica versao | [Cadastro de cenarios](cadastro_cenarios_rh.md#fluxo-operacional-atual) |
-| Candidato responde | [README](../README.md#candidato) e [Mapa Frontend-Backend](frontend-backend-map.md#execucao-do-candidato) |
-| Gupy cria tentativa | [Integracao Gupy](INTEGRACAO-GUPY-PROVEDOR.md#post-testcandidate) |
-| Resultado vai para Gupy | [Integracao Gupy](INTEGRACAO-GUPY-PROVEDOR.md#entrega-assincrona-por-outbox) e [Outbox](ARQUITETURA_OUTBOX_PATTERN.md) |
-| Operacao reprocessa DLQ | [Arquitetura Outbox](ARQUITETURA_OUTBOX_PATTERN.md#monitoramento-e-operacao) |
+| RH cria avaliação | [Cadastro de cenários](cadastro_cenarios_rh.md) e [Mapa Frontend-Backend](frontend-backend-map.md) |
+| RH publica versão | [Cadastro de cenários](cadastro_cenarios_rh.md#fluxo-operacional-atual) |
+| Candidato responde | [Mapa Frontend-Backend](frontend-backend-map.md#execucao-do-candidato) |
+| Gupy lista avaliações | [Integração Gupy](INTEGRACAO-GUPY-PROVEDOR.md#get-test) |
+| Gupy cria tentativa | [Integração Gupy](INTEGRACAO-GUPY-PROVEDOR.md#post-testcandidate) |
+| Resultado é entregue | [Integração Gupy](INTEGRACAO-GUPY-PROVEDOR.md#outbox-e-entrega-assincrona) |
+| Operação reprocessa DLQ | [Arquitetura Outbox](ARQUITETURA_OUTBOX_PATTERN.md) |
+| Preparar homologação Gupy | [Bloqueadores](INTEGRACAO-GUPY-PROVEDOR.md#bloqueadores-para-homologacao) |
 
-## Produto e decisoes
+## Produto e prontidão
 
-- [Cadastro de cenarios para RH](cadastro_cenarios_rh.md) - documento principal de produto atualizado.
-- [Pesquisa de reclamacoes de concorrentes](research/competitor-complaints-research-2025-2026.md) - contexto de mercado.
+- [P0 de prontidão](P0_PRODUCT_READINESS.md) — promessas comerciais seguras.
+- [Resumo de implementação](IMPLEMENTATION_SUMMARY.md) — estado técnico resumido.
+- [Pesquisa de reclamações de concorrentes](research/competitor-complaints-research-2025-2026.md) — contexto de mercado.
 
-## Compliance e juridico
+## Compliance e jurídico
 
-> Documentos em `docs/legal/` sao **minutas para validacao juridica** e nao
-> constituem aconselhamento juridico. Enderecam os riscos juridicos criticos e altos.
+Documentos em `docs/legal/` são minutas para validação jurídica e não constituem aconselhamento jurídico.
 
-Riscos criticos:
+Principais referências:
 
-- [Minuta de consentimento e termos para a vertical de Saude](PROPOSTA-CONSENTIMENTO-SAUDE.md) - propostas de texto (LGPD dado sensivel, uso educativo) para validacao juridica antes de habilitar a vertical.
-- [RIPD / DPIA](legal/RIPD-DPIA.md) - relatorio de impacto do tratamento automatizado (LGPD art. 20 - risco critico #1).
-- [Direitos do titular (LGPD art. 18)](legal/DIREITOS-DO-TITULAR-LGPD.md) - canal in-product `data-request`, prazos e retencao (risco critico #2).
-- [DPA - Acordo de Tratamento de Dados](legal/DPA-ACORDO-DE-TRATAMENTO-DE-DADOS.md) - controlador x operador e mapa de suboperadores (LGPD art. 39 - risco critico #3).
-- [Politica de Privacidade](legal/POLITICA-DE-PRIVACIDADE.md), [Termos de Uso](legal/TERMOS-DE-USO.md) e [Politica de Cookies](legal/POLITICA-DE-COOKIES.md) - documentos publicos da plataforma (risco critico #4).
+- [RIPD / DPIA](legal/RIPD-DPIA.md)
+- [Direitos do titular](legal/DIREITOS-DO-TITULAR-LGPD.md)
+- [DPA](legal/DPA-ACORDO-DE-TRATAMENTO-DE-DADOS.md)
+- [Política de Privacidade](legal/POLITICA-DE-PRIVACIDADE.md)
+- [Termos de Uso](legal/TERMOS-DE-USO.md)
+- [Política de Cookies](legal/POLITICA-DE-COOKIES.md)
+- [Mitigação de viés](legal/POLITICA-MITIGACAO-VIES.md)
+- [Resposta a incidentes](legal/PLANO-RESPOSTA-INCIDENTES.md)
 
-Riscos altos:
+## Histórico
 
-- [Politica de mitigacao de vies](legal/POLITICA-MITIGACAO-VIES.md) - guardrails antidiscriminacao, job-relatedness e monitoramento de impacto (risco alto #5).
-- [Vertical de Saude - ANVISA](legal/VERTICAL-SAUDE-ANVISA.md) - enquadramento SaMD e checklist de habilitacao (risco alto #6).
-- Fail-fast de seguranca em producao: `SecurityStartupGuard` recusa subir com perfil `prod` e `PRAXIS_SECURITY_ENABLED=false` (risco alto #7; ver `IMPLANTACAO.md`).
+- [Usabilidade — implementação](USABILIDADE_IMPLEMENTACAO.md) — registro histórico de UX.
+- [Resumo de implementação](IMPLEMENTATION_SUMMARY.md) — fotografia técnica atual.
 
-Riscos medios:
+## Regras de manutenção
 
-- Hash do dado pessoal na chave de idempotencia: `IdempotencyKeyHasher` + migracao `V68` deixam de guardar CPF/e-mail em claro na coluna `idempotency_key` (risco medio #10).
-- [Plano de resposta a incidentes](legal/PLANO-RESPOSTA-INCIDENTES.md) - runbook LGPD arts. 46-48 (risco medio #11).
-- [Exposicao regulatoria internacional](legal/EXPOSICAO-REGULATORIA-INTERNACIONAL.md) - EU AI Act, NYC LL144, GDPR e recomendacao de geo-restricao (risco medio #9).
+- Links devem apontar para arquivos reais.
+- Documento histórico não deve ser usado como promessa de funcionalidade atual.
+- Integração não homologada deve ser identificada explicitamente.
+- Alterações de contrato público exigem atualização do documento correspondente.
 
-## Historico
-
-- [Usabilidade - implementacao](USABILIDADE_IMPLEMENTACAO.md) - historico de uma entrega de UX; nao e contrato atual completo.
-- [Resumo de implementacao](IMPLEMENTATION_SUMMARY.md) - estado tecnico resumido e observacoes de verificacao.
-
-## Fora do caminho principal
-
-- [Regras Backend Java](backend-java.md) - guia amplo de estilo/geracao Java; nao e arquitetura especifica do Praxis.
-
-## Observacoes
-
-- O repositorio nao possui documentos chamados `GARANTIAS-PRODUCAO.md`, `ARQUITETURA-SISTEMA.md`, `OPERACIONAL-MONITORAMENTO.md`, `OPERACIONAL-GOVERNANCA.md`, `DESENVOLVIMENTO-BACKEND-JAVA.md`, `INTEGRACAO-ROUTES-TANSTACK.md` ou `RECLAMACOES-CONCORRENTES.md`.
-- Links novos devem apontar para arquivos reais listados aqui.
-- Documentos com conteudo historico devem ser lidos como registro de decisao, nao como promessa de feature atual.
-
-Ultima revisao: 03/07/2026.
+Última revisão: 12/07/2026.
