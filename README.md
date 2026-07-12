@@ -16,7 +16,9 @@ Processos seletivos precisam de critérios claros e revisão humana. No Praxis, 
 - Links públicos para candidatos e jornadas com múltiplas avaliações.
 - Resultados por competência, comparação de candidatos e registro de decisão do recrutador.
 - Auditoria, monitoramento de entregas, retry e DLQ para integrações.
-- Integrações com Gupy, Recrutei e API própria.
+- Integrações técnicas com Gupy, Recrutei e API própria.
+
+> A integração Gupy possui endpoints e entrega assíncrona implementados, mas ainda não deve ser apresentada como homologada. O estado de compatibilidade com o contrato oficial está em [docs/INTEGRACAO-GUPY-PROVEDOR.md](docs/INTEGRACAO-GUPY-PROVEDOR.md).
 
 ## Fluxo do produto
 
@@ -78,7 +80,10 @@ Pré-requisitos: Docker e Docker Compose.
 
 ```bash
 cp .env.example .env
-# Configure POSTGRES_USER, POSTGRES_PASSWORD, PRAXIS_INTEGRATION_TOKEN e PRAXIS_JWT_SECRET.
+# Configure POSTGRES_USER, POSTGRES_PASSWORD e PRAXIS_JWT_SECRET.
+# O docker-compose.yml ainda exige PRAXIS_INTEGRATION_TOKEN por compatibilidade legada,
+# porém /test/** autentica por tokens gerados na Central de Integrações e persistidos
+# somente como SHA-256 Base64URL na tabela integration_tokens.
 docker compose up --build
 ```
 
