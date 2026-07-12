@@ -1,6 +1,6 @@
 # Documentação técnica do Praxis
 
-Este documento descreve a arquitetura e a operação do repositório com base na implementação atual. Ele não substitui decisões de segurança, infraestrutura ou produto que dependam do ambiente de implantação.
+Este documento descreve a arquitetura e a operação do repositório com base na implementação atual. Ele não substitui decisões de segurança, infraestrutura, produto ou homologação de integrações.
 
 ## Visão geral
 
@@ -10,7 +10,7 @@ O Praxis é uma plataforma de avaliações situacionais para recrutamento. O flu
 2. A plataforma valida a estrutura e publica uma versão imutável.
 3. O candidato acessa a jornada pública e responde à avaliação.
 4. O backend calcula a pontuação de forma determinística.
-5. O recrutador consulta as evidências e registra a decisão humana.
+5. O recrutador consulta evidências e registra a decisão humana.
 
 A aplicação não utiliza IA generativa para julgar candidatos. A decisão continua sob responsabilidade humana.
 
@@ -21,9 +21,9 @@ A aplicação não utiliza IA generativa para julgar candidatos. A decisão cont
 | Frontend | Interface para RH e candidato, rotas e comunicação com a API | React 19, TypeScript, TanStack Start/Router, Vite e Tailwind CSS |
 | Backend | Regras de negócio, autenticação, API HTTP, persistência e integrações | Java 21, Spring Boot 3.5.3, Spring Security e JPA |
 | Banco de dados | Dados transacionais e histórico de versões | PostgreSQL 17 |
-| Migrações | Evolução versionada do esquema de dados | Flyway |
-| Integrações | Entregas para ATS, webhooks e processamento operacional | Outbox transacional, retry e DLQ |
-| Armazenamento de objetos | Suporte a conteúdo compatível com S3 | AWS SDK S3 |
+| Migrações | Evolução versionada do esquema | Flyway |
+| Integrações | ATS, webhooks, tokens por empresa e processamento operacional | Outbox transacional, retry e DLQ |
+| Armazenamento | Conteúdo compatível com S3 | AWS SDK S3 |
 
 ## Arquitetura lógica
 
@@ -38,85 +38,108 @@ flowchart LR
   OUTBOX --> OPS[Retry, monitoramento e DLQ]
 ```
 
-O frontend é servido pelo serviço `frontend` e se comunica internamente com o backend usando `http://backend:8080`. O backend persiste no serviço `postgres`, na rede Docker `praxis-network`.
+O frontend é servido pelo serviço `frontend` e se comunica internamente com `http://backend:8080`. O backend persiste no serviço `postgres`, na rede `praxis-network`.
 
-## Estrutura relevante do repositório
+## Estrutura relevante
 
 ```text
 backend/                 API Spring Boot e testes
 frontend/                aplicação React/TanStack Start
 docs/                    documentação e guias operacionais
-docs/screenshots/        convenções para capturas usadas no README
+docs/screenshots/        convenções para capturas
 docker-compose.yml       composição local dos serviços
-.env.example             modelo de variáveis locais
 ```
 
 ## Execução local com Docker Compose
 
 Pré-requisitos:
 
-- Docker com suporte ao Docker Compose.
-- Arquivo `.env` configurado a partir de `.env.example`.
+- Docker com suporte ao Docker Compose;
+- arquivo `.env` com as variáveis exigidas pelo Compose.
 
 ```bash
-cp .env.example .env
 docker compose up --build
 ```
 
-Após a inicialização, os serviços ficam disponíveis em:
+Serviços:
 
 | Serviço | Endereço local |
 | --- | --- |
 | Frontend | `http://localhost` |
 | Backend | `http://localhost:8080` |
-| PostgreSQL | disponível apenas na rede interna do Compose por padrão |
+| PostgreSQL | rede interna do Compose |
 
-Para interromper os serviços:
+Para interromper:
 
 ```bash
 docker compose down
 ```
 
-Para também remover o volume local do PostgreSQL:
+Para remover também os dados locais:
 
 ```bash
 docker compose down -v
 ```
 
-> A remoção do volume apaga os dados locais persistidos pelo serviço `postgres`.
-
 ## Configurações de ambiente
 
-O Compose exige as variáveis abaixo para iniciar o backend e o banco:
+O Compose exige:
 
-| Variável | Uso |
+| Variável | Uso real |
 | --- | --- |
 | `POSTGRES_USER` | Usuário do PostgreSQL |
-| `POSTGRES_PASSWORD` | Senha do PostgreSQL e da fonte de dados do backend |
-| `PRAXIS_INTEGRATION_TOKEN` | Token de autenticação para integrações |
-| `PRAXIS_JWT_SECRET` | Segredo usado pela autenticação baseada em JWT |
+| `POSTGRES_PASSWORD` | Senha do PostgreSQL e do backend |
+| `PRAXIS_JWT_SECRET` | Assinatura de JWT |
+| `PRAXIS_INTEGRATION_TOKEN` | Exigência legada do `docker-compose.yml`; não autentica `/test/**` |
 
-Também são suportadas as configurações a seguir:
+Também são suportadas:
 
-| Variável | Padrão no Compose | Uso |
+| Variável | Padrão | Uso |
 | --- | --- | --- |
-| `PRAXIS_SECURITY_ENABLED` | `true` | Ativa ou desativa a camada de segurança do backend |
-| `PRAXIS_PUBLIC_BASE_URL` | `http://localhost` | URL pública base da aplicação |
-| `PRAXIS_CANDIDATE_PAGE_BASE_URL` | `http://localhost` | URL base usada para jornadas de candidatos |
+| `PRAXIS_SECURITY_ENABLED` | `true` | Segurança do backend |
+| `PRAXIS_PUBLIC_BASE_URL` | `http://localhost` | Base pública de links e resultados |
+| `PRAXIS_CANDIDATE_PAGE_BASE_URL` | `http://localhost` | Página pública da pessoa candidata |
 
-Não versione segredos reais em `.env`, arquivos de configuração, documentação, imagens ou logs.
+A autenticação Gupy e Recrutei usa tokens gerados na Central de Integrações. O backend persiste apenas o SHA-256 Base64URL em `integration_tokens`. A variável legada do Compose não substitui esse cadastro.
+
+Não versione segredos reais em `.env`, configuração, documentação, imagens ou logs.
 
 ## Backend
 
-O backend utiliza Java 21 e Spring Boot 3.5.3. As dependências principais incluem validação, JPA, Spring Security, Actuator, e-mail, Flyway, OpenAPI via Springdoc, integração S3, JWT e Apache Tika.
+O backend utiliza Java 21 e Spring Boot 3.5.3. As dependências principais incluem validação, JPA, Spring Security, Actuator, e-mail, Flyway, OpenAPI, S3, JWT e Apache Tika.
 
-As migrações usam recursos específicos do PostgreSQL. Por esse motivo, os testes de integração utilizam PostgreSQL real com Testcontainers; o H2 está restrito ao escopo de testes e não deve ser tratado como substituto compatível das migrações.
+As migrações usam recursos específicos do PostgreSQL. Testes de integração usam PostgreSQL real com Testcontainers; H2 não deve ser tratado como substituto compatível das migrações.
 
-A estratégia de DDL usada pelo Compose é `validate`: o Hibernate valida o esquema existente, enquanto a evolução estrutural deve ocorrer por migrações Flyway.
+Em produção, o Hibernate deve usar `validate`; a evolução do schema pertence ao Flyway.
+
+## Integrações ATS
+
+### Tokens
+
+- token em claro retornado uma única vez;
+- hash SHA-256 Base64URL persistido;
+- isolamento por empresa e provider;
+- providers atuais: Gupy, Recrutei e API própria.
+
+### Gupy
+
+Os endpoints técnicos existem, mas a compatibilidade oficial é parcial. Não declarar homologação até corrigir callback, redirecionamento e assinatura do endpoint de resultado.
+
+Leia [INTEGRACAO-GUPY-PROVEDOR.md](INTEGRACAO-GUPY-PROVEDOR.md).
+
+### Outbox
+
+- lote máximo de 100 eventos;
+- estados `PENDING`, `PROCESSING`, `RETRYING`, `SENT`, `DLQ`;
+- backoff de 1, 4, 16 e 64 segundos;
+- 4xx permanente vai para DLQ, exceto `408` e `429`;
+- eventos em `PROCESSING` por mais de cinco minutos podem ser retomados.
 
 ## Frontend
 
-O frontend usa React 19 com TanStack Start, TanStack Router e TanStack Query. Os scripts disponíveis em `frontend/package.json` são:
+O frontend usa React 19 com TanStack Start, TanStack Router e TanStack Query.
+
+Scripts principais:
 
 ```bash
 npm run dev
@@ -127,11 +150,9 @@ npm run lint
 npm run format
 ```
 
-O build de produção é executado por `npm run build`. O comando `npm run format` aplica alterações nos arquivos; revise o diff antes de incluí-lo em um commit.
+`npm run format` altera arquivos; revise o diff antes do commit.
 
 ## Qualidade e validação
-
-Antes de abrir um pull request, execute ao menos:
 
 ```bash
 # Frontend
@@ -144,17 +165,24 @@ cd ../backend
 mvn test
 ```
 
-Os testes do backend exigem Docker disponível quando houver cenários com Testcontainers. A automação contínua descrita no repositório executa build e testes do backend com PostgreSQL real via Testcontainers, além do build do frontend, em pushes e pull requests para `main`.
+Os testes do backend podem exigir Docker por causa do Testcontainers.
 
 ## Convenções de mudança
 
-- Crie migrations para qualquer alteração de esquema; não use atualização automática de DDL em produção.
-- Preserve a imutabilidade das versões publicadas de avaliações.
-- Não exponha tokens, links públicos de candidatos, resultados reais ou dados pessoais em capturas e documentação.
-- Use dados fictícios ou anonimizados nas imagens do README.
-- Documente mudanças de configuração, comportamento público ou integração junto com a implementação.
+- Crie migrations para alterações de schema.
+- Preserve versões publicadas.
+- Não exponha tokens, links públicos, resultados reais ou dados pessoais.
+- Use dados fictícios ou anonimizados nas imagens.
+- Atualize documentação quando mudar contrato público, operação ou configuração.
+- Não descreva integração externa como homologada apenas porque endpoints locais existem.
 
-## Referências internas
+## Referências
 
-- [Visão geral do produto](../README.md)
-- [Guia de capturas para o README](screenshots/README.md)
+- [Visão geral](../README.md)
+- [Índice](00-INDICE.md)
+- [Integração Gupy](INTEGRACAO-GUPY-PROVEDOR.md)
+- [Implantação](IMPLANTACAO.md)
+- [Operação](OPERACAO.md)
+- [Capturas do README](screenshots/README.md)
+
+Última revisão: 12/07/2026.
