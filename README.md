@@ -78,12 +78,18 @@ flowchart LR
 
 Pré-requisitos: Docker e Docker Compose.
 
+Crie um arquivo `.env` na raiz do repositório:
+
 ```bash
-cp .env.example .env
-# Configure POSTGRES_USER, POSTGRES_PASSWORD e PRAXIS_JWT_SECRET.
-# O docker-compose.yml ainda exige PRAXIS_INTEGRATION_TOKEN por compatibilidade legada,
-# porém /test/** autentica por tokens gerados na Central de Integrações e persistidos
-# somente como SHA-256 Base64URL na tabela integration_tokens.
+POSTGRES_USER=praxis
+POSTGRES_PASSWORD=troque-esta-senha
+PRAXIS_INTEGRATION_TOKEN=valor-legado-exigido-pelo-compose
+PRAXIS_JWT_SECRET=troque-este-segredo
+```
+
+> `PRAXIS_INTEGRATION_TOKEN` ainda é exigida pelo `docker-compose.yml`, mas não autentica `/test/**`. As integrações Gupy e Recrutei usam tokens gerados na Central de Integrações e persistidos somente como SHA-256 Base64URL na tabela `integration_tokens`.
+
+```bash
 docker compose up --build
 ```
 
