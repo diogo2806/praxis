@@ -1,89 +1,105 @@
-# P0 - Prontidão de Produto antes de venda ou demonstração
+# P0 — Prontidão de produto antes de venda ou demonstração
 
 > Fonte de verdade complementar para README, `frontend-backend-map.md` e `cadastro_cenarios_rh.md`.
+>
 > Objetivo: deixar claro o que está pronto para demonstração, o que é operação interna e quais promessas comerciais são seguras.
 
 ## Posicionamento seguro
 
-Frase principal recomendada:
+Frase recomendada:
 
 > Praxis adiciona ao ATS uma camada de avaliação situacional estruturada, com critérios explícitos, pesos cadastrados, score determinístico e trilha auditável — sem IA julgando candidato.
 
-Evitar em venda, tela ou documentação pública:
+Evitar:
 
-- "sem viés" como promessa absoluta;
-- "livre de discriminação" sem estudo local;
-- "prediz performance" sem validação estatística da empresa;
-- "decisão automática" ou ranking eliminatório.
+- “sem viés” como promessa absoluta;
+- “livre de discriminação” sem estudo local;
+- “prediz performance” sem validação estatística;
+- “decisão automática” ou ranking eliminatório;
+- “integração Gupy homologada” antes da validação oficial.
 
-Usar no lugar:
+Usar:
 
 - critérios explícitos, auditáveis e revisáveis;
 - score calculado por regra cadastrada;
 - apoio à triagem e entrevista estruturada;
 - decisão final humana documentada;
-- sem IA/LLM julgando resposta de candidato.
+- integração técnica em preparação para homologação, quando esse for o estado real.
 
 ## Estado real do produto
 
-### Produção / demonstração principal
+### Produção e demonstração principal
 
 | Área | Estado | Observação |
 | --- | --- | --- |
-| Login | Implementado | Há rota frontend `/login` integrada ao `POST /api/v1/auth/login`. |
-| Dashboard | Implementado | Consolida indicadores e ações recomendadas da empresa. |
-| Avaliações | Implementado | Lista avaliações, mostra status, competências, tentativas e agora arquiva em vez de excluir definitivamente. |
-| Começar | Implementado | Entrada recomendada para RH antes de criar uma avaliação. |
-| Modelo rápido | Implementado | `/nova/rapido` cria rascunho a partir de modelo pronto. |
-| Assistente de 4 passos | Implementado | Caminho canônico: Teste -> Cenário -> Revisão -> Publicação. |
-| Enviar link | Implementado | Gera links internos e acompanha tentativas ao vivo. |
-| Gupy | Implementado | Contrato externo `/test/**`, preflight e entregas por outbox. |
-| Resultados | Implementado | Lista/detalha tentativa e registra decisão humana. |
-| Compliance | Implementado | Reúne defensabilidade, LGPD e explicabilidade operacional. |
-| Notificações/DLQ | Implementado | Nova rota `/notifications` lista alertas internos e permite reprocessar entregas em DLQ. |
-| Billing self-service | Implementado nesta entrega | `/billing` lista planos, gera checkout de créditos/assinatura no Mercado Pago e permite sincronizar a assinatura do próprio cliente. |
+| Login | Implementado | `/login` integrado a `POST /api/v1/auth/login`. |
+| Dashboard | Implementado | Indicadores e ações recomendadas. |
+| Avaliações | Implementado | Lista, edição, publicação e arquivamento com preservação de histórico. |
+| Começar | Implementado | Entrada recomendada para RH. |
+| Modelo rápido | Implementado | `/nova/rapido` cria rascunho por modelo. |
+| Assistente de 4 passos | Implementado | Teste → Cenário → Revisão → Publicação. |
+| Enviar link | Implementado | Links internos e acompanhamento de tentativas. |
+| Gupy | **Implementação técnica parcial** | `/test/**`, preflight e outbox existem, mas callback, redirecionamento e assinatura oficial do resultado ainda bloqueiam homologação. |
+| Recrutei | Implementado tecnicamente | Validar homologação comercial separadamente. |
+| API própria | Implementada | Central de integrações, token e webhook próprios. |
+| Resultados | Implementado | Lista, detalhe e decisão humana. |
+| Compliance | Implementado | Defensabilidade, LGPD e explicabilidade operacional. |
+| Notificações/DLQ | Implementado | `/notifications` lista alertas e reprocessa DLQ. |
+| Billing | Implementado | Plano, uso, checkout e sincronização conforme permissões do fluxo atual. |
 
-### Operação/admin
+### Operação e administração
 
 | Área | Estado | Observação |
 | --- | --- | --- |
-| Admin plataforma | Implementado | Rotas `/admin*` no frontend e `/api/admin/**` no backend exigem perfil `ADMIN`. |
-| Billing admin | Implementado | ADMIN continua com visão consolidada, criação assistida de cobranças e sincronização manual como operação de suporte. |
-| Health Score / CS | Implementado como operação interna | Fila admin de empresas em risco, não fluxo principal de RH. |
-| Engagement mensal | Implementado como worker | Apoia retenção e percepção de valor, não altera o fluxo de avaliação. |
+| Admin da plataforma | Implementado | Rotas `/admin*` e `/api/admin/**`, role `ADMIN`. |
+| Billing admin | Implementado | Visão consolidada e suporte operacional. |
+| Health Score / CS | Operação interna | Não é fluxo principal de RH. |
+| Engagement mensal | Worker interno | Apoia retenção; não altera avaliação. |
 
-### Rotas standalone secundárias
+### Rotas secundárias
 
-Estas rotas continuam úteis para manutenção, power users ou diagnóstico, mas não devem ser apresentadas como caminho principal de onboarding:
+Não apresentar como caminho principal de onboarding:
 
-- `/nova/objetivo`
-- `/nova/dialogo`
-- `/nova/mapa`
-- `/nova/piloto`
-- `/nova/gupy`
+- `/nova/objetivo`;
+- `/nova/dialogo`;
+- `/nova/mapa`;
+- `/nova/piloto`;
+- `/nova/gupy`.
 
-O caminho recomendado para RH é:
+Caminho recomendado:
 
 ```text
-Começar -> Modelo rápido ou Do zero -> 4 passos -> Publicar -> Enviar link/Gupy -> Ver resultados
+Começar → Modelo rápido ou Do zero → 4 passos → Publicar → Enviar link ou preparar integração → Ver resultados
 ```
 
-## Lacunas P0 fechadas nesta entrega
+## Regra comercial para Gupy
 
-1. **Notificações operacionais:** nova tela dedicada em `/notifications` consome `GET /api/v1/notifications`.
-2. **Reprocessamento de DLQ:** a mesma tela lista entregas com status `dlq` e chama `POST /api/v1/gupy/result-deliveries/{deliveryId}/reprocess`.
-3. **Arquivamento seguro:** a lista de avaliações passou a usar arquivamento, preservando histórico e auditoria, em vez de incentivar exclusão definitiva.
-4. **Mensagem de produto:** este documento consolida a promessa segura: critérios explícitos, auditáveis e revisáveis, sem IA julgando candidato.
-5. **Billing self-service:** o cliente passa a gerar checkout de créditos/assinatura e sincronizar a própria assinatura sem depender do ADMIN para a ação operacional básica.
+Pode afirmar:
 
-## Próxima revisão de documentação
+- o Praxis possui endpoints de provedor externo;
+- há autenticação por token de empresa;
+- há idempotência, resultado percentual e entrega assíncrona;
+- há monitoramento, retry e DLQ;
+- existe diagnóstico local em `/nova/gupy`.
 
-Ao editar README, `frontend-backend-map.md` ou `cadastro_cenarios_rh.md`, manter esta verdade:
+Não pode afirmar ainda:
+
+- que a integração está homologada pela Gupy;
+- que o candidato retorna automaticamente à Gupy;
+- que o contrato oficial é atendido integralmente;
+- que existe sandbox oficial de homologação;
+- que qualquer cliente pode ativar sem validação conjunta.
+
+Documento técnico: [INTEGRACAO-GUPY-PROVEDOR.md](INTEGRACAO-GUPY-PROVEDOR.md).
+
+## Verdades que devem permanecer sincronizadas
 
 - `/login` existe.
-- `/admin*` existe e é operação de plataforma, não fluxo de RH.
-- `/billing` é o self-service do cliente para plano, uso, histórico, checkout de créditos/assinatura e sincronização da assinatura atual.
-- `/api/admin/**` continua sendo a operação de suporte para visão consolidada, criação assistida e sincronização manual quando necessário.
-- `/notifications` é a tela dedicada para alertas internos e DLQ.
-- O assistente de 4 passos é o fluxo principal; as rotas standalone são secundárias.
-- Nunca prometer ausência absoluta de viés; prometer critério explícito, auditável e revisável.
+- `/admin*` é operação de plataforma.
+- `/notifications` é a tela dedicada de alertas e DLQ.
+- O assistente de 4 passos é o fluxo principal.
+- Rotas standalone são secundárias.
+- Nunca prometer ausência absoluta de viés.
+- Nunca promover Gupy como homologada enquanto houver bloqueadores no contrato oficial.
+
+Última revisão: 12/07/2026.
