@@ -1,63 +1,70 @@
-# Resumo de Implementacao
+# Resumo de Implementação
 
-> Estado tecnico resumido do Praxis em 04/07/2026.
+> Estado técnico resumido do Praxis em 12/07/2026.
 
 ## Backend
 
 - Spring Boot 3.5.3 com Java 21.
 - PostgreSQL com Flyway.
-- Seguranca por JWT nas rotas internas quando `PRAXIS_SECURITY_ENABLED=true`.
-- Empresa resolvido por contexto de seguranca nas rotas internas.
-- Integracao Gupy/Recrutei por Bearer token validado contra a tabela `integration_tokens` (SHA-256 Base64URL, via `IntegrationAuthService`).
-- Outbox transacional para entrega de resultados/eventos externos.
-- Auditoria por tentativa e por versao de simulacao.
-- Upload de midia por `/api/v1/media`.
-- Empresa config por `/api/v1/empresa-config`.
-- Notificacoes internas por `GET /api/v1/notifications`.
-- Reprocessamento operacional de entregas por `/api/v1/gupy/result-deliveries`.
+- Segurança por JWT nas rotas internas quando `PRAXIS_SECURITY_ENABLED=true`.
+- Empresa resolvida por contexto de segurança nas rotas internas.
+- Integração Gupy/Recrutei por Bearer token validado contra `integration_tokens` usando SHA-256 Base64URL.
+- Outbox transacional com lotes de até 100 eventos, retry, recuperação de `PROCESSING` órfão e DLQ.
+- HTTP 4xx permanente vai para DLQ; `408` e `429` são tratados como transitórios.
+- Auditoria por tentativa e por versão de avaliação.
+- Upload de mídia por `/api/v1/media`.
+- Configuração da empresa por `/api/v1/empresa-config`.
+- Notificações internas por `GET /api/v1/notifications`.
+- Reprocessamento operacional por `/api/v1/gupy/result-deliveries`.
 
 ## Frontend
 
 - React 19 + TanStack Start/Router.
 - Rotas em `frontend/src/routes`.
-- Tela `/login` conectada ao endpoint real `POST /api/v1/auth/login`, salvando token, empresa, nome e roles na sessão local.
-- Tela `/notifications` dedicada a alertas internos, consulta `GET /api/v1/notifications`, lista entregas em DLQ e permite reprocessamento manual.
-- Tela `/monitoramento` consolida o happy path operacional, tentativas, notificacoes e entregas.
+- `/login` usa `POST /api/v1/auth/login`.
+- `/integrations` configura provedores e gera tokens de integração.
+- `/nova/gupy` executa preflight local da versão e lista entregas.
+- `/notifications` lista alertas e permite reprocessar DLQ.
+- `/monitoramento` consolida tentativas e entregas.
 - Camada HTTP central em `frontend/src/lib/api/praxis.ts`.
-- Cliente de autenticação em `frontend/src/lib/api/auth.ts`.
-- Cliente operacional de notificacoes/DLQ em `frontend/src/lib/api/operations.ts`.
-- SSR/proxy em `frontend/src/server.ts`.
-- Configuracao runtime em `runtime-config.ts` e `runtime-config.server.ts`.
-- CSS global em `frontend/src/styles/app.css`.
-- Design system exposto pelo `@theme inline` do Tailwind, com tokens OKLCH em `:root` e `.dark`.
-- Paleta de marca "Confianca Serena": azul-petroleo em `--primary`, dourado de veredito em `--gold`, fundo off-white quente, neutros azulados e graficos derivados em `--chart-1` a `--chart-5`.
+- Runtime em `runtime-config.ts`, `runtime-config.server.ts` e `server.ts`.
 
-## Integracao Frontend/Backend
+## Integração Gupy
 
-- As telas operacionais usam a camada HTTP em `frontend/src/lib/api/praxis.ts`.
-- Catalogos de empresa sao carregados por `GET /api/v1/empresa-config`.
-- A criacao de rascunho usa `POST /api/v1/simulations/drafts`.
-- Edicao de fluxo, validacao, governanca, monitoramento, LGPD, envio de link, Talent Match, candidato, notificacoes e DLQ consomem endpoints reais do backend.
-- Nao ha fallback local de catalogo, sessao demo ou server function de exemplo no frontend.
+Implementado:
 
-## Integracao Gupy
+- `GET /test`;
+- `POST /test/candidate`;
+- `GET /test/result/{resultId}`;
+- Bearer token por empresa;
+- idempotência de tentativa;
+- `test_url` para `/candidato/{token}`;
+- `result_webhook_url` com outbox;
+- resultado percentual por competência;
+- retry e DLQ.
 
-- A integracao operacional em producao e explicitamente Gupy.
-- Nao ha camada generica `ATSAdapter` nem registry de adapters.
-- Os fluxos de catalogo, tentativa, resultado e entrega usam servicos concretos de Gupy.
-- O contrato externo usa snake_case em `POST /test/candidate`.
-- `GET /test` retorna `total_tests` e `payload`.
-- `POST /test/candidate` retorna `test_url` e `test_result_id`.
+Ainda incompatível com o contrato oficial publicado:
 
-## Lacunas conhecidas
+- ausência de `callback_url`;
+- ausência de callback GET e redirecionamento final;
+- `GET /test/result/{resultId}` exige `company_id` extra;
+- `company_id` e `document_id` usam `String`, não `int64`;
+- `job_id` não é recebido;
+- `previous_result` não segue o enum oficial;
+- `result_candidate_page_url` aponta para API JSON;
+- existem campos extras no `TestResult` que precisam ser validados.
 
-Estas lacunas tambem aparecem no [Mapa Frontend-Backend](frontend-backend-map.md#lacunas-conhecidas-entre-backend-e-ui).
+Por isso, a integração deve ser descrita como **implementação técnica em preparação para homologação**, não como integração Gupy homologada.
 
-- `PRAXIS_INTEGRATION_TOKEN` e exigida no `docker-compose.yml`, mas a autenticacao real de `/test/**` usa a tabela `integration_tokens` (tokens cadastrados pela area de Integracoes).
-- `/billing` segue parcialmente self-service: cliente consulta plano, uso e eventos; criacao/sincronizacao de cobranca fica no painel ADMIN/Mercado Pago.
-- O menu lateral ainda pode destacar melhor `/notifications`, embora a rota e a tela dedicada ja existam.
+Detalhes: [INTEGRACAO-GUPY-PROVEDOR.md](INTEGRACAO-GUPY-PROVEDOR.md).
 
-## Verificacao recomendada
+## Configuração legada do Compose
+
+`docker-compose.yml` ainda exige `PRAXIS_INTEGRATION_TOKEN`, mas `/test/**` não lê essa variável. A autenticação real usa tokens gerados na Central de Integrações e persistidos somente como hash em `integration_tokens`.
+
+Não usar a variável legada como evidência de que a integração está configurada.
+
+## Verificação recomendada
 
 Backend:
 
@@ -73,8 +80,8 @@ cd frontend
 pnpm build
 ```
 
-Documentacao:
+Documentação:
 
 ```bash
-rg -n "api key antiga|callback de retorno|nao ha helper/tela dedicada|UI atual apenas lista entregas" README.md docs frontend/src/routes/README.md
+rg -n "Gupy.*homologad|PRAXIS_INTEGRATION_TOKEN|callback_url|company_id" README.md docs
 ```
