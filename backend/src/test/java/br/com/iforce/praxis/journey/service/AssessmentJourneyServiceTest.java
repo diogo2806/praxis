@@ -203,16 +203,14 @@ class AssessmentJourneyServiceTest {
     }
 
     @Test
-    void cannotEditPublishedJourney() {
+    void cannotEditArchivedJourney() {
         AssessmentJourneyEntity journey = draftJourney();
-        journey.setStatus(AssessmentJourneyStatus.PUBLISHED);
+        journey.setStatus(AssessmentJourneyStatus.ARCHIVED);
         when(journeyRepository.findByEmpresaIdAndId("empresa-1", "j1")).thenReturn(Optional.of(journey));
-        when(simulationCatalogService.findPublishedById("empresa-1", "sim-x"))
-                .thenReturn(Optional.of(publishedSimulation("sim-x", 1)));
 
         assertThatThrownBy(() -> service.addStep("j1", new AddJourneyStepRequest("sim-x", "principal", null, true)))
                 .isInstanceOf(ResponseStatusException.class)
-                .hasMessageContaining("rascunho");
+                .hasMessageContaining("arquivadas");
     }
 
     @Test
