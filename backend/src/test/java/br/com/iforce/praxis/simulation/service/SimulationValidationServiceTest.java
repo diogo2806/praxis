@@ -1,41 +1,24 @@
 package br.com.iforce.praxis.simulation.service;
 
 import br.com.iforce.praxis.config.PraxisProperties;
-
 import br.com.iforce.praxis.simulation.dto.CompetencyWeightDto;
-
 import br.com.iforce.praxis.simulation.dto.SimulationValidationResponse;
-
 import br.com.iforce.praxis.simulation.dto.ValidationIssueResponse;
-
 import br.com.iforce.praxis.simulation.model.ValidationIssueSeverity;
-
 import br.com.iforce.praxis.simulation.persistence.entity.OptionCompetencyScoreEntity;
-
 import br.com.iforce.praxis.simulation.persistence.entity.SimulationCompetencyEntity;
-
 import br.com.iforce.praxis.simulation.persistence.entity.SimulationEntity;
-
 import br.com.iforce.praxis.simulation.persistence.entity.SimulationNodeEntity;
-
 import br.com.iforce.praxis.simulation.persistence.entity.SimulationOptionEntity;
-
 import br.com.iforce.praxis.simulation.persistence.entity.SimulationVersionEntity;
-
 import org.junit.jupiter.api.Test;
-
 import org.springframework.web.server.ResponseStatusException;
 
-
 import java.util.List;
-
 import java.util.Map;
 
-
 import static org.assertj.core.api.Assertions.assertThat;
-
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-
 
 class SimulationValidationServiceTest {
 
@@ -94,24 +77,24 @@ class SimulationValidationServiceTest {
 
     @Test
     void blocksPublicationWhenDepthExceedsMaximumTurns() {
-        SimulationVersionEntity version = linearVersion(11);
+        SimulationVersionEntity version = linearVersion(21);
 
         SimulationValidationResponse response = service.validate(version);
 
         assertThat(response.publishable()).isFalse();
         assertThat(response.issues())
                 .anyMatch(issue -> issue.severity() == ValidationIssueSeverity.BLOCKER
-                        && issue.message().contains("limite de 10 etapas"));
+                        && issue.message().contains("limite de 20 etapas"));
     }
 
     @Test
     void allowsDepthUpToMaximumTurns() {
-        SimulationVersionEntity version = linearVersion(10);
+        SimulationVersionEntity version = linearVersion(20);
 
         SimulationValidationResponse response = service.validate(version);
 
         assertThat(response.issues()).extracting(ValidationIssueResponse::message)
-                .noneMatch(message -> message.contains("limite de 10 etapas"));
+                .noneMatch(message -> message.contains("limite de 20 etapas"));
     }
 
     @Test
@@ -143,8 +126,6 @@ class SimulationValidationServiceTest {
 
     @Test
     void allowsPublicationWhenACompetencyIsZeroedOnEveryPath() {
-        // Cenário relatado no validador: uma etapa com duas respostas e três encerramentos
-        // (dois por resposta, um por timeout); "Negociacao" tem peso mas nota 0 em tudo.
         SimulationVersionEntity version = baseVersion("turno-1");
         version.getCompetencies().add(competency(version, "Empatia", 0.34));
         version.getCompetencies().add(competency(version, "Lideranca", 0.33));
