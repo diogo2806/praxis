@@ -1,0 +1,122 @@
+name: Apply disabled integration actions fix
+
+on:
+  push:
+    branches:
+      - fix/remover-desconectar-integracao-desativada-20260714-01
+
+permissions:
+  contents: write
+
+jobs:
+  apply-fix:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Apply source and test changes
+        run: |
+          python <<'PY'
+          from pathlib import Path
+          from textwrap import dedent
+
+          service_path = Path("backend/src/main/java/br/com/iforce/praxis/shared/integration/IntegrationManagementService.java")
+          service = service_path.read_text(encoding="utf-8")
+          old = "case DESATIVADA -> List.of(IntegrationAction.REACTIVATE, IntegrationAction.VIEW, IntegrationAction.DISCONNECT);"
+          new = "case DESATIVADA -> List.of(IntegrationAction.REACTIVATE, IntegrationAction.VIEW);"
+          if service.count(old) != 1:
+              raise SystemExit(f"Expected one disabled action mapping, found {service.count(old)}")
+          service_path.write_text(service.replace(old, new, 1), encoding="utf-8")
+
+          test_path = Path("backend/src/test/java/br/com/iforce/praxis/shared/integration/IntegrationManagementDisabledActionsTest.java")
+          test_path.write_text(dedent('''
+              package br.com.iforce.praxis.shared.integration;
+
+              import br.com.iforce.praxis.audit.service.AuditEventService;
+              import br.com.iforce.praxis.auth.persistence.repository.EmpresaRepository;
+              import br.com.iforce.praxis.auth.service.CurrentEmpresaService;
+              import br.com.iforce.praxis.auth.service.CurrentUserService;
+              import br.com.iforce.praxis.shared.integration.model.IntegrationAction;
+              import br.com.iforce.praxis.shared.integration.model.IntegrationProvider;
+              import br.com.iforce.praxis.shared.integration.model.IntegrationStatus;
+              import br.com.iforce.praxis.shared.integration.model.IntegrationType;
+              import br.com.iforce.praxis.shared.integration.persistence.entity.EmpresaIntegrationEntity;
+              import br.com.iforce.praxis.shared.integration.persistence.repository.EmpresaIntegrationRepository;
+              import com.fasterxml.jackson.databind.ObjectMapper;
+              import org.junit.jupiter.api.Test;
+
+              import java.util.Optional;
+
+              import static org.assertj.core.api.Assertions.assertThat;
+              import static org.mockito.Mockito.mock;
+              import static org.mockito.Mockito.when;
+
+              class IntegrationManagementDisabledActionsTest {
+
+                  private final CurrentEmpresaService currentEmpresaService = mock(CurrentEmpresaService.class);
+                  private final CurrentUserService currentUserService = mock(CurrentUserService.class);
+                  private final EmpresaRepository empresaRepository = mock(EmpresaRepository.class);
+                  private final EmpresaIntegrationRepository empresaIntegrationRepository = mock(EmpresaIntegrationRepository.class);
+                  private final IntegrationTokenAdminService integrationTokenAdminService = mock(IntegrationTokenAdminService.class);
+                  private final AuditEventService auditEventService = mock(AuditEventService.class);
+                  private final IntegrationManagementService service = new IntegrationManagementService(
+                          currentEmpresaService,
+                          currentUserService,
+                          empresaRepository,
+                          empresaIntegrationRepository,
+                          integrationTokenAdminService,
+                          auditEventService,
+                          new ObjectMapper()
+                  );
+
+                  @Test
+                  void disabledGupyOffersOnlyReactivateAndView() {
+                      assertDisabledActions(IntegrationProvider.GUPY, IntegrationType.ATS, "gupy");
+                  }
+
+                  @Test
+                  void disabledCustomApiOffersOnlyReactivateAndView() {
+                      assertDisabledActions(IntegrationProvider.CUSTOM_API, IntegrationType.API, "custom_api");
+                  }
+
+                  private void assertDisabledActions(
+                          IntegrationProvider provider,
+                          IntegrationType type,
+                          String providerPath
+                  ) {
+                      String empresaId = "empresa-1";
+                      EmpresaIntegrationEntity entity = new EmpresaIntegrationEntity();
+                      entity.setProvider(provider);
+                      entity.setType(type);
+                      entity.setStatus(IntegrationStatus.DESATIVADA);
+
+                      when(currentEmpresaService.requiredEmpresaId()).thenReturn(empresaId);
+                      when(empresaIntegrationRepository.findFirstByEmpresaIdAndProvider(empresaId, provider))
+                              .thenReturn(Optional.of(entity));
+
+                      var response = service.getIntegration(providerPath);
+
+                      assertThat(response.availableActions()).containsExactly(
+                              IntegrationAction.REACTIVATE,
+                              IntegrationAction.VIEW
+                      );
+                      assertThat(response.availableActions()).doesNotContain(IntegrationAction.DISCONNECT);
+                  }
+              }
+              ''').lstrip(), encoding="utf-8")
+          PY
+
+      - name: Run focused backend tests
+        working-directory: backend
+        run: mvn -B -ntp -Dtest=IntegrationManagementDisabledActionsTest test
+
+      - name: Commit applied changes
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add backend/src/main/java/br/com/iforce/praxis/shared/integration/IntegrationManagementService.java \
+                  backend/src/test/java/br/com/iforce/praxis/shared/integration/IntegrationManagementDisabledActionsTest.java
+          git commit -m "fix: remover desconexão de integração desativada"
+          git push
