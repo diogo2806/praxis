@@ -28,4 +28,11 @@ public record IntegrationResponse(
         Instant tokenCreatedAt,
         List<IntegrationAction> availableActions
 ) {
+    public IntegrationResponse {
+        if (status == IntegrationStatus.DESATIVADA && availableActions != null) {
+            availableActions = availableActions.stream()
+                    .filter(action -> action != IntegrationAction.DISCONNECT)
+                    .toList();
+        }
+    }
 }
