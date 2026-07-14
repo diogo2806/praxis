@@ -152,7 +152,17 @@ function IntegrationsPage() {
 
   const reactivateMutation = useMutation({
     mutationFn: reactivateIntegration,
-    onSuccess: invalidate,
+    onSuccess: async (data) => {
+      if (data.token) {
+        setGeneratedToken({
+          provider: data.provider,
+          token: data.token,
+          tokenPreview: data.tokenPreview ?? "********",
+          createdAt: data.tokenCreatedAt ?? new Date().toISOString(),
+        });
+      }
+      await invalidate();
+    },
   });
 
   const testConnectionMutation = useMutation({

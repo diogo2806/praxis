@@ -216,21 +216,27 @@ public class IntegrationManagementService {
         }
         IntegrationStatus previousStatus = entity.getStatus();
         Instant now = Instant.now();
+        String rawToken = null;
+        Instant tokenCreatedAt = null;
 
         if (usesAccessToken(definition.provider())) {
-            String newToken = integrationTokenAdminService.rotateToken(definition.tokenProvider()).token();
-            entity.setCredentialsHash(sha256(newToken));
-            entity.setTokenPreview(buildTokenPreview(newToken));
+            var rotatedToken = integrationTokenAdminService.rotateToken(definition.tokenProvider());
+            rawToken = rotatedToken.token();
+            tokenCreatedAt = rotatedToken.createdAt();
+            entity.setCredentialsHash(sha256(rawToken));
+            entity.setTokenPreview(buildTokenPreview(rawToken));
         }
-        entity.setStatus(IntegrationStatus.CONECTADA);
+        entity.setStatus(IntegrationStatus.PENDENTE);
         entity.setDisabledAt(null);
+        entity.setLastSyncAt(null);
+        entity.setConfiguredAt(now);
         entity.setLastErrorMessage(null);
         entity.setUpdatedAt(now);
         EmpresaIntegrationEntity saved = empresaIntegrationRepository.save(entity);
 
         appendAudit(empresaId, actorUserId, definition.provider(), previousStatus, saved.getStatus(),
-                AuditEventType.INTEGRATION_REACTIVATED, null);
-        return toResponse(definition, saved);
+      AuditEventType.INTEGRATION_REACTIVATED, null);
+        return toResponse(definition, saved, rawToken, tokenCreatedAt);
     }
 
     @Transactional
@@ -364,23 +370,34 @@ public class IntegrationManagementService {
     }
 
     private IntegrationResponse toResponse(
-            IntegrationCatalog.Definition definition,
-            EmpresaIntegrationEntity entity
-    ) {
-        IntegrationStatus status = entity == null ? IntegrationStatus.NAO_CONFIGURADA : entity.getStatus();
-        return new IntegrationResponse(
-                definition.provider(),
-                definition.name(),
-                definition.description(),
-                definition.type(),
-                status,
-                entity == null ? null : entity.getLastSyncAt(),
-                entity == null ? null : entity.getConfiguredAt(),
-                entity == null ? null : entity.getLastErrorMessage(),
-                entity == null ? null : entity.getTokenPreview(),
-                actionsFor(status, definition.provider(), definition.supportsManualSync())
-        );
-    }
+    IntegrationCatalog.Definition definition,
+    EmpresaIntegrationEntity entity
+) {
+    return toResponse(definition, entity, null, null);
+}
+
+private IntegrationResponse toResponse(
+    IntegrationCatalog.Definition definition,
+    EmpresaIntegrationEntity entity,
+    String rawToken,
+    Instant tokenCreatedAt
+) {
+    IntegrationStatus status = entity == null ? IntegrationStatus.NAO_CONFIGURADA : entity.getStatus();
+    return new IntegrationResponse(
+            definition.provider(),
+            definition.name(),
+            definition.description(),
+            definition.type(),
+            status,
+            entity == null ? null : entity.getLastSyncAt(),
+            entity == null ? null : entity.getConfiguredAt(),
+            entity == null ? null : entity.getLastErrorMessage(),
+            entity == null ? null : entity.getTokenPreview(),
+            rawToken,
+            tokenCreatedAt,
+            actionsFor(status, definition.provider(), definition.supportsManualSync())
+    );
+}
 
     private static List<IntegrationAction> actionsFor(
             IntegrationStatus status,

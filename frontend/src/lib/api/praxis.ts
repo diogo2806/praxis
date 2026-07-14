@@ -602,6 +602,10 @@ export interface IntegrationCenterItem {
   configuredAt: string | null;
   errorMessage: string | null;
   tokenPreview: string | null;
+  /** Presente apenas na resposta que cria ou reativa uma credencial. */
+  token?: string | null;
+  /** Data de criação do token retornado uma única vez. */
+  tokenCreatedAt?: string | null;
   availableActions: IntegrationCenterAction[];
 }
 

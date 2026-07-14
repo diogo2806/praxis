@@ -24,6 +24,8 @@ public record IntegrationResponse(
         Instant configuredAt,
         String errorMessage,
         String tokenPreview,
+        String token,
+        Instant tokenCreatedAt,
         List<IntegrationAction> availableActions
 ) {
 }
