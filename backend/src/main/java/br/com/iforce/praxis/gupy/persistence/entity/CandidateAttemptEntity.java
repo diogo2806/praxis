@@ -11,13 +11,10 @@ import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.Id;
 import jakarta.persistence.OneToMany;
-import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import org.springframework.http.HttpStatus;
-import org.springframework.web.server.ResponseStatusException;
 
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -121,21 +118,4 @@ public class CandidateAttemptEntity implements EmpresaAwareEntity {
 
     @OneToMany(mappedBy = "candidateAttempt", cascade = CascadeType.ALL, orphanRemoval = true)
     private Set<ResultItemEntity> resultItems = new LinkedHashSet<>();
-
-    @PreUpdate
-    void validateIdempotentRequestFingerprint() {
-        String currentFingerprint = CandidateAttemptRequestFingerprint.from(this);
-        if (requestFingerprint == null) {
-            requestFingerprint = currentFingerprint;
-            requestFingerprintVersion = CandidateAttemptRequestFingerprint.VERSION;
-            return;
-        }
-        if (!requestFingerprint.equals(currentFingerprint)
-                || !Integer.valueOf(CandidateAttemptRequestFingerprint.VERSION).equals(requestFingerprintVersion)) {
-            throw new ResponseStatusException(
-                    HttpStatus.CONFLICT,
-                    "A chave de idempotência já foi usada com dados diferentes."
-            );
-        }
-    }
 }
