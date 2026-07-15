@@ -1,6 +1,6 @@
 # Requisitos técnicos pendentes — praxis
 
-Status: atualizado em 2026-07-15 após conclusão de `ASYNC11`, `BUS13`, `INT18` e `DATA13`.
+Status: atualizado em 2026-07-15 após conclusão de `ASYNC11`, `BUS13`, `INT18`, `DATA13` e `DATA14`.
 
 Este arquivo contém somente pendências técnicas implementáveis e comprovadas no sistema. Não inclui CI/CD, testes, QA, métricas observacionais, publicação ou marketing.
 
@@ -27,20 +27,7 @@ Este arquivo contém somente pendências técnicas implementáveis e comprovadas
 | `backend/src/main/java/br/com/iforce/praxis/gupy/service/CandidateAttemptService.java` | `publishEngagementTransitionIfNeeded()` e `publishAttemptEngagementEvent()` | Transições para início e abandono publicam `ATTEMPT_STARTED` e `ATTEMPT_ABANDONED` usando `CandidateAttemptEntity.resultWebhookUrl`. O payload inclui nome e e-mail do candidato. | Reservar `result_webhook_url` ao resultado oficial. Omitir esses eventos para Gupy ou encaminhá-los somente por canal genérico explicitamente configurado e com contrato próprio. |
 | `backend/src/main/java/br/com/iforce/praxis/shared/outbox/service/OutboxProcessor.java` | `dispatch()` e `processAttemptEngagementEvent()` | O processador reconhece os eventos proprietários, valida a URL e envia `eventPayload` por HTTP ao endereço armazenado como webhook de resultado. | Remover esse despacho para o destino Gupy e impedir que eventos internos reutilizem o contrato de `TestResult`. |
 
-## 2. Dados, aplicação e idempotência
-
-| ID | Tarefa técnica | Critério de conclusão | Status |
-|---|---|---|---|
-| DATA14 | Permitir novas aplicações de links diretos por ciclo, vaga ou comando explícito. | A empresa consegue criar nova aplicação para o mesmo candidato e avaliação ao informar novo ciclo/contexto ou solicitar nova tentativa; reenvios equivalentes continuam idempotentes. | ⬜ Pendente |
-
-### DATA14 — reaplicação de links diretos
-
-| Caminho completo | Método/campo/contrato | Como está | O que fazer |
-|---|---|---|---|
-| `backend/src/main/java/br/com/iforce/praxis/gupy/service/CandidateAttemptService.java` | `createCompanyLink()` | A chave usa empresa, e-mail e avaliação; qualquer tentativa anterior é reaproveitada indefinidamente. | Adicionar `applicationCycleId`, vaga/contexto ou comando explícito de nova aplicação, mantendo chave separada para reenvio equivalente. |
-| API e frontend de criação de link | contrato de criação | Não há escolha explícita entre reenviar link existente e criar nova tentativa. | Expor ações distintas, validar autorização e informar o efeito da operação. |
-
-## 3. Regras de negócio
+## 2. Regras de negócio
 
 | ID | Tarefa técnica | Critério de conclusão | Status |
 |---|---|---|---|
@@ -54,7 +41,7 @@ Este arquivo contém somente pendências técnicas implementáveis e comprovadas
 | `backend/src/main/java/br/com/iforce/praxis/simulation/service/SimulationValidationService.java` | `validatePathCompetencyCoverage()` | A cobertura desigual entre caminhos não impede necessariamente a publicação. | Bloquear publicação quando a política exigir base comum ou registrar formalmente grupos de caminhos comparáveis. |
 | `frontend/src/routes/talent-match.tsx` | consulta e exibição do Talent Match | Seleciona e exibe candidatos da mesma avaliação sem validar assinatura comum de competências, pesos e máximos efetivos. | Consumir metadado de comparabilidade e bloquear, separar ou sinalizar resultados incompatíveis. |
 
-## 4. Operação e interface
+## 3. Operação e interface
 
 | ID | Tarefa técnica | Critério de conclusão | Status |
 |---|---|---|---|
@@ -71,6 +58,5 @@ Este arquivo contém somente pendências técnicas implementáveis e comprovadas
 ## Ordem recomendada
 
 1. `INT17` — interromper o uso indevido do webhook Gupy e a exposição de payload proprietário.
-2. `DATA14` — permitir nova aplicação explícita em links diretos.
-3. `BUS12` — tornar resultados comparáveis ou bloquear comparações incompatíveis.
-4. `UI13` — paginar e completar o centro operacional.
+2. `BUS12` — tornar resultados comparáveis ou bloquear comparações incompatíveis.
+3. `UI13` — paginar e completar o centro operacional.
