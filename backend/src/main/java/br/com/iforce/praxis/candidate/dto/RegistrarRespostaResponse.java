@@ -17,6 +17,9 @@ public record RegistrarRespostaResponse(
         @Schema(example = "true")
         boolean finalizado,
 
+        @Schema(example = "https://cliente.gupy.io/candidates/return", description = "Destino final informado pela Gupy; presente somente após a conclusão.")
+        String redirectUrl,
+
         ParticipacaoResponse.ProgressoResponse progresso,
 
         EtapaAtualResponse etapaAtual

@@ -78,6 +78,12 @@ public class CandidateAttemptEntity implements EmpresaAwareEntity {
     @Column(name = "candidate_email", nullable = false, length = 180)
     private String candidateEmail;
 
+    @Column(name = "gupy_job_id")
+    private Long gupyJobId;
+
+    @Column(name = "callback_url", length = 1000)
+    private String callbackUrl;
+
     @Column(name = "result_webhook_url", length = 1000)
     private String resultWebhookUrl;
 

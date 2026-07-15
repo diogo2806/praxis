@@ -1,5 +1,7 @@
 package br.com.iforce.praxis.gupy.controller;
 
+import br.com.iforce.praxis.gupy.persistence.entity.CandidateAttemptEntity;
+import br.com.iforce.praxis.gupy.persistence.repository.CandidateAttemptRepository;
 import com.jayway.jsonpath.JsonPath;
 
 import org.junit.jupiter.api.Test;
@@ -49,6 +51,9 @@ class GupyIntegrationControllerTest {
 
     @Autowired
     private MockMvc mockMvc;
+
+    @Autowired
+    private CandidateAttemptRepository candidateAttemptRepository;
 
     @Test
     void listPublishedTestsRequiresBearerToken() throws Exception {
@@ -109,7 +114,25 @@ class GupyIntegrationControllerTest {
     }
 
     @Test
-    void createCandidateAttemptIsIdempotentByCompanyDocumentAndTest() throws Exception {
+    void createCandidateAttemptPersistsCallbackAndJobId() throws Exception {
+        MvcResult result = mockMvc.perform(post("/test/candidate")
+                        .header("Authorization", AUTHORIZATION)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(validCandidateRequest("candidate-contract-context", 901L)))
+                .andExpect(status().isCreated())
+                .andReturn();
+
+        String resultId = JsonPath.read(result.getResponse().getContentAsString(), "$.test_result_id");
+        CandidateAttemptEntity attempt = candidateAttemptRepository
+                .findByEmpresaIdAndResultId("empresa-1", resultId)
+                .orElseThrow();
+
+        assertThat(attempt.getGupyJobId()).isEqualTo(901L);
+        assertThat(attempt.getCallbackUrl()).isEqualTo("https://cliente.gupy.io/candidate-return");
+    }
+
+    @Test
+    void createCandidateAttemptIsIdempotentByCompanyDocumentTestAndJob() throws Exception {
         MvcResult firstResult = mockMvc.perform(post("/test/candidate")
                         .header("Authorization", AUTHORIZATION)
                         .contentType(MediaType.APPLICATION_JSON)
@@ -128,6 +151,26 @@ class GupyIntegrationControllerTest {
 
         String secondBody = secondResult.getResponse().getContentAsString();
         assertThat(secondBody).isEqualTo(firstBody);
+    }
+
+    @Test
+    void differentJobsCreateDifferentAttemptsForSameCandidateAndTest() throws Exception {
+        MvcResult first = mockMvc.perform(post("/test/candidate")
+                        .header("Authorization", AUTHORIZATION)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(validCandidateRequest("candidate-multiple-jobs", 100L)))
+                .andExpect(status().isCreated())
+                .andReturn();
+        MvcResult second = mockMvc.perform(post("/test/candidate")
+                        .header("Authorization", AUTHORIZATION)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(validCandidateRequest("candidate-multiple-jobs", 200L)))
+                .andExpect(status().isCreated())
+                .andReturn();
+
+        String firstResultId = JsonPath.read(first.getResponse().getContentAsString(), "$.test_result_id");
+        String secondResultId = JsonPath.read(second.getResponse().getContentAsString(), "$.test_result_id");
+        assertThat(secondResultId).isNotEqualTo(firstResultId);
     }
 
     @Test
@@ -185,7 +228,9 @@ class GupyIntegrationControllerTest {
                                   "document_id": "candidate-document-forbidden",
                                   "test_id": "sim-atendimento-caos",
                                   "name": "Thiago Souza",
-                                  "email": "thiago@example.com"
+                                  "email": "thiago@example.com",
+                                  "job_id": 100,
+                                  "callback_url": "https://cliente.gupy.io/candidate-return"
                                 }
                                 """))
                 .andExpect(status().isForbidden());
@@ -203,10 +248,15 @@ class GupyIntegrationControllerTest {
                 .andExpect(jsonPath("$.fields.documentId").exists())
                 .andExpect(jsonPath("$.fields.testId").exists())
                 .andExpect(jsonPath("$.fields.candidateName").exists())
-                .andExpect(jsonPath("$.fields.candidateEmail").exists());
+                .andExpect(jsonPath("$.fields.candidateEmail").exists())
+                .andExpect(jsonPath("$.fields.callbackUrl").exists());
     }
 
     private String validCandidateRequest(String documentId) {
+        return validCandidateRequest(documentId, 100L);
+    }
+
+    private String validCandidateRequest(String documentId, long jobId) {
         return """
                 {
                   "company_id": "empresa-123",
@@ -214,11 +264,13 @@ class GupyIntegrationControllerTest {
                   "test_id": "sim-atendimento-caos",
                   "name": "Thiago Souza",
                   "email": "thiago@example.com",
+                  "job_id": %d,
+                  "callback_url": "https://cliente.gupy.io/candidate-return",
                   "result_webhook_url": "https://cliente.gupy.io/result-webhook",
                   "candidate_type": "external",
                   "previous_result": "none"
                 }
-                """.formatted(documentId);
+                """.formatted(documentId, jobId);
     }
 }
 

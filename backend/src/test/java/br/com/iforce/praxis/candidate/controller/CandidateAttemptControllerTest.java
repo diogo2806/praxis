@@ -150,6 +150,7 @@ class CandidateAttemptControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("concluida"))
                 .andExpect(jsonPath("$.finalizado").value(true))
+                .andExpect(jsonPath("$.redirectUrl").value("https://cliente.gupy.io/candidate-return"))
                 .andExpect(jsonPath("$.progresso.passoAtual").value(1))
                 .andExpect(jsonPath("$.progresso.passosEstimados").value(1))
                 .andExpect(jsonPath("$.progresso.percentual").value(100))
@@ -690,6 +691,8 @@ class CandidateAttemptControllerTest {
                                   "test_id": "%s",
                                   "name": "Thiago Souza",
                                   "email": "thiago@example.com",
+                                  "job_id": 100,
+                                  "callback_url": "https://cliente.gupy.io/candidate-return",
                                   "result_webhook_url": "https://cliente.gupy.io/result-webhook",
                                   "candidate_type": "external",
                                   "previous_result": "none"
