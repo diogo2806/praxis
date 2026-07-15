@@ -1,16 +1,10 @@
 package br.com.iforce.praxis.gupy.dto;
 
-import br.com.iforce.praxis.gupy.model.ReliabilityLevel;
-
 import io.swagger.v3.oas.annotations.media.Schema;
-
 
 import java.util.List;
 
-import java.util.Map;
-
-
-@Schema(description = "Corpo exato esperado pela Gupy no /test/result/{resultId}")
+@Schema(description = "Contrato oficial TestResult esperado pela Gupy no /test/result/{resultId} e no webhook")
 public record TestResultResponse(
         String title,
         String testCode,
@@ -21,8 +15,6 @@ public record TestResultResponse(
         String status,                       // "done"
         String result_page_url,
         String result_candidate_page_url,
-        ReliabilityLevel reliabilityLevel,
-        Map<String, Object> other_informations,
         List<TestResultItemResponse> results
 ) {
 }
