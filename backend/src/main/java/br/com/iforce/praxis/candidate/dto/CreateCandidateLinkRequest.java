@@ -41,6 +41,12 @@ public record CreateCandidateLinkRequest(
         BigDecimal accommodationTimeMultiplier
 ) {
 
+    public CreateCandidateLinkRequest {
+        if (applicationCycleId == null || applicationCycleId.isBlank()) {
+            applicationCycleId = legacyCycleId(simulationId, candidateEmail);
+        }
+    }
+
     /** Compatibilidade para fluxos internos que ainda não expõem ciclo de aplicação. */
     public CreateCandidateLinkRequest(
             String simulationId,
