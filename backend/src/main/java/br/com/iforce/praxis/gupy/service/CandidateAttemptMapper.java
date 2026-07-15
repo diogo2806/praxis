@@ -1,60 +1,33 @@
 package br.com.iforce.praxis.gupy.service;
 
 import br.com.iforce.praxis.candidate.dto.EtapaAtualResponse;
-
 import br.com.iforce.praxis.candidate.dto.RespostaResponse;
-
 import br.com.iforce.praxis.gupy.dto.CreateCandidateRequest;
-
 import br.com.iforce.praxis.gupy.model.AttemptAnswer;
-
 import br.com.iforce.praxis.gupy.model.AttemptStatus;
-
 import br.com.iforce.praxis.gupy.model.CandidateAttempt;
-
 import br.com.iforce.praxis.gupy.model.PublishedSimulation;
-
 import br.com.iforce.praxis.gupy.model.ReliabilityLevel;
-
 import br.com.iforce.praxis.gupy.model.ResultDecision;
-
 import br.com.iforce.praxis.gupy.model.ResultItem;
-
 import br.com.iforce.praxis.gupy.model.ResultTier;
-
 import br.com.iforce.praxis.gupy.model.ScenarioNode;
-
 import br.com.iforce.praxis.gupy.persistence.entity.AttemptAnswerEntity;
-
 import br.com.iforce.praxis.gupy.persistence.entity.AttemptNodeServeEntity;
-
 import br.com.iforce.praxis.gupy.persistence.entity.CandidateAttemptEntity;
-
 import br.com.iforce.praxis.gupy.persistence.entity.ResultItemEntity;
-
 import org.springframework.stereotype.Component;
 
-
 import java.math.BigDecimal;
-
 import java.math.RoundingMode;
-
 import java.time.Instant;
-
 import java.util.Comparator;
-
 import java.util.HashSet;
-
 import java.util.LinkedHashMap;
-
 import java.util.List;
-
 import java.util.Map;
-
 import java.util.Set;
-
 import java.util.UUID;
-
 
 /**
  * Tradução entre a entidade JPA {@link CandidateAttemptEntity} e o agregado de domínio
@@ -272,8 +245,7 @@ public class CandidateAttemptMapper {
                         option.plainTextDescription(),
                         option.audioDescriptionUrl(),
                         option.mediaUrl(),
-                        option.mediaType(),
-                        option.nextNodeId()
+                        option.mediaType()
                 ))
                 .toList();
 
@@ -288,7 +260,6 @@ public class CandidateAttemptMapper {
                 node.audioDescriptionUrl(),
                 node.mediaUrl(),
                 node.mediaType(),
-                node.timeoutNextNodeId(),
                 alternativas
         );
     }
