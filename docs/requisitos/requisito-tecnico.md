@@ -1,133 +1,116 @@
 # Requisitos técnicos pendentes — praxis
 
-Status: atualizado em 2026-07-15 após auditoria da branch `main`.
+Status: atualizado em 2026-07-15 após revalidação funcional da branch `main`.
 
-Este arquivo contém somente pendências técnicas implementáveis e comprovadas no sistema. Não inclui CI/CD, testes, QA, métricas observacionais, publicação ou marketing.
+Este arquivo contém somente pendências técnicas implementáveis e comprovadas no sistema. Não inclui CI/CD, testes, QA, métricas meramente observacionais, publicação ou marketing.
 
 ## Contexto da auditoria
 
-- Commit auditado da branch principal: `7883116a029b0ae839e7f68b6d6ae5c3221fd236`.
-- Finalidade identificada: plataforma de avaliações situacionais versionadas para recrutamento, com pontuação determinística, revisão humana, trilha auditável e integrações com ATS.
+- Commit auditado da branch principal: `9d3d9c99a3556f597a71180c770ee9801c0832ab`.
+- Finalidade identificada: plataforma de avaliações situacionais para recrutamento, com critérios explícitos, score determinístico, trilha auditável e integração com ATS.
 - Stack principal: Java 21, Spring Boot 3.5, Spring Security, JPA, PostgreSQL/Flyway, React 19, TanStack Start/Router e TypeScript.
 - Arquitetura predominante: frontend React consumindo API Spring Boot, persistência PostgreSQL, autenticação JWT nas rotas internas, Bearer token nas integrações e entrega assíncrona por outbox transacional.
-- Fluxos revisados: integração Gupy, criação e reaproveitamento de tentativas, links diretos, cálculo de pontuação, Talent Match, processamento do outbox, monitoramento operacional, relatórios de engajamento e documentos canônicos.
+- Fluxos revisados: criação e repetição de tentativas, links diretos, execução do candidato, cálculo e comparação de resultados, callback Gupy, entrega de webhook, outbox, monitoramento operacional, relatórios de engajamento e documentação normativa.
+- Os identificadores `INT15`, `INT16` e `ASYNC10` já possuíam entregas históricas registradas. As novas lacunas receberam `INT17`, `INT18` e `ASYNC11` para evitar colisão e preservar rastreabilidade.
+- `LEGACY12` foi concluído durante esta normalização: os fatos válidos foram convertidos em requisitos objetivos e `docs/backlog.txt` foi removido como fonte concorrente.
+
+## Resumo das pendências
+
+| ID | Prioridade | Tarefa técnica | Critério de conclusão | Status |
+|---|---|---|---|---|
+| `INT17` | Crítica | Impedir envio de eventos proprietários ao `result_webhook_url` da Gupy. | O destino fornecido pela Gupy recebe exclusivamente o `TestResult` contratual; eventos de engajamento são omitidos ou enviados somente por integração genérica explicitamente configurada, sem dados pessoais destinados ao endpoint Gupy. | ⬜ Pendente |
+| `INT18` | Crítica | Confirmar o `callback_url` por chamada GET efetiva, persistente e recuperável. | A conclusão agenda uma chamada servidor-servidor ao callback autorizado, persiste tentativas, resposta, erro e confirmação, aplica retentativa/DLQ e não considera a mera apresentação da URL ao navegador como confirmação. | ⬜ Pendente |
+| `ASYNC11` | Crítica | Rejeitar tipos desconhecidos no outbox. | Todo tipo não suportado lança erro explícito, permanece fora de `SENT` e segue a política normal de retentativa e DLQ com erro observável. | ⬜ Pendente |
+| `DATA13` | Crítica | Separar repetição idempotente de criação legítima de nova tentativa na Gupy. | O sistema distingue repetição equivalente, reapresentação do mesmo resultado, reteste autorizado e nova aplicação após falha, abandono ou expiração, sem transformar uma nova tentativa legítima em `409`. | ⬜ Pendente |
+| `DATA14` | Alta | Permitir novas aplicações de links diretos por ciclo, vaga ou comando explícito. | A empresa consegue criar uma nova aplicação para o mesmo candidato e avaliação quando informa um novo ciclo/contexto ou solicita explicitamente nova tentativa; reenvios equivalentes continuam idempotentes. | ⬜ Pendente |
+| `BUS12` | Alta | Garantir comparabilidade de pontuação entre caminhos ou bloquear comparações incompatíveis. | Resultados comparados usam uma base comum de competências, pesos e máximos alcançáveis; alternativamente, o backend classifica resultados incompatíveis e o Talent Match impede ou sinaliza claramente a comparação. | ⬜ Pendente |
+| `UI13` | Média | Paginar o centro operacional e incluir todos os estados relevantes. | A API e a interface suportam paginação e filtros por estado, incluindo não iniciadas, em andamento, concluídas, abandonadas e expiradas, sem corte silencioso fixo em 200 registros. | ⬜ Pendente |
+| `BUS13` | Média | Apresentar horas economizadas como estimativa configurável com metodologia explícita. | Relatórios e telas identificam o valor como estimativa, exibem período, fórmula, parâmetro configurado e ressalva metodológica; nenhuma mensagem trata o número como economia observada sem dados comparativos reais. | ⬜ Pendente |
 
 ## 1. Integração Gupy
 
-| ID | Tarefa técnica | Critério de conclusão | Status |
-|---|---|---|---|
-| INT17 | Restringir o `result_webhook_url` da Gupy ao payload oficial de resultado. | Somente eventos `RESULT_READY` serializados como `TestResult` são enviados ao `result_webhook_url`; eventos internos de início e abandono não usam esse destino nem expõem dados pessoais ao ATS. | ⬜ Pendente |
-| INT18 | Confirmar o `callback_url` da Gupy por chamada servidor-servidor persistida. | O backend executa GET no callback ao concluir a tentativa, registra código HTTP, data e estado da confirmação, aplica retentativa idempotente e não considera `callback_presented` como confirmação. | ⬜ Pendente |
-
-### INT17 — arquivos e métodos
+### INT17 — uso indevido do webhook de resultado
 
 | Caminho completo | Método/campo/contrato | Como está | O que fazer |
 |---|---|---|---|
-| `src/main/java/**/OutboxProcessor.java` | despacho de `ATTEMPT_STARTED`, `ATTEMPT_ABANDONED` e `RESULT_READY` | Eventos proprietários de início e abandono são enviados por HTTP ao mesmo `result_webhook_url` reservado ao resultado oficial da Gupy. | Separar os destinos e permitir no `result_webhook_url` apenas o payload oficial `TestResult` produzido por `RESULT_READY`. |
-| `src/main/java/**/CandidateAttemptService.java` e produtores do outbox | payloads de início e abandono | Os payloads internos podem incluir nome e e-mail do candidato e seguem para um endpoint externo cujo contrato não prevê esses eventos. | Manter esses eventos apenas em canais internos ou em um webhook próprio explicitamente configurado, sem reutilizar o endpoint de resultados da Gupy. |
-| `docs/implementados/requisitos-implementados.md` | registro anterior de `INT11` | A documentação registra como corrigido um comportamento que permanece ativo na implementação auditada. | Reabrir a lacuna funcional no backlog e só registrar nova conclusão quando o fluxo real estiver separado. |
+| `backend/src/main/java/br/com/iforce/praxis/gupy/service/CandidateAttemptService.java` | `publishAttemptEngagementEvent()` | Publica `ATTEMPT_STARTED` e `ATTEMPT_ABANDONED` usando o `resultWebhookUrl` armazenado na tentativa e inclui nome e e-mail da pessoa candidata no payload proprietário. | Remover o destino Gupy desses eventos. Eventos proprietários devem depender exclusivamente de webhook genérico explicitamente configurado e com contrato próprio. |
+| `backend/src/main/java/br/com/iforce/praxis/shared/outbox/service/OutboxProcessor.java` | `processAttemptEngagementEvent()` | Valida a URL e envia o payload proprietário com `ResultWebhookClient.postPayload()` para o endereço recebido como webhook de resultado. | Eliminar esse despacho para o destino Gupy e manter o `result_webhook_url` reservado ao `TestResult`. |
+| `docs/implementados/requisitos-implementados.md` | registro de `INT11` | A conclusão histórica não correspondia ao fluxo alcançável atual. | Manter a reclassificação e concluir `INT17` antes de voltar a declarar separação integral dos contratos. |
 
-### INT18 — arquivos e métodos
-
-| Caminho completo | Método/campo/contrato | Como está | O que fazer |
-|---|---|---|---|
-| `src/main/java/**/Gupy*Callback*.java` e fluxo de conclusão | `callback_url`, `handoff=callback_presented` | O sistema registra apenas que a URL foi disponibilizada ao navegador; isso não comprova que o GET foi executado nem recebido pela Gupy. | Implementar chamada GET servidor-servidor após conclusão, com persistência do resultado e retentativa segura. |
-| `src/main/java/**/Audit*.java` ou evento de auditoria do callback | mensagem “Callback de conclusão disponibilizado ao navegador” | A auditoria pode transmitir confirmação operacional inexistente. | Distinguir `APRESENTADO_AO_NAVEGADOR`, `CONFIRMADO_PELO_BACKEND` e `FALHA_DE_CONFIRMACAO`, registrando status HTTP e instante. |
-
-## 2. Tentativas e idempotência
-
-| ID | Tarefa técnica | Critério de conclusão | Status |
-|---|---|---|---|
-| DATA13 | Diferenciar repetição idempotente de nova tentativa autorizada pela Gupy. | Reenvios idênticos reutilizam a mesma tentativa, enquanto `previous_result=fail` ou outro comando explícito de reteste cria nova aplicação sem retornar `409` indevido. | ⬜ Pendente |
-| DATA14 | Modelar aplicações independentes para links diretos. | A empresa consegue criar nova aplicação da mesma avaliação para o mesmo candidato por vaga, ciclo ou comando explícito, preservando a idempotência de cada aplicação. | ⬜ Pendente |
-
-### DATA13 — arquivos e métodos
+### INT18 — callback sem confirmação servidor-servidor
 
 | Caminho completo | Método/campo/contrato | Como está | O que fazer |
 |---|---|---|---|
-| `src/main/java/**/CandidateAttemptService.java` | `createOrReuse()` | A chave idempotente usa empresa, candidato, teste e vaga, mas não representa uma nova aplicação; `previous_result` entra no fingerprint e não na decisão de reteste. | Separar `idempotencyKey` de `applicationId` ou `attemptCycle`; tratar `previous_result=fail` conforme política explícita de reteste. |
-| `src/main/java/**/Gupy*Request*.java` | `previous_result` | O campo é aceito pelo DTO, mas uma alteração de valor pode gerar a mesma chave com fingerprint diferente e resultar em `409 Conflict`. | Fazer o contrato alcançar a regra de negócio, criando nova tentativa quando a solicitação representar reteste legítimo. |
+| `backend/src/main/java/br/com/iforce/praxis/gupy/observability/CandidateCallbackHandoffAdvice.java` | `beforeBodyWrite()` e `record()` | Registra apenas que o callback foi apresentado ao navegador (`callback_presented`). Não executa o GET nem comprova recebimento pelo ATS. | Criar processamento servidor-servidor persistente para o callback e reservar o evento atual apenas como telemetria de apresentação ao navegador. |
+| `backend/src/main/java/br/com/iforce/praxis/gupy/service/CandidateAttemptService.java` | `redirectUrl()` e respostas de conclusão | Devolve a URL ao frontend, mantendo a navegação do navegador como mecanismo efetivo de retorno. | Publicar evento transacional de callback após conclusão e preservar o redirecionamento apenas como experiência complementar. |
+| `backend/src/main/java/br/com/iforce/praxis/shared/outbox/` | processamento assíncrono | Não há estado persistido específico para tentativa, confirmação, erro e DLQ do callback GET. | Adicionar destino/evento próprio, idempotência, validação de URL, timeout, backoff, confirmação HTTP e operação de reprocessamento. |
 
-### DATA14 — arquivos e métodos
+## 2. Dados e idempotência
 
-| Caminho completo | Método/campo/contrato | Como está | O que fazer |
-|---|---|---|---|
-| `src/main/java/**/CandidateAttemptService.java` ou serviço de links diretos | chave `empresa + e-mail + avaliação` | Qualquer tentativa existente pode ser reaproveitada, inclusive abandonada, expirada ou pertencente a outra aplicação legítima. | Introduzir identificador de aplicação, vaga, ciclo ou comando explícito de nova tentativa e limitar o reaproveitamento à mesma aplicação. |
-| `src/main/java/**/CandidateLink*.java` | criação e listagem de links | O domínio não expressa de forma inequívoca quando um novo link deve criar nova tentativa. | Novo campo ou entidade sugerida: `applicationId`/`assessmentCycleId`, persistida e usada na chave idempotente. |
-
-## 3. Pontuação e comparabilidade
-
-| ID | Tarefa técnica | Critério de conclusão | Status |
-|---|---|---|---|
-| BUS12 | Garantir comparabilidade válida entre candidatos de caminhos distintos. | O score usa uma base comum de competências e máximos alcançáveis, ou o Talent Match identifica e bloqueia comparações entre resultados calculados sobre bases incompatíveis. | ⬜ Pendente |
-
-### BUS12 — arquivos e métodos
+### DATA13 — reteste Gupy versus repetição idempotente
 
 | Caminho completo | Método/campo/contrato | Como está | O que fazer |
 |---|---|---|---|
-| `src/main/java/**/Scoring*.java` | cálculo do máximo por etapa e redistribuição de pesos | O denominador combina máximos de alternativas que podem levar a ramos diferentes; competências ausentes no caminho são removidas e os pesos restantes são redistribuídos. | Calcular contra uma matriz comum e alcançável por versão da avaliação, ou produzir metadados explícitos de comparabilidade. |
-| `src/main/java/**/TalentMatch*.java` e frontend correspondente | radar, benchmark e comparação | Candidatos podem ser colocados lado a lado apesar de terem sido medidos em competências e pesos efetivos diferentes. | Validar a compatibilidade das bases antes de comparar; quando incompatíveis, impedir benchmark único e informar o motivo. |
-| `src/main/java/**/AssessmentValidator*.java` | aviso de competência ausente em caminhos | A validação permite publicação apenas com aviso, embora isso possa invalidar comparações posteriores. | Transformar em erro quando a avaliação declarar comparabilidade global, ou exigir uma política explícita de comparação por caminho. |
+| `backend/src/main/java/br/com/iforce/praxis/gupy/service/CandidateAttemptIdempotencyAspect.java` | `idempotencyKey()` | A chave usa empresa, companhia, documento, teste e vaga, mas não representa uma aplicação ou ciclo de reteste. | Introduzir identificador de aplicação/ciclo contratual ou regra determinística que permita nova tentativa autorizada sem perder idempotência da mesma solicitação. |
+| `backend/src/main/java/br/com/iforce/praxis/gupy/service/CandidateAttemptIdempotencyAspect.java` | `fingerprint()` | Inclui `previous_result`; a mudança desse campo mantém a mesma chave e produz fingerprint divergente, resultando em `409`. | Separar campos de identidade idempotente dos campos que autorizam novo ciclo e definir transições explícitas para reteste. |
+| `backend/src/main/java/br/com/iforce/praxis/gupy/dto/CreateCandidateRequest.java` | `previous_result` | O contrato aceita `fail`, mas o fluxo não o converte em uma nova aplicação legítima. | Usar o campo dentro de uma política documentada de reteste, incluindo estados anteriores aceitos e prevenção de duplicidade concorrente. |
+
+### DATA14 — reaplicação de links diretos
+
+| Caminho completo | Método/campo/contrato | Como está | O que fazer |
+|---|---|---|---|
+| `backend/src/main/java/br/com/iforce/praxis/gupy/service/CandidateAttemptService.java` | `createCompanyLink()` | A chave usa empresa, e-mail e avaliação; qualquer tentativa anterior é reaproveitada indefinidamente. | Adicionar `applicationCycleId`, vaga/contexto ou comando explícito de nova aplicação, mantendo uma chave separada para reenvio equivalente. |
+| API e frontend de criação de link | contrato de criação | Não existe escolha clara entre reenviar o link existente e gerar uma nova tentativa. | Expor ações distintas, validar autorização e apresentar ao usuário o efeito de cada opção. |
+
+## 3. Regras de negócio
+
+### BUS12 — comparabilidade entre caminhos
+
+| Caminho completo | Método/campo/contrato | Como está | O que fazer |
+|---|---|---|---|
+| `backend/src/main/java/br/com/iforce/praxis/gupy/service/ResultScoringService.java` | normalização por caminho | Competências sem máximo positivo no caminho são removidas e os pesos restantes são renormalizados, produzindo bases efetivas distintas. | Definir matriz comum de competências e máximos alcançáveis por versão, ou gerar metadado explícito de assinatura de comparabilidade por caminho. |
+| `backend/src/main/java/br/com/iforce/praxis/simulation/service/SimulationValidationService.java` | `validatePathCompetencyCoverage()` | Caminhos sem cobertura de uma competência geram apenas aviso e continuam publicáveis. | Bloquear publicação quando a política exigir comparação comum ou marcar formalmente os grupos de caminhos compatíveis. |
+| `frontend/src/routes/talent-match.tsx` | comparação de candidatos | Exibe candidatos no mesmo radar sem comprovar que foram pontuados sobre a mesma base efetiva. | Consumir a informação de comparabilidade do backend e bloquear, separar ou sinalizar comparações incompatíveis. |
+
+### BUS13 — metodologia das horas economizadas
+
+| Caminho completo | Método/campo/contrato | Como está | O que fazer |
+|---|---|---|---|
+| `backend/src/main/java/br/com/iforce/praxis/engagement/service/EngagementReportService.java` | `hoursSaved = completed * hoursSavedPerEvaluation` | Multiplica conclusões por uma constante e apresenta o resultado como horas economizadas, sem comparação observada. | Nomear o valor como estimativa, incluir fórmula, parâmetro, período e origem metodológica no DTO e na mensagem. |
+| `backend/src/main/resources/application.properties` | `praxis.engagement.hours-saved-per-evaluation` | O padrão de 1,5 hora não traz unidade e metodologia explícitas para quem recebe o relatório. | Documentar a hipótese, permitir configuração por empresa ou desativação e impedir linguagem de comprovação quando só houver estimativa. |
 
 ## 4. Processamento assíncrono
 
-| ID | Tarefa técnica | Critério de conclusão | Status |
-|---|---|---|---|
-| ASYNC10 | Fazer tipos desconhecidos do outbox falharem explicitamente. | Qualquer tipo não suportado gera erro, permanece pendente para retentativa e segue para DLQ conforme a política existente; nunca é marcado como `SENT`. | ⬜ Pendente |
-
-### ASYNC10 — arquivos e métodos
+### ASYNC11 — evento desconhecido marcado como entregue
 
 | Caminho completo | Método/campo/contrato | Como está | O que fazer |
 |---|---|---|---|
-| `src/main/java/**/OutboxProcessor.java` | despacho por tipo de evento | Somente três tipos são tratados; um tipo desconhecido encerra o método sem erro e depois é marcado como entregue. | Adicionar ramo padrão que lance exceção específica, por exemplo `novo método sugerido: rejectUnsupportedEventType()`. |
-| `src/main/java/**/OutboxProcessor.java` | transição para `SENT` | A transição ocorre mesmo quando nenhum handler processou o evento. | Marcar como `SENT` apenas após um handler reconhecido concluir com sucesso. |
+| `backend/src/main/java/br/com/iforce/praxis/shared/outbox/service/OutboxProcessor.java` | `dispatch()` | Tipos fora dos casos reconhecidos retornam sem erro; `deliverAndFinalize()` marca o evento como `SENT`. | Adicionar ramo padrão que lance `UnsupportedOutboxEventTypeException` com tipo e ID do evento. |
+| `backend/src/main/java/br/com/iforce/praxis/shared/outbox/service/OutboxProcessor.java` | `deliverAndFinalize()` | Não diferencia ausência de handler de entrega bem-sucedida. | Manter o evento em retry e encaminhá-lo à DLQ segundo a política existente, preservando erro operacional explícito. |
 
-## 5. Monitoramento operacional
+Comportamento mínimo esperado:
 
-| ID | Tarefa técnica | Critério de conclusão | Status |
-|---|---|---|---|
-| UI13 | Paginar o centro operacional e incluir todos os estados relevantes. | Convites não abertos, tentativas em andamento, concluídas, abandonadas e expiradas podem ser consultados com paginação e filtros, sem corte silencioso em 200 registros. | ⬜ Pendente |
+```java
+default -> throw new UnsupportedOutboxEventTypeException(event.getEventType());
+```
 
-### UI13 — arquivos e métodos
+## 5. Operação e interface
 
-| Caminho completo | Método/campo/contrato | Como está | O que fazer |
-|---|---|---|---|
-| `src/main/java/**/CandidateLink*.java` ou repositório de tentativas | consulta limitada a 200 registros | A listagem geral possui limite fixo e não expõe paginação. | Receber parâmetros de página, tamanho, estado, período e ordenação; retornar metadados de paginação. |
-| `src/main/java/**/Operations*.java` e frontend do centro operacional | filtros de status | A tela carrega somente `IN_PROGRESS` e `COMPLETED`, ocultando convites não abertos, abandonos e expirações. | Expor todos os estados operacionais relevantes e permitir filtros combináveis. |
-
-## 6. Relatórios de valor
-
-| ID | Tarefa técnica | Critério de conclusão | Status |
-|---|---|---|---|
-| BUS13 | Tratar horas economizadas como estimativa configurável e metodologicamente explícita. | A interface, API e relatórios usam o termo “estimativa de horas potencialmente economizadas”, exibem a metodologia e permitem configurar a média por cliente. | ⬜ Pendente |
-
-### BUS13 — arquivos e métodos
+### UI13 — paginação e estados do centro operacional
 
 | Caminho completo | Método/campo/contrato | Como está | O que fazer |
 |---|---|---|---|
-| `src/main/java/**/EngagementReportService.java` | cálculo `avaliacoesConcluidas * 1.5` | Uma constante genérica é apresentada como economia efetivamente entregue, sem medição do processo anterior. | Renomear o indicador, expor a fórmula e ler a média configurada pela empresa, mantendo um default claramente identificado como estimativa. |
-| frontend e templates de relatório | rótulo “horas economizadas” | O texto não diferencia hipótese de medição real. | Exibir metodologia, valor configurado e aviso de estimativa em todas as superfícies. |
-
-## 7. Documentação concorrente
-
-| ID | Tarefa técnica | Critério de conclusão | Status |
-|---|---|---|---|
-| LEGACY12 | Remover `docs/backlog.txt` como fonte concorrente e obsoleta. | Conteúdo ainda válido é convertido em requisitos objetivos no backlog canônico; recomendações especulativas e informações superadas são removidas ou arquivadas como material não normativo. | ⬜ Pendente |
-
-### LEGACY12 — arquivos e métodos
-
-| Caminho completo | Método/campo/contrato | Como está | O que fazer |
-|---|---|---|---|
-| `docs/backlog.txt` | conteúdo integral | O arquivo mistura conversa, propostas hipotéticas, tecnologias não adotadas, código ilustrativo e afirmações superadas, incluindo sugestão de outbox já existente. | Remover o arquivo ou substituí-lo por aviso de arquivo histórico não normativo; migrar somente pendências comprovadas para este documento. |
-| `docs/requisitos/requisito-tecnico.md` | fonte canônica de pendências | O documento declarava ausência de pendências apesar das inconsistências funcionais comprovadas na implementação. | Manter somente requisitos verificáveis, específicos e implementáveis, conforme esta auditoria. |
+| `backend/src/main/java/br/com/iforce/praxis/gupy/service/CandidateAttemptService.java` | `listLiveAttempts()` | Consulta somente `IN_PROGRESS` e `COMPLETED` e aplica `PageRequest.of(0, 200)`. | Criar endpoint paginado com filtros de estado, período, avaliação e busca por candidato. |
+| `backend/src/main/java/br/com/iforce/praxis/gupy/service/CandidateAttemptService.java` | `listCompanyLinks()` | Limita silenciosamente a listagem aos 200 registros mais recentes. | Retornar página, total, cursor ou metadados equivalentes sem corte invisível. |
+| `frontend/src/routes/monitoramento.tsx` | centro operacional | Não oferece visão completa de convites não iniciados, abandonos e expirações. | Adicionar filtros, paginação e estados vazios/erros coerentes com a API paginada. |
 
 ## Ordem recomendada
 
-1. `INT17` — interromper o envio de eventos proprietários ao webhook oficial da Gupy.
-2. `INT18` — confirmar o callback por chamada servidor-servidor persistida.
-3. `ASYNC10` — impedir perda silenciosa de eventos desconhecidos.
-4. `DATA13` e `DATA14` — separar repetição idempotente de nova aplicação legítima.
-5. `BUS12` — corrigir a base de comparação do Talent Match ou bloquear comparações incompatíveis.
-6. `UI13` — paginar o monitoramento e incluir todos os estados operacionais.
-7. `BUS13` — corrigir a semântica e a configuração da estimativa de horas.
-8. `LEGACY12` — eliminar a documentação concorrente e obsoleta.
+1. `INT17` — interromper o uso indevido do webhook Gupy e a exposição de payload proprietário.
+2. `INT18` — executar e confirmar o callback por processamento servidor-servidor persistente.
+3. `ASYNC11` — impedir perda silenciosa de tipos desconhecidos no outbox.
+4. `DATA13` — separar reteste legítimo de repetição idempotente.
+5. `DATA14` — permitir nova aplicação explícita em links diretos.
+6. `BUS12` — tornar os resultados comparáveis ou bloquear comparações incompatíveis.
+7. `UI13` — paginar e completar o centro operacional.
+8. `BUS13` — explicitar a metodologia da estimativa de horas economizadas.
