@@ -9,6 +9,7 @@ import br.com.iforce.praxis.gupy.persistence.repository.CandidateAttemptReposito
 import br.com.iforce.praxis.gupy.service.GupyTestResultMapper;
 import br.com.iforce.praxis.gupy.service.SimulationCatalogService;
 import br.com.iforce.praxis.shared.integration.IntegrationManagementService;
+import br.com.iforce.praxis.shared.integration.service.AttemptEngagementWebhookService;
 import br.com.iforce.praxis.shared.integration.service.ConfirmableGenericWebhookDeliveryService;
 import br.com.iforce.praxis.shared.notification.service.ResultDeliveryDlqAlertService;
 import br.com.iforce.praxis.shared.outbox.persistence.entity.OutboxEventEntity;
@@ -51,6 +52,8 @@ class OutboxProcessorTest {
     @Mock
     private ConfirmableGenericWebhookDeliveryService genericWebhookDeliveryService;
     @Mock
+    private AttemptEngagementWebhookService attemptEngagementWebhookService;
+    @Mock
     private IntegrationManagementService integrationManagementService;
     @Mock
     private PlatformTransactionManager transactionManager;
@@ -71,6 +74,7 @@ class OutboxProcessorTest {
                 outboundUrlValidator,
                 dlqAlertService,
                 genericWebhookDeliveryService,
+                attemptEngagementWebhookService,
                 integrationManagementService,
                 transactionManager
         );
@@ -171,7 +175,7 @@ class OutboxProcessorTest {
     }
 
     @Test
-    void shouldPostAttemptEngagementEventPayload() {
+    void shouldDeliverAttemptEngagementOnlyThroughCustomApi() {
         OutboxEventEntity event = new OutboxEventEntity();
         event.setId(3L);
         event.setEmpresaId("empresa-1");
@@ -180,11 +184,9 @@ class OutboxProcessorTest {
         event.setAggregateId("att_123");
         event.setPayload("""
                 {
-                  "webhookUrl": "https://example.com/webhook",
-                  "eventPayload": {
-                    "event_type": "ATTEMPT_STARTED",
-                    "attempt_id": "att_123"
-                  }
+                  "event": "ATTEMPT_STARTED",
+                  "tenantId": "empresa-1",
+                  "attemptId": "att_123"
                 }
                 """);
         event.setStatus(OutboxEventEntity.OutboxEventStatus.PENDING);
@@ -194,8 +196,10 @@ class OutboxProcessorTest {
 
         outboxProcessor.processReadyEvents();
 
-        verify(resultWebhookClient).postPayload(eq("https://example.com/webhook"), any(JsonNode.class));
+        verify(attemptEngagementWebhookService).deliver(eq("empresa-1"), eq("ATTEMPT_STARTED"), any(JsonNode.class));
+        verify(resultWebhookClient, never()).postPayload(anyString(), any(JsonNode.class));
         assertThat(event.getStatus()).isEqualTo(OutboxEventEntity.OutboxEventStatus.SENT);
+        assertThat(destinationStatus(event, "CUSTOM_API")).isEqualTo("SENT");
     }
 
     @Test
@@ -211,7 +215,7 @@ class OutboxProcessorTest {
         assertThat(event.getLastError())
                 .contains("UNSUPPORTED_EVENT")
                 .contains("77");
-        verifyNoInteractions(resultWebhookClient, genericWebhookDeliveryService);
+        verifyNoInteractions(resultWebhookClient, genericWebhookDeliveryService, attemptEngagementWebhookService);
     }
 
     @Test
@@ -229,7 +233,7 @@ class OutboxProcessorTest {
                 .contains("UNSUPPORTED_EVENT")
                 .contains("78");
         verify(dlqAlertService).alertEmpresaAdmins(event);
-        verifyNoInteractions(resultWebhookClient, genericWebhookDeliveryService);
+        verifyNoInteractions(resultWebhookClient, genericWebhookDeliveryService, attemptEngagementWebhookService);
     }
 
     @Test
@@ -239,7 +243,7 @@ class OutboxProcessorTest {
 
         outboxProcessor.processReadyEvents();
 
-        verifyNoInteractions(resultWebhookClient, genericWebhookDeliveryService);
+        verifyNoInteractions(resultWebhookClient, genericWebhookDeliveryService, attemptEngagementWebhookService);
     }
 
     private String destinationStatus(OutboxEventEntity event, String destination) {
