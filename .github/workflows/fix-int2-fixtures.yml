@@ -1,0 +1,57 @@
+name: Corrigir fixtures INT2
+
+on:
+  push:
+    branches:
+      - fix/int2-gupy-enums-20260715-1620
+    paths:
+      - .github/workflows/fix-int2-fixtures.yml
+
+permissions:
+  contents: write
+
+jobs:
+  migrate-fixtures:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout da branch
+        uses: actions/checkout@v4
+        with:
+          ref: fix/int2-gupy-enums-20260715-1620
+          fetch-depth: 0
+
+      - name: Atualizar payloads antigos e remover workflow temporário
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          root = Path('backend/src/test/java')
+          old = '"previous_result": "none"'
+          new = '"previous_result": null'
+          changed = []
+
+          for path in root.rglob('*.java'):
+              content = path.read_text(encoding='utf-8')
+              updated = content.replace(old, new)
+              if updated != content:
+                  path.write_text(updated, encoding='utf-8')
+                  changed.append(str(path))
+
+          if not changed:
+              raise SystemExit('Nenhuma fixture legada encontrada.')
+
+          print('Fixtures atualizadas:')
+          print('\n'.join(changed))
+          PY
+
+          rm .github/workflows/fix-int2-fixtures.yml
+
+      - name: Commitar migração pontual
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add backend/src/test/java .github/workflows/fix-int2-fixtures.yml
+          git commit -m "test: alinhar fixtures ao contrato Gupy"
+          git push origin HEAD:fix/int2-gupy-enums-20260715-1620
