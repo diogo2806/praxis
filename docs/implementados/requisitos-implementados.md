@@ -1,6 +1,6 @@
 # Requisitos técnicos implementados — praxis
 
-Status: atualizado em 2026-07-15 após conclusão e revalidação de `ASYNC11` e `BUS13`.
+Status: atualizado em 2026-07-15 após conclusão e revalidação de `ASYNC11`, `BUS13` e `DATA14`.
 
 Este arquivo registra comportamentos comprovadamente entregues no código e preserva a rastreabilidade de conclusões históricas posteriormente reclassificadas. Entregas parciais ou invalidadas apontam obrigatoriamente para o backlog canônico.
 
@@ -8,6 +8,7 @@ Este arquivo registra comportamentos comprovadamente entregues no código e pres
 
 | Origem | Situação registrada | Entrega comprovada | Pendência remanescente |
 |---|---|---|---|
+| `DATA14` | Concluído | Links diretos usam `applicationCycleId` na identidade idempotente da criação; um novo ciclo gera tentativa independente, o mesmo ciclo reaproveita somente a criação equivalente e `POST /api/v1/candidate-links/{attemptId}/resend` recupera a tentativa existente com autorização por empresa. A interface diferencia e explica as duas ações. | Nenhuma para reaplicação e reenvio de links diretos. |
 | `BUS13` | Concluído | O relatório trata horas poupadas como estimativa opcional, inclui período, fórmula, hipótese por avaliação, fonte metodológica e ressalva explícita, e permite desativar somente a estimativa sem interromper o relatório de uso. | Nenhuma para a explicitação metodológica da estimativa. |
 | `LEGACY12` | Concluído | Os fatos técnicos ainda válidos foram convertidos em requisitos objetivos em `docs/requisitos/requisito-tecnico.md` e o arquivo conversacional `docs/backlog.txt` foi removido como fonte concorrente. | Nenhuma para a consolidação documental. |
 | `INT16` | Concluído | `docs/INTEGRACAO-GUPY-PROVEDOR.md` descreve `result_candidate_page_url` com JWT assinado do tipo `candidate_result`, empresa e tentativa, TTL próprio configurável, consumo por `CandidateResultPageService`, exemplo contratual e fluxo coerentes com essa implementação. | Nenhuma para o alinhamento documental da URL de resultado; homologação externa permanece não comprovada. |
@@ -43,6 +44,9 @@ Este arquivo registra comportamentos comprovadamente entregues no código e pres
 | `backend/src/main/java/br/com/iforce/praxis/gupy/service/CandidateAttemptIdempotencyAspect.java` | `enforceEquivalentRetry()` | Bloqueia fingerprint divergente sob a mesma chave; a ausência de um conceito de novo ciclo permanece em `DATA13`. |
 | `backend/src/main/java/br/com/iforce/praxis/shared/outbox/service/OutboxProcessor.java` | `dispatch()` e `handleEventFailure()` | Tipos desconhecidos lançam erro explícito com tipo e ID, permanecem em retry e chegam à DLQ após o limite sem serem marcados como `SENT`. |
 | `backend/src/test/java/br/com/iforce/praxis/shared/outbox/service/OutboxProcessorTest.java` | cenários de evento desconhecido | Verifica ausência de `sentAt`, persistência de `lastError`, transição para `RETRYING` e encaminhamento à DLQ na quinta tentativa. |
+| `backend/src/main/java/br/com/iforce/praxis/candidate/service/CompanyCandidateLinkService.java` | `createNewAttempt()` | Compõe a chave com empresa, e-mail normalizado, avaliação e `applicationCycleId`; ciclos distintos criam tentativas distintas e o mesmo ciclo permanece idempotente. |
+| `backend/src/main/java/br/com/iforce/praxis/candidate/service/CompanyCandidateLinkService.java` | `resendExistingLink()` | Localiza a tentativa pelo par empresa/tentativa, não cria nova aplicação, não consome novo crédito e registra o reenvio na trilha de auditoria. |
+| `frontend/src/features/candidate-links/enviar-link-page.tsx` | criação e reenvio | Apresenta ações separadas, informa o efeito de cada uma e gera um novo ciclo apenas para o comando explícito de nova tentativa. |
 | `backend/src/main/java/br/com/iforce/praxis/gupy/service/CandidateAttemptService.java` | eventos de resultado e engajamento | Publica `RESULT_READY` no outbox, mas também associa eventos proprietários de engajamento ao `resultWebhookUrl`, pendência `INT17`. |
 | `backend/src/main/java/br/com/iforce/praxis/gupy/observability/CandidateCallbackHandoffAdvice.java` | `callback_presented` | Registra que o callback foi incluído na resposta ao navegador; não comprova execução nem confirmação do GET, pendência `INT18`. |
 | `backend/src/main/java/br/com/iforce/praxis/gupy/service/ResultScoringService.java` | normalização | Renormaliza pesos sobre competências cobertas pelo caminho; a comparabilidade entre bases distintas permanece em `BUS12`. |
