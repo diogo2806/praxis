@@ -21,6 +21,7 @@
     "noFallthroughCasesInSwitch": true,
     "noUncheckedSideEffectImports": true,
     "paths": {
+      "@/lib/api/praxis": ["./src/lib/api/praxis-strict.ts"],
       "@/*": ["./src/*"]
     }
   }
