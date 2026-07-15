@@ -75,7 +75,7 @@ public final class CreateCandidateRequest {
 
     @JsonProperty("previous_result")
     @Schema(example = "fail", allowableValues = {"fail"}, nullable = true,
-            description = "Resultado anterior. Use fail ou null quando não houver resultado anterior.")
+            description = "Resultado anterior. fail autoriza o ciclo contratual de reteste após uma tentativa terminal; null identifica o ciclo inicial.")
     private final PreviousResult previousResult;
 
     @JsonIgnore
@@ -192,6 +192,11 @@ public final class CreateCandidateRequest {
 
     public PreviousResult previousResult() {
         return previousResult;
+    }
+
+    @JsonIgnore
+    public boolean isRetestRequested() {
+        return previousResult == PreviousResult.FAIL;
     }
 
     public Long contractCompanyId() {
