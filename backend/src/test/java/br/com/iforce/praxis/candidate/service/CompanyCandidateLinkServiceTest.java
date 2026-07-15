@@ -126,6 +126,26 @@ class CompanyCandidateLinkServiceTest {
     }
 
     @Test
+    void sameApplicationCycleWithDifferentPayloadReturnsConflict() {
+        service.createNewApplication(request("cycle-vaga-1"));
+        CreateCandidateLinkRequest divergent = new CreateCandidateLinkRequest(
+                "sim-java",
+                "Maria Souza",
+                "Maria@Example.com",
+                "cycle-vaga-1",
+                "Vaga Java - outra etapa",
+                null
+        );
+
+        assertThatThrownBy(() -> service.createNewApplication(divergent))
+                .isInstanceOfSatisfying(ResponseStatusException.class, exception ->
+                        assertThat(exception.getStatusCode()).isEqualTo(HttpStatus.CONFLICT));
+
+        verify(candidateAttemptRepository, times(1)).saveAndFlush(any(CandidateAttemptEntity.class));
+        verify(creditService, times(1)).assertCanStartNewAttempt("empresa-1");
+    }
+
+    @Test
     void differentApplicationCyclesCreateIndependentAttempts() {
         CreateCandidateLinkResponse first = service.createNewApplication(request("cycle-vaga-1"));
         CreateCandidateLinkResponse second = service.createNewApplication(request("cycle-vaga-2"));
