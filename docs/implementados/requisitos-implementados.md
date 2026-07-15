@@ -1,6 +1,6 @@
 # Requisitos técnicos implementados — praxis
 
-Status: atualizado em 2026-07-15 após revalidação funcional da branch `main` no commit `9d3d9c99a3556f597a71180c770ee9801c0832ab`.
+Status: atualizado em 2026-07-15 após conclusão de `BUS13`.
 
 Este arquivo registra comportamentos comprovadamente entregues no código e preserva a rastreabilidade de conclusões históricas posteriormente reclassificadas. Entregas parciais ou invalidadas apontam obrigatoriamente para o backlog canônico.
 
@@ -8,6 +8,7 @@ Este arquivo registra comportamentos comprovadamente entregues no código e pres
 
 | Origem | Situação registrada | Entrega comprovada | Pendência remanescente |
 |---|---|---|---|
+| `BUS13` | Concluído | O relatório trata horas poupadas como estimativa opcional, inclui período, fórmula, hipótese por avaliação, fonte metodológica e ressalva explícita, e permite desativar somente a estimativa sem interromper o relatório de uso. | Nenhuma para a explicitação metodológica da estimativa. |
 | `LEGACY12` | Concluído | Os fatos técnicos ainda válidos foram convertidos em requisitos objetivos em `docs/requisitos/requisito-tecnico.md` e o arquivo conversacional `docs/backlog.txt` foi removido como fonte concorrente. | Nenhuma para a consolidação documental. |
 | `INT16` | Concluído | `docs/INTEGRACAO-GUPY-PROVEDOR.md` descreve `result_candidate_page_url` com JWT assinado do tipo `candidate_result`, empresa e tentativa, TTL próprio configurável, consumo por `CandidateResultPageService`, exemplo contratual e fluxo coerentes com essa implementação. | Nenhuma para o alinhamento documental da URL de resultado; homologação externa permanece não comprovada. |
 | `INT14` | Concluído | `GupyTestResultMapper` gera credencial JWT exclusiva do tipo `candidate_result` e `CandidateResultPageService` aceita somente esse tipo de token, consultando a tentativa pelo par empresa/tentativa. | Nenhuma para a credencial pública de resultado. |
@@ -43,7 +44,10 @@ Este arquivo registra comportamentos comprovadamente entregues no código e pres
 | `backend/src/main/java/br/com/iforce/praxis/gupy/service/CandidateAttemptService.java` | eventos de resultado e engajamento | Publica `RESULT_READY` no outbox, mas também associa eventos proprietários de engajamento ao `resultWebhookUrl`, pendência `INT17`. |
 | `backend/src/main/java/br/com/iforce/praxis/gupy/observability/CandidateCallbackHandoffAdvice.java` | `callback_presented` | Registra que o callback foi incluído na resposta ao navegador; não comprova execução nem confirmação do GET, pendência `INT18`. |
 | `backend/src/main/java/br/com/iforce/praxis/gupy/service/ResultScoringService.java` | normalização | Renormaliza pesos sobre competências cobertas pelo caminho; a comparabilidade entre bases distintas permanece em `BUS12`. |
-| `backend/src/main/java/br/com/iforce/praxis/engagement/service/EngagementReportService.java` | estimativa de horas | Calcula conclusões multiplicadas por constante configurável; a explicitação metodológica permanece em `BUS13`. |
+| `backend/src/main/java/br/com/iforce/praxis/engagement/dto/EngagementReportSummary.java` | contrato da estimativa | Expõe período, indicador de habilitação, valor estimado, hipótese em horas por avaliação, fórmula, fonte metodológica e ressalva explícita. |
+| `backend/src/main/java/br/com/iforce/praxis/engagement/service/EngagementReportService.java` | `sendMonthlyReports()` | Calcula a estimativa somente quando habilitada, valida a hipótese positiva e mantém o relatório de conclusões quando a estimativa está desativada. |
+| `backend/src/main/java/br/com/iforce/praxis/engagement/service/LoggingEngagementReportEmailSender.java` | mensagem do relatório | Identifica o valor como estimativa potencial, informa o período, a fórmula, o parâmetro, a fonte metodológica e a ressalva de ausência de comprovação causal. |
+| `backend/src/main/resources/application.properties` | configuração da estimativa | Documenta a unidade do parâmetro, permite desativar a estimativa e configurar a origem metodológica por ambiente. |
 
 ## Regras de manutenção
 
