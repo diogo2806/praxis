@@ -67,7 +67,7 @@ export const Route = createFileRoute("/integrations/$provider")({
 
 const statusLabel: Record<IntegrationCenterStatus, string> = {
   CONECTADA: "Conectada",
-  PENDENTE: "Pendente",
+  PENDENTE: "Token configurado · aguardando primeiro evento",
   ERRO: "Erro",
   DESATIVADA: "Desativada",
   NAO_CONFIGURADA: "Não configurada",
@@ -272,10 +272,10 @@ function IntegrationDetailPage() {
                         className={cn("h-4 w-4", testConnectionMutation.isPending && "animate-spin")}
                       />
                       {testConnectionMutation.isPending
-                        ? "Testando"
+                        ? "Atualizando"
                         : connectionTested
-                          ? "Conexão ok"
-                          : "Testar conexão"}
+                          ? "Status atualizado"
+                          : "Atualizar status"}
                     </Button>
                   )}
                   {hasAction("REACTIVATE") && (
@@ -319,6 +319,13 @@ function IntegrationDetailPage() {
                 <InfoItem label="Configurada em" value={formatDateTime(integration.configuredAt)} />
               </div>
             </div>
+
+            {integration.status === "PENDENTE" && (
+              <StateBanner tone="info" title="Token configurado — aguardando primeiro evento do ATS">
+                Atualizar o status apenas consulta o estado atual. A integração será marcada como
+                conectada somente depois que o Práxis receber uma requisição autenticada do ATS.
+              </StateBanner>
+            )}
 
             {/* Error panel */}
             {integration.errorMessage && (
@@ -459,6 +466,10 @@ function TokenPanel({
           <div className="mb-2 text-sm font-medium text-success">
             Token gerado — copie agora, não será exibido novamente.
           </div>
+          <p className="mb-3 text-xs text-muted-foreground">
+            Gerar o token não confirma a conexão. O status continuará pendente até o primeiro evento
+            autenticado do ATS.
+          </p>
           <div className="flex items-center gap-2">
             <code className="flex-1 rounded bg-background px-3 py-2 font-mono text-xs break-all select-all">
               {generatedToken.token}
@@ -536,9 +547,7 @@ function IntegrationStatusBadge({ integration }: { integration: IntegrationCente
       )}
     >
       <Icon className="h-3.5 w-3.5" />
-      {status === "CONECTADA" && !integration.lastSyncAt
-        ? "Conectada · aguardando primeiro evento"
-        : statusLabel[status]}
+      {statusLabel[status]}
     </span>
   );
 }
