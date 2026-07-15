@@ -83,8 +83,7 @@ public class PublicCandidateFlowSecurity {
                         option.descricaoAcessivel(),
                         option.audioDescricaoUrl(),
                         option.midiaUrl(),
-                        option.tipoMidia(),
-                        null
+                        option.tipoMidia()
                 ))
                 .toList();
         return new EtapaAtualResponse(
@@ -98,7 +97,6 @@ public class PublicCandidateFlowSecurity {
                 stage.audioDescricaoUrl(),
                 stage.midiaUrl(),
                 stage.tipoMidia(),
-                null,
                 options
         );
     }
