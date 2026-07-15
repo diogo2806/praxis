@@ -1,6 +1,6 @@
 # Requisitos técnicos pendentes — praxis
 
-Status: atualizado em 2026-07-15 após auditoria da branch `main`.
+Status: atualizado em 2026-07-15 após conclusão de `ASYNC11` e `DATA14`.
 
 Este arquivo contém somente pendências técnicas implementáveis e comprovadas no sistema. Não inclui CI/CD, testes, QA, métricas observacionais, publicação ou marketing.
 
@@ -36,25 +36,11 @@ Este arquivo contém somente pendências técnicas implementáveis e comprovadas
 | `backend/src/main/java/br/com/iforce/praxis/gupy/service/CandidateAttemptService.java` | `redirectUrl()` e respostas de conclusão | A URL é devolvida ao frontend; a navegação do navegador continua sendo o mecanismo efetivo de retorno. | Publicar evento transacional após conclusão para executar o callback, mantendo o redirecionamento apenas como experiência complementar. |
 | `backend/src/main/java/br/com/iforce/praxis/shared/outbox/` | novo fluxo sugerido: `GUPY_CALLBACK_CONFIRMATION` | Não existe evento persistido específico com tentativa, código HTTP, confirmação, erro e reprocessamento do GET. | Adicionar processamento idempotente com validação de URL, timeout, backoff, confirmação HTTP, DLQ e reprocessamento operacional. |
 
-## 2. Processamento assíncrono
-
-| ID | Tarefa técnica | Critério de conclusão | Status |
-|---|---|---|---|
-| ASYNC11 | Rejeitar tipos desconhecidos no outbox. | Todo tipo não suportado gera erro explícito, não recebe status `SENT` e segue retentativa e DLQ com erro observável. | ⬜ Pendente |
-
-### ASYNC11 — evento desconhecido marcado como entregue
-
-| Caminho completo | Método/campo/contrato | Como está | O que fazer |
-|---|---|---|---|
-| `backend/src/main/java/br/com/iforce/praxis/shared/outbox/service/OutboxProcessor.java` | `dispatch()` | O método retorna normalmente para tipos diferentes de `RESULT_READY`, `ATTEMPT_STARTED` e `ATTEMPT_ABANDONED`. | Adicionar ramo padrão que lance exceção específica com o tipo e o ID do evento. |
-| `backend/src/main/java/br/com/iforce/praxis/shared/outbox/service/OutboxProcessor.java` | `deliverAndFinalize()` | Qualquer retorno normal de `dispatch()` é persistido como `SENT`. | Manter tipos desconhecidos em retry e encaminhá-los à DLQ pela política existente, preservando `lastError`. |
-
-## 3. Dados, aplicação e idempotência
+## 2. Dados, aplicação e idempotência
 
 | ID | Tarefa técnica | Critério de conclusão | Status |
 |---|---|---|---|
 | DATA13 | Separar repetição idempotente de criação legítima de nova tentativa na Gupy. | O sistema distingue reenvio equivalente, retomada da mesma tentativa, reteste autorizado e nova aplicação após falha, abandono ou expiração, sem transformar nova tentativa legítima em `409`. | ⬜ Pendente |
-| DATA14 | Permitir novas aplicações de links diretos por ciclo, vaga ou comando explícito. | A empresa consegue criar nova aplicação para o mesmo candidato e avaliação ao informar novo ciclo/contexto ou solicitar nova tentativa; reenvios equivalentes continuam idempotentes. | ⬜ Pendente |
 
 ### DATA13 — reteste Gupy versus repetição idempotente
 
@@ -64,14 +50,7 @@ Este arquivo contém somente pendências técnicas implementáveis e comprovadas
 | `backend/src/main/java/br/com/iforce/praxis/gupy/service/CandidateAttemptIdempotencyAspect.java` | `fingerprint()` | `previous_result` participa do fingerprint, mas não da chave. A mesma chave com alteração desse campo resulta em `409`. | Definir transições explícitas que usem `previous_result` para autorizar novo ciclo sem enfraquecer a idempotência da mesma requisição. |
 | `backend/src/main/java/br/com/iforce/praxis/gupy/service/CandidateAttemptService.java` | `createOrReuse()` | O serviço também deriva a chave por empresa, companhia, documento, teste e `job_id`, reaproveitando a tentativa encontrada. | Centralizar uma única regra de identidade da aplicação e impedir divergência entre aspecto e serviço. |
 
-### DATA14 — reaplicação de links diretos
-
-| Caminho completo | Método/campo/contrato | Como está | O que fazer |
-|---|---|---|---|
-| `backend/src/main/java/br/com/iforce/praxis/gupy/service/CandidateAttemptService.java` | `createCompanyLink()` | A chave usa empresa, e-mail e avaliação; qualquer tentativa anterior é reaproveitada indefinidamente. | Adicionar `applicationCycleId`, vaga/contexto ou comando explícito de nova aplicação, mantendo chave separada para reenvio equivalente. |
-| API e frontend de criação de link | contrato de criação | Não há escolha explícita entre reenviar link existente e criar nova tentativa. | Expor ações distintas, validar autorização e informar o efeito da operação. |
-
-## 4. Regras de negócio
+## 3. Regras de negócio
 
 | ID | Tarefa técnica | Critério de conclusão | Status |
 |---|---|---|---|
@@ -93,7 +72,7 @@ Este arquivo contém somente pendências técnicas implementáveis e comprovadas
 | `backend/src/main/java/br/com/iforce/praxis/engagement/service/EngagementReportService.java` | `sendMonthlyReports()` | Calcula `completed * hoursSavedPerEvaluation` e envia o valor como horas economizadas, sem medição do processo anterior. | Nomear como estimativa e incluir fórmula, parâmetro, período e origem metodológica no DTO e na mensagem. |
 | `backend/src/main/resources/application.properties` | `praxis.engagement.hours-saved-per-evaluation` | O serviço usa padrão de `1.5` quando não há configuração; o parâmetro não é específico por empresa. | Permitir configuração por empresa ou desativação e impedir linguagem de comprovação quando houver apenas hipótese. |
 
-## 5. Operação e interface
+## 4. Operação e interface
 
 | ID | Tarefa técnica | Critério de conclusão | Status |
 |---|---|---|---|
@@ -111,9 +90,7 @@ Este arquivo contém somente pendências técnicas implementáveis e comprovadas
 
 1. `INT17` — interromper o uso indevido do webhook Gupy e a exposição de payload proprietário.
 2. `INT18` — executar e confirmar o callback por processamento servidor-servidor persistente.
-3. `ASYNC11` — impedir perda silenciosa de tipos desconhecidos no outbox.
-4. `DATA13` — separar reteste legítimo de repetição idempotente.
-5. `DATA14` — permitir nova aplicação explícita em links diretos.
-6. `BUS12` — tornar resultados comparáveis ou bloquear comparações incompatíveis.
-7. `UI13` — paginar e completar o centro operacional.
-8. `BUS13` — explicitar a metodologia da estimativa de horas economizadas.
+3. `DATA13` — separar reteste legítimo de repetição idempotente.
+4. `BUS12` — tornar resultados comparáveis ou bloquear comparações incompatíveis.
+5. `UI13` — paginar e completar o centro operacional.
+6. `BUS13` — explicitar a metodologia da estimativa de horas economizadas.
