@@ -199,6 +199,40 @@ class OutboxProcessorTest {
     }
 
     @Test
+    void shouldRetryUnsupportedEventTypeWithoutMarkingItAsSent() {
+        OutboxEventEntity event = createUnsupportedEvent(77L, 0);
+        givenClaimed(event);
+
+        outboxProcessor.processReadyEvents();
+
+        assertThat(event.getStatus()).isEqualTo(OutboxEventEntity.OutboxEventStatus.RETRYING);
+        assertThat(event.getSentAt()).isNull();
+        assertThat(event.getNextAttemptAt()).isNotNull();
+        assertThat(event.getLastError())
+                .contains("UNSUPPORTED_EVENT")
+                .contains("77");
+        verifyNoInteractions(resultWebhookClient, genericWebhookDeliveryService);
+    }
+
+    @Test
+    void shouldMoveUnsupportedEventTypeToDeadLetterQueueAfterMaxAttempts() {
+        OutboxEventEntity event = createUnsupportedEvent(78L, 4);
+        givenClaimed(event);
+
+        outboxProcessor.processReadyEvents();
+
+        assertThat(event.getAttempts()).isEqualTo(5);
+        assertThat(event.getStatus()).isEqualTo(OutboxEventEntity.OutboxEventStatus.DLQ);
+        assertThat(event.getSentAt()).isNull();
+        assertThat(event.getNextAttemptAt()).isNull();
+        assertThat(event.getLastError())
+                .contains("UNSUPPORTED_EVENT")
+                .contains("78");
+        verify(dlqAlertService).alertEmpresaAdmins(event);
+        verifyNoInteractions(resultWebhookClient, genericWebhookDeliveryService);
+    }
+
+    @Test
     void shouldSkipProcessingWhenNoEventsReady() {
         when(outboxEventRepository.claimReadyBatch(anyList(), any(Instant.class), any(Instant.class), anyInt()))
                 .thenReturn(List.of());
@@ -230,6 +264,21 @@ class OutboxProcessorTest {
         event.setPayload("{\"webhookUrl\":\"https://example.com/webhook\",\"testResult\":{\"score\":85}}");
         event.setStatus(OutboxEventEntity.OutboxEventStatus.PENDING);
         event.setAttempts(0);
+        event.setNextAttemptAt(Instant.now());
+        event.setCreatedAt(Instant.now());
+        return event;
+    }
+
+    private OutboxEventEntity createUnsupportedEvent(Long id, int attempts) {
+        OutboxEventEntity event = new OutboxEventEntity();
+        event.setId(id);
+        event.setEmpresaId("empresa-1");
+        event.setEventType("UNSUPPORTED_EVENT");
+        event.setAggregateType("UnknownAggregate");
+        event.setAggregateId("unknown-aggregate");
+        event.setPayload("{}");
+        event.setStatus(OutboxEventEntity.OutboxEventStatus.PENDING);
+        event.setAttempts(attempts);
         event.setNextAttemptAt(Instant.now());
         event.setCreatedAt(Instant.now());
         return event;
