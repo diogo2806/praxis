@@ -1,8 +1,8 @@
 # Requisitos técnicos pendentes — praxis
 
-Status: atualizado em 2026-07-15 após implementação de `CFG10`, `INT1`, `INT2` e `API1`.
+Status: atualizado em 2026-07-15 após auditoria da branch `main`.
 
-Este arquivo contém somente pendências técnicas implementáveis e comprovadas no código, configurações, dados e fluxos reais do sistema. Não inclui CI/CD, pipelines, lint, cobertura, tarefas de testes, QA manual, métricas apenas observacionais, coleta de evidências, publicação ou marketing.
+Este arquivo contém somente pendências técnicas implementáveis e comprovadas no sistema. Não inclui CI/CD, testes, QA, métricas observacionais, publicação ou marketing.
 
 ## Como usar
 
@@ -13,7 +13,7 @@ Este arquivo contém somente pendências técnicas implementáveis e comprovadas
 
 ## Contexto da auditoria
 
-- Commit auditado da branch principal: `7f7e964c495f668963ecfa9a88198ad63d897906`.
+- Commit auditado da branch principal: `d9dc643833ea0f17eab61e4a23fe798420912609`.
 - Finalidade identificada: plataforma de avaliações situacionais para recrutamento, com regras explícitas, score determinístico, trilha auditável e integração com ATS.
 - Stack principal: Java 21, Spring Boot 3.5, Spring Security, JPA, PostgreSQL/Flyway, React 19, TanStack Start/Router e TypeScript.
 - Arquitetura predominante: frontend React consumindo API Spring Boot, persistência PostgreSQL, autenticação JWT nas rotas internas, Bearer token nas integrações e entrega assíncrona por outbox.
