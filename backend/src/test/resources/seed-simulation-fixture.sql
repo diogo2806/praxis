@@ -1,3 +1,9 @@
+-- A tabela de auditoria é append-only em produção. O fixture precisa limpar os
+-- registros determinísticos entre métodos de teste, então suspende somente os
+-- triggers de usuário durante esta preparação transacional e os restaura logo
+-- em seguida.
+ALTER TABLE audit_events DISABLE TRIGGER USER;
+
 DELETE FROM audit_events
 WHERE aggregate_id IN ('sim-atendimento-caos', 'sim-atendimento-caos:v1', 'sim-timeout-fallback', 'sim-timeout-fallback:v1');
 
@@ -5,6 +11,8 @@ DELETE FROM audit_events
 WHERE empresa_id = 'empresa-1'
   AND aggregate_type = 'Integration'
   AND aggregate_id = 'GUPY';
+
+ALTER TABLE audit_events ENABLE TRIGGER USER;
 
 DELETE FROM outbox_events
 WHERE aggregate_type = 'CandidateAttempt'
