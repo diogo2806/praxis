@@ -8,6 +8,19 @@ on:
   workflow_dispatch:
 
 jobs:
+  compose-config:
+    name: Docker Compose — config without legacy token
+    runs-on: ubuntu-latest
+    env:
+      POSTGRES_USER: praxis
+      POSTGRES_PASSWORD: ci-postgres-password
+      PRAXIS_JWT_SECRET: ci-jwt-secret-with-sufficient-length
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate runtime configuration
+        run: docker compose config --quiet
+
   backend-build:
     name: Backend — build deployable artifact
     runs-on: ubuntu-latest
