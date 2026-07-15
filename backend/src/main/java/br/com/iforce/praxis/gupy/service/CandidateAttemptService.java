@@ -46,6 +46,8 @@ import br.com.iforce.praxis.shared.integration.IntegrationManagementService;
 
 import br.com.iforce.praxis.shared.integration.model.IntegrationProvider;
 
+import br.com.iforce.praxis.shared.integration.service.AttemptEngagementWebhookService;
+
 import br.com.iforce.praxis.shared.integration.service.GenericWebhookDeliveryService;
 
 import br.com.iforce.praxis.gupy.model.AttemptAnswer;
@@ -145,6 +147,7 @@ public class CandidateAttemptService {
     private final HealthVerticalService healthVerticalService;
     private final CreditService creditService;
     private final GenericWebhookDeliveryService genericWebhookDeliveryService;
+    private final AttemptEngagementWebhookService attemptEngagementWebhookService;
     private final IntegrationManagementService integrationManagementService;
 
     public CandidateAttemptService(
@@ -161,6 +164,7 @@ public class CandidateAttemptService {
             HealthVerticalService healthVerticalService,
             CreditService creditService,
             GenericWebhookDeliveryService genericWebhookDeliveryService,
+            AttemptEngagementWebhookService attemptEngagementWebhookService,
             IntegrationManagementService integrationManagementService
     ) {
         this.candidateAttemptRepository = candidateAttemptRepository;
@@ -176,6 +180,7 @@ public class CandidateAttemptService {
         this.healthVerticalService = healthVerticalService;
         this.creditService = creditService;
         this.genericWebhookDeliveryService = genericWebhookDeliveryService;
+        this.attemptEngagementWebhookService = attemptEngagementWebhookService;
         this.integrationManagementService = integrationManagementService;
     }
 
@@ -1095,23 +1100,16 @@ public class CandidateAttemptService {
     }
 
     private void publishAttemptEngagementEvent(CandidateAttempt attempt, String eventType, Instant occurredAt) {
-        CandidateAttemptEntity candidateAttemptEntity = candidateAttemptRepository
-                .findByEmpresaIdAndId(attempt.empresaId(), attempt.id())
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Tentativa não encontrada."));
-        if (candidateAttemptEntity.getResultWebhookUrl() == null || candidateAttemptEntity.getResultWebhookUrl().isBlank()) {
+        if (!attemptEngagementWebhookService.hasActiveWebhook(attempt.empresaId(), eventType)) {
             return;
         }
-
-        Map<String, Object> payload = new LinkedHashMap<>();
-        payload.put("webhookUrl", candidateAttemptEntity.getResultWebhookUrl());
-        payload.put("eventPayload", engagementPayload(attempt, eventType, occurredAt));
 
         outboxService.publish(
                 attempt.empresaId(),
                 eventType,
                 CANDIDATE_ATTEMPT_AGGREGATE,
                 attempt.id(),
-                payload
+                engagementPayload(attempt, eventType, occurredAt)
         );
     }
 
@@ -1121,17 +1119,18 @@ public class CandidateAttemptService {
         candidate.put("email", attempt.candidateEmail());
 
         Map<String, Object> payload = new LinkedHashMap<>();
-        payload.put("event_type", eventType);
-        payload.put("attempt_id", attempt.id());
-        payload.put("result_id", attempt.resultId());
-        payload.put("company_id", attempt.companyId());
-        payload.put("test_id", attempt.simulationId());
-        payload.put("simulation_version_id", attempt.simulationVersionId());
-        payload.put("simulation_version_number", attempt.simulationVersionNumber());
+        payload.put("event", eventType);
+        payload.put("tenantId", attempt.empresaId());
+        payload.put("attemptId", attempt.id());
+        payload.put("resultId", attempt.resultId());
+        payload.put("companyId", attempt.companyId());
+        payload.put("simulationId", attempt.simulationId());
+        payload.put("simulationVersionId", attempt.simulationVersionId());
+        payload.put("simulationVersionNumber", attempt.simulationVersionNumber());
         payload.put("status", attempt.status().getDescricao());
-        payload.put("occurred_at", occurredAt);
-        payload.put("started_at", attempt.startedAt());
-        payload.put("finished_at", attempt.finishedAt());
+        payload.put("occurredAt", occurredAt);
+        payload.put("startedAt", attempt.startedAt());
+        payload.put("finishedAt", attempt.finishedAt());
         payload.put("candidate", candidate);
         return payload;
     }
