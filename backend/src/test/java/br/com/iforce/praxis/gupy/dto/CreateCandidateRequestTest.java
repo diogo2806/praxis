@@ -61,7 +61,7 @@ class CreateCandidateRequestTest {
     }
 
     @Test
-    void deserializesOfficialNumericIdentifiersAndNormalizesNullPreviousResult() throws Exception {
+    void deserializesOfficialNumericIdentifiersAndJsonNullPreviousResult() throws Exception {
         CreateCandidateRequest request = objectMapper.readValue("""
                 {
                   "company_id": 1,
@@ -71,7 +71,7 @@ class CreateCandidateRequestTest {
                   "email": "candidato@example.com",
                   "callback_url": "https://cliente.gupy.io/candidate-return",
                   "candidate_type": "internal",
-                  "previous_result": "null"
+                  "previous_result": null
                 }
                 """, CreateCandidateRequest.class);
 
@@ -99,19 +99,29 @@ class CreateCandidateRequestTest {
     }
 
     @Test
-    void rejectsValuesOutsideOfficialEnums() {
-        assertThatThrownBy(() -> objectMapper.readValue("""
-                {
-                  "company_id": 1,
-                  "document_id": 4398157034,
-                  "test_id": "sim-atendimento",
-                  "name": "Candidato Teste",
-                  "email": "candidato@example.com",
-                  "callback_url": "https://cliente.gupy.io/candidate-return",
-                  "candidate_type": "partner",
-                  "previous_result": "none"
-                }
-                """, CreateCandidateRequest.class))
-                .isInstanceOf(JsonProcessingException.class);
+    void enumsExposeOnlyOfficialWireValues() {
+        assertThat(CreateCandidateRequest.CandidateType.fromValue("internal"))
+                .isEqualTo(CreateCandidateRequest.CandidateType.INTERNAL);
+        assertThat(CreateCandidateRequest.CandidateType.fromValue("external"))
+                .isEqualTo(CreateCandidateRequest.CandidateType.EXTERNAL);
+        assertThat(CreateCandidateRequest.PreviousResult.fromValue("fail"))
+                .isEqualTo(CreateCandidateRequest.PreviousResult.FAIL);
+        assertThat(CreateCandidateRequest.PreviousResult.fromValue(null)).isNull();
+    }
+
+    @Test
+    void enumsRejectValuesOutsideTheGupyContract() {
+        assertThatThrownBy(() -> CreateCandidateRequest.CandidateType.fromValue("partner"))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("candidate_type deve ser internal ou external.");
+        assertThatThrownBy(() -> CreateCandidateRequest.PreviousResult.fromValue("none"))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("previous_result deve ser fail ou null.");
+        assertThatThrownBy(() -> CreateCandidateRequest.PreviousResult.fromValue("pass"))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("previous_result deve ser fail ou null.");
+        assertThatThrownBy(() -> CreateCandidateRequest.PreviousResult.fromValue("null"))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("previous_result deve ser fail ou null.");
     }
 }
