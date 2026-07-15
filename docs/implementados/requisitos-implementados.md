@@ -1,6 +1,6 @@
 # Requisitos técnicos implementados — praxis
 
-Status: atualizado em 2026-07-15 após auditoria da branch main no commit `8cab460d7a248a48683c3c1856a321f18788008e`.
+Status: atualizado em 2026-07-15 após auditoria da branch main no commit `94b1210a7dddbda4679aa53b26639275b13595ad`.
 
 Este arquivo registra somente comportamentos comprovadamente entregues no código e no fluxo real. Entregas parciais permanecem no backlog canônico.
 
