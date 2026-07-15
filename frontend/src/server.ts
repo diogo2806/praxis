@@ -61,14 +61,23 @@ function getBackendBaseUrl(): string {
   ).replace(/\/$/, "");
 }
 
+function matchesBackendPrefix(pathname: string, prefix: string): boolean {
+  return pathname === prefix || pathname.startsWith(`${prefix}/`);
+}
+
 function shouldProxyToBackend(pathname: string): boolean {
-  return (
-    pathname.startsWith("/api/v1/") ||
-    pathname === "/api/v1" ||
-    pathname.startsWith("/api/admin/") ||
-    pathname === "/api/admin" ||
-    pathname.startsWith("/candidate/")
-  );
+  const backendPrefixes = [
+    "/api",
+    "/candidate",
+    "/test",
+    "/recrutei/test",
+    "/docs",
+    "/swagger-ui",
+    "/v3/api-docs",
+    "/actuator/health",
+  ];
+
+  return backendPrefixes.some((prefix) => matchesBackendPrefix(pathname, prefix));
 }
 
 function getProxyHeaders(request: Request): Headers {
