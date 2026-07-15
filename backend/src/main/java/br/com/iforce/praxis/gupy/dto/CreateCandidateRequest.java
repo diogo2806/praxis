@@ -28,13 +28,13 @@ public final class CreateCandidateRequest {
     @Positive
     @JsonProperty("company_id")
     @Schema(type = "integer", format = "int64", example = "1")
-    private final Long contractCompanyId;
+    private final Long companyId;
 
     @NotNull
     @Positive
     @JsonProperty("document_id")
     @Schema(type = "integer", format = "int64", example = "4398157034")
-    private final Long contractDocumentId;
+    private final Long documentId;
 
     @NotBlank
     @JsonProperty("test_id")
@@ -79,10 +79,10 @@ public final class CreateCandidateRequest {
     private final PreviousResult previousResult;
 
     @JsonIgnore
-    private final String internalCompanyId;
+    private final String normalizedCompanyId;
 
     @JsonIgnore
-    private final String internalDocumentId;
+    private final String normalizedDocumentId;
 
     @JsonCreator
     public CreateCandidateRequest(
@@ -102,8 +102,8 @@ public final class CreateCandidateRequest {
             @JsonProperty("candidate_type") CandidateType candidateType,
             @JsonProperty("previous_result") PreviousResult previousResult
     ) {
-        this.contractCompanyId = companyId;
-        this.contractDocumentId = documentId;
+        this.companyId = companyId;
+        this.documentId = documentId;
         this.testId = testId;
         this.candidateName = candidateName;
         this.candidateEmail = candidateEmail;
@@ -113,8 +113,8 @@ public final class CreateCandidateRequest {
         this.accommodationTimeMultiplier = accommodationTimeMultiplier;
         this.candidateType = candidateType;
         this.previousResult = previousResult;
-        this.internalCompanyId = companyId == null ? null : Long.toString(companyId);
-        this.internalDocumentId = documentId == null ? null : Long.toString(documentId);
+        this.normalizedCompanyId = companyId == null ? null : Long.toString(companyId);
+        this.normalizedDocumentId = documentId == null ? null : Long.toString(documentId);
     }
 
     /**
@@ -133,8 +133,8 @@ public final class CreateCandidateRequest {
             CandidateType candidateType,
             PreviousResult previousResult
     ) {
-        this.contractCompanyId = null;
-        this.contractDocumentId = null;
+        this.companyId = null;
+        this.documentId = null;
         this.testId = testId;
         this.candidateName = candidateName;
         this.candidateEmail = candidateEmail;
@@ -144,18 +144,18 @@ public final class CreateCandidateRequest {
         this.accommodationTimeMultiplier = accommodationTimeMultiplier;
         this.candidateType = candidateType;
         this.previousResult = previousResult;
-        this.internalCompanyId = companyId;
-        this.internalDocumentId = documentId;
+        this.normalizedCompanyId = companyId;
+        this.normalizedDocumentId = documentId;
     }
 
     @JsonIgnore
     public String companyId() {
-        return internalCompanyId;
+        return normalizedCompanyId;
     }
 
     @JsonIgnore
     public String documentId() {
-        return internalDocumentId;
+        return normalizedDocumentId;
     }
 
     public String testId() {
@@ -195,11 +195,11 @@ public final class CreateCandidateRequest {
     }
 
     public Long contractCompanyId() {
-        return contractCompanyId;
+        return companyId;
     }
 
     public Long contractDocumentId() {
-        return contractDocumentId;
+        return documentId;
     }
 
     public enum CandidateType {
