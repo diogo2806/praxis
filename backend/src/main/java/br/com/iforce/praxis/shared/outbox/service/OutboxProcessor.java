@@ -10,6 +10,7 @@ import br.com.iforce.praxis.gupy.service.GupyTestResultMapper;
 import br.com.iforce.praxis.gupy.service.SimulationCatalogService;
 import br.com.iforce.praxis.shared.integration.IntegrationManagementService;
 import br.com.iforce.praxis.shared.integration.model.IntegrationProvider;
+import br.com.iforce.praxis.shared.integration.service.AttemptEngagementWebhookService;
 import br.com.iforce.praxis.shared.integration.service.ConfirmableGenericWebhookDeliveryService;
 import br.com.iforce.praxis.shared.notification.service.ResultDeliveryDlqAlertService;
 import br.com.iforce.praxis.shared.outbox.persistence.entity.OutboxEventEntity;
@@ -29,7 +30,6 @@ import org.springframework.web.server.ResponseStatusException;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
-import java.util.Optional;
 
 @Slf4j
 @Component
@@ -54,6 +54,7 @@ public class OutboxProcessor {
     private final GupyOutboundUrlValidator outboundUrlValidator;
     private final ResultDeliveryDlqAlertService dlqAlertService;
     private final ConfirmableGenericWebhookDeliveryService genericWebhookDeliveryService;
+    private final AttemptEngagementWebhookService attemptEngagementWebhookService;
     private final IntegrationManagementService integrationManagementService;
     private final TransactionTemplate txTemplate;
 
@@ -67,6 +68,7 @@ public class OutboxProcessor {
             GupyOutboundUrlValidator outboundUrlValidator,
             ResultDeliveryDlqAlertService dlqAlertService,
             ConfirmableGenericWebhookDeliveryService genericWebhookDeliveryService,
+            AttemptEngagementWebhookService attemptEngagementWebhookService,
             IntegrationManagementService integrationManagementService,
             PlatformTransactionManager transactionManager
     ) {
@@ -79,6 +81,7 @@ public class OutboxProcessor {
         this.outboundUrlValidator = outboundUrlValidator;
         this.dlqAlertService = dlqAlertService;
         this.genericWebhookDeliveryService = genericWebhookDeliveryService;
+        this.attemptEngagementWebhookService = attemptEngagementWebhookService;
         this.integrationManagementService = integrationManagementService;
         this.txTemplate = new TransactionTemplate(transactionManager);
     }
@@ -256,13 +259,13 @@ public class OutboxProcessor {
 
     private void processAttemptEngagementEvent(OutboxEventEntity event) {
         JsonNode payload = parsePayload(event.getPayload());
-        String webhookUrl = payload.get("webhookUrl").asText();
-        JsonNode eventPayload = payload.get("eventPayload");
-        if (eventPayload == null || eventPayload.isNull()) {
-            throw new IllegalArgumentException("Erro interno ao processar a entrega.");
+        try {
+            attemptEngagementWebhookService.deliver(event.getEmpresaId(), event.getEventType(), payload);
+            persistDestinationSent(event.getId(), CUSTOM_API_DESTINATION);
+        } catch (Exception exception) {
+            persistDestinationFailure(event.getId(), CUSTOM_API_DESTINATION, exception);
+            throw new DestinationDeliveryException(CUSTOM_API_DESTINATION, exception);
         }
-        outboundUrlValidator.validate(webhookUrl);
-        resultWebhookClient.postPayload(webhookUrl, eventPayload);
     }
 
     private void persistDestinationSent(Long eventId, String destination) {
