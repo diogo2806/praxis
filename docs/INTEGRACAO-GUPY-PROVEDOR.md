@@ -61,7 +61,7 @@ Fluxo:
 
 O token é gerado pela Central de Integrações, usando os endpoints internos de integração. O valor em claro é retornado uma única vez; somente o hash é persistido.
 
-`PRAXIS_INTEGRATION_TOKEN` não é usado por `/test/**`. O `docker-compose.yml` ainda exige essa variável por legado de configuração, mas ela não substitui o token cadastrado no banco.
+`PRAXIS_INTEGRATION_TOKEN` não é usado por `/test/**` e não é exigido pelo runtime. O `docker-compose.yml` reflete o modelo efetivo: cada integração autentica com o token cadastrado para a empresa e o provedor na tabela `integration_tokens`.
 
 ## Contrato implementado
 
