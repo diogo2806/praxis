@@ -26,8 +26,8 @@ class GupyCallbackValidationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
-                                  "company_id": "empresa-123",
-                                  "document_id": "candidate-invalid-callback",
+                                  "company_id": 1,
+                                  "document_id": 10001,
                                   "test_id": "sim-atendimento-caos",
                                   "name": "Candidato Teste",
                                   "email": "candidato@example.com",
