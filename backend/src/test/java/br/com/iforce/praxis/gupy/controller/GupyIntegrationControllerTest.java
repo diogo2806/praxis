@@ -7,40 +7,23 @@ import com.jayway.jsonpath.JsonPath;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.beans.factory.annotation.Autowired;
-
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-
 import org.springframework.boot.test.context.SpringBootTest;
-
 import org.springframework.http.MediaType;
-
 import org.springframework.test.context.jdbc.Sql;
-
 import org.springframework.test.web.servlet.MockMvc;
-
 import org.springframework.test.web.servlet.MvcResult;
 
-
 import static org.assertj.core.api.Assertions.assertThat;
-
 import static org.hamcrest.Matchers.empty;
-
 import static org.hamcrest.Matchers.containsString;
-
 import static org.hamcrest.Matchers.not;
-
 import static org.hamcrest.Matchers.startsWith;
-
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
-
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -201,7 +184,6 @@ class GupyIntegrationControllerTest {
                 .andExpect(content().string(containsString("\"tier\":\"major\"")));
     }
 
-
     @Test
     void createCandidateAttemptRejectsCompanyIdThatDoesNotBelongToToken() throws Exception {
         mockMvc.perform(post("/test/candidate")
@@ -253,9 +235,8 @@ class GupyIntegrationControllerTest {
                   "callback_url": "https://cliente.gupy.io/candidate-return",
                   "result_webhook_url": "https://cliente.gupy.io/result-webhook",
                   "candidate_type": "external",
-                  "previous_result": "none"
+                  "previous_result": null
                 }
                 """.formatted(documentId, jobId);
     }
 }
-
