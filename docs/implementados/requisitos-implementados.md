@@ -1,6 +1,6 @@
 # Requisitos técnicos implementados — praxis
 
-Status: atualizado em 2026-07-15 após revalidação funcional da branch `main` no commit `9d3d9c99a3556f597a71180c770ee9801c0832ab`.
+Status: atualizado em 2026-07-15 após conclusão e revalidação de `ASYNC11`, `BUS13` e `DATA13`.
 
 Este arquivo registra comportamentos comprovadamente entregues no código e preserva a rastreabilidade de conclusões históricas posteriormente reclassificadas. Entregas parciais ou invalidadas apontam obrigatoriamente para o backlog canônico.
 
@@ -8,14 +8,16 @@ Este arquivo registra comportamentos comprovadamente entregues no código e pres
 
 | Origem | Situação registrada | Entrega comprovada | Pendência remanescente |
 |---|---|---|---|
+| `BUS13` | Concluído | O relatório trata horas poupadas como estimativa opcional, inclui período, fórmula, hipótese por avaliação, fonte metodológica e ressalva explícita, e permite desativar somente a estimativa sem interromper o relatório de uso. | Nenhuma para a explicitação metodológica da estimativa. |
+| `DATA13` | Concluído | A chave idempotente distingue o ciclo inicial do ciclo autorizado por `previous_result=fail`; o reteste exige tentativa anterior terminal, repetições equivalentes reutilizam o mesmo resultado e a unicidade da chave impede duplicidade concorrente. A política detalhada está em `docs/implementados/data13-idempotencia-reteste-gupy.md`. | Nenhuma para o reteste previsto pelo contrato atual; ciclos adicionais exigem futuro identificador explícito de aplicação/ciclo fornecido pela Gupy. |
 | `LEGACY12` | Concluído | Os fatos técnicos ainda válidos foram convertidos em requisitos objetivos em `docs/requisitos/requisito-tecnico.md` e o arquivo conversacional `docs/backlog.txt` foi removido como fonte concorrente. | Nenhuma para a consolidação documental. |
 | `INT16` | Concluído | `docs/INTEGRACAO-GUPY-PROVEDOR.md` descreve `result_candidate_page_url` com JWT assinado do tipo `candidate_result`, empresa e tentativa, TTL próprio configurável, consumo por `CandidateResultPageService`, exemplo contratual e fluxo coerentes com essa implementação. | Nenhuma para o alinhamento documental da URL de resultado; homologação externa permanece não comprovada. |
 | `INT14` | Concluído | `GupyTestResultMapper` gera credencial JWT exclusiva do tipo `candidate_result` e `CandidateResultPageService` aceita somente esse tipo de token, consultando a tentativa pelo par empresa/tentativa. | Nenhuma para a credencial pública de resultado. |
 | `INT15` | Concluído | A documentação do catálogo Gupy reproduz o JSON real sem `category` e `level` artificiais e registra corretamente os estados externamente representáveis. | Nenhuma para o escopo documental originalmente definido. |
 | `INT13` | Concluído | O catálogo Gupy usa `GupyTestCatalogMapper`; categoria e nível nulos são omitidos por `NON_NULL`, sem valores genéricos fabricados. | Nenhuma para metadados artificiais do catálogo. |
-| `DATA13` | Concluído | A chave idempotente distingue o ciclo inicial do ciclo autorizado por `previous_result=fail`; o reteste exige tentativa anterior terminal, repetições equivalentes reutilizam o mesmo resultado e a unicidade da chave impede duplicidade concorrente. A política detalhada está em `docs/implementados/data13-idempotencia-reteste-gupy.md`. | Nenhuma para o reteste previsto pelo contrato atual; ciclos adicionais exigem futuro identificador explícito de aplicação/ciclo fornecido pela Gupy. |
 | `API2` | Concluído | A criação Gupy persiste fingerprint versionado, preserva a tentativa em repetições equivalentes e retorna `409` para conteúdo divergente dentro do mesmo ciclo idempotente. | Nenhuma para repetição equivalente e reteste contratual. |
-| `ASYNC10` | Concluído no escopo de fan-out por destino | `RESULT_READY` mantém confirmação, tentativas, erro e conclusão independentes para Gupy e `CUSTOM_API`. | `ASYNC11` deve impedir que tipos de evento desconhecidos sejam marcados como `SENT`. |
+| `ASYNC10` | Concluído no escopo de fan-out por destino | `RESULT_READY` mantém confirmação, tentativas, erro e conclusão independentes para Gupy e `CUSTOM_API`. | Nenhuma para o fan-out por destino. |
+| `ASYNC11` | Concluído | `OutboxProcessor.dispatch()` rejeita explicitamente todo tipo não suportado, incluindo tipo e ID do evento no erro; o evento não recebe `SENT` e segue a política existente de retry, backoff, `lastError`, DLQ e alerta administrativo. | Nenhuma. |
 | `INT11` | Reclassificado | A separação existe para `RESULT_READY`, mas a conclusão histórica de que todos os eventos proprietários deixaram de usar `result_webhook_url` não corresponde ao fluxo atual. `ATTEMPT_STARTED` e `ATTEMPT_ABANDONED` ainda usam esse destino. | `INT17` deve reservar o webhook Gupy exclusivamente ao `TestResult`. |
 | `INT12` | Concluído | Tentativas abandonadas ou expiradas não são publicadas como resultado Gupy concluído com pontuações provisórias. | Nenhuma para estados terminais sem resultado válido. |
 | `SEC11` | Concluído | O limite público sanitiza IDs, remove destinos futuros e regras de timeout das respostas e ignora identificadores internos enviados pelo navegador. | Nenhuma para exposição da topologia da avaliação. |
@@ -41,11 +43,15 @@ Este arquivo registra comportamentos comprovadamente entregues no código e pres
 | `backend/src/main/java/br/com/iforce/praxis/candidate/service/CandidateResultPageService.java` | `findByToken()` e `parseToken()` | Aceita somente token de resultado e limita a resposta pública. |
 | `backend/src/main/java/br/com/iforce/praxis/gupy/service/CandidateAttemptIdempotencyAspect.java` | `enforceEquivalentRetry()` | Separa ciclo inicial e reteste Gupy, exige estado anterior terminal, valida fingerprints versão 1 e 2 e mantém repetições equivalentes no mesmo resultado. |
 | `backend/src/main/java/br/com/iforce/praxis/gupy/service/CandidateAttemptIdempotencyKeyFactory.java` | `currentKey()` e `initialKey()` | Centraliza a identidade base e acrescenta marcador determinístico somente ao ciclo autorizado por `previous_result=fail`. |
-| `backend/src/main/java/br/com/iforce/praxis/shared/outbox/service/OutboxProcessor.java` | estado de entrega por destino | Confirma destinos de `RESULT_READY` separadamente; `dispatch()` ainda não rejeita tipo desconhecido, registrado em `ASYNC11`. |
+| `backend/src/main/java/br/com/iforce/praxis/shared/outbox/service/OutboxProcessor.java` | `dispatch()` e `handleEventFailure()` | Tipos desconhecidos lançam erro explícito com tipo e ID, permanecem em retry e chegam à DLQ após o limite sem serem marcados como `SENT`. |
+| `backend/src/test/java/br/com/iforce/praxis/shared/outbox/service/OutboxProcessorTest.java` | cenários de evento desconhecido | Verifica ausência de `sentAt`, persistência de `lastError`, transição para `RETRYING` e encaminhamento à DLQ na quinta tentativa. |
 | `backend/src/main/java/br/com/iforce/praxis/gupy/service/CandidateAttemptService.java` | eventos de resultado e engajamento | Publica `RESULT_READY` no outbox, mas também associa eventos proprietários de engajamento ao `resultWebhookUrl`, pendência `INT17`. |
 | `backend/src/main/java/br/com/iforce/praxis/gupy/observability/CandidateCallbackHandoffAdvice.java` | `callback_presented` | Registra que o callback foi incluído na resposta ao navegador; não comprova execução nem confirmação do GET, pendência `INT18`. |
 | `backend/src/main/java/br/com/iforce/praxis/gupy/service/ResultScoringService.java` | normalização | Renormaliza pesos sobre competências cobertas pelo caminho; a comparabilidade entre bases distintas permanece em `BUS12`. |
-| `backend/src/main/java/br/com/iforce/praxis/engagement/service/EngagementReportService.java` | estimativa de horas | Calcula conclusões multiplicadas por constante configurável; a explicitação metodológica permanece em `BUS13`. |
+| `backend/src/main/java/br/com/iforce/praxis/engagement/dto/EngagementReportSummary.java` | contrato da estimativa | Expõe período, indicador de habilitação, valor estimado, hipótese em horas por avaliação, fórmula, fonte metodológica e ressalva explícita. |
+| `backend/src/main/java/br/com/iforce/praxis/engagement/service/EngagementReportService.java` | `sendMonthlyReports()` | Calcula a estimativa somente quando habilitada, valida a hipótese positiva e mantém o relatório de conclusões quando a estimativa está desativada. |
+| `backend/src/main/java/br/com/iforce/praxis/engagement/service/LoggingEngagementReportEmailSender.java` | mensagem do relatório | Identifica o valor como estimativa potencial, informa o período, a fórmula, o parâmetro, a fonte metodológica e a ressalva de ausência de comprovação causal. |
+| `backend/src/main/resources/application.properties` | configuração da estimativa | Documenta a unidade do parâmetro, permite desativar a estimativa e configurar a origem metodológica por ambiente. |
 
 ## Regras de manutenção
 
