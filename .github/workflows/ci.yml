@@ -40,21 +40,22 @@ jobs:
           java-version: "21"
           cache: maven
 
-      # Suíte completa + empacotamento. Os testes de integração (@SpringBootTest,
-      # @DataJpaTest) rodam contra PostgreSQL real via Testcontainers — as migrations
-      # Flyway usam sintaxe exclusiva do PostgreSQL (ex.: índice parcial na V14),
-      # incompatível com H2. O runner ubuntu-latest do GitHub já tem Docker, que o
-      # Testcontainers usa para subir o container do Postgres automaticamente
-      # (ver src/test/resources/application.properties, datasource jdbc:tc).
+      # Suíte completa + empacotamento. O tee mantém um log integral mesmo quando
+      # a compilação falha antes de o Surefire criar relatórios de teste.
       - name: Build & test (verify)
-        run: mvn -B -ntp verify
+        shell: bash
+        run: |
+          set -o pipefail
+          mvn -B -ntp verify 2>&1 | tee build.log
 
-      - name: Upload test reports on failure
+      - name: Upload backend diagnostics on failure
         if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: backend-surefire-reports
-          path: backend/target/surefire-reports
+          name: backend-diagnostics
+          path: |
+            backend/build.log
+            backend/target/surefire-reports
           if-no-files-found: warn
           retention-days: 7
 
@@ -74,9 +75,6 @@ jobs:
           cache: npm
           cache-dependency-path: frontend/package-lock.json
 
-      # Instala a partir do package-lock (mesmo caminho do Dockerfile) e builda o app
-      # (client + SSR + nitro). Garante que regressões de TypeScript/build do frontend não
-      # passem sem alarme — antes o CI só cobria o backend.
       - name: Install dependencies
         run: npm ci
 
