@@ -1,6 +1,6 @@
 # Requisitos técnicos implementados — praxis
 
-Status: atualizado em 2026-07-15 após conclusão e revalidação de `ASYNC11` e `BUS13`.
+Status: atualizado em 2026-07-15 após conclusão e revalidação de `ASYNC11`, `BUS13` e `INT18`.
 
 Este arquivo registra comportamentos comprovadamente entregues no código e preserva a rastreabilidade de conclusões históricas posteriormente reclassificadas. Entregas parciais ou invalidadas apontam obrigatoriamente para o backlog canônico.
 
@@ -8,6 +8,7 @@ Este arquivo registra comportamentos comprovadamente entregues no código e pres
 
 | Origem | Situação registrada | Entrega comprovada | Pendência remanescente |
 |---|---|---|---|
+| `INT18` | Concluído | A conclusão de uma tentativa com `callback_url` gera `GUPY_CALLBACK_CONFIRMATION` no outbox pela mesma transação de banco. O processador executa GET com validação SSRF, timeouts configuráveis, redirecionamento desabilitado, confirmação exclusiva por HTTP 2xx, código HTTP persistido, backoff, DLQ e reprocessamento manual. | Nenhuma para a confirmação servidor-servidor; o redirecionamento do navegador permanece apenas como experiência complementar. |
 | `BUS13` | Concluído | O relatório trata horas poupadas como estimativa opcional, inclui período, fórmula, hipótese por avaliação, fonte metodológica e ressalva explícita, e permite desativar somente a estimativa sem interromper o relatório de uso. | Nenhuma para a explicitação metodológica da estimativa. |
 | `LEGACY12` | Concluído | Os fatos técnicos ainda válidos foram convertidos em requisitos objetivos em `docs/requisitos/requisito-tecnico.md` e o arquivo conversacional `docs/backlog.txt` foi removido como fonte concorrente. | Nenhuma para a consolidação documental. |
 | `INT16` | Concluído | `docs/INTEGRACAO-GUPY-PROVEDOR.md` descreve `result_candidate_page_url` com JWT assinado do tipo `candidate_result`, empresa e tentativa, TTL próprio configurável, consumo por `CandidateResultPageService`, exemplo contratual e fluxo coerentes com essa implementação. | Nenhuma para o alinhamento documental da URL de resultado; homologação externa permanece não comprovada. |
@@ -20,7 +21,7 @@ Este arquivo registra comportamentos comprovadamente entregues no código e pres
 | `INT11` | Reclassificado | A separação existe para `RESULT_READY`, mas a conclusão histórica de que todos os eventos proprietários deixaram de usar `result_webhook_url` não corresponde ao fluxo atual. `ATTEMPT_STARTED` e `ATTEMPT_ABANDONED` ainda usam esse destino. | `INT17` deve reservar o webhook Gupy exclusivamente ao `TestResult`. |
 | `INT12` | Concluído | Tentativas abandonadas ou expiradas não são publicadas como resultado Gupy concluído com pontuações provisórias. | Nenhuma para estados terminais sem resultado válido. |
 | `SEC11` | Concluído | O limite público sanitiza IDs, remove destinos futuros e regras de timeout das respostas e ignora identificadores internos enviados pelo navegador. | Nenhuma para exposição da topologia da avaliação. |
-| `SEC12` | Concluído parcialmente no escopo de proteção e telemetria | A política de callback restringe destinos e o backend registra quando a URL é apresentada ao navegador. | `INT18` deve executar o GET servidor-servidor, persistir confirmação, erro e retentativas; `callback_presented` não equivale a callback confirmado. |
+| `SEC12` | Concluído no escopo de proteção, telemetria e recuperação | A política de callback restringe destinos, o backend confirma o callback por processamento servidor-servidor persistente e `callback_presented` permanece identificado apenas como apresentação ao navegador. | Nenhuma para o handoff de conclusão e sua recuperação operacional. |
 | `SEC13` | Concluído | Os endpoints públicos exigem JWT de tentativa válido; token inválido ou expirado retorna `401` e o padrão `att_...` não funciona como credencial no controller público. | Nenhuma para bypass pelas rotas públicas protegidas. |
 | `UI10` | Concluído | O dashboard usa somente a API oficial e não fabrica plano, operação ou conexão por fallback. | Nenhuma. |
 | `SEC10` | Concluído | Rotação, reativação, desconexão e revogação de credenciais usam um caso de uso transacional único. | Nenhuma. |
@@ -36,6 +37,11 @@ Este arquivo registra comportamentos comprovadamente entregues no código e pres
 
 | Caminho completo | Método/campo/contrato | Comportamento comprovado |
 |---|---|---|
+| `backend/src/main/resources/db/migration/V1001__gupy_callback_confirmation_outbox.sql` | trigger `enqueue_gupy_callback_confirmation()` | Insere o evento de callback na mesma transação da conclusão e deduplica por empresa, tentativa e URL, permitindo novo evento quando o provedor renovar o callback. |
+| `backend/src/main/java/br/com/iforce/praxis/shared/outbox/service/OutboxProcessor.java` | `processGupyCallbackConfirmationEvent()` | Executa o GET, persiste tentativas, status, código HTTP, erro e instante de confirmação, reutilizando retry exponencial, DLQ e alerta administrativo do outbox. |
+| `backend/src/main/java/br/com/iforce/praxis/gupy/delivery/service/RestClientResultWebhookClient.java` | `getCallback()` | Aplica timeout de conexão e leitura, não segue redirecionamento e considera confirmado somente status 2xx. |
+| `backend/src/main/java/br/com/iforce/praxis/gupy/delivery/controller/CallbackDeliveryController.java` | listagem e `/{deliveryId}/reprocess` | Disponibiliza consulta operacional e reprocessamento manual das confirmações de callback da empresa autenticada. |
+| `backend/src/test/java/br/com/iforce/praxis/gupy/delivery/service/RestClientResultWebhookClientTest.java` | cenários 2xx e redirecionamento | Comprova confirmação por 204 e rejeição de 302 sem seguir o novo destino. |
 | `backend/src/main/java/br/com/iforce/praxis/auth/service/JwtService.java` | `generateCandidateResultToken()` e `parseCandidateResultToken()` | Gera e valida token assinado com tipo `candidate_result`, empresa, tentativa e expiração; os tipos de token de execução e resultado permanecem separados. |
 | `backend/src/main/java/br/com/iforce/praxis/config/PraxisProperties.java` | `candidateResultTtlHours` | Mantém validade própria para consulta do resultado, com padrão de 720 horas. |
 | `backend/src/main/java/br/com/iforce/praxis/gupy/service/GupyTestResultMapper.java` | `candidateResultPageUrl()` | Publica `/candidato/{token}/resultado` com token `candidate_result`. |
@@ -44,7 +50,7 @@ Este arquivo registra comportamentos comprovadamente entregues no código e pres
 | `backend/src/main/java/br/com/iforce/praxis/shared/outbox/service/OutboxProcessor.java` | `dispatch()` e `handleEventFailure()` | Tipos desconhecidos lançam erro explícito com tipo e ID, permanecem em retry e chegam à DLQ após o limite sem serem marcados como `SENT`. |
 | `backend/src/test/java/br/com/iforce/praxis/shared/outbox/service/OutboxProcessorTest.java` | cenários de evento desconhecido | Verifica ausência de `sentAt`, persistência de `lastError`, transição para `RETRYING` e encaminhamento à DLQ na quinta tentativa. |
 | `backend/src/main/java/br/com/iforce/praxis/gupy/service/CandidateAttemptService.java` | eventos de resultado e engajamento | Publica `RESULT_READY` no outbox, mas também associa eventos proprietários de engajamento ao `resultWebhookUrl`, pendência `INT17`. |
-| `backend/src/main/java/br/com/iforce/praxis/gupy/observability/CandidateCallbackHandoffAdvice.java` | `callback_presented` | Registra que o callback foi incluído na resposta ao navegador; não comprova execução nem confirmação do GET, pendência `INT18`. |
+| `backend/src/main/java/br/com/iforce/praxis/gupy/observability/CandidateCallbackHandoffAdvice.java` | `callback_presented` | Registra somente a apresentação da URL ao navegador; a confirmação efetiva é independente e persistida no evento `GUPY_CALLBACK_CONFIRMATION`. |
 | `backend/src/main/java/br/com/iforce/praxis/gupy/service/ResultScoringService.java` | normalização | Renormaliza pesos sobre competências cobertas pelo caminho; a comparabilidade entre bases distintas permanece em `BUS12`. |
 | `backend/src/main/java/br/com/iforce/praxis/engagement/dto/EngagementReportSummary.java` | contrato da estimativa | Expõe período, indicador de habilitação, valor estimado, hipótese em horas por avaliação, fórmula, fonte metodológica e ressalva explícita. |
 | `backend/src/main/java/br/com/iforce/praxis/engagement/service/EngagementReportService.java` | `sendMonthlyReports()` | Calcula a estimativa somente quando habilitada, valida a hipótese positiva e mantém o relatório de conclusões quando a estimativa está desativada. |
