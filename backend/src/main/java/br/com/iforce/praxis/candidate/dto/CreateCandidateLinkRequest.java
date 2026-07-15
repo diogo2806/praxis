@@ -8,8 +8,7 @@ import jakarta.validation.constraints.Size;
 import java.math.BigDecimal;
 import java.util.Locale;
 
-
-@Schema(description = "Pedido da empresa para criar uma nova aplicação de simulacao para um candidato.")
+@Schema(description = "Pedido da empresa para criar uma nova aplicação de simulação para um candidato.")
 public record CreateCandidateLinkRequest(
         @NotBlank
         @Schema(example = "sim-atendimento-n2")
@@ -24,11 +23,10 @@ public record CreateCandidateLinkRequest(
         @Schema(example = "maria@example.com")
         String candidateEmail,
 
-        @NotBlank
         @Size(max = 120)
         @Schema(
                 example = "vaga-1234-etapa-tecnica-2026-07",
-                description = "Identificador do ciclo de aplicação. Repetir o mesmo valor torna o pedido idempotente; usar outro valor cria uma nova tentativa."
+                description = "Identificador do ciclo de aplicação. Repetir o mesmo valor torna o pedido idempotente; quando omitido, o sistema usa um ciclo legado determinístico por avaliação e e-mail."
         )
         String applicationCycleId,
 
@@ -39,14 +37,11 @@ public record CreateCandidateLinkRequest(
         )
         String applicationContext,
 
-        @Schema(example = "1.50", description = "Multiplicador de tempo para acomodacoes de acessibilidade.")
+        @Schema(example = "1.50", description = "Multiplicador de tempo para acomodações de acessibilidade.")
         BigDecimal accommodationTimeMultiplier
 ) {
 
-    /**
-     * Compatibilidade para fluxos internos que ainda não expõem ciclo de aplicação.
-     * Chamadas HTTP usam o construtor canônico e exigem applicationCycleId explícito.
-     */
+    /** Compatibilidade para fluxos internos que ainda não expõem ciclo de aplicação. */
     public CreateCandidateLinkRequest(
             String simulationId,
             String candidateName,
@@ -63,11 +58,11 @@ public record CreateCandidateLinkRequest(
         );
     }
 
-    private static String legacyCycleId(String simulationId, String candidateEmail) {
+    public static String legacyCycleId(String simulationId, String candidateEmail) {
         String normalizedSimulation = simulationId == null ? "unknown" : simulationId.trim();
         String normalizedEmail = candidateEmail == null
                 ? "unknown"
                 : candidateEmail.trim().toLowerCase(Locale.ROOT);
-        return "internal:" + normalizedSimulation + ":" + normalizedEmail;
+        return "legacy:" + normalizedSimulation + ":" + normalizedEmail;
     }
 }
