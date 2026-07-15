@@ -71,7 +71,7 @@ class GupyTestResultMapperTest {
 
         assertThat(response.status()).isEqualTo("done");
         assertThat(response.results()).hasSize(1);
-        assertThat(response.results().getFirst().score()).isEqualTo(87);
+        assertThat(response.results().get(0).score()).isEqualTo(87);
     }
 
     @Test
@@ -91,8 +91,8 @@ class GupyTestResultMapperTest {
     private void givenUrlConfiguration() {
         when(praxisProperties.publicBaseUrl()).thenReturn("https://api.praxis.test");
         when(praxisProperties.candidatePageBaseUrl()).thenReturn("https://praxis.test");
-        when(praxisProperties.attemptLinkTtlHours()).thenReturn(24L);
-        when(jwtService.generateCandidateAttemptToken("empresa-1", "attempt-1", 24L)).thenReturn("token");
+        when(praxisProperties.attemptLinkTtlHours()).thenReturn(24);
+        when(jwtService.generateCandidateAttemptToken("empresa-1", "attempt-1", 24)).thenReturn("token");
     }
 
     private CandidateAttempt attemptWithStatus(AttemptStatus status, Instant finishedAt) {
