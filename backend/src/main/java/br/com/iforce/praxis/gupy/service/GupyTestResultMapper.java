@@ -27,10 +27,6 @@ import br.com.iforce.praxis.gupy.persistence.entity.ResultItemEntity;
 import org.springframework.stereotype.Component;
 
 
-import java.net.URLEncoder;
-
-import java.nio.charset.StandardCharsets;
-
 import java.time.Instant;
 
 import java.util.Comparator;
@@ -59,7 +55,7 @@ public class GupyTestResultMapper {
                 attempt.companyResultString(),
                 praxisProperties.publicBaseUrl(),
                 toGupyStatus(attempt.status()),
-                resultPageUrl(attempt.resultId(), attempt.companyId()),
+                resultPageUrl(attempt.resultId()),
                 candidatePageUrl(attempt.id()),
                 attempt.reliabilityLevel() == null ? ReliabilityLevel.NORMAL : attempt.reliabilityLevel(),
                 otherInformations(timeoutCount(attempt)),
@@ -84,7 +80,7 @@ public class GupyTestResultMapper {
                 attempt.getCompanyResultString(),
                 praxisProperties.publicBaseUrl(),
                 toGupyStatus(attempt.getStatus()),
-                resultPageUrl(attempt.getResultId(), attempt.getCompanyId()),
+                resultPageUrl(attempt.getResultId()),
                 candidatePageUrl(attempt.getId()),
                 attempt.getReliabilityLevel() == null ? ReliabilityLevel.NORMAL : attempt.getReliabilityLevel(),
                 otherInformations(timeoutCount(attempt)),
@@ -140,9 +136,8 @@ public class GupyTestResultMapper {
         };
     }
 
-    private String resultPageUrl(String resultId, String companyId) {
-        return praxisProperties.publicBaseUrl() + "/test/result/" + resultId
-                + "?company_id=" + URLEncoder.encode(companyId, StandardCharsets.UTF_8);
+    private String resultPageUrl(String resultId) {
+        return praxisProperties.publicBaseUrl() + "/test/result/" + resultId;
     }
 
     private String candidatePageUrl(String attemptId) {

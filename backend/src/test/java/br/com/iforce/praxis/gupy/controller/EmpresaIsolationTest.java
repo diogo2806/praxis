@@ -86,14 +86,12 @@ class EmpresaIsolationTest {
 
         // O dono (empresa-123) enxerga o resultado.
         mockMvc.perform(get("/test/result/" + resultId)
-                        .header("Authorization", EMPRESA1_AUTH)
-                        .param("company_id", "empresa-123"))
+                        .header("Authorization", EMPRESA1_AUTH))
                 .andExpect(status().isOk());
 
         // Outro empresa configurado (empresa-456) recebe 404, sem vazamento.
         mockMvc.perform(get("/test/result/" + resultId)
-                        .header("Authorization", EMPRESA2_AUTH)
-                        .param("company_id", "empresa-456"))
+                        .header("Authorization", EMPRESA2_AUTH))
                 .andExpect(status().isNotFound());
     }
 

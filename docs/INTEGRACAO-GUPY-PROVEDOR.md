@@ -17,7 +17,7 @@ O Praxis expõe:
 - `GET /test/result/{resultId}` para consultar o resultado;
 - entrega assíncrona para `result_webhook_url` por outbox.
 
-O fluxo interno implementa `callback_url`, `job_id`, retorno assíncrono e redirecionamento final. Permanecem divergências no endpoint de resultado, tipos e enums que ainda impedem declarar a integração homologada.
+O fluxo interno implementa `callback_url`, `job_id`, retorno assíncrono, redirecionamento final e o endpoint oficial de consulta do resultado. Permanecem divergências de tipos e enums que ainda impedem declarar a integração homologada.
 
 ## Compatibilidade com o contrato oficial
 
@@ -34,7 +34,7 @@ O fluxo interno implementa `callback_url`, `job_id`, retorno assíncrono e redir
 | `previous_result` | Aceita qualquer texto; OpenAPI local exemplifica `pass`, `fail`, `none` | **Incompatível** com `fail` ou `null` do contrato oficial |
 | `result_webhook_url` | Recebido como `URI`; resultado é enviado por POST | Compatível |
 | Resposta `201` com `test_result_id` e `test_url` | Implementada | Compatível |
-| `GET /test/result/{resultId}` somente com `resultId` | Exige também `?company_id=...` | **Incompatível** |
+| `GET /test/result/{resultId}` somente com `resultId` | Implementado sem query adicional; empresa resolvida pelo token | Compatível |
 | Callback GET após conclusão | O frontend navega para `callback_url`, fazendo o GET no navegador da pessoa candidata | Compatível tecnicamente |
 | Redirecionamento do candidato de volta à Gupy | Executado automaticamente após a resposta final | Compatível tecnicamente |
 | Payload `TestResult` | Campos principais são produzidos | Parcial |
@@ -157,19 +157,18 @@ Chamadas repetidas com a mesma combinação reutilizam a tentativa existente.
 Implementação atual:
 
 ```text
-GET /test/result/res_123?company_id=empresa-123
+GET /test/result/res_123
 Authorization: Bearer <token>
 ```
 
 O backend valida:
 
 - Bearer token;
-- empresa associada ao token;
-- correspondência entre o `company_id` da query e o token;
-- propriedade do resultado pela empresa;
+- empresa e `company_id` associados ao token;
+- propriedade do resultado pela empresa autenticada;
 - existência do resultado.
 
-A query `company_id` é uma proteção adicional interna, mas não aparece no endpoint oficial publicado pela Gupy. Para homologação, o isolamento deve continuar sendo feito pelo token sem alterar a assinatura esperada pela Gupy.
+O endpoint não recebe parâmetros de query. O isolamento permanece garantido pelo token, pelo `empresaId` e pelo `companyId` resolvidos em `integration_tokens`.
 
 ## Resultado produzido
 
@@ -184,7 +183,7 @@ Campos principais:
   "company_result_string": "Resultado em Markdown para o RH",
   "providerLink": "https://app.exemplo.com",
   "status": "done",
-  "result_page_url": "https://app.exemplo.com/test/result/res_123?company_id=empresa-123",
+  "result_page_url": "https://app.exemplo.com/test/result/res_123",
   "result_candidate_page_url": "https://app.exemplo.com/candidate/attempts/att_123",
   "reliabilityLevel": "NORMAL",
   "other_informations": {
@@ -234,7 +233,7 @@ sequenceDiagram
   Praxis->>Praxis: calcula score determinístico
   Praxis->>Outbox: grava RESULT_READY
   Outbox->>Gupy: POST result_webhook_url
-  Gupy->>Praxis: GET /test/result/{resultId}?company_id=...
+  Gupy->>Praxis: GET /test/result/{resultId}
 ```
 
 Fluxo de callback e redirecionamento implementado:
@@ -289,12 +288,11 @@ POST /api/v1/gupy/result-deliveries/{deliveryId}/reprocess
 
 ## Bloqueadores para homologação
 
-1. Remover a obrigatoriedade de `company_id` da query do endpoint de resultado, mantendo isolamento pelo token.
-2. Definir compatibilidade de tipos para `company_id` e `document_id`.
-3. Aceitar e validar `previous_result` conforme `fail` ou `null`.
-4. Corrigir `result_candidate_page_url` para uma página de navegador.
-5. Validar com a Gupy se campos extras no `TestResult` são aceitos ou removê-los do contrato externo.
-6. Executar homologação em vaga real, pois a própria documentação da Gupy informa que não há ambiente de sandbox para esse fluxo.
+1. Definir compatibilidade de tipos para `company_id` e `document_id`.
+2. Aceitar e validar `previous_result` conforme `fail` ou `null`.
+3. Corrigir `result_candidate_page_url` para uma página de navegador.
+4. Validar com a Gupy se campos extras no `TestResult` são aceitos ou removê-los do contrato externo.
+5. Executar homologação em vaga real, pois a própria documentação da Gupy informa que não há ambiente de sandbox para esse fluxo.
 
 ## Checklist de validação
 
@@ -306,7 +304,7 @@ POST /api/v1/gupy/result-deliveries/{deliveryId}/reprocess
 - [ ] Confirmar `test_url` na página `/candidato/{token}`.
 - [ ] Concluir uma tentativa.
 - [x] Validar callback e redirecionamento em testes automatizados; falta confirmar na homologação real da Gupy.
-- [ ] Validar `GET /test/result/{resultId}` sem parâmetros extras.
+- [x] Validar `GET /test/result/{resultId}` sem parâmetros extras e com isolamento pelo token.
 - [ ] Validar o `TestResult` exibido para empresa e candidato.
 - [ ] Testar `result_webhook_url`.
 - [ ] Testar retry, `408`, `429`, 4xx permanente e DLQ.

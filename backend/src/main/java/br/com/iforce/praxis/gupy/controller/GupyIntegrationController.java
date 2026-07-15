@@ -172,12 +172,11 @@ public class GupyIntegrationController {
      * Consulta o resultado de uma prova já finalizada (para a Gupy).
      *
      * <p>Devolve a pontuação e o desempenho por competência do candidato.
-     * Exige a empresa (company_id) para garantir que o resultado pertence a
-     * quem está consultando.</p>
+     * A empresa é resolvida exclusivamente pelo token Bearer da integração,
+     * conforme o contrato oficial da Gupy.</p>
      *
      * @param authorization token de acesso da integração (cabeçalho HTTP)
      * @param resultId identificador do resultado consultado
-     * @param companyId identificador da empresa dona do resultado
      * @return o resultado da prova no formato esperado pela Gupy
      */
     @GetMapping("/test/result/{resultId}")
@@ -190,10 +189,11 @@ public class GupyIntegrationController {
     })
     public ResponseEntity<TestResultResponse> getTestResult(
             @RequestHeader(name = "Authorization", required = false) String authorization,
-            @PathVariable String resultId,
-            @RequestParam(name = "company_id") String companyId
+            @PathVariable String resultId
     ) {
         IntegrationEmpresaContext empresaContext = integrationAuthService.validateBearerToken(authorization, PROVIDER);
-        return ResponseEntity.ok(candidateAttemptService.findResult(resultId, companyId, empresaContext));
+        return ResponseEntity.ok(
+                candidateAttemptService.findResult(resultId, empresaContext.companyId(), empresaContext)
+        );
     }
 }
