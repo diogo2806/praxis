@@ -1,6 +1,6 @@
 import { getApiBaseUrl } from "@/lib/runtime-config";
 import { getSession } from "@/lib/session";
-import { PraxisApiError, type DashboardResponse } from "./praxis";
+import { PraxisApiError, type DashboardResponse } from "./praxis-legacy";
 
 export class DashboardCompatibilityError extends PraxisApiError {
   constructor() {
