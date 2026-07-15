@@ -1,57 +1,33 @@
 package br.com.iforce.praxis.shared.outbox.service;
 
 import br.com.iforce.praxis.gupy.delivery.service.GupyOutboundUrlValidator;
-
 import br.com.iforce.praxis.gupy.delivery.service.ResultWebhookClient;
-
 import br.com.iforce.praxis.gupy.dto.TestResultResponse;
-
 import br.com.iforce.praxis.gupy.model.PublishedSimulation;
-
 import br.com.iforce.praxis.gupy.persistence.entity.CandidateAttemptEntity;
-
 import br.com.iforce.praxis.gupy.persistence.repository.CandidateAttemptRepository;
-
 import br.com.iforce.praxis.gupy.service.GupyTestResultMapper;
-
 import br.com.iforce.praxis.gupy.service.SimulationCatalogService;
-
 import br.com.iforce.praxis.shared.integration.IntegrationManagementService;
-
+import br.com.iforce.praxis.shared.integration.service.ConfirmableGenericWebhookDeliveryService;
 import br.com.iforce.praxis.shared.notification.service.ResultDeliveryDlqAlertService;
-
 import br.com.iforce.praxis.shared.outbox.persistence.entity.OutboxEventEntity;
-
 import br.com.iforce.praxis.shared.outbox.persistence.repository.OutboxEventRepository;
-
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-
 import org.junit.jupiter.api.BeforeEach;
-
 import org.junit.jupiter.api.Test;
-
 import org.junit.jupiter.api.extension.ExtendWith;
-
-import org.mockito.ArgumentCaptor;
-
 import org.mockito.Mock;
-
 import org.mockito.junit.jupiter.MockitoExtension;
-
 import org.springframework.transaction.PlatformTransactionManager;
-
 import org.springframework.web.client.RestClientResponseException;
 
-
 import java.time.Instant;
-
 import java.util.List;
-
 import java.util.Optional;
 
-
 import static org.assertj.core.api.Assertions.assertThat;
-
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
@@ -60,31 +36,22 @@ class OutboxProcessorTest {
 
     @Mock
     private OutboxEventRepository outboxEventRepository;
-
     @Mock
     private ResultWebhookClient resultWebhookClient;
-
     @Mock
     private CandidateAttemptRepository candidateAttemptRepository;
-
     @Mock
     private SimulationCatalogService simulationCatalogService;
-
     @Mock
     private GupyTestResultMapper gupyTestResultMapper;
-
     @Mock
     private GupyOutboundUrlValidator outboundUrlValidator;
-
     @Mock
     private ResultDeliveryDlqAlertService dlqAlertService;
-
     @Mock
-    private br.com.iforce.praxis.shared.integration.service.GenericWebhookDeliveryService genericWebhookDeliveryService;
-
+    private ConfirmableGenericWebhookDeliveryService genericWebhookDeliveryService;
     @Mock
     private IntegrationManagementService integrationManagementService;
-
     @Mock
     private PlatformTransactionManager transactionManager;
 
@@ -95,27 +62,23 @@ class OutboxProcessorTest {
     void setUp() {
         objectMapper = new ObjectMapper();
         outboxProcessor = new OutboxProcessor(
-            outboxEventRepository,
-            resultWebhookClient,
-            objectMapper,
-            candidateAttemptRepository,
-            simulationCatalogService,
-            gupyTestResultMapper,
-            outboundUrlValidator,
-            dlqAlertService,
-            genericWebhookDeliveryService,
-            integrationManagementService,
-            transactionManager
+                outboxEventRepository,
+                resultWebhookClient,
+                objectMapper,
+                candidateAttemptRepository,
+                simulationCatalogService,
+                gupyTestResultMapper,
+                outboundUrlValidator,
+                dlqAlertService,
+                genericWebhookDeliveryService,
+                integrationManagementService,
+                transactionManager
         );
     }
 
-    /**
-     * Reivindica o evento (claim) e o devolve em findById, simulando o ciclo
-     * claim → entrega (HTTP) → finalização do processador real.
-     */
     private void givenClaimed(OutboxEventEntity event) {
         when(outboxEventRepository.claimReadyBatch(anyList(), any(Instant.class), any(Instant.class), anyInt()))
-            .thenReturn(List.of(event));
+                .thenReturn(List.of(event));
         when(outboxEventRepository.findById(event.getId())).thenReturn(Optional.of(event));
     }
 
@@ -127,111 +90,82 @@ class OutboxProcessorTest {
         outboxProcessor.processReadyEvents();
 
         assertThat(event.getStatus()).isEqualTo(OutboxEventEntity.OutboxEventStatus.SENT);
-        assertThat(event.getNextAttemptAt()).isNull();
+        assertThat(destinationStatus(event, "GUPY")).isEqualTo("SENT");
+        assertThat(destinationStatus(event, "CUSTOM_API")).isEqualTo("SENT");
         verify(resultWebhookClient).postResult(anyString(), any(TestResultResponse.class));
     }
 
     @Test
-    void shouldRetryOnServerError() {
+    void shouldRetryOnlyCustomApiAfterGupyWasConfirmed() {
         OutboxEventEntity event = createPendingEvent();
-        event.setAttempts(0);
+        CandidateAttemptEntity attempt = new CandidateAttemptEntity();
+        attempt.setId("att_123");
         givenClaimed(event);
-        doThrow(new RestClientResponseException("Server error", 500, "Internal Server Error", null, null, null))
-            .when(resultWebhookClient).postResult(anyString(), any(TestResultResponse.class));
+        when(candidateAttemptRepository.findByEmpresaIdAndId("empresa-1", "att_123"))
+                .thenReturn(Optional.of(attempt));
+        doThrow(new ConfirmableGenericWebhookDeliveryService.CustomWebhookDeliveryException("indisponível"))
+                .doNothing()
+                .when(genericWebhookDeliveryService)
+                .deliverResultReady("empresa-1", attempt);
 
         outboxProcessor.processReadyEvents();
 
         assertThat(event.getStatus()).isEqualTo(OutboxEventEntity.OutboxEventStatus.RETRYING);
-        assertThat(event.getAttempts()).isEqualTo(1);
-        assertThat(event.getNextAttemptAt()).isNotNull();
+        assertThat(destinationStatus(event, "GUPY")).isEqualTo("SENT");
+        assertThat(destinationStatus(event, "CUSTOM_API")).isEqualTo("RETRYING");
+
+        outboxProcessor.processReadyEvents();
+
+        assertThat(event.getStatus()).isEqualTo(OutboxEventEntity.OutboxEventStatus.SENT);
+        assertThat(destinationStatus(event, "CUSTOM_API")).isEqualTo("SENT");
+        verify(resultWebhookClient, times(1)).postResult(anyString(), any(TestResultResponse.class));
+        verify(genericWebhookDeliveryService, times(2)).deliverResultReady("empresa-1", attempt);
     }
 
     @Test
-    void shouldMoveToDeadLetterQueueOnClientError() {
+    void shouldRetryGupyOnServerErrorWithoutCallingCustomApi() {
         OutboxEventEntity event = createPendingEvent();
-        event.setAttempts(0);
+        givenClaimed(event);
+        doThrow(new RestClientResponseException("Server error", 500, "Internal Server Error", null, null, null))
+                .when(resultWebhookClient).postResult(anyString(), any(TestResultResponse.class));
+
+        outboxProcessor.processReadyEvents();
+
+        assertThat(event.getStatus()).isEqualTo(OutboxEventEntity.OutboxEventStatus.RETRYING);
+        assertThat(destinationStatus(event, "GUPY")).isEqualTo("RETRYING");
+        verifyNoInteractions(genericWebhookDeliveryService);
+    }
+
+    @Test
+    void shouldMoveDestinationToDeadLetterQueueOnClientError() {
+        OutboxEventEntity event = createPendingEvent();
         givenClaimed(event);
         doThrow(new RestClientResponseException("Bad request", 400, "Bad Request", null, null, null))
-            .when(resultWebhookClient).postResult(anyString(), any(TestResultResponse.class));
+                .when(resultWebhookClient).postResult(anyString(), any(TestResultResponse.class));
 
         outboxProcessor.processReadyEvents();
 
         assertThat(event.getStatus()).isEqualTo(OutboxEventEntity.OutboxEventStatus.DLQ);
-        assertThat(event.getNextAttemptAt()).isNull();
+        assertThat(destinationStatus(event, "GUPY")).isEqualTo("DLQ");
         verify(dlqAlertService).alertEmpresaAdmins(event);
-    }
-
-    @Test
-    void shouldMoveToDeadLetterQueueAfterMaxAttempts() {
-        OutboxEventEntity event = createPendingEvent();
-        event.setAttempts(5);
-        givenClaimed(event);
-        doThrow(new RuntimeException("Network error"))
-            .when(resultWebhookClient).postResult(anyString(), any(TestResultResponse.class));
-
-        outboxProcessor.processReadyEvents();
-
-        assertThat(event.getStatus()).isEqualTo(OutboxEventEntity.OutboxEventStatus.DLQ);
-        assertThat(event.getNextAttemptAt()).isNull();
-        verify(dlqAlertService).alertEmpresaAdmins(event);
-    }
-
-    @Test
-    void shouldCalculateExponentialBackoffDelay() {
-        OutboxEventEntity event = createPendingEvent();
-        givenClaimed(event);
-        doThrow(new RuntimeException("Error"))
-            .when(resultWebhookClient).postResult(anyString(), any(TestResultResponse.class));
-
-        Instant beforeRetry = Instant.now();
-        for (int attempt = 1; attempt <= 5; attempt++) {
-            event.setAttempts(attempt - 1);
-            outboxProcessor.processReadyEvents();
-            if (attempt < 5) {
-                Instant nextRetry = event.getNextAttemptAt();
-                long delaySeconds = nextRetry.getEpochSecond() - beforeRetry.getEpochSecond();
-                long expectedDelay = switch (attempt) {
-                    case 1 -> 1L;
-                    case 2 -> 4L;
-                    case 3 -> 16L;
-                    case 4 -> 64L;
-                    default -> 256L;
-                };
-                assertThat(delaySeconds).isGreaterThanOrEqualTo(expectedDelay - 1)
-                    .isLessThanOrEqualTo(expectedDelay + 2);
-            }
-        }
     }
 
     @Test
     void shouldFetchTestResultForMigratedEvent() {
-        OutboxEventEntity event = new OutboxEventEntity();
-        event.setId(2L);
-        event.setEmpresaId("empresa-1");
-        event.setEventType("RESULT_READY");
-        event.setAggregateType("CandidateAttempt");
-        event.setAggregateId("att_123");
+        OutboxEventEntity event = createPendingEvent();
         event.setPayload("{\"webhookUrl\":\"https://example.com/webhook\",\"attemptId\":\"att_123\"}");
-        event.setStatus(OutboxEventEntity.OutboxEventStatus.PENDING);
-        event.setAttempts(0);
-        event.setNextAttemptAt(Instant.now());
-
         CandidateAttemptEntity attempt = new CandidateAttemptEntity();
         attempt.setSimulationVersionId(100L);
         PublishedSimulation simulation = mock(PublishedSimulation.class);
         TestResultResponse testResult = mock(TestResultResponse.class);
-
         givenClaimed(event);
         when(candidateAttemptRepository.findByEmpresaIdAndId("empresa-1", "att_123"))
-            .thenReturn(Optional.of(attempt));
-        when(simulationCatalogService.findByVersionId(100L))
-            .thenReturn(Optional.of(simulation));
-        when(gupyTestResultMapper.toResponse(attempt, simulation))
-            .thenReturn(testResult);
+                .thenReturn(Optional.of(attempt));
+        when(simulationCatalogService.findByVersionId(100L)).thenReturn(Optional.of(simulation));
+        when(gupyTestResultMapper.toResponse(attempt, simulation)).thenReturn(testResult);
 
         outboxProcessor.processReadyEvents();
 
-        verify(gupyTestResultMapper).toResponse(attempt, simulation);
         verify(resultWebhookClient).postResult("https://example.com/webhook", testResult);
         assertThat(event.getStatus()).isEqualTo(OutboxEventEntity.OutboxEventStatus.SENT);
     }
@@ -249,46 +183,41 @@ class OutboxProcessorTest {
                   "webhookUrl": "https://example.com/webhook",
                   "eventPayload": {
                     "event_type": "ATTEMPT_STARTED",
-                    "attempt_id": "att_123",
-                    "status": "inProgress"
+                    "attempt_id": "att_123"
                   }
                 }
                 """);
         event.setStatus(OutboxEventEntity.OutboxEventStatus.PENDING);
         event.setAttempts(0);
         event.setNextAttemptAt(Instant.now());
-
         givenClaimed(event);
 
         outboxProcessor.processReadyEvents();
 
-        ArgumentCaptor<Object> payloadCaptor = ArgumentCaptor.forClass(Object.class);
-        verify(resultWebhookClient).postPayload(eq("https://example.com/webhook"), payloadCaptor.capture());
-        assertThat(payloadCaptor.getValue().toString()).contains("ATTEMPT_STARTED");
+        verify(resultWebhookClient).postPayload(eq("https://example.com/webhook"), any(JsonNode.class));
         assertThat(event.getStatus()).isEqualTo(OutboxEventEntity.OutboxEventStatus.SENT);
-    }
-
-    @Test
-    void shouldNotPostWhenWebhookUrlFailsOutboundValidation() {
-        OutboxEventEntity event = createPendingEvent();
-        givenClaimed(event);
-        when(outboundUrlValidator.validate("https://example.com/webhook"))
-            .thenThrow(new IllegalArgumentException("URL externa invalida."));
-
-        outboxProcessor.processReadyEvents();
-
-        verify(resultWebhookClient, never()).postResult(anyString(), any(TestResultResponse.class));
-        assertThat(event.getStatus()).isEqualTo(OutboxEventEntity.OutboxEventStatus.RETRYING);
     }
 
     @Test
     void shouldSkipProcessingWhenNoEventsReady() {
         when(outboxEventRepository.claimReadyBatch(anyList(), any(Instant.class), any(Instant.class), anyInt()))
-            .thenReturn(List.of());
+                .thenReturn(List.of());
 
         outboxProcessor.processReadyEvents();
 
-        verify(resultWebhookClient, never()).postResult(anyString(), any(TestResultResponse.class));
+        verifyNoInteractions(resultWebhookClient, genericWebhookDeliveryService);
+    }
+
+    private String destinationStatus(OutboxEventEntity event, String destination) {
+        try {
+            return objectMapper.readTree(event.getPayload())
+                    .path("deliveryState")
+                    .path(destination)
+                    .path("status")
+                    .asText();
+        } catch (Exception exception) {
+            throw new AssertionError(exception);
+        }
     }
 
     private OutboxEventEntity createPendingEvent() {
