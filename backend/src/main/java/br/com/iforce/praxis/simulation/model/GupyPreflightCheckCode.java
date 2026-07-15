@@ -1,17 +1,14 @@
 package br.com.iforce.praxis.simulation.model;
 
 import br.com.iforce.praxis.shared.model.DescribedEnum;
-
 import br.com.iforce.praxis.shared.model.DescribedEnums;
-
 import com.fasterxml.jackson.annotation.JsonCreator;
-
 import com.fasterxml.jackson.annotation.JsonValue;
-
 
 public enum GupyPreflightCheckCode implements DescribedEnum {
 
     PUBLIC_BASE_URL("publicBaseUrl"),
+    PUBLICATION_STATUS("publicationStatus"),
     INTEGRATION_TOKEN("integrationToken"),
     SIMULATION_VALIDATION("simulationValidation");
 
