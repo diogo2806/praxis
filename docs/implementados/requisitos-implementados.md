@@ -1,6 +1,6 @@
 # Requisitos técnicos implementados — praxis
 
-Status: atualizado em 2026-07-15 após entregas de `SEC10` e `INT10`.
+Status: atualizado em 2026-07-15 após auditoria da branch main e conclusão de `UI10`.
 
 Este arquivo registra somente comportamentos comprovadamente entregues no código e no fluxo real. Entregas parciais são descritas como parciais e apontam para os IDs que mantêm as lacunas remanescentes no backlog canônico.
 
@@ -8,6 +8,7 @@ Este arquivo registra somente comportamentos comprovadamente entregues no códig
 
 | Origem | Situação registrada | Entrega comprovada | Pendência remanescente |
 |---|---|---|---|
+| `UI10` | Concluído | O módulo público da API exporta a implementação estrita do dashboard; respostas `404` produzem incompatibilidade explícita, a interface exibe estado indisponível e nenhum plano, operação ou conexão de integração é inferido por fallback, token ou consultas auxiliares. | Nenhuma para compatibilidade e fonte dos dados do dashboard. |
 | `SEC10` | Concluído | Rotação, reativação, desconexão e revogação usam um único caso de uso transacional; `integration_tokens` e `empresa_integrations` são atualizadas na mesma transação, com rollback integral; rotação deixa ATS `PENDENTE` e revogação deixa `DESATIVADA`, sem evidência da credencial anterior. | Nenhuma para o ciclo de vida das credenciais. |
 | `INT10` | Concluído | Todos os endpoints externos Gupy e Recrutei registram atividade somente depois de uma resposta de negócio bem-sucedida; a evidência contém provedor, endpoint e horário; `PENDENTE` e `ERRO` são promovidos por atividade autenticada, `CONECTADA` atualiza `lastSyncAt` e `DESATIVADA` permanece protegida; primeira conexão, recuperação e atividades seguintes usam a trilha de auditoria existente. | Nenhuma para o estado de conexão ATS. |
 | `CFG10` | Concluído | O Docker Compose não exige mais `PRAXIS_INTEGRATION_TOKEN`; o CI valida a configuração sem credencial global; Gupy e Recrutei continuam autenticando somente pelos tokens persistidos por empresa e provedor. | Nenhuma. |
@@ -16,6 +17,15 @@ Este arquivo registra somente comportamentos comprovadamente entregues no códig
 | `API1` | Concluído | Consulta e webhook usam o mesmo DTO externo sem `reliabilityLevel` nem `other_informations` no topo; informações operacionais permanecem no domínio e na persistência interna. | Nenhuma para o schema externo de resultado. |
 | `REQ-INTEGRACOES-REATIVACAO-TOKEN-ATS` | Concluído | Reativação de Gupy/Recrutei rotaciona a credencial, retorna o novo token uma única vez, persiste somente hash/prévia, muda o estado para `PENDENTE` e limpa a atividade da credencial anterior. | Nenhuma. |
 | `REQ-INTEGRACOES-STATUS-CONEXAO-REAL` | Concluído | Estado operacional passa a refletir atividade externa autenticada; token configurado permanece `PENDENTE` até a primeira chamada real e conexões subsequentes atualizam a evidência temporal. | Nenhuma. |
+
+### UI10 — dashboard sem fallback sintético
+
+| Caminho completo | Método/campo/contrato | Comportamento comprovado |
+|---|---|---|
+| `frontend/src/lib/api/praxis.ts` | exportações públicas | Mantém os contratos existentes pela fachada, mas sobrescreve a exportação de `getDashboard()` com a implementação estrita; consumidores do módulo público não alcançam o método legado. |
+| `frontend/src/lib/api/dashboard-strict.ts` | `getDashboard()` | Consulta somente `GET /api/v1/dashboard`; em `404`, lança `DashboardCompatibilityError`; outras falhas preservam o status e a mensagem da API; não consulta fontes auxiliares nem fabrica dados. |
+| `frontend/src/routes/dashboard.tsx` | `DashboardPage()` e `ErrorState()` | Usa a implementação estrita, desabilita retry automático e apresenta incompatibilidade ou erro sem renderizar conteúdo sintético; informa explicitamente que plano, operação e conexão não foram inferidos. |
+| `frontend/src/lib/api/praxis-legacy.ts` | implementação antiga | Permanece apenas como fonte de tipos e contratos legados exportados pela fachada; a busca de referências não encontrou consumidor direto nem exportação pública do antigo `getDashboard()`. |
 
 ### SEC10 — ciclo de vida atômico das credenciais
 
