@@ -194,7 +194,9 @@ public class OutboxProcessor {
         if (ATTEMPT_STARTED_EVENT.equals(event.getEventType())
                 || ATTEMPT_ABANDONED_EVENT.equals(event.getEventType())) {
             processAttemptEngagementEvent(event);
+            return;
         }
+        throw new UnsupportedOutboxEventTypeException(event.getId(), event.getEventType());
     }
 
     private void processResultReadyEvent(OutboxEventEntity event) {
@@ -389,6 +391,13 @@ public class OutboxProcessor {
             return "Falha desconhecida no processamento do evento.";
         }
         return message.length() <= 1200 ? message : message.substring(0, 1200);
+    }
+
+    private static final class UnsupportedOutboxEventTypeException extends RuntimeException {
+        private UnsupportedOutboxEventTypeException(Long eventId, String eventType) {
+            super("Tipo de evento do outbox não suportado: " + String.valueOf(eventType)
+                    + " (evento " + eventId + ").");
+        }
     }
 
     private static final class DestinationDeliveryException extends RuntimeException {
