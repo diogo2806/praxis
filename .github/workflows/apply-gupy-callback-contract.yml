@@ -26,6 +26,9 @@ jobs:
           fetch-depth: 1
           show-progress: false
 
+      - name: Fix application script
+        run: python .github/scripts/fix_gupy_apply_script.py
+
       - name: Apply source changes
         env:
           GH_TOKEN: ${{ github.token }}
@@ -44,6 +47,7 @@ jobs:
       - name: Remove temporary automation
         run: |
           rm .github/scripts/apply_gupy_callback_contract.py
+          rm .github/scripts/fix_gupy_apply_script.py
           rm .github/workflows/apply-gupy-callback-contract.yml
 
       - name: Commit implementation
