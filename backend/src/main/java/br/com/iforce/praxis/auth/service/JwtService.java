@@ -1,45 +1,25 @@
 package br.com.iforce.praxis.auth.service;
 
 import io.jsonwebtoken.Claims;
-
 import io.jsonwebtoken.Jwts;
-
 import io.jsonwebtoken.security.Keys;
-
 import org.springframework.beans.factory.annotation.Value;
-
 import org.springframework.stereotype.Service;
 
-
 import javax.crypto.SecretKey;
-
 import java.nio.charset.StandardCharsets;
-
 import java.time.Instant;
-
 import java.util.Date;
-
 import java.util.Set;
-
 
 /**
  * Cria e valida tokens de segurança (JWT).
- *
- * JWT (JSON Web Token) é um padrão de token assinado digitalmente que prova
- * a identidade de um usuário. O token contém:
- * - Quem é o usuário (ID)
- * - Qual empresa ele pertence (empresa)
- * - Quais permissões tem (roles)
- * - Quando expira (TTL)
- *
- * Dois tipos de tokens são gerados:
- * 1. Para administradores/recrutadores: dura 8 horas (configurável)
- * 2. Para candidatos em prova: dura apenas o tempo que levam para fazer a prova
  */
 @Service
 public class JwtService {
 
     private static final String CANDIDATE_ATTEMPT_TOKEN_TYPE = "candidate_attempt";
+    private static final String CANDIDATE_RESULT_TOKEN_TYPE = "candidate_result";
 
     private final SecretKey secretKey;
     private final int expirationHours;
@@ -63,18 +43,6 @@ public class JwtService {
         this.expirationHours = expirationHours;
     }
 
-    /**
-     * Cria um token de sessão para um usuário (administrador/recrutador).
-     *
-     * O token contém a identidade do usuário, sua empresa, e suas permissões.
-     * É válido por um período configurado (padrão: 8 horas). Após expirar,
-     * o usuário precisa fazer login novamente.
-     *
-     * @param userId ID único do usuário
-     * @param empresaId ID da empresa do usuário
-     * @param roles Conjunto de permissões (ex: ADMIN, RECRUITER)
-     * @return Token JWT assinado que pode ser enviado em requisições
-     */
     public String generateToken(String userId, String empresaId, Set<String> roles) {
         Instant now = Instant.now();
         return Jwts.builder()
@@ -87,25 +55,32 @@ public class JwtService {
                 .compact();
     }
 
-    /**
-     * Cria um token para um candidato fazendo uma prova.
-     *
-     * Este token é mais restritivo que o de administrador: vale apenas enquanto
-     * o candidato está fazendo a prova. Contém o ID da tentativa e da empresa.
-     *
-     * O tempo de validade é passado como parâmetro para que seja flexível:
-     * uma prova de 1 hora recebe um token de 1 hora, uma de 2 horas recebe 2 horas.
-     *
-     * @param empresaId ID da empresa
-     * @param attemptId ID da tentativa da prova
-     * @param ttlHours Tempo de validade do token em horas
-     * @return Token JWT para usar durante a prova
-     */
     public String generateCandidateAttemptToken(String empresaId, String attemptId, int ttlHours) {
+        return generateCandidateScopedToken(empresaId, attemptId, CANDIDATE_ATTEMPT_TOKEN_TYPE, ttlHours);
+    }
+
+    public String generateCandidateResultToken(String empresaId, String attemptId, int ttlHours) {
+        return generateCandidateScopedToken(empresaId, attemptId, CANDIDATE_RESULT_TOKEN_TYPE, ttlHours);
+    }
+
+    public CandidateAttemptToken parseCandidateAttemptToken(String token) {
+        CandidateScopedToken parsed = parseCandidateScopedToken(token, CANDIDATE_ATTEMPT_TOKEN_TYPE);
+        return new CandidateAttemptToken(parsed.empresaId(), parsed.attemptId());
+    }
+
+    public CandidateResultToken parseCandidateResultToken(String token) {
+        CandidateScopedToken parsed = parseCandidateScopedToken(token, CANDIDATE_RESULT_TOKEN_TYPE);
+        return new CandidateResultToken(parsed.empresaId(), parsed.attemptId());
+    }
+
+    private String generateCandidateScopedToken(String empresaId, String attemptId, String type, int ttlHours) {
+        if (ttlHours <= 0) {
+            throw new IllegalArgumentException("A validade do token deve ser maior que zero.");
+        }
         Instant now = Instant.now();
         return Jwts.builder()
                 .subject(attemptId)
-                .claim("typ", CANDIDATE_ATTEMPT_TOKEN_TYPE)
+                .claim("typ", type)
                 .claim("empresa_id", empresaId)
                 .claim("attempt_id", attemptId)
                 .issuedAt(Date.from(now))
@@ -114,39 +89,19 @@ public class JwtService {
                 .compact();
     }
 
-    /**
-     * Extrai as informações de um token de prova.
-     *
-     * Valida a assinatura do token (garante que não foi falsificado) e extrai
-     * o ID da tentativa e da empresa.
-     *
-     * @param token Token JWT recebido do candidato
-     * @return ID da tentativa e da empresa contidos no token
-     * @throws IllegalArgumentException se o token é inválido ou expirou
-     */
-    public CandidateAttemptToken parseCandidateAttemptToken(String token) {
+    private CandidateScopedToken parseCandidateScopedToken(String token, String expectedType) {
         Claims claims = parse(token);
-        if (!CANDIDATE_ATTEMPT_TOKEN_TYPE.equals(claims.get("typ", String.class))) {
+        if (!expectedType.equals(claims.get("typ", String.class))) {
             throw new IllegalArgumentException("Token público de candidato inválido.");
         }
         String empresaId = claims.get("empresa_id", String.class);
         String attemptId = claims.get("attempt_id", String.class);
         if (empresaId == null || empresaId.isBlank() || attemptId == null || attemptId.isBlank()) {
-            throw new IllegalArgumentException("Token publico de candidato incompleto.");
+            throw new IllegalArgumentException("Token público de candidato incompleto.");
         }
-        return new CandidateAttemptToken(empresaId, attemptId);
+        return new CandidateScopedToken(empresaId, attemptId);
     }
 
-    /**
-     * Decodifica um token JWT.
-     *
-     * Valida a assinatura e retorna todas as informações (claims) contidas no token.
-     * Este é o método de baixo nível; use os métodos especializados acima em vez deste.
-     *
-     * @param token Token JWT assinado
-     * @return Dados decodificados do token
-     * @throws RuntimeException se o token é inválido ou expirou
-     */
     public Claims parse(String token) {
         return Jwts.parser()
                 .verifyWith(secretKey)
@@ -155,7 +110,12 @@ public class JwtService {
                 .getPayload();
     }
 
-    /** Dados extraídos do link do candidato: a empresa e a participação a que ele dá acesso. */
+    private record CandidateScopedToken(String empresaId, String attemptId) {
+    }
+
     public record CandidateAttemptToken(String empresaId, String attemptId) {
+    }
+
+    public record CandidateResultToken(String empresaId, String attemptId) {
     }
 }
