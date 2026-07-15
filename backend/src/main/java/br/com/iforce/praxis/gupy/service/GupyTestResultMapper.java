@@ -1,38 +1,23 @@
 package br.com.iforce.praxis.gupy.service;
 
+import br.com.iforce.praxis.auth.service.JwtService;
 import br.com.iforce.praxis.config.PraxisProperties;
-
 import br.com.iforce.praxis.gupy.dto.TestResultItemResponse;
-
 import br.com.iforce.praxis.gupy.dto.TestResultResponse;
-
 import br.com.iforce.praxis.gupy.model.AttemptAnswer;
-
 import br.com.iforce.praxis.gupy.model.AttemptStatus;
-
 import br.com.iforce.praxis.gupy.model.CandidateAttempt;
-
 import br.com.iforce.praxis.gupy.model.PublishedSimulation;
-
 import br.com.iforce.praxis.gupy.model.ReliabilityLevel;
-
 import br.com.iforce.praxis.gupy.model.ResultItem;
-
 import br.com.iforce.praxis.gupy.persistence.entity.AttemptAnswerEntity;
-
 import br.com.iforce.praxis.gupy.persistence.entity.CandidateAttemptEntity;
-
 import br.com.iforce.praxis.gupy.persistence.entity.ResultItemEntity;
-
 import org.springframework.stereotype.Component;
 
-
 import java.time.Instant;
-
 import java.util.Comparator;
-
 import java.util.Map;
-
 
 @Component
 public class GupyTestResultMapper {
@@ -41,9 +26,11 @@ public class GupyTestResultMapper {
     private static final String TYPE_RESULT = "percentage";
 
     private final PraxisProperties praxisProperties;
+    private final JwtService jwtService;
 
-    public GupyTestResultMapper(PraxisProperties praxisProperties) {
+    public GupyTestResultMapper(PraxisProperties praxisProperties, JwtService jwtService) {
         this.praxisProperties = praxisProperties;
+        this.jwtService = jwtService;
     }
 
     public TestResultResponse toResponse(CandidateAttempt attempt, PublishedSimulation simulation) {
@@ -55,8 +42,8 @@ public class GupyTestResultMapper {
                 attempt.companyResultString(),
                 praxisProperties.publicBaseUrl(),
                 toGupyStatus(attempt.status()),
-                resultPageUrl(attempt.resultId()),
-                candidatePageUrl(attempt.id()),
+                recruiterResultPageUrl(attempt.id()),
+                candidateResultPageUrl(attempt.empresaId(), attempt.id()),
                 attempt.reliabilityLevel() == null ? ReliabilityLevel.NORMAL : attempt.reliabilityLevel(),
                 otherInformations(timeoutCount(attempt)),
                 attempt.results().stream()
@@ -80,8 +67,8 @@ public class GupyTestResultMapper {
                 attempt.getCompanyResultString(),
                 praxisProperties.publicBaseUrl(),
                 toGupyStatus(attempt.getStatus()),
-                resultPageUrl(attempt.getResultId()),
-                candidatePageUrl(attempt.getId()),
+                recruiterResultPageUrl(attempt.getId()),
+                candidateResultPageUrl(attempt.getEmpresaId(), attempt.getId()),
                 attempt.getReliabilityLevel() == null ? ReliabilityLevel.NORMAL : attempt.getReliabilityLevel(),
                 otherInformations(timeoutCount(attempt)),
                 attempt.getResultItems().stream()
@@ -136,11 +123,21 @@ public class GupyTestResultMapper {
         };
     }
 
-    private String resultPageUrl(String resultId) {
-        return praxisProperties.publicBaseUrl() + "/test/result/" + resultId;
+    private String recruiterResultPageUrl(String attemptId) {
+        return frontendBaseUrl() + "/results/" + attemptId;
     }
 
-    private String candidatePageUrl(String attemptId) {
-        return praxisProperties.publicBaseUrl() + "/candidate/attempts/" + attemptId;
+    private String candidateResultPageUrl(String empresaId, String attemptId) {
+        String token = jwtService.generateCandidateAttemptToken(
+                empresaId,
+                attemptId,
+                praxisProperties.attemptLinkTtlHours()
+        );
+        return frontendBaseUrl() + "/candidato/" + token + "/resultado";
+    }
+
+    private String frontendBaseUrl() {
+        String baseUrl = praxisProperties.candidatePageBaseUrl();
+        return baseUrl.endsWith("/") ? baseUrl.substring(0, baseUrl.length() - 1) : baseUrl;
     }
 }

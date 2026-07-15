@@ -35,7 +35,8 @@ class GupyResultEndpointContractTest {
         mockMvc.perform(get("/test/result/" + resultId)
                         .header("Authorization", EMPRESA1_AUTH))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.result_page_url").value(containsString("/test/result/" + resultId)))
+                .andExpect(jsonPath("$.result_page_url").value(containsString("/results/")))
+                .andExpect(jsonPath("$.result_page_url").value(not(containsString("/test/result/"))))
                 .andExpect(jsonPath("$.result_page_url").value(not(containsString("?company_id="))));
     }
 
