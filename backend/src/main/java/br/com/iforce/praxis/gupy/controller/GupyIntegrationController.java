@@ -6,6 +6,7 @@ import br.com.iforce.praxis.gupy.dto.GupyTestResponse;
 import br.com.iforce.praxis.gupy.dto.TestItemsResponse;
 import br.com.iforce.praxis.gupy.dto.TestResultResponse;
 import br.com.iforce.praxis.gupy.service.CandidateAttemptService;
+import br.com.iforce.praxis.gupy.service.GupyTestCatalogMapper;
 import br.com.iforce.praxis.gupy.service.SimulationCatalogService;
 import br.com.iforce.praxis.shared.integration.IntegrationAuthService;
 import br.com.iforce.praxis.shared.integration.IntegrationEmpresaContext;
@@ -64,17 +65,20 @@ public class GupyIntegrationController {
 
     private final IntegrationAuthService integrationAuthService;
     private final SimulationCatalogService simulationCatalogService;
+    private final GupyTestCatalogMapper gupyTestCatalogMapper;
     private final CandidateAttemptService candidateAttemptService;
     private final IntegrationManagementService integrationManagementService;
 
     public GupyIntegrationController(
             IntegrationAuthService integrationAuthService,
             SimulationCatalogService simulationCatalogService,
+            GupyTestCatalogMapper gupyTestCatalogMapper,
             CandidateAttemptService candidateAttemptService,
             IntegrationManagementService integrationManagementService
     ) {
         this.integrationAuthService = integrationAuthService;
         this.simulationCatalogService = simulationCatalogService;
+        this.gupyTestCatalogMapper = gupyTestCatalogMapper;
         this.candidateAttemptService = candidateAttemptService;
         this.integrationManagementService = integrationManagementService;
     }
@@ -99,13 +103,7 @@ public class GupyIntegrationController {
 
         List<GupyTestResponse> tests = simulationCatalogService
                 .findPublished(empresaContext.empresaId(), searchString, normalizedOffset, normalizedLimit).stream()
-                .map(simulation -> new GupyTestResponse(
-                        simulation.id(),
-                        simulation.name(),
-                        null,
-                        simulation.description(),
-                        null
-                ))
+                .map(gupyTestCatalogMapper::toResponse)
                 .toList();
 
         int totalTests = simulationCatalogService.countPublished(empresaContext.empresaId(), searchString);
