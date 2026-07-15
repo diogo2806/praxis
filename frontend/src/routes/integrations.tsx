@@ -97,7 +97,7 @@ const CUSTOM_API_DOCS_URL = "/docs/integracao-api-propria";
 
 const statusLabel: Record<IntegrationCenterStatus, string> = {
   CONECTADA: "Conectada",
-  PENDENTE: "Pendente",
+  PENDENTE: "Token configurado · aguardando primeiro evento",
   ERRO: "Erro",
   DESATIVADA: "Desativada",
   NAO_CONFIGURADA: "Não configurada",
@@ -362,6 +362,12 @@ function IntegrationCard({
           <p className="mt-3 text-sm">
             <span className="font-medium">Como funciona:</span> {getIntegrationFlow(integration)}
           </p>
+          {integration.status === "PENDENTE" && (
+            <p className="mt-2 text-xs text-muted-foreground">
+              O token está configurado no Práxis. A conexão será confirmada somente após a primeira
+              requisição autenticada recebida do ATS.
+            </p>
+          )}
         </div>
         <div className="flex shrink-0 flex-wrap gap-2">
           <CardActions
@@ -525,7 +531,11 @@ function CardActions({
           disabled={pendingAction && !testingConnection}
         >
           <RefreshCw className={cn("h-4 w-4", testingConnection && "animate-spin")} />
-          {testingConnection ? "Testando" : connectionTested ? "Conexão ok" : "Testar conexão"}
+          {testingConnection
+            ? "Atualizando"
+            : connectionTested
+              ? "Status atualizado"
+              : "Atualizar status"}
         </Button>
       )}
       {hasAction("RETRY") && (
@@ -594,9 +604,7 @@ function IntegrationStatusBadge({ integration }: { integration: IntegrationCente
       )}
     >
       <Icon className="h-3.5 w-3.5" />
-      {status === "CONECTADA" && !integration.lastSyncAt
-        ? "Conectada · aguardando primeiro evento"
-        : statusLabel[status]}
+      {statusLabel[status]}
     </span>
   );
 }
@@ -841,7 +849,7 @@ function GeneratedTokenModal({
           <DialogTitle>Token gerado</DialogTitle>
           <DialogDescription>
             Copie o token agora. Por segurança, ele não será exibido novamente após fechar esta
-            janela.
+            janela. A integração permanecerá aguardando o primeiro evento autenticado do ATS.
           </DialogDescription>
         </DialogHeader>
         <div className="grid gap-3">
