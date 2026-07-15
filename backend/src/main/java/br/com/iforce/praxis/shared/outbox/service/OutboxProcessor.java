@@ -1,5 +1,6 @@
 package br.com.iforce.praxis.shared.outbox.service;
 
+import br.com.iforce.praxis.gupy.delivery.service.CallbackHttpStatusException;
 import br.com.iforce.praxis.gupy.delivery.service.GupyOutboundUrlValidator;
 import br.com.iforce.praxis.gupy.delivery.service.ResultWebhookClient;
 import br.com.iforce.praxis.gupy.dto.TestResultResponse;
@@ -39,10 +40,12 @@ public class OutboxProcessor {
     private static final int BATCH_SIZE = 100;
     private static final Duration STUCK_PROCESSING_TIMEOUT = Duration.ofMinutes(5);
     private static final String RESULT_READY_EVENT = "RESULT_READY";
+    private static final String GUPY_CALLBACK_CONFIRMATION_EVENT = "GUPY_CALLBACK_CONFIRMATION";
     private static final String ATTEMPT_STARTED_EVENT = "ATTEMPT_STARTED";
     private static final String ATTEMPT_ABANDONED_EVENT = "ATTEMPT_ABANDONED";
     private static final String DELIVERY_STATE = "deliveryState";
     private static final String GUPY_DESTINATION = "GUPY";
+    private static final String GUPY_CALLBACK_DESTINATION = "GUPY_CALLBACK";
     private static final String CUSTOM_API_DESTINATION = "CUSTOM_API";
 
     private final OutboxEventRepository outboxEventRepository;
@@ -173,14 +176,16 @@ public class OutboxProcessor {
                 OutboxEventEntity event = outboxEventRepository.findById(eventId).orElseThrow();
                 handleEventFailure(event, exception);
                 if (exception instanceof DestinationDeliveryException destinationException) {
+                    Throwable cause = destinationException.getCause() == null
+                            ? destinationException
+                            : destinationException.getCause();
                     applyDestinationState(
                             event,
                             destinationException.destination(),
                             event.getStatus().name(),
-                            destinationException.getCause() == null
-                                    ? destinationException.getMessage()
-                                    : destinationException.getCause().getMessage(),
-                            null);
+                            cause.getMessage(),
+                            null,
+                            httpStatus(cause));
                 }
             });
         }
@@ -189,6 +194,10 @@ public class OutboxProcessor {
     private void dispatch(OutboxEventEntity event) {
         if (RESULT_READY_EVENT.equals(event.getEventType())) {
             processResultReadyEvent(event);
+            return;
+        }
+        if (GUPY_CALLBACK_CONFIRMATION_EVENT.equals(event.getEventType())) {
+            processGupyCallbackConfirmationEvent(event);
             return;
         }
         if (ATTEMPT_STARTED_EVENT.equals(event.getEventType())
@@ -210,7 +219,7 @@ public class OutboxProcessor {
                 log.debug("Enviando resultado para webhook Gupy: {}", webhookUrl);
                 resultWebhookClient.postResult(webhookUrl, testResult);
                 recordGupyActivityBestEffort(event.getEmpresaId());
-                persistDestinationSent(event.getId(), GUPY_DESTINATION);
+                persistDestinationSent(event.getId(), GUPY_DESTINATION, null);
             } catch (Exception exception) {
                 persistDestinationFailure(event.getId(), GUPY_DESTINATION, exception);
                 throw new DestinationDeliveryException(GUPY_DESTINATION, exception);
@@ -221,11 +230,34 @@ public class OutboxProcessor {
         if (!isDestinationSent(refreshedPayload, CUSTOM_API_DESTINATION)) {
             try {
                 deliverGenericWebhook(event);
-                persistDestinationSent(event.getId(), CUSTOM_API_DESTINATION);
+                persistDestinationSent(event.getId(), CUSTOM_API_DESTINATION, null);
             } catch (Exception exception) {
                 persistDestinationFailure(event.getId(), CUSTOM_API_DESTINATION, exception);
                 throw new DestinationDeliveryException(CUSTOM_API_DESTINATION, exception);
             }
+        }
+    }
+
+    private void processGupyCallbackConfirmationEvent(OutboxEventEntity event) {
+        JsonNode payload = parsePayload(event.getPayload());
+        if (isDestinationSent(payload, GUPY_CALLBACK_DESTINATION)) {
+            return;
+        }
+
+        String callbackUrl = textOrNull(payload.get("callbackUrl"));
+        if (callbackUrl == null || callbackUrl.isBlank()) {
+            throw new IllegalArgumentException("Evento de callback sem callbackUrl.");
+        }
+
+        try {
+            outboundUrlValidator.validate(callbackUrl);
+            log.debug("Confirmando callback Gupy para tentativa {}", event.getAggregateId());
+            int statusCode = resultWebhookClient.getCallback(callbackUrl);
+            recordGupyActivityBestEffort(event.getEmpresaId());
+            persistDestinationSent(event.getId(), GUPY_CALLBACK_DESTINATION, statusCode);
+        } catch (Exception exception) {
+            persistDestinationFailure(event.getId(), GUPY_CALLBACK_DESTINATION, exception);
+            throw new DestinationDeliveryException(GUPY_CALLBACK_DESTINATION, exception);
         }
     }
 
@@ -265,17 +297,23 @@ public class OutboxProcessor {
         resultWebhookClient.postPayload(webhookUrl, eventPayload);
     }
 
-    private void persistDestinationSent(Long eventId, String destination) {
+    private void persistDestinationSent(Long eventId, String destination, Integer httpStatus) {
         txTemplate.executeWithoutResult(status -> {
             OutboxEventEntity event = outboxEventRepository.findById(eventId).orElseThrow();
-            applyDestinationState(event, destination, "SENT", null, Instant.now());
+            applyDestinationState(event, destination, "SENT", null, Instant.now(), httpStatus);
         });
     }
 
     private void persistDestinationFailure(Long eventId, String destination, Exception exception) {
         txTemplate.executeWithoutResult(status -> {
             OutboxEventEntity event = outboxEventRepository.findById(eventId).orElseThrow();
-            applyDestinationState(event, destination, "FAILED", limitMessage(exception.getMessage()), null);
+            applyDestinationState(
+                    event,
+                    destination,
+                    "FAILED",
+                    limitMessage(exception.getMessage()),
+                    null,
+                    httpStatus(exception));
         });
     }
 
@@ -284,7 +322,8 @@ public class OutboxProcessor {
             String destination,
             String status,
             String lastError,
-            Instant confirmedAt
+            Instant confirmedAt,
+            Integer httpStatus
     ) {
         ObjectNode payload = (ObjectNode) parsePayload(event.getPayload());
         ObjectNode deliveryState = payload.withObject(DELIVERY_STATE);
@@ -300,6 +339,11 @@ public class OutboxProcessor {
             destinationState.putNull("confirmedAt");
         } else {
             destinationState.put("confirmedAt", confirmedAt.toString());
+        }
+        if (httpStatus == null) {
+            destinationState.putNull("httpStatus");
+        } else {
+            destinationState.put("httpStatus", httpStatus);
         }
         event.setPayload(payload.toString());
     }
@@ -317,6 +361,16 @@ public class OutboxProcessor {
 
     private String textOrNull(JsonNode node) {
         return node == null || node.isNull() ? null : node.asText();
+    }
+
+    private Integer httpStatus(Throwable throwable) {
+        if (throwable instanceof RestClientResponseException responseException) {
+            return responseException.getStatusCode().value();
+        }
+        if (throwable instanceof CallbackHttpStatusException callbackException) {
+            return callbackException.statusCode();
+        }
+        return null;
     }
 
     private TestResultResponse fetchTestResult(String attemptId, String empresaId) {

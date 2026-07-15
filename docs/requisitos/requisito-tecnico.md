@@ -1,6 +1,6 @@
 # Requisitos técnicos pendentes — praxis
 
-Status: atualizado em 2026-07-15 após conclusão de `ASYNC11` e `BUS13`.
+Status: atualizado em 2026-07-15 após conclusão de `ASYNC11`, `BUS13` e `INT18`.
 
 Este arquivo contém somente pendências técnicas implementáveis e comprovadas no sistema. Não inclui CI/CD, testes, QA, métricas observacionais, publicação ou marketing.
 
@@ -19,7 +19,6 @@ Este arquivo contém somente pendências técnicas implementáveis e comprovadas
 | ID | Tarefa técnica | Critério de conclusão | Status |
 |---|---|---|---|
 | INT17 | Impedir envio de eventos proprietários ao `result_webhook_url` da Gupy. | O destino fornecido pela Gupy recebe exclusivamente o `TestResult` contratual; eventos internos de engajamento não são enviados a esse endpoint nem carregam dados pessoais para ele. | ⬜ Pendente |
-| INT18 | Confirmar o `callback_url` por chamada GET efetiva, persistente e recuperável. | A conclusão agenda chamada servidor-servidor ao callback autorizado, persiste tentativas, resposta, erro e confirmação, aplica retentativa/DLQ e não considera a mera apresentação da URL ao navegador como confirmação. | ⬜ Pendente |
 
 ### INT17 — uso indevido do webhook de resultado
 
@@ -27,14 +26,6 @@ Este arquivo contém somente pendências técnicas implementáveis e comprovadas
 |---|---|---|---|
 | `backend/src/main/java/br/com/iforce/praxis/gupy/service/CandidateAttemptService.java` | `publishEngagementTransitionIfNeeded()` e `publishAttemptEngagementEvent()` | Transições para início e abandono publicam `ATTEMPT_STARTED` e `ATTEMPT_ABANDONED` usando `CandidateAttemptEntity.resultWebhookUrl`. O payload inclui nome e e-mail do candidato. | Reservar `result_webhook_url` ao resultado oficial. Omitir esses eventos para Gupy ou encaminhá-los somente por canal genérico explicitamente configurado e com contrato próprio. |
 | `backend/src/main/java/br/com/iforce/praxis/shared/outbox/service/OutboxProcessor.java` | `dispatch()` e `processAttemptEngagementEvent()` | O processador reconhece os eventos proprietários, valida a URL e envia `eventPayload` por HTTP ao endereço armazenado como webhook de resultado. | Remover esse despacho para o destino Gupy e impedir que eventos internos reutilizem o contrato de `TestResult`. |
-
-### INT18 — callback sem confirmação servidor-servidor
-
-| Caminho completo | Método/campo/contrato | Como está | O que fazer |
-|---|---|---|---|
-| `backend/src/main/java/br/com/iforce/praxis/gupy/observability/CandidateCallbackHandoffAdvice.java` | `beforeBodyWrite()` e `record()` | Registra `callback_presented` quando a URL é devolvida ao navegador. Não executa o GET e não comprova recebimento pelo ATS. | Manter esse registro apenas como telemetria de apresentação e criar confirmação servidor-servidor independente. |
-| `backend/src/main/java/br/com/iforce/praxis/gupy/service/CandidateAttemptService.java` | `redirectUrl()` e respostas de conclusão | A URL é devolvida ao frontend; a navegação do navegador continua sendo o mecanismo efetivo de retorno. | Publicar evento transacional após conclusão para executar o callback, mantendo o redirecionamento apenas como experiência complementar. |
-| `backend/src/main/java/br/com/iforce/praxis/shared/outbox/` | novo fluxo sugerido: `GUPY_CALLBACK_CONFIRMATION` | Não existe evento persistido específico com tentativa, código HTTP, confirmação, erro e reprocessamento do GET. | Adicionar processamento idempotente com validação de URL, timeout, backoff, confirmação HTTP, DLQ e reprocessamento operacional. |
 
 ## 2. Dados, aplicação e idempotência
 
@@ -89,8 +80,7 @@ Este arquivo contém somente pendências técnicas implementáveis e comprovadas
 ## Ordem recomendada
 
 1. `INT17` — interromper o uso indevido do webhook Gupy e a exposição de payload proprietário.
-2. `INT18` — executar e confirmar o callback por processamento servidor-servidor persistente.
-3. `DATA13` — separar reteste legítimo de repetição idempotente.
-4. `DATA14` — permitir nova aplicação explícita em links diretos.
-5. `BUS12` — tornar resultados comparáveis ou bloquear comparações incompatíveis.
-6. `UI13` — paginar e completar o centro operacional.
+2. `DATA13` — separar reteste legítimo de repetição idempotente.
+3. `DATA14` — permitir nova aplicação explícita em links diretos.
+4. `BUS12` — tornar resultados comparáveis ou bloquear comparações incompatíveis.
+5. `UI13` — paginar e completar o centro operacional.
