@@ -282,13 +282,18 @@ class CandidateAttemptControllerTest {
                 .andExpect(jsonPath("$.finalizado").value(true))
                 .andExpect(jsonPath("$.etapaAtual").doesNotExist());
 
+        CandidateAttemptEntity completedAttempt = candidateAttemptRepository.findById(attemptId)
+                .orElseThrow();
+        assertThat(completedAttempt.getAnswers())
+                .anySatisfy(answer -> assertThat(answer.isTimedOut()).isTrue());
+
         mockMvc.perform(get("/test/result/" + resultId)
                         .header("Authorization", AUTHORIZATION)
                         .param("company_id", "1"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("done"))
-                .andExpect(jsonPath("$.other_informations.timeout_count").value(1))
-                .andExpect(jsonPath("$.other_informations.situational_omission_count").value(1))
+                .andExpect(jsonPath("$.other_informations").doesNotExist())
+                .andExpect(jsonPath("$.reliabilityLevel").doesNotExist())
                 .andExpect(jsonPath("$.results[?(@.title=='Empatia')].score").value(org.hamcrest.Matchers.hasItem(50)));
     }
 
