@@ -1,0 +1,574 @@
+name: Apply DATA13 fix
+
+on:
+  push:
+    branches:
+      - fix/data13-gupy-retest-idempotency-20260715
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/data13-gupy-retest-idempotency-20260715
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+
+      - name: Apply implementation
+        shell: bash
+        run: |
+          python3 <<'PY'
+          from pathlib import Path
+          import re
+
+          root = Path('.')
+
+          key_factory = '''package br.com.iforce.praxis.gupy.service;
+
+import br.com.iforce.praxis.gupy.dto.CreateCandidateRequest;
+import br.com.iforce.praxis.shared.integration.IntegrationEmpresaContext;
+
+final class CandidateAttemptIdempotencyKeyFactory {
+
+    private static final String GUPY_PROVIDER = "gupy";
+    private static final String RETEST_CYCLE_MARKER = "|cycle:retest:previous_result=fail";
+
+    private CandidateAttemptIdempotencyKeyFactory() {
+    }
+
+    static String currentKey(CreateCandidateRequest request, IntegrationEmpresaContext context) {
+        String source = baseSource(request, context);
+        if (isGupyRetest(request, context)) {
+            source += RETEST_CYCLE_MARKER;
+        }
+        return IdempotencyKeyHasher.sha256Hex(source);
+    }
+
+    static String initialKey(CreateCandidateRequest request, IntegrationEmpresaContext context) {
+        return IdempotencyKeyHasher.sha256Hex(baseSource(request, context));
+    }
+
+    static boolean isGupyRetest(CreateCandidateRequest request, IntegrationEmpresaContext context) {
+        return GUPY_PROVIDER.equalsIgnoreCase(context.provider()) && request.isRetestRequested();
+    }
+
+    private static String baseSource(CreateCandidateRequest request, IntegrationEmpresaContext context) {
+        String source = context.empresaId() + "|" + context.companyId() + "|" + request.documentId()
+                + "|" + request.testId();
+        if (request.jobId() != null) {
+            source += "|" + request.jobId();
+        }
+        return source;
+    }
+}
+'''
+          (root / 'backend/src/main/java/br/com/iforce/praxis/gupy/service/CandidateAttemptIdempotencyKeyFactory.java').write_text(key_factory, encoding='utf-8')
+
+          aspect = '''package br.com.iforce.praxis.gupy.service;
+
+import br.com.iforce.praxis.gupy.dto.CreateCandidateRequest;
+import br.com.iforce.praxis.gupy.model.AttemptStatus;
+import br.com.iforce.praxis.gupy.persistence.entity.CandidateAttemptEntity;
+import br.com.iforce.praxis.gupy.persistence.repository.CandidateAttemptRepository;
+import br.com.iforce.praxis.shared.integration.IntegrationEmpresaContext;
+import org.aspectj.lang.ProceedingJoinPoint;
+import org.aspectj.lang.annotation.Around;
+import org.aspectj.lang.annotation.Aspect;
+import org.springframework.http.HttpStatus;
+import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
+
+import java.math.BigDecimal;
+import java.net.URI;
+import java.util.Locale;
+import java.util.Objects;
+import java.util.Set;
+
+@Aspect
+@Component
+public class CandidateAttemptIdempotencyAspect {
+
+    private static final int LEGACY_FINGERPRINT_VERSION = 1;
+    private static final int FINGERPRINT_VERSION = 2;
+    private static final Set<AttemptStatus> RETESTABLE_STATUSES = Set.of(
+            AttemptStatus.COMPLETED,
+            AttemptStatus.ABANDONED,
+            AttemptStatus.EXPIRED
+    );
+
+    private final CandidateAttemptRepository candidateAttemptRepository;
+
+    public CandidateAttemptIdempotencyAspect(CandidateAttemptRepository candidateAttemptRepository) {
+        this.candidateAttemptRepository = candidateAttemptRepository;
+    }
+
+    @Around("execution(* br.com.iforce.praxis.gupy.service.CandidateAttemptService.createOrReuse(..))"
+            + " && args(request, empresaContext)")
+    @Transactional
+    public Object enforceEquivalentRetry(ProceedingJoinPoint joinPoint, CreateCandidateRequest request,
+                                         IntegrationEmpresaContext empresaContext) throws Throwable {
+        String empresaId = empresaContext.empresaId();
+        String idempotencyKey = CandidateAttemptIdempotencyKeyFactory.currentKey(request, empresaContext);
+        String fingerprint = fingerprint(request);
+
+        CandidateAttemptEntity existing = candidateAttemptRepository
+                .findByEmpresaIdAndIdempotencyKey(empresaId, idempotencyKey).orElse(null);
+
+        if (existing == null && CandidateAttemptIdempotencyKeyFactory.isGupyRetest(request, empresaContext)) {
+            assertRetestAllowed(request, empresaContext);
+        }
+        if (existing != null) {
+            assertEquivalent(existing, request, fingerprint);
+        }
+
+        Object response = joinPoint.proceed();
+        CandidateAttemptEntity saved = candidateAttemptRepository
+                .findByEmpresaIdAndIdempotencyKey(empresaId, idempotencyKey)
+                .orElseThrow(() -> new IllegalStateException("Tentativa idempotente não foi persistida."));
+        if (saved.getRequestFingerprint() == null
+                || !Integer.valueOf(FINGERPRINT_VERSION).equals(saved.getRequestFingerprintVersion())) {
+            saved.setRequestFingerprint(fingerprint);
+            saved.setRequestFingerprintVersion(FINGERPRINT_VERSION);
+            candidateAttemptRepository.save(saved);
+        }
+        return response;
+    }
+
+    private void assertRetestAllowed(CreateCandidateRequest request, IntegrationEmpresaContext context) {
+        CandidateAttemptEntity previousAttempt = candidateAttemptRepository
+                .findByEmpresaIdAndIdempotencyKey(
+                        context.empresaId(),
+                        CandidateAttemptIdempotencyKeyFactory.initialKey(request, context)
+                )
+                .orElseThrow(CandidateAttemptIdempotencyAspect::retestWithoutPreviousAttempt);
+
+        if (!RETESTABLE_STATUSES.contains(previousAttempt.getStatus())) {
+            throw retestBeforeTerminalState();
+        }
+    }
+
+    private static void assertEquivalent(CandidateAttemptEntity existing, CreateCandidateRequest request,
+                                         String currentFingerprint) {
+        if (existing.getRequestFingerprint() == null) {
+            if (!matchesLegacySnapshot(existing, request)) {
+                throw conflict();
+            }
+            return;
+        }
+
+        Integer version = existing.getRequestFingerprintVersion();
+        String expectedFingerprint;
+        if (Integer.valueOf(FINGERPRINT_VERSION).equals(version)) {
+            expectedFingerprint = currentFingerprint;
+        } else if (Integer.valueOf(LEGACY_FINGERPRINT_VERSION).equals(version)) {
+            expectedFingerprint = legacyFingerprint(request);
+        } else {
+            throw conflict();
+        }
+
+        if (!expectedFingerprint.equals(existing.getRequestFingerprint())) {
+            throw conflict();
+        }
+    }
+
+    private static String fingerprint(CreateCandidateRequest request) {
+        String canonical = String.join("\n",
+                field("company_id", normalized(request.companyId(), false)),
+                field("document_id", normalized(request.documentId(), false)),
+                field("test_id", normalized(request.testId(), false)),
+                field("name", normalized(request.candidateName(), false)),
+                field("email", normalized(request.candidateEmail(), true)),
+                field("job_id", request.jobId() == null ? "" : request.jobId().toString()),
+                field("callback_url", normalized(request.callbackUrl())),
+                field("result_webhook_url", normalized(request.resultWebhookUrl())),
+                field("accommodation_time_multiplier", normalized(request.accommodationTimeMultiplier())),
+                field("candidate_type", request.candidateType() == null ? "" : request.candidateType().value()));
+        return IdempotencyKeyHasher.sha256Hex("v" + FINGERPRINT_VERSION + "\n" + canonical);
+    }
+
+    private static String legacyFingerprint(CreateCandidateRequest request) {
+        String canonical = String.join("\n",
+                field("company_id", normalized(request.companyId(), false)),
+                field("document_id", normalized(request.documentId(), false)),
+                field("test_id", normalized(request.testId(), false)),
+                field("name", normalized(request.candidateName(), false)),
+                field("email", normalized(request.candidateEmail(), true)),
+                field("job_id", request.jobId() == null ? "" : request.jobId().toString()),
+                field("callback_url", normalized(request.callbackUrl())),
+                field("result_webhook_url", normalized(request.resultWebhookUrl())),
+                field("accommodation_time_multiplier", normalized(request.accommodationTimeMultiplier())),
+                field("candidate_type", request.candidateType() == null ? "" : request.candidateType().value()),
+                field("previous_result", request.previousResult() == null ? "" : request.previousResult().value()));
+        return IdempotencyKeyHasher.sha256Hex("v" + LEGACY_FINGERPRINT_VERSION + "\n" + canonical);
+    }
+
+    private static boolean matchesLegacySnapshot(CandidateAttemptEntity entity, CreateCandidateRequest request) {
+        return normalized(entity.getCompanyId(), false).equals(normalized(request.companyId(), false))
+                && normalized(entity.getSimulationId(), false).equals(normalized(request.testId(), false))
+                && normalized(entity.getCandidateName(), false).equals(normalized(request.candidateName(), false))
+                && normalized(entity.getCandidateEmail(), true).equals(normalized(request.candidateEmail(), true))
+                && Objects.equals(entity.getGupyJobId(), request.jobId())
+                && normalized(entity.getCallbackUrl()).equals(normalized(request.callbackUrl()))
+                && normalized(entity.getResultWebhookUrl()).equals(normalized(request.resultWebhookUrl()))
+                && normalized(entity.getAccommodationTimeMultiplier()).equals(normalized(request.accommodationTimeMultiplier()));
+    }
+
+    private static String field(String name, String value) {
+        return name + ":" + value.length() + ":" + value;
+    }
+
+    private static String normalized(Object value, boolean lowercase) {
+        if (value == null) return "";
+        String result = value.toString().trim();
+        return lowercase ? result.toLowerCase(Locale.ROOT) : result;
+    }
+
+    private static String normalized(URI value) {
+        return value == null ? "" : value.normalize().toASCIIString();
+    }
+
+    private static String normalized(String value) {
+        if (value == null || value.isBlank()) return "";
+        try {
+            return URI.create(value.trim()).normalize().toASCIIString();
+        } catch (IllegalArgumentException exception) {
+            return value.trim();
+        }
+    }
+
+    private static String normalized(BigDecimal value) {
+        BigDecimal normalized = value == null || value.compareTo(BigDecimal.ONE) < 0
+                ? BigDecimal.ONE : value.min(BigDecimal.valueOf(9.99));
+        return normalized.stripTrailingZeros().toPlainString();
+    }
+
+    private static ResponseStatusException conflict() {
+        return new ResponseStatusException(HttpStatus.CONFLICT,
+                "A chave de idempotência já foi usada com dados diferentes.");
+    }
+
+    private static ResponseStatusException retestWithoutPreviousAttempt() {
+        return new ResponseStatusException(HttpStatus.CONFLICT,
+                "Reteste Gupy exige uma tentativa anterior para a mesma empresa, pessoa candidata, teste e vaga.");
+    }
+
+    private static ResponseStatusException retestBeforeTerminalState() {
+        return new ResponseStatusException(HttpStatus.CONFLICT,
+                "Reteste Gupy permitido somente após tentativa concluída, abandonada ou expirada.");
+    }
+}
+'''
+          (root / 'backend/src/main/java/br/com/iforce/praxis/gupy/service/CandidateAttemptIdempotencyAspect.java').write_text(aspect, encoding='utf-8')
+
+          service_path = root / 'backend/src/main/java/br/com/iforce/praxis/gupy/service/CandidateAttemptService.java'
+          service = service_path.read_text(encoding='utf-8')
+          old_service = '''        String idempotencySource =
+                empresaId + "|" + empresaContext.companyId() + "|" + request.documentId() + "|" + request.testId();
+        if (request.jobId() != null) {
+            idempotencySource += "|" + request.jobId();
+        }
+        String idempotencyKey = IdempotencyKeyHasher.sha256Hex(idempotencySource);'''
+          new_service = '''        String idempotencyKey = CandidateAttemptIdempotencyKeyFactory.currentKey(request, empresaContext);'''
+          assert old_service in service, 'CandidateAttemptService idempotency block not found'
+          service_path.write_text(service.replace(old_service, new_service, 1), encoding='utf-8')
+
+          dto_path = root / 'backend/src/main/java/br/com/iforce/praxis/gupy/dto/CreateCandidateRequest.java'
+          dto = dto_path.read_text(encoding='utf-8')
+          old_schema = '''    @Schema(example = "fail", allowableValues = {"fail"}, nullable = true,
+            description = "Resultado anterior. Use fail ou null quando não houver resultado anterior.")'''
+          new_schema = '''    @Schema(example = "fail", allowableValues = {"fail"}, nullable = true,
+            description = "Resultado anterior. fail autoriza o ciclo contratual de reteste após uma tentativa terminal; null identifica o ciclo inicial.")'''
+          assert old_schema in dto, 'previous_result schema block not found'
+          dto = dto.replace(old_schema, new_schema, 1)
+          old_accessor = '''    public PreviousResult previousResult() {
+        return previousResult;
+    }
+
+    public Long contractCompanyId() {'''
+          new_accessor = '''    public PreviousResult previousResult() {
+        return previousResult;
+    }
+
+    @JsonIgnore
+    public boolean isRetestRequested() {
+        return previousResult == PreviousResult.FAIL;
+    }
+
+    public Long contractCompanyId() {'''
+          assert old_accessor in dto, 'previousResult accessor block not found'
+          dto_path.write_text(dto.replace(old_accessor, new_accessor, 1), encoding='utf-8')
+
+          test = '''package br.com.iforce.praxis.gupy.service;
+
+import br.com.iforce.praxis.gupy.dto.CreateCandidateRequest;
+import br.com.iforce.praxis.gupy.model.AttemptStatus;
+import br.com.iforce.praxis.gupy.persistence.entity.CandidateAttemptEntity;
+import br.com.iforce.praxis.gupy.persistence.repository.CandidateAttemptRepository;
+import br.com.iforce.praxis.shared.integration.IntegrationEmpresaContext;
+import org.aspectj.lang.ProceedingJoinPoint;
+import org.junit.jupiter.api.Test;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.server.ResponseStatusException;
+
+import java.math.BigDecimal;
+import java.net.URI;
+import java.util.Optional;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
+class CandidateAttemptIdempotencyAspectTest {
+
+    private final CandidateAttemptRepository repository = mock(CandidateAttemptRepository.class);
+    private final ProceedingJoinPoint joinPoint = mock(ProceedingJoinPoint.class);
+    private final CandidateAttemptIdempotencyAspect aspect = new CandidateAttemptIdempotencyAspect(repository);
+    private final IntegrationEmpresaContext context = new IntegrationEmpresaContext("empresa-1", "1", "gupy");
+
+    @Test
+    void shouldReuseWhenCanonicalRequestIsEquivalent() throws Throwable {
+        CreateCandidateRequest request = request("Candidato Teste", "CANDIDATO@EXAMPLE.COM", null);
+        CandidateAttemptEntity existing = legacySnapshot("Candidato Teste", "candidato@example.com");
+        when(repository.findByEmpresaIdAndIdempotencyKey(anyString(), anyString()))
+                .thenReturn(Optional.of(existing));
+        when(joinPoint.proceed()).thenReturn("ok");
+
+        Object response = aspect.enforceEquivalentRetry(joinPoint, request, context);
+
+        assertThat(response).isEqualTo("ok");
+        assertThat(existing.getRequestFingerprint()).hasSize(64);
+        assertThat(existing.getRequestFingerprintVersion()).isEqualTo(2);
+        verify(joinPoint).proceed();
+        verify(repository).save(existing);
+    }
+
+    @Test
+    void shouldReturnConflictWhenSameKeyHasDifferentContent() {
+        CreateCandidateRequest request = request("Nome Alterado", "candidato@example.com", null);
+        CandidateAttemptEntity existing = legacySnapshot("Candidato Teste", "candidato@example.com");
+        when(repository.findByEmpresaIdAndIdempotencyKey(anyString(), anyString()))
+                .thenReturn(Optional.of(existing));
+
+        assertThatThrownBy(() -> aspect.enforceEquivalentRetry(joinPoint, request, context))
+                .isInstanceOfSatisfying(ResponseStatusException.class, exception ->
+                        assertThat(exception.getStatusCode()).isEqualTo(HttpStatus.CONFLICT));
+
+        verify(joinPoint, never()).proceed();
+        verify(repository, never()).save(existing);
+    }
+
+    @Test
+    void shouldCreateRetestAfterTerminalAttempt() throws Throwable {
+        CreateCandidateRequest request = request("Candidato Teste", "candidato@example.com",
+                CreateCandidateRequest.PreviousResult.FAIL);
+        String initialKey = CandidateAttemptIdempotencyKeyFactory.initialKey(request, context);
+        String retestKey = CandidateAttemptIdempotencyKeyFactory.currentKey(request, context);
+        CandidateAttemptEntity previous = legacySnapshot("Candidato Teste", "candidato@example.com");
+        previous.setStatus(AttemptStatus.COMPLETED);
+        CandidateAttemptEntity saved = legacySnapshot("Candidato Teste", "candidato@example.com");
+        saved.setStatus(AttemptStatus.NOT_STARTED);
+
+        when(repository.findByEmpresaIdAndIdempotencyKey("empresa-1", retestKey))
+                .thenReturn(Optional.empty(), Optional.of(saved));
+        when(repository.findByEmpresaIdAndIdempotencyKey("empresa-1", initialKey))
+                .thenReturn(Optional.of(previous));
+        when(joinPoint.proceed()).thenReturn("ok");
+
+        Object response = aspect.enforceEquivalentRetry(joinPoint, request, context);
+
+        assertThat(response).isEqualTo("ok");
+        assertThat(saved.getRequestFingerprintVersion()).isEqualTo(2);
+        verify(joinPoint).proceed();
+        verify(repository).save(saved);
+    }
+
+    @Test
+    void shouldReuseEquivalentRetestInsteadOfCreatingAnotherCycle() throws Throwable {
+        CreateCandidateRequest request = request("Candidato Teste", "candidato@example.com",
+                CreateCandidateRequest.PreviousResult.FAIL);
+        CandidateAttemptEntity existingRetest = legacySnapshot("Candidato Teste", "candidato@example.com");
+        existingRetest.setStatus(AttemptStatus.IN_PROGRESS);
+        when(repository.findByEmpresaIdAndIdempotencyKey(anyString(), anyString()))
+                .thenReturn(Optional.of(existingRetest));
+        when(joinPoint.proceed()).thenReturn("ok");
+
+        Object response = aspect.enforceEquivalentRetry(joinPoint, request, context);
+
+        assertThat(response).isEqualTo("ok");
+        verify(joinPoint).proceed();
+        verify(repository).save(existingRetest);
+    }
+
+    @Test
+    void shouldRejectRetestWithoutPreviousAttempt() {
+        CreateCandidateRequest request = request("Candidato Teste", "candidato@example.com",
+                CreateCandidateRequest.PreviousResult.FAIL);
+        when(repository.findByEmpresaIdAndIdempotencyKey(anyString(), anyString()))
+                .thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> aspect.enforceEquivalentRetry(joinPoint, request, context))
+                .isInstanceOfSatisfying(ResponseStatusException.class, exception -> {
+                    assertThat(exception.getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
+                    assertThat(exception.getReason()).contains("exige uma tentativa anterior");
+                });
+
+        verify(joinPoint, never()).proceed();
+    }
+
+    @Test
+    void shouldRejectRetestWhilePreviousAttemptIsActive() {
+        CreateCandidateRequest request = request("Candidato Teste", "candidato@example.com",
+                CreateCandidateRequest.PreviousResult.FAIL);
+        String initialKey = CandidateAttemptIdempotencyKeyFactory.initialKey(request, context);
+        String retestKey = CandidateAttemptIdempotencyKeyFactory.currentKey(request, context);
+        CandidateAttemptEntity previous = legacySnapshot("Candidato Teste", "candidato@example.com");
+        previous.setStatus(AttemptStatus.IN_PROGRESS);
+        when(repository.findByEmpresaIdAndIdempotencyKey("empresa-1", retestKey))
+                .thenReturn(Optional.empty());
+        when(repository.findByEmpresaIdAndIdempotencyKey("empresa-1", initialKey))
+                .thenReturn(Optional.of(previous));
+
+        assertThatThrownBy(() -> aspect.enforceEquivalentRetry(joinPoint, request, context))
+                .isInstanceOfSatisfying(ResponseStatusException.class, exception -> {
+                    assertThat(exception.getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
+                    assertThat(exception.getReason()).contains("concluída, abandonada ou expirada");
+                });
+
+        verify(joinPoint, never()).proceed();
+    }
+
+    @Test
+    void shouldKeepInitialAndRetestKeysDistinctAndStable() {
+        CreateCandidateRequest initial = request("Candidato Teste", "candidato@example.com", null);
+        CreateCandidateRequest retest = request("Candidato Teste", "candidato@example.com",
+                CreateCandidateRequest.PreviousResult.FAIL);
+
+        assertThat(CandidateAttemptIdempotencyKeyFactory.currentKey(initial, context))
+                .isEqualTo(CandidateAttemptIdempotencyKeyFactory.initialKey(initial, context));
+        assertThat(CandidateAttemptIdempotencyKeyFactory.currentKey(retest, context))
+                .isNotEqualTo(CandidateAttemptIdempotencyKeyFactory.initialKey(retest, context));
+        assertThat(CandidateAttemptIdempotencyKeyFactory.currentKey(retest, context))
+                .isEqualTo(CandidateAttemptIdempotencyKeyFactory.currentKey(retest, context));
+    }
+
+    private static CreateCandidateRequest request(String name, String email,
+                                                   CreateCandidateRequest.PreviousResult previousResult) {
+        return new CreateCandidateRequest(
+                1L, 4398157034L, "sim-atendimento-n2", name, email, 100L,
+                URI.create("https://cliente.gupy.io/candidates/return"),
+                URI.create("https://cliente.gupy.io/result-webhook"),
+                new BigDecimal("1.50"), CreateCandidateRequest.CandidateType.EXTERNAL, previousResult
+        );
+    }
+
+    private static CandidateAttemptEntity legacySnapshot(String name, String email) {
+        CandidateAttemptEntity entity = new CandidateAttemptEntity();
+        entity.setEmpresaId("empresa-1");
+        entity.setCompanyId("1");
+        entity.setSimulationId("sim-atendimento-n2");
+        entity.setCandidateName(name);
+        entity.setCandidateEmail(email);
+        entity.setGupyJobId(100L);
+        entity.setCallbackUrl("https://cliente.gupy.io/candidates/return");
+        entity.setResultWebhookUrl("https://cliente.gupy.io/result-webhook");
+        entity.setAccommodationTimeMultiplier(new BigDecimal("1.5"));
+        return entity;
+    }
+}
+'''
+          (root / 'backend/src/test/java/br/com/iforce/praxis/gupy/service/CandidateAttemptIdempotencyAspectTest.java').write_text(test, encoding='utf-8')
+
+          dto_test_path = root / 'backend/src/test/java/br/com/iforce/praxis/gupy/dto/CreateCandidateRequestTest.java'
+          dto_test = dto_test_path.read_text(encoding='utf-8')
+          old_assert = '''        assertThat(request.previousResult()).isEqualTo(CreateCandidateRequest.PreviousResult.FAIL);'''
+          new_assert = '''        assertThat(request.previousResult()).isEqualTo(CreateCandidateRequest.PreviousResult.FAIL);
+        assertThat(request.isRetestRequested()).isTrue();'''
+          assert old_assert in dto_test, 'DTO test assertion not found'
+          dto_test = dto_test.replace(old_assert, new_assert, 1)
+          old_null_assert = '''        assertThat(request.previousResult()).isNull();'''
+          new_null_assert = '''        assertThat(request.previousResult()).isNull();
+        assertThat(request.isRetestRequested()).isFalse();'''
+          assert old_null_assert in dto_test, 'DTO null assertion not found'
+          dto_test_path.write_text(dto_test.replace(old_null_assert, new_null_assert, 1), encoding='utf-8')
+
+          integration_path = root / 'docs/INTEGRACAO-GUPY-PROVEDOR.md'
+          integration = integration_path.read_text(encoding='utf-8')
+          integration = integration.replace(
+              '| `previous_result` | Enum estrito: `fail`, ausência ou JSON `null`; `pass`, `none`, a string `"null"` e valores desconhecidos são rejeitados | Compatível |',
+              '| `previous_result` | Enum estrito: `fail`, ausência ou JSON `null`; `fail` autoriza um ciclo de reteste separado após tentativa terminal, enquanto repetições equivalentes reutilizam o mesmo ciclo | Compatível |'
+          )
+          integration = integration.replace(
+              '| `previous_result` | Não | Aceita `fail`, ausência ou JSON `null`; não aceita `none`, `pass`, a string `"null"` ou outro texto. |',
+              '| `previous_result` | Não | Aceita `fail`, ausência ou JSON `null`. `null` identifica o ciclo inicial; `fail` autoriza o ciclo de reteste somente quando a tentativa inicial está `COMPLETED`, `ABANDONED` ou `EXPIRED`. |'
+          )
+          old_idempotency = '''A idempotência usa o hash de:
+
+```text
+empresaId | companyId decimal canônico | documentId decimal canônico | testId | jobId (quando informado)
+```
+
+Como os identificadores são desserializados como `Long` e convertidos uma única vez com `Long.toString`, chamadas equivalentes não produzem identidades distintas por espaços, sinal positivo, zeros à esquerda ou outra representação textual. Chamadas repetidas com a mesma combinação reutilizam a tentativa existente; vagas diferentes continuam produzindo tentativas distintas.'''
+          new_idempotency = '''A idempotência separa identidade da solicitação e autorização de reteste. O ciclo inicial preserva a chave histórica calculada sobre:
+
+```text
+empresaId | companyId decimal canônico | documentId decimal canônico | testId | jobId (quando informado)
+```
+
+Quando `previous_result=fail`, o backend acrescenta um marcador contratual de ciclo antes do hash. Assim, o reteste possui chave diferente da tentativa inicial, mas todas as repetições equivalentes do mesmo reteste continuam usando exatamente a mesma chave.
+
+A política aceita `fail` somente quando a tentativa inicial da mesma empresa, pessoa candidata, avaliação e vaga está em `COMPLETED`, `ABANDONED` ou `EXPIRED`. Estados `NOT_STARTED` e `IN_PROGRESS` retornam `409`, assim como um pedido de reteste sem tentativa anterior. A restrição impede avaliações paralelas e mantém a criação concorrente protegida pela unicidade de `idempotency_key`.
+
+O fingerprint versão 2 não contém `previous_result`: esse campo autoriza a transição de ciclo e já está representado na chave. Nome, e-mail, destinos, vaga, avaliação, tipo de candidato e acomodação continuam protegidos contra divergência dentro do mesmo ciclo. Fingerprints versão 1 permanecem verificáveis e são atualizados após uma repetição equivalente.
+
+Como o contrato publicado pela Gupy oferece apenas `null` e `fail`, a política representa dois ciclos determinísticos por identidade: inicial e reteste. Uma extensão futura para ciclos adicionais exige identificador contratual explícito de aplicação/ciclo.
+
+Como os identificadores são desserializados como `Long` e convertidos uma única vez com `Long.toString`, chamadas equivalentes não produzem identidades distintas por espaços, sinal positivo, zeros à esquerda ou outra representação textual. Vagas diferentes continuam produzindo tentativas distintas.'''
+          assert old_idempotency in integration, 'integration idempotency section not found'
+          integration_path.write_text(integration.replace(old_idempotency, new_idempotency, 1), encoding='utf-8')
+
+          pending_path = root / 'docs/requisitos/requisito-tecnico.md'
+          pending = pending_path.read_text(encoding='utf-8')
+          pending = re.sub(r'^\| `DATA13` \|.*\n', '', pending, flags=re.MULTILINE)
+          pending = re.sub(r'\n### DATA13 — reteste Gupy versus repetição idempotente\n.*?(?=\n### DATA14)', '\n', pending, flags=re.DOTALL)
+          pending = pending.replace('4. `DATA13` — separar reteste legítimo de repetição idempotente.\n5. `DATA14`', '4. `DATA14`')
+          pending = pending.replace('6. `BUS12`', '5. `BUS12`').replace('7. `UI13`', '6. `UI13`').replace('8. `BUS13`', '7. `BUS13`')
+          pending_path.write_text(pending, encoding='utf-8')
+
+          implemented_path = root / 'docs/implementados/requisitos-implementados.md'
+          implemented = implemented_path.read_text(encoding='utf-8')
+          old_api2 = '| `API2` | Concluído no escopo de repetição equivalente | A criação Gupy persiste fingerprint versionado, preserva a tentativa em repetições equivalentes e retorna `409` para conteúdo divergente sob a mesma identidade idempotente. | `DATA13` deve separar divergência indevida de uma nova aplicação ou reteste legitimamente autorizado. |'
+          new_rows = '| `DATA13` | Concluído | A chave idempotente distingue o ciclo inicial do ciclo autorizado por `previous_result=fail`; o reteste exige tentativa anterior terminal, repetições equivalentes reutilizam o mesmo resultado e a restrição única impede duplicidade concorrente. | Nenhuma para o reteste contratual Gupy; ciclos adicionais exigem futuro identificador explícito da Gupy. |\n| `API2` | Concluído | A criação Gupy persiste fingerprint versionado, preserva a tentativa em repetições equivalentes e retorna `409` para conteúdo divergente dentro do mesmo ciclo. | Nenhuma para repetição idempotente e reteste contratual. |'
+          assert old_api2 in implemented, 'API2 row not found'
+          implemented = implemented.replace(old_api2, new_rows, 1)
+          old_behavior = '| `backend/src/main/java/br/com/iforce/praxis/gupy/service/CandidateAttemptIdempotencyAspect.java` | `enforceEquivalentRetry()` | Bloqueia fingerprint divergente sob a mesma chave; a ausência de um conceito de novo ciclo permanece em `DATA13`. |'
+          new_behavior = '| `backend/src/main/java/br/com/iforce/praxis/gupy/service/CandidateAttemptIdempotencyAspect.java` | `enforceEquivalentRetry()` | Separa ciclo inicial e reteste Gupy, exige estado anterior terminal, valida fingerprints versão 1 e 2 e mantém repetições equivalentes no mesmo resultado. |'
+          assert old_behavior in implemented, 'implemented behavior row not found'
+          implemented_path.write_text(implemented.replace(old_behavior, new_behavior, 1), encoding='utf-8')
+          PY
+
+      - name: Run focused backend tests
+        working-directory: backend
+        run: mvn -q -Dtest=CandidateAttemptIdempotencyAspectTest,CreateCandidateRequestTest test
+
+      - name: Commit implementation
+        shell: bash
+        run: |
+          rm .github/workflows/data13-apply.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "fix: separar reteste Gupy da repetição idempotente"
+          git push origin HEAD:fix/data13-gupy-retest-idempotency-20260715
