@@ -1,113 +1,46 @@
 # Requisitos técnicos implementados — praxis
 
-Status: atualizado em 2026-07-15 após auditoria da branch main e conclusão de `UI10`.
+Status: atualizado em 2026-07-15 após auditoria da branch main no commit `2cbe682a1c82c2b11fa7b08523b28805bc790e33`.
 
-Este arquivo registra somente comportamentos comprovadamente entregues no código e no fluxo real. Entregas parciais são descritas como parciais e apontam para os IDs que mantêm as lacunas remanescentes no backlog canônico.
+Este arquivo registra somente comportamentos comprovadamente entregues no código e no fluxo real. Entregas parciais permanecem no backlog canônico.
 
 ## 2026-07-15
 
 | Origem | Situação registrada | Entrega comprovada | Pendência remanescente |
 |---|---|---|---|
-| `UI10` | Concluído | O módulo público da API exporta a implementação estrita do dashboard; respostas `404` produzem incompatibilidade explícita, a interface exibe estado indisponível e nenhum plano, operação ou conexão de integração é inferido por fallback, token ou consultas auxiliares. | Nenhuma para compatibilidade e fonte dos dados do dashboard. |
-| `SEC10` | Concluído | Rotação, reativação, desconexão e revogação usam um único caso de uso transacional; `integration_tokens` e `empresa_integrations` são atualizadas na mesma transação, com rollback integral; rotação deixa ATS `PENDENTE` e revogação deixa `DESATIVADA`, sem evidência da credencial anterior. | Nenhuma para o ciclo de vida das credenciais. |
-| `INT10` | Concluído | Todos os endpoints externos Gupy e Recrutei registram atividade somente depois de uma resposta de negócio bem-sucedida; a evidência contém provedor, endpoint e horário; `PENDENTE` e `ERRO` são promovidos por atividade autenticada, `CONECTADA` atualiza `lastSyncAt` e `DESATIVADA` permanece protegida; primeira conexão, recuperação e atividades seguintes usam a trilha de auditoria existente. | Nenhuma para o estado de conexão ATS. |
-| `CFG10` | Concluído | O Docker Compose não exige mais `PRAXIS_INTEGRATION_TOKEN`; o CI valida a configuração sem credencial global; Gupy e Recrutei continuam autenticando somente pelos tokens persistidos por empresa e provedor. | Nenhuma. |
-| `INT1` | Concluído | `company_id` e `document_id` do `POST /test/candidate` são recebidos como inteiros JSON `int64` positivos, normalizados para identidade decimal canônica, validados contra o token e usados de forma estável na idempotência. | Nenhuma para o contrato de entrada; a homologação real continua necessária. |
-| `INT2` | Concluído | `candidate_type` aceita somente `internal` ou `external`; `previous_result` aceita somente `fail`, ausência ou JSON `null`; valores desconhecidos, `pass`, `none` e a string `"null"` retornam `400`; o construtor auxiliar usa os mesmos enums fechados. | Nenhuma para os enums de entrada. |
-| `API1` | Concluído | Consulta e webhook usam o mesmo DTO externo sem `reliabilityLevel` nem `other_informations` no topo; informações operacionais permanecem no domínio e na persistência interna. | Nenhuma para o schema externo de resultado. |
-| `REQ-INTEGRACOES-REATIVACAO-TOKEN-ATS` | Concluído | Reativação de Gupy/Recrutei rotaciona a credencial, retorna o novo token uma única vez, persiste somente hash/prévia, muda o estado para `PENDENTE` e limpa a atividade da credencial anterior. | Nenhuma. |
-| `REQ-INTEGRACOES-STATUS-CONEXAO-REAL` | Concluído | Estado operacional passa a refletir atividade externa autenticada; token configurado permanece `PENDENTE` até a primeira chamada real e conexões subsequentes atualizam a evidência temporal. | Nenhuma. |
+| `API2` | Concluído | A criação Gupy calcula impressão canônica versionada da requisição, persiste o fingerprint e retorna `409` quando a mesma chave idempotente reaparece com conteúdo divergente; repetições equivalentes preservam a tentativa original. | Nenhuma para consistência da repetição idempotente. |
+| `ASYNC10` | Concluído | O processamento de `RESULT_READY` mantém confirmação, tentativas, erro e conclusão por destino Gupy e `CUSTOM_API`; falha de um destino não apaga sua entrega nem repete automaticamente o destino já confirmado. | Nenhuma para fan-out e retry independente. |
+| `INT11` | Concluído | Eventos proprietários de engajamento deixaram de usar o `result_webhook_url`; o destino Gupy permanece reservado ao `TestResult`, enquanto eventos internos dependem de integração genérica explicitamente configurada. | Nenhuma para separação dos contratos de webhook. |
+| `INT12` | Concluído | Tentativas abandonadas ou expiradas não são mais publicadas como resultado Gupy concluído com pontuações provisórias; a entrega externa exige conclusão real e resultado calculado. | Nenhuma para estados terminais sem resultado válido. |
+| `SEC11` | Concluído | O limite público sanitiza IDs, remove destinos futuros e regras de timeout das respostas e ignora identificadores internos enviados pelo navegador; a navegação permanece resolvida no servidor. | Nenhuma para exposição da topologia da avaliação. |
+| `SEC12` | Concluído | A política de callback Gupy passou a restringir destinos e o handoff de conclusão é registrado no backend, sem depender apenas do atraso e redirecionamento em JavaScript. | Nenhuma para proteção do callback e evidência do handoff. |
+| `SEC13` | Concluído | Todos os endpoints públicos exigem JWT de tentativa válido; token inválido ou expirado retorna `401` e o padrão `att_...` não funciona mais como credencial alternativa. | Nenhuma para bypass por identificador cru. |
+| `UI10` | Concluído | O dashboard usa somente a API oficial e não fabrica plano, operação ou conexão por fallback. | Nenhuma. |
+| `SEC10` | Concluído | Rotação, reativação, desconexão e revogação de credenciais usam um caso de uso transacional único. | Nenhuma. |
+| `INT10` | Concluído | Endpoints Gupy e Recrutei registram atividade autenticada somente após sucesso do fluxo real. | Nenhuma. |
+| `CFG10` | Concluído | O runtime não exige credencial global de integração; tokens permanecem vinculados à empresa e ao provedor. | Nenhuma. |
+| `INT1` | Concluído | Identificadores externos são inteiros positivos canônicos e participam de pertencimento e idempotência de forma estável. | Nenhuma. |
+| `INT2` | Concluído | Enums do contrato externo são fechados e valores artificiais são rejeitados. | Nenhuma. |
+| `API1` | Concluído | Consulta e webhook usam o mesmo DTO externo sem extensões internas no topo. | Nenhuma. |
+| `REQ-INTEGRACOES-REATIVACAO-TOKEN-ATS` | Concluído | Reativação rotaciona a credencial e expõe o novo token somente no retorno imediato. | Nenhuma. |
+| `REQ-INTEGRACOES-STATUS-CONEXAO-REAL` | Concluído | O estado conectado depende de atividade externa autenticada e mantém evidência temporal. | Nenhuma. |
 
-### UI10 — dashboard sem fallback sintético
-
-| Caminho completo | Método/campo/contrato | Comportamento comprovado |
-|---|---|---|
-| `frontend/src/lib/api/praxis.ts` | exportações públicas | Mantém os contratos existentes pela fachada, mas sobrescreve a exportação de `getDashboard()` com a implementação estrita; consumidores do módulo público não alcançam o método legado. |
-| `frontend/src/lib/api/dashboard-strict.ts` | `getDashboard()` | Consulta somente `GET /api/v1/dashboard`; em `404`, lança `DashboardCompatibilityError`; outras falhas preservam o status e a mensagem da API; não consulta fontes auxiliares nem fabrica dados. |
-| `frontend/src/routes/dashboard.tsx` | `DashboardPage()` e `ErrorState()` | Usa a implementação estrita, desabilita retry automático e apresenta incompatibilidade ou erro sem renderizar conteúdo sintético; informa explicitamente que plano, operação e conexão não foram inferidos. |
-| `frontend/src/lib/api/praxis-legacy.ts` | implementação antiga | Permanece apenas como fonte de tipos e contratos legados exportados pela fachada; a busca de referências não encontrou consumidor direto nem exportação pública do antigo `getDashboard()`. |
-
-### SEC10 — ciclo de vida atômico das credenciais
+### Entregas comprovadas nesta auditoria
 
 | Caminho completo | Método/campo/contrato | Comportamento comprovado |
 |---|---|---|
-| `backend/src/main/java/br/com/iforce/praxis/shared/integration/IntegrationManagementService.java` | `generateToken()` e `reactivate()` | A troca da credencial atualiza hash e prévia, remove credencial cifrada legada, define `PENDENTE`, limpa `disabledAt`, `lastSyncAt` e erro, atualiza a data de configuração e audita a transição a partir do estado anterior. |
-| `backend/src/main/java/br/com/iforce/praxis/shared/integration/IntegrationManagementService.java` | `revokeProviderToken()` e `disconnect()` | Revoga a credencial real e, na mesma transação, remove hash, prévia e credencial cifrada da representação operacional, limpa atividade/erro e define `DESATIVADA`. Uma revogação também corrige tokens órfãos criando o estado operacional desativado. |
-| `backend/src/main/java/br/com/iforce/praxis/shared/integration/IntegrationTokenAdminController.java` | rotas administrativas de rotação e revogação | Mantém compatibilidade HTTP, mas delega mutações ao mesmo caso de uso da Central de Integrações; o serviço de token direto permanece usado apenas para listagem. |
-| `backend/src/main/java/br/com/iforce/praxis/shared/integration/IntegrationTokenAdminService.java` | `rotateToken()` e `revokeToken()` | As mutações usam propagação transacional `MANDATORY`, portanto só executam dentro da transação aberta pelo caso de uso que também grava `empresa_integrations`. |
-| `backend/src/main/java/br/com/iforce/praxis/shared/integration/IntegrationManagementService.java` | `testConnection()` | Tornou-se uma leitura de estado e não promove mais `CONECTADA` pela simples presença de hash. |
-| `backend/src/test/java/br/com/iforce/praxis/shared/integration/IntegrationTokenAtomicityTest.java` | falha em `empresa_integrations` após rotação | Simula falha na segunda persistência e comprova que a alteração real em `integration_tokens` é revertida, preservando o hash anterior. |
-| `backend/src/test/java/br/com/iforce/praxis/shared/integration/IntegrationManagementServiceTest.java` | invariantes operacionais | Cobre redefinição para `PENDENTE`, limpeza da evidência anterior, revogação completa, leitura segura de conexão e correção de token órfão. |
-| `backend/src/test/java/br/com/iforce/praxis/shared/integration/IntegrationTokenAdminControllerTest.java` | delegação das rotas legadas | Comprova que rotação e revogação administrativas não chamam mais diretamente o serviço que altera somente `integration_tokens`. |
-
-### INT10 — atividade ATS autenticada e auditável
-
-| Caminho completo | Método/campo/contrato | Comportamento comprovado |
-|---|---|---|
-| `backend/src/main/java/br/com/iforce/praxis/gupy/controller/GupyIntegrationController.java` | `GET /test`, `POST /test/candidate` e `GET /test/result/{resultId}` | Após a conclusão bem-sucedida do fluxo, registra atividade com o contexto autenticado e a identificação do endpoint. O controller participa de uma transação que inclui o negócio, a evidência operacional e a auditoria. |
-| `backend/src/main/java/br/com/iforce/praxis/recrutei/controller/RecruteiIntegrationController.java` | os três endpoints equivalentes | Aplica o mesmo contrato de evidência real para listagem, criação de candidato e consulta de resultado Recrutei. |
-| `backend/src/main/java/br/com/iforce/praxis/shared/integration/IntegrationManagementService.java` | `recordActivity(empresaId, provider, endpointEvidence)` | Aceita somente provedores ATS com endpoint informado; promove apenas `PENDENTE` ou `ERRO`, preserva `CONECTADA`, rejeita `DESATIVADA`, atualiza `lastSyncAt`, limpa o erro e propaga falhas de persistência ou auditoria. |
-| `backend/src/main/java/br/com/iforce/praxis/shared/integration/IntegrationManagementService.java` | sobrecarga legada sem evidência | Não promove Gupy ou Recrutei; o registro autoritativo ocorre exclusivamente no limite HTTP depois do sucesso do fluxo. |
-| `backend/src/main/java/br/com/iforce/praxis/audit/model/AuditEventType.java` | eventos de conexão | Diferencia primeira conexão, recuperação de erro e atividade autenticada posterior, sem criar infraestrutura paralela de auditoria. |
-| `backend/src/test/java/br/com/iforce/praxis/gupy/controller/GupyIntegrationActivityControllerTest.java` e `backend/src/test/java/br/com/iforce/praxis/recrutei/controller/RecruteiIntegrationActivityControllerTest.java` | produtores de evidência | Verificam que cada um dos seis endpoints chama o registro com o provedor e endpoint corretos somente depois do retorno principal. |
-| `backend/src/test/java/br/com/iforce/praxis/shared/integration/IntegrationManagementServiceTest.java` | transições e auditoria | Cobre primeira conexão, recuperação, atualização de `lastSyncAt`, metadados da evidência, bloqueio de `DESATIVADA` e neutralização do caminho legado. |
-
-### CFG10 — runtime sem credencial global legada
-
-| Caminho completo | Método/campo/contrato | Comportamento comprovado |
-|---|---|---|
-| `docker-compose.yml` | ambiente do backend | Removeu a expansão obrigatória de `PRAXIS_INTEGRATION_TOKEN`; a inicialização continua exigindo apenas as configurações efetivamente consumidas. |
-| `.github/workflows/ci.yml` | job `compose-config` | Executa `docker compose config --quiet` sem definir a credencial global, impedindo a reintrodução da exigência legada. |
-| `README.md` e `docs/IMPLANTACAO.md` | configuração local e implantação | Documentam o modelo real de token vinculado à empresa e ao provedor na tabela `integration_tokens`. |
-
-### INT1 — identificadores oficiais e idempotência estável
-
-| Caminho completo | Método/campo/contrato | Comportamento comprovado |
-|---|---|---|
-| `backend/src/main/java/br/com/iforce/praxis/gupy/dto/CreateCandidateRequest.java` | `company_id` e `document_id` | O limite externo usa `Long`, exige presença e valor positivo e rejeita tokens JSON que não sejam inteiros ou que excedam a faixa `int64`. |
-| `backend/src/main/java/br/com/iforce/praxis/gupy/dto/CreateCandidateRequest.java` | `companyId()` e `documentId()` | Converte os identificadores uma única vez com `Long.toString`, produzindo representação decimal canônica para pertencimento, persistência e chave idempotente. |
-| `backend/src/main/java/br/com/iforce/praxis/gupy/service/CandidateAttemptService.java` | `assertCompanyMatchesToken()` e `createOrReuse()` | O fluxo existente continua comparando o identificador canônico com o `company_id` resolvido pelo Bearer token e compõe a chave com empresa, companhia, documento, teste e vaga opcional. |
-| `backend/src/main/java/br/com/iforce/praxis/recrutei/controller/RecruteiIntegrationController.java` | criação do comando compartilhado | O construtor interno textual foi preservado para o contrato próprio da Recrutei sem participar da desserialização pública da Gupy. |
-| `backend/src/test/java/br/com/iforce/praxis/gupy/controller/GupyIntegrationControllerTest.java` | contrato e idempotência | Cobre rejeição de identificadores textuais, ausentes e não positivos, pertencimento ao token, repetição idempotente e diferenciação por `job_id`. |
-
-### INT2 — enums oficiais no limite de entrada
-
-| Caminho completo | Método/campo/contrato | Comportamento comprovado |
-|---|---|---|
-| `backend/src/main/java/br/com/iforce/praxis/gupy/dto/CreateCandidateRequest.java` | `CandidateType` | Aceita somente `internal` e `external`; ausência e JSON `null` permanecem opcionais. |
-| `backend/src/main/java/br/com/iforce/praxis/gupy/dto/CreateCandidateRequest.java` | `PreviousResult` | Aceita `fail`, ausência e JSON `null`; rejeita `none`, `pass`, a string `"null"` e valores desconhecidos. |
-| `backend/src/test/java/br/com/iforce/praxis/gupy/controller/GupyCandidateContractValidationTest.java` | `POST /test/candidate` | Comprova `201` para os valores oficiais e `400` para valores artificiais ou desconhecidos. |
-| `docs/INTEGRACAO-GUPY-PROVEDOR.md` | contrato de `POST /test/candidate` | Registra os tipos e enums efetivamente aceitos e remove essas divergências dos bloqueadores de homologação. |
-
-### API1 — schema externo de resultado
-
-| Caminho completo | Método/campo/contrato | Comportamento comprovado |
-|---|---|---|
-| `backend/src/main/java/br/com/iforce/praxis/gupy/dto/TestResultResponse.java` | contrato serializado | Contém somente os campos oficiais do `TestResult` publicado pela Gupy. |
-| `backend/src/main/java/br/com/iforce/praxis/gupy/service/GupyTestResultMapper.java` | consulta e webhook | Produz o mesmo DTO externo restrito para os dois canais de entrega. |
-| `backend/src/test/java/br/com/iforce/praxis/gupy/controller/GupyResultEndpointContractTest.java` | resposta da consulta | Confirma que `reliabilityLevel` e `other_informations` não aparecem no topo. |
-| `backend/src/test/java/br/com/iforce/praxis/gupy/delivery/service/RestClientResultWebhookClientTest.java` | payload assíncrono | Confirma que o webhook também não envia extensões internas. |
-
-### REQ-INTEGRACOES-REATIVACAO-TOKEN-ATS — reativação segura entregue
-
-| Caminho completo | Método/campo/contrato | Comportamento comprovado |
-|---|---|---|
-| `backend/src/main/java/br/com/iforce/praxis/shared/integration/IntegrationManagementService.java` | `reactivate()` | Exige estado `DESATIVADA`, rotaciona o token, persiste hash e prévia, define `PENDENTE`, limpa `disabledAt`, `lastSyncAt` e erro, registra auditoria e inclui o token novo somente na resposta da operação. |
-| `backend/src/main/java/br/com/iforce/praxis/shared/integration/IntegrationTokenAdminService.java` | `rotateToken()` | Remove a credencial anterior de `integration_tokens`, grava somente o hash da nova credencial e devolve o valor em claro apenas no retorno imediato. |
-| `backend/src/main/java/br/com/iforce/praxis/shared/integration/IntegrationManagementController.java` | `POST /api/v1/integrations/{provider}/reactivate` | Expõe a resposta de reativação produzida pelo caso de uso, incluindo o token novo somente nessa chamada. |
-| `frontend/src/routes/integrations.tsx` | `reactivateMutation` e `GeneratedTokenModal` | Recebe o token retornado, apresenta o valor para cópia e invalida as consultas de integração sem tentar recuperar o segredo posteriormente. |
-
-### REQ-INTEGRACOES-STATUS-CONEXAO-REAL — entrega concluída
-
-| Caminho completo | Método/campo/contrato | Comportamento comprovado |
-|---|---|---|
-| `backend/src/main/java/br/com/iforce/praxis/shared/integration/IntegrationStatusRefreshService.java` | `refreshStatus()` | Executa leitura de estado sem promover `PENDENTE` para `CONECTADA`; uma integração marcada como conectada sem evidência temporal é apresentada como pendente. |
-| `backend/src/main/java/br/com/iforce/praxis/shared/integration/IntegrationManagementController.java` | `POST /api/v1/integrations/{provider}/test-connection` e `POST /api/v1/integrations/{provider}/refresh-status` | Os dois endpoints delegam à leitura segura de status e não inferem conexão pela presença do token. |
-| `backend/src/main/java/br/com/iforce/praxis/shared/integration/IntegrationManagementService.java` | atividade autenticada ATS | A conexão passa a depender da primeira requisição externa bem-sucedida e mantém evidência temporal em chamadas posteriores. |
-| `frontend/src/routes/integrations.tsx` | `statusLabel`, texto de `PENDENTE` e ação de atualização | Exibe “Token configurado · aguardando primeiro evento”, explica que a conexão depende da primeira requisição autenticada e trata a ação manual como atualização de estado, não como prova de conectividade. |
+| `backend/src/main/java/br/com/iforce/praxis/gupy/service/CandidateAttemptIdempotencyAspect.java` | `enforceEquivalentRetry()` | Intercepta o caso de uso real, compara fingerprint versionado ou snapshot legado antes da mutação e bloqueia divergência com conflito. |
+| `backend/src/main/java/br/com/iforce/praxis/gupy/persistence/entity/CandidateAttemptEntity.java` | `requestFingerprint` e `requestFingerprintVersion` | Mantém a evidência necessária para validar repetições futuras. |
+| `backend/src/main/resources/db/migration/V39__candidate_attempt_request_fingerprint.sql` | novas colunas | Persiste a impressão canônica sem substituir dados funcionais da tentativa. |
+| `backend/src/main/java/br/com/iforce/praxis/shared/outbox/service/OutboxProcessor.java` | estado de entrega por destino | Retoma somente destinos pendentes e finaliza o evento após todos os destinos aplicáveis serem confirmados. |
+| `backend/src/main/java/br/com/iforce/praxis/shared/integration/service/ConfirmableGenericWebhookDeliveryService.java` | `deliverResultReady()` | Propaga falha persistida do webhook genérico para o outbox manter retry ou DLQ. |
+| `backend/src/main/java/br/com/iforce/praxis/candidate/service/PublicCandidateFlowSecurity.java` | validação e sanitização | Exige token válido, gera IDs opacos e remove transições futuras do contrato público. |
+| `backend/src/main/java/br/com/iforce/praxis/candidate/controller/CandidateAttemptController.java` | endpoints públicos | Aplica a validação e sanitização antes e depois do caso de uso em leitura, resposta e solicitações do candidato. |
+| `backend/src/main/java/br/com/iforce/praxis/gupy/service/CandidateAttemptService.java` | publicação de eventos, estados e callback | Separa destinos, evita resultado artificial e preserva o handoff de conclusão no fluxo alcançável. |
+| `backend/src/main/java/br/com/iforce/praxis/gupy/service/GupyTestResultMapper.java` | montagem do `TestResult` | Só produz resultado externo compatível quando existe conclusão válida e pontuação final. |
 
 ## Regras de manutenção
 
 - Uma entrega só entra neste histórico depois de verificação direta do código e do fluxo alcançável.
-- Requisitos parcialmente entregues permanecem no backlog com novo ID ou referência explícita à lacuna ainda existente.
+- Requisitos parcialmente entregues permanecem no backlog com o mesmo ID ou referência explícita à lacuna remanescente.
 - O histórico não registra tarefas de CI/CD, testes, QA, homologação, métricas observacionais, publicação ou marketing.
