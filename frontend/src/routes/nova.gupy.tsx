@@ -26,11 +26,10 @@ export const Route = createFileRoute("/nova/gupy")({
   }),
   head: () => ({
     meta: [
-      { title: "Gupy - Preflight & Conferência - Práxis" },
+      { title: "Ativação Gupy - Práxis" },
       {
         name: "description",
-        content:
-          "Diagnóstico técnico em tempo real da integração do Práxis com avaliações externas da Gupy.",
+        content: "Conferência técnica de uma versão publicada antes da ativação no catálogo Gupy.",
       },
     ],
   }),
@@ -59,83 +58,112 @@ function GupyActivation() {
       }),
     enabled: hasParams,
   });
-  const hasFailure = preflightQuery.data?.checks.some((item) => item.status === "blocker") ?? false;
+  const hasBlocker = preflightQuery.data?.checks.some((item) => item.status === "blocker") ?? false;
 
   return (
     <AppShell>
       <WizardStepper current="publicacao" />
-      <div className="mb-5 flex flex-wrap items-start justify-between gap-4">
+      <header className="mb-5 flex flex-wrap items-start justify-between gap-4">
         <div>
-          <div className="text-xs uppercase text-primary">Passo 4</div>
-          <h1 className="mt-1 text-3xl font-semibold">Gupy - Preflight e conferência</h1>
-          <p className="mt-1 max-w-3xl text-sm text-muted-foreground">
-            Confira se esta avaliação está pronta para aparecer na Gupy e se os resultados serão
-            enviados corretamente depois que o candidato terminar.
+          <div className="text-xs font-semibold uppercase tracking-[0.18em] text-primary">
+            Ativação no ATS
+          </div>
+          <h1 className="mt-1 font-display text-3xl">Gupy — ativação e conferência</h1>
+          <p className="mt-2 max-w-3xl text-sm leading-6 text-muted-foreground">
+            Primeiro publique a versão no Práxis. Depois execute esta conferência para validar o
+            token real da integração, a URL pública e a estrutura que será exposta à Gupy.
           </p>
         </div>
-      </div>
+        <Link
+          to="/integrations/$provider"
+          params={{ provider: "gupy" }}
+          className="rounded-md border border-border bg-card px-4 py-2 text-sm font-medium hover:bg-accent"
+        >
+          Configurar integração
+        </Link>
+      </header>
 
       {!hasParams ? (
         <EmptyState
-          title="Selecione uma versão para executar a verificação prévia"
-          description="A disponibilidade para a Gupy depende do diagnóstico em tempo real de versões publicadas."
+          title="Selecione uma versão publicada"
+          description="Rascunhos precisam ser revisados e publicados antes da ativação na Gupy."
           actions={
             <SimulationLinks
               loading={simulationsQuery.isLoading}
-              simulations={simulationsQuery.data ?? []}
+              simulations={(simulationsQuery.data ?? []).filter(
+                (simulation) => simulation.status === "published",
+              )}
             />
           }
         />
       ) : (
-        <>
+        <div className="space-y-5">
           {preflightQuery.isLoading && (
-            <StateBanner tone="info" title="Verificação conectada">
-              Validando a avaliação {search.simulationId} v{search.versionNumber}.
+            <StateBanner tone="info" title="Executando conferência">
+              Validando {search.simulationId} v{search.versionNumber} com as configurações atuais.
             </StateBanner>
           )}
 
           {preflightQuery.isError && (
-            <StateBanner tone="danger" title="Não foi possível executar a verificação prévia">
+            <StateBanner tone="danger" title="Não foi possível executar a conferência">
               {preflightQuery.error instanceof Error
                 ? preflightQuery.error.message
-                : "Verifique se o sistema está disponível e tente novamente."}
+                : "Verifique a configuração e tente novamente."}
             </StateBanner>
           )}
 
           {preflightQuery.data && (
             <StateBanner
-              tone={hasFailure ? "danger" : "ok"}
-              title={hasFailure ? "Verificação bloqueada" : "Verificação aprovada"}
+              tone={hasBlocker ? "danger" : "ok"}
+              title={hasBlocker ? "Ativação bloqueada" : "Pronta para ativação"}
             >
-              {hasFailure
-                ? "Corrija os bloqueios calculados pelo sistema antes de vincular a versão na Gupy."
-                : "A versão publicada passou nas verificações exigidas para integração."}
+              {hasBlocker
+                ? "Corrija todos os bloqueios antes de vincular esta versão no catálogo da Gupy."
+                : "A versão publicada passou pelas verificações técnicas disponíveis no Práxis."}
             </StateBanner>
           )}
 
-          <div className="mt-5 space-y-5">
-            <section className="rounded-md border border-border bg-card p-5">
-              <h2 className="text-sm font-semibold">Lista de verificação da integração</h2>
-              <div className="mt-4 space-y-3">
-                {(preflightQuery.data?.checks ?? []).map((item) => (
-                  <PreflightCheck key={item.code} item={item} />
-                ))}
-              </div>
-            </section>
+          <section className="rounded-xl border border-border bg-card p-5">
+            <h2 className="text-sm font-semibold">Lista de verificação</h2>
+            <div className="mt-4 space-y-3">
+              {(preflightQuery.data?.checks ?? []).map((item) => (
+                <PreflightCheck key={item.code} item={item} />
+              ))}
+              {!preflightQuery.isLoading && !preflightQuery.data && !preflightQuery.isError && (
+                <p className="text-sm text-muted-foreground">Nenhuma verificação disponível.</p>
+              )}
+            </div>
+          </section>
 
-            <section className="rounded-md border border-border bg-card p-5">
-              <div className="mb-4 flex items-center gap-2 text-sm font-semibold">
-                <Send className="h-4 w-4" />
-                Envios de resultado
-              </div>
-              <DeliveryList
-                deliveries={deliveriesQuery.data ?? []}
-                loading={deliveriesQuery.isLoading}
-                error={deliveriesQuery.isError}
-              />
-            </section>
+          <section className="rounded-xl border border-border bg-card p-5">
+            <div className="mb-4 flex items-center gap-2 text-sm font-semibold">
+              <Send className="h-4 w-4" />
+              Entregas de resultado desta versão
+            </div>
+            <DeliveryList
+              deliveries={deliveriesQuery.data ?? []}
+              loading={deliveriesQuery.isLoading}
+              error={deliveriesQuery.isError}
+            />
+          </section>
+
+          <div className="flex flex-wrap justify-between gap-3">
+            <Link
+              to="/nova/governanca"
+              search={{ simulationId: search.simulationId, versionNumber: search.versionNumber }}
+              className="rounded-md border border-border bg-card px-4 py-2 text-sm hover:bg-accent"
+            >
+              Voltar para publicação
+            </Link>
+            <Link
+              to="/integrations/$provider"
+              params={{ provider: "gupy" }}
+              className="rounded-md bg-primary px-5 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
+            >
+              Abrir configuração Gupy
+            </Link>
           </div>
-        </>
+        </div>
       )}
     </AppShell>
   );
@@ -153,7 +181,7 @@ function PreflightCheck({ item }: { item: GupyPreflightCheckResponse }) {
       <Icon className={`mt-0.5 h-4 w-4 ${ok ? "text-success" : "text-danger"}`} />
       <div>
         <div className="text-sm font-medium">{formatCheckCode(item.code)}</div>
-        <div className="text-xs text-muted-foreground">{item.message}</div>
+        <div className="text-xs leading-5 text-muted-foreground">{item.message}</div>
       </div>
     </div>
   );
@@ -169,32 +197,21 @@ function DeliveryList({
   error: boolean;
 }) {
   if (loading) {
-    return (
-      <div className="rounded-md border border-border bg-background p-3 text-sm">
-        Carregando envios...
-      </div>
-    );
+    return <div className="text-sm text-muted-foreground">Carregando entregas...</div>;
   }
-
   if (error) {
-    return (
-      <div className="rounded-md border border-danger/30 bg-danger/10 p-3 text-sm text-danger">
-        Não foi possível carregar os envios.
-      </div>
-    );
+    return <div className="text-sm text-danger">Não foi possível carregar as entregas.</div>;
   }
-
   if (deliveries.length === 0) {
     return (
       <div className="rounded-md border border-border bg-background p-3 text-sm text-muted-foreground">
-        Nenhum envio registrado.
+        Nenhuma entrega registrada para esta versão.
       </div>
     );
   }
-
   return (
     <div className="space-y-3">
-      {deliveries.slice(0, 5).map((delivery) => (
+      {deliveries.slice(0, 10).map((delivery) => (
         <div key={delivery.id} className="rounded-md border border-border bg-background p-3">
           <div className="flex items-center justify-between gap-2">
             <div className="min-w-0">
@@ -225,51 +242,42 @@ function SimulationLinks({
   loading: boolean;
 }) {
   if (loading) {
-    return (
-      <div className="rounded-md border border-border bg-card px-4 py-3 text-sm">
-        Carregando avaliações...
-      </div>
-    );
+    return <div className="text-sm text-muted-foreground">Carregando avaliações...</div>;
   }
-
   if (simulations.length === 0) {
     return (
       <Link
-        to="/nova/avaliacao"
+        to="/avaliacoes"
         className="rounded-md border border-border bg-card px-4 py-3 text-sm hover:bg-accent"
       >
-        Criar avaliação
+        Revisar e publicar uma avaliação
       </Link>
     );
   }
-
   return (
-    <>
-      {simulations.slice(0, 3).map((simulation) => (
+    <div className="flex flex-wrap gap-3">
+      {simulations.map((simulation) => (
         <Link
-          key={simulation.id}
+          key={`${simulation.id}-${simulation.versionNumber}`}
           to="/nova/gupy"
-          search={{
-            simulationId: simulation.id,
-            versionNumber: simulation.versionNumber,
-          }}
-          className="rounded-md border border-border bg-card px-4 py-3 text-sm hover:bg-accent"
+          search={{ simulationId: simulation.id, versionNumber: simulation.versionNumber }}
+          className="rounded-md border border-border bg-card px-4 py-3 text-left text-sm hover:bg-accent"
         >
           <span className="block font-medium">{simulation.name}</span>
           <span className="mt-1 block">
-            <StatusBadge
-              status={simulation.status}
-              maturity={maturityForStatus(simulation.status)}
-            />
+            <StatusBadge status={simulation.status} maturity={maturityForStatus(simulation.status)} />
           </span>
         </Link>
       ))}
-    </>
+    </div>
   );
 }
 
 function formatCheckCode(value: string) {
-  return value.replace(/([A-Z])/g, " $1").toLowerCase();
+  return value
+    .replace(/([A-Z])/g, " $1")
+    .trim()
+    .replace(/^./, (letter) => letter.toUpperCase());
 }
 
 function formatDateTime(value: string | null) {
