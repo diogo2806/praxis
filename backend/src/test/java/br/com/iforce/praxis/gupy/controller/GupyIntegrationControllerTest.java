@@ -186,8 +186,7 @@ class GupyIntegrationControllerTest {
         String resultId = JsonPath.read(responseBody, "$.test_result_id");
 
         mockMvc.perform(get("/test/result/" + resultId)
-                        .header("Authorization", AUTHORIZATION)
-                        .param("company_id", "empresa-123"))
+                        .header("Authorization", AUTHORIZATION))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.title").value("Cenario Seed de Teste"))
                 .andExpect(jsonPath("$.testCode").value("sim-atendimento-caos"))
@@ -195,27 +194,12 @@ class GupyIntegrationControllerTest {
                 .andExpect(jsonPath("$.status").value("notStarted"))
                 .andExpect(jsonPath("$.score").doesNotExist())
                 .andExpect(jsonPath("$.company_result_string").exists())
+                .andExpect(jsonPath("$.result_page_url").value(containsString("/test/result/" + resultId)))
+                .andExpect(jsonPath("$.result_page_url").value(not(containsString("?company_id="))))
                 .andExpect(content().string(containsString("\"title\":\"Empatia\"")))
                 .andExpect(content().string(containsString("\"tier\":\"major\"")));
     }
 
-    @Test
-    void getTestResultRequiresMatchingCompanyId() throws Exception {
-        MvcResult createResult = mockMvc.perform(post("/test/candidate")
-                        .header("Authorization", AUTHORIZATION)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(validCandidateRequest("candidate-document-wrong-company")))
-                .andExpect(status().isCreated())
-                .andReturn();
-
-        String responseBody = createResult.getResponse().getContentAsString();
-        String resultId = JsonPath.read(responseBody, "$.test_result_id");
-
-        mockMvc.perform(get("/test/result/" + resultId)
-                        .header("Authorization", AUTHORIZATION)
-                        .param("company_id", "outra-empresa"))
-                .andExpect(status().isForbidden());
-    }
 
     @Test
     void createCandidateAttemptRejectsCompanyIdThatDoesNotBelongToToken() throws Exception {
