@@ -4,6 +4,11 @@
 DELETE FROM audit_events
 WHERE aggregate_id IN ('sim-empresa2', 'sim-empresa2:v1');
 
+DELETE FROM audit_events
+WHERE empresa_id = 'empresa-2'
+  AND aggregate_type = 'Integration'
+  AND aggregate_id = 'GUPY';
+
 DELETE FROM outbox_events
 WHERE aggregate_type = 'CandidateAttempt'
   AND aggregate_id IN (
@@ -19,6 +24,9 @@ WHERE id = 'sim-empresa2';
 DELETE FROM integration_tokens
 WHERE empresa_id = 'empresa-2';
 
+DELETE FROM empresa_integrations
+WHERE empresa_id = 'empresa-2';
+
 DELETE FROM empresas
 WHERE id = 'empresa-2';
 
@@ -27,6 +35,27 @@ VALUES ('empresa-2', 'Globex S.A.', '2', 'Xg4vISzoD08ZGOoujdIpczYOTp7_djZuo_y18y
 
 INSERT INTO integration_tokens (empresa_id, provider, token_hash)
 VALUES ('empresa-2', 'gupy', 'Xg4vISzoD08ZGOoujdIpczYOTp7_djZuo_y18yDRqRk');
+
+INSERT INTO empresa_integrations (
+    empresa_id,
+    provider,
+    type,
+    status,
+    credentials_hash,
+    configured_at,
+    created_at,
+    updated_at
+)
+VALUES (
+    'empresa-2',
+    'GUPY',
+    'ATS',
+    'PENDENTE',
+    'Xg4vISzoD08ZGOoujdIpczYOTp7_djZuo_y18yDRqRk',
+    CURRENT_TIMESTAMP,
+    CURRENT_TIMESTAMP,
+    CURRENT_TIMESTAMP
+);
 
 INSERT INTO simulations (id, empresa_id, name, description, created_at)
 VALUES (
