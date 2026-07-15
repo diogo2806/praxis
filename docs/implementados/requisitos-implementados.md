@@ -1,6 +1,6 @@
 # Requisitos técnicos implementados — praxis
 
-Status: atualizado em 2026-07-15 após auditoria da branch main no commit `2cbe682a1c82c2b11fa7b08523b28805bc790e33`.
+Status: atualizado em 2026-07-15 após auditoria da branch main no commit `689bad357105b10d57ce84d56e52ddf9a0141a0a`.
 
 Este arquivo registra somente comportamentos comprovadamente entregues no código e no fluxo real. Entregas parciais permanecem no backlog canônico.
 
@@ -8,6 +8,7 @@ Este arquivo registra somente comportamentos comprovadamente entregues no códig
 
 | Origem | Situação registrada | Entrega comprovada | Pendência remanescente |
 |---|---|---|---|
+| `INT13` | Concluído | O catálogo Gupy usa `GupyTestCatalogMapper` no fluxo real de `GET /test`; como o domínio publicado não possui fonte configurável para categoria e nível, ambos são mantidos nulos e omitidos da serialização externa por `NON_NULL`, sem valores genéricos fabricados. | Nenhuma para metadados artificiais do catálogo. |
 | `API2` | Concluído | A criação Gupy calcula impressão canônica versionada da requisição, persiste o fingerprint e retorna `409` quando a mesma chave idempotente reaparece com conteúdo divergente; repetições equivalentes preservam a tentativa original. | Nenhuma para consistência da repetição idempotente. |
 | `ASYNC10` | Concluído | O processamento de `RESULT_READY` mantém confirmação, tentativas, erro e conclusão por destino Gupy e `CUSTOM_API`; falha de um destino não apaga sua entrega nem repete automaticamente o destino já confirmado. | Nenhuma para fan-out e retry independente. |
 | `INT11` | Concluído | Eventos proprietários de engajamento deixaram de usar o `result_webhook_url`; o destino Gupy permanece reservado ao `TestResult`, enquanto eventos internos dependem de integração genérica explicitamente configurada. | Nenhuma para separação dos contratos de webhook. |
@@ -29,6 +30,9 @@ Este arquivo registra somente comportamentos comprovadamente entregues no códig
 
 | Caminho completo | Método/campo/contrato | Comportamento comprovado |
 |---|---|---|
+| `backend/src/main/java/br/com/iforce/praxis/gupy/controller/GupyIntegrationController.java` | `listPublishedTests()` | O endpoint alcançável autentica a integração, busca somente simulações publicadas da empresa e delega cada item ao mapper de catálogo. |
+| `backend/src/main/java/br/com/iforce/praxis/gupy/service/GupyTestCatalogMapper.java` | `toResponse()` | Preserva ID, nome e descrição reais da simulação e não fabrica categoria ou nível sem fonte no domínio publicado. |
+| `backend/src/main/java/br/com/iforce/praxis/gupy/dto/GupyTestResponse.java` | `@JsonInclude(NON_NULL)` | Remove os campos opcionais nulos do JSON efetivamente enviado pelo catálogo. |
 | `backend/src/main/java/br/com/iforce/praxis/gupy/service/CandidateAttemptIdempotencyAspect.java` | `enforceEquivalentRetry()` | Intercepta o caso de uso real, compara fingerprint versionado ou snapshot legado antes da mutação e bloqueia divergência com conflito. |
 | `backend/src/main/java/br/com/iforce/praxis/gupy/persistence/entity/CandidateAttemptEntity.java` | `requestFingerprint` e `requestFingerprintVersion` | Mantém a evidência necessária para validar repetições futuras. |
 | `backend/src/main/resources/db/migration/V39__candidate_attempt_request_fingerprint.sql` | novas colunas | Persiste a impressão canônica sem substituir dados funcionais da tentativa. |
