@@ -1,6 +1,6 @@
 name: Apply INT11 separation
 
-# Arquivo temporário removido automaticamente após a aplicação.
+# Arquivo temporário removido automaticamente após a aplicação aprovada.
 on:
   pull_request:
     branches:
