@@ -8,6 +8,7 @@ import com.fasterxml.jackson.annotation.JsonValue;
 public enum AuditEventType implements DescribedEnum {
 
     ATTEMPT_CREATED("attemptCreated"),
+    CANDIDATE_LINK_RESENT("candidateLinkResent"),
     ATTEMPT_STARTED("attemptStarted"),
     ATTEMPT_ABANDONED("attemptAbandoned"),
     ATTEMPT_EXPIRED("attemptExpired"),
