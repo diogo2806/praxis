@@ -1,29 +1,16 @@
 package br.com.iforce.praxis.engagement.service;
 
 import br.com.iforce.praxis.engagement.dto.EngagementReportSummary;
-
 import org.slf4j.Logger;
-
 import org.slf4j.LoggerFactory;
-
 import org.springframework.stereotype.Component;
 
 
 /**
  * Implementação padrão do envio do relatório mensal de engajamento.
  *
- * <p>Enquanto não há provedor SMTP configurado, o envio é registrado em log para permitir o fluxo
- * de retenção de ponta a ponta em desenvolvimento e homologação. O e-mail do destinatário é
- * mascarado no log.</p>
- *
- * <p>Mensagem enviada (assunto "Seu mês na Práxis"):</p>
- * <pre>
- * Olá, equipe {empresa}.
- * Neste mês você concluiu {n} avaliações comportamentais na Práxis,
- * o que representa cerca de {horas} horas economizadas em triagem manual.
- * Continue contando com a Práxis para decisões de contratação mais rápidas e defensáveis.
- * Equipe Práxis
- * </pre>
+ * <p>Enquanto não há provedor SMTP configurado, o conteúdo é registrado em log para permitir o
+ * fluxo de ponta a ponta em desenvolvimento e homologação. O e-mail do destinatário é mascarado.</p>
  */
 @Component
 public class LoggingEngagementReportEmailSender implements EngagementReportEmailSender {
@@ -32,18 +19,41 @@ public class LoggingEngagementReportEmailSender implements EngagementReportEmail
 
     @Override
     public void sendMonthlyReport(String recipientEmail, String empresaName, EngagementReportSummary summary) {
+        if (!summary.timeSavingEstimateEnabled()) {
+            log.info(
+                    "Relatório mensal de engajamento (assunto: \"Seu mês na Práxis\") enviado para {} — {}: "
+                            + "período {} a {}, {} avaliações concluídas; estimativa de tempo poupado desativada.",
+                    mask(recipientEmail),
+                    empresaName,
+                    summary.periodStart(),
+                    summary.periodEnd(),
+                    summary.completedEvaluations()
+            );
+            return;
+        }
+
         log.info(
                 "Relatório mensal de engajamento (assunto: \"Seu mês na Práxis\") enviado para {} — {}: "
-                        + "{} avaliações concluídas, ~{}h economizadas no período.",
+                        + "período {} a {}, {} avaliações concluídas; estimativa de ~{}h potencialmente poupadas "
+                        + "(fórmula: {}; parâmetro: {}h por avaliação concluída; fonte metodológica: {}). {}",
                 mask(recipientEmail),
                 empresaName,
+                summary.periodStart(),
+                summary.periodEnd(),
                 summary.completedEvaluations(),
-                formatHours(summary.hoursSaved())
+                formatHours(summary.estimatedHoursSaved()),
+                summary.estimationFormula(),
+                formatHours(summary.assumedHoursPerCompletedEvaluation()),
+                summary.estimationMethodologySource(),
+                summary.estimationCaveat()
         );
     }
 
-    /** Formata as horas economizadas com uma casa decimal, sem depender do locale do servidor. Uso interno. */
-    private static String formatHours(double hours) {
+    /** Formata horas com uma casa decimal, sem depender do locale do servidor. */
+    private static String formatHours(Double hours) {
+        if (hours == null) {
+            return "n/a";
+        }
         return String.valueOf(Math.round(hours * 10) / 10.0);
     }
 
