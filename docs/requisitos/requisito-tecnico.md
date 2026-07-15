@@ -1,6 +1,6 @@
 # Requisitos técnicos pendentes — praxis
 
-Status: atualizado em 2026-07-15 após conclusão de `ASYNC11`, `BUS13` e `INT18`.
+Status: atualizado em 2026-07-15 após conclusão de `ASYNC11`, `BUS13`, `INT18` e `DATA13`.
 
 Este arquivo contém somente pendências técnicas implementáveis e comprovadas no sistema. Não inclui CI/CD, testes, QA, métricas observacionais, publicação ou marketing.
 
@@ -31,16 +31,7 @@ Este arquivo contém somente pendências técnicas implementáveis e comprovadas
 
 | ID | Tarefa técnica | Critério de conclusão | Status |
 |---|---|---|---|
-| DATA13 | Separar repetição idempotente de criação legítima de nova tentativa na Gupy. | O sistema distingue reenvio equivalente, retomada da mesma tentativa, reteste autorizado e nova aplicação após falha, abandono ou expiração, sem transformar nova tentativa legítima em `409`. | ⬜ Pendente |
 | DATA14 | Permitir novas aplicações de links diretos por ciclo, vaga ou comando explícito. | A empresa consegue criar nova aplicação para o mesmo candidato e avaliação ao informar novo ciclo/contexto ou solicitar nova tentativa; reenvios equivalentes continuam idempotentes. | ⬜ Pendente |
-
-### DATA13 — reteste Gupy versus repetição idempotente
-
-| Caminho completo | Método/campo/contrato | Como está | O que fazer |
-|---|---|---|---|
-| `backend/src/main/java/br/com/iforce/praxis/gupy/service/CandidateAttemptIdempotencyAspect.java` | `idempotencyKey()` | A chave usa empresa, companhia, documento, teste e vaga, mas não representa aplicação ou ciclo de reteste. | Introduzir identificador de aplicação/ciclo contratual ou regra determinística equivalente. |
-| `backend/src/main/java/br/com/iforce/praxis/gupy/service/CandidateAttemptIdempotencyAspect.java` | `fingerprint()` | `previous_result` participa do fingerprint, mas não da chave. A mesma chave com alteração desse campo resulta em `409`. | Definir transições explícitas que usem `previous_result` para autorizar novo ciclo sem enfraquecer a idempotência da mesma requisição. |
-| `backend/src/main/java/br/com/iforce/praxis/gupy/service/CandidateAttemptService.java` | `createOrReuse()` | O serviço também deriva a chave por empresa, companhia, documento, teste e `job_id`, reaproveitando a tentativa encontrada. | Centralizar uma única regra de identidade da aplicação e impedir divergência entre aspecto e serviço. |
 
 ### DATA14 — reaplicação de links diretos
 
@@ -80,7 +71,6 @@ Este arquivo contém somente pendências técnicas implementáveis e comprovadas
 ## Ordem recomendada
 
 1. `INT17` — interromper o uso indevido do webhook Gupy e a exposição de payload proprietário.
-2. `DATA13` — separar reteste legítimo de repetição idempotente.
-3. `DATA14` — permitir nova aplicação explícita em links diretos.
-4. `BUS12` — tornar resultados comparáveis ou bloquear comparações incompatíveis.
-5. `UI13` — paginar e completar o centro operacional.
+2. `DATA14` — permitir nova aplicação explícita em links diretos.
+3. `BUS12` — tornar resultados comparáveis ou bloquear comparações incompatíveis.
+4. `UI13` — paginar e completar o centro operacional.
