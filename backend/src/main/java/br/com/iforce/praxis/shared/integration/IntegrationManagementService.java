@@ -1,66 +1,36 @@
 package br.com.iforce.praxis.shared.integration;
 
 import br.com.iforce.praxis.audit.model.AuditEventType;
-
 import br.com.iforce.praxis.audit.service.AuditEventService;
-
 import br.com.iforce.praxis.auth.persistence.entity.EmpresaEntity;
-
 import br.com.iforce.praxis.auth.persistence.repository.EmpresaRepository;
-
 import br.com.iforce.praxis.auth.service.CurrentEmpresaService;
-
 import br.com.iforce.praxis.auth.service.CurrentUserService;
-
 import br.com.iforce.praxis.shared.integration.dto.ConfigureIntegrationRequest;
-
 import br.com.iforce.praxis.shared.integration.dto.GenerateIntegrationTokenResponse;
-
 import br.com.iforce.praxis.shared.integration.dto.IntegrationResponse;
-
 import br.com.iforce.praxis.shared.integration.model.IntegrationAction;
-
 import br.com.iforce.praxis.shared.integration.model.IntegrationProvider;
-
 import br.com.iforce.praxis.shared.integration.model.IntegrationStatus;
-
 import br.com.iforce.praxis.shared.integration.persistence.entity.EmpresaIntegrationEntity;
-
 import br.com.iforce.praxis.shared.integration.persistence.repository.EmpresaIntegrationRepository;
-
 import com.fasterxml.jackson.core.JsonProcessingException;
-
 import com.fasterxml.jackson.databind.ObjectMapper;
-
 import org.springframework.http.HttpStatus;
-
 import org.springframework.stereotype.Service;
-
 import org.springframework.transaction.annotation.Transactional;
-
 import org.springframework.web.server.ResponseStatusException;
 
-
 import java.nio.charset.StandardCharsets;
-
 import java.security.MessageDigest;
-
 import java.security.NoSuchAlgorithmException;
-
 import java.time.Instant;
-
 import java.util.Base64;
-
 import java.util.LinkedHashMap;
-
 import java.util.List;
-
 import java.util.Map;
-
 import java.util.function.Function;
-
 import java.util.stream.Collectors;
-
 
 @Service
 public class IntegrationManagementService {
@@ -117,28 +87,13 @@ public class IntegrationManagementService {
 
         String empresaId = currentEmpresaService.requiredEmpresaId();
         String actorUserId = currentUserService.requiredUserId();
-        EmpresaEntity empresa = empresaRepository.findById(empresaId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Cliente nao encontrado."));
-
-        EmpresaIntegrationEntity entity = empresaIntegrationRepository
-                .findFirstByEmpresaIdAndProvider(empresaId, definition.provider())
-                .orElseGet(() -> {
-                    EmpresaIntegrationEntity created = new EmpresaIntegrationEntity();
-                    created.setEmpresa(empresa);
-                    created.setProvider(definition.provider());
-                    created.setType(definition.type());
-                    created.setCreatedAt(Instant.now());
-                    return created;
-                });
-
-        IntegrationStatus previousStatus = entity.getStatus() == null
-                ? IntegrationStatus.NAO_CONFIGURADA
-                : entity.getStatus();
+        EmpresaEntity empresa = requireEmpresa(empresaId);
         Instant now = Instant.now();
+        EmpresaIntegrationEntity entity = findOrCreateIntegration(empresaId, empresa, definition, now);
+        IntegrationStatus previousStatus = statusOf(entity);
 
         validateConfigureRequest(definition, request);
         entity.setCredentialsHash(hashJson(request == null ? null : request.credentials()));
-
         entity.setType(definition.type());
         entity.setStatus(nextConfiguredStatus(definition.provider()));
         entity.setSettingsJson(toJson(request == null ? null : request.settings()));
@@ -170,18 +125,10 @@ public class IntegrationManagementService {
         String actorUserId = currentUserService.requiredUserId();
         IntegrationCatalog.Definition definition = IntegrationCatalog.requireDefinition(provider);
         EmpresaIntegrationEntity entity = requireIntegration(empresaId, definition.provider());
-        IntegrationStatus previousStatus = entity.getStatus();
+        IntegrationStatus previousStatus = statusOf(entity);
         Instant now = Instant.now();
 
-        if (usesAccessToken(definition.provider())) {
-            integrationTokenAdminService.revokeToken(definition.tokenProvider());
-        }
-        entity.setStatus(IntegrationStatus.DESATIVADA);
-        entity.setDisabledAt(now);
-        entity.setUpdatedAt(now);
-        entity.setLastErrorMessage(null);
-        EmpresaIntegrationEntity saved = empresaIntegrationRepository.save(entity);
-
+        EmpresaIntegrationEntity saved = revokeTokenAndDisable(definition, entity, now);
         appendAudit(
                 empresaId,
                 actorUserId,
@@ -214,29 +161,19 @@ public class IntegrationManagementService {
         if (entity.getStatus() != IntegrationStatus.DESATIVADA) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Integração não está desativada.");
         }
+
         IntegrationStatus previousStatus = entity.getStatus();
-        Instant now = Instant.now();
-        String rawToken = null;
-        Instant tokenCreatedAt = null;
-
-        if (usesAccessToken(definition.provider())) {
-            var rotatedToken = integrationTokenAdminService.rotateToken(definition.tokenProvider());
-            rawToken = rotatedToken.token();
-            tokenCreatedAt = rotatedToken.createdAt();
-            entity.setCredentialsHash(sha256(rawToken));
-            entity.setTokenPreview(buildTokenPreview(rawToken));
-        }
-        entity.setStatus(IntegrationStatus.PENDENTE);
-        entity.setDisabledAt(null);
-        entity.setLastSyncAt(null);
-        entity.setConfiguredAt(now);
-        entity.setLastErrorMessage(null);
-        entity.setUpdatedAt(now);
-        EmpresaIntegrationEntity saved = empresaIntegrationRepository.save(entity);
-
-        appendAudit(empresaId, actorUserId, definition.provider(), previousStatus, saved.getStatus(),
-      AuditEventType.INTEGRATION_REACTIVATED, null);
-        return toResponse(definition, saved, rawToken, tokenCreatedAt);
+        RotatedToken rotatedToken = rotateTokenAndResetEvidence(definition, entity, Instant.now());
+        appendAudit(
+                empresaId,
+                actorUserId,
+                definition.provider(),
+                previousStatus,
+                entity.getStatus(),
+                AuditEventType.INTEGRATION_REACTIVATED,
+                null
+        );
+        return toResponse(definition, entity, rotatedToken.rawToken(), rotatedToken.createdAt());
     }
 
     @Transactional
@@ -248,38 +185,24 @@ public class IntegrationManagementService {
         if (!definition.supportsManualSync()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Este provedor nao suporta sincronizacao manual.");
         }
-        if (entity.getStatus() == IntegrationStatus.NAO_CONFIGURADA || entity.getStatus() == IntegrationStatus.DESATIVADA) {
+        if (entity.getStatus() == IntegrationStatus.NAO_CONFIGURADA
+                || entity.getStatus() == IntegrationStatus.DESATIVADA) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Configure a integracao antes de sincronizar.");
         }
 
-        throw new ResponseStatusException(HttpStatus.NOT_IMPLEMENTED, "Sincronizacao manual nao implementada para este provedor.");
+        throw new ResponseStatusException(
+                HttpStatus.NOT_IMPLEMENTED,
+                "Sincronizacao manual nao implementada para este provedor."
+        );
     }
 
-    @Transactional
+    /**
+     * Mantido para compatibilidade de chamadas internas antigas. Esta operação apenas lê
+     * o estado comprovável persistido e nunca promove uma integração para CONECTADA.
+     */
+    @Transactional(readOnly = true)
     public IntegrationResponse testConnection(String provider) {
-        String empresaId = currentEmpresaService.requiredEmpresaId();
-        IntegrationCatalog.Definition definition = IntegrationCatalog.requireDefinition(provider);
-        EmpresaIntegrationEntity entity = requireIntegration(empresaId, definition.provider());
-
-        if (!usesAccessToken(definition.provider())) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Este provedor nao possui teste de conexao.");
-        }
-        if (entity.getStatus() == IntegrationStatus.NAO_CONFIGURADA || entity.getStatus() == IntegrationStatus.DESATIVADA) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "Configure a integracao antes de testar a conexao.");
-        }
-        if (entity.getCredentialsHash() == null || entity.getCredentialsHash().isBlank()) {
-            entity.setStatus(IntegrationStatus.ERRO);
-            entity.setLastErrorMessage("Token de integracao ausente. Gere um novo token e configure o provedor.");
-            entity.setUpdatedAt(Instant.now());
-            empresaIntegrationRepository.save(entity);
-            throw new ResponseStatusException(HttpStatus.CONFLICT, entity.getLastErrorMessage());
-        }
-
-        entity.setStatus(IntegrationStatus.CONECTADA);
-        entity.setLastErrorMessage(null);
-        entity.setUpdatedAt(Instant.now());
-        EmpresaIntegrationEntity saved = empresaIntegrationRepository.save(entity);
-        return toResponse(definition, saved);
+        return getIntegration(provider);
     }
 
     @Transactional
@@ -308,36 +231,32 @@ public class IntegrationManagementService {
         String empresaId = currentEmpresaService.requiredEmpresaId();
         String actorUserId = currentUserService.requiredUserId();
         IntegrationCatalog.Definition definition = IntegrationCatalog.requireDefinition(provider);
-        EmpresaEntity empresa = empresaRepository.findById(empresaId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Cliente nao encontrado."));
-
-        EmpresaIntegrationEntity entity = empresaIntegrationRepository
-                .findFirstByEmpresaIdAndProvider(empresaId, definition.provider())
-                .orElseGet(() -> {
-                    EmpresaIntegrationEntity created = new EmpresaIntegrationEntity();
-                    created.setEmpresa(empresa);
-                    created.setProvider(definition.provider());
-                    created.setType(definition.type());
-                    created.setStatus(IntegrationStatus.PENDENTE);
-                    created.setCreatedAt(Instant.now());
-                    return created;
-                });
-
-        boolean isRotation = entity.getCredentialsHash() != null;
-        String rawToken = integrationTokenAdminService.rotateToken(definition.tokenProvider()).token();
-        String preview = buildTokenPreview(rawToken);
+        EmpresaEntity empresa = requireEmpresa(empresaId);
         Instant now = Instant.now();
+        EmpresaIntegrationEntity entity = findOrCreateIntegration(empresaId, empresa, definition, now);
+        IntegrationStatus previousStatus = statusOf(entity);
+        boolean isRotation = entity.getCredentialsHash() != null || entity.getTokenPreview() != null;
 
-        entity.setCredentialsHash(sha256(rawToken));
-        entity.setTokenPreview(preview);
-        entity.setConfiguredAt(entity.getConfiguredAt() != null ? entity.getConfiguredAt() : now);
-        entity.setUpdatedAt(now);
-        empresaIntegrationRepository.save(entity);
+        RotatedToken rotatedToken = rotateTokenAndResetEvidence(definition, entity, now);
+        AuditEventType auditType = isRotation
+                ? AuditEventType.INTEGRATION_TOKEN_ROTATED
+                : AuditEventType.INTEGRATION_TOKEN_CREATED;
+        appendAudit(
+                empresaId,
+                actorUserId,
+                definition.provider(),
+                previousStatus,
+                entity.getStatus(),
+                auditType,
+                null
+        );
 
-        AuditEventType auditType = isRotation ? AuditEventType.INTEGRATION_TOKEN_ROTATED : AuditEventType.INTEGRATION_TOKEN_CREATED;
-        appendAudit(empresaId, actorUserId, definition.provider(), entity.getStatus(), entity.getStatus(), auditType, null);
-
-        return new GenerateIntegrationTokenResponse(definition.provider().name(), rawToken, preview, now);
+        return new GenerateIntegrationTokenResponse(
+                definition.provider().name(),
+                rotatedToken.rawToken(),
+                rotatedToken.preview(),
+                rotatedToken.createdAt()
+        );
     }
 
     @Transactional
@@ -345,20 +264,86 @@ public class IntegrationManagementService {
         String empresaId = currentEmpresaService.requiredEmpresaId();
         String actorUserId = currentUserService.requiredUserId();
         IntegrationCatalog.Definition definition = IntegrationCatalog.requireDefinition(provider);
-        EmpresaIntegrationEntity entity = requireIntegration(empresaId, definition.provider());
-        IntegrationStatus previousStatus = entity.getStatus();
+        EmpresaEntity empresa = requireEmpresa(empresaId);
         Instant now = Instant.now();
+        EmpresaIntegrationEntity entity = findOrCreateIntegration(empresaId, empresa, definition, now);
+        IntegrationStatus previousStatus = statusOf(entity);
 
-        integrationTokenAdminService.revokeToken(definition.tokenProvider());
-        entity.setCredentialsHash(null);
-        entity.setTokenPreview(null);
-        entity.setStatus(IntegrationStatus.DESATIVADA);
-        entity.setDisabledAt(now);
+        EmpresaIntegrationEntity saved = revokeTokenAndDisable(definition, entity, now);
+        appendAudit(
+                empresaId,
+                actorUserId,
+                definition.provider(),
+                previousStatus,
+                saved.getStatus(),
+                AuditEventType.INTEGRATION_TOKEN_REVOKED,
+                null
+        );
+    }
+
+    private EmpresaEntity requireEmpresa(String empresaId) {
+        return empresaRepository.findById(empresaId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Cliente nao encontrado."));
+    }
+
+    private EmpresaIntegrationEntity findOrCreateIntegration(
+            String empresaId,
+            EmpresaEntity empresa,
+            IntegrationCatalog.Definition definition,
+            Instant now
+    ) {
+        return empresaIntegrationRepository
+                .findFirstByEmpresaIdAndProvider(empresaId, definition.provider())
+                .orElseGet(() -> {
+                    EmpresaIntegrationEntity created = new EmpresaIntegrationEntity();
+                    created.setEmpresa(empresa);
+                    created.setProvider(definition.provider());
+                    created.setType(definition.type());
+                    created.setCreatedAt(now);
+                    return created;
+                });
+    }
+
+    private RotatedToken rotateTokenAndResetEvidence(
+            IntegrationCatalog.Definition definition,
+            EmpresaIntegrationEntity entity,
+            Instant now
+    ) {
+        var rotatedToken = integrationTokenAdminService.rotateToken(definition.tokenProvider());
+        String rawToken = rotatedToken.token();
+        String preview = buildTokenPreview(rawToken);
+
+        entity.setType(definition.type());
+        entity.setCredentialsHash(sha256(rawToken));
+        entity.setCredentialsEncrypted(null);
+        entity.setTokenPreview(preview);
+        entity.setStatus(IntegrationStatus.PENDENTE);
+        entity.setDisabledAt(null);
+        entity.setLastSyncAt(null);
+        entity.setConfiguredAt(now);
+        entity.setLastErrorMessage(null);
         entity.setUpdatedAt(now);
         empresaIntegrationRepository.save(entity);
 
-        appendAudit(empresaId, actorUserId, definition.provider(), previousStatus, IntegrationStatus.DESATIVADA,
-                AuditEventType.INTEGRATION_TOKEN_REVOKED, null);
+        return new RotatedToken(rawToken, preview, rotatedToken.createdAt());
+    }
+
+    private EmpresaIntegrationEntity revokeTokenAndDisable(
+            IntegrationCatalog.Definition definition,
+            EmpresaIntegrationEntity entity,
+            Instant now
+    ) {
+        integrationTokenAdminService.revokeToken(definition.tokenProvider());
+        entity.setType(definition.type());
+        entity.setCredentialsHash(null);
+        entity.setCredentialsEncrypted(null);
+        entity.setTokenPreview(null);
+        entity.setStatus(IntegrationStatus.DESATIVADA);
+        entity.setDisabledAt(now);
+        entity.setLastSyncAt(null);
+        entity.setLastErrorMessage(null);
+        entity.setUpdatedAt(now);
+        return empresaIntegrationRepository.save(entity);
     }
 
     private EmpresaIntegrationEntity requireIntegration(String empresaId, IntegrationProvider provider) {
@@ -370,34 +355,34 @@ public class IntegrationManagementService {
     }
 
     private IntegrationResponse toResponse(
-    IntegrationCatalog.Definition definition,
-    EmpresaIntegrationEntity entity
-) {
-    return toResponse(definition, entity, null, null);
-}
+            IntegrationCatalog.Definition definition,
+            EmpresaIntegrationEntity entity
+    ) {
+        return toResponse(definition, entity, null, null);
+    }
 
-private IntegrationResponse toResponse(
-    IntegrationCatalog.Definition definition,
-    EmpresaIntegrationEntity entity,
-    String rawToken,
-    Instant tokenCreatedAt
-) {
-    IntegrationStatus status = entity == null ? IntegrationStatus.NAO_CONFIGURADA : entity.getStatus();
-    return new IntegrationResponse(
-            definition.provider(),
-            definition.name(),
-            definition.description(),
-            definition.type(),
-            status,
-            entity == null ? null : entity.getLastSyncAt(),
-            entity == null ? null : entity.getConfiguredAt(),
-            entity == null ? null : entity.getLastErrorMessage(),
-            entity == null ? null : entity.getTokenPreview(),
-            rawToken,
-            tokenCreatedAt,
-            actionsFor(status, definition.provider(), definition.supportsManualSync())
-    );
-}
+    private IntegrationResponse toResponse(
+            IntegrationCatalog.Definition definition,
+            EmpresaIntegrationEntity entity,
+            String rawToken,
+            Instant tokenCreatedAt
+    ) {
+        IntegrationStatus status = entity == null ? IntegrationStatus.NAO_CONFIGURADA : entity.getStatus();
+        return new IntegrationResponse(
+                definition.provider(),
+                definition.name(),
+                definition.description(),
+                definition.type(),
+                status,
+                entity == null ? null : entity.getLastSyncAt(),
+                entity == null ? null : entity.getConfiguredAt(),
+                entity == null ? null : entity.getLastErrorMessage(),
+                entity == null ? null : entity.getTokenPreview(),
+                rawToken,
+                tokenCreatedAt,
+                actionsFor(status, definition.provider(), definition.supportsManualSync())
+        );
+    }
 
     private static List<IntegrationAction> actionsFor(
             IntegrationStatus status,
@@ -425,12 +410,22 @@ private IntegrationResponse toResponse(
                     : isAtsProvider
                     ? List.of(IntegrationAction.VIEW_ERROR, IntegrationAction.TEST_CONNECTION, IntegrationAction.GENERATE_TOKEN)
                     : List.of(IntegrationAction.VIEW_ERROR, IntegrationAction.TEST_CONNECTION, IntegrationAction.EDIT);
-            case DESATIVADA -> List.of(IntegrationAction.REACTIVATE, IntegrationAction.VIEW, IntegrationAction.DISCONNECT);
+            case DESATIVADA -> List.of(
+                    IntegrationAction.REACTIVATE,
+                    IntegrationAction.VIEW,
+                    IntegrationAction.DISCONNECT
+            );
         };
     }
 
+    private static IntegrationStatus statusOf(EmpresaIntegrationEntity entity) {
+        return entity.getStatus() == null ? IntegrationStatus.NAO_CONFIGURADA : entity.getStatus();
+    }
+
     private static IntegrationStatus nextConfiguredStatus(IntegrationProvider provider) {
-        return provider == IntegrationProvider.CUSTOM_API ? IntegrationStatus.PENDENTE : IntegrationStatus.CONECTADA;
+        return provider == IntegrationProvider.CUSTOM_API
+                ? IntegrationStatus.PENDENTE
+                : IntegrationStatus.CONECTADA;
     }
 
     private static boolean usesAccessToken(IntegrationProvider provider) {
@@ -481,18 +476,19 @@ private IntegrationResponse toResponse(
                 provider.name(),
                 eventType,
                 "Integracao " + provider.name() + " atualizada.",
-                auditMetadata(provider, previousStatus, nextStatus, error)
+                auditMetadata(empresaId, provider, previousStatus, nextStatus, error)
         );
     }
 
     private String auditMetadata(
+            String empresaId,
             IntegrationProvider provider,
             IntegrationStatus previousStatus,
             IntegrationStatus nextStatus,
             String error
     ) {
         Map<String, Object> metadata = new LinkedHashMap<>();
-        metadata.put("empresaId", currentEmpresaService.requiredEmpresaId());
+        metadata.put("empresaId", empresaId);
         metadata.put("provider", provider.name());
         metadata.put("statusAnterior", previousStatus.name());
         metadata.put("statusNovo", nextStatus.name());
@@ -508,7 +504,9 @@ private IntegrationResponse toResponse(
     }
 
     private static String buildTokenPreview(String token) {
-        if (token == null || token.length() <= 8) return "****";
+        if (token == null || token.length() <= 8) {
+            return "****";
+        }
         return token.substring(0, 8) + "****";
     }
 
@@ -520,5 +518,8 @@ private IntegrationResponse toResponse(
         } catch (NoSuchAlgorithmException exception) {
             throw new IllegalStateException("SHA-256 indisponivel.", exception);
         }
+    }
+
+    private record RotatedToken(String rawToken, String preview, Instant createdAt) {
     }
 }
