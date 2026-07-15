@@ -23,7 +23,7 @@ DELETE FROM empresas
 WHERE id = 'empresa-2';
 
 INSERT INTO empresas (id, name, company_id, integration_token_hash)
-VALUES ('empresa-2', 'Globex S.A.', 'empresa-456', 'Xg4vISzoD08ZGOoujdIpczYOTp7_djZuo_y18yDRqRk');
+VALUES ('empresa-2', 'Globex S.A.', '2', 'Xg4vISzoD08ZGOoujdIpczYOTp7_djZuo_y18yDRqRk');
 
 INSERT INTO integration_tokens (empresa_id, provider, token_hash)
 VALUES ('empresa-2', 'gupy', 'Xg4vISzoD08ZGOoujdIpczYOTp7_djZuo_y18yDRqRk');
