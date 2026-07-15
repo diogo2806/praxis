@@ -33,6 +33,25 @@ class GupyCandidateContractValidationTest {
     }
 
     @Test
+    void acceptsOmittedOptionalContractFieldsAsNull() throws Exception {
+        mockMvc.perform(post("/test/candidate")
+                        .header("Authorization", AUTHORIZATION)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "company_id": "empresa-123",
+                                  "document_id": "candidate-contract-omitted-fields",
+                                  "test_id": "sim-atendimento-caos",
+                                  "name": "Candidato Contrato",
+                                  "email": "contrato@example.com",
+                                  "job_id": 100,
+                                  "callback_url": "https://cliente.gupy.io/candidate-return"
+                                }
+                                """))
+                .andExpect(status().isCreated());
+    }
+
+    @Test
     void rejectsUnknownCandidateType() throws Exception {
         assertInvalidContractValue(candidateRequest(
                 "candidate-contract-invalid-type",
