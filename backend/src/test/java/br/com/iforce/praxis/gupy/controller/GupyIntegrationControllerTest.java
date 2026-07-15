@@ -7,40 +7,23 @@ import com.jayway.jsonpath.JsonPath;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.beans.factory.annotation.Autowired;
-
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-
 import org.springframework.boot.test.context.SpringBootTest;
-
 import org.springframework.http.MediaType;
-
 import org.springframework.test.context.jdbc.Sql;
-
 import org.springframework.test.web.servlet.MockMvc;
-
 import org.springframework.test.web.servlet.MvcResult;
 
-
 import static org.assertj.core.api.Assertions.assertThat;
-
 import static org.hamcrest.Matchers.empty;
-
 import static org.hamcrest.Matchers.containsString;
-
 import static org.hamcrest.Matchers.not;
-
 import static org.hamcrest.Matchers.startsWith;
-
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
-
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -106,7 +89,7 @@ class GupyIntegrationControllerTest {
         mockMvc.perform(post("/test/candidate")
                         .header("Authorization", AUTHORIZATION)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(validCandidateRequest("candidate-document-1")))
+                        .content(validCandidateRequest(4398157001L)))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.test_url").value(startsWith("http://localhost:8080/candidato/")))
                 .andExpect(jsonPath("$.test_result_id").value(startsWith("res_")))
@@ -118,7 +101,7 @@ class GupyIntegrationControllerTest {
         MvcResult result = mockMvc.perform(post("/test/candidate")
                         .header("Authorization", AUTHORIZATION)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(validCandidateRequest("candidate-contract-context", 901L)))
+                        .content(validCandidateRequest(4398157002L, 901L)))
                 .andExpect(status().isCreated())
                 .andReturn();
 
@@ -127,16 +110,17 @@ class GupyIntegrationControllerTest {
                 .findByEmpresaIdAndResultId("empresa-1", resultId)
                 .orElseThrow();
 
+        assertThat(attempt.getCompanyId()).isEqualTo("1");
         assertThat(attempt.getGupyJobId()).isEqualTo(901L);
         assertThat(attempt.getCallbackUrl()).isEqualTo("https://cliente.gupy.io/candidate-return");
     }
 
     @Test
-    void createCandidateAttemptIsIdempotentByCompanyDocumentTestAndJob() throws Exception {
+    void createCandidateAttemptIsIdempotentByCanonicalNumericCompanyDocumentTestAndJob() throws Exception {
         MvcResult firstResult = mockMvc.perform(post("/test/candidate")
                         .header("Authorization", AUTHORIZATION)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(validCandidateRequest("candidate-document-2")))
+                        .content(validCandidateRequest(4398157003L)))
                 .andExpect(status().isCreated())
                 .andReturn();
 
@@ -145,7 +129,7 @@ class GupyIntegrationControllerTest {
         MvcResult secondResult = mockMvc.perform(post("/test/candidate")
                         .header("Authorization", AUTHORIZATION)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(validCandidateRequest("candidate-document-2")))
+                        .content(validCandidateRequest(4398157003L)))
                 .andExpect(status().isCreated())
                 .andReturn();
 
@@ -158,13 +142,13 @@ class GupyIntegrationControllerTest {
         MvcResult first = mockMvc.perform(post("/test/candidate")
                         .header("Authorization", AUTHORIZATION)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(validCandidateRequest("candidate-multiple-jobs", 100L)))
+                        .content(validCandidateRequest(4398157004L, 100L)))
                 .andExpect(status().isCreated())
                 .andReturn();
         MvcResult second = mockMvc.perform(post("/test/candidate")
                         .header("Authorization", AUTHORIZATION)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(validCandidateRequest("candidate-multiple-jobs", 200L)))
+                        .content(validCandidateRequest(4398157004L, 200L)))
                 .andExpect(status().isCreated())
                 .andReturn();
 
@@ -174,11 +158,106 @@ class GupyIntegrationControllerTest {
     }
 
     @Test
+    void acceptsAbsentAndNullOptionalContractEnums() throws Exception {
+        mockMvc.perform(post("/test/candidate")
+                        .header("Authorization", AUTHORIZATION)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "company_id": 1,
+                                  "document_id": 4398157005,
+                                  "test_id": "sim-atendimento-caos",
+                                  "name": "Thiago Souza",
+                                  "email": "thiago@example.com",
+                                  "job_id": 100,
+                                  "callback_url": "https://cliente.gupy.io/candidate-return",
+                                  "candidate_type": null,
+                                  "previous_result": "null"
+                                }
+                                """))
+                .andExpect(status().isCreated());
+
+        mockMvc.perform(post("/test/candidate")
+                        .header("Authorization", AUTHORIZATION)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "company_id": 1,
+                                  "document_id": 4398157006,
+                                  "test_id": "sim-atendimento-caos",
+                                  "name": "Thiago Souza",
+                                  "email": "thiago@example.com",
+                                  "job_id": 100,
+                                  "callback_url": "https://cliente.gupy.io/candidate-return"
+                                }
+                                """))
+                .andExpect(status().isCreated());
+    }
+
+    @Test
+    void rejectsIdentifiersThatAreNotJsonInt64Values() throws Exception {
+        mockMvc.perform(post("/test/candidate")
+                        .header("Authorization", AUTHORIZATION)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "company_id": "1",
+                                  "document_id": "4398157007",
+                                  "test_id": "sim-atendimento-caos",
+                                  "name": "Thiago Souza",
+                                  "email": "thiago@example.com",
+                                  "callback_url": "https://cliente.gupy.io/candidate-return"
+                                }
+                                """))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void rejectsNonPositiveIdentifiersBeforeStartingFlow() throws Exception {
+        mockMvc.perform(post("/test/candidate")
+                        .header("Authorization", AUTHORIZATION)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "company_id": 0,
+                                  "document_id": -1,
+                                  "test_id": "sim-atendimento-caos",
+                                  "name": "Thiago Souza",
+                                  "email": "thiago@example.com",
+                                  "callback_url": "https://cliente.gupy.io/candidate-return"
+                                }
+                                """))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.fields.companyId").exists())
+                .andExpect(jsonPath("$.fields.documentId").exists());
+    }
+
+    @Test
+    void rejectsValuesOutsideOfficialCandidateEnums() throws Exception {
+        mockMvc.perform(post("/test/candidate")
+                        .header("Authorization", AUTHORIZATION)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "company_id": 1,
+                                  "document_id": 4398157008,
+                                  "test_id": "sim-atendimento-caos",
+                                  "name": "Thiago Souza",
+                                  "email": "thiago@example.com",
+                                  "callback_url": "https://cliente.gupy.io/candidate-return",
+                                  "candidate_type": "partner",
+                                  "previous_result": "none"
+                                }
+                                """))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
     void getTestResultReturnsAttemptStatus() throws Exception {
         MvcResult createResult = mockMvc.perform(post("/test/candidate")
                         .header("Authorization", AUTHORIZATION)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(validCandidateRequest("candidate-document-3")))
+                        .content(validCandidateRequest(4398157009L)))
                 .andExpect(status().isCreated())
                 .andReturn();
 
@@ -201,7 +280,6 @@ class GupyIntegrationControllerTest {
                 .andExpect(content().string(containsString("\"tier\":\"major\"")));
     }
 
-
     @Test
     void createCandidateAttemptRejectsCompanyIdThatDoesNotBelongToToken() throws Exception {
         mockMvc.perform(post("/test/candidate")
@@ -209,8 +287,8 @@ class GupyIntegrationControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
-                                  "company_id": "outra-empresa",
-                                  "document_id": "candidate-document-forbidden",
+                                  "company_id": 2,
+                                  "document_id": 4398157010,
                                   "test_id": "sim-atendimento-caos",
                                   "name": "Thiago Souza",
                                   "email": "thiago@example.com",
@@ -237,15 +315,15 @@ class GupyIntegrationControllerTest {
                 .andExpect(jsonPath("$.fields.callbackUrl").exists());
     }
 
-    private String validCandidateRequest(String documentId) {
+    private String validCandidateRequest(long documentId) {
         return validCandidateRequest(documentId, 100L);
     }
 
-    private String validCandidateRequest(String documentId, long jobId) {
+    private String validCandidateRequest(long documentId, long jobId) {
         return """
                 {
-                  "company_id": "empresa-123",
-                  "document_id": "%s",
+                  "company_id": 1,
+                  "document_id": %d,
                   "test_id": "sim-atendimento-caos",
                   "name": "Thiago Souza",
                   "email": "thiago@example.com",
@@ -253,9 +331,8 @@ class GupyIntegrationControllerTest {
                   "callback_url": "https://cliente.gupy.io/candidate-return",
                   "result_webhook_url": "https://cliente.gupy.io/result-webhook",
                   "candidate_type": "external",
-                  "previous_result": "none"
+                  "previous_result": null
                 }
                 """.formatted(documentId, jobId);
     }
 }
-
