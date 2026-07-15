@@ -12,6 +12,7 @@ Este arquivo contém somente pendências técnicas implementáveis e comprovadas
 - Arquitetura predominante: frontend React consumindo API Spring Boot, persistência PostgreSQL, autenticação JWT nas rotas internas, Bearer token nas integrações e entrega assíncrona por outbox transacional.
 - Fluxos revisados: criação e repetição de tentativas, links diretos, execução do candidato, cálculo e comparação de resultados, callback Gupy, entrega de webhook, outbox, monitoramento operacional, relatórios de engajamento e documentação normativa.
 - Os identificadores `INT15`, `INT16` e `ASYNC10` já possuíam entregas históricas registradas. As novas lacunas receberam `INT17`, `INT18` e `ASYNC11` para evitar colisão e preservar rastreabilidade.
+- `LEGACY12` foi concluído durante esta normalização: os fatos válidos foram convertidos em requisitos objetivos e `docs/backlog.txt` foi removido como fonte concorrente.
 
 ## Resumo das pendências
 
@@ -25,7 +26,6 @@ Este arquivo contém somente pendências técnicas implementáveis e comprovadas
 | `BUS12` | Alta | Garantir comparabilidade de pontuação entre caminhos ou bloquear comparações incompatíveis. | Resultados comparados usam uma base comum de competências, pesos e máximos alcançáveis; alternativamente, o backend classifica resultados incompatíveis e o Talent Match impede ou sinaliza claramente a comparação. | ⬜ Pendente |
 | `UI13` | Média | Paginar o centro operacional e incluir todos os estados relevantes. | A API e a interface suportam paginação e filtros por estado, incluindo não iniciadas, em andamento, concluídas, abandonadas e expiradas, sem corte silencioso fixo em 200 registros. | ⬜ Pendente |
 | `BUS13` | Média | Apresentar horas economizadas como estimativa configurável com metodologia explícita. | Relatórios e telas identificam o valor como estimativa, exibem período, fórmula, parâmetro configurado e ressalva metodológica; nenhuma mensagem trata o número como economia observada sem dados comparativos reais. | ⬜ Pendente |
-| `LEGACY12` | Média | Eliminar `docs/backlog.txt` como fonte concorrente e obsoleta. | Informações ainda válidas são migradas para requisitos objetivos no backlog canônico; o arquivo conversacional é removido ou arquivado com marcação explícita de conteúdo histórico não normativo e sem referências ativas. | ⬜ Pendente |
 
 ## 1. Integração Gupy
 
@@ -35,7 +35,7 @@ Este arquivo contém somente pendências técnicas implementáveis e comprovadas
 |---|---|---|---|
 | `backend/src/main/java/br/com/iforce/praxis/gupy/service/CandidateAttemptService.java` | `publishAttemptEngagementEvent()` | Publica `ATTEMPT_STARTED` e `ATTEMPT_ABANDONED` usando o `resultWebhookUrl` armazenado na tentativa e inclui nome e e-mail da pessoa candidata no payload proprietário. | Remover o destino Gupy desses eventos. Eventos proprietários devem depender exclusivamente de webhook genérico explicitamente configurado e com contrato próprio. |
 | `backend/src/main/java/br/com/iforce/praxis/shared/outbox/service/OutboxProcessor.java` | `processAttemptEngagementEvent()` | Valida a URL e envia o payload proprietário com `ResultWebhookClient.postPayload()` para o endereço recebido como webhook de resultado. | Eliminar esse despacho para o destino Gupy e manter o `result_webhook_url` reservado ao `TestResult`. |
-| `docs/implementados/requisitos-implementados.md` | registro de `INT11` | Declara que eventos proprietários deixaram de usar o `result_webhook_url`, afirmação incompatível com o fluxo alcançável atual. | Reclassificar a conclusão histórica, apontar `INT17` como pendência e evitar registrar comportamento não comprovado como entregue. |
+| `docs/implementados/requisitos-implementados.md` | registro de `INT11` | A conclusão histórica não correspondia ao fluxo alcançável atual. | Manter a reclassificação e concluir `INT17` antes de voltar a declarar separação integral dos contratos. |
 
 ### INT18 — callback sem confirmação servidor-servidor
 
@@ -104,14 +104,6 @@ default -> throw new UnsupportedOutboxEventTypeException(event.getEventType());
 | `backend/src/main/java/br/com/iforce/praxis/gupy/service/CandidateAttemptService.java` | `listCompanyLinks()` | Limita silenciosamente a listagem aos 200 registros mais recentes. | Retornar página, total, cursor ou metadados equivalentes sem corte invisível. |
 | `frontend/src/routes/monitoramento.tsx` | centro operacional | Não oferece visão completa de convites não iniciados, abandonos e expirações. | Adicionar filtros, paginação e estados vazios/erros coerentes com a API paginada. |
 
-## 6. Legado documental
-
-### LEGACY12 — fonte concorrente em `docs/backlog.txt`
-
-| Caminho completo | Método/campo/contrato | Como está | O que fazer |
-|---|---|---|---|
-| `docs/backlog.txt` | conteúdo integral | Contém conversa, recomendações especulativas, arquitetura hipotética, código de exemplo e afirmações superadas, sem formato de requisito canônico. | Migrar somente fatos ainda válidos para este arquivo e remover o documento; caso seja preservado, mover para área histórica com aviso inequívoco de conteúdo não normativo. |
-
 ## Ordem recomendada
 
 1. `INT17` — interromper o uso indevido do webhook Gupy e a exposição de payload proprietário.
@@ -122,4 +114,3 @@ default -> throw new UnsupportedOutboxEventTypeException(event.getEventType());
 6. `BUS12` — tornar os resultados comparáveis ou bloquear comparações incompatíveis.
 7. `UI13` — paginar e completar o centro operacional.
 8. `BUS13` — explicitar a metodologia da estimativa de horas economizadas.
-9. `LEGACY12` — eliminar a fonte documental concorrente após a migração dos fatos válidos.
