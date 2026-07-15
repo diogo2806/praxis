@@ -45,6 +45,7 @@ public class CompanyCandidateLinkService {
     public static final String CREATED_NEW_APPLICATION = "CREATED_NEW_APPLICATION";
     public static final String REUSED_IDEMPOTENT_REQUEST = "REUSED_IDEMPOTENT_REQUEST";
     public static final String RESENT_EXISTING_LINK = "RESENT_EXISTING_LINK";
+    private static final int REQUEST_FINGERPRINT_VERSION = 1;
 
     private final CandidateAttemptRepository candidateAttemptRepository;
     private final SimulationCatalogService simulationCatalogService;
@@ -80,7 +81,7 @@ public class CompanyCandidateLinkService {
     public CreateCandidateLinkResponse createNewApplication(CreateCandidateLinkRequest request) {
         String empresaId = EmpresaSecurity.requiredEmpresa();
         String applicationCycleId = requiredApplicationCycleId(request.applicationCycleId());
-        String normalizedEmail = request.candidateEmail().trim().toLowerCase(Locale.ROOT);
+        String normalizedEmail = normalizeEmail(request.candidateEmail());
         PublishedSimulation publishedSimulation = simulationCatalogService
                 .findPublishedById(empresaId, request.simulationId())
                 .orElseThrow(() -> new ResponseStatusException(
@@ -97,10 +98,17 @@ public class CompanyCandidateLinkService {
                         + "|"
                         + applicationCycleId
         );
+        String requestFingerprint = requestFingerprint(
+                request,
+                applicationCycleId,
+                normalizedEmail,
+                publishedSimulation
+        );
 
         CompanyLinkResolution resolution = resolveApplication(
                 empresaId,
                 idempotencyKey,
+                requestFingerprint,
                 applicationCycleId,
                 request,
                 publishedSimulation
@@ -144,6 +152,7 @@ public class CompanyCandidateLinkService {
     private CompanyLinkResolution resolveApplication(
             String empresaId,
             String idempotencyKey,
+            String requestFingerprint,
             String applicationCycleId,
             CreateCandidateLinkRequest request,
             PublishedSimulation publishedSimulation
@@ -152,6 +161,7 @@ public class CompanyCandidateLinkService {
                 .findByEmpresaIdAndIdempotencyKey(empresaId, idempotencyKey)
                 .orElse(null);
         if (existing != null) {
+            assertEquivalentRequest(existing, requestFingerprint);
             return new CompanyLinkResolution(existing, true);
         }
 
@@ -160,6 +170,7 @@ public class CompanyCandidateLinkService {
             CandidateAttemptEntity created = createAttempt(
                     empresaId,
                     idempotencyKey,
+                    requestFingerprint,
                     applicationCycleId,
                     request,
                     publishedSimulation
@@ -169,6 +180,7 @@ public class CompanyCandidateLinkService {
             CandidateAttemptEntity concurrent = candidateAttemptRepository
                     .findByEmpresaIdAndIdempotencyKey(empresaId, idempotencyKey)
                     .orElseThrow(() -> exception);
+            assertEquivalentRequest(concurrent, requestFingerprint);
             return new CompanyLinkResolution(concurrent, true);
         }
     }
@@ -176,6 +188,7 @@ public class CompanyCandidateLinkService {
     private CandidateAttemptEntity createAttempt(
             String empresaId,
             String idempotencyKey,
+            String requestFingerprint,
             String applicationCycleId,
             CreateCandidateLinkRequest request,
             PublishedSimulation publishedSimulation
@@ -214,6 +227,8 @@ public class CompanyCandidateLinkService {
 
         CandidateAttemptEntity entity = new CandidateAttemptEntity();
         candidateAttemptMapper.applyDomainToEntity(attempt, entity);
+        entity.setRequestFingerprint(requestFingerprint);
+        entity.setRequestFingerprintVersion(REQUEST_FINGERPRINT_VERSION);
         CandidateAttemptEntity saved = candidateAttemptRepository.saveAndFlush(entity);
 
         auditEventService.appendCandidateAttemptEvent(
@@ -231,6 +246,42 @@ public class CompanyCandidateLinkService {
                 )
         );
         return saved;
+    }
+
+    private void assertEquivalentRequest(CandidateAttemptEntity existing, String requestFingerprint) {
+        if (existing.getRequestFingerprintVersion() == null
+                || existing.getRequestFingerprintVersion() != REQUEST_FINGERPRINT_VERSION
+                || !requestFingerprint.equals(existing.getRequestFingerprint())) {
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "applicationCycleId já foi usado com dados diferentes. Informe um novo ciclo para criar outra aplicação."
+            );
+        }
+    }
+
+    private String requestFingerprint(
+            CreateCandidateLinkRequest request,
+            String applicationCycleId,
+            String normalizedEmail,
+            PublishedSimulation publishedSimulation
+    ) {
+        BigDecimal multiplier = normalizeAccommodationMultiplier(request.accommodationTimeMultiplier());
+        String source = REQUEST_FINGERPRINT_VERSION
+                + "|"
+                + request.simulationId().trim()
+                + "|"
+                + publishedSimulation.versionId()
+                + "|"
+                + request.candidateName().trim()
+                + "|"
+                + normalizedEmail
+                + "|"
+                + applicationCycleId
+                + "|"
+                + normalizedContext(request.applicationContext())
+                + "|"
+                + multiplier.stripTrailingZeros().toPlainString();
+        return IdempotencyKeyHasher.sha256Hex(source);
     }
 
     private CreateCandidateLinkResponse response(
@@ -274,8 +325,12 @@ public class CompanyCandidateLinkService {
         return value.trim();
     }
 
+    private String normalizeEmail(String value) {
+        return value.trim().toLowerCase(Locale.ROOT);
+    }
+
     private String normalizedContext(String value) {
-        return value == null || value.isBlank() ? null : value.trim();
+        return value == null || value.isBlank() ? "" : value.trim();
     }
 
     private BigDecimal normalizeAccommodationMultiplier(BigDecimal value) {
