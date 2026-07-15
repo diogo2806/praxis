@@ -1,45 +1,25 @@
 package br.com.iforce.praxis.candidate.controller;
 
 import br.com.iforce.praxis.candidate.dto.DataSubjectRequest;
-
 import br.com.iforce.praxis.candidate.dto.HealthConsentRequest;
-
 import br.com.iforce.praxis.candidate.dto.ParticipacaoResponse;
-
 import br.com.iforce.praxis.candidate.dto.RegistrarRespostaRequest;
-
 import br.com.iforce.praxis.candidate.dto.RegistrarRespostaResponse;
-
 import br.com.iforce.praxis.candidate.dto.ReviewRequest;
-
 import br.com.iforce.praxis.candidate.service.CandidateDataRequestService;
-
 import br.com.iforce.praxis.candidate.service.CandidateHealthConsentService;
-
 import br.com.iforce.praxis.candidate.service.CandidateReviewRequestService;
-
 import br.com.iforce.praxis.gupy.service.CandidateAttemptService;
-
 import io.swagger.v3.oas.annotations.Operation;
-
 import io.swagger.v3.oas.annotations.tags.Tag;
-
 import jakarta.validation.Valid;
-
 import org.springframework.http.ResponseEntity;
-
 import org.springframework.web.bind.annotation.GetMapping;
-
 import org.springframework.web.bind.annotation.PathVariable;
-
 import org.springframework.web.bind.annotation.PostMapping;
-
 import org.springframework.web.bind.annotation.RequestBody;
-
 import org.springframework.web.bind.annotation.RequestMapping;
-
 import org.springframework.web.bind.annotation.RestController;
-
 
 /**
  * Porta de entrada (API) do fluxo público do candidato durante a avaliação.
@@ -47,8 +27,9 @@ import org.springframework.web.bind.annotation.RestController;
  * <p>É por aqui que a tela usada pelo próprio candidato conversa com o
  * sistema enquanto ele faz a prova: carregar a etapa atual, enviar respostas,
  * pedir revisão humana do resultado e registrar consentimento de dados de
- * saúde. Tudo é exposto sem revelar gabarito, pesos ou informações internas,
- * preservando a integridade da avaliação e a privacidade do participante.</p>
+ * saúde. O contrato público entrega somente os dados necessários para exibir
+ * e executar a etapa atual; transições, pontuações e demais regras técnicas
+ * permanecem resolvidas no servidor.</p>
  */
 @RestController
 @RequestMapping("/candidate/attempts")
@@ -75,8 +56,9 @@ public class CandidateAttemptController {
     /**
      * Carrega a tela atual da prova para o candidato.
      *
-     * <p>Devolve a etapa em que o candidato está, sem expor gabarito, pesos
-     * ou dados internos — apenas o que ele precisa ver para continuar.</p>
+     * <p>Devolve a etapa em que o candidato está com o conteúdo necessário
+     * para continuar. A topologia da avaliação e as regras de transição não
+     * fazem parte da resposta pública.</p>
      *
      * @param attemptId identificador da participação do candidato
      * @return a etapa atual da avaliação
@@ -84,7 +66,7 @@ public class CandidateAttemptController {
     @GetMapping("/{attemptId}")
     @Operation(
             summary = "Carrega participacao do candidato",
-            description = "Retorna a etapa atual sem expor gabarito, pesos, identificadores internos ou regras tecnicas."
+            description = "Retorna somente a etapa atual e seu conteúdo visual; transições e regras técnicas são resolvidas no servidor."
     )
     public ResponseEntity<ParticipacaoResponse> getCandidateAttempt(@PathVariable String attemptId) {
         return ResponseEntity.ok(candidateAttemptService.findCandidateAttempt(attemptId));
