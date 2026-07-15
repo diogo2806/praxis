@@ -1,0 +1,171 @@
+name: Bootstrap INT11
+
+on:
+  pull_request_target:
+    branches: [main]
+    types: [synchronize, reopened]
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    if: github.event.pull_request.head.ref == 'fix/int11-separar-webhooks-20260715'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/int11-separar-webhooks-20260715
+          fetch-depth: 0
+
+      - name: Merge main and apply INT11
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git fetch origin main
+          git merge --no-edit origin/main
+          python3 <<'PY'
+          from pathlib import Path
+
+          candidate_path = Path('backend/src/main/java/br/com/iforce/praxis/gupy/service/CandidateAttemptService.java')
+          candidate = candidate_path.read_text()
+          old = '''    private void publishAttemptEngagementEvent(CandidateAttempt attempt, String eventType, Instant occurredAt) {
+        CandidateAttemptEntity candidateAttemptEntity = candidateAttemptRepository
+                .findByEmpresaIdAndId(attempt.empresaId(), attempt.id())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Tentativa não encontrada."));
+        if (candidateAttemptEntity.getResultWebhookUrl() == null || candidateAttemptEntity.getResultWebhookUrl().isBlank()) {
+            return;
+        }
+
+        Map<String, Object> payload = new LinkedHashMap<>();
+        payload.put("webhookUrl", candidateAttemptEntity.getResultWebhookUrl());
+        payload.put("eventPayload", engagementPayload(attempt, eventType, occurredAt));
+
+        outboxService.publish(
+                attempt.empresaId(),
+                eventType,
+                CANDIDATE_ATTEMPT_AGGREGATE,
+                attempt.id(),
+                payload
+        );
+    }
+'''
+          new = '''    private void publishAttemptEngagementEvent(CandidateAttempt attempt, String eventType, Instant occurredAt) {
+        if (!genericWebhookDeliveryService.hasActiveWebhookForEvent(attempt.empresaId(), eventType)) {
+            return;
+        }
+
+        Map<String, Object> payload = new LinkedHashMap<>();
+        payload.put("eventPayload", engagementPayload(attempt, eventType, occurredAt));
+
+        outboxService.publish(
+                attempt.empresaId(),
+                eventType,
+                CANDIDATE_ATTEMPT_AGGREGATE,
+                attempt.id(),
+                payload
+        );
+    }
+'''
+          if old not in candidate:
+              raise SystemExit('CandidateAttemptService target block not found')
+          candidate_path.write_text(candidate.replace(old, new))
+
+          generic_path = Path('backend/src/main/java/br/com/iforce/praxis/shared/integration/service/GenericWebhookDeliveryService.java')
+          generic = generic_path.read_text()
+          generic = generic.replace(
+              '    public static final String RESULT_READY_EVENT = "RESULT_READY";\n',
+              '    public static final String RESULT_READY_EVENT = "RESULT_READY";\n'
+              '    public static final String ATTEMPT_STARTED_EVENT = "ATTEMPT_STARTED";\n'
+              '    public static final String ATTEMPT_ABANDONED_EVENT = "ATTEMPT_ABANDONED";\n'
+          )
+          marker = '    // --- Entrega real (chamada pelo processamento do outbox) ------------------\n'
+          addition = '''    @Transactional(readOnly = true)
+    public boolean hasActiveWebhookForEvent(String empresaId, String eventType) {
+        return empresaIntegrationRepository
+                .findFirstByEmpresaIdAndProvider(empresaId, IntegrationProvider.CUSTOM_API)
+                .filter(entity -> entity.getStatus() == IntegrationStatus.CONECTADA)
+                .map(this::readSettings)
+                .filter(settings -> settings.webhookUrl() != null
+                        && settings.secret() != null
+                        && settings.events().contains(eventType))
+                .isPresent();
+    }
+
+    public void deliverEngagementEvent(String empresaId, String eventType, Map<String, Object> eventPayload) {
+        try {
+            EmpresaIntegrationEntity entity = empresaIntegrationRepository
+                    .findFirstByEmpresaIdAndProvider(empresaId, IntegrationProvider.CUSTOM_API)
+                    .orElse(null);
+            if (entity == null || entity.getStatus() != IntegrationStatus.CONECTADA) {
+                return;
+            }
+            WebhookSettings settings = readSettings(entity);
+            if (settings.webhookUrl() == null || settings.secret() == null
+                    || !settings.events().contains(eventType)) {
+                return;
+            }
+            WebhookTestResponse result = post(settings, eventPayload);
+            recordDelivery(empresaId, result);
+        } catch (Exception exception) {
+            log.warn("Falha ao entregar evento {} pelo webhook genérico para empresa {}: {}",
+                    eventType, empresaId, exception.getMessage());
+            recordDelivery(empresaId, new WebhookTestResponse(false, null, limit(exception.getMessage())));
+        }
+    }
+
+'''
+          if marker not in generic:
+              raise SystemExit('GenericWebhookDeliveryService insertion marker not found')
+          generic_path.write_text(generic.replace(marker, addition + marker))
+
+          outbox_path = Path('backend/src/main/java/br/com/iforce/praxis/shared/outbox/service/OutboxProcessor.java')
+          outbox = outbox_path.read_text()
+          old = '''    private void processAttemptEngagementEvent(OutboxEventEntity event) {
+        JsonNode payload = parsePayload(event.getPayload());
+
+        String webhookUrl = payload.get("webhookUrl").asText();
+        JsonNode eventPayload = payload.get("eventPayload");
+        if (eventPayload == null || eventPayload.isNull()) {
+            throw new IllegalArgumentException("Erro interno ao processar a entrega.");
+        }
+
+        outboundUrlValidator.validate(webhookUrl);
+        log.debug("Enviando evento {} para webhook: {}", event.getEventType(), webhookUrl);
+        resultWebhookClient.postPayload(webhookUrl, eventPayload);
+    }
+'''
+          new = '''    private void processAttemptEngagementEvent(OutboxEventEntity event) {
+        JsonNode payload = parsePayload(event.getPayload());
+        JsonNode eventPayload = payload.get("eventPayload");
+        if (eventPayload == null || eventPayload.isNull()) {
+            throw new IllegalArgumentException("Erro interno ao processar a entrega.");
+        }
+
+        Map<String, Object> genericPayload = objectMapper.convertValue(eventPayload, Map.class);
+        genericWebhookDeliveryService.deliverEngagementEvent(
+                event.getEmpresaId(),
+                event.getEventType(),
+                genericPayload
+        );
+    }
+'''
+          if old not in outbox:
+              raise SystemExit('OutboxProcessor target block not found')
+          outbox = outbox.replace(old, new)
+          if 'import java.util.Map;' not in outbox:
+              outbox = outbox.replace('import java.util.List;\n', 'import java.util.List;\nimport java.util.Map;\n')
+          outbox_path.write_text(outbox)
+          PY
+          rm -f .github/workflows/int11-apply.yml .github/workflows/int11-bootstrap.yml
+
+      - name: Compile backend
+        working-directory: backend
+        run: ./mvnw -q -DskipTests compile
+
+      - name: Commit and push
+        run: |
+          git add -A
+          git commit -m "fix: separar webhook Gupy de eventos internos"
+          git push origin HEAD:fix/int11-separar-webhooks-20260715
