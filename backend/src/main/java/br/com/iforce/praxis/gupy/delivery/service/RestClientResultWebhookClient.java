@@ -1,14 +1,10 @@
 package br.com.iforce.praxis.gupy.delivery.service;
 
 import br.com.iforce.praxis.gupy.dto.TestResultResponse;
-
 import org.springframework.stereotype.Component;
-
 import org.springframework.web.client.RestClient;
 
-
 import java.net.URI;
-
 
 @Component
 public class RestClientResultWebhookClient implements ResultWebhookClient {
@@ -23,16 +19,17 @@ public class RestClientResultWebhookClient implements ResultWebhookClient {
 
     @Override
     public void postResult(String webhookUrl, TestResultResponse testResultResponse) {
-        postPayload(webhookUrl, testResultResponse);
+        URI uri = outboundUrlValidator.validate(webhookUrl);
+        restClient.post()
+                .uri(uri)
+                .body(testResultResponse)
+                .retrieve()
+                .toBodilessEntity();
     }
 
     @Override
     public void postPayload(String webhookUrl, Object payload) {
-        URI uri = outboundUrlValidator.validate(webhookUrl);
-        restClient.post()
-                .uri(uri)
-                .body(payload)
-                .retrieve()
-                .toBodilessEntity();
+        // O result_webhook_url pertence ao contrato Gupy e aceita exclusivamente TestResult.
+        // Eventos proprietários de engajamento não podem reutilizar esse destino.
     }
 }

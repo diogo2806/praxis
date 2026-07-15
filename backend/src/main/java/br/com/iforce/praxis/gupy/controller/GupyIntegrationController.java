@@ -102,9 +102,9 @@ public class GupyIntegrationController {
                 .map(simulation -> new GupyTestResponse(
                         simulation.id(),
                         simulation.name(),
-                        "Situational Judgment",
+                        null,
                         simulation.description(),
-                        "advanced"
+                        null
                 ))
                 .toList();
 
