@@ -67,6 +67,7 @@ export interface CandidateAttemptResponse {
   avaliacaoNome: string;
   status: ParticipacaoStatus;
   finalizado: boolean;
+  redirectUrl?: string | null;
   acaoSugeridaFrontend?: "INICIAR" | "CONTINUAR_TESTE" | "VER_RESULTADOS";
   progresso: CandidateProgressResponse;
   etapaAtual: CandidateNodeResponse | null;
@@ -87,6 +88,7 @@ export interface SubmitAnswerResponse {
   status: ParticipacaoStatus;
   repetida: boolean;
   finalizado: boolean;
+  redirectUrl?: string | null;
   progresso: CandidateProgressResponse;
   etapaAtual: CandidateNodeResponse | null;
 }

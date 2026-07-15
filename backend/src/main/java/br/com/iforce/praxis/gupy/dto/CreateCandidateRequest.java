@@ -8,6 +8,8 @@ import jakarta.validation.constraints.Email;
 
 import jakarta.validation.constraints.NotBlank;
 
+import jakarta.validation.constraints.NotNull;
+
 
 import java.math.BigDecimal;
 
@@ -41,6 +43,15 @@ public record CreateCandidateRequest(
         @JsonProperty("email")
         @Schema(example = "candidato@example.com")
         String candidateEmail,
+
+        @JsonProperty("job_id")
+        @Schema(example = "100", description = "Identificador da vaga na Gupy.")
+        Long jobId,
+
+        @NotNull
+        @JsonProperty("callback_url")
+        @Schema(example = "https://cliente.gupy.io/candidates/return")
+        URI callbackUrl,
 
         @JsonProperty("result_webhook_url")
         @Schema(example = "https://cliente.gupy.io/result-webhook")

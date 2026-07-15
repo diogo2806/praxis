@@ -17,6 +17,9 @@ public record ParticipacaoResponse(
         @Schema(example = "false")
         boolean finalizado,
 
+        @Schema(example = "https://cliente.gupy.io/candidates/return", description = "Destino final informado pela Gupy; presente somente após a conclusão.")
+        String redirectUrl,
+
         @Schema(example = "CONTINUAR_TESTE", allowableValues = {"INICIAR", "CONTINUAR_TESTE", "VER_RESULTADOS"})
         String acaoSugeridaFrontend,
 

@@ -93,6 +93,8 @@ import java.math.BigDecimal;
 
 import java.math.RoundingMode;
 
+import java.net.URI;
+
 import java.time.Duration;
 
 import java.time.Instant;
@@ -197,16 +199,27 @@ public class CandidateAttemptService {
             IntegrationEmpresaContext empresaContext
     ) {
         assertCompanyMatchesToken(request.companyId(), empresaContext);
+        validateCallbackUrl(request.callbackUrl());
         String empresaId = empresaContext.empresaId();
 
         PublishedSimulation publishedSimulation = simulationCatalogService.findPublishedById(empresaId, request.testId())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Não encontramos o teste publicado."));
 
-        String idempotencyKey = IdempotencyKeyHasher.sha256Hex(
-                empresaId + "|" + empresaContext.companyId() + "|" + request.documentId() + "|" + request.testId());
+        String idempotencySource =
+                empresaId + "|" + empresaContext.companyId() + "|" + request.documentId() + "|" + request.testId();
+        if (request.jobId() != null) {
+            idempotencySource += "|" + request.jobId();
+        }
+        String idempotencyKey = IdempotencyKeyHasher.sha256Hex(idempotencySource);
         CandidateAttemptEntity candidateAttemptEntity = candidateAttemptRepository
                 .findByEmpresaIdAndIdempotencyKey(empresaId, idempotencyKey)
                 .orElseGet(() -> createAndAuditAttemptSafely(empresaId, idempotencyKey, request, publishedSimulation));
+        candidateAttemptEntity.setGupyJobId(request.jobId());
+        candidateAttemptEntity.setCallbackUrl(request.callbackUrl().toString());
+        candidateAttemptEntity.setResultWebhookUrl(
+                request.resultWebhookUrl() == null ? null : request.resultWebhookUrl().toString()
+        );
+        candidateAttemptEntity = candidateAttemptRepository.save(candidateAttemptEntity);
         recordIncomingActivity(empresaContext);
 
         // test_url deve ser a PAGINA do candidato (browser), nao a URL da API JSON. A Gupy repassa
@@ -430,6 +443,7 @@ public class CandidateAttemptService {
                 auditMetadata.of(
                         "resultId", candidateAttemptEntity.getResultId(),
                         "testId", request.testId(),
+                        "jobId", request.jobId(),
                         "simulationVersionId", publishedSimulation.versionId(),
                         "simulationVersionNumber", publishedSimulation.versionNumber()
                 )
@@ -482,6 +496,7 @@ public class CandidateAttemptService {
                 simulation.name(),
                 publicStatus(savedAttempt.status()),
                 savedAttempt.status() == AttemptStatus.COMPLETED,
+                redirectUrl(candidateAttemptEntity, savedAttempt.status()),
                 suggestedFrontendAction(savedAttempt.status()),
                 progressFor(savedAttempt, simulation, currentNode),
                 candidateAttemptMapper.toEtapaAtualResponse(currentNode, savedAttempt.accommodationTimeMultiplier()),
@@ -536,7 +551,7 @@ public class CandidateAttemptService {
             return reconciledResponse.get();
         }
 
-        Optional<RegistrarRespostaResponse> duplicateResponse = handleDuplicate(attempt, simulation, request);
+        Optional<RegistrarRespostaResponse> duplicateResponse = handleDuplicate(attempt, simulation, request, candidateAttemptEntity);
         if (duplicateResponse.isPresent()) {
             return duplicateResponse.get();
         }
@@ -577,6 +592,7 @@ public class CandidateAttemptService {
                 publicStatus(savedAttempt.status()),
                 false,
                 savedAttempt.status() == AttemptStatus.COMPLETED,
+                redirectUrl(candidateAttemptEntity, savedAttempt.status()),
                 progressFor(savedAttempt, simulation, nextNode),
                 candidateAttemptMapper.toEtapaAtualResponse(nextNode, savedAttempt.accommodationTimeMultiplier())
         );
@@ -661,6 +677,21 @@ public class CandidateAttemptService {
         return gupyTestResultMapper.toResponse(result.attempt(), result.simulation());
     }
 
+    private void validateCallbackUrl(URI callbackUrl) {
+        String scheme = callbackUrl == null ? null : callbackUrl.getScheme();
+        boolean validScheme = "http".equalsIgnoreCase(scheme) || "https".equalsIgnoreCase(scheme);
+        if (!validScheme || callbackUrl.getHost() == null || callbackUrl.getHost().isBlank()) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "callback_url deve ser uma URL absoluta iniciando com http:// ou https://."
+            );
+        }
+    }
+
+    private String redirectUrl(CandidateAttemptEntity entity, AttemptStatus status) {
+        return status == AttemptStatus.COMPLETED ? entity.getCallbackUrl() : null;
+    }
+
     private void assertCompanyMatchesToken(String companyId, IntegrationEmpresaContext empresaContext) {
         if (companyId == null || companyId.isBlank()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "company_id é obrigatório.");
@@ -673,7 +704,8 @@ public class CandidateAttemptService {
     private Optional<RegistrarRespostaResponse> handleDuplicate(
             CandidateAttempt attempt,
             PublishedSimulation simulation,
-            RegistrarRespostaRequest request
+            RegistrarRespostaRequest request,
+            CandidateAttemptEntity candidateAttemptEntity
     ) {
         ScenarioNode requestNode = resolveRequestNode(attempt, simulation, request).orElse(null);
         if (requestNode == null) {
@@ -701,6 +733,7 @@ public class CandidateAttemptService {
                 publicStatus(attempt.status()),
                 true,
                 attempt.status() == AttemptStatus.COMPLETED,
+                redirectUrl(candidateAttemptEntity, attempt.status()),
                 progressFor(attempt, simulation, currentNode),
                 candidateAttemptMapper.toEtapaAtualResponse(currentNode, attempt.accommodationTimeMultiplier())
         ));
@@ -829,6 +862,7 @@ public class CandidateAttemptService {
                 publicStatus(savedAttempt.status()),
                 false,
                 savedAttempt.status() == AttemptStatus.COMPLETED,
+                redirectUrl(candidateAttemptEntity, savedAttempt.status()),
                 progressFor(savedAttempt, simulation, nextNode),
                 candidateAttemptMapper.toEtapaAtualResponse(nextNode, savedAttempt.accommodationTimeMultiplier())
         ));

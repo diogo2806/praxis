@@ -50,6 +50,8 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
+
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -150,6 +152,7 @@ class CandidateAttemptControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("concluida"))
                 .andExpect(jsonPath("$.finalizado").value(true))
+                .andExpect(jsonPath("$.redirectUrl").value("https://cliente.gupy.io/candidate-return"))
                 .andExpect(jsonPath("$.progresso.passoAtual").value(1))
                 .andExpect(jsonPath("$.progresso.passosEstimados").value(1))
                 .andExpect(jsonPath("$.progresso.percentual").value(100))
@@ -176,6 +179,29 @@ class CandidateAttemptControllerTest {
 
         assertThat(candidateAttemptEntity.getStartedAt()).isNotNull();
         assertThat(candidateAttemptEntity.getFinishedAt()).isNotNull();
+    }
+
+    @Test
+    void completedGupyAttemptRedirectsBrowserToCallbackUrl() throws Exception {
+        MvcResult createResult = createAttemptResult("candidate-final-redirect");
+        String responseBody = createResult.getResponse().getContentAsString();
+        String attemptId = attemptIdFromResponse(responseBody);
+        String publicToken = tokenFromResponse(responseBody);
+
+        mockMvc.perform(post("/candidate/attempts/" + attemptId + "/answers")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "nodeId": "turno-1",
+                                  "optionId": "opcao-equilibrada"
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.finalizado").value(true));
+
+        mockMvc.perform(get("/candidate/attempts/" + publicToken + "/redirect"))
+                .andExpect(status().isFound())
+                .andExpect(header().string("Location", "https://cliente.gupy.io/candidate-return"));
     }
 
     @Test
@@ -690,6 +716,8 @@ class CandidateAttemptControllerTest {
                                   "test_id": "%s",
                                   "name": "Thiago Souza",
                                   "email": "thiago@example.com",
+                                  "job_id": 100,
+                                  "callback_url": "https://cliente.gupy.io/candidate-return",
                                   "result_webhook_url": "https://cliente.gupy.io/result-webhook",
                                   "candidate_type": "external",
                                   "previous_result": "none"

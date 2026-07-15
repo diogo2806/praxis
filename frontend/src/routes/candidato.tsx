@@ -516,6 +516,16 @@ function FocusedCandidateExperience({ token }: { token: string }) {
   const totalSteps = Math.max(currentStep, attempt?.progresso?.passosEstimados ?? currentStep);
   const selectedOption = currentNode?.alternativas.find((option) => option.id === selectedOptionId);
 
+  useEffect(() => {
+    const redirectUrl = attempt?.redirectUrl;
+    if (!finished || !redirectUrl) return;
+
+    const timeout = window.setTimeout(() => {
+      window.location.assign(redirectUrl);
+    }, 1200);
+    return () => window.clearTimeout(timeout);
+  }, [attempt?.redirectUrl, finished]);
+
   const submitAnswer = useCallback(
     async (node: CandidateNodeResponse, optionId: string | null, timedOut: boolean) => {
       if (!attempt) return;
@@ -535,11 +545,13 @@ function FocusedCandidateExperience({ token }: { token: string }) {
           avaliacaoNome: attempt.avaliacaoNome,
           status: response.status,
           finalizado: response.finalizado,
+          redirectUrl: response.redirectUrl ?? attempt.redirectUrl ?? null,
           acaoSugeridaFrontend: response.finalizado
             ? "VER_RESULTADOS"
             : attempt.acaoSugeridaFrontend,
           progresso: response.progresso,
           etapaAtual: response.etapaAtual,
+          verticalSaude: attempt.verticalSaude,
         });
         setSelectedOptionId(null);
         void attemptQuery.refetch();
@@ -815,7 +827,11 @@ function FocusedCandidateExperience({ token }: { token: string }) {
         <div className="cand-status">
           <div className="cs-label done">Participação finalizada</div>
           <h1>Obrigado por participar.</h1>
-          <p>O resultado será processado e entregue para a equipe responsável.</p>
+          <p>
+            {attempt?.redirectUrl
+              ? "Avaliação concluída. Redirecionando você de volta para a Gupy..."
+              : "O resultado será processado e entregue para a equipe responsável."}
+          </p>
           <div className="cs-note">
             Esta avaliação mede como você age em uma situação de trabalho, por competência.
             Ela é apoio à decisão: quem decide sobre a sua candidatura é uma pessoa, não um
