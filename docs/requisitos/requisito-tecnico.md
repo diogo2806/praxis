@@ -1,6 +1,6 @@
 # Requisitos técnicos pendentes — praxis
 
-Status: atualizado em 2026-07-15 após implementação de `SEC10`.
+Status: atualizado em 2026-07-15 após implementação de `SEC10` e `INT10`.
 
 Este arquivo contém somente pendências técnicas implementáveis e comprovadas no sistema. Não inclui CI/CD, testes, QA, métricas observacionais, publicação ou marketing.
 
@@ -13,28 +13,12 @@ Este arquivo contém somente pendências técnicas implementáveis e comprovadas
 
 ## Contexto da auditoria
 
-- Commit base da branch principal: `f110bd93bd1aef97f954df504864f3bd79af84bb`.
+- Commit base da branch principal: `2f6f1ef37cad33fd0f889c733cd9ef9ba368bef6`.
 - Finalidade identificada: plataforma de avaliações situacionais para recrutamento, com regras explícitas, score determinístico, trilha auditável e integração com ATS.
 - Stack principal: Java 21, Spring Boot 3.5, Spring Security, JPA, PostgreSQL/Flyway, React 19, TanStack Start/Router e TypeScript.
 - Arquitetura predominante: frontend React consumindo API Spring Boot, persistência PostgreSQL, autenticação JWT nas rotas internas, Bearer token nas integrações e entrega assíncrona por outbox.
 
-## 1. Integrações ATS — estado de conexão real
-
-| ID | Tarefa técnica | Critério de conclusão | Status |
-|---|---|---|---|
-| INT10 | Registrar atividade autenticada em todos os fluxos externos Gupy e Recrutei e auditar a primeira conexão real. | Cada requisição externa concluída com Bearer token válido registra provedor, endpoint/evidência e horário; `PENDENTE` ou `ERRO` passa para `CONECTADA` somente após essa evidência; chamadas posteriores atualizam `lastSyncAt`; `DESATIVADA` nunca é reativada implicitamente; falhas de registro não são descartadas silenciosamente; a primeira conexão e a recuperação de erro ficam auditadas com estado anterior e novo. | ⬜ Pendente |
-
-### INT10 — produtores de evidência, persistência e auditoria
-
-| Caminho completo | Método/campo/contrato | Como está | O que fazer |
-|---|---|---|---|
-| `backend/src/main/java/br/com/iforce/praxis/gupy/controller/GupyIntegrationController.java` | `listPublishedTests()`, `createCandidateAttempt()` e `getTestResult()` | Os três endpoints validam o Bearer token. Somente `POST /test/candidate` alcança uma tentativa de registro de atividade; `GET /test` e `GET /test/result/{resultId}` não atualizam a integração. | Registrar a atividade após a conclusão bem-sucedida de cada fluxo, usando o contexto autenticado e identificando o endpoint que forneceu a evidência. |
-| `backend/src/main/java/br/com/iforce/praxis/recrutei/controller/RecruteiIntegrationController.java` | `listPublishedTests()`, `createCandidateAttempt()` e `getTestResult()` | Repete a lacuna da Gupy: somente a criação de candidato passa pelo serviço que tenta registrar atividade. | Aplicar o mesmo contrato de atividade real a todos os endpoints Recrutei concluídos com sucesso. |
-| `backend/src/main/java/br/com/iforce/praxis/gupy/service/CandidateAttemptService.java` | `recordIncomingActivity()` | Converte o provedor e chama `recordActivity()`, mas captura qualquer `RuntimeException` e ignora a falha. O caso de uso principal retorna sucesso mesmo quando o estado operacional não foi registrado. | Não descartar a falha silenciosamente. Persistir a evidência de forma coerente com a transação ou registrar uma ação durável de retry/recuperação que deixe a falha observável. |
-| `backend/src/main/java/br/com/iforce/praxis/shared/integration/IntegrationManagementService.java` | `recordActivity()` | Define qualquer integração existente como `CONECTADA`, atualiza `lastSyncAt` e limpa erro, inclusive sem verificar `DESATIVADA`; não registra evento de auditoria nem a origem da evidência. | Restringir transições permitidas, preservar `DESATIVADA`, atualizar atividade de conexões já válidas e auditar a primeira conexão/recuperação com provedor, endpoint, horário, estado anterior e novo. |
-| `backend/src/main/java/br/com/iforce/praxis/audit/service/AuditEventService.java` | eventos de integração | A infraestrutura de auditoria existe e já é usada em configuração, reativação, desconexão e token, mas não participa da promoção por atividade externa. | Registrar a transição real usando a infraestrutura existente, sem criar uma trilha paralela. |
-
-## 2. Interface e fallbacks de compatibilidade
+## 1. Interface e fallbacks de compatibilidade
 
 | ID | Tarefa técnica | Critério de conclusão | Status |
 |---|---|---|---|
@@ -52,5 +36,4 @@ Este arquivo contém somente pendências técnicas implementáveis e comprovadas
 
 ## Ordem recomendada
 
-1. `INT10` — tornar conexão e atividade ATS reais, persistidas e auditáveis.
-2. `UI10` — remover o fallback que fabrica estados operacionais e comerciais.
+1. `UI10` — remover o fallback que fabrica estados operacionais e comerciais.
