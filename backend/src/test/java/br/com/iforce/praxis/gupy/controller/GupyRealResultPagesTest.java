@@ -40,7 +40,7 @@ class GupyRealResultPagesTest {
 
     @Test
     void resultPayloadPointsToRecruiterAndCandidateWebPages() throws Exception {
-        MvcResult created = createCandidate("candidate-real-result-pages");
+        MvcResult created = createCandidate(4398157101L);
         String createdBody = created.getResponse().getContentAsString();
         String resultId = JsonPath.read(createdBody, "$.test_result_id");
         String testUrl = JsonPath.read(createdBody, "$.test_url");
@@ -103,14 +103,14 @@ class GupyRealResultPagesTest {
                 .andExpect(jsonPath("$.concluidoEm").exists());
     }
 
-    private MvcResult createCandidate(String documentId) throws Exception {
+    private MvcResult createCandidate(long documentId) throws Exception {
         return mockMvc.perform(post("/test/candidate")
                         .header("Authorization", AUTHORIZATION)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
-                                  "company_id": "empresa-123",
-                                  "document_id": "%s",
+                                  "company_id": 1,
+                                  "document_id": %d,
                                   "test_id": "sim-atendimento-caos",
                                   "name": "Thiago Souza",
                                   "email": "thiago@example.com",
@@ -118,7 +118,7 @@ class GupyRealResultPagesTest {
                                   "callback_url": "https://cliente.gupy.io/candidate-return",
                                   "result_webhook_url": "https://cliente.gupy.io/result-webhook",
                                   "candidate_type": "external",
-                                  "previous_result": "none"
+                                  "previous_result": null
                                 }
                                 """.formatted(documentId)))
                 .andExpect(status().isCreated())
