@@ -69,7 +69,6 @@ Este arquivo contém somente pendências técnicas implementáveis e comprovadas
 | ID | Tarefa técnica | Critério de conclusão | Status |
 |---|---|---|---|
 | INT1 | Alinhar os tipos de `company_id` e `document_id` ao contrato externo da Gupy sem perder a validação de pertencimento e a idempotência. | O endpoint `POST /test/candidate` aceita identificadores no tipo definido pelo contrato oficial, rejeita formato/faixa inválidos antes de iniciar o fluxo e preserva uma chave idempotente estável para chamadas equivalentes, sem quebrar o contrato próprio da Recrutei. | ⬜ Pendente |
-| INT2 | Validar `candidate_type` e `previous_result` no limite de entrada conforme os enums aceitos pela Gupy. | Valores fora do contrato são rejeitados com resposta de validação; ausência e `null` são tratados conforme o contrato; nenhum valor artificial como `none` é aceito como oficial; chamadas internas não contornam as mesmas regras. | ⬜ Pendente |
 
 ### INT1 — tipos, identidade e compatibilidade entre provedores
 
@@ -79,15 +78,6 @@ Este arquivo contém somente pendências técnicas implementáveis e comprovadas
 | `backend/src/main/java/br/com/iforce/praxis/gupy/service/CandidateAttemptService.java` | `assertCompanyMatchesToken()` e `createOrReuse()` | Compara `companyId` textual e usa `documentId` textual na fonte da chave idempotente. | Adaptar comparação, normalização e composição da chave para o tipo oficial sem criar colisões ou identidades diferentes para o mesmo valor. |
 | `backend/src/main/java/br/com/iforce/praxis/recrutei/controller/RecruteiIntegrationController.java` | `createCandidateAttempt()` | Reaproveita `CreateCandidateRequest` e encaminha `candidateId` textual da Recrutei como `documentId`. Uma mudança direta do DTO compartilhado pode quebrar esse provedor. | Separar o DTO externo Gupy do comando interno compartilhado ou mapear explicitamente cada provedor para um modelo de domínio que preserve seus contratos próprios. |
 | `docs/INTEGRACAO-GUPY-PROVEDOR.md` | contrato de `POST /test/candidate` | Registra a incompatibilidade de tipos como bloqueador técnico. | Atualizar somente depois que os tipos corrigidos percorrerem autenticação, idempotência, persistência e resposta sem regressão nos demais provedores. |
-
-### INT2 — enums e caminhos alternativos
-
-| Caminho completo | Método/campo/contrato | Como está | O que fazer |
-|---|---|---|---|
-| `backend/src/main/java/br/com/iforce/praxis/gupy/dto/CreateCandidateRequest.java` | campos `candidateType` e `previousResult` | São textos livres. O Swagger apenas sugere valores; `previous_result` ainda anuncia `pass`, `fail` e `none`, divergindo do contrato publicado. | Aplicar enum ou validador específico do contrato Gupy; aceitar ausência conforme o schema e rejeitar valores desconhecidos com erro de entrada. |
-| `backend/src/main/java/br/com/iforce/praxis/gupy/dto/CreateCandidateRequest.java` | construtor auxiliar | Permite criar o record internamente sem uma camada explícita de normalização específica por provedor. | Substituir por comando interno separado ou garantir que todo caminho passe pelas mesmas invariantes antes do caso de uso. |
-| `backend/src/main/java/br/com/iforce/praxis/gupy/service/CandidateAttemptService.java` | `createOrReuse()` | Não lê nem valida `candidateType` ou `previousResult`; os valores aceitos pelo DTO não produzem regra de domínio e entradas inválidas passam silenciosamente. | Validar no limite externo e propagar apenas os valores que tenham comportamento/contrato definido, sem armazenar metadata inválida como se fosse oficial. |
-| `docs/INTEGRACAO-GUPY-PROVEDOR.md` | compatibilidade e bloqueadores | Confirma que não há validação de enum no domínio e que `previous_result` diverge do contrato. | Atualizar após o endpoint aplicar o contrato real. |
 
 ## 5. Integração Gupy — contrato de resultado
 
@@ -125,6 +115,6 @@ Este arquivo contém somente pendências técnicas implementáveis e comprovadas
 1. `CFG10` — remover o bloqueio de inicialização por configuração sem consumidor.
 2. `SEC10` — eliminar fontes de verdade concorrentes no ciclo de vida das credenciais.
 3. `INT10` — tornar conexão e atividade ATS reais, persistidas e auditáveis.
-4. `INT1` e `INT2` — alinhar o contrato de entrada da Gupy preservando idempotência e compatibilidade Recrutei.
+4. `INT1` — alinhar os tipos do contrato de entrada da Gupy preservando idempotência e compatibilidade Recrutei.
 5. `API1` — alinhar o contrato de resultado usado por consulta e webhook.
 6. `UI10` — remover o fallback que fabrica estados operacionais e comerciais.
