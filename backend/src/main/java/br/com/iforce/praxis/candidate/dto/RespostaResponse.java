@@ -23,9 +23,6 @@ public record RespostaResponse(
         String midiaUrl,
 
         @Schema(description = "Tipo da midia (IMAGE ou AUDIO).", nullable = true)
-        MediaType tipoMidia,
-
-        @Schema(description = "Próxima etapa pública quando esta resposta é escolhida, sem expor pontuação.", nullable = true)
-        String proximaEtapaId
+        MediaType tipoMidia
 ) {
 }
