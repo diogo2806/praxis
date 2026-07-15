@@ -33,6 +33,15 @@ class GupyCandidateContractValidationTest {
     }
 
     @Test
+    void acceptsExplicitJsonNullAsNoPreviousResult() throws Exception {
+        mockMvc.perform(post("/test/candidate")
+                        .header("Authorization", AUTHORIZATION)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(candidateRequest("candidate-contract-json-null", "external", "null")))
+                .andExpect(status().isCreated());
+    }
+
+    @Test
     void acceptsOmittedOptionalContractFieldsAsNull() throws Exception {
         mockMvc.perform(post("/test/candidate")
                         .header("Authorization", AUTHORIZATION)
