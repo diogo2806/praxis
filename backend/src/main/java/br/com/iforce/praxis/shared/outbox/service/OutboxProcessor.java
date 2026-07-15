@@ -1,92 +1,49 @@
 package br.com.iforce.praxis.shared.outbox.service;
 
-import br.com.iforce.praxis.gupy.delivery.service.ResultWebhookClient;
-
 import br.com.iforce.praxis.gupy.delivery.service.GupyOutboundUrlValidator;
-
+import br.com.iforce.praxis.gupy.delivery.service.ResultWebhookClient;
 import br.com.iforce.praxis.gupy.dto.TestResultResponse;
-
 import br.com.iforce.praxis.gupy.model.PublishedSimulation;
-
 import br.com.iforce.praxis.gupy.persistence.entity.CandidateAttemptEntity;
-
 import br.com.iforce.praxis.gupy.persistence.repository.CandidateAttemptRepository;
-
 import br.com.iforce.praxis.gupy.service.GupyTestResultMapper;
-
 import br.com.iforce.praxis.gupy.service.SimulationCatalogService;
-
-import br.com.iforce.praxis.shared.integration.service.GenericWebhookDeliveryService;
-
 import br.com.iforce.praxis.shared.integration.IntegrationManagementService;
-
 import br.com.iforce.praxis.shared.integration.model.IntegrationProvider;
-
+import br.com.iforce.praxis.shared.integration.service.ConfirmableGenericWebhookDeliveryService;
 import br.com.iforce.praxis.shared.notification.service.ResultDeliveryDlqAlertService;
-
 import br.com.iforce.praxis.shared.outbox.persistence.entity.OutboxEventEntity;
-
 import br.com.iforce.praxis.shared.outbox.persistence.repository.OutboxEventRepository;
-
 import com.fasterxml.jackson.databind.DeserializationFeature;
-
 import com.fasterxml.jackson.databind.JsonNode;
-
 import com.fasterxml.jackson.databind.ObjectMapper;
-
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import lombok.extern.slf4j.Slf4j;
-
 import org.springframework.http.HttpStatus;
-
 import org.springframework.stereotype.Component;
-
 import org.springframework.transaction.PlatformTransactionManager;
-
 import org.springframework.transaction.support.TransactionTemplate;
-
 import org.springframework.web.client.RestClientResponseException;
-
 import org.springframework.web.server.ResponseStatusException;
 
-
+import java.time.Duration;
+import java.time.Instant;
 import java.util.List;
-
 import java.util.Optional;
 
-import java.time.Duration;
-
-import java.time.Instant;
-
-
-/**
- * Processa e entrega eventos armazenados na fila do outbox.
- *
- * Funciona como um "carteiro" que busca eventos pendentes de entrega (como resultados
- * de provas, status de candidatos) e os envia para os webhooks cadastrados nas integrações.
- *
- * Se uma entrega falhar:
- * - Tenta novamente com mais tempo de espera entre as tentativas
- * - Após 5 tentativas sem sucesso, move o evento para "Dead Letter Queue" (DLQ)
- * - Avisa os administradores da empresa que há eventos nãoentregáveis
- *
- * Processa em lotes de 100 eventos por vez para não sobrecarregar o sistema.
- * Isso garante que todas as integrações externas sempre recebem as notificações,
- * mesmo que o servidor seja reiniciado ou haja indisponibilidades temporárias.
- */
 @Slf4j
 @Component
 public class OutboxProcessor {
 
     private static final int MAX_ATTEMPT_COUNT = 5;
     private static final int BATCH_SIZE = 100;
-    /**
-     * Eventos PROCESSING mais antigos que isto são considerados órfãos (a instância que os
-     * reivindicou provavelmente morreu) e podem ser reivindicados novamente.
-     */
     private static final Duration STUCK_PROCESSING_TIMEOUT = Duration.ofMinutes(5);
     private static final String RESULT_READY_EVENT = "RESULT_READY";
     private static final String ATTEMPT_STARTED_EVENT = "ATTEMPT_STARTED";
     private static final String ATTEMPT_ABANDONED_EVENT = "ATTEMPT_ABANDONED";
+    private static final String DELIVERY_STATE = "deliveryState";
+    private static final String GUPY_DESTINATION = "GUPY";
+    private static final String CUSTOM_API_DESTINATION = "CUSTOM_API";
 
     private final OutboxEventRepository outboxEventRepository;
     private final ResultWebhookClient resultWebhookClient;
@@ -96,22 +53,22 @@ public class OutboxProcessor {
     private final GupyTestResultMapper gupyTestResultMapper;
     private final GupyOutboundUrlValidator outboundUrlValidator;
     private final ResultDeliveryDlqAlertService dlqAlertService;
-    private final GenericWebhookDeliveryService genericWebhookDeliveryService;
+    private final ConfirmableGenericWebhookDeliveryService genericWebhookDeliveryService;
     private final IntegrationManagementService integrationManagementService;
     private final TransactionTemplate txTemplate;
 
     public OutboxProcessor(
-        OutboxEventRepository outboxEventRepository,
-        ResultWebhookClient resultWebhookClient,
-        ObjectMapper objectMapper,
-        CandidateAttemptRepository candidateAttemptRepository,
-        SimulationCatalogService simulationCatalogService,
-        GupyTestResultMapper gupyTestResultMapper,
-        GupyOutboundUrlValidator outboundUrlValidator,
-        ResultDeliveryDlqAlertService dlqAlertService,
-        GenericWebhookDeliveryService genericWebhookDeliveryService,
-        IntegrationManagementService integrationManagementService,
-        PlatformTransactionManager transactionManager
+            OutboxEventRepository outboxEventRepository,
+            ResultWebhookClient resultWebhookClient,
+            ObjectMapper objectMapper,
+            CandidateAttemptRepository candidateAttemptRepository,
+            SimulationCatalogService simulationCatalogService,
+            GupyTestResultMapper gupyTestResultMapper,
+            GupyOutboundUrlValidator outboundUrlValidator,
+            ResultDeliveryDlqAlertService dlqAlertService,
+            ConfirmableGenericWebhookDeliveryService genericWebhookDeliveryService,
+            IntegrationManagementService integrationManagementService,
+            PlatformTransactionManager transactionManager
     ) {
         this.outboxEventRepository = outboxEventRepository;
         this.resultWebhookClient = resultWebhookClient;
@@ -126,59 +83,21 @@ public class OutboxProcessor {
         this.txTemplate = new TransactionTemplate(transactionManager);
     }
 
-    /**
-     * Processa todos os eventos pendentes de entrega no sistema.
-     *
-     * Busca um lote de até 100 eventos que estão prontos para serem entregues,
-     * bloqueia eles (para outra instância não processar em paralelo), e tenta
-     * enviar para os webhooks correspondentes.
-     *
-     * Se a tentativa falhar, agenda uma nova tentativa com backoff (espera progressiva).
-     * Se depois de 5 tentativas ainda não funcionar, desiste e marca como irrecuperável (DLQ).
-     */
     public void processReadyEvents() {
         List<Long> claimedIds = claimBatch();
         if (claimedIds.isEmpty()) {
             return;
         }
-
         log.info("Processando {} eventos do outbox", claimedIds.size());
-
-        for (Long id : claimedIds) {
-            deliverAndFinalize(id);
-        }
+        claimedIds.forEach(this::deliverAndFinalize);
     }
 
-    /**
-     * Processa eventos pendentes de uma empresa específica.
-     *
-     * Semelhante a {@link #processReadyEvents()}, mas lida apenas com eventos
-     * da empresa informada. Usado quando se quer reprocessar eventos de uma
-     * empresa em particular ou disparar processamento sob demanda.
-     *
-     * @param empresaId A empresa cujos eventos serão processados
-     * @return Quantidade de eventos que foram processados
-     */
     public int processReadyEventsForEmpresa(String empresaId) {
         List<Long> claimedIds = claimBatchForEmpresa(empresaId);
-        for (Long id : claimedIds) {
-            deliverAndFinalize(id);
-        }
+        claimedIds.forEach(this::deliverAndFinalize);
         return claimedIds.size();
     }
 
-    /**
-     * Reprocessa um evento específico que falhou anteriormente.
-     *
-     * Usado quando um evento ficou preso em "Dead Letter Queue" (DLQ) porque
-     * falhou 5 vezes. Um administrador pode corrigir o problema (por exemplo,
-     * corrigir a URL do webhook) e chamar este método para tentar novamente.
-     *
-     * Se o evento já foi entregue com sucesso, ignora o reprocessamento.
-     *
-     * @param eventId ID do evento a reprocessar
-     * @param empresaId A empresa que o evento pertence (para isolamento de dados)
-     */
     public void reprocessEvent(Long eventId, String empresaId) {
         Long claimedId = txTemplate.execute(status -> {
             OutboxEventEntity event = outboxEventRepository.findByIdAndEmpresaIdForUpdate(eventId, empresaId)
@@ -186,9 +105,6 @@ public class OutboxProcessor {
             if (event.getStatus() == OutboxEventEntity.OutboxEventStatus.SENT) {
                 return null;
             }
-            // Não reivindicar um evento que o poller acabou de reivindicar e ainda está
-            // entregando (PROCESSING recente): reprocessá-lo agora causaria entrega duplicada.
-            // Só assume um PROCESSING quando ele está órfão (mais antigo que o timeout de stuck).
             if (event.getStatus() == OutboxEventEntity.OutboxEventStatus.PROCESSING
                     && event.getLastAttemptAt() != null
                     && event.getLastAttemptAt().isAfter(stuckBefore())) {
@@ -197,36 +113,24 @@ public class OutboxProcessor {
             markClaimed(event);
             return event.getId();
         });
-        if (claimedId == null) {
-            return;
+        if (claimedId != null) {
+            deliverAndFinalize(claimedId);
         }
-        deliverAndFinalize(claimedId);
     }
 
-    /** TX CURTA: trava o lote, marca PROCESSING e incrementa a tentativa. O commit libera a trava. */
     private List<Long> claimBatch() {
         return txTemplate.execute(status -> {
             List<OutboxEventEntity> batch = outboxEventRepository.claimReadyBatch(
-                readyStatuses(),
-                Instant.now(),
-                stuckBefore(),
-                BATCH_SIZE
-            );
+                    readyStatuses(), Instant.now(), stuckBefore(), BATCH_SIZE);
             batch.forEach(this::markClaimed);
             return batch.stream().map(OutboxEventEntity::getId).toList();
         });
     }
 
-    /** TX CURTA por empresa: trava e marca PROCESSING. */
     private List<Long> claimBatchForEmpresa(String empresaId) {
         return txTemplate.execute(status -> {
             List<OutboxEventEntity> batch = outboxEventRepository.claimReadyBatchForEmpresa(
-                empresaId,
-                readyStatuses(),
-                Instant.now(),
-                stuckBefore(),
-                BATCH_SIZE
-            );
+                    empresaId, readyStatuses(), Instant.now(), stuckBefore(), BATCH_SIZE);
             batch.forEach(this::markClaimed);
             return batch.stream().map(OutboxEventEntity::getId).toList();
         });
@@ -240,44 +144,54 @@ public class OutboxProcessor {
 
     private List<String> readyStatuses() {
         return List.of(
-            OutboxEventEntity.OutboxEventStatus.PENDING.name(),
-            OutboxEventEntity.OutboxEventStatus.RETRYING.name()
-        );
+                OutboxEventEntity.OutboxEventStatus.PENDING.name(),
+                OutboxEventEntity.OutboxEventStatus.RETRYING.name());
     }
 
     private Instant stuckBefore() {
         return Instant.now().minus(STUCK_PROCESSING_TIMEOUT);
     }
 
-    /** FORA de transação: faz o POST e só depois grava o resultado em uma TX CURTA. */
     private void deliverAndFinalize(Long eventId) {
-        OutboxEventEntity snapshot = txTemplate.execute(s ->
-            outboxEventRepository.findById(eventId).orElse(null));
+        OutboxEventEntity snapshot = txTemplate.execute(status ->
+                outboxEventRepository.findById(eventId).orElse(null));
         if (snapshot == null) {
             return;
         }
+
         try {
-            dispatch(snapshot); // HTTP aqui, SEM transação aberta
-            txTemplate.executeWithoutResult(s -> {
+            dispatch(snapshot);
+            txTemplate.executeWithoutResult(status -> {
                 OutboxEventEntity event = outboxEventRepository.findById(eventId).orElseThrow();
                 event.setStatus(OutboxEventEntity.OutboxEventStatus.SENT);
                 event.setNextAttemptAt(null);
                 event.setSentAt(Instant.now());
                 event.setLastError(null);
             });
-        } catch (Exception ex) {
-            txTemplate.executeWithoutResult(s -> {
+        } catch (Exception exception) {
+            txTemplate.executeWithoutResult(status -> {
                 OutboxEventEntity event = outboxEventRepository.findById(eventId).orElseThrow();
-                handleEventFailure(event, ex);
+                handleEventFailure(event, exception);
+                if (exception instanceof DestinationDeliveryException destinationException) {
+                    applyDestinationState(
+                            event,
+                            destinationException.destination(),
+                            event.getStatus().name(),
+                            destinationException.getCause() == null
+                                    ? destinationException.getMessage()
+                                    : destinationException.getCause().getMessage(),
+                            null);
+                }
             });
         }
     }
 
-    /** Apenas o roteamento do POST — sem mexer no status. */
     private void dispatch(OutboxEventEntity event) {
         if (RESULT_READY_EVENT.equals(event.getEventType())) {
             processResultReadyEvent(event);
-        } else if (ATTEMPT_STARTED_EVENT.equals(event.getEventType())
+            return;
+        }
+        if (ATTEMPT_STARTED_EVENT.equals(event.getEventType())
                 || ATTEMPT_ABANDONED_EVENT.equals(event.getEventType())) {
             processAttemptEngagementEvent(event);
         }
@@ -285,51 +199,51 @@ public class OutboxProcessor {
 
     private void processResultReadyEvent(OutboxEventEntity event) {
         JsonNode payload = parsePayload(event.getPayload());
+        TestResultResponse testResult = resolveTestResult(payload, event);
 
-        JsonNode webhookUrlNode = payload.get("webhookUrl");
-        String webhookUrl = webhookUrlNode == null || webhookUrlNode.isNull() ? null : webhookUrlNode.asText();
-        TestResultResponse testResult = null;
+        String webhookUrl = textOrNull(payload.get("webhookUrl"));
+        if (webhookUrl != null && !webhookUrl.isBlank() && !isDestinationSent(payload, GUPY_DESTINATION)) {
+            try {
+                outboundUrlValidator.validate(webhookUrl);
+                log.debug("Enviando resultado para webhook Gupy: {}", webhookUrl);
+                resultWebhookClient.postResult(webhookUrl, testResult);
+                recordGupyActivityBestEffort(event.getEmpresaId());
+                persistDestinationSent(event.getId(), GUPY_DESTINATION);
+            } catch (Exception exception) {
+                persistDestinationFailure(event.getId(), GUPY_DESTINATION, exception);
+                throw new DestinationDeliveryException(GUPY_DESTINATION, exception);
+            }
+        }
+
+        JsonNode refreshedPayload = reloadPayload(event.getId());
+        if (!isDestinationSent(refreshedPayload, CUSTOM_API_DESTINATION)) {
+            try {
+                deliverGenericWebhook(event);
+                persistDestinationSent(event.getId(), CUSTOM_API_DESTINATION);
+            } catch (Exception exception) {
+                persistDestinationFailure(event.getId(), CUSTOM_API_DESTINATION, exception);
+                throw new DestinationDeliveryException(CUSTOM_API_DESTINATION, exception);
+            }
+        }
+    }
+
+    private TestResultResponse resolveTestResult(JsonNode payload, OutboxEventEntity event) {
         JsonNode testResultNode = payload.get("testResult");
         if (testResultNode != null && !testResultNode.isNull()) {
-            testResult = toTestResult(testResultNode);
+            return toTestResult(testResultNode);
         }
-
-        if (testResult == null) {
-            // Migrated event: need to fetch test result from database
-            String attemptId = payload.get("attemptId").asText();
-            testResult = fetchTestResult(attemptId, event.getEmpresaId());
-        }
-
-        if (webhookUrl != null && !webhookUrl.isBlank()) {
-            outboundUrlValidator.validate(webhookUrl);
-            log.debug("Enviando resultado para webhook: {}", webhookUrl);
-            resultWebhookClient.postResult(webhookUrl, testResult);
-            // Best-effort: registrar atividade NÃO pode falhar a entrega. Se lançasse aqui, o
-            // evento inteiro iria para RETRYING e o POST da Gupy (já bem-sucedido) seria refeito
-            // na próxima tentativa — entrega duplicada que o consumidor não deduplica.
-            recordGupyActivityBestEffort(event.getEmpresaId());
-        }
-
-        // Entrega adicional (melhor esforço) ao webhook personalizado do cliente,
-        // se houver integração CUSTOM_API ativa. Nunca interrompe nem faz o evento reentregar a
-        // Gupy: uma falha aqui é apenas logada; a reentrega do CUSTOM_API é responsabilidade do
-        // próprio GenericWebhookDeliveryService.
-        deliverGenericWebhookBestEffort(event);
+        JsonNode attemptId = payload.get("attemptId");
+        String resolvedAttemptId = attemptId == null || attemptId.isNull()
+                ? event.getAggregateId()
+                : attemptId.asText();
+        return fetchTestResult(resolvedAttemptId, event.getEmpresaId());
     }
 
     private void recordGupyActivityBestEffort(String empresaId) {
         try {
             integrationManagementService.recordActivity(empresaId, IntegrationProvider.GUPY);
-        } catch (Exception ex) {
-            log.warn("Falha ao registrar atividade da integração Gupy (ignorada): {}", ex.getMessage());
-        }
-    }
-
-    private void deliverGenericWebhookBestEffort(OutboxEventEntity event) {
-        try {
-            deliverGenericWebhook(event);
-        } catch (Exception ex) {
-            log.warn("Falha na entrega best-effort ao webhook CUSTOM_API (ignorada): {}", ex.getMessage());
+        } catch (Exception exception) {
+            log.warn("Falha ao registrar atividade da integração Gupy (ignorada): {}", exception.getMessage());
         }
     }
 
@@ -340,27 +254,73 @@ public class OutboxProcessor {
 
     private void processAttemptEngagementEvent(OutboxEventEntity event) {
         JsonNode payload = parsePayload(event.getPayload());
-
         String webhookUrl = payload.get("webhookUrl").asText();
         JsonNode eventPayload = payload.get("eventPayload");
         if (eventPayload == null || eventPayload.isNull()) {
             throw new IllegalArgumentException("Erro interno ao processar a entrega.");
         }
-
         outboundUrlValidator.validate(webhookUrl);
-        log.debug("Enviando evento {} para webhook: {}", event.getEventType(), webhookUrl);
         resultWebhookClient.postPayload(webhookUrl, eventPayload);
     }
 
-    private TestResultResponse fetchTestResult(String attemptId, String empresaId) {
-        Optional<CandidateAttemptEntity> attempt = candidateAttemptRepository.findByEmpresaIdAndId(empresaId, attemptId);
-        if (attempt.isEmpty()) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Item não encontrado.");
-        }
+    private void persistDestinationSent(Long eventId, String destination) {
+        txTemplate.executeWithoutResult(status -> {
+            OutboxEventEntity event = outboxEventRepository.findById(eventId).orElseThrow();
+            applyDestinationState(event, destination, "SENT", null, Instant.now());
+        });
+    }
 
-        CandidateAttemptEntity candidateAttemptEntity = attempt.get();
-        PublishedSimulation simulation = getSimulation(candidateAttemptEntity);
-        return gupyTestResultMapper.toResponse(candidateAttemptEntity, simulation);
+    private void persistDestinationFailure(Long eventId, String destination, Exception exception) {
+        txTemplate.executeWithoutResult(status -> {
+            OutboxEventEntity event = outboxEventRepository.findById(eventId).orElseThrow();
+            applyDestinationState(event, destination, "FAILED", limitMessage(exception.getMessage()), null);
+        });
+    }
+
+    private void applyDestinationState(
+            OutboxEventEntity event,
+            String destination,
+            String status,
+            String lastError,
+            Instant confirmedAt
+    ) {
+        ObjectNode payload = (ObjectNode) parsePayload(event.getPayload());
+        ObjectNode deliveryState = payload.withObject(DELIVERY_STATE);
+        ObjectNode destinationState = deliveryState.withObject(destination);
+        destinationState.put("status", status);
+        destinationState.put("attempts", event.getAttempts());
+        if (lastError == null) {
+            destinationState.putNull("lastError");
+        } else {
+            destinationState.put("lastError", limitMessage(lastError));
+        }
+        if (confirmedAt == null) {
+            destinationState.putNull("confirmedAt");
+        } else {
+            destinationState.put("confirmedAt", confirmedAt.toString());
+        }
+        event.setPayload(payload.toString());
+    }
+
+    private JsonNode reloadPayload(Long eventId) {
+        return txTemplate.execute(status -> outboxEventRepository.findById(eventId)
+                .map(OutboxEventEntity::getPayload)
+                .map(this::parsePayload)
+                .orElseGet(objectMapper::createObjectNode));
+    }
+
+    private boolean isDestinationSent(JsonNode payload, String destination) {
+        return "SENT".equals(payload.path(DELIVERY_STATE).path(destination).path("status").asText());
+    }
+
+    private String textOrNull(JsonNode node) {
+        return node == null || node.isNull() ? null : node.asText();
+    }
+
+    private TestResultResponse fetchTestResult(String attemptId, String empresaId) {
+        CandidateAttemptEntity attempt = candidateAttemptRepository.findByEmpresaIdAndId(empresaId, attemptId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Item não encontrado."));
+        return gupyTestResultMapper.toResponse(attempt, getSimulation(attempt));
     }
 
     private TestResultResponse toTestResult(JsonNode testResultNode) {
@@ -373,41 +333,39 @@ public class OutboxProcessor {
         }
     }
 
-    private PublishedSimulation getSimulation(CandidateAttemptEntity candidateAttemptEntity) {
-        if (candidateAttemptEntity.getSimulationVersionId() != null) {
-            return simulationCatalogService.findByVersionId(candidateAttemptEntity.getSimulationVersionId())
+    private PublishedSimulation getSimulation(CandidateAttemptEntity attempt) {
+        if (attempt.getSimulationVersionId() != null) {
+            return simulationCatalogService.findByVersionId(attempt.getSimulationVersionId())
                     .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Não encontramos esta versão do teste."));
         }
-
-        return simulationCatalogService.findPublishedById(candidateAttemptEntity.getEmpresaId(), candidateAttemptEntity.getSimulationId())
+        return simulationCatalogService.findPublishedById(attempt.getEmpresaId(), attempt.getSimulationId())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Não encontramos o teste publicado."));
     }
 
     private JsonNode parsePayload(String payload) {
         try {
             return objectMapper.readTree(payload);
-        } catch (Exception e) {
-            throw new RuntimeException("Erro interno ao processar a entrega.", e);
+        } catch (Exception exception) {
+            throw new RuntimeException("Erro interno ao processar a entrega.", exception);
         }
     }
 
     private void handleEventFailure(OutboxEventEntity event, Exception exception) {
-        String errorMessage = limitMessage(exception.getMessage());
+        Throwable cause = exception instanceof DestinationDeliveryException && exception.getCause() != null
+                ? exception.getCause()
+                : exception;
+        String errorMessage = limitMessage(cause.getMessage());
         event.setLastError(errorMessage);
         log.warn("Falha ao processar evento {} (tentativa {}): {}", event.getId(), event.getAttempts(), errorMessage);
 
-        // Um 4xx normalmente indica erro de contrato (payload/URL/permissão) irrecuperável por
-        // retry → DLQ imediata. EXCEÇÃO: 408 (Request Timeout) e 429 (Too Many Requests) são
-        // transitórios e devem ser retentados com backoff, não descartados.
-        boolean isPermanentContractError = exception instanceof RestClientResponseException responseException
-            && responseException.getStatusCode().is4xxClientError()
-            && responseException.getStatusCode().value() != 408
-            && responseException.getStatusCode().value() != 429;
+        boolean permanentContractError = cause instanceof RestClientResponseException responseException
+                && responseException.getStatusCode().is4xxClientError()
+                && responseException.getStatusCode().value() != 408
+                && responseException.getStatusCode().value() != 429;
 
-        if (isPermanentContractError || event.getAttempts() >= MAX_ATTEMPT_COUNT) {
+        if (permanentContractError || event.getAttempts() >= MAX_ATTEMPT_COUNT) {
             event.setStatus(OutboxEventEntity.OutboxEventStatus.DLQ);
             event.setNextAttemptAt(null);
-            log.error("Evento {} movido para DLQ após {} tentativas", event.getId(), event.getAttempts());
             dlqAlertService.alertEmpresaAdmins(event);
             return;
         }
@@ -430,9 +388,19 @@ public class OutboxProcessor {
         if (message == null) {
             return "Falha desconhecida no processamento do evento.";
         }
-        if (message.length() <= 1200) {
-            return message;
+        return message.length() <= 1200 ? message : message.substring(0, 1200);
+    }
+
+    private static final class DestinationDeliveryException extends RuntimeException {
+        private final String destination;
+
+        private DestinationDeliveryException(String destination, Throwable cause) {
+            super(cause == null ? null : cause.getMessage(), cause);
+            this.destination = destination;
         }
-        return message.substring(0, 1200);
+
+        private String destination() {
+            return destination;
+        }
     }
 }
