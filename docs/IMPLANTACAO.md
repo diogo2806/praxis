@@ -155,7 +155,6 @@ O repositório já traz `docker-compose.yml` (backend + frontend + postgres). Cr
 ```bash
 POSTGRES_USER=praxis
 POSTGRES_PASSWORD=troque-esta-senha
-PRAXIS_INTEGRATION_TOKEN=troque-este-token
 PRAXIS_JWT_SECRET=troque-este-segredo-com-tamanho-suficiente
 PRAXIS_SECURITY_ENABLED=true
 PRAXIS_PUBLIC_BASE_URL=https://app.seu-dominio.com.br
@@ -174,10 +173,10 @@ Serviços resultantes:
 - Frontend: `http://localhost` (Nginx na porta 80).
 - PostgreSQL: rede interna do Compose, volume `postgres_data`.
 
-> O Compose exige `PRAXIS_INTEGRATION_TOKEN`, mas a autenticação real de `/test/**` (Gupy/Recrutei)
-> não lê essa variável. O token é cadastrado pela área de Integrações da empresa
-> (`POST /api/v1/integrations/{provider}/tokens`), que gera um token `prx_...`, o exibe uma única
-> vez e guarda apenas o SHA-256 Base64URL dele na tabela `integration_tokens`.
+> As integrações Gupy e Recrutei não usam uma credencial global de ambiente. O token é cadastrado
+> pela área de Integrações da empresa (`POST /api/v1/integrations/{provider}/tokens`), que gera um
+> token `prx_...`, o exibe uma única vez e guarda apenas o SHA-256 Base64URL dele na tabela
+> `integration_tokens`.
 
 ### 17.3 Cloud / homologação / produção
 
@@ -274,4 +273,4 @@ A documentação é considerada concluída quando:
 - ✅ A documentação permanece sincronizada com a versão do sistema (ver rodapé).
 
 **Versão do sistema coberta:** backend `0.1.0-SNAPSHOT`, Spring Boot 3.5.3, Java 21.
-**Última revisão:** 30/06/2026.
+**Última revisão:** 15/07/2026.
