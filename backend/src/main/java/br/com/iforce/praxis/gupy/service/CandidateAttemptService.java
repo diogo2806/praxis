@@ -199,7 +199,9 @@ public class CandidateAttemptService {
             IntegrationEmpresaContext empresaContext
     ) {
         assertCompanyMatchesToken(request.companyId(), empresaContext);
-        validateCallbackUrl(request.callbackUrl());
+        if ("gupy".equalsIgnoreCase(empresaContext.provider())) {
+            validateCallbackUrl(request.callbackUrl());
+        }
         String empresaId = empresaContext.empresaId();
 
         PublishedSimulation publishedSimulation = simulationCatalogService.findPublishedById(empresaId, request.testId())
@@ -215,7 +217,7 @@ public class CandidateAttemptService {
                 .findByEmpresaIdAndIdempotencyKey(empresaId, idempotencyKey)
                 .orElseGet(() -> createAndAuditAttemptSafely(empresaId, idempotencyKey, request, publishedSimulation));
         candidateAttemptEntity.setGupyJobId(request.jobId());
-        candidateAttemptEntity.setCallbackUrl(request.callbackUrl().toString());
+        candidateAttemptEntity.setCallbackUrl(request.callbackUrl() == null ? null : request.callbackUrl().toString());
         candidateAttemptEntity.setResultWebhookUrl(
                 request.resultWebhookUrl() == null ? null : request.resultWebhookUrl().toString()
         );

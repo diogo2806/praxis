@@ -99,7 +99,7 @@ public class CandidateAttemptMapper {
         CandidateAttemptEntity candidateAttemptEntity = new CandidateAttemptEntity();
         applyDomainToEntity(initialAttempt, candidateAttemptEntity);
         candidateAttemptEntity.setGupyJobId(request.jobId());
-        candidateAttemptEntity.setCallbackUrl(request.callbackUrl().toString());
+        candidateAttemptEntity.setCallbackUrl(request.callbackUrl() == null ? null : request.callbackUrl().toString());
         candidateAttemptEntity.setResultWebhookUrl(request.resultWebhookUrl() == null ? null : request.resultWebhookUrl().toString());
         return candidateAttemptEntity;
     }

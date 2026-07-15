@@ -69,4 +69,29 @@ public record CreateCandidateRequest(
         @Schema(example = "fail", allowableValues = {"pass", "fail", "none"})
         String previousResult
 ) {
+    public CreateCandidateRequest(
+            String companyId,
+            String documentId,
+            String testId,
+            String candidateName,
+            String candidateEmail,
+            URI resultWebhookUrl,
+            BigDecimal accommodationTimeMultiplier,
+            String candidateType,
+            String previousResult
+    ) {
+        this(
+                companyId,
+                documentId,
+                testId,
+                candidateName,
+                candidateEmail,
+                null,
+                null,
+                resultWebhookUrl,
+                accommodationTimeMultiplier,
+                candidateType,
+                previousResult
+        );
+    }
 }

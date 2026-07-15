@@ -35,7 +35,7 @@ O fluxo interno implementa `callback_url`, `job_id`, retorno assíncrono e redir
 | `result_webhook_url` | Recebido como `URI`; resultado é enviado por POST | Compatível |
 | Resposta `201` com `test_result_id` e `test_url` | Implementada | Compatível |
 | `GET /test/result/{resultId}` somente com `resultId` | Exige também `?company_id=...` | **Incompatível** |
-| Callback GET após conclusão | O navegador acessa `/candidate/attempts/{token}/redirect` e recebe `302` para `callback_url` | Compatível tecnicamente |
+| Callback GET após conclusão | O frontend navega para `callback_url`, fazendo o GET no navegador da pessoa candidata | Compatível tecnicamente |
 | Redirecionamento do candidato de volta à Gupy | Executado automaticamente após a resposta final | Compatível tecnicamente |
 | Payload `TestResult` | Campos principais são produzidos | Parcial |
 | Status `notStarted`, `paused`, `done` | Implementado | Compatível |
@@ -133,7 +133,7 @@ Campos atuais:
 | `candidate_type` | Não | Não há validação de enum no domínio. |
 | `previous_result` | Não | Não há validação de enum no domínio. |
 
-Após a conclusão, a API pública devolve `redirectUrl` à tela. O frontend navega para `/candidate/attempts/{token}/redirect`, e esse endpoint responde `302 Location` para a `callback_url` recebida da Gupy. Assim, o GET final ocorre no navegador da pessoa candidata.
+Após a conclusão, a API pública devolve `redirectUrl` à tela. O frontend navega diretamente para a `callback_url` recebida da Gupy, fazendo o GET final no navegador da pessoa candidata.
 
 Resposta:
 
@@ -247,8 +247,6 @@ sequenceDiagram
 
   Candidato->>Praxis: conclui teste
   Praxis-->>Candidato: redirectUrl após a resposta final
-  Candidato->>Praxis: GET /candidate/attempts/{token}/redirect
-  Praxis-->>Candidato: 302 Location: callback_url
   Candidato->>Gupy: GET callback_url
 ```
 
