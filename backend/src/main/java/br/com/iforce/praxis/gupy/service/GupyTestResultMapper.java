@@ -24,9 +24,11 @@ public class GupyTestResultMapper {
     private static final String TYPE_RESULT = "percentage";
 
     private final PraxisProperties praxisProperties;
+    private final JwtService jwtService;
 
     public GupyTestResultMapper(PraxisProperties praxisProperties, JwtService jwtService) {
         this.praxisProperties = praxisProperties;
+        this.jwtService = jwtService;
     }
 
     public TestResultResponse toResponse(CandidateAttempt attempt, PublishedSimulation simulation) {
@@ -40,7 +42,7 @@ public class GupyTestResultMapper {
                 praxisProperties.publicBaseUrl(),
                 toGupyStatus(attempt.status()),
                 recruiterResultPageUrl(attempt.id()),
-                candidateResultPageUrl(attempt.id()),
+                candidateResultPageUrl(attempt.empresaId(), attempt.id()),
                 attempt.status() == AttemptStatus.COMPLETED
                         ? attempt.results().stream()
                                 .sorted(Comparator.comparing(ResultItem::name))
@@ -66,7 +68,7 @@ public class GupyTestResultMapper {
                 praxisProperties.publicBaseUrl(),
                 toGupyStatus(attempt.getStatus()),
                 recruiterResultPageUrl(attempt.getId()),
-                candidateResultPageUrl(attempt.getId()),
+                candidateResultPageUrl(attempt.getEmpresaId(), attempt.getId()),
                 attempt.getStatus() == AttemptStatus.COMPLETED
                         ? attempt.getResultItems().stream()
                                 .sorted(Comparator.comparing(ResultItemEntity::getName))
@@ -117,8 +119,13 @@ public class GupyTestResultMapper {
         return frontendBaseUrl() + "/results/" + attemptId;
     }
 
-    private String candidateResultPageUrl(String attemptId) {
-        return frontendBaseUrl() + "/candidato/" + attemptId + "/resultado";
+    private String candidateResultPageUrl(String empresaId, String attemptId) {
+        String token = jwtService.generateCandidateResultToken(
+                empresaId,
+                attemptId,
+                praxisProperties.candidateResultTtlHours()
+        );
+        return frontendBaseUrl() + "/candidato/" + token + "/resultado";
     }
 
     private String frontendBaseUrl() {
