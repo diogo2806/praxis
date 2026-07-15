@@ -83,11 +83,10 @@ Crie um arquivo `.env` na raiz do repositório:
 ```bash
 POSTGRES_USER=praxis
 POSTGRES_PASSWORD=troque-esta-senha
-PRAXIS_INTEGRATION_TOKEN=valor-legado-exigido-pelo-compose
 PRAXIS_JWT_SECRET=troque-este-segredo
 ```
 
-> `PRAXIS_INTEGRATION_TOKEN` ainda é exigida pelo `docker-compose.yml`, mas não autentica `/test/**`. As integrações Gupy e Recrutei usam tokens gerados na Central de Integrações e persistidos somente como SHA-256 Base64URL na tabela `integration_tokens`.
+> As integrações Gupy e Recrutei não usam uma credencial global de ambiente. Cada token é gerado na Central de Integrações, vinculado à empresa e ao provedor, e persistido somente como SHA-256 Base64URL na tabela `integration_tokens`.
 
 ```bash
 docker compose up --build
@@ -102,4 +101,4 @@ A documentação detalhada de arquitetura, módulos, endpoints e decisões de pr
 
 ## Qualidade contínua
 
-Cada push e pull request para `main` executa build e testes do backend com PostgreSQL real via Testcontainers, além do build do frontend.
+Cada push e pull request para `main` executa a validação do Docker Compose sem credencial global de integração, o build e os testes do backend com PostgreSQL real via Testcontainers, além do build do frontend.
