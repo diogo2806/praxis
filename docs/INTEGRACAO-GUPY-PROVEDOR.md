@@ -2,7 +2,7 @@
 
 > **Propósito:** documentar o comportamento realmente implementado e comparar esse comportamento com o contrato oficial de provedores externos da Gupy.
 >
-> **Estado em 12/07/2026:** implementação técnica parcial. Os endpoints principais existem, mas a integração **não está pronta para ser declarada homologada** enquanto as incompatibilidades desta página não forem corrigidas e validadas em uma vaga real da Gupy.
+> **Estado em 15/07/2026:** contrato de entrada alinhado para `company_id`, `document_id`, `candidate_type` e `previous_result`. A integração ainda não deve ser declarada homologada antes da validação dos campos extras do resultado e da execução em uma vaga real da Gupy.
 
 Fonte oficial usada na revisão:
 
@@ -17,7 +17,7 @@ O Praxis expõe:
 - `GET /test/result/{resultId}` para consultar o resultado;
 - entrega assíncrona para `result_webhook_url` por outbox.
 
-O fluxo interno implementa `callback_url`, `job_id`, retorno assíncrono, redirecionamento final, consulta oficial do resultado e páginas web reais para recrutador e candidato. Permanecem divergências de tipos e enums que ainda impedem declarar a integração homologada.
+O fluxo interno implementa `callback_url`, `job_id`, retorno assíncrono, redirecionamento final, consulta oficial do resultado e páginas web reais para recrutador e candidato. O limite de entrada do `POST /test/candidate` recebe os identificadores oficiais como `int64`, valida faixa e enums antes do caso de uso, preserva pertencimento ao token e mantém uma identidade idempotente canônica.
 
 ## Compatibilidade com o contrato oficial
 
@@ -26,12 +26,12 @@ O fluxo interno implementa `callback_url`, `job_id`, retorno assíncrono, redire
 | Bearer token no cabeçalho `Authorization` | Validado por `IntegrationAuthService` contra `integration_tokens` | Compatível |
 | `GET /test` com `searchString`, `offset` e `limit` | Implementado; `limit` é normalizado entre 1 e 400 | Compatível |
 | Resposta `TestItems` com `limit`, `offset`, `total_tests` e `payload` | Implementada | Compatível |
-| `POST /test/candidate` | Implementado | Parcial |
-| `name`, `email`, `document_id`, `test_id`, `company_id` | Recebidos | Parcial: `document_id` e `company_id` são `String`, enquanto o contrato oficial os descreve como `int64` |
+| `POST /test/candidate` | Implementado com validação do contrato antes do fluxo | Compatível |
+| `name`, `email`, `document_id`, `test_id`, `company_id` | `document_id` e `company_id` são recebidos como inteiros JSON `int64` positivos | Compatível |
 | `callback_url` obrigatório | Recebido, validado, persistido e devolvido ao navegador após conclusão | Compatível tecnicamente |
 | `job_id` | Recebido e persistido; também participa da idempotência quando informado | Compatível |
-| `candidate_type` | Recebido, sem validação de enum no domínio | Parcial |
-| `previous_result` | Aceita qualquer texto; OpenAPI local exemplifica `pass`, `fail`, `none` | **Incompatível** com `fail` ou `null` do contrato oficial |
+| `candidate_type` | Enum de entrada restrito a `internal` e `external`; ausência e `null` são aceitos | Compatível |
+| `previous_result` | Aceita `fail`, ausência, `null` JSON e o valor textual `null` publicado pela Gupy; rejeita `none` e valores desconhecidos | Compatível |
 | `result_webhook_url` | Recebido como `URI`; resultado é enviado por POST | Compatível |
 | Resposta `201` com `test_result_id` e `test_url` | Implementada | Compatível |
 | `GET /test/result/{resultId}` somente com `resultId` | Implementado sem query adicional; empresa resolvida pelo token | Compatível |
@@ -61,7 +61,9 @@ Fluxo:
 
 O token é gerado pela Central de Integrações, usando os endpoints internos de integração. O valor em claro é retornado uma única vez; somente o hash é persistido.
 
-`PRAXIS_INTEGRATION_TOKEN` não é usado por `/test/**`. O `docker-compose.yml` ainda exige essa variável por legado de configuração, mas ela não substitui o token cadastrado no banco.
+O `company_id` cadastrado para a empresa integrada à Gupy deve conter a representação decimal positiva do identificador `int64` informado pela Gupy. O endpoint converte o inteiro recebido para essa forma canônica antes de validar o pertencimento ao token.
+
+`PRAXIS_INTEGRATION_TOKEN` não é usado por `/test/**`. A autenticação é feita pelo token cadastrado no banco.
 
 ## Contrato implementado
 
@@ -100,12 +102,12 @@ Exemplo:
 
 ### `POST /test/candidate`
 
-Body atualmente aceito:
+Body aceito no contrato Gupy:
 
 ```json
 {
-  "company_id": "empresa-123",
-  "document_id": "candidate-document-456",
+  "company_id": 1,
+  "document_id": 4398157034,
   "test_id": "sim-atendimento",
   "name": "Candidato Teste",
   "email": "candidato@example.com",
@@ -114,16 +116,16 @@ Body atualmente aceito:
   "result_webhook_url": "https://integracao.gupy.example/webhook",
   "accommodation_time_multiplier": 1.5,
   "candidate_type": "external",
-  "previous_result": "none"
+  "previous_result": null
 }
 ```
 
-Campos atuais:
+Campos:
 
 | Campo | Obrigatório no código | Observação |
 | --- | --- | --- |
-| `company_id` | Sim | Deve ser igual ao `company_id` associado ao token. |
-| `document_id` | Sim | Participa da chave idempotente. |
+| `company_id` | Sim | Inteiro JSON `int64` positivo. A forma decimal canônica deve ser igual ao `company_id` associado ao token. Strings, zero, negativos e valores fora de `int64` são rejeitados antes do fluxo. |
+| `document_id` | Sim | Inteiro JSON `int64` positivo. A forma decimal canônica participa da chave idempotente. |
 | `test_id` | Sim | Deve identificar avaliação publicada da mesma empresa. |
 | `name` | Sim | Nome da pessoa candidata. |
 | `email` | Sim | Validado como e-mail. |
@@ -131,8 +133,12 @@ Campos atuais:
 | `callback_url` | Sim | URL absoluta HTTP(S), persistida para o retorno final à Gupy. |
 | `result_webhook_url` | Não | Se presente, recebe `TestResult` por POST. |
 | `accommodation_time_multiplier` | Não | Extensão própria para acessibilidade. |
-| `candidate_type` | Não | Não há validação de enum no domínio. |
-| `previous_result` | Não | Não há validação de enum no domínio. |
+| `candidate_type` | Não | Aceita somente `internal`, `external`, ausência ou `null`. |
+| `previous_result` | Não | Aceita `fail`, ausência, `null` JSON ou o texto `null`; não aceita `none`. |
+
+A desserialização e a Bean Validation rejeitam identificadores em formato incorreto, ausentes, não positivos ou fora da faixa de `long`, além de enums desconhecidos, antes de `CandidateAttemptService.createOrReuse()` iniciar a resolução da simulação ou a persistência.
+
+O fluxo compartilhado com a Recrutei mantém o contrato textual próprio desse provedor por meio de um construtor interno explícito. Esse caminho não participa da desserialização do endpoint Gupy e não altera o tipo público de `company_id` ou `document_id`.
 
 Após a conclusão, a API pública devolve `redirectUrl` à tela. O frontend navega diretamente para a `callback_url` recebida da Gupy, fazendo o GET final no navegador da pessoa candidata.
 
@@ -148,10 +154,10 @@ Resposta:
 A idempotência usa o hash de:
 
 ```text
-empresaId | companyId | documentId | testId | jobId (quando informado)
+empresaId | companyId decimal canônico | documentId decimal canônico | testId | jobId (quando informado)
 ```
 
-Chamadas repetidas com a mesma combinação reutilizam a tentativa existente.
+Como os identificadores são desserializados como `Long` e convertidos uma única vez com `Long.toString`, chamadas equivalentes não produzem identidades distintas por espaços, sinal positivo, zeros à esquerda ou outra representação textual. Chamadas repetidas com a mesma combinação reutilizam a tentativa existente; vagas diferentes continuam produzindo tentativas distintas.
 
 ### `GET /test/result/{resultId}`
 
@@ -293,25 +299,23 @@ POST /api/v1/gupy/result-deliveries/{deliveryId}/reprocess
 
 ## Bloqueadores para homologação
 
-1. Definir compatibilidade de tipos para `company_id` e `document_id`.
-2. Aceitar e validar `previous_result` conforme `fail` ou `null`.
-3. Validar com a Gupy se campos extras no `TestResult` são aceitos ou removê-los do contrato externo.
-4. Executar homologação em vaga real, pois a própria documentação da Gupy informa que não há ambiente de sandbox para esse fluxo.
+1. Validar com a Gupy se campos extras no `TestResult` são aceitos ou removê-los do contrato externo.
+2. Executar homologação em vaga real, pois a própria documentação da Gupy informa que não há ambiente de sandbox para esse fluxo.
 
 ## Checklist de validação
 
 - [ ] Gerar token Gupy pela Central de Integrações.
-- [ ] Validar `GET /test`.
-- [ ] Validar paginação e busca.
-- [ ] Validar o payload oficial completo de `POST /test/candidate`.
-- [ ] Confirmar idempotência.
-- [ ] Confirmar `test_url` na página `/candidato/{token}`.
-- [ ] Concluir uma tentativa.
+- [ ] Validar `GET /test` em ambiente de homologação.
+- [x] Validar paginação e busca em testes automatizados.
+- [x] Validar tipos, faixa e enums do payload oficial de `POST /test/candidate` em testes automatizados.
+- [x] Confirmar idempotência e diferenciação por `job_id` em testes automatizados.
+- [ ] Confirmar `test_url` na página `/candidato/{token}` em ambiente integrado.
+- [ ] Concluir uma tentativa em vaga real.
 - [x] Validar callback e redirecionamento em testes automatizados; falta confirmar na homologação real da Gupy.
 - [x] Validar `GET /test/result/{resultId}` sem parâmetros extras e com isolamento pelo token.
 - [x] Validar páginas reais do `TestResult` para recrutador e candidato, incluindo isolamento de dados.
-- [ ] Testar `result_webhook_url`.
-- [ ] Testar retry, `408`, `429`, 4xx permanente e DLQ.
+- [ ] Testar `result_webhook_url` com a Gupy.
+- [x] Testar retry, 4xx permanente e DLQ em testes automatizados; falta validar a comunicação real.
 - [ ] Homologar com cliente e vaga real na Gupy.
 
 Última revisão: 15/07/2026.
