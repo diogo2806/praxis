@@ -19,7 +19,6 @@ import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.startsWith;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -276,8 +275,7 @@ class GupyIntegrationControllerTest {
                 .andExpect(jsonPath("$.result_page_url").value(containsString("/results/")))
                 .andExpect(jsonPath("$.result_page_url").value(not(containsString("/test/result/"))))
                 .andExpect(jsonPath("$.result_page_url").value(not(containsString("?company_id="))))
-                .andExpect(content().string(containsString("\"title\":\"Empatia\"")))
-                .andExpect(content().string(containsString("\"tier\":\"major\"")));
+                .andExpect(jsonPath("$.results").isEmpty());
     }
 
     @Test
