@@ -1,0 +1,45 @@
+name: Sincronizar INT2 com main
+
+on:
+  push:
+    branches:
+      - fix/int2-gupy-enums-20260715-1620
+    paths:
+      - .github/workflows/sync-int2-main.yml
+
+permissions:
+  contents: write
+
+jobs:
+  sync-main:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout da branch
+        uses: actions/checkout@v4
+        with:
+          ref: fix/int2-gupy-enums-20260715-1620
+          fetch-depth: 0
+
+      - name: Incorporar main preservando a entrega INT2
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git fetch origin main
+
+          if ! git merge --no-edit origin/main; then
+            conflicts="$(git diff --name-only --diff-filter=U)"
+            if [ "$conflicts" != "docs/INTEGRACAO-GUPY-PROVEDOR.md" ]; then
+              echo "Conflitos inesperados:"
+              echo "$conflicts"
+              exit 1
+            fi
+            git checkout --ours docs/INTEGRACAO-GUPY-PROVEDOR.md
+            git add docs/INTEGRACAO-GUPY-PROVEDOR.md
+            git commit --no-edit
+          fi
+
+          rm .github/workflows/sync-int2-main.yml
+          git add -A
+          git commit -m "chore: concluir sincronização do INT2 com main"
+          git push origin HEAD:fix/int2-gupy-enums-20260715-1620
