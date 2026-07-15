@@ -194,7 +194,8 @@ class GupyIntegrationControllerTest {
                 .andExpect(jsonPath("$.status").value("notStarted"))
                 .andExpect(jsonPath("$.score").doesNotExist())
                 .andExpect(jsonPath("$.company_result_string").exists())
-                .andExpect(jsonPath("$.result_page_url").value(containsString("/test/result/" + resultId)))
+                .andExpect(jsonPath("$.result_page_url").value(containsString("/results/")))
+                .andExpect(jsonPath("$.result_page_url").value(not(containsString("/test/result/"))))
                 .andExpect(jsonPath("$.result_page_url").value(not(containsString("?company_id="))))
                 .andExpect(content().string(containsString("\"title\":\"Empatia\"")))
                 .andExpect(content().string(containsString("\"tier\":\"major\"")));
