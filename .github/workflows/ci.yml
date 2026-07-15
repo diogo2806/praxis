@@ -46,7 +46,10 @@ jobs:
           set -o pipefail
           {
             echo "=== MIGRATIONS ==="
-            find src/main/resources/db/migration src/test/resources/db/migration -type f 2>/dev/null | sort
+            find src/main/resources/db/migration -type f | sort
+            if [ -d src/test/resources/db/migration ]; then
+              find src/test/resources/db/migration -type f | sort
+            fi
             echo "=== MAVEN ==="
           } | tee build.log
           mvn -B -ntp verify 2>&1 | tee -a build.log
