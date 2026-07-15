@@ -205,25 +205,88 @@ public class IntegrationManagementService {
         return getIntegration(provider);
     }
 
+    /**
+     * Registra atividade operacional interna. Integrações ATS exigem a sobrecarga com
+     * evidência de endpoint, impedindo promoção por chamadas legadas sem origem comprovada.
+     */
     @Transactional
     public void recordActivity(String empresaId, IntegrationProvider provider) {
+        if (usesAccessToken(provider)) {
+            return;
+        }
+
         IntegrationCatalog.Definition definition = IntegrationCatalog.requireDefinition(provider.name());
         EmpresaIntegrationEntity entity = empresaIntegrationRepository
                 .findFirstByEmpresaIdAndProvider(empresaId, provider)
                 .orElse(null);
-        if (entity == null) {
+        if (entity == null
+                || statusOf(entity) == IntegrationStatus.NAO_CONFIGURADA
+                || statusOf(entity) == IntegrationStatus.DESATIVADA) {
             return;
         }
 
-        Instant now = Instant.now();
-        if (provider != IntegrationProvider.CUSTOM_API) {
-            entity.setType(definition.type());
+        applyActivity(definition, entity, Instant.now());
+    }
+
+    /**
+     * Registra a evidência durável de uma requisição externa autenticada concluída.
+     * Persistência e auditoria participam da mesma transação do fluxo chamador; qualquer
+     * falha é propagada e não pode ser descartada silenciosamente.
+     */
+    @Transactional
+    public void recordActivity(
+            String empresaId,
+            IntegrationProvider provider,
+            String endpointEvidence
+    ) {
+        if (!usesAccessToken(provider)) {
+            throw new IllegalArgumentException("Evidência autenticada é suportada apenas para integrações ATS.");
         }
-        entity.setStatus(IntegrationStatus.CONECTADA);
-        entity.setLastSyncAt(now);
+        if (endpointEvidence == null || endpointEvidence.isBlank()) {
+            throw new IllegalArgumentException("Endpoint de evidência é obrigatório.");
+        }
+
+        IntegrationCatalog.Definition definition = IntegrationCatalog.requireDefinition(provider.name());
+        EmpresaIntegrationEntity entity = empresaIntegrationRepository
+                .findFirstByEmpresaIdAndProvider(empresaId, provider)
+                .orElseThrow(() -> new IllegalStateException(
+                        "Integração operacional não encontrada para " + provider.name() + "."
+                ));
+        IntegrationStatus previousStatus = statusOf(entity);
+
+        if (previousStatus == IntegrationStatus.DESATIVADA) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Integração está desativada.");
+        }
+        if (previousStatus == IntegrationStatus.NAO_CONFIGURADA) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Integração ainda não está configurada.");
+        }
+
+        Instant occurredAt = Instant.now();
+        EmpresaIntegrationEntity saved = applyActivity(definition, entity, occurredAt);
+        appendAuthenticatedActivityAudit(
+                empresaId,
+                provider,
+                previousStatus,
+                saved.getStatus(),
+                endpointEvidence.trim(),
+                occurredAt
+        );
+    }
+
+    private EmpresaIntegrationEntity applyActivity(
+            IntegrationCatalog.Definition definition,
+            EmpresaIntegrationEntity entity,
+            Instant occurredAt
+    ) {
+        IntegrationStatus previousStatus = statusOf(entity);
+        entity.setType(definition.type());
+        if (previousStatus == IntegrationStatus.PENDENTE || previousStatus == IntegrationStatus.ERRO) {
+            entity.setStatus(IntegrationStatus.CONECTADA);
+        }
+        entity.setLastSyncAt(occurredAt);
         entity.setLastErrorMessage(null);
-        entity.setUpdatedAt(now);
-        empresaIntegrationRepository.save(entity);
+        entity.setUpdatedAt(occurredAt);
+        return empresaIntegrationRepository.save(entity);
     }
 
     @Transactional
@@ -480,6 +543,42 @@ public class IntegrationManagementService {
         );
     }
 
+    private void appendAuthenticatedActivityAudit(
+            String empresaId,
+            IntegrationProvider provider,
+            IntegrationStatus previousStatus,
+            IntegrationStatus nextStatus,
+            String endpointEvidence,
+            Instant occurredAt
+    ) {
+        AuditEventType eventType = previousStatus == IntegrationStatus.PENDENTE
+                ? AuditEventType.INTEGRATION_CONNECTED
+                : previousStatus == IntegrationStatus.ERRO
+                ? AuditEventType.INTEGRATION_RECOVERED
+                : AuditEventType.INTEGRATION_ACTIVITY_RECORDED;
+        String message = switch (eventType) {
+            case INTEGRATION_CONNECTED -> "Primeira conexão autenticada da integração " + provider.name() + ".";
+            case INTEGRATION_RECOVERED -> "Integração " + provider.name() + " recuperada por atividade autenticada.";
+            default -> "Atividade autenticada da integração " + provider.name() + " registrada.";
+        };
+
+        auditEventService.appendIntegrationEvent(
+                empresaId,
+                null,
+                provider.name(),
+                eventType,
+                message,
+                authenticatedActivityMetadata(
+                        empresaId,
+                        provider,
+                        previousStatus,
+                        nextStatus,
+                        endpointEvidence,
+                        occurredAt
+                )
+        );
+    }
+
     private String auditMetadata(
             String empresaId,
             IntegrationProvider provider,
@@ -500,6 +599,28 @@ public class IntegrationManagementService {
             return objectMapper.writeValueAsString(metadata);
         } catch (JsonProcessingException exception) {
             return "{\"provider\":\"" + provider.name() + "\"}";
+        }
+    }
+
+    private String authenticatedActivityMetadata(
+            String empresaId,
+            IntegrationProvider provider,
+            IntegrationStatus previousStatus,
+            IntegrationStatus nextStatus,
+            String endpointEvidence,
+            Instant occurredAt
+    ) {
+        Map<String, Object> metadata = new LinkedHashMap<>();
+        metadata.put("empresaId", empresaId);
+        metadata.put("provider", provider.name());
+        metadata.put("endpoint", endpointEvidence);
+        metadata.put("dataHora", occurredAt.toString());
+        metadata.put("statusAnterior", previousStatus.name());
+        metadata.put("statusNovo", nextStatus.name());
+        try {
+            return objectMapper.writeValueAsString(metadata);
+        } catch (JsonProcessingException exception) {
+            throw new IllegalStateException("Não foi possível serializar a evidência de atividade ATS.", exception);
         }
     }
 
