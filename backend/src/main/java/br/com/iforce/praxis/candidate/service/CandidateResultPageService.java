@@ -36,7 +36,7 @@ public class CandidateResultPageService {
 
     @Transactional(readOnly = true)
     public CandidateResultPageResponse findByToken(String token) {
-        JwtService.CandidateAttemptToken candidateToken = parseToken(token);
+        JwtService.CandidateResultToken candidateToken = parseToken(token);
         CandidateAttemptEntity entity = candidateAttemptRepository
                 .findByEmpresaIdAndId(candidateToken.empresaId(), candidateToken.attemptId())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Tentativa não encontrada."));
@@ -53,9 +53,9 @@ public class CandidateResultPageService {
         );
     }
 
-    private JwtService.CandidateAttemptToken parseToken(String token) {
+    private JwtService.CandidateResultToken parseToken(String token) {
         try {
-            return jwtService.parseCandidateAttemptToken(token);
+            return jwtService.parseCandidateResultToken(token);
         } catch (RuntimeException exception) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Token público de candidato inválido.");
         }
