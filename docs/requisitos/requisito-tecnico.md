@@ -1,33 +1,32 @@
 # Requisitos técnicos pendentes — praxis
 
-Status: atualizado em 2026-07-15 após conclusão de `INT15`.
+Status: atualizado em 2026-07-15 após auditoria da branch main.
 
 Este arquivo contém somente pendências técnicas implementáveis e comprovadas no sistema. Não inclui CI/CD, testes, QA, métricas observacionais, publicação ou marketing.
 
 ## Contexto da auditoria
 
-- Commit auditado da branch principal: `689bad357105b10d57ce84d56e52ddf9a0141a0a`.
+- Commit auditado da branch principal: `2c3e118ac797bd52ba02553f53d6f9a298f7e296`.
 - Finalidade identificada: plataforma de avaliações situacionais para recrutamento, com critérios explícitos, score determinístico, trilha auditável e integração com ATS.
 - Stack principal: Java 21, Spring Boot 3.5, Spring Security, JPA, PostgreSQL/Flyway, React 19, TanStack Start/Router e TypeScript.
 - Arquitetura predominante: frontend React consumindo API Spring Boot, persistência PostgreSQL, autenticação JWT nas rotas internas, Bearer token nas integrações e entrega assíncrona por outbox transacional.
-- Fluxos revisados: catálogo Gupy, criação idempotente de tentativas, emissão de links públicos, execução do candidato, cálculo e entrega de resultado, callback, página pública de resultado, outbox por destino e documentação de compatibilidade.
+- Fluxos revisados: catálogo Gupy, criação idempotente de tentativas, emissão de links públicos, execução do candidato, cálculo e entrega de resultado, callback, página pública de resultado, outbox por destino, proxy SSR das rotas públicas e documentação de compatibilidade.
 
-## 1. Resultado público da integração Gupy
+## 1. Documentação do contrato Gupy
 
 | ID | Tarefa técnica | Critério de conclusão | Status |
 |---|---|---|---|
-| INT14 | Emitir uma URL de resultado da pessoa candidata que seja realmente consumível pelo endpoint público e tenha validade própria para consulta posterior. | `result_candidate_page_url` contém credencial assinada aceita por `/candidate/results/{token}`; a consulta não reutiliza ID interno nem depende do TTL curto da execução; conteúdo e escopo permanecem limitados ao candidato. | ⬜ Pendente |
+| INT16 | Alinhar novamente o documento do provedor Gupy à credencial pública de resultado efetivamente implementada na `main`. | O resumo, a matriz de compatibilidade, o exemplo de `TestResult`, a descrição da página pública e o diagrama de fluxo mostram `result_candidate_page_url` com JWT `candidate_result`, TTL próprio e consumo por `CandidateResultPageService`; `INT14` não é mais citado como pendente e a ausência de homologação externa continua explícita. | ⬜ Pendente |
 
-### INT14 — credencial e validade da página pública de resultado
+### INT16 — documentação desatualizada após implementação da credencial de resultado
 
 | Caminho completo | Método/campo/contrato | Como está | O que fazer |
 |---|---|---|---|
-| `backend/src/main/java/br/com/iforce/praxis/gupy/service/GupyTestResultMapper.java` | `candidateResultPageUrl()` e construtor | O mapper publica `/candidato/{attemptId}/resultado`; recebe `JwtService`, mas não o armazena nem gera credencial assinada. O valor produzido é um ID interno `att_...`. | Gerar uma credencial específica de consulta de resultado, com empresa, tentativa, tipo e expiração próprios, e inserir essa credencial na URL publicada. |
-| `backend/src/main/java/br/com/iforce/praxis/candidate/service/CandidateResultPageService.java` | `findByToken()` e `parseToken()` | O fluxo alcançável exige `JwtService.parseCandidateResultToken()`. Portanto, a URL atualmente produzida pelo mapper é rejeitada com `401` antes da consulta da tentativa. | Aceitar somente o novo tipo de token de resultado e resolver empresa/tentativa a partir dele; não adicionar fallback para `attemptId` cru. |
-| `backend/src/main/java/br/com/iforce/praxis/auth/service/JwtService.java` | `generateCandidateResultToken()` e `parseCandidateResultToken()` | O tipo `candidate_result` e o parser correspondente já existem, com empresa, tentativa e TTL fornecido pelo chamador. O mapper Gupy ainda não usa esse gerador. | Injetar e usar o gerador existente na montagem de `result_candidate_page_url`, sem reutilizar o token de execução. |
-| `backend/src/main/java/br/com/iforce/praxis/config/PraxisProperties.java` | `candidateResultTtlHours` | A validade específica do resultado já existe, com padrão de 720 horas, mas não é consumida pelo mapper Gupy. | Usar `candidateResultTtlHours` somente na geração da credencial publicada em `result_candidate_page_url`. |
-| `frontend/src/routes/candidato.$token.resultado.tsx` | parâmetro `$token` | A tela e o cliente HTTP já tratam o parâmetro como token e apresentam somente estado, avaliação, conclusão e retorno ao ATS. | Preservar esse contrato limitado e garantir que links de continuar avaliação não reutilizem token de resultado como token de execução. |
+| `docs/INTEGRACAO-GUPY-PROVEDOR.md` | resumo executivo e estado da integração | O documento afirma que `result_candidate_page_url` ainda contém o identificador interno da tentativa e permanece bloqueada por `INT14`. Na `main`, `GupyTestResultMapper.candidateResultPageUrl()` gera JWT específico de resultado e o insere na URL. | Remover a divergência já concluída, registrar a URL assinada como comportamento implementado e manter separada a ressalva de homologação externa. |
+| `docs/INTEGRACAO-GUPY-PROVEDOR.md` | matriz de compatibilidade de `result_candidate_page_url` | A matriz descreve `/candidato/{attemptId}/resultado` como incompatível. O mapper atual chama `JwtService.generateCandidateResultToken(empresaId, attemptId, candidateResultTtlHours)` e publica `/candidato/{token}/resultado`. | Atualizar caminho, credencial, validade e estado de compatibilidade técnica conforme o fluxo real. |
+| `docs/INTEGRACAO-GUPY-PROVEDOR.md` | exemplo de `TestResult` e explicação subsequente | O JSON usa `att_123` no segmento público e o texto afirma que a consulta falha com `401`. O endpoint alcançável usa `JwtService.parseCandidateResultToken()` e resolve empresa e tentativa a partir do token assinado produzido pelo mapper. | Substituir o identificador cru por um marcador de JWT de resultado e descrever a validação de tipo, assinatura, expiração, empresa e tentativa. |
+| `docs/INTEGRACAO-GUPY-PROVEDOR.md` | descrição da página pública e diagrama do fluxo | O texto e o fluxo ainda tratam a página como inacessível por incompatibilidade de credencial. A implementação atual alcança `CandidateResultPageService.findByToken()` com token `candidate_result` e mantém a resposta limitada a avaliação, estado, conclusão e retorno ao ATS. | Documentar o fluxo alcançável e preservar a distinção entre token de execução e token de consulta de resultado. |
 
 ## Ordem recomendada
 
-1. `INT14` — corrigir a URL pública que hoje é rejeitada pelo próprio endpoint.
+1. `INT16` — corrigir o contrato documental que voltou a representar uma versão anterior da implementação.
