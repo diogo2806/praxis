@@ -2,7 +2,7 @@
 
 > **Propósito:** documentar o comportamento realmente implementado e comparar esse comportamento com o contrato oficial de provedores externos da Gupy.
 >
-> **Estado em 12/07/2026:** implementação técnica parcial. Os endpoints principais existem, mas a integração **não está pronta para ser declarada homologada** enquanto as incompatibilidades desta página não forem corrigidas e validadas em uma vaga real da Gupy.
+> **Estado em 15/07/2026:** implementação técnica parcial. Os endpoints principais existem, mas a integração **não está pronta para ser declarada homologada** enquanto as incompatibilidades desta página não forem corrigidas e validadas em uma vaga real da Gupy.
 
 Fonte oficial usada na revisão:
 
@@ -17,7 +17,7 @@ O Praxis expõe:
 - `GET /test/result/{resultId}` para consultar o resultado;
 - entrega assíncrona para `result_webhook_url` por outbox.
 
-O fluxo interno implementa `callback_url`, `job_id`, retorno assíncrono, redirecionamento final, consulta oficial do resultado e páginas web reais para recrutador e candidato. Permanecem divergências de tipos e enums que ainda impedem declarar a integração homologada.
+O fluxo interno implementa `callback_url`, `job_id`, retorno assíncrono, redirecionamento final, consulta oficial do resultado e páginas web reais para recrutador e candidato. Permanecem divergências de tipos e campos extras no resultado que ainda impedem declarar a integração homologada.
 
 ## Compatibilidade com o contrato oficial
 
@@ -30,8 +30,8 @@ O fluxo interno implementa `callback_url`, `job_id`, retorno assíncrono, redire
 | `name`, `email`, `document_id`, `test_id`, `company_id` | Recebidos | Parcial: `document_id` e `company_id` são `String`, enquanto o contrato oficial os descreve como `int64` |
 | `callback_url` obrigatório | Recebido, validado, persistido e devolvido ao navegador após conclusão | Compatível tecnicamente |
 | `job_id` | Recebido e persistido; também participa da idempotência quando informado | Compatível |
-| `candidate_type` | Recebido, sem validação de enum no domínio | Parcial |
-| `previous_result` | Aceita qualquer texto; OpenAPI local exemplifica `pass`, `fail`, `none` | **Incompatível** com `fail` ou `null` do contrato oficial |
+| `candidate_type` | Desserializado como enum estrito; aceita somente `internal`, `external` ou ausência | Compatível |
+| `previous_result` | Desserializado como enum estrito; aceita somente `fail` ou ausência/JSON `null`; `pass`, `none` e textos desconhecidos são rejeitados | Compatível |
 | `result_webhook_url` | Recebido como `URI`; resultado é enviado por POST | Compatível |
 | Resposta `201` com `test_result_id` e `test_url` | Implementada | Compatível |
 | `GET /test/result/{resultId}` somente com `resultId` | Implementado sem query adicional; empresa resolvida pelo token | Compatível |
@@ -114,7 +114,7 @@ Body atualmente aceito:
   "result_webhook_url": "https://integracao.gupy.example/webhook",
   "accommodation_time_multiplier": 1.5,
   "candidate_type": "external",
-  "previous_result": "none"
+  "previous_result": null
 }
 ```
 
@@ -131,8 +131,8 @@ Campos atuais:
 | `callback_url` | Sim | URL absoluta HTTP(S), persistida para o retorno final à Gupy. |
 | `result_webhook_url` | Não | Se presente, recebe `TestResult` por POST. |
 | `accommodation_time_multiplier` | Não | Extensão própria para acessibilidade. |
-| `candidate_type` | Não | Não há validação de enum no domínio. |
-| `previous_result` | Não | Não há validação de enum no domínio. |
+| `candidate_type` | Não | Enum estrito: aceita `internal`, `external` ou ausência; qualquer outro texto retorna `400`. |
+| `previous_result` | Não | Enum estrito: aceita `fail` ou ausência/JSON `null`; não converte ausência em `none` e rejeita a string `"null"`. |
 
 Após a conclusão, a API pública devolve `redirectUrl` à tela. O frontend navega diretamente para a `callback_url` recebida da Gupy, fazendo o GET final no navegador da pessoa candidata.
 
@@ -294,9 +294,8 @@ POST /api/v1/gupy/result-deliveries/{deliveryId}/reprocess
 ## Bloqueadores para homologação
 
 1. Definir compatibilidade de tipos para `company_id` e `document_id`.
-2. Aceitar e validar `previous_result` conforme `fail` ou `null`.
-3. Validar com a Gupy se campos extras no `TestResult` são aceitos ou removê-los do contrato externo.
-4. Executar homologação em vaga real, pois a própria documentação da Gupy informa que não há ambiente de sandbox para esse fluxo.
+2. Validar com a Gupy se campos extras no `TestResult` são aceitos ou removê-los do contrato externo.
+3. Executar homologação em vaga real, pois a própria documentação da Gupy informa que não há ambiente de sandbox para esse fluxo.
 
 ## Checklist de validação
 
@@ -304,6 +303,7 @@ POST /api/v1/gupy/result-deliveries/{deliveryId}/reprocess
 - [ ] Validar `GET /test`.
 - [ ] Validar paginação e busca.
 - [ ] Validar o payload oficial completo de `POST /test/candidate`.
+- [x] Validar `candidate_type` e `previous_result`, incluindo rejeição de valores desconhecidos e preservação de ausência como JSON `null`.
 - [ ] Confirmar idempotência.
 - [ ] Confirmar `test_url` na página `/candidato/{token}`.
 - [ ] Concluir uma tentativa.
