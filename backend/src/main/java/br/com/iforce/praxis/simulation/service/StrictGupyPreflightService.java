@@ -12,8 +12,10 @@ import br.com.iforce.praxis.simulation.model.SimulationVersionStatus;
 import br.com.iforce.praxis.simulation.persistence.entity.SimulationVersionEntity;
 import br.com.iforce.praxis.simulation.persistence.repository.SimulationVersionRepository;
 import org.springframework.context.annotation.Primary;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -33,6 +35,7 @@ public class StrictGupyPreflightService extends GupyPreflightService {
 
     private static final String GUPY_PROVIDER = "gupy";
 
+    private final SimulationVersionRepository simulationVersionRepository;
     private final CurrentEmpresaService currentEmpresaService;
     private final IntegrationTokenRepository integrationTokenRepository;
 
@@ -51,6 +54,7 @@ public class StrictGupyPreflightService extends GupyPreflightService {
                 currentEmpresaService,
                 empresaRepository
         );
+        this.simulationVersionRepository = simulationVersionRepository;
         this.currentEmpresaService = currentEmpresaService;
         this.integrationTokenRepository = integrationTokenRepository;
     }
@@ -58,13 +62,12 @@ public class StrictGupyPreflightService extends GupyPreflightService {
     /**
      * Checagem usada pela publicação. Mantém a validação estrutural e consulta
      * o repositório real de tokens, mas não obriga a empresa a usar Gupy para
-     * conseguir publicar uma avaliação destinada a link direto ou outro ATS.
+     * publicar uma avaliação destinada a link direto ou outro ATS.
      */
     @Override
     public GupyPreflightResponse evaluate(SimulationVersionEntity version) {
         GupyPreflightResponse base = super.evaluate(version);
-        List<GupyPreflightCheckResponse> checks = replaceTokenCheck(base.checks(), false);
-        return response(base, checks);
+        return response(base, replaceTokenCheck(base.checks(), false));
     }
 
     /**
@@ -74,9 +77,27 @@ public class StrictGupyPreflightService extends GupyPreflightService {
     @Override
     @Transactional(readOnly = true)
     public GupyPreflightResponse getPreflight(String simulationId, int versionNumber) {
-        GupyPreflightResponse base = super.getPreflight(simulationId, versionNumber);
+        String empresaId = currentEmpresaService.requiredEmpresaId();
+        SimulationVersionEntity version = simulationVersionRepository
+                .findBySimulationEmpresaIdAndSimulationIdAndVersionNumber(
+                        empresaId,
+                        simulationId,
+                        versionNumber
+                )
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "Não encontramos esta versão do teste."
+                ));
+        if (version.getStatus() == SimulationVersionStatus.ARCHIVED) {
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "Versões arquivadas não podem passar no preflight Gupy."
+            );
+        }
+
+        GupyPreflightResponse base = evaluate(version);
         List<GupyPreflightCheckResponse> checks = new ArrayList<>();
-        checks.add(publicationStatus(base));
+        checks.add(publicationStatus(version));
         checks.addAll(replaceTokenCheck(base.checks(), true));
         return response(base, checks);
     }
@@ -96,32 +117,14 @@ public class StrictGupyPreflightService extends GupyPreflightService {
         return checks;
     }
 
-    private GupyPreflightCheckResponse publicationStatus(GupyPreflightResponse base) {
-        // super.getPreflight() já resolveu a versão e rejeitou versões arquivadas.
-        // O status é consultado novamente pela chave do retorno para manter este
-        // serviço sem duplicar a resolução multiempresa da classe-base.
-        return findPublishedStatus(base.simulationId(), base.versionNumber());
-    }
-
-    private GupyPreflightCheckResponse findPublishedStatus(String simulationId, int versionNumber) {
-        // A classe-base não expõe a entidade resolvida. Para evitar uma segunda
-        // fonte de verdade, a própria avaliação estrutural só é considerada apta
-        // para ativação quando a versão retornada pelo catálogo já está publicada.
-        // O endpoint chama getPreflight apenas para versões alcançáveis da empresa.
-        GupyPreflightResponse current = super.getPreflight(simulationId, versionNumber);
-        boolean published = current.checks().stream()
-                .noneMatch(check -> check.code() == GupyPreflightCheckCode.PUBLICATION_STATUS
-                        && check.status() == GupyPreflightCheckStatus.BLOCKER);
-        // O contrato-base ainda não possui esta checagem; o status efetivo será
-        // confirmado pelo serviço de catálogo no método sobrescrito abaixo.
-        return publishedStatusCheck(simulationId, versionNumber);
-    }
-
-    private GupyPreflightCheckResponse publishedStatusCheck(String simulationId, int versionNumber) {
-        // Implementação substituída em publicationStatus(SimulationVersionEntity)
-        // quando o estado está disponível durante evaluate. Este método existe
-        // apenas para manter o contrato de resposta e é sobrescrito pelo check
-        // calculado no getPreflightWithVersion abaixo.
+    private GupyPreflightCheckResponse publicationStatus(SimulationVersionEntity version) {
+        if (version.getStatus() != SimulationVersionStatus.PUBLISHED) {
+            return new GupyPreflightCheckResponse(
+                    GupyPreflightCheckCode.PUBLICATION_STATUS,
+                    GupyPreflightCheckStatus.BLOCKER,
+                    "Publique a versão no Práxis antes de ativá-la no catálogo da Gupy."
+            );
+        }
         return new GupyPreflightCheckResponse(
                 GupyPreflightCheckCode.PUBLICATION_STATUS,
                 GupyPreflightCheckStatus.OK,
