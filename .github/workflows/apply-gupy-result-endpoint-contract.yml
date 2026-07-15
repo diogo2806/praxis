@@ -1,18 +1,20 @@
 name: Apply Gupy result endpoint contract
 
 on:
-  push:
+  pull_request:
     branches:
-      - fix/gupy-result-endpoint-contract-20260715-01
-    paths:
-      - .github/scripts/apply_gupy_result_endpoint_contract.py
-      - .github/workflows/apply-gupy-result-endpoint-contract.yml
+      - main
+    types:
+      - opened
+      - reopened
+      - synchronize
 
 permissions:
   contents: write
 
 jobs:
   apply-contract:
+    if: github.head_ref == 'fix/gupy-result-endpoint-contract-20260715-01'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout branch
