@@ -1,42 +1,24 @@
 package br.com.iforce.praxis.simulation.controller;
 
 import org.junit.jupiter.api.Test;
-
 import org.springframework.beans.factory.annotation.Autowired;
-
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-
 import org.springframework.boot.test.context.SpringBootTest;
-
 import org.springframework.http.MediaType;
-
 import org.springframework.test.context.jdbc.Sql;
-
 import org.springframework.test.web.servlet.MockMvc;
-
 import org.springframework.test.web.servlet.MvcResult;
 
-
 import static org.hamcrest.Matchers.containsString;
-
 import static org.hamcrest.Matchers.empty;
-
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
-
 import static org.hamcrest.Matchers.hasItem;
-
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
-
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
-
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -306,7 +288,7 @@ class SimulationAdminControllerTest {
 
     @Test
     @Sql(statements = {
-            "INSERT INTO candidate_attempts (id, empresa_id, company_id, result_id, simulation_id, simulation_version_id, simulation_version_number, idempotency_key, candidate_name, candidate_email, result_webhook_url, status, score, decision, human_review_required, company_result_string, created_at, started_at, finished_at, anonymized_at) VALUES ('attempt-delete-guard-1', 'empresa-1', 'empresa-123', 'result-delete-guard-1', 'sim-atendimento-caos', 1, 1, 'idem-delete-guard-1', 'Ana Costa', 'ana@example.com', 'https://cliente.gupy.io/result-webhook', 'COMPLETED', 85, 'RECOMMEND_INTERVIEW', FALSE, 'Resultado Ana', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, NULL)"
+            "INSERT INTO candidate_attempts (id, empresa_id, company_id, result_id, simulation_id, simulation_version_id, simulation_version_number, idempotency_key, candidate_name, candidate_email, result_webhook_url, status, score, decision, human_review_required, company_result_string, created_at, started_at, finished_at, anonymized_at) VALUES ('attempt-delete-guard-1', 'empresa-1', '1', 'result-delete-guard-1', 'sim-atendimento-caos', 1, 1, 'idem-delete-guard-1', 'Ana Costa', 'ana@example.com', 'https://cliente.gupy.io/result-webhook', 'COMPLETED', 85, 'RECOMMEND_INTERVIEW', FALSE, 'Resultado Ana', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, NULL)"
     })
     void deleteSimulationWithCandidateAttemptsReturnsConflict() throws Exception {
         mockMvc.perform(delete("/api/v1/simulations/sim-atendimento-caos"))
@@ -341,8 +323,8 @@ class SimulationAdminControllerTest {
     @Test
     @Sql(statements = {
             "UPDATE simulation_competencies SET target_score = 82 WHERE simulation_version_id = 1 AND name = 'Empatia'",
-            "INSERT INTO candidate_attempts (id, empresa_id, company_id, result_id, simulation_id, simulation_version_id, simulation_version_number, idempotency_key, candidate_name, candidate_email, result_webhook_url, status, score, decision, human_review_required, company_result_string, created_at, started_at, finished_at, anonymized_at) VALUES ('attempt-match-1', 'empresa-1', 'empresa-123', 'result-match-1', 'sim-atendimento-caos', 1, 1, 'idem-match-1', 'Ana Costa', 'ana@example.com', 'https://cliente.gupy.io/result-webhook', 'COMPLETED', 85, 'RECOMMEND_INTERVIEW', FALSE, 'Resultado Ana', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, NULL)",
-            "INSERT INTO candidate_attempts (id, empresa_id, company_id, result_id, simulation_id, simulation_version_id, simulation_version_number, idempotency_key, candidate_name, candidate_email, result_webhook_url, status, score, decision, human_review_required, company_result_string, created_at, started_at, finished_at, anonymized_at) VALUES ('attempt-match-2', 'empresa-1', 'empresa-123', 'result-match-2', 'sim-atendimento-caos', 1, 1, 'idem-match-2', 'Bruno Lima', 'bruno@example.com', 'https://cliente.gupy.io/result-webhook', 'COMPLETED', 85, 'RECOMMEND_INTERVIEW', FALSE, 'Resultado Bruno', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, NULL)",
+            "INSERT INTO candidate_attempts (id, empresa_id, company_id, result_id, simulation_id, simulation_version_id, simulation_version_number, idempotency_key, candidate_name, candidate_email, result_webhook_url, status, score, decision, human_review_required, company_result_string, created_at, started_at, finished_at, anonymized_at) VALUES ('attempt-match-1', 'empresa-1', '1', 'result-match-1', 'sim-atendimento-caos', 1, 1, 'idem-match-1', 'Ana Costa', 'ana@example.com', 'https://cliente.gupy.io/result-webhook', 'COMPLETED', 85, 'RECOMMEND_INTERVIEW', FALSE, 'Resultado Ana', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, NULL)",
+            "INSERT INTO candidate_attempts (id, empresa_id, company_id, result_id, simulation_id, simulation_version_id, simulation_version_number, idempotency_key, candidate_name, candidate_email, result_webhook_url, status, score, decision, human_review_required, company_result_string, created_at, started_at, finished_at, anonymized_at) VALUES ('attempt-match-2', 'empresa-1', '1', 'result-match-2', 'sim-atendimento-caos', 1, 1, 'idem-match-2', 'Bruno Lima', 'bruno@example.com', 'https://cliente.gupy.io/result-webhook', 'COMPLETED', 85, 'RECOMMEND_INTERVIEW', FALSE, 'Resultado Bruno', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, NULL)",
             "INSERT INTO result_items (candidate_attempt_id, name, score, tier) VALUES ('attempt-match-1', 'Empatia', 94, 'MAJOR')",
             "INSERT INTO result_items (candidate_attempt_id, name, score, tier) VALUES ('attempt-match-1', 'Resolucao de conflito', 76, 'MAJOR')",
             "INSERT INTO result_items (candidate_attempt_id, name, score, tier) VALUES ('attempt-match-1', 'Aderencia a politica', 68, 'MINOR')",
@@ -368,8 +350,8 @@ class SimulationAdminControllerTest {
     @Test
     @Sql(scripts = "/empresa-isolation-fixtures.sql")
     @Sql(statements = {
-            "INSERT INTO candidate_attempts (id, empresa_id, company_id, result_id, simulation_id, simulation_version_id, simulation_version_number, idempotency_key, candidate_name, candidate_email, result_webhook_url, status, score, decision, human_review_required, company_result_string, created_at, started_at, finished_at, anonymized_at) VALUES ('attempt-match-safe', 'empresa-1', 'empresa-123', 'result-match-safe', 'sim-atendimento-caos', 1, 1, 'idem-match-safe', 'Carla Nunes', 'carla@example.com', 'https://cliente.gupy.io/result-webhook', 'COMPLETED', 80, 'RECOMMEND_INTERVIEW', FALSE, 'Resultado Carla', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, NULL)",
-            "INSERT INTO candidate_attempts (id, empresa_id, company_id, result_id, simulation_id, simulation_version_id, simulation_version_number, idempotency_key, candidate_name, candidate_email, result_webhook_url, status, score, decision, human_review_required, company_result_string, created_at, started_at, finished_at, anonymized_at) VALUES ('attempt-match-empresa2', 'empresa-2', 'empresa-456', 'result-match-empresa2', 'sim-empresa2', 9001, 1, 'idem-match-empresa2', 'Outro Empresa', 'empresa2@example.com', 'https://cliente.gupy.io/result-webhook', 'COMPLETED', 88, 'RECOMMEND_INTERVIEW', FALSE, 'Resultado Empresa 2', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, NULL)"
+            "INSERT INTO candidate_attempts (id, empresa_id, company_id, result_id, simulation_id, simulation_version_id, simulation_version_number, idempotency_key, candidate_name, candidate_email, result_webhook_url, status, score, decision, human_review_required, company_result_string, created_at, started_at, finished_at, anonymized_at) VALUES ('attempt-match-safe', 'empresa-1', '1', 'result-match-safe', 'sim-atendimento-caos', 1, 1, 'idem-match-safe', 'Carla Nunes', 'carla@example.com', 'https://cliente.gupy.io/result-webhook', 'COMPLETED', 80, 'RECOMMEND_INTERVIEW', FALSE, 'Resultado Carla', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, NULL)",
+            "INSERT INTO candidate_attempts (id, empresa_id, company_id, result_id, simulation_id, simulation_version_id, simulation_version_number, idempotency_key, candidate_name, candidate_email, result_webhook_url, status, score, decision, human_review_required, company_result_string, created_at, started_at, finished_at, anonymized_at) VALUES ('attempt-match-empresa2', 'empresa-2', '2', 'result-match-empresa2', 'sim-empresa2', 9001, 1, 'idem-match-empresa2', 'Outro Empresa', 'empresa2@example.com', 'https://cliente.gupy.io/result-webhook', 'COMPLETED', 88, 'RECOMMEND_INTERVIEW', FALSE, 'Resultado Empresa 2', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, NULL)"
     })
     void talentMatchRejectsCrossEmpresaAttemptIds() throws Exception {
         mockMvc.perform(get("/api/v1/simulations/sim-atendimento-caos/versions/1/talent-match")
@@ -378,19 +360,20 @@ class SimulationAdminControllerTest {
     }
 
     private String validCandidateRequest(String documentId) {
+        long numericDocumentId = Integer.toUnsignedLong(documentId.hashCode()) + 1L;
         return """
                 {
-                  "company_id": "empresa-123",
-                  "document_id": "%s",
+                  "company_id": 1,
+                  "document_id": %d,
                   "test_id": "sim-atendimento-caos",
                   "name": "Thiago Souza",
                   "email": "thiago@example.com",
                   "callback_url": "https://cliente.gupy.io/candidate-return",
                   "result_webhook_url": "https://cliente.gupy.io/result-webhook",
                   "candidate_type": "external",
-                  "previous_result": "none"
+                  "previous_result": null
                 }
-                """.formatted(documentId);
+                """.formatted(numericDocumentId);
     }
 
     private String validOptionRequest(String text, int empathyScore, int resolutionScore) {
