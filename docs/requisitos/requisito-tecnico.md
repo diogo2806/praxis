@@ -1,6 +1,6 @@
 # Requisitos técnicos pendentes — praxis
 
-Status: atualizado em 2026-07-15 após auditoria da branch `main`.
+Status: atualizado em 2026-07-15 após implementação de `SEC10`.
 
 Este arquivo contém somente pendências técnicas implementáveis e comprovadas no sistema. Não inclui CI/CD, testes, QA, métricas observacionais, publicação ou marketing.
 
@@ -13,28 +13,12 @@ Este arquivo contém somente pendências técnicas implementáveis e comprovadas
 
 ## Contexto da auditoria
 
-- Commit auditado da branch principal: `8bb1abc70dc517be05dd91f11d61d11e14e3ed42`.
+- Commit base da branch principal: `f110bd93bd1aef97f954df504864f3bd79af84bb`.
 - Finalidade identificada: plataforma de avaliações situacionais para recrutamento, com regras explícitas, score determinístico, trilha auditável e integração com ATS.
 - Stack principal: Java 21, Spring Boot 3.5, Spring Security, JPA, PostgreSQL/Flyway, React 19, TanStack Start/Router e TypeScript.
 - Arquitetura predominante: frontend React consumindo API Spring Boot, persistência PostgreSQL, autenticação JWT nas rotas internas, Bearer token nas integrações e entrega assíncrona por outbox.
 
-## 1. Credenciais e fontes de verdade das integrações
-
-| ID | Tarefa técnica | Critério de conclusão | Status |
-|---|---|---|---|
-| SEC10 | Unificar rotação e revogação de tokens com o estado exibido pela Central de Integrações. | Qualquer endpoint de rotação ou revogação atualiza `integration_tokens` e `empresa_integrations` de forma atômica: rotação deixa ATS em `PENDENTE`, limpa a evidência da credencial anterior e persiste hash/prévia coerentes; revogação deixa `DESATIVADA` e remove credenciais exibidas; falha em qualquer gravação não deixa as tabelas divergentes. | ⬜ Pendente |
-
-### SEC10 — ciclo de vida de token e estado operacional
-
-| Caminho completo | Método/campo/contrato | Como está | O que fazer |
-|---|---|---|---|
-| `backend/src/main/java/br/com/iforce/praxis/shared/integration/IntegrationManagementService.java` | `generateToken()` | Rotaciona o token real em `integration_tokens` e atualiza hash/prévia em `empresa_integrations`, mas preserva o status anterior e `lastSyncAt`. Uma integração já `CONECTADA` continua apresentada como conectada pela credencial revogada. | Centralizar a rotação em um único caso de uso transacional; ao trocar a credencial ATS, mudar para `PENDENTE`, limpar `lastSyncAt`, `lastErrorMessage` e qualquer evidência ligada ao token anterior, mantendo auditoria da transição. |
-| `backend/src/main/java/br/com/iforce/praxis/shared/integration/IntegrationTokenAdminController.java` | `POST /api/v1/integrations/tokens/{provider}/rotate` e `DELETE /api/v1/integrations/tokens/{provider}` | Expõe um segundo fluxo administrativo que chama `IntegrationTokenAdminService` diretamente e contorna `empresa_integrations`. | Delegar aos mesmos casos de uso da Central de Integrações ou remover as rotas concorrentes após migrar consumidores. |
-| `backend/src/main/java/br/com/iforce/praxis/shared/integration/IntegrationTokenAdminService.java` | `rotateToken()` e `revokeToken()` | Altera somente `integration_tokens`. A rotação substitui a credencial de autenticação e a revogação a remove, sem atualizar status, prévia, hash operacional, `lastSyncAt` ou auditoria em `empresa_integrations`. | Fazer a mutação pelo caso de uso unificado e garantir rollback integral quando uma das persistências falhar. |
-| `backend/src/main/java/br/com/iforce/praxis/shared/integration/persistence/entity/EmpresaIntegrationEntity.java` | tabela `empresa_integrations`, campos `status`, `credentials_hash`, `token_preview`, `last_sync_at`, `disabled_at` | Mantém uma representação operacional da mesma credencial usada em `integration_tokens`, mas os fluxos paralelos não preservam consistência entre as duas fontes. | Definir a responsabilidade de cada tabela e sincronizar os campos derivados dentro da mesma transação, sem permitir status baseado em credencial antiga. |
-| `backend/src/main/java/br/com/iforce/praxis/shared/integration/IntegrationManagementService.java` | `testConnection()` | O método ainda consegue definir `CONECTADA` apenas pela presença de `credentialsHash`, embora o controller atual não o utilize. | Remover o caminho inseguro ou fazê-lo delegar à leitura de estado, para que nenhum chamador interno volte a promover conexão sem atividade externa real. |
-
-## 2. Integrações ATS — estado de conexão real
+## 1. Integrações ATS — estado de conexão real
 
 | ID | Tarefa técnica | Critério de conclusão | Status |
 |---|---|---|---|
@@ -50,7 +34,7 @@ Este arquivo contém somente pendências técnicas implementáveis e comprovadas
 | `backend/src/main/java/br/com/iforce/praxis/shared/integration/IntegrationManagementService.java` | `recordActivity()` | Define qualquer integração existente como `CONECTADA`, atualiza `lastSyncAt` e limpa erro, inclusive sem verificar `DESATIVADA`; não registra evento de auditoria nem a origem da evidência. | Restringir transições permitidas, preservar `DESATIVADA`, atualizar atividade de conexões já válidas e auditar a primeira conexão/recuperação com provedor, endpoint, horário, estado anterior e novo. |
 | `backend/src/main/java/br/com/iforce/praxis/audit/service/AuditEventService.java` | eventos de integração | A infraestrutura de auditoria existe e já é usada em configuração, reativação, desconexão e token, mas não participa da promoção por atividade externa. | Registrar a transição real usando a infraestrutura existente, sem criar uma trilha paralela. |
 
-## 3. Interface e fallbacks de compatibilidade
+## 2. Interface e fallbacks de compatibilidade
 
 | ID | Tarefa técnica | Critério de conclusão | Status |
 |---|---|---|---|
@@ -68,6 +52,5 @@ Este arquivo contém somente pendências técnicas implementáveis e comprovadas
 
 ## Ordem recomendada
 
-1. `SEC10` — eliminar fontes de verdade concorrentes no ciclo de vida das credenciais.
-2. `INT10` — tornar conexão e atividade ATS reais, persistidas e auditáveis.
-3. `UI10` — remover o fallback que fabrica estados operacionais e comerciais.
+1. `INT10` — tornar conexão e atividade ATS reais, persistidas e auditáveis.
+2. `UI10` — remover o fallback que fabrica estados operacionais e comerciais.
