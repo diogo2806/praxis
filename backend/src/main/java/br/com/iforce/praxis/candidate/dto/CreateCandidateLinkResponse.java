@@ -28,4 +28,9 @@ public record CreateCandidateLinkResponse(
         )
         String operation
 ) {
+
+    /** Compatibilidade para fluxos internos que ainda não expõem o efeito da operação. */
+    public CreateCandidateLinkResponse(String attemptId, String candidateUrl, String simulationName) {
+        this(attemptId, candidateUrl, simulationName, false, "CREATED_NEW_APPLICATION");
+    }
 }
