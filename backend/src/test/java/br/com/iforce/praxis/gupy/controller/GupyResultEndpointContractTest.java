@@ -29,7 +29,7 @@ class GupyResultEndpointContractTest {
     private MockMvc mockMvc;
 
     @Test
-    void resultEndpointUsesOnlyResultIdFromPath() throws Exception {
+    void resultEndpointUsesOnlyOfficialTopLevelFields() throws Exception {
         String resultId = createAttempt(4398157301L);
 
         mockMvc.perform(get("/test/result/" + resultId)
@@ -37,7 +37,9 @@ class GupyResultEndpointContractTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.result_page_url").value(containsString("/results/")))
                 .andExpect(jsonPath("$.result_page_url").value(not(containsString("/test/result/"))))
-                .andExpect(jsonPath("$.result_page_url").value(not(containsString("?company_id="))));
+                .andExpect(jsonPath("$.result_page_url").value(not(containsString("?company_id="))))
+                .andExpect(jsonPath("$.reliabilityLevel").doesNotExist())
+                .andExpect(jsonPath("$.other_informations").doesNotExist());
     }
 
     @Test
