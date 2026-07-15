@@ -1,6 +1,6 @@
 # Requisitos técnicos pendentes — praxis
 
-Status: atualizado em 2026-07-15 após conclusão de `ASYNC11`, `BUS13` e `INT18`.
+Status: atualizado em 2026-07-15 após conclusão de `ASYNC11`, `BUS13`, `INT18` e `INT17`.
 
 Este arquivo contém somente pendências técnicas implementáveis e comprovadas no sistema. Não inclui CI/CD, testes, QA, métricas observacionais, publicação ou marketing.
 
@@ -11,23 +11,11 @@ Este arquivo contém somente pendências técnicas implementáveis e comprovadas
 - Stack principal: Java 21, Spring Boot 3.5, Spring Security, JPA, PostgreSQL/Flyway, React 19, TanStack Start/Router e TypeScript.
 - Arquitetura predominante: frontend React consumindo API Spring Boot; persistência PostgreSQL; autenticação JWT nas rotas internas; Bearer token nas integrações; entrega assíncrona por outbox transacional.
 - Fluxos de código revalidados: criação e repetição de tentativas, links diretos, execução do candidato, cálculo e comparação de resultados, callback Gupy, entrega de webhook, processamento do outbox, monitoramento operacional e relatórios de engajamento.
-- Os Markdown foram tratados apenas como referência secundária. A classificação abaixo foi mantida após leitura da implementação alcançável na `main`.
+- Os Markdown foram tratados apenas como referência secundária. A classificação abaixo foi mantida após leitura da implementação alcançável.
 - `LEGACY12` permanece concluído: `docs/backlog.txt` foi removido e não é fonte normativa.
+- `INT17` foi concluído e transferido para `docs/implementados/requisitos-implementados.md`: `result_webhook_url` está reservado ao `TestResult`, e eventos proprietários dependem exclusivamente da integração `CUSTOM_API` explicitamente configurada.
 
-## 1. Integração Gupy
-
-| ID | Tarefa técnica | Critério de conclusão | Status |
-|---|---|---|---|
-| INT17 | Impedir envio de eventos proprietários ao `result_webhook_url` da Gupy. | O destino fornecido pela Gupy recebe exclusivamente o `TestResult` contratual; eventos internos de engajamento não são enviados a esse endpoint nem carregam dados pessoais para ele. | ⬜ Pendente |
-
-### INT17 — uso indevido do webhook de resultado
-
-| Caminho completo | Método/campo/contrato | Como está | O que fazer |
-|---|---|---|---|
-| `backend/src/main/java/br/com/iforce/praxis/gupy/service/CandidateAttemptService.java` | `publishEngagementTransitionIfNeeded()` e `publishAttemptEngagementEvent()` | Transições para início e abandono publicam `ATTEMPT_STARTED` e `ATTEMPT_ABANDONED` usando `CandidateAttemptEntity.resultWebhookUrl`. O payload inclui nome e e-mail do candidato. | Reservar `result_webhook_url` ao resultado oficial. Omitir esses eventos para Gupy ou encaminhá-los somente por canal genérico explicitamente configurado e com contrato próprio. |
-| `backend/src/main/java/br/com/iforce/praxis/shared/outbox/service/OutboxProcessor.java` | `dispatch()` e `processAttemptEngagementEvent()` | O processador reconhece os eventos proprietários, valida a URL e envia `eventPayload` por HTTP ao endereço armazenado como webhook de resultado. | Remover esse despacho para o destino Gupy e impedir que eventos internos reutilizem o contrato de `TestResult`. |
-
-## 2. Dados, aplicação e idempotência
+## 1. Dados, aplicação e idempotência
 
 | ID | Tarefa técnica | Critério de conclusão | Status |
 |---|---|---|---|
@@ -49,7 +37,7 @@ Este arquivo contém somente pendências técnicas implementáveis e comprovadas
 | `backend/src/main/java/br/com/iforce/praxis/gupy/service/CandidateAttemptService.java` | `createCompanyLink()` | A chave usa empresa, e-mail e avaliação; qualquer tentativa anterior é reaproveitada indefinidamente. | Adicionar `applicationCycleId`, vaga/contexto ou comando explícito de nova aplicação, mantendo chave separada para reenvio equivalente. |
 | API e frontend de criação de link | contrato de criação | Não há escolha explícita entre reenviar link existente e criar nova tentativa. | Expor ações distintas, validar autorização e informar o efeito da operação. |
 
-## 3. Regras de negócio
+## 2. Regras de negócio
 
 | ID | Tarefa técnica | Critério de conclusão | Status |
 |---|---|---|---|
@@ -63,7 +51,7 @@ Este arquivo contém somente pendências técnicas implementáveis e comprovadas
 | `backend/src/main/java/br/com/iforce/praxis/simulation/service/SimulationValidationService.java` | `validatePathCompetencyCoverage()` | A cobertura desigual entre caminhos não impede necessariamente a publicação. | Bloquear publicação quando a política exigir base comum ou registrar formalmente grupos de caminhos comparáveis. |
 | `frontend/src/routes/talent-match.tsx` | consulta e exibição do Talent Match | Seleciona e exibe candidatos da mesma avaliação sem validar assinatura comum de competências, pesos e máximos efetivos. | Consumir metadado de comparabilidade e bloquear, separar ou sinalizar resultados incompatíveis. |
 
-## 4. Operação e interface
+## 3. Operação e interface
 
 | ID | Tarefa técnica | Critério de conclusão | Status |
 |---|---|---|---|
@@ -79,8 +67,7 @@ Este arquivo contém somente pendências técnicas implementáveis e comprovadas
 
 ## Ordem recomendada
 
-1. `INT17` — interromper o uso indevido do webhook Gupy e a exposição de payload proprietário.
-2. `DATA13` — separar reteste legítimo de repetição idempotente.
-3. `DATA14` — permitir nova aplicação explícita em links diretos.
-4. `BUS12` — tornar resultados comparáveis ou bloquear comparações incompatíveis.
-5. `UI13` — paginar e completar o centro operacional.
+1. `DATA13` — separar reteste legítimo de repetição idempotente.
+2. `DATA14` — permitir nova aplicação explícita em links diretos.
+3. `BUS12` — tornar resultados comparáveis ou bloquear comparações incompatíveis.
+4. `UI13` — paginar e completar o centro operacional.
