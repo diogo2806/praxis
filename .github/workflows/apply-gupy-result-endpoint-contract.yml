@@ -30,6 +30,7 @@ jobs:
         run: |
           rm .github/scripts/apply_gupy_result_endpoint_contract.py
           rm .github/workflows/apply-gupy-result-endpoint-contract.yml
+          rm .github/RESULT_ENDPOINT_PR_DRAFT.md
 
       - name: Commit implementation
         run: |
