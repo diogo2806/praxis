@@ -40,9 +40,6 @@ public record EtapaAtualResponse(
         @Schema(description = "Tipo da midia (IMAGE ou AUDIO).", nullable = true)
         MediaType tipoMidia,
 
-        @Schema(description = "Próxima etapa quando o tempo se esgota, sem expor pontuação.", nullable = true)
-        String proximaEtapaTempoEsgotadoId,
-
         List<RespostaResponse> alternativas
 ) {
 }
