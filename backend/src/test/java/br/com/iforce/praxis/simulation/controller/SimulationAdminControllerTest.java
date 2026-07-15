@@ -388,7 +388,7 @@ class SimulationAdminControllerTest {
                   "callback_url": "https://cliente.gupy.io/candidate-return",
                   "result_webhook_url": "https://cliente.gupy.io/result-webhook",
                   "candidate_type": "external",
-                  "previous_result": "none"
+                  "previous_result": null
                 }
                 """.formatted(documentId);
     }
