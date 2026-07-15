@@ -172,7 +172,7 @@ class GupyIntegrationControllerTest {
                                   "job_id": 100,
                                   "callback_url": "https://cliente.gupy.io/candidate-return",
                                   "candidate_type": null,
-                                  "previous_result": "null"
+                                  "previous_result": null
                                 }
                                 """))
                 .andExpect(status().isCreated());
