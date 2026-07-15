@@ -10,6 +10,8 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 
 import org.springframework.boot.test.context.SpringBootTest;
 
+import org.springframework.http.MediaType;
+
 import org.springframework.test.context.jdbc.Sql;
 
 import org.springframework.test.web.servlet.MockMvc;
@@ -19,7 +21,7 @@ import java.util.Set;
 
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 
@@ -58,5 +60,22 @@ class SecurityConfigTest {
         mockMvc.perform(get("/test")
                         .header("Authorization", "Bearer empresa1-token"))
                 .andExpect(status().isOk());
+    }
+
+    @Test
+    void csrfProtectionRemainsEnabledOutsideStatelessContracts() throws Exception {
+        mockMvc.perform(post("/browser/session-action"))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void csrfDoesNotBlockBearerAuthenticatedApiRequests() throws Exception {
+        String empresaToken = jwtService.generateToken("empresa-user", "empresa-1", Set.of("EMPRESA"));
+
+        mockMvc.perform(post("/api/v1/simulations")
+                        .header("Authorization", "Bearer " + empresaToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{}"))
+                .andExpect(status().isBadRequest());
     }
 }
