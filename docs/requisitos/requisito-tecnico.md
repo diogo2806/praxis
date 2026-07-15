@@ -1,6 +1,6 @@
 # Requisitos técnicos pendentes — praxis
 
-Status: atualizado em 2026-07-15 após implementação de `CFG10`, `INT1` e `INT2`.
+Status: atualizado em 2026-07-15 após implementação de `CFG10`, `INT1`, `INT2` e `API1`.
 
 Este arquivo contém somente pendências técnicas implementáveis e comprovadas no código, configurações, dados e fluxos reais do sistema. Não inclui CI/CD, pipelines, lint, cobertura, tarefas de testes, QA manual, métricas apenas observacionais, coleta de evidências, publicação ou marketing.
 
@@ -13,7 +13,7 @@ Este arquivo contém somente pendências técnicas implementáveis e comprovadas
 
 ## Contexto da auditoria
 
-- Commit auditado da branch principal: `0c50efe6b05825202ed92049bfb13528a92565e5`.
+- Commit auditado da branch principal: `7f7e964c495f668963ecfa9a88198ad63d897906`.
 - Finalidade identificada: plataforma de avaliações situacionais para recrutamento, com regras explícitas, score determinístico, trilha auditável e integração com ATS.
 - Stack principal: Java 21, Spring Boot 3.5, Spring Security, JPA, PostgreSQL/Flyway, React 19, TanStack Start/Router e TypeScript.
 - Arquitetura predominante: frontend React consumindo API Spring Boot, persistência PostgreSQL, autenticação JWT nas rotas internas, Bearer token nas integrações e entrega assíncrona por outbox.
@@ -50,22 +50,7 @@ Este arquivo contém somente pendências técnicas implementáveis e comprovadas
 | `backend/src/main/java/br/com/iforce/praxis/shared/integration/IntegrationManagementService.java` | `recordActivity()` | Define qualquer integração existente como `CONECTADA`, atualiza `lastSyncAt` e limpa erro, inclusive sem verificar `DESATIVADA`; não registra evento de auditoria nem a origem da evidência. | Restringir transições permitidas, preservar `DESATIVADA`, atualizar atividade de conexões já válidas e auditar a primeira conexão/recuperação com provedor, endpoint, horário, estado anterior e novo. |
 | `backend/src/main/java/br/com/iforce/praxis/audit/service/AuditEventService.java` | eventos de integração | A infraestrutura de auditoria existe e já é usada em configuração, reativação, desconexão e token, mas não participa da promoção por atividade externa. | Registrar a transição real usando a infraestrutura existente, sem criar uma trilha paralela. |
 
-## 3. Integração Gupy — contrato de resultado
-
-| ID | Tarefa técnica | Critério de conclusão | Status |
-|---|---|---|---|
-| API1 | Remover ou isolar campos não pertencentes ao schema oficial do resultado enviado à Gupy. | A resposta de `GET /test/result/{resultId}` e o payload do webhook usam o mesmo DTO externo e contêm apenas campos aceitos pelo contrato publicado; extensões internas não vazam no topo do payload externo; eventual extensão formalmente aceita fica isolada e documentada sem alterar o contrato padrão. | ⬜ Pendente |
-
-### API1 — serialização usada por consulta e webhook
-
-| Caminho completo | Método/campo/contrato | Como está | O que fazer |
-|---|---|---|---|
-| `backend/src/main/java/br/com/iforce/praxis/gupy/dto/TestResultResponse.java` | record `TestResultResponse` | O DTO descrito como corpo exato da Gupy inclui `reliabilityLevel` e `other_informations` no topo, campos ausentes no schema oficial publicado. | Criar um DTO externo restrito ao schema aceito ou remover os campos de topo, preservando metadata interna em modelo separado. |
-| `backend/src/main/java/br/com/iforce/praxis/gupy/service/GupyTestResultMapper.java` | `toResponse(CandidateAttempt, ...)` e `toResponse(CandidateAttemptEntity, ...)` | Preenche explicitamente `reliabilityLevel` e `other_informations` nos dois caminhos de mapeamento. | Mapear somente os campos externos permitidos; manter informações adicionais fora do payload padrão ou em posição formalmente suportada. |
-| `backend/src/main/java/br/com/iforce/praxis/gupy/service/CandidateAttemptService.java` | `findResult()` e `publishResultReadyEvent()` | O mesmo `TestResultResponse` é retornado por consulta e inserido no evento `RESULT_READY`, propagando a incompatibilidade tanto ao GET quanto à entrega assíncrona. | Garantir que ambos os fluxos compartilhem o DTO externo corrigido e não existam duas versões concorrentes do contrato. |
-| `docs/INTEGRACAO-GUPY-PROVEDOR.md` | seção “Resultado produzido” | Registra que os campos extras ainda dependem de compatibilidade com o provedor. | Atualizar após o payload real de consulta e webhook ser alinhado. |
-
-## 4. Interface e fallbacks de compatibilidade
+## 3. Interface e fallbacks de compatibilidade
 
 | ID | Tarefa técnica | Critério de conclusão | Status |
 |---|---|---|---|
@@ -85,5 +70,4 @@ Este arquivo contém somente pendências técnicas implementáveis e comprovadas
 
 1. `SEC10` — eliminar fontes de verdade concorrentes no ciclo de vida das credenciais.
 2. `INT10` — tornar conexão e atividade ATS reais, persistidas e auditáveis.
-3. `API1` — alinhar o contrato de resultado usado por consulta e webhook.
-4. `UI10` — remover o fallback que fabrica estados operacionais e comerciais.
+3. `UI10` — remover o fallback que fabrica estados operacionais e comerciais.
