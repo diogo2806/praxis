@@ -1,6 +1,6 @@
 # Requisitos técnicos implementados — praxis
 
-Status: atualizado em 2026-07-15 após auditoria da `main` no commit `319102895c981eae48eb9595c3a61da0dcd43899`.
+Status: atualizado em 2026-07-15 após entrega do contrato de entrada da Gupy.
 
 Este arquivo registra somente comportamentos comprovadamente entregues no código e no fluxo real. Entregas parciais são descritas como parciais e apontam para os IDs que mantêm as lacunas remanescentes no backlog canônico.
 
@@ -8,8 +8,28 @@ Este arquivo registra somente comportamentos comprovadamente entregues no códig
 
 | Origem | Situação registrada | Entrega comprovada | Pendência remanescente |
 |---|---|---|---|
+| `INT1` | Concluído | `company_id` e `document_id` do `POST /test/candidate` são recebidos como inteiros JSON `int64` positivos, normalizados para identidade decimal canônica, validados contra o token e usados de forma estável na idempotência. | Nenhuma para o contrato de entrada; a homologação real continua necessária. |
+| `INT2` | Concluído | `candidate_type` aceita somente `internal`/`external`; `previous_result` aceita `fail`, ausência e formas de `null` previstas pela documentação; `none` e valores desconhecidos são rejeitados antes do caso de uso. | Nenhuma para os enums de entrada. |
 | `REQ-INTEGRACOES-REATIVACAO-TOKEN-ATS` | Concluído | Reativação de Gupy/Recrutei rotaciona a credencial, retorna o novo token uma única vez, persiste somente hash/prévia, muda o estado para `PENDENTE` e limpa a atividade da credencial anterior. | O ciclo geral de rotação/revogação ainda possui fluxos concorrentes; registrado em `SEC10`. |
 | `REQ-INTEGRACOES-STATUS-CONEXAO-REAL` | Entrega parcial consolidada | Atualização manual de status deixou de promover conexão; conexões sem `lastSyncAt` são normalizadas para `PENDENTE`; a interface diferencia token configurado de conexão comprovada. | Registro completo da atividade externa, auditoria e proteção de `DESATIVADA` permanecem em `INT10`; consistência de credenciais permanece em `SEC10`. |
+
+### INT1 — identificadores oficiais e idempotência estável
+
+| Caminho completo | Método/campo/contrato | Comportamento comprovado |
+|---|---|---|
+| `backend/src/main/java/br/com/iforce/praxis/gupy/dto/CreateCandidateRequest.java` | `company_id` e `document_id` | O limite externo usa `Long`, exige presença e valor positivo e rejeita tokens JSON que não sejam inteiros ou que excedam a faixa `int64`. |
+| `backend/src/main/java/br/com/iforce/praxis/gupy/dto/CreateCandidateRequest.java` | `companyId()` e `documentId()` | Converte os identificadores uma única vez com `Long.toString`, produzindo representação decimal canônica para pertencimento, persistência e chave idempotente. |
+| `backend/src/main/java/br/com/iforce/praxis/gupy/service/CandidateAttemptService.java` | `assertCompanyMatchesToken()` e `createOrReuse()` | O fluxo existente continua comparando o identificador canônico com o `company_id` resolvido pelo Bearer token e compõe a chave com empresa, companhia, documento, teste e vaga opcional. |
+| `backend/src/main/java/br/com/iforce/praxis/recrutei/controller/RecruteiIntegrationController.java` | criação do comando compartilhado | O construtor interno textual foi preservado para o contrato próprio da Recrutei sem participar da desserialização pública da Gupy. |
+
+### INT2 — enums oficiais no limite de entrada
+
+| Caminho completo | Método/campo/contrato | Comportamento comprovado |
+|---|---|---|
+| `backend/src/main/java/br/com/iforce/praxis/gupy/dto/CreateCandidateRequest.java` | `CandidateType` | Aceita somente `internal` e `external`; ausência e `null` permanecem opcionais. |
+| `backend/src/main/java/br/com/iforce/praxis/gupy/dto/CreateCandidateRequest.java` | `PreviousResult` | Aceita `fail`, ausência, `null` JSON e o texto `null` publicado no exemplo oficial; rejeita `none`, `pass` e valores desconhecidos. |
+| `backend/src/test/java/br/com/iforce/praxis/gupy/controller/GupyIntegrationControllerTest.java` | testes de contrato | Cobre tipos oficiais, faixa positiva, pertencimento ao token, idempotência, diferenciação por vaga, opcionais nulos e rejeição dos valores fora do contrato. |
+| `docs/INTEGRACAO-GUPY-PROVEDOR.md` | contrato de `POST /test/candidate` | Registra os tipos e enums efetivamente aceitos e remove essas divergências dos bloqueadores de homologação. |
 
 ### REQ-INTEGRACOES-REATIVACAO-TOKEN-ATS — reativação segura entregue
 
