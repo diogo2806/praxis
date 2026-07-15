@@ -1,59 +1,33 @@
 package br.com.iforce.praxis.candidate.controller;
 
 import br.com.iforce.praxis.auth.service.JwtService;
-
 import br.com.iforce.praxis.gupy.persistence.entity.CandidateAttemptEntity;
-
 import br.com.iforce.praxis.gupy.persistence.repository.CandidateAttemptRepository;
-
 import br.com.iforce.praxis.gupy.model.AttemptStatus;
-
 import br.com.iforce.praxis.shared.outbox.persistence.entity.OutboxEventEntity;
-
 import br.com.iforce.praxis.shared.outbox.persistence.repository.OutboxEventRepository;
-
 import com.jayway.jsonpath.JsonPath;
-
 import org.junit.jupiter.api.Test;
-
 import org.springframework.beans.factory.annotation.Autowired;
-
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-
 import org.springframework.boot.test.context.SpringBootTest;
-
 import org.springframework.http.MediaType;
-
 import org.springframework.jdbc.core.JdbcTemplate;
-
 import org.springframework.test.context.jdbc.Sql;
-
 import org.springframework.test.web.servlet.MockMvc;
-
 import org.springframework.test.web.servlet.MvcResult;
 
-
 import java.time.Duration;
-
 import java.time.Instant;
-
 import java.time.temporal.ChronoUnit;
-
 import java.util.List;
 
-
 import static org.assertj.core.api.Assertions.assertThat;
-
 import static org.hamcrest.Matchers.startsWith;
-
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -158,7 +132,7 @@ class CandidateAttemptControllerTest {
 
         mockMvc.perform(get("/test/result/" + resultId)
                         .header("Authorization", AUTHORIZATION)
-                        .param("company_id", "empresa-123"))
+                        .param("company_id", "1"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("done"))
                 .andExpect(jsonPath("$.results[?(@.title=='Empatia')].score").value(org.hamcrest.Matchers.hasItem(100)))
@@ -223,7 +197,7 @@ class CandidateAttemptControllerTest {
 
         mockMvc.perform(get("/test/result/" + resultId)
                         .header("Authorization", AUTHORIZATION)
-                        .param("company_id", "empresa-123"))
+                        .param("company_id", "1"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("done"))
                 .andExpect(jsonPath("$.results[?(@.title=='Empatia')].score").value(org.hamcrest.Matchers.hasItem(95)))
@@ -252,7 +226,7 @@ class CandidateAttemptControllerTest {
 
         mockMvc.perform(get("/test/result/" + resultId)
                         .header("Authorization", AUTHORIZATION)
-                        .param("company_id", "empresa-123"))
+                        .param("company_id", "1"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("done"))
                 .andExpect(jsonPath("$.results[?(@.title=='Empatia')].score").value(org.hamcrest.Matchers.hasItem(0)))
@@ -310,7 +284,7 @@ class CandidateAttemptControllerTest {
 
         mockMvc.perform(get("/test/result/" + resultId)
                         .header("Authorization", AUTHORIZATION)
-                        .param("company_id", "empresa-123"))
+                        .param("company_id", "1"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("done"))
                 .andExpect(jsonPath("$.other_informations.timeout_count").value(1))
@@ -456,7 +430,7 @@ class CandidateAttemptControllerTest {
 
         mockMvc.perform(get("/test/result/" + resultId)
                         .header("Authorization", AUTHORIZATION)
-                        .param("company_id", "empresa-123"))
+                        .param("company_id", "1"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.results[?(@.title=='Empatia')].score").value(org.hamcrest.Matchers.hasItem(100)))
                 .andExpect(jsonPath("$.company_result_string").value(org.hamcrest.Matchers.containsString("Pontuação geral: 100/100")));
@@ -481,7 +455,7 @@ class CandidateAttemptControllerTest {
 
         mockMvc.perform(get("/test/result/" + resultId)
                         .header("Authorization", AUTHORIZATION)
-                        .param("company_id", "empresa-123"))
+                        .param("company_id", "1"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.results[?(@.title=='Aderencia a politica')].tier").value(org.hamcrest.Matchers.hasItem("minor")))
                 .andExpect(jsonPath("$.results[?(@.title=='Empatia')].tier").value(org.hamcrest.Matchers.hasItem("major")))
@@ -681,13 +655,14 @@ class CandidateAttemptControllerTest {
     }
 
     private MvcResult createAttemptResult(String documentId, String simulationId) throws Exception {
+        long numericDocumentId = Integer.toUnsignedLong(documentId.hashCode()) + 1L;
         return mockMvc.perform(post("/test/candidate")
                         .header("Authorization", AUTHORIZATION)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
-                                  "company_id": "empresa-123",
-                                  "document_id": "%s",
+                                  "company_id": 1,
+                                  "document_id": %d,
                                   "test_id": "%s",
                                   "name": "Thiago Souza",
                                   "email": "thiago@example.com",
@@ -695,9 +670,9 @@ class CandidateAttemptControllerTest {
                                   "callback_url": "https://cliente.gupy.io/candidate-return",
                                   "result_webhook_url": "https://cliente.gupy.io/result-webhook",
                                   "candidate_type": "external",
-                                  "previous_result": "none"
+                                  "previous_result": null
                                 }
-                                """.formatted(documentId, simulationId)))
+                                """.formatted(numericDocumentId, simulationId)))
                 .andExpect(status().isCreated())
                 .andReturn();
     }
