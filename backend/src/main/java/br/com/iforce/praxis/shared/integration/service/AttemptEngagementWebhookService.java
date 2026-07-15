@@ -10,6 +10,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
@@ -42,6 +43,9 @@ public class AttemptEngagementWebhookService {
     private final RestClient restClient;
     private final IntegrationManagementService integrationManagementService;
 
+    @Value("${praxis.engagement.capture-events-without-webhook:false}")
+    private boolean captureEventsWithoutWebhook;
+
     public AttemptEngagementWebhookService(
             EmpresaIntegrationRepository integrationRepository,
             GupyOutboundUrlValidator outboundUrlValidator,
@@ -58,9 +62,13 @@ public class AttemptEngagementWebhookService {
         this.integrationManagementService = integrationManagementService;
     }
 
-    /** Retorna verdadeiro somente quando o evento foi selecionado no webhook CUSTOM_API ativo. */
+    /**
+     * Retorna verdadeiro quando existe destino CUSTOM_API ativo ou quando a
+     * captura operacional sem entrega foi explicitamente habilitada. A opção
+     * de captura não envia dados para a Gupy nem para qualquer URL externa.
+     */
     public boolean hasActiveWebhook(String empresaId, String eventType) {
-        return findActiveSettings(empresaId, eventType) != null;
+        return captureEventsWithoutWebhook || findActiveSettings(empresaId, eventType) != null;
     }
 
     /**
