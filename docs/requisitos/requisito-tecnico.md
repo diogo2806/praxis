@@ -13,7 +13,7 @@ Este arquivo contém somente pendências técnicas implementáveis e comprovadas
 
 ## Contexto da auditoria
 
-- Commit auditado da branch principal: `d9dc643833ea0f17eab61e4a23fe798420912609`.
+- Commit auditado da branch principal: `8bb1abc70dc517be05dd91f11d61d11e14e3ed42`.
 - Finalidade identificada: plataforma de avaliações situacionais para recrutamento, com regras explícitas, score determinístico, trilha auditável e integração com ATS.
 - Stack principal: Java 21, Spring Boot 3.5, Spring Security, JPA, PostgreSQL/Flyway, React 19, TanStack Start/Router e TypeScript.
 - Arquitetura predominante: frontend React consumindo API Spring Boot, persistência PostgreSQL, autenticação JWT nas rotas internas, Bearer token nas integrações e entrega assíncrona por outbox.
