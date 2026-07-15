@@ -99,6 +99,21 @@ class CreateCandidateRequestTest {
     }
 
     @Test
+    void rejectsIdentifiersOutsideSignedInt64Range() {
+        assertThatThrownBy(() -> objectMapper.readValue("""
+                {
+                  "company_id": 9223372036854775808,
+                  "document_id": 4398157034,
+                  "test_id": "sim-atendimento",
+                  "name": "Candidato Teste",
+                  "email": "candidato@example.com",
+                  "callback_url": "https://cliente.gupy.io/candidate-return"
+                }
+                """, CreateCandidateRequest.class))
+                .isInstanceOf(JsonProcessingException.class);
+    }
+
+    @Test
     void enumsExposeOnlyOfficialWireValues() {
         assertThat(CreateCandidateRequest.CandidateType.fromValue("internal"))
                 .isEqualTo(CreateCandidateRequest.CandidateType.INTERNAL);
