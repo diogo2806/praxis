@@ -65,7 +65,10 @@ public class CandidateAttemptMonitoringQueryService {
         int normalizedSize = Math.max(1, Math.min(size, MAX_PAGE_SIZE));
         AttemptStatus parsedStatus = parseStatus(status);
         String normalizedSimulation = normalize(simulationId);
-        String normalizedCandidate = normalize(candidate).toLowerCase(Locale.ROOT);
+        String normalizedCandidateValue = normalize(candidate);
+        String normalizedCandidate = normalizedCandidateValue == null
+                ? null
+                : normalizedCandidateValue.toLowerCase(Locale.ROOT);
 
         Specification<CandidateAttemptEntity> specification = (root, query, builder) -> {
             List<Predicate> predicates = new ArrayList<>();
@@ -79,8 +82,8 @@ public class CandidateAttemptMonitoringQueryService {
             if (normalizedCandidate != null) {
                 String pattern = "%" + normalizedCandidate + "%";
                 predicates.add(builder.or(
-                        builder.like(builder.lower(root.get("candidateName")), pattern),
-                        builder.like(builder.lower(root.get("candidateEmail")), pattern)
+                        builder.like(builder.lower(root.<String>get("candidateName")), pattern),
+                        builder.like(builder.lower(root.<String>get("candidateEmail")), pattern)
                 ));
             }
             return builder.and(predicates.toArray(Predicate[]::new));
