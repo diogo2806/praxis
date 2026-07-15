@@ -28,13 +28,13 @@ public final class CreateCandidateRequest {
     @Positive
     @JsonProperty("company_id")
     @Schema(type = "integer", format = "int64", example = "1")
-    private final Long companyId;
+    private final Long contractCompanyId;
 
     @NotNull
     @Positive
     @JsonProperty("document_id")
     @Schema(type = "integer", format = "int64", example = "4398157034")
-    private final Long documentId;
+    private final Long contractDocumentId;
 
     @NotBlank
     @JsonProperty("test_id")
@@ -74,7 +74,8 @@ public final class CreateCandidateRequest {
     private final CandidateType candidateType;
 
     @JsonProperty("previous_result")
-    @Schema(example = "fail", allowableValues = {"fail", "null"}, nullable = true)
+    @Schema(example = "fail", allowableValues = {"fail"}, nullable = true,
+            description = "Resultado anterior. Use fail ou null quando não houver resultado anterior.")
     private final PreviousResult previousResult;
 
     @JsonIgnore
@@ -101,8 +102,8 @@ public final class CreateCandidateRequest {
             @JsonProperty("candidate_type") CandidateType candidateType,
             @JsonProperty("previous_result") PreviousResult previousResult
     ) {
-        this.companyId = companyId;
-        this.documentId = documentId;
+        this.contractCompanyId = companyId;
+        this.contractDocumentId = documentId;
         this.testId = testId;
         this.candidateName = candidateName;
         this.candidateEmail = candidateEmail;
@@ -117,9 +118,9 @@ public final class CreateCandidateRequest {
     }
 
     /**
-     * Construtor interno mantido para provedores que reutilizam o fluxo de tentativa,
-     * mas possuem identificadores textuais próprios. Ele não é usado na desserialização
-     * do contrato público da Gupy.
+     * Construtor interno para provedores que reutilizam o fluxo de tentativa,
+     * mas possuem identificadores textuais próprios. Não participa da
+     * desserialização do endpoint público da Gupy.
      */
     public CreateCandidateRequest(
             String companyId,
@@ -129,11 +130,11 @@ public final class CreateCandidateRequest {
             String candidateEmail,
             URI resultWebhookUrl,
             BigDecimal accommodationTimeMultiplier,
-            String candidateType,
-            String previousResult
+            CandidateType candidateType,
+            PreviousResult previousResult
     ) {
-        this.companyId = null;
-        this.documentId = null;
+        this.contractCompanyId = null;
+        this.contractDocumentId = null;
         this.testId = testId;
         this.candidateName = candidateName;
         this.candidateEmail = candidateEmail;
@@ -141,8 +142,8 @@ public final class CreateCandidateRequest {
         this.callbackUrl = null;
         this.resultWebhookUrl = resultWebhookUrl;
         this.accommodationTimeMultiplier = accommodationTimeMultiplier;
-        this.candidateType = CandidateType.fromValue(candidateType);
-        this.previousResult = PreviousResult.fromValue(previousResult);
+        this.candidateType = candidateType;
+        this.previousResult = previousResult;
         this.internalCompanyId = companyId;
         this.internalDocumentId = documentId;
     }
@@ -194,11 +195,11 @@ public final class CreateCandidateRequest {
     }
 
     public Long contractCompanyId() {
-        return companyId;
+        return contractCompanyId;
     }
 
     public Long contractDocumentId() {
-        return documentId;
+        return contractDocumentId;
     }
 
     public enum CandidateType {
@@ -211,7 +212,12 @@ public final class CreateCandidateRequest {
             this.value = value;
         }
 
-        @JsonCreator
+        @JsonValue
+        public String value() {
+            return value;
+        }
+
+        @JsonCreator(mode = JsonCreator.Mode.DELEGATING)
         public static CandidateType fromValue(String value) {
             if (value == null) {
                 return null;
@@ -222,11 +228,6 @@ public final class CreateCandidateRequest {
                 }
             }
             throw new IllegalArgumentException("candidate_type deve ser internal ou external.");
-        }
-
-        @JsonValue
-        public String value() {
-            return value;
         }
     }
 
@@ -239,20 +240,22 @@ public final class CreateCandidateRequest {
             this.value = value;
         }
 
-        @JsonCreator
-        public static PreviousResult fromValue(String value) {
-            if (value == null || "null".equals(value)) {
-                return null;
-            }
-            if (FAIL.value.equals(value)) {
-                return FAIL;
-            }
-            throw new IllegalArgumentException("previous_result deve ser fail ou null.");
-        }
-
         @JsonValue
         public String value() {
             return value;
+        }
+
+        @JsonCreator(mode = JsonCreator.Mode.DELEGATING)
+        public static PreviousResult fromValue(String value) {
+            if (value == null) {
+                return null;
+            }
+            for (PreviousResult previousResult : values()) {
+                if (previousResult.value.equals(value)) {
+                    return previousResult;
+                }
+            }
+            throw new IllegalArgumentException("previous_result deve ser fail ou null.");
         }
     }
 
