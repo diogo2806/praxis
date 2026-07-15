@@ -282,10 +282,12 @@ class CandidateAttemptControllerTest {
                 .andExpect(jsonPath("$.finalizado").value(true))
                 .andExpect(jsonPath("$.etapaAtual").doesNotExist());
 
-        CandidateAttemptEntity completedAttempt = candidateAttemptRepository.findById(attemptId)
-                .orElseThrow();
-        assertThat(completedAttempt.getAnswers())
-                .anySatisfy(answer -> assertThat(answer.isTimedOut()).isTrue());
+        Long timeoutAnswerCount = jdbcTemplate.queryForObject(
+                "SELECT COUNT(*) FROM attempt_answers WHERE candidate_attempt_id = ? AND timed_out = TRUE",
+                Long.class,
+                attemptId
+        );
+        assertThat(timeoutAnswerCount).isEqualTo(1L);
 
         mockMvc.perform(get("/test/result/" + resultId)
                         .header("Authorization", AUTHORIZATION)
