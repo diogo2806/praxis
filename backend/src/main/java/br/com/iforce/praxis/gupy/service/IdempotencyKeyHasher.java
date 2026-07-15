@@ -32,10 +32,20 @@ public final class IdempotencyKeyHasher {
     /**
      * Devolve o SHA-256 (hex minúsculo) do valor informado.
      *
+     * <p>Durante a criação de uma tentativa Gupy, o aspecto de idempotência pode
+     * resolver uma chave de ciclo diferente para a mesma composição histórica.
+     * O escopo é local à thread, limitado à chamada interceptada e não altera o
+     * algoritmo padrão nem as migrações existentes.</p>
+     *
      * @param rawKey chave composta em claro (pode conter dado pessoal)
      * @return o hash hexadecimal estável da chave
      */
     public static String sha256Hex(String rawKey) {
+        String scopedHash = CandidateAttemptIdempotencyScope.resolve(rawKey);
+        if (scopedHash != null) {
+            return scopedHash;
+        }
+
         try {
             MessageDigest digest = MessageDigest.getInstance("SHA-256");
             byte[] hash = digest.digest(rawKey.getBytes(StandardCharsets.UTF_8));

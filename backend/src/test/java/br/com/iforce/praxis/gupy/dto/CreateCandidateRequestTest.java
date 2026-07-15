@@ -37,6 +37,7 @@ class CreateCandidateRequestTest {
         assertThat(request.callbackUrl()).isEqualTo(callbackUrl);
         assertThat(request.candidateType()).isEqualTo(CreateCandidateRequest.CandidateType.EXTERNAL);
         assertThat(request.previousResult()).isEqualTo(CreateCandidateRequest.PreviousResult.FAIL);
+        assertThat(request.isRetestRequested()).isTrue();
     }
 
     @Test
@@ -58,6 +59,7 @@ class CreateCandidateRequestTest {
         assertThat(request.jobId()).isNull();
         assertThat(request.callbackUrl()).isNull();
         assertThat(request.resultWebhookUrl()).hasToString("https://ats.example.com/result-webhook");
+        assertThat(request.isRetestRequested()).isFalse();
     }
 
     @Test
@@ -81,6 +83,7 @@ class CreateCandidateRequestTest {
         assertThat(request.documentId()).isEqualTo("4398157034");
         assertThat(request.candidateType()).isEqualTo(CreateCandidateRequest.CandidateType.INTERNAL);
         assertThat(request.previousResult()).isNull();
+        assertThat(request.isRetestRequested()).isFalse();
     }
 
     @Test
