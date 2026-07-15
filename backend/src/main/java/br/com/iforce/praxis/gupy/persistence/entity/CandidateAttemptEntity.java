@@ -65,6 +65,9 @@ public class CandidateAttemptEntity implements EmpresaAwareEntity {
     @Column(name = "candidate_email", nullable = false, length = 180)
     private String candidateEmail;
 
+    @Column(name = "application_cycle_id", length = 120)
+    private String applicationCycleId;
+
     @Column(name = "gupy_job_id")
     private Long gupyJobId;
 
