@@ -30,6 +30,10 @@ import java.util.Optional;
 
 public interface CandidateAttemptRepository extends JpaRepository<CandidateAttemptEntity, String>, JpaSpecificationExecutor<CandidateAttemptEntity> {
 
+    @Override
+    @EntityGraph(attributePaths = {"answers", "resultItems"})
+    Optional<CandidateAttemptEntity> findById(String id);
+
     @EntityGraph(attributePaths = {"answers", "resultItems"})
     Optional<CandidateAttemptEntity> findByEmpresaIdAndIdempotencyKey(String empresaId, String idempotencyKey);
 
@@ -152,5 +156,4 @@ public interface CandidateAttemptRepository extends JpaRepository<CandidateAttem
             @Param("finishedBefore") Instant finishedBefore,
             Pageable pageable
     );
-
 }

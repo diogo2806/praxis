@@ -1,57 +1,32 @@
 package br.com.iforce.praxis.gupy.delivery.controller;
 
 import br.com.iforce.praxis.auth.service.JwtService;
-
 import br.com.iforce.praxis.gupy.delivery.service.ResultWebhookClient;
-
 import br.com.iforce.praxis.gupy.dto.TestResultResponse;
-
 import com.jayway.jsonpath.JsonPath;
-
 import org.junit.jupiter.api.Test;
-
 import org.mockito.ArgumentCaptor;
-
 import org.springframework.beans.factory.annotation.Autowired;
-
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-
 import org.springframework.boot.test.context.SpringBootTest;
-
 import org.springframework.http.MediaType;
-
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
-
 import org.springframework.test.context.jdbc.Sql;
-
 import org.springframework.test.web.servlet.MockMvc;
-
 import org.springframework.test.web.servlet.MvcResult;
-
 
 import java.util.List;
 
-
 import static org.assertj.core.api.Assertions.assertThat;
-
 import static org.mockito.ArgumentMatchers.any;
-
 import static org.mockito.ArgumentMatchers.eq;
-
 import static org.mockito.Mockito.doNothing;
-
 import static org.mockito.Mockito.doThrow;
-
 import static org.mockito.Mockito.verify;
-
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -191,7 +166,6 @@ class ResultDeliveryControllerTest {
                 .when(resultWebhookClient)
                 .postResult(eq("https://cliente.gupy.io/result-webhook"), any(TestResultResponse.class));
 
-        // 4xx é erro de contrato: vai direto para a DLQ na primeira tentativa, sem retry.
         mockMvc.perform(post("/api/v1/gupy/result-deliveries/" + deliveryId + "/reprocess"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.delivery.status").value("dlq"))
@@ -200,13 +174,14 @@ class ResultDeliveryControllerTest {
     }
 
     private String createCompletedAttempt(String documentId) throws Exception {
+        long numericDocumentId = Integer.toUnsignedLong(documentId.hashCode()) + 1L;
         MvcResult createResult = mockMvc.perform(post("/test/candidate")
                         .header("Authorization", AUTHORIZATION)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
-                                  "company_id": "empresa-123",
-                                  "document_id": "%s",
+                                  "company_id": 1,
+                                  "document_id": %d,
                                   "test_id": "sim-atendimento-caos",
                                   "name": "Thiago Souza",
                                   "email": "thiago@example.com",
@@ -215,7 +190,7 @@ class ResultDeliveryControllerTest {
                                   "candidate_type": "external",
                                   "previous_result": null
                                 }
-                                """.formatted(documentId)))
+                                """.formatted(numericDocumentId)))
                 .andExpect(status().isCreated())
                 .andReturn();
 

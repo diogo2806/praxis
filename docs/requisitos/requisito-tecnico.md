@@ -1,6 +1,6 @@
 # Requisitos técnicos pendentes — praxis
 
-Status: atualizado em 2026-07-15 após nova auditoria da `main`.
+Status: atualizado em 2026-07-15 após implementação de `CFG10`, `INT1`, `INT2` e `API1`.
 
 Este arquivo contém somente pendências técnicas implementáveis e comprovadas no código, configurações, dados e fluxos reais do sistema. Não inclui CI/CD, pipelines, lint, cobertura, tarefas de testes, QA manual, métricas apenas observacionais, coleta de evidências, publicação ou marketing.
 
@@ -13,26 +13,12 @@ Este arquivo contém somente pendências técnicas implementáveis e comprovadas
 
 ## Contexto da auditoria
 
-- Commit auditado da branch principal: `319102895c981eae48eb9595c3a61da0dcd43899`.
+- Commit auditado da branch principal: `7f7e964c495f668963ecfa9a88198ad63d897906`.
 - Finalidade identificada: plataforma de avaliações situacionais para recrutamento, com regras explícitas, score determinístico, trilha auditável e integração com ATS.
 - Stack principal: Java 21, Spring Boot 3.5, Spring Security, JPA, PostgreSQL/Flyway, React 19, TanStack Start/Router e TypeScript.
 - Arquitetura predominante: frontend React consumindo API Spring Boot, persistência PostgreSQL, autenticação JWT nas rotas internas, Bearer token nas integrações e entrega assíncrona por outbox.
 
-## 1. Inicialização e configuração
-
-| ID | Tarefa técnica | Critério de conclusão | Status |
-|---|---|---|---|
-| CFG10 | Remover a exigência de uma credencial legada que não participa da autenticação real das integrações. | A composição inicia sem `PRAXIS_INTEGRATION_TOKEN`; as rotas Gupy e Recrutei continuam autenticando exclusivamente pelos tokens persistidos em `integration_tokens`; nenhuma variável obrigatória sem consumidor bloqueia a inicialização. | ⬜ Pendente |
-
-### CFG10 — configuração do runtime e autenticação real
-
-| Caminho completo | Método/campo/contrato | Como está | O que fazer |
-|---|---|---|---|
-| `docker-compose.yml` | `services.backend.environment.PRAXIS_INTEGRATION_TOKEN` | O Compose usa a expansão obrigatória `${PRAXIS_INTEGRATION_TOKEN:?...}` e interrompe a resolução/inicialização quando a variável não existe. | Remover a obrigatoriedade da variável legada ou substituí-la somente por uma configuração realmente consumida pelo runtime. |
-| `backend/src/main/java/br/com/iforce/praxis/shared/integration/IntegrationAuthService.java` | `validateBearerToken()` | A autenticação real calcula o hash do Bearer token e consulta `integration_tokens`; não lê `PRAXIS_INTEGRATION_TOKEN`. | Manter `integration_tokens` como fonte efetiva de autenticação e garantir que o Compose represente esse fluxo real. |
-| `backend/src/main/resources/application.properties` | configurações de integração | Não existe propriedade de runtime correspondente à variável obrigatória do Compose. | Não introduzir uma segunda credencial global apenas para justificar a variável; alinhar a configuração ao modelo de token por empresa e provedor. |
-
-## 2. Credenciais e fontes de verdade das integrações
+## 1. Credenciais e fontes de verdade das integrações
 
 | ID | Tarefa técnica | Critério de conclusão | Status |
 |---|---|---|---|
@@ -48,7 +34,7 @@ Este arquivo contém somente pendências técnicas implementáveis e comprovadas
 | `backend/src/main/java/br/com/iforce/praxis/shared/integration/persistence/entity/EmpresaIntegrationEntity.java` | tabela `empresa_integrations`, campos `status`, `credentials_hash`, `token_preview`, `last_sync_at`, `disabled_at` | Mantém uma representação operacional da mesma credencial usada em `integration_tokens`, mas os fluxos paralelos não preservam consistência entre as duas fontes. | Definir a responsabilidade de cada tabela e sincronizar os campos derivados dentro da mesma transação, sem permitir status baseado em credencial antiga. |
 | `backend/src/main/java/br/com/iforce/praxis/shared/integration/IntegrationManagementService.java` | `testConnection()` | O método ainda consegue definir `CONECTADA` apenas pela presença de `credentialsHash`, embora o controller atual não o utilize. | Remover o caminho inseguro ou fazê-lo delegar à leitura de estado, para que nenhum chamador interno volte a promover conexão sem atividade externa real. |
 
-## 3. Integrações ATS — estado de conexão real
+## 2. Integrações ATS — estado de conexão real
 
 | ID | Tarefa técnica | Critério de conclusão | Status |
 |---|---|---|---|
@@ -64,37 +50,7 @@ Este arquivo contém somente pendências técnicas implementáveis e comprovadas
 | `backend/src/main/java/br/com/iforce/praxis/shared/integration/IntegrationManagementService.java` | `recordActivity()` | Define qualquer integração existente como `CONECTADA`, atualiza `lastSyncAt` e limpa erro, inclusive sem verificar `DESATIVADA`; não registra evento de auditoria nem a origem da evidência. | Restringir transições permitidas, preservar `DESATIVADA`, atualizar atividade de conexões já válidas e auditar a primeira conexão/recuperação com provedor, endpoint, horário, estado anterior e novo. |
 | `backend/src/main/java/br/com/iforce/praxis/audit/service/AuditEventService.java` | eventos de integração | A infraestrutura de auditoria existe e já é usada em configuração, reativação, desconexão e token, mas não participa da promoção por atividade externa. | Registrar a transição real usando a infraestrutura existente, sem criar uma trilha paralela. |
 
-## 4. Integração Gupy — contrato de entrada
-
-| ID | Tarefa técnica | Critério de conclusão | Status |
-|---|---|---|---|
-| INT1 | Alinhar os tipos de `company_id` e `document_id` ao contrato externo da Gupy sem perder a validação de pertencimento e a idempotência. | O endpoint `POST /test/candidate` aceita identificadores no tipo definido pelo contrato oficial, rejeita formato/faixa inválidos antes de iniciar o fluxo e preserva uma chave idempotente estável para chamadas equivalentes, sem quebrar o contrato próprio da Recrutei. | ⬜ Pendente |
-
-### INT1 — tipos, identidade e compatibilidade entre provedores
-
-| Caminho completo | Método/campo/contrato | Como está | O que fazer |
-|---|---|---|---|
-| `backend/src/main/java/br/com/iforce/praxis/gupy/dto/CreateCandidateRequest.java` | campos `companyId` e `documentId` | Ambos são `String` com `@NotBlank`, enquanto o contrato externo da Gupy os define como `int64`. | Usar uma representação numérica compatível no limite Gupy e validar faixa/formato antes de chamar o domínio. |
-| `backend/src/main/java/br/com/iforce/praxis/gupy/service/CandidateAttemptService.java` | `assertCompanyMatchesToken()` e `createOrReuse()` | Compara `companyId` textual e usa `documentId` textual na fonte da chave idempotente. | Adaptar comparação, normalização e composição da chave para o tipo oficial sem criar colisões ou identidades diferentes para o mesmo valor. |
-| `backend/src/main/java/br/com/iforce/praxis/recrutei/controller/RecruteiIntegrationController.java` | `createCandidateAttempt()` | Reaproveita `CreateCandidateRequest` e encaminha `candidateId` textual da Recrutei como `documentId`. Uma mudança direta do DTO compartilhado pode quebrar esse provedor. | Separar o DTO externo Gupy do comando interno compartilhado ou mapear explicitamente cada provedor para um modelo de domínio que preserve seus contratos próprios. |
-| `docs/INTEGRACAO-GUPY-PROVEDOR.md` | contrato de `POST /test/candidate` | Registra a incompatibilidade de tipos como bloqueador técnico. | Atualizar somente depois que os tipos corrigidos percorrerem autenticação, idempotência, persistência e resposta sem regressão nos demais provedores. |
-
-## 5. Integração Gupy — contrato de resultado
-
-| ID | Tarefa técnica | Critério de conclusão | Status |
-|---|---|---|---|
-| API1 | Remover ou isolar campos não pertencentes ao schema oficial do resultado enviado à Gupy. | A resposta de `GET /test/result/{resultId}` e o payload do webhook usam o mesmo DTO externo e contêm apenas campos aceitos pelo contrato publicado; extensões internas não vazam no topo do payload externo; eventual extensão formalmente aceita fica isolada e documentada sem alterar o contrato padrão. | ⬜ Pendente |
-
-### API1 — serialização usada por consulta e webhook
-
-| Caminho completo | Método/campo/contrato | Como está | O que fazer |
-|---|---|---|---|
-| `backend/src/main/java/br/com/iforce/praxis/gupy/dto/TestResultResponse.java` | record `TestResultResponse` | O DTO descrito como corpo exato da Gupy inclui `reliabilityLevel` e `other_informations` no topo, campos ausentes no schema oficial publicado. | Criar um DTO externo restrito ao schema aceito ou remover os campos de topo, preservando metadata interna em modelo separado. |
-| `backend/src/main/java/br/com/iforce/praxis/gupy/service/GupyTestResultMapper.java` | `toResponse(CandidateAttempt, ...)` e `toResponse(CandidateAttemptEntity, ...)` | Preenche explicitamente `reliabilityLevel` e `other_informations` nos dois caminhos de mapeamento. | Mapear somente os campos externos permitidos; manter informações adicionais fora do payload padrão ou em posição formalmente suportada. |
-| `backend/src/main/java/br/com/iforce/praxis/gupy/service/CandidateAttemptService.java` | `findResult()` e `publishResultReadyEvent()` | O mesmo `TestResultResponse` é retornado por consulta e inserido no evento `RESULT_READY`, propagando a incompatibilidade tanto ao GET quanto à entrega assíncrona. | Garantir que ambos os fluxos compartilhem o DTO externo corrigido e não existam duas versões concorrentes do contrato. |
-| `docs/INTEGRACAO-GUPY-PROVEDOR.md` | seção “Resultado produzido” | Registra que os campos extras ainda dependem de compatibilidade com o provedor. | Atualizar após o payload real de consulta e webhook ser alinhado. |
-
-## 6. Interface e fallbacks de compatibilidade
+## 3. Interface e fallbacks de compatibilidade
 
 | ID | Tarefa técnica | Critério de conclusão | Status |
 |---|---|---|---|
@@ -112,9 +68,6 @@ Este arquivo contém somente pendências técnicas implementáveis e comprovadas
 
 ## Ordem recomendada
 
-1. `CFG10` — remover o bloqueio de inicialização por configuração sem consumidor.
-2. `SEC10` — eliminar fontes de verdade concorrentes no ciclo de vida das credenciais.
-3. `INT10` — tornar conexão e atividade ATS reais, persistidas e auditáveis.
-4. `INT1` — alinhar os tipos do contrato de entrada da Gupy preservando idempotência e compatibilidade Recrutei.
-5. `API1` — alinhar o contrato de resultado usado por consulta e webhook.
-6. `UI10` — remover o fallback que fabrica estados operacionais e comerciais.
+1. `SEC10` — eliminar fontes de verdade concorrentes no ciclo de vida das credenciais.
+2. `INT10` — tornar conexão e atividade ATS reais, persistidas e auditáveis.
+3. `UI10` — remover o fallback que fabrica estados operacionais e comerciais.

@@ -1,42 +1,24 @@
 package br.com.iforce.praxis.candidate.controller;
 
 import br.com.iforce.praxis.auth.service.JwtService;
-
 import br.com.iforce.praxis.gupy.persistence.entity.CandidateAttemptEntity;
-
 import br.com.iforce.praxis.gupy.persistence.repository.CandidateAttemptRepository;
-
 import com.jayway.jsonpath.JsonPath;
-
 import org.junit.jupiter.api.Test;
-
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-
 import org.springframework.boot.test.context.SpringBootTest;
-
 import org.springframework.http.MediaType;
-
 import org.springframework.jdbc.core.JdbcTemplate;
-
 import org.springframework.test.context.jdbc.Sql;
-
 import org.springframework.test.web.servlet.MockMvc;
-
 import org.springframework.beans.factory.annotation.Autowired;
-
 import org.springframework.test.web.servlet.MvcResult;
 
-
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
-
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-
 
 @SpringBootTest(properties = {
         "praxis.security.enabled=true",
@@ -68,8 +50,8 @@ class CandidateAttemptSecurityEnabledTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
-                                  "company_id": "empresa-123",
-                                  "document_id": "candidate-public-with-security",
+                                  "company_id": 1,
+                                  "document_id": 4398157401,
                                   "test_id": "sim-atendimento-caos",
                                   "name": "Thiago Souza",
                                   "email": "thiago@example.com",
@@ -99,8 +81,8 @@ class CandidateAttemptSecurityEnabledTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
-                                  "company_id": "empresa-123",
-                                  "document_id": "candidate-legacy-link-with-security",
+                                  "company_id": 1,
+                                  "document_id": 4398157402,
                                   "test_id": "sim-atendimento-caos",
                                   "name": "Thiago Souza",
                                   "email": "thiago@example.com",
@@ -137,8 +119,8 @@ class CandidateAttemptSecurityEnabledTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
-                                  "company_id": "empresa-123",
-                                  "document_id": "candidate-page-redirect-with-security",
+                                  "company_id": 1,
+                                  "document_id": 4398157403,
                                   "test_id": "sim-atendimento-caos",
                                   "name": "Thiago Souza",
                                   "email": "thiago@example.com",

@@ -1,7 +1,6 @@
 package br.com.iforce.praxis.gupy.controller;
 
 import org.junit.jupiter.api.Test;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -28,7 +27,7 @@ class GupyCandidateContractValidationTest {
         mockMvc.perform(post("/test/candidate")
                         .header("Authorization", AUTHORIZATION)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(candidateRequest("candidate-contract-valid", "internal", "\"fail\"")))
+                        .content(candidateRequest(4398157501L, "internal", "\"fail\"")))
                 .andExpect(status().isCreated());
     }
 
@@ -37,7 +36,7 @@ class GupyCandidateContractValidationTest {
         mockMvc.perform(post("/test/candidate")
                         .header("Authorization", AUTHORIZATION)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(candidateRequest("candidate-contract-json-null", "external", "null")))
+                        .content(candidateRequest(4398157502L, "external", "null")))
                 .andExpect(status().isCreated());
     }
 
@@ -48,8 +47,8 @@ class GupyCandidateContractValidationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
-                                  "company_id": "empresa-123",
-                                  "document_id": "candidate-contract-omitted-fields",
+                                  "company_id": 1,
+                                  "document_id": 4398157503,
                                   "test_id": "sim-atendimento-caos",
                                   "name": "Candidato Contrato",
                                   "email": "contrato@example.com",
@@ -62,38 +61,22 @@ class GupyCandidateContractValidationTest {
 
     @Test
     void rejectsUnknownCandidateType() throws Exception {
-        assertInvalidContractValue(candidateRequest(
-                "candidate-contract-invalid-type",
-                "partner",
-                "null"
-        ));
+        assertInvalidContractValue(candidateRequest(4398157504L, "partner", "null"));
     }
 
     @Test
     void rejectsArtificialPreviousResultNone() throws Exception {
-        assertInvalidContractValue(candidateRequest(
-                "candidate-contract-invalid-none",
-                "external",
-                "\"none\""
-        ));
+        assertInvalidContractValue(candidateRequest(4398157505L, "external", "\"none\""));
     }
 
     @Test
     void rejectsPreviousResultPass() throws Exception {
-        assertInvalidContractValue(candidateRequest(
-                "candidate-contract-invalid-pass",
-                "external",
-                "\"pass\""
-        ));
+        assertInvalidContractValue(candidateRequest(4398157506L, "external", "\"pass\""));
     }
 
     @Test
     void rejectsStringNullInsteadOfJsonNull() throws Exception {
-        assertInvalidContractValue(candidateRequest(
-                "candidate-contract-invalid-string-null",
-                "external",
-                "\"null\""
-        ));
+        assertInvalidContractValue(candidateRequest(4398157507L, "external", "\"null\""));
     }
 
     private void assertInvalidContractValue(String requestBody) throws Exception {
@@ -105,11 +88,11 @@ class GupyCandidateContractValidationTest {
                 .andExpect(jsonPath("$.message").value("Corpo da requisição inválido."));
     }
 
-    private String candidateRequest(String documentId, String candidateType, String previousResultJson) {
+    private String candidateRequest(long documentId, String candidateType, String previousResultJson) {
         return """
                 {
-                  "company_id": "empresa-123",
-                  "document_id": "%s",
+                  "company_id": 1,
+                  "document_id": %d,
                   "test_id": "sim-atendimento-caos",
                   "name": "Candidato Contrato",
                   "email": "contrato@example.com",

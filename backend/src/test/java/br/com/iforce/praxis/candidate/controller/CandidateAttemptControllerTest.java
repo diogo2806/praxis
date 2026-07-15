@@ -132,7 +132,7 @@ class CandidateAttemptControllerTest {
 
         mockMvc.perform(get("/test/result/" + resultId)
                         .header("Authorization", AUTHORIZATION)
-                        .param("company_id", "empresa-123"))
+                        .param("company_id", "1"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("done"))
                 .andExpect(jsonPath("$.results[?(@.title=='Empatia')].score").value(org.hamcrest.Matchers.hasItem(100)))
@@ -197,7 +197,7 @@ class CandidateAttemptControllerTest {
 
         mockMvc.perform(get("/test/result/" + resultId)
                         .header("Authorization", AUTHORIZATION)
-                        .param("company_id", "empresa-123"))
+                        .param("company_id", "1"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("done"))
                 .andExpect(jsonPath("$.results[?(@.title=='Empatia')].score").value(org.hamcrest.Matchers.hasItem(95)))
@@ -226,7 +226,7 @@ class CandidateAttemptControllerTest {
 
         mockMvc.perform(get("/test/result/" + resultId)
                         .header("Authorization", AUTHORIZATION)
-                        .param("company_id", "empresa-123"))
+                        .param("company_id", "1"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("done"))
                 .andExpect(jsonPath("$.results[?(@.title=='Empatia')].score").value(org.hamcrest.Matchers.hasItem(0)))
@@ -282,16 +282,14 @@ class CandidateAttemptControllerTest {
                 .andExpect(jsonPath("$.finalizado").value(true))
                 .andExpect(jsonPath("$.etapaAtual").doesNotExist());
 
-        Long timeoutAnswerCount = jdbcTemplate.queryForObject(
-                "SELECT COUNT(*) FROM attempt_answers WHERE candidate_attempt_id = ? AND timed_out = TRUE",
-                Long.class,
-                attemptId
-        );
-        assertThat(timeoutAnswerCount).isEqualTo(1L);
+        CandidateAttemptEntity completedAttempt = candidateAttemptRepository.findById(attemptId)
+                .orElseThrow();
+        assertThat(completedAttempt.getAnswers())
+                .anySatisfy(answer -> assertThat(answer.isTimedOut()).isTrue());
 
         mockMvc.perform(get("/test/result/" + resultId)
                         .header("Authorization", AUTHORIZATION)
-                        .param("company_id", "empresa-123"))
+                        .param("company_id", "1"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("done"))
                 .andExpect(jsonPath("$.other_informations").doesNotExist())
@@ -437,7 +435,7 @@ class CandidateAttemptControllerTest {
 
         mockMvc.perform(get("/test/result/" + resultId)
                         .header("Authorization", AUTHORIZATION)
-                        .param("company_id", "empresa-123"))
+                        .param("company_id", "1"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.results[?(@.title=='Empatia')].score").value(org.hamcrest.Matchers.hasItem(100)))
                 .andExpect(jsonPath("$.company_result_string").value(org.hamcrest.Matchers.containsString("Pontuação geral: 100/100")));
@@ -462,7 +460,7 @@ class CandidateAttemptControllerTest {
 
         mockMvc.perform(get("/test/result/" + resultId)
                         .header("Authorization", AUTHORIZATION)
-                        .param("company_id", "empresa-123"))
+                        .param("company_id", "1"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.results[?(@.title=='Aderencia a politica')].tier").value(org.hamcrest.Matchers.hasItem("minor")))
                 .andExpect(jsonPath("$.results[?(@.title=='Empatia')].tier").value(org.hamcrest.Matchers.hasItem("major")))
@@ -662,13 +660,14 @@ class CandidateAttemptControllerTest {
     }
 
     private MvcResult createAttemptResult(String documentId, String simulationId) throws Exception {
+        long numericDocumentId = Integer.toUnsignedLong(documentId.hashCode()) + 1L;
         return mockMvc.perform(post("/test/candidate")
                         .header("Authorization", AUTHORIZATION)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
-                                  "company_id": "empresa-123",
-                                  "document_id": "%s",
+                                  "company_id": 1,
+                                  "document_id": %d,
                                   "test_id": "%s",
                                   "name": "Thiago Souza",
                                   "email": "thiago@example.com",
@@ -678,7 +677,7 @@ class CandidateAttemptControllerTest {
                                   "candidate_type": "external",
                                   "previous_result": null
                                 }
-                                """.formatted(documentId, simulationId)))
+                                """.formatted(numericDocumentId, simulationId)))
                 .andExpect(status().isCreated())
                 .andReturn();
     }
