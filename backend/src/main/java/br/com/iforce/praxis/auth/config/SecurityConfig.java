@@ -2,6 +2,8 @@ package br.com.iforce.praxis.auth.config;
 
 import br.com.iforce.praxis.auth.filter.JwtAuthenticationFilter;
 
+import jakarta.servlet.http.HttpServletRequest;
+
 import org.springframework.beans.factory.annotation.Value;
 
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
@@ -10,9 +12,9 @@ import org.springframework.context.annotation.Bean;
 
 import org.springframework.context.annotation.Configuration;
 
-import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.http.HttpHeaders;
 
-import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
+import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 
 import org.springframework.security.config.http.SessionCreationPolicy;
 
@@ -30,6 +32,8 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 @Configuration
 public class SecurityConfig {
 
+    private static final String BEARER_PREFIX = "Bearer ";
+
     private final JwtAuthenticationFilter jwtFilter;
     private final boolean securityEnabled;
 
@@ -43,7 +47,7 @@ public class SecurityConfig {
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
-        http.csrf(AbstractHttpConfigurer::disable)
+        http.csrf(csrf -> csrf.ignoringRequestMatchers(this::isCsrfExemptRequest))
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
 
         if (!securityEnabled) {
@@ -105,6 +109,45 @@ public class SecurityConfig {
         );
 
         return http.build();
+    }
+
+    /**
+     * Mantém CSRF habilitado para fluxos que possam vir a usar credenciais de
+     * navegador, dispensando somente os contratos stateless atuais. Tokens Bearer
+     * enviados explicitamente no cabeçalho não são credenciais anexadas
+     * automaticamente pelo navegador e, portanto, não são suscetíveis a CSRF.
+     */
+    private boolean isCsrfExemptRequest(HttpServletRequest request) {
+        if (!securityEnabled) {
+            return true;
+        }
+
+        String authorization = request.getHeader(HttpHeaders.AUTHORIZATION);
+        if (authorization != null && authorization.startsWith(BEARER_PREFIX)) {
+            return true;
+        }
+
+        String path = resolveRequestPath(request);
+        return "/api/v1/auth/login".equals(path)
+                || matchesPathOrDescendant(path, "/api/v1/auth/invite")
+                || matchesPathOrDescendant(path, "/api/v1/auth/password")
+                || matchesPathOrDescendant(path, "/candidate")
+                || matchesPathOrDescendant(path, "/candidato")
+                || matchesPathOrDescendant(path, "/test")
+                || matchesPathOrDescendant(path, "/recrutei/test")
+                || matchesPathOrDescendant(path, "/api/webhooks/mercado-pago");
+    }
+
+    private static String resolveRequestPath(HttpServletRequest request) {
+        String contextPath = request.getContextPath();
+        String requestUri = request.getRequestURI();
+        return contextPath == null || contextPath.isBlank()
+                ? requestUri
+                : requestUri.substring(contextPath.length());
+    }
+
+    private static boolean matchesPathOrDescendant(String path, String rootPath) {
+        return rootPath.equals(path) || path.startsWith(rootPath + "/");
     }
 
     @Bean
