@@ -1,16 +1,17 @@
 name: Apply INT11 separation
 
 on:
-  push:
+  pull_request:
     branches:
-      - fix/int11-separar-webhooks-20260715
+      - main
+    types: [opened, synchronize, reopened]
 
 permissions:
   contents: write
 
 jobs:
   apply:
-    if: github.actor != 'github-actions[bot]'
+    if: github.head_ref == 'fix/int11-separar-webhooks-20260715' && github.actor != 'github-actions[bot]'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -76,8 +77,7 @@ jobs:
               '    public static final String ATTEMPT_STARTED_EVENT = "ATTEMPT_STARTED";\n'
               '    public static final String ATTEMPT_ABANDONED_EVENT = "ATTEMPT_ABANDONED";\n'
           )
-          marker = '''    // --- Entrega real (chamada pelo processamento do outbox) ------------------
-'''
+          marker = '    // --- Entrega real (chamada pelo processamento do outbox) ------------------\n'
           addition = '''    /** Verifica se o webhook genérico está conectado e inscrito no evento informado. */
     @Transactional(readOnly = true)
     public boolean hasActiveWebhookForEvent(String empresaId, String eventType) {
