@@ -1,6 +1,6 @@
 # Requisitos técnicos pendentes — praxis
 
-Status: atualizado em 2026-07-15 após conclusão de `ASYNC11` e `DATA14`.
+Status: atualizado em 2026-07-15 após conclusão de `ASYNC11`, `BUS13` e `DATA14`.
 
 Este arquivo contém somente pendências técnicas implementáveis e comprovadas no sistema. Não inclui CI/CD, testes, QA, métricas observacionais, publicação ou marketing.
 
@@ -55,7 +55,6 @@ Este arquivo contém somente pendências técnicas implementáveis e comprovadas
 | ID | Tarefa técnica | Critério de conclusão | Status |
 |---|---|---|---|
 | BUS12 | Garantir comparabilidade de pontuação entre caminhos ou bloquear comparações incompatíveis. | Resultados comparados usam base comum de competências, pesos e máximos alcançáveis; alternativamente, o backend classifica incompatibilidade e o Talent Match bloqueia ou sinaliza claramente a comparação. | ⬜ Pendente |
-| BUS13 | Apresentar horas economizadas como estimativa configurável com metodologia explícita. | Relatórios identificam o valor como estimativa, exibem período, fórmula, parâmetro e ressalva metodológica; nenhuma mensagem o apresenta como economia observada sem dados comparativos. | ⬜ Pendente |
 
 ### BUS12 — comparabilidade entre caminhos
 
@@ -64,13 +63,6 @@ Este arquivo contém somente pendências técnicas implementáveis e comprovadas
 | `backend/src/main/java/br/com/iforce/praxis/gupy/service/ResultScoringService.java` | `calculate()` | O máximo é somado por nó do caminho percorrido usando a melhor alternativa daquele nó; competências sem máximo positivo são removidas e os pesos restantes são renormalizados. Caminhos diferentes podem produzir bases efetivas diferentes. | Definir matriz comum de competências e máximos por versão ou gerar assinatura explícita de comparabilidade por caminho. |
 | `backend/src/main/java/br/com/iforce/praxis/simulation/service/SimulationValidationService.java` | `validatePathCompetencyCoverage()` | A cobertura desigual entre caminhos não impede necessariamente a publicação. | Bloquear publicação quando a política exigir base comum ou registrar formalmente grupos de caminhos comparáveis. |
 | `frontend/src/routes/talent-match.tsx` | consulta e exibição do Talent Match | Seleciona e exibe candidatos da mesma avaliação sem validar assinatura comum de competências, pesos e máximos efetivos. | Consumir metadado de comparabilidade e bloquear, separar ou sinalizar resultados incompatíveis. |
-
-### BUS13 — metodologia das horas economizadas
-
-| Caminho completo | Método/campo/contrato | Como está | O que fazer |
-|---|---|---|---|
-| `backend/src/main/java/br/com/iforce/praxis/engagement/service/EngagementReportService.java` | `sendMonthlyReports()` | Calcula `completed * hoursSavedPerEvaluation` e envia o valor como horas economizadas, sem medição do processo anterior. | Nomear como estimativa e incluir fórmula, parâmetro, período e origem metodológica no DTO e na mensagem. |
-| `backend/src/main/resources/application.properties` | `praxis.engagement.hours-saved-per-evaluation` | O serviço usa padrão de `1.5` quando não há configuração; o parâmetro não é específico por empresa. | Permitir configuração por empresa ou desativação e impedir linguagem de comprovação quando houver apenas hipótese. |
 
 ## 4. Operação e interface
 
@@ -93,4 +85,3 @@ Este arquivo contém somente pendências técnicas implementáveis e comprovadas
 3. `DATA13` — separar reteste legítimo de repetição idempotente.
 4. `BUS12` — tornar resultados comparáveis ou bloquear comparações incompatíveis.
 5. `UI13` — paginar e completar o centro operacional.
-6. `BUS13` — explicitar a metodologia da estimativa de horas economizadas.
