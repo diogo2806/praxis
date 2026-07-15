@@ -1,6 +1,6 @@
 # Requisitos técnicos implementados — praxis
 
-Status: atualizado em 2026-07-15 após auditoria da branch main no commit `689bad357105b10d57ce84d56e52ddf9a0141a0a`.
+Status: atualizado em 2026-07-15 após conclusão de `INT15`.
 
 Este arquivo registra somente comportamentos comprovadamente entregues no código e no fluxo real. Entregas parciais permanecem no backlog canônico.
 
@@ -8,6 +8,7 @@ Este arquivo registra somente comportamentos comprovadamente entregues no códig
 
 | Origem | Situação registrada | Entrega comprovada | Pendência remanescente |
 |---|---|---|---|
+| `INT15` | Concluído | A documentação do provedor Gupy passou a reproduzir o JSON real do catálogo sem `category` e `level` artificiais, identifica `result_candidate_page_url` como incompatível enquanto publicar `attemptId` cru, registra que `ABANDONED` e `EXPIRED` são rejeitados e mantém explícita a ausência de homologação. | `INT14` continua pendente para gerar a credencial assinada da página pública de resultado; a homologação real também permanece externa ao código. |
 | `INT13` | Concluído | O catálogo Gupy usa `GupyTestCatalogMapper` no fluxo real de `GET /test`; como o domínio publicado não possui fonte configurável para categoria e nível, ambos são mantidos nulos e omitidos da serialização externa por `NON_NULL`, sem valores genéricos fabricados. | Nenhuma para metadados artificiais do catálogo. |
 | `API2` | Concluído | A criação Gupy calcula impressão canônica versionada da requisição, persiste o fingerprint e retorna `409` quando a mesma chave idempotente reaparece com conteúdo divergente; repetições equivalentes preservam a tentativa original. | Nenhuma para consistência da repetição idempotente. |
 | `ASYNC10` | Concluído | O processamento de `RESULT_READY` mantém confirmação, tentativas, erro e conclusão por destino Gupy e `CUSTOM_API`; falha de um destino não apaga sua entrega nem repete automaticamente o destino já confirmado. | Nenhuma para fan-out e retry independente. |
@@ -30,6 +31,8 @@ Este arquivo registra somente comportamentos comprovadamente entregues no códig
 
 | Caminho completo | Método/campo/contrato | Comportamento comprovado |
 |---|---|---|
+| `docs/INTEGRACAO-GUPY-PROVEDOR.md` | catálogo, matriz de compatibilidade, URLs e estados | O exemplo de `GET /test` corresponde à serialização real; a URL de resultado da pessoa candidata é marcada como incompatível até `INT14`; estados sem resultado final deixam de ser descritos como `done`; a documentação não afirma homologação. |
+| `README.md` | ressalva da integração Gupy | A apresentação permanece sem afirmação de homologação e encaminha para o documento técnico atualizado. |
 | `backend/src/main/java/br/com/iforce/praxis/gupy/controller/GupyIntegrationController.java` | `listPublishedTests()` | O endpoint alcançável autentica a integração, busca somente simulações publicadas da empresa e delega cada item ao mapper de catálogo. |
 | `backend/src/main/java/br/com/iforce/praxis/gupy/service/GupyTestCatalogMapper.java` | `toResponse()` | Preserva ID, nome e descrição reais da simulação e não fabrica categoria ou nível sem fonte no domínio publicado. |
 | `backend/src/main/java/br/com/iforce/praxis/gupy/dto/GupyTestResponse.java` | `@JsonInclude(NON_NULL)` | Remove os campos opcionais nulos do JSON efetivamente enviado pelo catálogo. |
