@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { CheckCircle2, Clock3, ExternalLink, ShieldCheck } from "lucide-react";
+import type { ReactNode } from "react";
 
 import { LanguageSelector } from "@/components/language-selector";
 import {
@@ -150,7 +151,7 @@ function ResultCard({
   title,
   description,
 }: {
-  icon: React.ReactNode;
+  icon: ReactNode;
   label: string;
   title: string;
   description: string;

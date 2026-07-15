@@ -17,7 +17,7 @@ O Praxis expõe:
 - `GET /test/result/{resultId}` para consultar o resultado;
 - entrega assíncrona para `result_webhook_url` por outbox.
 
-O fluxo interno implementa `callback_url`, `job_id`, retorno assíncrono, redirecionamento final e o endpoint oficial de consulta do resultado. Permanecem divergências de tipos e enums que ainda impedem declarar a integração homologada.
+O fluxo interno implementa `callback_url`, `job_id`, retorno assíncrono, redirecionamento final, consulta oficial do resultado e páginas web reais para recrutador e candidato. Permanecem divergências de tipos e enums que ainda impedem declarar a integração homologada.
 
 ## Compatibilidade com o contrato oficial
 
@@ -40,7 +40,8 @@ O fluxo interno implementa `callback_url`, `job_id`, retorno assíncrono, redire
 | Payload `TestResult` | Campos principais são produzidos | Parcial |
 | Status `notStarted`, `paused`, `done` | Implementado | Compatível |
 | Resultado numérico de 0 a 100 | Implementado por competência | Compatível |
-| `result_candidate_page_url` como página para a pessoa candidata | Hoje aponta para `/candidate/attempts/{attemptId}`, que é uma API JSON | **Incompatível para experiência de navegador** |
+| `result_page_url` para recrutador | Aponta para `/results/{attemptId}`, página autenticada com competências, respostas e decisão humana | Compatível |
+| `result_candidate_page_url` para candidato | Aponta para `/candidato/{token}/resultado`, página assinada e limitada a status, avaliação e retorno ao ATS | Compatível |
 | Campos extras no resultado | Envia `reliabilityLevel` e `other_informations` no topo | Exige validação com a Gupy; não fazem parte do schema oficial publicado |
 
 ## Autenticação real
@@ -183,8 +184,8 @@ Campos principais:
   "company_result_string": "Resultado em Markdown para o RH",
   "providerLink": "https://app.exemplo.com",
   "status": "done",
-  "result_page_url": "https://app.exemplo.com/test/result/res_123",
-  "result_candidate_page_url": "https://app.exemplo.com/candidate/attempts/att_123",
+  "result_page_url": "https://app.exemplo.com/results/att_123",
+  "result_candidate_page_url": "https://app.exemplo.com/candidato/<token-assinado>/resultado",
   "reliabilityLevel": "NORMAL",
   "other_informations": {
     "timeout_count": 0,
@@ -204,6 +205,8 @@ Campos principais:
   ]
 }
 ```
+
+`result_page_url` abre a página autenticada do recrutador. `result_candidate_page_url` usa token assinado e abre uma página separada que não expõe pontuação, respostas, e-mail ou regras internas; ela mostra apenas o estado da participação, a avaliação e o retorno ao processo seletivo.
 
 Mapeamento de status:
 
@@ -234,6 +237,8 @@ sequenceDiagram
   Praxis->>Outbox: grava RESULT_READY
   Outbox->>Gupy: POST result_webhook_url
   Gupy->>Praxis: GET /test/result/{resultId}
+  Gupy-->>Recrutador: abre /results/{attemptId}
+  Gupy-->>Candidato: abre /candidato/{token}/resultado
 ```
 
 Fluxo de callback e redirecionamento implementado:
@@ -290,9 +295,8 @@ POST /api/v1/gupy/result-deliveries/{deliveryId}/reprocess
 
 1. Definir compatibilidade de tipos para `company_id` e `document_id`.
 2. Aceitar e validar `previous_result` conforme `fail` ou `null`.
-3. Corrigir `result_candidate_page_url` para uma página de navegador.
-4. Validar com a Gupy se campos extras no `TestResult` são aceitos ou removê-los do contrato externo.
-5. Executar homologação em vaga real, pois a própria documentação da Gupy informa que não há ambiente de sandbox para esse fluxo.
+3. Validar com a Gupy se campos extras no `TestResult` são aceitos ou removê-los do contrato externo.
+4. Executar homologação em vaga real, pois a própria documentação da Gupy informa que não há ambiente de sandbox para esse fluxo.
 
 ## Checklist de validação
 
@@ -305,7 +309,7 @@ POST /api/v1/gupy/result-deliveries/{deliveryId}/reprocess
 - [ ] Concluir uma tentativa.
 - [x] Validar callback e redirecionamento em testes automatizados; falta confirmar na homologação real da Gupy.
 - [x] Validar `GET /test/result/{resultId}` sem parâmetros extras e com isolamento pelo token.
-- [ ] Validar o `TestResult` exibido para empresa e candidato.
+- [x] Validar páginas reais do `TestResult` para recrutador e candidato, incluindo isolamento de dados.
 - [ ] Testar `result_webhook_url`.
 - [ ] Testar retry, `408`, `429`, 4xx permanente e DLQ.
 - [ ] Homologar com cliente e vaga real na Gupy.
