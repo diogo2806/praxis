@@ -6,46 +6,44 @@ Este arquivo contém somente pendências técnicas implementáveis e comprovadas
 
 ## Contexto da auditoria
 
-- Commit auditado da branch principal: `2cbe682a1c82c2b11fa7b08523b28805bc790e33`.
+- Commit auditado da branch principal: `689bad357105b10d57ce84d56e52ddf9a0141a0a`.
 - Finalidade identificada: plataforma de avaliações situacionais para recrutamento, com critérios explícitos, score determinístico, trilha auditável e integração com ATS.
 - Stack principal: Java 21, Spring Boot 3.5, Spring Security, JPA, PostgreSQL/Flyway, React 19, TanStack Start/Router e TypeScript.
-- Arquitetura predominante: frontend React consumindo API Spring Boot, persistência PostgreSQL, autenticação JWT nas rotas internas, Bearer token nas integrações e entrega assíncrona por outbox.
-- Fluxos revisados: catálogo Gupy, criação idempotente de tentativas, execução pública do candidato, cálculo e entrega de resultado, callback, página pública de resultado, outbox por destino e documentação de compatibilidade.
+- Arquitetura predominante: frontend React consumindo API Spring Boot, persistência PostgreSQL, autenticação JWT nas rotas internas, Bearer token nas integrações e entrega assíncrona por outbox transacional.
+- Fluxos revisados: catálogo Gupy, criação idempotente de tentativas, emissão de links públicos, execução do candidato, cálculo e entrega de resultado, callback, página pública de resultado, outbox por destino e documentação de compatibilidade.
 
-## 1. Contrato e catálogo da integração Gupy
+## 1. Resultado público da integração Gupy
 
 | ID | Tarefa técnica | Critério de conclusão | Status |
 |---|---|---|---|
-| INT13 | Tornar categoria e nível do catálogo Gupy derivados de dados reais ou omiti-los quando não configurados. | Cada teste publicado anuncia metadados coerentes com sua configuração; não há valores fixos aplicados indistintamente a todas as avaliações sem fonte no domínio. | ⬜ Pendente |
-| INT14 | Alinhar a URL de resultado da pessoa candidata ao conteúdo e à duração prometidos no contrato externo. | A URL enviada como página de resultado abre conteúdo coerente com a finalidade declarada e usa credencial com validade própria ou renovação segura, sem reutilizar o TTL curto de execução. | ⬜ Pendente |
-| INT15 | Manter uma matriz explícita de compatibilidade Gupy sem declarar homologação antes da validação contratual. | A documentação distingue schema confirmado, extensões do Praxis, exemplos contraditórios e decisões ainda pendentes, sem afirmar compatibilidade absoluta ou homologação concluída. | ⬜ Pendente |
+| INT14 | Emitir uma URL de resultado da pessoa candidata que seja realmente consumível pelo endpoint público e tenha validade própria para consulta posterior. | `result_candidate_page_url` contém credencial assinada aceita por `/candidate/results/{token}`; a consulta não reutiliza ID interno nem depende do TTL curto da execução; conteúdo e escopo permanecem limitados ao candidato. | ⬜ Pendente |
 
-### INT13 — metadados reais do catálogo Gupy
+### INT14 — credencial e validade da página pública de resultado
 
 | Caminho completo | Método/campo/contrato | Como está | O que fazer |
 |---|---|---|---|
-| `backend/src/main/java/br/com/iforce/praxis/gupy/service/GupyTestCatalogMapper.java` | montagem de categoria e nível | O contrato externo continua preenchendo categoria e nível com valores fixos sem fonte comprovada na simulação publicada. | Derivar os valores de configuração persistida da avaliação ou omiti-los quando o contrato permitir. |
-| `backend/src/main/java/br/com/iforce/praxis/gupy/model/PublishedSimulation.java` | metadados de catálogo | O domínio publicado não possui campos que distingam categoria e nível por avaliação. | Adicionar campos somente quando forem realmente configuráveis e obrigatórios; caso contrário, não fabricar valores no mapper externo. |
-| `backend/src/main/java/br/com/iforce/praxis/simulation/service/SimulationMapperService.java` | `toPublishedSimulation()` | O mapeamento da versão publicada não fornece metadados de categoria ou nível ao catálogo Gupy. | Propagar os campos persistidos caso sejam introduzidos ou manter o contrato externo sem esses valores artificiais. |
+| `backend/src/main/java/br/com/iforce/praxis/gupy/service/GupyTestResultMapper.java` | `candidateResultPageUrl()` e construtor | O mapper publica `/candidato/{attemptId}/resultado`; recebe `JwtService`, mas não o armazena nem gera credencial assinada. O valor produzido é um ID interno `att_...`. | Gerar uma credencial específica de consulta de resultado, com empresa, tentativa, tipo e expiração próprios, e inserir essa credencial na URL publicada. |
+| `backend/src/main/java/br/com/iforce/praxis/candidate/service/CandidateResultPageService.java` | `findByToken()` e `parseToken()` | O fluxo alcançável exige `JwtService.parseCandidateAttemptToken()`. Portanto, a URL atualmente produzida pelo mapper é rejeitada com `401` antes da consulta da tentativa. | Aceitar somente o novo tipo de token de resultado e resolver empresa/tentativa a partir dele; não adicionar fallback para `attemptId` cru. |
+| `backend/src/main/java/br/com/iforce/praxis/auth/service/JwtService.java` | `generateCandidateAttemptToken()` e `parseCandidateAttemptToken()` | Existe somente token de execução, com tipo `candidate_attempt` e TTL fornecido pelo fluxo da prova. Não há token separado para consulta histórica do resultado. | Adicionar `novo método sugerido: generateCandidateResultToken()` e parser correspondente, com claim de tipo e TTL independentes do token de execução. |
+| `backend/src/main/java/br/com/iforce/praxis/config/PraxisProperties.java` | configuração de validade | A configuração não separa a validade do acesso à prova da validade da página de resultado. | Adicionar configuração explícita para TTL do resultado público e usá-la somente na geração da credencial de consulta. |
+| `frontend/src/routes/candidato.$token.resultado.tsx` | parâmetro `$token` | A tela e o cliente HTTP já tratam o parâmetro como token e apresentam somente estado, avaliação, conclusão e retorno ao ATS. | Preservar esse contrato limitado e garantir que links de continuar avaliação não reutilizem token de resultado como token de execução. |
 
-### INT14 — página de resultado e validade do acesso
+## 2. Documentação do contrato Gupy
+
+| ID | Tarefa técnica | Critério de conclusão | Status |
+|---|---|---|---|
+| INT15 | Alinhar o documento do provedor Gupy ao comportamento real do código, sem declarar compatibilidade onde o fluxo falha ou diverge. | Exemplos, tabelas de estado e descrição das URLs correspondem ao payload e às validações executadas na `main`; divergências abertas ficam marcadas como pendentes, sem afirmação de homologação. | ⬜ Pendente |
+
+### INT15 — divergências comprovadas no documento do provedor
 
 | Caminho completo | Método/campo/contrato | Como está | O que fazer |
 |---|---|---|---|
-| `backend/src/main/java/br/com/iforce/praxis/gupy/service/GupyTestResultMapper.java` | URL pública de resultado | A URL externa continua vinculada ao token da tentativa usado no fluxo de execução. | Emitir credencial específica de consulta de resultado com escopo e validade próprios ou implementar renovação segura. |
-| `backend/src/main/java/br/com/iforce/praxis/config/PraxisProperties.java` | TTL do link da tentativa | A mesma política temporal ainda governa execução e consulta histórica do resultado. | Separar a configuração de TTL de execução da configuração de consulta de resultado. |
-| `backend/src/main/java/br/com/iforce/praxis/candidate/controller/CandidateResultController.java` | conteúdo da página pública | O endpoint identificado como página de resultado não possui um contrato de conteúdo que corresponda claramente ao que é anunciado ao provedor. | Exibir somente o resultado permitido pela política do produto ou deixar de anunciar esse endpoint como página de resultado. |
-
-### INT15 — matriz de compatibilidade e prontidão Gupy
-
-| Caminho completo | Método/campo/contrato | Como está | O que fazer |
-|---|---|---|---|
-| `docs/INTEGRACAO-GUPY-PROVEDOR.md` | status de compatibilidade | A documentação precisa permanecer alinhada às divergências funcionais ainda abertas, especialmente catálogo e página de resultado. | Manter tabela por campo e endpoint com situação confirmada, decisão adotada, risco e evidência, sem declarar homologação concluída. |
-| `backend/src/main/java/br/com/iforce/praxis/gupy/dto/CreateCandidateRequest.java` | campos adicionais e interpretações | O Praxis exige dados adicionais e adota interpretações específicas para valores contraditórios nos exemplos externos. | Documentar formalmente cada extensão e interpretação até confirmação do contrato efetivamente aceito pelo provedor. |
-| `README.md` | apresentação da integração | O README já evita afirmar homologação, mas depende do documento técnico para o estado detalhado. | Preservar essa ressalva e garantir que o documento técnico não contradiga a implementação real. |
+| `docs/INTEGRACAO-GUPY-PROVEDOR.md` | exemplo de `GET /test` | O exemplo ainda envia `category` e `level`, embora o catálogo real omita ambos quando não há fonte configurável no domínio. | Remover esses campos do exemplo padrão ou apresentá-los apenas em exemplo condicionado a dados reais persistidos. |
+| `docs/INTEGRACAO-GUPY-PROVEDOR.md` | `result_candidate_page_url` | O texto afirma que a URL contém token assinado e é compatível, mas `GupyTestResultMapper.candidateResultPageUrl()` publica o ID interno da tentativa e o endpoint exige JWT. | Marcar a URL como incompatível até a conclusão de `INT14` e descrever exatamente a credencial produzida pela implementação atual. |
+| `docs/INTEGRACAO-GUPY-PROVEDOR.md` | mapeamento de estados | A tabela documenta `ABANDONED` e `EXPIRED` como `done`, enquanto `GupyTestResultMapper.assertExternallyRepresentable()` rejeita ambos e não produz resultado externo. | Corrigir a tabela e o fluxo descrito para refletir que apenas estados representáveis chegam ao contrato externo. |
+| `README.md` | apresentação da integração | O README evita declarar homologação e encaminha para o documento técnico. | Manter a ressalva e impedir que o documento técnico contradiga essa condição com estados de compatibilidade absolutos. |
 
 ## Ordem recomendada
 
-1. `INT14` — corrigir semântica e validade da página de resultado.
-2. `INT13` — publicar somente metadados de catálogo sustentados pelo domínio.
-3. `INT15` — consolidar a matriz de compatibilidade com as decisões contratuais reais.
+1. `INT14` — corrigir a URL pública que hoje é rejeitada pelo próprio endpoint.
+2. `INT15` — alinhar exemplos e matriz documental ao comportamento efetivamente alcançável.
