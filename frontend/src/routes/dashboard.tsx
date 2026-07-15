@@ -18,12 +18,8 @@ import {
 } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
 import { StateBanner } from "@/components/praxis-ui";
-import {
-  DashboardCompatibilityError,
-  getDashboard,
-  type DashboardActionSeverity,
-  type DashboardResponse,
-} from "@/lib/api/praxis";
+import { DashboardCompatibilityError, getDashboard } from "@/lib/api/dashboard-strict";
+import { type DashboardActionSeverity, type DashboardResponse } from "@/lib/api/praxis";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/dashboard")({
