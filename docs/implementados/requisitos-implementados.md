@@ -1,6 +1,6 @@
 # Requisitos técnicos implementados — praxis
 
-Status: atualizado em 2026-07-15 após entrega do contrato de entrada da Gupy.
+Status: atualizado em 2026-07-15 após entregas de `CFG10`, `INT1` e `INT2`.
 
 Este arquivo registra somente comportamentos comprovadamente entregues no código e no fluxo real. Entregas parciais são descritas como parciais e apontam para os IDs que mantêm as lacunas remanescentes no backlog canônico.
 
@@ -8,10 +8,19 @@ Este arquivo registra somente comportamentos comprovadamente entregues no códig
 
 | Origem | Situação registrada | Entrega comprovada | Pendência remanescente |
 |---|---|---|---|
+| `CFG10` | Concluído | O Docker Compose não exige mais `PRAXIS_INTEGRATION_TOKEN`; o CI valida a configuração sem credencial global; Gupy e Recrutei continuam autenticando somente pelos tokens persistidos por empresa e provedor. | Nenhuma. |
 | `INT1` | Concluído | `company_id` e `document_id` do `POST /test/candidate` são recebidos como inteiros JSON `int64` positivos, normalizados para identidade decimal canônica, validados contra o token e usados de forma estável na idempotência. | Nenhuma para o contrato de entrada; a homologação real continua necessária. |
 | `INT2` | Concluído | `candidate_type` aceita somente `internal`/`external`; `previous_result` aceita `fail`, ausência e formas de `null` previstas pela documentação; `none` e valores desconhecidos são rejeitados antes do caso de uso. | Nenhuma para os enums de entrada. |
 | `REQ-INTEGRACOES-REATIVACAO-TOKEN-ATS` | Concluído | Reativação de Gupy/Recrutei rotaciona a credencial, retorna o novo token uma única vez, persiste somente hash/prévia, muda o estado para `PENDENTE` e limpa a atividade da credencial anterior. | O ciclo geral de rotação/revogação ainda possui fluxos concorrentes; registrado em `SEC10`. |
 | `REQ-INTEGRACOES-STATUS-CONEXAO-REAL` | Entrega parcial consolidada | Atualização manual de status deixou de promover conexão; conexões sem `lastSyncAt` são normalizadas para `PENDENTE`; a interface diferencia token configurado de conexão comprovada. | Registro completo da atividade externa, auditoria e proteção de `DESATIVADA` permanecem em `INT10`; consistência de credenciais permanece em `SEC10`. |
+
+### CFG10 — runtime sem credencial global legada
+
+| Caminho completo | Método/campo/contrato | Comportamento comprovado |
+|---|---|---|
+| `docker-compose.yml` | ambiente do backend | Removeu a expansão obrigatória de `PRAXIS_INTEGRATION_TOKEN`; a inicialização continua exigindo apenas as configurações efetivamente consumidas. |
+| `.github/workflows/ci.yml` | job `compose-config` | Executa `docker compose config --quiet` sem definir a credencial global, impedindo a reintrodução da exigência legada. |
+| `README.md` e `docs/IMPLANTACAO.md` | configuração local e implantação | Documentam o modelo real de token vinculado à empresa e ao provedor na tabela `integration_tokens`. |
 
 ### INT1 — identificadores oficiais e idempotência estável
 
