@@ -25,7 +25,12 @@ jobs:
           show-progress: false
 
       - name: Apply source changes
-        run: python .github/scripts/apply_gupy_callback_contract.py
+        run: |
+          set +e
+          output=$(python .github/scripts/apply_gupy_callback_contract.py 2>&1)
+          status=$?
+          printf '%s\n' "$output" | tail -n 20
+          exit $status
 
       - name: Remove temporary automation
         run: |
