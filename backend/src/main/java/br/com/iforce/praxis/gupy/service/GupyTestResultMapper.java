@@ -14,6 +14,7 @@ import org.springframework.stereotype.Component;
 
 import java.time.Instant;
 import java.util.Comparator;
+import java.util.List;
 import java.util.Map;
 
 @Component
@@ -31,6 +32,7 @@ public class GupyTestResultMapper {
     }
 
     public TestResultResponse toResponse(CandidateAttempt attempt, PublishedSimulation simulation) {
+        assertExternallyRepresentable(attempt.status());
         return new TestResultResponse(
                 simulation.name(),
                 simulation.id(),
@@ -41,19 +43,22 @@ public class GupyTestResultMapper {
                 toGupyStatus(attempt.status()),
                 recruiterResultPageUrl(attempt.id()),
                 candidateResultPageUrl(attempt.empresaId(), attempt.id()),
-                attempt.results().stream()
-                        .sorted(Comparator.comparing(ResultItem::name))
-                        .map(resultItem -> toItemResponse(
-                                resultItem.name(),
-                                resultItem.score(),
-                                resultItem.tier().getDescricao(),
-                                attempt.finishedAt()
-                        ))
-                        .toList()
+                attempt.status() == AttemptStatus.COMPLETED
+                        ? attempt.results().stream()
+                                .sorted(Comparator.comparing(ResultItem::name))
+                                .map(resultItem -> toItemResponse(
+                                        resultItem.name(),
+                                        resultItem.score(),
+                                        resultItem.tier().getDescricao(),
+                                        attempt.finishedAt()
+                                ))
+                                .toList()
+                        : List.of()
         );
     }
 
     public TestResultResponse toResponse(CandidateAttemptEntity attempt, PublishedSimulation simulation) {
+        assertExternallyRepresentable(attempt.getStatus());
         return new TestResultResponse(
                 simulation.name(),
                 simulation.id(),
@@ -64,15 +69,17 @@ public class GupyTestResultMapper {
                 toGupyStatus(attempt.getStatus()),
                 recruiterResultPageUrl(attempt.getId()),
                 candidateResultPageUrl(attempt.getEmpresaId(), attempt.getId()),
-                attempt.getResultItems().stream()
-                        .sorted(Comparator.comparing(ResultItemEntity::getName))
-                        .map(resultItem -> toItemResponse(
-                                resultItem.getName(),
-                                resultItem.getScore(),
-                                resultItem.getTier().getDescricao(),
-                                attempt.getFinishedAt()
-                        ))
-                        .toList()
+                attempt.getStatus() == AttemptStatus.COMPLETED
+                        ? attempt.getResultItems().stream()
+                                .sorted(Comparator.comparing(ResultItemEntity::getName))
+                                .map(resultItem -> toItemResponse(
+                                        resultItem.getName(),
+                                        resultItem.getScore(),
+                                        resultItem.getTier().getDescricao(),
+                                        attempt.getFinishedAt()
+                                ))
+                                .toList()
+                        : List.of()
         );
     }
 
@@ -89,11 +96,22 @@ public class GupyTestResultMapper {
         );
     }
 
+    private void assertExternallyRepresentable(AttemptStatus status) {
+        if (status == AttemptStatus.ABANDONED || status == AttemptStatus.EXPIRED) {
+            throw new IllegalStateException(
+                    "Tentativas abandonadas ou expiradas não possuem resultado final válido para o contrato Gupy."
+            );
+        }
+    }
+
     private String toGupyStatus(AttemptStatus status) {
         return switch (status) {
             case NOT_STARTED -> "notStarted";
-            case COMPLETED, ABANDONED, EXPIRED -> "done";
+            case COMPLETED -> "done";
             case IN_PROGRESS -> "paused";
+            case ABANDONED, EXPIRED -> throw new IllegalStateException(
+                    "Tentativas abandonadas ou expiradas não possuem status contratual de conclusão."
+            );
         };
     }
 
