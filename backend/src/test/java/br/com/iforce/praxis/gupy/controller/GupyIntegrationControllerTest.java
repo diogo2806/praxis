@@ -55,8 +55,8 @@ class GupyIntegrationControllerTest {
                 .andExpect(jsonPath("$.payload", not(empty())))
                 .andExpect(jsonPath("$.payload[?(@.id=='sim-atendimento-caos')].name")
                         .value(org.hamcrest.Matchers.hasItem("Cenario Seed de Teste")))
-                .andExpect(jsonPath("$.payload[0].category").value("Situational Judgment"))
-                .andExpect(jsonPath("$.payload[0].level").value("advanced"))
+                .andExpect(jsonPath("$.payload[0].category").doesNotExist())
+                .andExpect(jsonPath("$.payload[0].level").doesNotExist())
                 .andExpect(jsonPath("$.payload[0].isBest").doesNotExist())
                 .andExpect(jsonPath("$.payload[0].weight").doesNotExist());
     }

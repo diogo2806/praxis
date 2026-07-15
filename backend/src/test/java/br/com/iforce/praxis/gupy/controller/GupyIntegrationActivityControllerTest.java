@@ -4,6 +4,7 @@ import br.com.iforce.praxis.gupy.dto.CreateCandidateRequest;
 import br.com.iforce.praxis.gupy.dto.CreateCandidateResponse;
 import br.com.iforce.praxis.gupy.dto.TestResultResponse;
 import br.com.iforce.praxis.gupy.service.CandidateAttemptService;
+import br.com.iforce.praxis.gupy.service.GupyTestCatalogMapper;
 import br.com.iforce.praxis.gupy.service.SimulationCatalogService;
 import br.com.iforce.praxis.shared.integration.IntegrationAuthService;
 import br.com.iforce.praxis.shared.integration.IntegrationEmpresaContext;
@@ -24,11 +25,13 @@ class GupyIntegrationActivityControllerTest {
 
     private final IntegrationAuthService integrationAuthService = mock(IntegrationAuthService.class);
     private final SimulationCatalogService simulationCatalogService = mock(SimulationCatalogService.class);
+    private final GupyTestCatalogMapper gupyTestCatalogMapper = mock(GupyTestCatalogMapper.class);
     private final CandidateAttemptService candidateAttemptService = mock(CandidateAttemptService.class);
     private final IntegrationManagementService integrationManagementService = mock(IntegrationManagementService.class);
     private final GupyIntegrationController controller = new GupyIntegrationController(
             integrationAuthService,
             simulationCatalogService,
+            gupyTestCatalogMapper,
             candidateAttemptService,
             integrationManagementService
     );
