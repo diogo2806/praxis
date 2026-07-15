@@ -6,7 +6,6 @@ import {
   CalendarClock,
   CheckCircle2,
   ClipboardCheck,
-  ClipboardList,
   CreditCard,
   FilePlus2,
   Link2,
@@ -15,13 +14,13 @@ import {
   RefreshCw,
   Route as RouteIcon,
   Users,
+  type LucideIcon,
 } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
-import { EmptyState, StateBanner } from "@/components/praxis-ui";
+import { StateBanner } from "@/components/praxis-ui";
 import {
+  DashboardCompatibilityError,
   getDashboard,
-  type AttemptStatus,
-  type AssessmentJourneyStatus,
   type DashboardActionSeverity,
   type DashboardResponse,
 } from "@/lib/api/praxis";
@@ -41,36 +40,11 @@ export const Route = createFileRoute("/dashboard")({
 });
 
 const quickActions = [
-  {
-    label: "Criar avaliação",
-    to: "/simulations/new",
-    icon: FilePlus2,
-    primary: true,
-  },
-  {
-    label: "Ver avaliações",
-    to: "/avaliacoes",
-    icon: ListChecks,
-    primary: false,
-  },
-  {
-    label: "Ver resultados",
-    to: "/results",
-    icon: ClipboardList,
-    primary: false,
-  },
-  {
-    label: "Gerar link",
-    to: "/candidate-links/new",
-    icon: Link2,
-    primary: false,
-  },
-  {
-    label: "Configurar integrações",
-    to: "/integrations",
-    icon: PlugZap,
-    primary: false,
-  },
+  { label: "Criar avaliação", to: "/simulations/new", icon: FilePlus2, primary: true },
+  { label: "Ver avaliações", to: "/avaliacoes", icon: ListChecks, primary: false },
+  { label: "Ver resultados", to: "/results", icon: ClipboardCheck, primary: false },
+  { label: "Gerar link", to: "/candidate-links/new", icon: Link2, primary: false },
+  { label: "Configurar integrações", to: "/integrations", icon: PlugZap, primary: false },
 ] as const;
 
 function DashboardPage() {
@@ -85,7 +59,7 @@ function DashboardPage() {
       {dashboardQuery.isLoading ? (
         <LoadingState />
       ) : dashboardQuery.isError ? (
-        <ErrorState onReload={() => dashboardQuery.refetch()} />
+        <ErrorState error={dashboardQuery.error} onReload={() => dashboardQuery.refetch()} />
       ) : dashboardQuery.data ? (
         <DashboardContent
           dashboard={dashboardQuery.data}
@@ -103,38 +77,6 @@ function DashboardContent({
   dashboard: DashboardResponse;
   onReload: () => void;
 }) {
-  const isEmpty =
-    dashboard.activeSimulations === 0 &&
-    dashboard.assessmentJourneys.total === 0 &&
-    dashboard.latestResults.length === 0;
-
-  if (isEmpty) {
-    return (
-      <EmptyState
-        title="Comece pelo Dashboard."
-        description="Este é o centro da operação no Práxis. Crie uma avaliação para iniciar o fluxo e depois acompanhe links, candidatos, resultados e integrações por aqui."
-        actions={
-          <>
-            <Link
-              to="/simulations/new"
-              className="inline-flex items-center justify-between gap-2 rounded-md border border-primary bg-primary px-4 py-3 text-sm font-medium text-primary-foreground hover:bg-primary/90"
-            >
-              Criar primeira avaliação
-              <FilePlus2 className="h-4 w-4" />
-            </Link>
-            <Link
-              to="/integrations"
-              className="inline-flex items-center justify-between gap-2 rounded-md border border-border bg-card px-4 py-3 text-sm hover:bg-accent"
-            >
-              Configurar integrações
-              <PlugZap className="h-4 w-4" />
-            </Link>
-          </>
-        }
-      />
-    );
-  }
-
   return (
     <div className="space-y-6">
       <DashboardHeader dashboard={dashboard} onReload={onReload} />
@@ -162,7 +104,7 @@ function DashboardContent({
         <DashboardMetricCard
           title="Concluídas nos últimos 30 dias"
           value={dashboard.completedAttemptsLast30Days}
-          hint="Uso recente da operação"
+          hint="Uso recente informado pelo backend"
           icon={BarChart3}
         />
       </div>
@@ -194,7 +136,7 @@ function DashboardHeader({
         </h1>
         <p className="mt-1 flex items-center gap-2 text-sm text-muted-foreground">
           <CalendarClock className="h-4 w-4" />
-          Acompanhe avaliações, candidatos, resultados, integrações e uso do plano em um só lugar.
+          Dados consolidados pelo endpoint oficial do dashboard.
         </p>
       </div>
       <button
@@ -215,10 +157,9 @@ function DashboardQuickActions() {
       <div className="mb-3">
         <h2 className="text-lg font-semibold">Ações principais</h2>
         <p className="text-sm text-muted-foreground">
-          Comece ou acompanhe os principais processos da operação.
+          Acesse os principais processos sem alterar o estado exibido no dashboard.
         </p>
       </div>
-
       <div className="flex flex-wrap gap-2">
         {quickActions.map((action) => (
           <Link
@@ -249,7 +190,7 @@ function DashboardMetricCard({
   title: string;
   value: number;
   hint: string;
-  icon: typeof ClipboardCheck;
+  icon: LucideIcon;
 }) {
   return (
     <section className="rounded-md border border-border bg-card p-4">
@@ -273,28 +214,32 @@ function RecommendedActionsPanel({
   return (
     <section className="rounded-md border border-border bg-card p-4">
       <h2 className="text-lg font-semibold">Próximos passos</h2>
-      <div className="mt-3 space-y-3">
-        {actions.map((action) => (
-          <div
-            key={`${action.type}-${action.route}`}
-            className="flex flex-wrap items-start justify-between gap-3 rounded-md border border-border bg-background p-3"
-          >
-            <div className="flex min-w-0 gap-3">
-              <ActionIcon severity={action.severity} />
-              <div>
-                <div className="font-medium text-foreground">{action.title}</div>
-                <p className="mt-0.5 text-sm text-muted-foreground">{action.description}</p>
-              </div>
-            </div>
-            <a
-              href={action.route}
-              className="inline-flex shrink-0 items-center rounded-md border border-border bg-card px-3 py-1.5 text-xs font-medium hover:bg-accent"
+      {actions.length === 0 ? (
+        <EmptyPanel message="Nenhuma recomendação foi informada pelo backend." />
+      ) : (
+        <div className="mt-3 space-y-3">
+          {actions.map((action) => (
+            <div
+              key={`${action.type}-${action.route}`}
+              className="flex flex-wrap items-start justify-between gap-3 rounded-md border border-border bg-background p-3"
             >
-              {action.buttonLabel}
-            </a>
-          </div>
-        ))}
-      </div>
+              <div className="flex min-w-0 gap-3">
+                <ActionIcon severity={action.severity} />
+                <div>
+                  <div className="font-medium text-foreground">{action.title}</div>
+                  <p className="mt-0.5 text-sm text-muted-foreground">{action.description}</p>
+                </div>
+              </div>
+              <a
+                href={action.route}
+                className="inline-flex shrink-0 items-center rounded-md border border-border bg-card px-3 py-1.5 text-xs font-medium hover:bg-accent"
+              >
+                {action.buttonLabel}
+              </a>
+            </div>
+          ))}
+        </div>
+      )}
     </section>
   );
 }
@@ -302,17 +247,9 @@ function RecommendedActionsPanel({
 function LatestResultsTable({ dashboard }: { dashboard: DashboardResponse }) {
   return (
     <section className="rounded-md border border-border bg-card">
-      <div className="flex items-center justify-between gap-3 border-b border-border p-4">
-        <h2 className="text-lg font-semibold">Últimos resultados</h2>
-        <a href="/results" className="text-sm font-medium text-primary hover:underline">
-          Ver resultados
-        </a>
-      </div>
+      <SectionHeader title="Últimos resultados" href="/results" actionLabel="Ver resultados" />
       {dashboard.latestResults.length === 0 ? (
-        <EmptyStateCard
-          title="Nenhum resultado ainda"
-          description="Os resultados aparecerão aqui após as primeiras conclusões."
-        />
+        <EmptyPanel message="Nenhum resultado foi informado pelo backend." />
       ) : (
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
@@ -333,18 +270,13 @@ function LatestResultsTable({ dashboard }: { dashboard: DashboardResponse }) {
                   <td className="px-4 py-3 text-muted-foreground">
                     {result.simulationOrJourneyName}
                   </td>
-                  <td className="px-4 py-3">
-                    <AttemptStatusBadge status={result.status} />
-                  </td>
+                  <td className="px-4 py-3">{attemptStatusLabel(result.status)}</td>
                   <td className="px-4 py-3 text-muted-foreground">{formatDate(result.date)}</td>
                   <td className="px-4 py-3 tabular-nums">
-                    {result.result == null ? "-" : `${result.result}%`}
+                    {result.result == null ? "Não informado" : `${result.result}%`}
                   </td>
                   <td className="px-4 py-3 text-right">
-                    <a
-                      href={result.actionRoute}
-                      className="text-sm font-medium text-primary hover:underline"
-                    >
+                    <a href={result.actionRoute} className="font-medium text-primary hover:underline">
                       {result.actionLabel}
                     </a>
                   </td>
@@ -361,50 +293,28 @@ function LatestResultsTable({ dashboard }: { dashboard: DashboardResponse }) {
 function AssessmentJourneySummary({ dashboard }: { dashboard: DashboardResponse }) {
   return (
     <section className="rounded-md border border-border bg-card">
-      <div className="flex items-center justify-between gap-3 border-b border-border p-4">
-        <h2 className="text-lg font-semibold">Jornadas de avaliação</h2>
-        <a href="/assessment-journeys" className="text-sm font-medium text-primary hover:underline">
-          Ver todas as jornadas
-        </a>
-      </div>
+      <SectionHeader
+        title="Jornadas de avaliação"
+        href="/assessment-journeys"
+        actionLabel="Ver jornadas"
+      />
       {dashboard.journeys.length === 0 ? (
-        <EmptyStateCard
-          title="Nenhuma jornada criada"
-          description="Crie uma jornada para organizar processos com múltiplas avaliações."
-        />
+        <EmptyPanel message="Nenhuma jornada foi informada pelo backend." />
       ) : (
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead className="border-b border-border bg-muted/45 text-xs uppercase text-muted-foreground">
-              <tr>
-                <th className="px-4 py-3 text-left font-medium">Nome</th>
-                <th className="px-4 py-3 text-left font-medium">Status</th>
-                <th className="px-4 py-3 text-left font-medium">Candidatos em andamento</th>
-                <th className="px-4 py-3 text-right font-medium">Ação</th>
-              </tr>
-            </thead>
-            <tbody>
-              {dashboard.journeys.map((journey) => (
-                <tr key={journey.id} className="border-b border-border last:border-0">
-                  <td className="px-4 py-3 font-medium">{journey.name}</td>
-                  <td className="px-4 py-3">
-                    <JourneyStatusBadge status={journey.status} />
-                  </td>
-                  <td className="px-4 py-3 tabular-nums">
-                    {journey.candidatesInProgress.toLocaleString("pt-BR")}
-                  </td>
-                  <td className="px-4 py-3 text-right">
-                    <a
-                      href={journey.actionRoute}
-                      className="text-sm font-medium text-primary hover:underline"
-                    >
-                      {journey.actionLabel}
-                    </a>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        <div className="divide-y divide-border">
+          {dashboard.journeys.map((journey) => (
+            <div key={journey.id} className="flex flex-wrap items-center justify-between gap-3 p-4">
+              <div>
+                <div className="font-medium">{journey.name}</div>
+                <div className="mt-1 text-xs text-muted-foreground">
+                  {journeyStatusLabel(journey.status)} · {journey.candidatesInProgress} candidatos em andamento
+                </div>
+              </div>
+              <a href={journey.actionRoute} className="text-sm font-medium text-primary hover:underline">
+                {journey.actionLabel}
+              </a>
+            </div>
+          ))}
         </div>
       )}
     </section>
@@ -420,31 +330,30 @@ function IntegrationsStatusPanel({ dashboard }: { dashboard: DashboardResponse }
           Configurar
         </a>
       </div>
-      <div className="mt-3 space-y-3">
-        {dashboard.integrations.map((integration) => (
-          <div
-            key={integration.provider}
-            className="rounded-md border border-border bg-background p-3"
-          >
-            <div className="flex items-center justify-between gap-3">
-              <div className="font-medium">{integration.name}</div>
-              <span
-                className={cn(
-                  "rounded-md px-2 py-1 text-xs font-medium",
-                  integrationTone(integration.status),
-                )}
-              >
-                {integrationLabel(integration.status)}
-              </span>
+      {dashboard.integrations.length === 0 ? (
+        <EmptyPanel message="Nenhum status de integração foi informado pelo backend." />
+      ) : (
+        <div className="mt-3 space-y-3">
+          {dashboard.integrations.map((integration) => (
+            <div
+              key={integration.provider}
+              className="rounded-md border border-border bg-background p-3"
+            >
+              <div className="flex items-center justify-between gap-3">
+                <div className="font-medium">{integration.name}</div>
+                <span className={cn("rounded-md px-2 py-1 text-xs font-medium", integrationTone(integration.status))}>
+                  {integrationLabel(integration.status)}
+                </span>
+              </div>
+              <div className="mt-1 text-xs text-muted-foreground">
+                {integration.lastSyncAt
+                  ? `Última sincronização: ${formatDate(integration.lastSyncAt)}`
+                  : "Sem sincronização comprovada"}
+              </div>
             </div>
-            <div className="mt-1 text-xs text-muted-foreground">
-              {integration.lastSyncAt
-                ? `Última sync: ${formatDate(integration.lastSyncAt)}`
-                : "Sem sincronização registrada"}
-            </div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
     </section>
   );
 }
@@ -460,27 +369,21 @@ function BillingUsageCard({ dashboard }: { dashboard: DashboardResponse }) {
       <dl className="mt-4 space-y-3 text-sm">
         <BillingLine label="Plano" value={planLabel(billing.plan)} />
         <BillingLine label="Status" value={billing.status} />
+        <BillingLine
+          label="Uso no período"
+          value={`${billing.usedInPeriod.toLocaleString("pt-BR")} avaliações concluídas`}
+        />
         {billing.plan === "AVULSO" && (
-          <>
-            <BillingLine
-              label="Saldo de créditos"
-              value={billing.creditBalance.toLocaleString("pt-BR")}
-            />
-            <BillingLine
-              label="Créditos usados no período"
-              value={billing.usedInPeriod.toLocaleString("pt-BR")}
-            />
-          </>
+          <BillingLine
+            label="Saldo de créditos"
+            value={billing.creditBalance.toLocaleString("pt-BR")}
+          />
         )}
         {billing.plan === "PROFISSIONAL" && (
           <>
             <BillingLine
               label="Assinatura"
-              value={billing.subscriptionStatus ?? "Sem assinatura"}
-            />
-            <BillingLine
-              label="Uso no período"
-              value={`${billing.usedInPeriod.toLocaleString("pt-BR")} avaliações concluídas`}
+              value={billing.subscriptionStatus ?? "Não informada"}
             />
             <BillingLine
               label="Próxima renovação"
@@ -489,16 +392,10 @@ function BillingUsageCard({ dashboard }: { dashboard: DashboardResponse }) {
           </>
         )}
         {billing.plan === "ENTERPRISE" && (
-          <>
-            <BillingLine
-              label="Condição comercial"
-              value={billing.commercialCondition ?? "Sob contrato"}
-            />
-            <BillingLine
-              label="Uso no período"
-              value={`${billing.usedInPeriod.toLocaleString("pt-BR")} avaliações concluídas`}
-            />
-          </>
+          <BillingLine
+            label="Condição comercial"
+            value={billing.commercialCondition ?? "Não informada"}
+          />
         )}
       </dl>
       <a
@@ -511,22 +408,34 @@ function BillingUsageCard({ dashboard }: { dashboard: DashboardResponse }) {
   );
 }
 
+function SectionHeader({
+  title,
+  href,
+  actionLabel,
+}: {
+  title: string;
+  href: string;
+  actionLabel: string;
+}) {
+  return (
+    <div className="flex items-center justify-between gap-3 border-b border-border p-4">
+      <h2 className="text-lg font-semibold">{title}</h2>
+      <a href={href} className="text-sm font-medium text-primary hover:underline">
+        {actionLabel}
+      </a>
+    </div>
+  );
+}
+
+function EmptyPanel({ message }: { message: string }) {
+  return <div className="p-4 text-sm text-muted-foreground">{message}</div>;
+}
+
 function BillingLine({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex items-start justify-between gap-4">
       <dt className="text-muted-foreground">{label}</dt>
       <dd className="text-right font-medium">{value}</dd>
-    </div>
-  );
-}
-
-function EmptyStateCard({ title, description }: { title: string; description: string }) {
-  return (
-    <div className="p-4">
-      <div className="rounded-md border border-dashed border-border bg-background p-4">
-        <div className="font-medium">{title}</div>
-        <p className="mt-1 text-sm text-muted-foreground">{description}</p>
-      </div>
     </div>
   );
 }
@@ -544,11 +453,19 @@ function LoadingState() {
   );
 }
 
-function ErrorState({ onReload }: { onReload: () => void }) {
+function ErrorState({ error, onReload }: { error: unknown; onReload: () => void }) {
+  const incompatible = error instanceof DashboardCompatibilityError;
+  const message =
+    error instanceof Error ? error.message : "O dashboard não pôde ser carregado nesta tentativa.";
+
   return (
     <StateBanner
-      tone="danger"
-      title="Não foi possível carregar o dashboard."
+      tone={incompatible ? "warn" : "danger"}
+      title={
+        incompatible
+          ? "Dashboard indisponível por incompatibilidade de versão."
+          : "Não foi possível carregar o dashboard."
+      }
       action={
         <button
           type="button"
@@ -559,7 +476,9 @@ function ErrorState({ onReload }: { onReload: () => void }) {
         </button>
       }
     >
-      Tente novamente.
+      {incompatible
+        ? `${message} Nenhum plano, status operacional ou conexão de integração foi inferido a partir de tokens ou de respostas auxiliares.`
+        : message}
     </StateBanner>
   );
 }
@@ -568,16 +487,19 @@ function ActionIcon({ severity }: { severity: DashboardActionSeverity }) {
   if (severity === "success") {
     return <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-success" />;
   }
-  return <AlertTriangle className={cn("mt-0.5 h-5 w-5 shrink-0", severityIcon(severity))} />;
-}
 
-function severityIcon(severity: DashboardActionSeverity) {
-  return {
-    info: "text-primary",
-    warning: "text-warning",
-    success: "text-success",
-    danger: "text-danger",
-  }[severity];
+  return (
+    <AlertTriangle
+      className={cn(
+        "mt-0.5 h-5 w-5 shrink-0",
+        severity === "danger"
+          ? "text-danger"
+          : severity === "warning"
+            ? "text-warning"
+            : "text-primary",
+      )}
+    />
+  );
 }
 
 function integrationTone(status: string) {
@@ -604,6 +526,28 @@ function integrationLabel(status: string) {
   );
 }
 
+function attemptStatusLabel(status: string) {
+  return (
+    {
+      notStarted: "Não iniciada",
+      inProgress: "Em andamento",
+      completed: "Concluída",
+      abandoned: "Abandonada",
+      expired: "Expirada",
+    }[status] ?? status
+  );
+}
+
+function journeyStatusLabel(status: string) {
+  return (
+    {
+      draft: "Rascunho",
+      published: "Publicada",
+      archived: "Arquivada",
+    }[status] ?? status
+  );
+}
+
 function planLabel(plan: string) {
   return (
     {
@@ -614,60 +558,17 @@ function planLabel(plan: string) {
   );
 }
 
-const attemptStatusMeta: Record<AttemptStatus, { label: string; cls: string }> = {
-  notStarted: { label: "Não iniciada", cls: "border-border bg-muted text-foreground" },
-  inProgress: { label: "Em andamento", cls: "border-primary/25 bg-primary/10 text-foreground" },
-  completed: { label: "Concluída", cls: "border-success/25 bg-success/10 text-foreground" },
-  abandoned: { label: "Abandonada", cls: "border-border bg-muted text-foreground" },
-  expired: { label: "Expirada", cls: "border-border bg-muted text-foreground" },
-};
-
-function AttemptStatusBadge({ status }: { status: AttemptStatus }) {
-  const meta = attemptStatusMeta[status] ?? {
-    label: status,
-    cls: "border-border bg-muted text-foreground",
-  };
-  return (
-    <span
-      className={cn(
-        "inline-flex items-center gap-1.5 rounded-md border px-2 py-1 text-[11px] font-medium",
-        meta.cls,
-      )}
-    >
-      {meta.label}
-    </span>
-  );
-}
-
-const journeyStatusMeta: Record<AssessmentJourneyStatus, { label: string; cls: string }> = {
-  draft: { label: "Rascunho", cls: "border-border bg-muted text-foreground" },
-  published: { label: "Publicada", cls: "border-success/25 bg-success/10 text-foreground" },
-  archived: { label: "Arquivada", cls: "border-border bg-muted text-foreground" },
-};
-
-function JourneyStatusBadge({ status }: { status: AssessmentJourneyStatus }) {
-  const meta = journeyStatusMeta[status] ?? {
-    label: status,
-    cls: "border-border bg-muted text-foreground",
-  };
-  return (
-    <span
-      className={cn(
-        "inline-flex items-center gap-1.5 rounded-md border px-2 py-1 text-[11px] font-medium",
-        meta.cls,
-      )}
-    >
-      {meta.label}
-    </span>
-  );
-}
-
 function formatDate(value: string) {
+  const date = new Date(value);
+  if (!Number.isFinite(date.getTime())) {
+    return "Data não informada";
+  }
+
   return new Intl.DateTimeFormat("pt-BR", {
     day: "2-digit",
     month: "2-digit",
     year: "numeric",
     hour: "2-digit",
     minute: "2-digit",
-  }).format(new Date(value));
+  }).format(date);
 }
