@@ -105,6 +105,7 @@ class EmpresaIsolationTest {
                   "test_id": "%s",
                   "name": "Maria Lima",
                   "email": "maria@example.com",
+                  "callback_url": "https://cliente.gupy.io/candidate-return",
                   "result_webhook_url": "https://cliente.gupy.io/result-webhook",
                   "candidate_type": "external",
                   "previous_result": "none"
