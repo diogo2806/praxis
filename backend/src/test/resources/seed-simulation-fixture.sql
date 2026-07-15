@@ -1,6 +1,11 @@
 DELETE FROM audit_events
 WHERE aggregate_id IN ('sim-atendimento-caos', 'sim-atendimento-caos:v1', 'sim-timeout-fallback', 'sim-timeout-fallback:v1');
 
+DELETE FROM audit_events
+WHERE empresa_id = 'empresa-1'
+  AND aggregate_type = 'Integration'
+  AND aggregate_id = 'GUPY';
+
 DELETE FROM outbox_events
 WHERE aggregate_type = 'CandidateAttempt'
   AND aggregate_id IN (
@@ -30,6 +35,31 @@ WHERE empresa_id = 'empresa-1'
 
 INSERT INTO integration_tokens (empresa_id, provider, token_hash)
 VALUES ('empresa-1', 'gupy', 'HQkNHnvADAg8tGffiSYY9Lx094NTkUZ9OLLSNKjSTGk');
+
+DELETE FROM empresa_integrations
+WHERE empresa_id = 'empresa-1'
+  AND provider = 'GUPY';
+
+INSERT INTO empresa_integrations (
+    empresa_id,
+    provider,
+    type,
+    status,
+    credentials_hash,
+    configured_at,
+    created_at,
+    updated_at
+)
+VALUES (
+    'empresa-1',
+    'GUPY',
+    'ATS',
+    'PENDENTE',
+    'HQkNHnvADAg8tGffiSYY9Lx094NTkUZ9OLLSNKjSTGk',
+    CURRENT_TIMESTAMP,
+    CURRENT_TIMESTAMP,
+    CURRENT_TIMESTAMP
+);
 
 INSERT INTO simulations (id, empresa_id, name, description, created_at)
 VALUES (
