@@ -1,20 +1,17 @@
 package br.com.iforce.praxis.gupy.dto;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonValue;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 
 import jakarta.validation.constraints.Email;
-
 import jakarta.validation.constraints.NotBlank;
-
 import jakarta.validation.constraints.NotNull;
 
-
 import java.math.BigDecimal;
-
 import java.net.URI;
-
 
 @Schema(description = "Pedido da Gupy para registrar um candidato em um teste Práxis.")
 public record CreateCandidateRequest(
@@ -62,12 +59,13 @@ public record CreateCandidateRequest(
         BigDecimal accommodationTimeMultiplier,
 
         @JsonProperty("candidate_type")
-        @Schema(example = "external", allowableValues = {"internal", "external"})
-        String candidateType,
+        @Schema(example = "external", allowableValues = {"internal", "external"}, nullable = true)
+        CandidateType candidateType,
 
         @JsonProperty("previous_result")
-        @Schema(example = "fail", allowableValues = {"pass", "fail", "none"})
-        String previousResult
+        @Schema(example = "fail", allowableValues = {"fail"}, nullable = true,
+                description = "Resultado anterior. Use fail ou null quando não houver resultado anterior.")
+        PreviousResult previousResult
 ) {
     public CreateCandidateRequest(
             String companyId,
@@ -77,8 +75,8 @@ public record CreateCandidateRequest(
             String candidateEmail,
             URI resultWebhookUrl,
             BigDecimal accommodationTimeMultiplier,
-            String candidateType,
-            String previousResult
+            CandidateType candidateType,
+            PreviousResult previousResult
     ) {
         this(
                 companyId,
@@ -93,5 +91,62 @@ public record CreateCandidateRequest(
                 candidateType,
                 previousResult
         );
+    }
+
+    public enum CandidateType {
+        INTERNAL("internal"),
+        EXTERNAL("external");
+
+        private final String value;
+
+        CandidateType(String value) {
+            this.value = value;
+        }
+
+        @JsonValue
+        public String value() {
+            return value;
+        }
+
+        @JsonCreator(mode = JsonCreator.Mode.DELEGATING)
+        public static CandidateType fromValue(String value) {
+            if (value == null) {
+                return null;
+            }
+            for (CandidateType candidateType : values()) {
+                if (candidateType.value.equals(value)) {
+                    return candidateType;
+                }
+            }
+            throw new IllegalArgumentException("candidate_type deve ser internal ou external.");
+        }
+    }
+
+    public enum PreviousResult {
+        FAIL("fail");
+
+        private final String value;
+
+        PreviousResult(String value) {
+            this.value = value;
+        }
+
+        @JsonValue
+        public String value() {
+            return value;
+        }
+
+        @JsonCreator(mode = JsonCreator.Mode.DELEGATING)
+        public static PreviousResult fromValue(String value) {
+            if (value == null) {
+                return null;
+            }
+            for (PreviousResult previousResult : values()) {
+                if (previousResult.value.equals(value)) {
+                    return previousResult;
+                }
+            }
+            throw new IllegalArgumentException("previous_result deve ser fail ou null.");
+        }
     }
 }
