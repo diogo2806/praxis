@@ -1,20 +1,15 @@
 package br.com.iforce.praxis.shared.outbox.service;
 
 import br.com.iforce.praxis.shared.outbox.persistence.entity.OutboxEventEntity;
-
 import br.com.iforce.praxis.shared.outbox.persistence.repository.OutboxEventRepository;
-
 import com.fasterxml.jackson.databind.ObjectMapper;
-
 import org.springframework.stereotype.Service;
-
 import org.springframework.transaction.annotation.Propagation;
-
 import org.springframework.transaction.annotation.Transactional;
 
-
 import java.time.Instant;
-
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 /**
  * Gerencia a fila de eventos para entrega assíncrona.
@@ -30,6 +25,9 @@ import java.time.Instant;
  */
 @Service
 public class OutboxService {
+
+    private static final String ATTEMPT_STARTED_EVENT = "ATTEMPT_STARTED";
+    private static final String ATTEMPT_ABANDONED_EVENT = "ATTEMPT_ABANDONED";
 
     private final OutboxEventRepository outboxEventRepository;
     private final ObjectMapper objectMapper;
@@ -48,12 +46,6 @@ public class OutboxService {
      * Este método DEVE ser chamado dentro de uma transação de banco de dados existente.
      * Isso garante que se algo der errado após publicar o evento, o banco inteiro
      * volta atrás (rollback), evitando inconsistências.
-     *
-     * @param empresaId A empresa que gerou o evento
-     * @param eventType Tipo de evento (ex: ATTEMPT_COMPLETED, RESULT_PROCESSED)
-     * @param aggregateType Entidade afetada (ex: CANDIDATE_ATTEMPT, INTEGRATION_RESULT)
-     * @param aggregateId ID único do registro afetado
-     * @param payload Dados completos do evento em formato JSON
      */
     @Transactional(propagation = Propagation.MANDATORY)
     public void publish(String empresaId, String eventType, String aggregateType, String aggregateId, Object payload) {
@@ -62,7 +54,7 @@ public class OutboxService {
         event.setEventType(eventType);
         event.setAggregateType(aggregateType);
         event.setAggregateId(aggregateId);
-        event.setPayload(serializePayload(payload));
+        event.setPayload(serializePayload(normalizePayload(eventType, payload)));
         event.setStatus(OutboxEventEntity.OutboxEventStatus.PENDING);
         event.setAttempts(0);
         event.setNextAttemptAt(Instant.now());
@@ -72,15 +64,21 @@ public class OutboxService {
     }
 
     /**
-     * Converte os dados do evento para formato JSON.
-     *
-     * Transforma o objeto de dados em texto JSON para armazenar no banco de dados
-     * de forma compacta. Quando o evento for processado, o JSON será decodificado
-     * novamente para a estrutura de dados original.
-     *
-     * @param payload Objeto contendo os dados do evento
-     * @return Representação em JSON do payload
+     * Mantém o campo atual {@code event} e acrescenta o alias legado
+     * {@code event_type} somente nos eventos proprietários de engajamento.
      */
+    private Object normalizePayload(String eventType, Object payload) {
+        if (!(ATTEMPT_STARTED_EVENT.equals(eventType) || ATTEMPT_ABANDONED_EVENT.equals(eventType))
+                || !(payload instanceof Map<?, ?> source)) {
+            return payload;
+        }
+
+        Map<Object, Object> compatible = new LinkedHashMap<>(source);
+        compatible.putIfAbsent("event", eventType);
+        compatible.putIfAbsent("event_type", eventType);
+        return compatible;
+    }
+
     private String serializePayload(Object payload) {
         try {
             return objectMapper.writeValueAsString(payload);
