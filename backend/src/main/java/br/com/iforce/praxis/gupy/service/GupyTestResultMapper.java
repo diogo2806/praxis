@@ -30,6 +30,7 @@ public class GupyTestResultMapper {
     }
 
     public TestResultResponse toResponse(CandidateAttempt attempt, PublishedSimulation simulation) {
+        assertExternallyRepresentable(attempt.status());
         return new TestResultResponse(
                 simulation.name(),
                 simulation.id(),
@@ -55,6 +56,7 @@ public class GupyTestResultMapper {
     }
 
     public TestResultResponse toResponse(CandidateAttemptEntity attempt, PublishedSimulation simulation) {
+        assertExternallyRepresentable(attempt.getStatus());
         return new TestResultResponse(
                 simulation.name(),
                 simulation.id(),
@@ -92,11 +94,22 @@ public class GupyTestResultMapper {
         );
     }
 
+    private void assertExternallyRepresentable(AttemptStatus status) {
+        if (status == AttemptStatus.ABANDONED || status == AttemptStatus.EXPIRED) {
+            throw new IllegalStateException(
+                    "Tentativas abandonadas ou expiradas não possuem resultado final válido para o contrato Gupy."
+            );
+        }
+    }
+
     private String toGupyStatus(AttemptStatus status) {
         return switch (status) {
             case NOT_STARTED -> "notStarted";
             case COMPLETED -> "done";
-            case IN_PROGRESS, ABANDONED, EXPIRED -> "paused";
+            case IN_PROGRESS -> "paused";
+            case ABANDONED, EXPIRED -> throw new IllegalStateException(
+                    "Tentativas abandonadas ou expiradas não possuem status contratual válido."
+            );
         };
     }
 
