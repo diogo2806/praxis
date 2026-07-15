@@ -47,7 +47,7 @@ class CandidateAttemptIdempotencyAspectTest {
     }
 
     @Test
-    void shouldReturnConflictWhenSameKeyHasDifferentContent() {
+    void shouldReturnConflictWhenSameKeyHasDifferentContent() throws Throwable {
         CreateCandidateRequest request = request("Nome Alterado", "candidato@example.com", null);
         CandidateAttemptEntity existing = legacySnapshot("Candidato Teste", "candidato@example.com");
         when(repository.findByEmpresaIdAndIdempotencyKey(anyString(), anyString()))
@@ -112,7 +112,7 @@ class CandidateAttemptIdempotencyAspectTest {
     }
 
     @Test
-    void shouldRejectRetestWithoutPreviousAttempt() {
+    void shouldRejectRetestWithoutPreviousAttempt() throws Throwable {
         CreateCandidateRequest request = request("Candidato Teste", "candidato@example.com",
                 CreateCandidateRequest.PreviousResult.FAIL);
         when(repository.findByEmpresaIdAndIdempotencyKey(anyString(), anyString()))
@@ -128,7 +128,7 @@ class CandidateAttemptIdempotencyAspectTest {
     }
 
     @Test
-    void shouldRejectRetestWhilePreviousAttemptIsActive() {
+    void shouldRejectRetestWhilePreviousAttemptIsActive() throws Throwable {
         CreateCandidateRequest request = request("Candidato Teste", "candidato@example.com",
                 CreateCandidateRequest.PreviousResult.FAIL);
         String initialKey = CandidateAttemptIdempotencyKeyFactory.initialKey(request, context);
