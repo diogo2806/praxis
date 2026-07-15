@@ -48,7 +48,7 @@ public class PublicCandidateFlowSecurity {
     }
 
     public ParticipacaoResponse sanitize(String token, ParticipacaoResponse response) {
-        if (allowLegacyResponse(token)) {
+        if (!securityEnabled) {
             return response;
         }
         return new ParticipacaoResponse(
@@ -65,7 +65,7 @@ public class PublicCandidateFlowSecurity {
     }
 
     public RegistrarRespostaResponse sanitize(String token, RegistrarRespostaResponse response) {
-        if (allowLegacyResponse(token)) {
+        if (!securityEnabled) {
             return response;
         }
         return new RegistrarRespostaResponse(
@@ -90,10 +90,6 @@ public class PublicCandidateFlowSecurity {
                 request.respondidaEm(),
                 request.tempoEsgotado()
         );
-    }
-
-    private boolean allowLegacyResponse(String token) {
-        return !securityEnabled && isLegacyAttemptId(token);
     }
 
     private boolean isLegacyAttemptId(String value) {
