@@ -30,7 +30,7 @@ class GupyResultEndpointContractTest {
 
     @Test
     void resultEndpointUsesOnlyResultIdFromPath() throws Exception {
-        String resultId = createAttempt("contract-result-without-query");
+        String resultId = createAttempt(4398157301L);
 
         mockMvc.perform(get("/test/result/" + resultId)
                         .header("Authorization", EMPRESA1_AUTH))
@@ -42,21 +42,21 @@ class GupyResultEndpointContractTest {
 
     @Test
     void resultEndpointKeepsTenantIsolationUsingBearerToken() throws Exception {
-        String resultId = createAttempt("contract-result-tenant-isolation");
+        String resultId = createAttempt(4398157302L);
 
         mockMvc.perform(get("/test/result/" + resultId)
                         .header("Authorization", EMPRESA2_AUTH))
                 .andExpect(status().isNotFound());
     }
 
-    private String createAttempt(String documentId) throws Exception {
+    private String createAttempt(long documentId) throws Exception {
         MvcResult result = mockMvc.perform(post("/test/candidate")
                         .header("Authorization", EMPRESA1_AUTH)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
-                                  "company_id": "empresa-123",
-                                  "document_id": "%s",
+                                  "company_id": 1,
+                                  "document_id": %d,
                                   "test_id": "sim-atendimento-caos",
                                   "name": "Candidato Contrato",
                                   "email": "contrato@example.com",
@@ -64,7 +64,7 @@ class GupyResultEndpointContractTest {
                                   "callback_url": "https://cliente.gupy.io/candidate-return",
                                   "result_webhook_url": "https://cliente.gupy.io/result-webhook",
                                   "candidate_type": "external",
-                                  "previous_result": "none"
+                                  "previous_result": null
                                 }
                                 """.formatted(documentId)))
                 .andExpect(status().isCreated())
