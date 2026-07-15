@@ -1,6 +1,6 @@
 # Requisitos técnicos pendentes — praxis
 
-Status: atualizado em 2026-07-15 após implementação de `INT1` e `INT2`.
+Status: atualizado em 2026-07-15 após implementação de `CFG10`, `INT1` e `INT2`.
 
 Este arquivo contém somente pendências técnicas implementáveis e comprovadas no código, configurações, dados e fluxos reais do sistema. Não inclui CI/CD, pipelines, lint, cobertura, tarefas de testes, QA manual, métricas apenas observacionais, coleta de evidências, publicação ou marketing.
 
@@ -13,26 +13,12 @@ Este arquivo contém somente pendências técnicas implementáveis e comprovadas
 
 ## Contexto da auditoria
 
-- Commit auditado da branch principal: `319102895c981eae48eb9595c3a61da0dcd43899`.
+- Commit auditado da branch principal: `0c50efe6b05825202ed92049bfb13528a92565e5`.
 - Finalidade identificada: plataforma de avaliações situacionais para recrutamento, com regras explícitas, score determinístico, trilha auditável e integração com ATS.
 - Stack principal: Java 21, Spring Boot 3.5, Spring Security, JPA, PostgreSQL/Flyway, React 19, TanStack Start/Router e TypeScript.
 - Arquitetura predominante: frontend React consumindo API Spring Boot, persistência PostgreSQL, autenticação JWT nas rotas internas, Bearer token nas integrações e entrega assíncrona por outbox.
 
-## 1. Inicialização e configuração
-
-| ID | Tarefa técnica | Critério de conclusão | Status |
-|---|---|---|---|
-| CFG10 | Remover a exigência de uma credencial legada que não participa da autenticação real das integrações. | A composição inicia sem `PRAXIS_INTEGRATION_TOKEN`; as rotas Gupy e Recrutei continuam autenticando exclusivamente pelos tokens persistidos em `integration_tokens`; nenhuma variável obrigatória sem consumidor bloqueia a inicialização. | ⬜ Pendente |
-
-### CFG10 — configuração do runtime e autenticação real
-
-| Caminho completo | Método/campo/contrato | Como está | O que fazer |
-|---|---|---|---|
-| `docker-compose.yml` | `services.backend.environment.PRAXIS_INTEGRATION_TOKEN` | O Compose usa a expansão obrigatória `${PRAXIS_INTEGRATION_TOKEN:?...}` e interrompe a resolução/inicialização quando a variável não existe. | Remover a obrigatoriedade da variável legada ou substituí-la somente por uma configuração realmente consumida pelo runtime. |
-| `backend/src/main/java/br/com/iforce/praxis/shared/integration/IntegrationAuthService.java` | `validateBearerToken()` | A autenticação real calcula o hash do Bearer token e consulta `integration_tokens`; não lê `PRAXIS_INTEGRATION_TOKEN`. | Manter `integration_tokens` como fonte efetiva de autenticação e garantir que o Compose represente esse fluxo real. |
-| `backend/src/main/resources/application.properties` | configurações de integração | Não existe propriedade de runtime correspondente à variável obrigatória do Compose. | Não introduzir uma segunda credencial global apenas para justificar a variável; alinhar a configuração ao modelo de token por empresa e provedor. |
-
-## 2. Credenciais e fontes de verdade das integrações
+## 1. Credenciais e fontes de verdade das integrações
 
 | ID | Tarefa técnica | Critério de conclusão | Status |
 |---|---|---|---|
@@ -48,7 +34,7 @@ Este arquivo contém somente pendências técnicas implementáveis e comprovadas
 | `backend/src/main/java/br/com/iforce/praxis/shared/integration/persistence/entity/EmpresaIntegrationEntity.java` | tabela `empresa_integrations`, campos `status`, `credentials_hash`, `token_preview`, `last_sync_at`, `disabled_at` | Mantém uma representação operacional da mesma credencial usada em `integration_tokens`, mas os fluxos paralelos não preservam consistência entre as duas fontes. | Definir a responsabilidade de cada tabela e sincronizar os campos derivados dentro da mesma transação, sem permitir status baseado em credencial antiga. |
 | `backend/src/main/java/br/com/iforce/praxis/shared/integration/IntegrationManagementService.java` | `testConnection()` | O método ainda consegue definir `CONECTADA` apenas pela presença de `credentialsHash`, embora o controller atual não o utilize. | Remover o caminho inseguro ou fazê-lo delegar à leitura de estado, para que nenhum chamador interno volte a promover conexão sem atividade externa real. |
 
-## 3. Integrações ATS — estado de conexão real
+## 2. Integrações ATS — estado de conexão real
 
 | ID | Tarefa técnica | Critério de conclusão | Status |
 |---|---|---|---|
@@ -64,7 +50,7 @@ Este arquivo contém somente pendências técnicas implementáveis e comprovadas
 | `backend/src/main/java/br/com/iforce/praxis/shared/integration/IntegrationManagementService.java` | `recordActivity()` | Define qualquer integração existente como `CONECTADA`, atualiza `lastSyncAt` e limpa erro, inclusive sem verificar `DESATIVADA`; não registra evento de auditoria nem a origem da evidência. | Restringir transições permitidas, preservar `DESATIVADA`, atualizar atividade de conexões já válidas e auditar a primeira conexão/recuperação com provedor, endpoint, horário, estado anterior e novo. |
 | `backend/src/main/java/br/com/iforce/praxis/audit/service/AuditEventService.java` | eventos de integração | A infraestrutura de auditoria existe e já é usada em configuração, reativação, desconexão e token, mas não participa da promoção por atividade externa. | Registrar a transição real usando a infraestrutura existente, sem criar uma trilha paralela. |
 
-## 4. Integração Gupy — contrato de resultado
+## 3. Integração Gupy — contrato de resultado
 
 | ID | Tarefa técnica | Critério de conclusão | Status |
 |---|---|---|---|
@@ -79,7 +65,7 @@ Este arquivo contém somente pendências técnicas implementáveis e comprovadas
 | `backend/src/main/java/br/com/iforce/praxis/gupy/service/CandidateAttemptService.java` | `findResult()` e `publishResultReadyEvent()` | O mesmo `TestResultResponse` é retornado por consulta e inserido no evento `RESULT_READY`, propagando a incompatibilidade tanto ao GET quanto à entrega assíncrona. | Garantir que ambos os fluxos compartilhem o DTO externo corrigido e não existam duas versões concorrentes do contrato. |
 | `docs/INTEGRACAO-GUPY-PROVEDOR.md` | seção “Resultado produzido” | Registra que os campos extras ainda dependem de compatibilidade com o provedor. | Atualizar após o payload real de consulta e webhook ser alinhado. |
 
-## 5. Interface e fallbacks de compatibilidade
+## 4. Interface e fallbacks de compatibilidade
 
 | ID | Tarefa técnica | Critério de conclusão | Status |
 |---|---|---|---|
@@ -97,8 +83,7 @@ Este arquivo contém somente pendências técnicas implementáveis e comprovadas
 
 ## Ordem recomendada
 
-1. `CFG10` — remover o bloqueio de inicialização por configuração sem consumidor.
-2. `SEC10` — eliminar fontes de verdade concorrentes no ciclo de vida das credenciais.
-3. `INT10` — tornar conexão e atividade ATS reais, persistidas e auditáveis.
-4. `API1` — alinhar o contrato de resultado usado por consulta e webhook.
-5. `UI10` — remover o fallback que fabrica estados operacionais e comerciais.
+1. `SEC10` — eliminar fontes de verdade concorrentes no ciclo de vida das credenciais.
+2. `INT10` — tornar conexão e atividade ATS reais, persistidas e auditáveis.
+3. `API1` — alinhar o contrato de resultado usado por consulta e webhook.
+4. `UI10` — remover o fallback que fabrica estados operacionais e comerciais.
