@@ -1,6 +1,6 @@
 # Requisitos técnicos implementados — praxis
 
-Status: atualizado em 2026-07-15 após conclusão de `INT15`.
+Status: atualizado em 2026-07-15 após auditoria da branch main no commit `8cab460d7a248a48683c3c1856a321f18788008e`.
 
 Este arquivo registra somente comportamentos comprovadamente entregues no código e no fluxo real. Entregas parciais permanecem no backlog canônico.
 
@@ -8,7 +8,8 @@ Este arquivo registra somente comportamentos comprovadamente entregues no códig
 
 | Origem | Situação registrada | Entrega comprovada | Pendência remanescente |
 |---|---|---|---|
-| `INT15` | Concluído | A documentação do provedor Gupy passou a reproduzir o JSON real do catálogo sem `category` e `level` artificiais, identifica `result_candidate_page_url` como incompatível enquanto publicar `attemptId` cru, registra que `ABANDONED` e `EXPIRED` são rejeitados e mantém explícita a ausência de homologação. | `INT14` continua pendente para gerar a credencial assinada da página pública de resultado; a homologação real também permanece externa ao código. |
+| `INT14` | Concluído | `GupyTestResultMapper` gera uma credencial JWT exclusiva do tipo `candidate_result`, com empresa, tentativa e TTL configurável de resultado, e publica essa credencial em `result_candidate_page_url`; `CandidateResultPageService` aceita somente esse tipo de token, consulta a tentativa pelo par empresa/tentativa e mantém a resposta pública limitada. | A documentação do provedor ainda representa a versão anterior do fluxo e permanece pendente em `INT16`; homologação externa não é comprovada pelo código. |
+| `INT15` | Concluído | A documentação do provedor Gupy passou a reproduzir o JSON real do catálogo sem `category` e `level` artificiais, registra que `ABANDONED` e `EXPIRED` são rejeitados e mantém explícita a ausência de homologação. | A parte referente à URL pública de resultado ficou desatualizada após a implementação posterior de `INT14` e foi registrada em `INT16`. |
 | `INT13` | Concluído | O catálogo Gupy usa `GupyTestCatalogMapper` no fluxo real de `GET /test`; como o domínio publicado não possui fonte configurável para categoria e nível, ambos são mantidos nulos e omitidos da serialização externa por `NON_NULL`, sem valores genéricos fabricados. | Nenhuma para metadados artificiais do catálogo. |
 | `API2` | Concluído | A criação Gupy calcula impressão canônica versionada da requisição, persiste o fingerprint e retorna `409` quando a mesma chave idempotente reaparece com conteúdo divergente; repetições equivalentes preservam a tentativa original. | Nenhuma para consistência da repetição idempotente. |
 | `ASYNC10` | Concluído | O processamento de `RESULT_READY` mantém confirmação, tentativas, erro e conclusão por destino Gupy e `CUSTOM_API`; falha de um destino não apaga sua entrega nem repete automaticamente o destino já confirmado. | Nenhuma para fan-out e retry independente. |
@@ -31,8 +32,13 @@ Este arquivo registra somente comportamentos comprovadamente entregues no códig
 
 | Caminho completo | Método/campo/contrato | Comportamento comprovado |
 |---|---|---|
-| `docs/INTEGRACAO-GUPY-PROVEDOR.md` | catálogo, matriz de compatibilidade, URLs e estados | O exemplo de `GET /test` corresponde à serialização real; a URL de resultado da pessoa candidata é marcada como incompatível até `INT14`; estados sem resultado final deixam de ser descritos como `done`; a documentação não afirma homologação. |
-| `README.md` | ressalva da integração Gupy | A apresentação permanece sem afirmação de homologação e encaminha para o documento técnico atualizado. |
+| `backend/src/main/java/br/com/iforce/praxis/auth/service/JwtService.java` | `generateCandidateResultToken()` e `parseCandidateResultToken()` | Gera e valida token assinado com tipo `candidate_result`, empresa, tentativa e expiração; o parser de resultado rejeita token de execução e o parser de execução rejeita token de resultado. |
+| `backend/src/main/java/br/com/iforce/praxis/config/PraxisProperties.java` | `candidateResultTtlHours` | Mantém validade própria para consulta do resultado, independente do TTL do link e da sessão de execução, com padrão de 720 horas. |
+| `backend/src/main/java/br/com/iforce/praxis/gupy/service/GupyTestResultMapper.java` | `candidateResultPageUrl()` | Usa empresa e tentativa reais para gerar o token de resultado com o TTL configurado e publica `/candidato/{token}/resultado` no DTO externo. |
+| `backend/src/main/java/br/com/iforce/praxis/candidate/service/CandidateResultPageService.java` | `findByToken()` e `parseToken()` | Aceita somente token `candidate_result`, resolve a tentativa pelo par empresa/tentativa, preserva a versão da simulação e devolve apenas avaliação, estado, conclusão, callback permitido e data de término. |
+| `frontend/src/routes/candidato.$token.resultado.tsx` | parâmetro `$token` | Consome a credencial de resultado na rota própria e mantém separado o fluxo de execução da avaliação. |
+| `docs/INTEGRACAO-GUPY-PROVEDOR.md` | catálogo e estados externos | O exemplo de `GET /test` corresponde à serialização real; estados sem resultado final não são descritos como `done`; a documentação não afirma homologação. A descrição da credencial de resultado precisa ser atualizada em `INT16`. |
+| `README.md` | ressalva da integração Gupy | A apresentação permanece sem afirmação de homologação e encaminha para o documento técnico. |
 | `backend/src/main/java/br/com/iforce/praxis/gupy/controller/GupyIntegrationController.java` | `listPublishedTests()` | O endpoint alcançável autentica a integração, busca somente simulações publicadas da empresa e delega cada item ao mapper de catálogo. |
 | `backend/src/main/java/br/com/iforce/praxis/gupy/service/GupyTestCatalogMapper.java` | `toResponse()` | Preserva ID, nome e descrição reais da simulação e não fabrica categoria ou nível sem fonte no domínio publicado. |
 | `backend/src/main/java/br/com/iforce/praxis/gupy/dto/GupyTestResponse.java` | `@JsonInclude(NON_NULL)` | Remove os campos opcionais nulos do JSON efetivamente enviado pelo catálogo. |
@@ -44,7 +50,7 @@ Este arquivo registra somente comportamentos comprovadamente entregues no códig
 | `backend/src/main/java/br/com/iforce/praxis/candidate/service/PublicCandidateFlowSecurity.java` | validação e sanitização | Exige token válido, gera IDs opacos e remove transições futuras do contrato público. |
 | `backend/src/main/java/br/com/iforce/praxis/candidate/controller/CandidateAttemptController.java` | endpoints públicos | Aplica a validação e sanitização antes e depois do caso de uso em leitura, resposta e solicitações do candidato. |
 | `backend/src/main/java/br/com/iforce/praxis/gupy/service/CandidateAttemptService.java` | publicação de eventos, estados e callback | Separa destinos, evita resultado artificial e preserva o handoff de conclusão no fluxo alcançável. |
-| `backend/src/main/java/br/com/iforce/praxis/gupy/service/GupyTestResultMapper.java` | montagem do `TestResult` | Só produz resultado externo compatível quando existe conclusão válida e pontuação final. |
+| `backend/src/main/java/br/com/iforce/praxis/gupy/service/GupyTestResultMapper.java` | montagem do `TestResult` | Só produz resultado externo compatível quando existe estado representável e usa a credencial assinada de resultado na URL pública da pessoa candidata. |
 
 ## Regras de manutenção
 
