@@ -1,0 +1,38 @@
+name: Update real result page tests
+
+on:
+  push:
+    branches:
+      - fix/gupy-real-result-pages-20260715-01
+    paths:
+      - .github/scripts/update_real_result_page_tests.py
+      - .github/workflows/update-real-result-page-tests.yml
+
+permissions:
+  contents: write
+
+jobs:
+  update-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout branch
+        uses: actions/checkout@v4
+        with:
+          ref: fix/gupy-real-result-pages-20260715-01
+          fetch-depth: 0
+
+      - name: Update test expectations
+        run: python .github/scripts/update_real_result_page_tests.py
+
+      - name: Remove temporary automation
+        run: |
+          rm .github/scripts/update_real_result_page_tests.py
+          rm .github/workflows/update-real-result-page-tests.yml
+
+      - name: Commit tests
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "test: alinhar expectativas às páginas web reais"
+          git push origin HEAD:fix/gupy-real-result-pages-20260715-01
