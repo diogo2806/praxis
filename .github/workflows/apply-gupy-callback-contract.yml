@@ -11,21 +11,35 @@ on:
 
 permissions:
   contents: write
+  pull-requests: write
+  issues: write
 
 jobs:
   apply-contract:
-    if: github.head_ref == 'feat/gupy-callback-job-redirect-20260715-01'
+    if: github.head_ref == 'feat/gupy-callback-job-redirect-20260715-02'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout branch
         uses: actions/checkout@v4
         with:
-          ref: feat/gupy-callback-job-redirect-20260715-01
+          ref: feat/gupy-callback-job-redirect-20260715-02
           fetch-depth: 1
           show-progress: false
 
       - name: Apply source changes
-        run: python .github/scripts/apply_gupy_callback_contract.py
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          set +e
+          output=$(python .github/scripts/apply_gupy_callback_contract.py 2>&1)
+          status=$?
+          if [ "$status" -ne 0 ]; then
+            printf -v body 'Falha ao aplicar o contrato Gupy:\n\n```text\n%s\n```' "$output"
+            gh pr comment "$PR_NUMBER" --body "$body"
+            exit "$status"
+          fi
+          printf '%s\n' "$output"
 
       - name: Remove temporary automation
         run: |
@@ -38,4 +52,4 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add -A
           git commit -m "feat: implementar callback e retorno final da Gupy"
-          git push origin HEAD:feat/gupy-callback-job-redirect-20260715-01
+          git push origin HEAD:feat/gupy-callback-job-redirect-20260715-02
