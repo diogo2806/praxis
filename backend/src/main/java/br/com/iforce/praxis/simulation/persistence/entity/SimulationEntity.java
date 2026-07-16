@@ -1,32 +1,23 @@
 package br.com.iforce.praxis.simulation.persistence.entity;
 
 import br.com.iforce.praxis.shared.jpa.EmpresaAwareEntity;
-
 import jakarta.persistence.CascadeType;
-
 import jakarta.persistence.Column;
-
 import jakarta.persistence.Entity;
-
 import jakarta.persistence.Id;
-
 import jakarta.persistence.OneToMany;
-
+import jakarta.persistence.PrePersist;
+import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
-
 import lombok.Getter;
-
 import lombok.NoArgsConstructor;
-
 import lombok.Setter;
 
-
+import java.text.Normalizer;
 import java.time.Instant;
-
 import java.util.LinkedHashSet;
-
+import java.util.Locale;
 import java.util.Set;
-
 
 @Getter
 @Setter
@@ -59,4 +50,83 @@ public class SimulationEntity implements EmpresaAwareEntity {
 
     @OneToMany(mappedBy = "simulation", cascade = CascadeType.ALL, orphanRemoval = true)
     private Set<SimulationVersionEntity> versions = new LinkedHashSet<>();
+
+    /**
+     * Versões antigas do assistente serializavam cargo, situação, competências
+     * e uso do resultado em {@code description}. Esses dados já possuem campos
+     * próprios no domínio. Antes de gravar, convertemos somente esse formato
+     * multilinha reconhecido em uma descrição pública simples; textos livres e
+     * resumos antigos de uma única linha são mantidos.
+     */
+    @PrePersist
+    @PreUpdate
+    void normalizeLegacyPlanningDescription() {
+        if (!isLegacyPlanningDescription(description)) {
+            return;
+        }
+
+        String normalizedName = name == null ? "" : name.trim();
+        String publicDescription = normalizedName.isBlank()
+                ? "Avaliação situacional estruturada."
+                : "Avaliação situacional estruturada para " + normalizedName + ".";
+        description = truncate(publicDescription);
+    }
+
+    private boolean isLegacyPlanningDescription(String value) {
+        if (value == null || value.isBlank()) {
+            return false;
+        }
+
+        int recognizedLines = 0;
+        for (String rawLine : value.split("\\R")) {
+            String line = rawLine.trim();
+            if (line.isBlank()) {
+                continue;
+            }
+            int separator = line.indexOf(':');
+            if (separator <= 0) {
+                return false;
+            }
+
+            String label = normalizeLabel(line.substring(0, separator));
+            if (!isPlanningLabel(label)) {
+                return false;
+            }
+            recognizedLines++;
+        }
+
+        return recognizedLines >= 2;
+    }
+
+    private boolean isPlanningLabel(String label) {
+        return isRoleLabel(label)
+                || label.contains("competenc")
+                || (containsAny(label, "situacao", "situation", "situacion")
+                    && containsAny(label, "critica", "critical"))
+                || (containsAny(label, "uso", "use") && label.contains("result"));
+    }
+
+    private boolean isRoleLabel(String label) {
+        return "cargo".equals(label) || "role".equals(label) || "puesto".equals(label);
+    }
+
+    private boolean containsAny(String value, String... fragments) {
+        for (String fragment : fragments) {
+            if (value.contains(fragment)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private String normalizeLabel(String value) {
+        return Normalizer.normalize(value, Normalizer.Form.NFD)
+                .replaceAll("\\p{M}+", "")
+                .trim()
+                .toLowerCase(Locale.ROOT);
+    }
+
+    private String truncate(String value) {
+        return value.length() <= 1000 ? value : value.substring(0, 997).stripTrailing() + "...";
+    }
 }
