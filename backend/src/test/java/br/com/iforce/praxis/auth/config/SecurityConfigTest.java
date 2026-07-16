@@ -53,16 +53,19 @@ class SecurityConfigTest {
     }
 
     @Test
-    @Sql(statements = {
-            "DELETE FROM integration_tokens WHERE empresa_id = 'empresa-1' AND provider = 'recrutei'",
-            "INSERT INTO integration_tokens (empresa_id, provider, token_hash) VALUES "
-                    + "('empresa-1', 'recrutei', 'HQkNHnvADAg8tGffiSYY9Lx094NTkUZ9OLLSNKjSTGk')",
-            "DELETE FROM empresa_integrations WHERE empresa_id = 'empresa-1' AND provider = 'RECRUTEI'",
-            "INSERT INTO empresa_integrations "
-                    + "(empresa_id, provider, type, status, credentials_hash, configured_at, created_at, updated_at) "
-                    + "VALUES ('empresa-1', 'RECRUTEI', 'ATS', 'PENDENTE', "
-                    + "'HQkNHnvADAg8tGffiSYY9Lx094NTkUZ9OLLSNKjSTGk', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)"
-    })
+    @Sql(
+            scripts = "/seed-simulation-fixture.sql",
+            statements = {
+                    "DELETE FROM integration_tokens WHERE empresa_id = 'empresa-1' AND provider = 'recrutei'",
+                    "INSERT INTO integration_tokens (empresa_id, provider, token_hash) VALUES "
+                            + "('empresa-1', 'recrutei', 'HQkNHnvADAg8tGffiSYY9Lx094NTkUZ9OLLSNKjSTGk')",
+                    "DELETE FROM empresa_integrations WHERE empresa_id = 'empresa-1' AND provider = 'RECRUTEI'",
+                    "INSERT INTO empresa_integrations "
+                            + "(empresa_id, provider, type, status, credentials_hash, configured_at, created_at, updated_at) "
+                            + "VALUES ('empresa-1', 'RECRUTEI', 'ATS', 'PENDENTE', "
+                            + "'HQkNHnvADAg8tGffiSYY9Lx094NTkUZ9OLLSNKjSTGk', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)"
+            }
+    )
     void recruteiOpaqueTokenReachesProviderAuthenticationInsteadOfJwtParser() throws Exception {
         mockMvc.perform(get("/recrutei/test")
                         .header("Authorization", "Bearer empresa1-token"))
