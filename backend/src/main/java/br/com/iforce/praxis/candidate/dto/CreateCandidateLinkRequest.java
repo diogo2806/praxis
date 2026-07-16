@@ -23,10 +23,11 @@ public record CreateCandidateLinkRequest(
         @Schema(example = "maria@example.com")
         String candidateEmail,
 
+        @NotBlank
         @Size(max = 120)
         @Schema(
                 example = "vaga-1234-etapa-tecnica-2026-07",
-                description = "Identificador do ciclo de aplicação. Repetir o mesmo valor torna o pedido idempotente; quando omitido, o sistema usa um ciclo legado determinístico por avaliação e e-mail."
+                description = "Identificador obrigatório do ciclo de aplicação. Repetir o mesmo valor torna o pedido idempotente; use um novo valor para criar outra aplicação."
         )
         String applicationCycleId,
 
@@ -41,13 +42,7 @@ public record CreateCandidateLinkRequest(
         BigDecimal accommodationTimeMultiplier
 ) {
 
-    public CreateCandidateLinkRequest {
-        if (applicationCycleId == null || applicationCycleId.isBlank()) {
-            applicationCycleId = legacyCycleId(simulationId, candidateEmail);
-        }
-    }
-
-    /** Compatibilidade para fluxos internos que ainda não expõem ciclo de aplicação. */
+    /** Compatibilidade restrita a fluxos internos que ainda não expõem ciclo de aplicação. */
     public CreateCandidateLinkRequest(
             String simulationId,
             String candidateName,
