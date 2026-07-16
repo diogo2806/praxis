@@ -1,0 +1,54 @@
+name: Apply backend CI contract test fix
+
+on:
+  push:
+    branches:
+      - fix/backend-ci-contract-tests-20260716
+
+permissions:
+  contents: write
+
+jobs:
+  patch-tests:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/backend-ci-contract-tests-20260716
+          fetch-depth: 0
+
+      - name: Add mandatory application cycles to controller tests
+        shell: python
+        run: |
+          from pathlib import Path
+
+          path = Path("backend/src/test/java/br/com/iforce/praxis/candidate/controller/CandidateAttemptControllerTest.java")
+          content = path.read_text(encoding="utf-8")
+          replacements = {
+              '                                  "candidateEmail": "thiago.company-link@example.com"\n':
+                  '                                  "candidateEmail": "thiago.company-link@example.com",\n'
+                  '                                  "applicationCycleId": "test-company-link-thiago-20260716"\n',
+              '                                  "candidateEmail": "maria.company-link@example.com"\n':
+                  '                                  "candidateEmail": "maria.company-link@example.com",\n'
+                  '                                  "applicationCycleId": "test-company-link-maria-20260716"\n',
+          }
+
+          for old, new in replacements.items():
+              occurrences = content.count(old)
+              if occurrences != 1:
+                  raise SystemExit(f"Esperava uma ocorrência, encontrei {occurrences}: {old!r}")
+              content = content.replace(old, new)
+
+          path.write_text(content, encoding="utf-8")
+
+      - name: Commit test correction and remove temporary workflow
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm .github/workflows/fix-backend-ci-contract-tests.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add backend/src/test/java/br/com/iforce/praxis/candidate/controller/CandidateAttemptControllerTest.java .github/workflows/fix-backend-ci-contract-tests.yml
+          git commit -m "test: informar ciclo obrigatório nos links de candidato"
+          git push origin HEAD:fix/backend-ci-contract-tests-20260716
