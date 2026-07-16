@@ -26,7 +26,7 @@ O fluxo recebe `callback_url`, `job_id`, `result_webhook_url`, `company_id` e `d
 | Item do contrato Gupy | Implementação atual | Estado |
 | --- | --- | --- |
 | Bearer token no cabeçalho `Authorization` | Validado por `IntegrationAuthService` contra `integration_tokens` | Compatível |
-| `GET /test` com `searchString`, `offset` e `limit` | Implementado; `limit` é normalizado entre 1 e 400 | Compatível |
+| `GET /test` com `searchString`, `offset` e `limit` | Implementado; `limit` é normalizado entre 0 e 400 | Compatível |
 | Resposta `TestItems` com `limit`, `offset`, `total_tests` e `payload` | Implementada | Compatível |
 | Campos opcionais `category` e `level` | O mapper mantém ambos nulos e a serialização `NON_NULL` os omite, pois o domínio publicado não possui fonte configurável para esses metadados | Compatível por omissão de campos opcionais |
 | `POST /test/candidate` | Implementado com validação do contrato antes do fluxo | Compatível |
@@ -34,7 +34,7 @@ O fluxo recebe `callback_url`, `job_id`, `result_webhook_url`, `company_id` e `d
 | `callback_url` obrigatório | Recebido, validado por política de esquema e host, persistido e reapresentado após conclusão | Implementado; homologação real pendente |
 | `job_id` | Recebido e persistido; também participa da idempotência quando informado | Compatível |
 | `candidate_type` | Enum estrito: `internal`, `external`, ausência ou JSON `null` | Compatível |
-| `previous_result` | Enum estrito: `fail`, ausência ou JSON `null`; `pass`, `none`, a string `"null"` e valores desconhecidos são rejeitados | Compatível |
+| `previous_result` | Aceita `fail`, ausência, JSON `null` e a string literal `"null"` usada no exemplo oficial; demais valores são rejeitados | Compatível |
 | `result_webhook_url` | Recebido como `URI`; resultado é enviado por POST | Implementado; comunicação real pendente |
 | Resposta `201` com `test_result_id` e `test_url` | Implementada | Compatível |
 | `GET /test/result/{resultId}` somente com `resultId` | Implementado sem query adicional; empresa resolvida pelo token | Compatível |
@@ -82,7 +82,8 @@ Regras:
 
 - `searchString`: opcional;
 - `offset`: padrão `0`, valores negativos viram `0`;
-- `limit`: padrão `50`, normalizado entre `1` e `400`;
+- `limit`: padrão `50`, normalizado entre `0` e `400`;
+- `limit=0`: retorna `payload` vazio, preserva `total_tests` e não consulta os itens do catálogo;
 - somente avaliações publicadas da empresa do token são retornadas;
 - `category` e `level` são omitidos enquanto não existir fonte real configurável no domínio.
 
@@ -119,7 +120,7 @@ Body aceito:
   "result_webhook_url": "https://empresa.gupy.io/webhook",
   "accommodation_time_multiplier": 1.5,
   "candidate_type": "external",
-  "previous_result": null
+  "previous_result": "null"
 }
 ```
 
@@ -137,9 +138,9 @@ Campos:
 | `result_webhook_url` | Não | Se presente, recebe `TestResult` por POST. |
 | `accommodation_time_multiplier` | Não | Extensão própria para acessibilidade. |
 | `candidate_type` | Não | Aceita somente `internal`, `external`, ausência ou JSON `null`. |
-| `previous_result` | Não | Aceita `fail`, ausência ou JSON `null`; não aceita `none`, `pass`, a string `"null"` ou outro texto. |
+| `previous_result` | Não | Aceita `fail`, ausência, JSON `null` ou a string literal `"null"`; não aceita `none`, `pass` ou outro texto. |
 
-A desserialização estrita e a Bean Validation rejeitam identificadores em formato incorreto, ausentes, não positivos ou fora da faixa de `long`, além de enums desconhecidos, antes de `CandidateAttemptService.createOrReuse()` iniciar a resolução da simulação ou a persistência.
+A desserialização estrita e a Bean Validation rejeitam identificadores em formato incorreto, ausentes, não positivos ou fora da faixa de `long`, além de enums desconhecidos, antes de `CandidateAttemptService.createOrReuse()` iniciar a resolução da simulação ou a persistência. O valor textual `"null"` de `previous_result` é normalizado para ausência de resultado anterior, conforme o exemplo de requisição publicado pela Gupy.
 
 O fluxo compartilhado com a Recrutei mantém o contrato textual próprio desse provedor por meio de um construtor interno explícito. Esse caminho não participa da desserialização do endpoint Gupy e não altera o tipo público de `company_id` ou `document_id`.
 
@@ -281,6 +282,8 @@ sequenceDiagram
   Candidato->>Gupy: GET callback_url
 ```
 
+O `callback_url` pertence ao handoff do navegador. Confirmações servidor-servidor foram desativadas porque repetiam o GET já executado pela pessoa candidata. `/api/v1/gupy/callback-deliveries` permanece somente para consulta de registros históricos e não oferece reprocessamento.
+
 ## Outbox e entrega assíncrona
 
 Estados:
@@ -328,12 +331,14 @@ POST /api/v1/gupy/result-deliveries/{deliveryId}/reprocess
 - [ ] Gerar token Gupy pela Central de Integrações.
 - [ ] Validar `GET /test` em ambiente integrado.
 - [x] Confirmar que o catálogo omite `category` e `level` sem fonte real.
-- [x] Validar paginação e busca em testes automatizados.
+- [x] Validar paginação, busca e `limit=0` em testes automatizados.
 - [x] Validar tipos, faixa e enums do payload oficial de `POST /test/candidate` em testes automatizados.
+- [x] Confirmar aceitação de JSON `null` e da string literal `"null"` em `previous_result`.
 - [x] Confirmar idempotência e diferenciação por `job_id` em testes automatizados.
 - [ ] Confirmar `test_url` em ambiente integrado.
 - [ ] Concluir uma tentativa em vaga real.
 - [x] Validar política de callback e registro do handoff em testes automatizados.
+- [x] Remover reprocessamento servidor-servidor do callback para impedir GET duplicado.
 - [ ] Confirmar callback e redirecionamento na plataforma real da Gupy.
 - [x] Validar `GET /test/result/{resultId}` sem parâmetros extras e com isolamento pelo token.
 - [x] Validar que consulta e webhook não serializam extensões fora do schema oficial.
