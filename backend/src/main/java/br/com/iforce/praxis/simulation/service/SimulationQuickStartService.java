@@ -1,68 +1,40 @@
 package br.com.iforce.praxis.simulation.service;
 
 import br.com.iforce.praxis.audit.model.AuditEventType;
-
 import br.com.iforce.praxis.audit.service.AuditEventService;
-
 import br.com.iforce.praxis.auth.service.CurrentEmpresaService;
-
 import br.com.iforce.praxis.gupy.model.ResultTier;
-
 import br.com.iforce.praxis.simulation.dto.QuickStartCreatedResponse;
-
 import br.com.iforce.praxis.simulation.dto.QuickStartTemplateSummaryResponse;
-
 import br.com.iforce.praxis.simulation.model.QuickStartCategory;
-
 import br.com.iforce.praxis.simulation.model.SimulationVersionStatus;
-
 import br.com.iforce.praxis.simulation.persistence.entity.OptionCompetencyScoreEntity;
-
 import br.com.iforce.praxis.simulation.persistence.entity.SimulationCompetencyEntity;
-
 import br.com.iforce.praxis.simulation.persistence.entity.SimulationEntity;
-
 import br.com.iforce.praxis.simulation.persistence.entity.SimulationNodeEntity;
-
 import br.com.iforce.praxis.simulation.persistence.entity.SimulationOptionEntity;
-
 import br.com.iforce.praxis.simulation.persistence.entity.SimulationVersionEntity;
-
 import br.com.iforce.praxis.simulation.persistence.repository.SimulationRepository;
-
 import com.fasterxml.jackson.databind.ObjectMapper;
-
 import org.springframework.core.io.ClassPathResource;
-
 import org.springframework.stereotype.Service;
-
 import org.springframework.transaction.annotation.Transactional;
 
-
 import java.io.IOException;
-
 import java.io.InputStream;
-
 import java.text.Normalizer;
-
 import java.time.Instant;
-
 import java.util.LinkedHashMap;
-
 import java.util.List;
-
 import java.util.Locale;
-
 import java.util.Map;
-
 import java.util.UUID;
-
 
 /**
  * Atalho de criação "começar rápido": a partir de um modelo pronto (template
  * estático em JSON, por categoria), cria uma simulação completa em rascunho —
  * com competências, etapas, respostas e pesos já preenchidos — para a pessoa
- * editar ou publicar direto, sem passar pelos 9 passos do assistente.
+ * seguir diretamente à revisão antes de publicar.
  *
  * <p>Os templates são carregados do classpath na inicialização e validados
  * estruturalmente, de modo que cada um gera uma versão que passa no validador.</p>
@@ -70,7 +42,7 @@ import java.util.UUID;
 @Service
 public class SimulationQuickStartService {
 
-    private static final String REDIRECT_TO = "/nova/mapa";
+    private static final String REDIRECT_TO = "/nova/validador";
 
     private final SimulationRepository simulationRepository;
     private final CurrentEmpresaService currentEmpresaService;
@@ -255,8 +227,6 @@ public class SimulationQuickStartService {
         } while (simulationRepository.existsById(id));
         return id;
     }
-
-    // --- Estrutura dos templates JSON (classpath: quickstart-templates/*.json) ---
 
     record QuickStartTemplate(
             QuickStartCategory category,
