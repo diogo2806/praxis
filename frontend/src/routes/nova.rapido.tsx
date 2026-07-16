@@ -10,13 +10,15 @@ import {
   type QuickStartTemplateSummaryResponse,
 } from "@/lib/api/praxis";
 
+const QUICK_START_DESTINATION = "/nova/validador" as const;
+
 export const Route = createFileRoute("/nova/rapido")({
   head: () => ({
     meta: [
       { title: "Começar rápido - Práxis" },
       {
         name: "description",
-        content: "Crie uma avaliação a partir de um modelo pronto, sem os 9 passos do assistente.",
+        content: "Crie uma avaliação a partir de um modelo pronto e siga direto para a revisão.",
       },
     ],
   }),
@@ -33,7 +35,7 @@ function QuickStartPage() {
     mutationFn: (category: QuickStartCategory) => createFromQuickStart(category),
     onSuccess: (created) => {
       void navigate({
-        to: "/nova/mapa",
+        to: QUICK_START_DESTINATION,
         search: {
           simulationId: created.simulationId,
           versionNumber: created.versionNumber,
@@ -49,10 +51,10 @@ function QuickStartPage() {
           <Sparkles className="h-3.5 w-3.5" />
           Começar rápido
         </div>
-        <h1 className="mt-1 font-display text-3xl">Escolha um modelo pra editar</h1>
+        <h1 className="mt-1 font-display text-3xl">Escolha um modelo para revisar</h1>
         <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
-          Cada modelo já vem com cenários, alternativas e pesos preenchidos. Você cai direto no mapa
-          para ajustar o texto e a pontuação antes de publicar.
+          Cada modelo já vem com cenário, alternativas, competências e pesos preenchidos. Depois da
+          criação, você segue direto para a revisão estrutural antes de publicar.
         </p>
       </div>
 
