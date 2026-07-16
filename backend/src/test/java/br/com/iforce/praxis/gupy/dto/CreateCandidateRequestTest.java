@@ -125,6 +125,7 @@ class CreateCandidateRequestTest {
         assertThat(CreateCandidateRequest.PreviousResult.fromValue("fail"))
                 .isEqualTo(CreateCandidateRequest.PreviousResult.FAIL);
         assertThat(CreateCandidateRequest.PreviousResult.fromValue(null)).isNull();
+        assertThat(CreateCandidateRequest.PreviousResult.fromValue("null")).isNull();
     }
 
     @Test
@@ -136,9 +137,6 @@ class CreateCandidateRequestTest {
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("previous_result deve ser fail ou null.");
         assertThatThrownBy(() -> CreateCandidateRequest.PreviousResult.fromValue("pass"))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("previous_result deve ser fail ou null.");
-        assertThatThrownBy(() -> CreateCandidateRequest.PreviousResult.fromValue("null"))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("previous_result deve ser fail ou null.");
     }
