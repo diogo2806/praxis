@@ -2,44 +2,37 @@ package br.com.iforce.praxis.journey.service;
 
 import br.com.iforce.praxis.config.PraxisProperties;
 import br.com.iforce.praxis.journey.dto.AssessmentJourneyAttemptResponse;
-import br.com.iforce.praxis.journey.dto.CreateJourneyAttemptRequest;
 import org.springframework.stereotype.Service;
 
 /**
- * Cria a tentativa da jornada e entrega o convite ao candidato após a persistência.
+ * Monta e entrega o convite público de uma tentativa de jornada já persistida.
  */
 @Service
 public class AssessmentJourneyInvitationService {
 
-    private final AssessmentJourneyAttemptService attemptService;
     private final AssessmentJourneyInvitationEmailSender invitationEmailSender;
     private final PraxisProperties praxisProperties;
 
     public AssessmentJourneyInvitationService(
-            AssessmentJourneyAttemptService attemptService,
             AssessmentJourneyInvitationEmailSender invitationEmailSender,
             PraxisProperties praxisProperties
     ) {
-        this.attemptService = attemptService;
         this.invitationEmailSender = invitationEmailSender;
         this.praxisProperties = praxisProperties;
     }
 
     /**
-     * Persiste a tentativa e, após o retorno transacional do serviço de jornada, envia o convite.
+     * Envia o convite correspondente a uma tentativa criada com sucesso.
      *
-     * @param request dados da jornada e do candidato
-     * @return tentativa criada
+     * @param attempt tentativa da jornada já persistida
      */
-    public AssessmentJourneyAttemptResponse createAttemptAndSendInvitation(CreateJourneyAttemptRequest request) {
-        AssessmentJourneyAttemptResponse response = attemptService.createAttempt(request);
+    public void sendInvitation(AssessmentJourneyAttemptResponse attempt) {
         invitationEmailSender.sendInvitation(
-                response.candidateEmail(),
-                response.candidateName(),
-                response.journeyName(),
-                journeyAttemptUrl(response.id())
+                attempt.candidateEmail(),
+                attempt.candidateName(),
+                attempt.journeyName(),
+                journeyAttemptUrl(attempt.id())
         );
-        return response;
     }
 
     private String journeyAttemptUrl(String attemptId) {
