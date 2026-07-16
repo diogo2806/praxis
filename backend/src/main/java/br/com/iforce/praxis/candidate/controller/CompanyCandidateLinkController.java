@@ -11,6 +11,7 @@ import br.com.iforce.praxis.candidate.service.CandidateAttemptMonitoringQuerySer
 import br.com.iforce.praxis.candidate.service.CandidateDispositionService;
 import br.com.iforce.praxis.candidate.service.CompanyCandidateLinkService;
 import br.com.iforce.praxis.candidate.service.EvidenceReportService;
+import br.com.iforce.praxis.candidate.service.LegacyCandidateLinkQueryService;
 import br.com.iforce.praxis.gupy.service.CandidateAttemptService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -38,6 +39,7 @@ public class CompanyCandidateLinkController {
     private final CandidateAttemptService candidateAttemptService;
     private final CandidateAttemptMonitoringQueryService monitoringQueryService;
     private final CompanyCandidateLinkService companyCandidateLinkService;
+    private final LegacyCandidateLinkQueryService legacyCandidateLinkQueryService;
     private final CandidateDispositionService candidateDispositionService;
     private final EvidenceReportService evidenceReportService;
 
@@ -45,25 +47,27 @@ public class CompanyCandidateLinkController {
             CandidateAttemptService candidateAttemptService,
             CandidateAttemptMonitoringQueryService monitoringQueryService,
             CompanyCandidateLinkService companyCandidateLinkService,
+            LegacyCandidateLinkQueryService legacyCandidateLinkQueryService,
             CandidateDispositionService candidateDispositionService,
             EvidenceReportService evidenceReportService
     ) {
         this.candidateAttemptService = candidateAttemptService;
         this.monitoringQueryService = monitoringQueryService;
         this.companyCandidateLinkService = companyCandidateLinkService;
+        this.legacyCandidateLinkQueryService = legacyCandidateLinkQueryService;
         this.candidateDispositionService = candidateDispositionService;
         this.evidenceReportService = evidenceReportService;
     }
 
     @GetMapping
     @Operation(
-            summary = "Lista links de candidatos",
-            description = "Retorna as tentativas da empresa com URL pública para compartilhamento."
+            summary = "Lista links de candidatos (legado)",
+            description = "Mantém o contrato de lista para consumidores existentes, percorrendo internamente todas as páginas. Novos consumidores devem preferir GET /page."
     )
     public ResponseEntity<List<CandidateLinkResponse>> listCandidateLinks(
             @RequestParam(name = "blind", defaultValue = "false") boolean blind
     ) {
-        return ResponseEntity.ok(candidateAttemptService.listCompanyLinks(blind));
+        return ResponseEntity.ok(legacyCandidateLinkQueryService.listAll(blind));
     }
 
     /**
