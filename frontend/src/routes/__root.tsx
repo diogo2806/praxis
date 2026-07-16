@@ -13,6 +13,7 @@ import { useEffect, type ReactNode } from "react";
 import appCss from "../styles/app.css?url";
 import tablesCss from "../styles/tables.css?url";
 import landingAccessibilityCss from "../styles/landing-accessibility.css?url";
+import { GlobalTablePagination } from "../components/global-table-pagination";
 import { reportAppError } from "../lib/app-error-reporting";
 import { resolveRuntimeConfigFromEnv } from "../lib/runtime-config.server";
 import { LanguageProvider, useLanguage } from "../lib/language-context";
@@ -176,6 +177,7 @@ function RootComponent() {
   return (
     <QueryClientProvider client={queryClient}>
       <SessionExpiryRedirect />
+      <GlobalTablePagination />
       <Outlet />
     </QueryClientProvider>
   );
