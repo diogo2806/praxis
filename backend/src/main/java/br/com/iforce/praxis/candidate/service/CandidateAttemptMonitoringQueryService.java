@@ -112,11 +112,7 @@ public class CandidateAttemptMonitoringQueryService {
     }
 
     private CandidateAttemptMonitoringResponse toResponse(CandidateAttemptEntity entity, Instant now) {
-        PublishedSimulation simulation = simulationCatalogService.findByVersionId(entity.getSimulationVersionId())
-                .orElseThrow(() -> new ResponseStatusException(
-                        HttpStatus.INTERNAL_SERVER_ERROR,
-                        "A versão associada à tentativa não foi encontrada."
-                ));
+        PublishedSimulation simulation = findSimulation(entity);
         CandidateAttempt attempt = candidateAttemptMapper.toDomain(entity);
         ScenarioNode currentNode = findCurrentNode(attempt, simulation);
         ProgressoResponse progress = progressFor(attempt, simulation, currentNode);
@@ -140,6 +136,21 @@ public class CandidateAttemptMonitoringQueryService {
                 entity.getStatus() == AttemptStatus.IN_PROGRESS
                         && !lastSignalAt.isBefore(now.minus(Duration.ofMinutes(5)))
         );
+    }
+
+    private PublishedSimulation findSimulation(CandidateAttemptEntity entity) {
+        if (entity.getSimulationVersionId() != null) {
+            return simulationCatalogService.findByVersionId(entity.getSimulationVersionId())
+                    .orElseThrow(() -> new ResponseStatusException(
+                            HttpStatus.INTERNAL_SERVER_ERROR,
+                            "A versão associada à tentativa não foi encontrada."
+                    ));
+        }
+        return simulationCatalogService.findPublishedById(entity.getEmpresaId(), entity.getSimulationId())
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.INTERNAL_SERVER_ERROR,
+                        "A avaliação associada à tentativa não foi encontrada."
+                ));
     }
 
     private ScenarioNode findCurrentNode(CandidateAttempt attempt, PublishedSimulation simulation) {
