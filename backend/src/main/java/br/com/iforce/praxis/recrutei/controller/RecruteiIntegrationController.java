@@ -118,7 +118,10 @@ public class RecruteiIntegrationController {
     }
 
     @PostMapping("/test/candidate")
-    @Operation(summary = "Registra candidato", description = "Cria ou reutiliza tentativa por company_id, candidate_id e test_id.")
+    @Operation(
+            summary = "Registra candidato",
+            description = "Cria ou reutiliza tentativa por company_id, candidate_id, test_id e vacancy_id."
+    )
     @ApiResponses({
             @ApiResponse(responseCode = "201", description = "Tentativa criada ou reutilizada."),
             @ApiResponse(responseCode = "400", description = "Dados inválidos.", content = @Content(examples = @ExampleObject(value = ERROR_EXAMPLE))),
@@ -130,19 +133,20 @@ public class RecruteiIntegrationController {
             @Valid @RequestBody RecruteiCreateCandidateRequest request
     ) {
         IntegrationEmpresaContext empresaContext = integrationAuthService.validateBearerToken(authorization, PROVIDER);
-        CreateCandidateRequest gupyRequest = new CreateCandidateRequest(
+        CreateCandidateRequest sharedRequest = new CreateCandidateRequest(
                 request.companyId(),
                 request.candidateId(),
                 request.testId(),
                 request.candidateName(),
                 request.candidateEmail(),
+                request.vacancyId(),
                 request.resultWebhookUrl(),
                 request.accommodationTimeMultiplier(),
                 null,
                 null
         );
 
-        CreateCandidateResponse candidateResponse = candidateAttemptService.createOrReuse(gupyRequest, empresaContext);
+        CreateCandidateResponse candidateResponse = candidateAttemptService.createOrReuse(sharedRequest, empresaContext);
         RecruteiCreateCandidateResponse response = new RecruteiCreateCandidateResponse(
                 candidateResponse.testUrl(),
                 candidateResponse.testResultId(),
