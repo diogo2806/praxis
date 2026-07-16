@@ -24,15 +24,6 @@ import java.util.Set;
 
 /**
  * Verifica a qualidade e a integridade de uma prova antes da publicação.
- *
- * <p>Na visão do processo, é o "revisor automático" da prova. Ele percorre
- * todo o cenário e aponta problemas, separando-os em <b>impedimentos</b>
- * (que bloqueiam a publicação — por exemplo, uma etapa inicial inexistente,
- * caminhos sem saída, ciclos que prendem o candidato ou pesos de competência
- * inválidos) e <b>avisos</b> (que não bloqueiam, mas merecem atenção, como um
- * cenário muito grande). Ao final, calcula uma nota de qualidade e diz se a
- * prova está liberada para publicar. Assim, a equipe corrige os problemas
- * antes que a prova chegue a um candidato real.</p>
  */
 @Service
 public class SimulationValidationService {
@@ -46,18 +37,6 @@ public class SimulationValidationService {
         this.praxisProperties = praxisProperties;
     }
 
-    /**
-     * Revisa uma versão da prova e relata todos os problemas encontrados.
-     *
-     * <p>Fluxo do processo: confere a etapa inicial, valida cada etapa e suas
-     * respostas, verifica os pesos das competências e analisa o cenário como
-     * um todo (caminhos sem saída, ciclos, profundidade excessiva e equilíbrio
-     * de pontuação). Devolve a lista de impedimentos e avisos, uma nota de
-     * qualidade e a informação de se a prova pode ou não ser publicada.</p>
-     *
-     * @param simulationVersionEntity a versão da prova a revisar
-     * @return o relatório de validação (impedimentos, avisos, nota e se é publicável)
-     */
     public SimulationValidationResponse validate(SimulationVersionEntity simulationVersionEntity) {
         List<ValidationIssueResponse> issues = new ArrayList<>();
         Map<String, SimulationNodeEntity> nodesById = buildNodeMap(simulationVersionEntity, issues);
@@ -83,7 +62,6 @@ public class SimulationValidationService {
             detectCycles(rootNodeId, nodesById, issues);
             validateReachability(rootNodeId, nodesById, issues);
             validateDepth(rootNodeId, nodesById, issues);
-            validatePathCompetencyCoverage(rootNodeId, nodesById, simulationVersionEntity, issues);
         }
 
         long blockerCount = issues.stream()
@@ -290,14 +268,7 @@ public class SimulationValidationService {
             Map<String, SimulationNodeEntity> nodesById,
             List<ValidationIssueResponse> issues
     ) {
-        if (option.getCompetencyScores().isEmpty()) {
-            issues.add(new ValidationIssueResponse(
-                    ValidationIssueSeverity.BLOCKER,
-                    node.getNodeId(),
-                    "Uma resposta está sem pontuação de competência. Abra a resposta e atribua notas de 0 a 100 para as competências configuradas."
-            ));
-        }
-
+        // Pontuações ausentes são equivalentes a zero. Apenas valores fora de 0 a 100 são inválidos.
         for (OptionCompetencyScoreEntity score : option.getCompetencyScores()) {
             if (score.getScore() < 0 || score.getScore() > 100) {
                 issues.add(new ValidationIssueResponse(
@@ -382,7 +353,6 @@ public class SimulationValidationService {
             configured.add(competency.getName());
         }
 
-        Set<String> scored = new HashSet<>();
         for (SimulationNodeEntity node : version.getNodes()) {
             for (SimulationOptionEntity option : node.getOptions()) {
                 for (OptionCompetencyScoreEntity score : option.getCompetencyScores()) {
@@ -396,33 +366,11 @@ public class SimulationValidationService {
                                         + "\", mas ela não está configurada no teste. Adicione essa competência no passo Avaliação ou remova a pontuação dessa resposta."
                         ));
                     }
-                    scored.add(competencyName);
                 }
-            }
-        }
-
-        for (String competencyName : configured) {
-            if (!scored.contains(competencyName)) {
-                issues.add(new ValidationIssueResponse(
-                        ValidationIssueSeverity.BLOCKER,
-                        competencyName,
-                        "A competência \""
-                                + competencyName
-                                + "\" tem peso, mas nenhuma resposta pontua essa competência. Inclua uma nota positiva para ela em pelo menos uma resposta."
-                ));
             }
         }
     }
 
-    /**
-     * Confere se os pesos das competências de uma prova são válidos.
-     *
-     * <p>Usado ao criar/editar a prova para garantir que os pesos fazem
-     * sentido (por exemplo, somam o esperado e não têm valores inválidos),
-     * recusando o cadastro caso contrário.</p>
-     *
-     * @param competencies as competências com seus pesos
-     */
     public void validateWeights(List<CompetencyWeightDto> competencies) {
         validateWeightValues(
                 competencies.stream()
@@ -431,14 +379,6 @@ public class SimulationValidationService {
         );
     }
 
-    /**
-     * Confere se os pesos das competências de um plano de avaliação são válidos.
-     *
-     * <p>Mesma verificação de {@link #validateWeights}, aplicada aos dados que
-     * chegam na atualização do plano da avaliação.</p>
-     *
-     * @param competencies as competências do plano com seus pesos
-     */
     public void validateBlueprintWeights(List<UpdateBlueprintRequest.CompetencyRequest> competencies) {
         validateWeightValues(
                 competencies.stream()
@@ -483,75 +423,6 @@ public class SimulationValidationService {
         }
     }
 
-    private void validatePathCompetencyCoverage(
-            String rootNodeId,
-            Map<String, SimulationNodeEntity> nodesById,
-            SimulationVersionEntity simulationVersionEntity,
-            List<ValidationIssueResponse> issues
-    ) {
-        List<List<SimulationNodeEntity>> paths = new ArrayList<>();
-        collectTerminalNodePaths(rootNodeId, nodesById, new HashSet<>(), new ArrayList<>(), paths);
-
-        for (List<SimulationNodeEntity> path : paths) {
-            SimulationNodeEntity terminalNode = path.get(path.size() - 1);
-            for (SimulationCompetencyEntity competency : simulationVersionEntity.getCompetencies()) {
-                int maxForCompetency = calculateMaxPathScoreForCompetency(path, competency.getName());
-                if (maxForCompetency <= 0) {
-                    // Pontuação zerada é permitida: o cálculo ignora competências com máximo zero
-                    // no caminho e renormaliza os pesos, então isso é aviso, não impedimento.
-                    issues.add(new ValidationIssueResponse(
-                            ValidationIssueSeverity.WARNING,
-                            terminalNode.getNodeId(),
-                            "O caminho que termina em "
-                                    + terminalNode.getNodeId()
-                                    + " não pontua a competência \""
-                                    + competency.getName()
-                                    + "\". Ela ficará de fora da nota final desse caminho; se não for intencional, atribua uma nota maior que zero em alguma resposta dele."
-                    ));
-                }
-            }
-        }
-    }
-
-    private int calculateMaxPathScoreForCompetency(List<SimulationNodeEntity> path, String competencyName) {
-        return path.stream()
-                .mapToInt(node -> node.getOptions().stream()
-                        .mapToInt(option -> option.getCompetencyScores().stream()
-                                .filter(score -> competencyName.equals(score.getCompetencyName()))
-                                .mapToInt(OptionCompetencyScoreEntity::getScore)
-                                .max()
-                                .orElse(0))
-                        .max()
-                        .orElse(0))
-                .sum();
-    }
-
-    private void collectTerminalNodePaths(
-            String nodeId,
-            Map<String, SimulationNodeEntity> nodesById,
-            Set<String> visiting,
-            List<SimulationNodeEntity> currentPath,
-            List<List<SimulationNodeEntity>> paths
-    ) {
-        SimulationNodeEntity node = nodesById.get(nodeId);
-        if (node == null || !visiting.add(nodeId)) {
-            return;
-        }
-
-        currentPath.add(node);
-        List<String> nextNodeIds = nextNodeIds(node, nodesById);
-        if (nextNodeIds.isEmpty()) {
-            paths.add(new ArrayList<>(currentPath));
-        } else {
-            for (String nextNodeId : nextNodeIds) {
-                collectTerminalNodePaths(nextNodeId, nodesById, visiting, currentPath, paths);
-            }
-        }
-
-        currentPath.remove(currentPath.size() - 1);
-        visiting.remove(nodeId);
-    }
-
     private void validateDepth(
             String rootNodeId,
             Map<String, SimulationNodeEntity> nodesById,
@@ -575,7 +446,6 @@ public class SimulationValidationService {
     ) {
         SimulationNodeEntity node = nodesById.get(nodeId);
         if (node == null || !visiting.add(nodeId)) {
-            // Nó inexistente ou ciclo (já sinalizado por detectCycles): interrompe a recursão.
             return 0;
         }
 
@@ -657,7 +527,11 @@ public class SimulationValidationService {
         }
     }
 
-    private void collectReachable(String nodeId, Map<String, SimulationNodeEntity> nodesById, Set<String> reachable) {
+    private void collectReachable(
+            String nodeId,
+            Map<String, SimulationNodeEntity> nodesById,
+            Set<String> reachable
+    ) {
         if (!reachable.add(nodeId)) {
             return;
         }
@@ -672,7 +546,10 @@ public class SimulationValidationService {
         }
     }
 
-    private List<String> nextNodeIds(SimulationNodeEntity node, Map<String, SimulationNodeEntity> nodesById) {
+    private List<String> nextNodeIds(
+            SimulationNodeEntity node,
+            Map<String, SimulationNodeEntity> nodesById
+    ) {
         if (node.isFinal()) {
             return List.of();
         }
@@ -681,7 +558,8 @@ public class SimulationValidationService {
                 .filter(nextNodeId -> nextNodeId != null && nodesById.containsKey(nextNodeId))
                 .distinct()
                 .toList());
-        if (node.getTimeoutNextNodeId() != null && nodesById.containsKey(node.getTimeoutNextNodeId())
+        if (node.getTimeoutNextNodeId() != null
+                && nodesById.containsKey(node.getTimeoutNextNodeId())
                 && !nextNodeIds.contains(node.getTimeoutNextNodeId())) {
             nextNodeIds.add(node.getTimeoutNextNodeId());
         }

@@ -110,16 +110,14 @@ class SimulationValidationServiceTest {
     }
 
     @Test
-    void warnsWithoutBlockingWhenAPathDoesNotScoreConfiguredCompetency() {
+    void allowsPublicationWhenAPathDoesNotScoreConfiguredCompetency() {
         SimulationVersionEntity version = branchingVersionWithMissingCompetencyOnOnePath();
 
         SimulationValidationResponse response = service.validate(version);
 
         assertThat(response.publishable()).isTrue();
         assertThat(response.issues())
-                .anyMatch(issue -> issue.severity() == ValidationIssueSeverity.WARNING
-                        && issue.nodeId().equals("fim-b")
-                        && issue.message().contains("não pontua a competência \"Resolucao\""));
+                .noneMatch(issue -> issue.message().contains("não pontua a competência"));
         assertThat(response.issues())
                 .noneMatch(issue -> issue.severity() == ValidationIssueSeverity.BLOCKER);
     }
@@ -150,10 +148,42 @@ class SimulationValidationServiceTest {
 
         assertThat(response.publishable()).isTrue();
         assertThat(response.blockerCount()).isZero();
+        assertThat(response.warningCount()).isZero();
         assertThat(response.issues())
-                .filteredOn(issue -> issue.severity() == ValidationIssueSeverity.WARNING
-                        && issue.message().contains("não pontua a competência \"Negociacao\""))
-                .hasSize(3);
+                .noneMatch(issue -> issue.message().contains("não pontua a competência"));
+    }
+
+    @Test
+    void allowsPublicationWhenConfiguredCompetencyIsNeverExplicitlyScored() {
+        SimulationVersionEntity version = singleNodeVersion(Map.of("Empatia", 0.5, "Resolucao", 0.5));
+        for (SimulationNodeEntity node : version.getNodes()) {
+            for (SimulationOptionEntity option : node.getOptions()) {
+                option.getCompetencyScores().removeIf(score -> "Resolucao".equals(score.getCompetencyName()));
+            }
+        }
+
+        SimulationValidationResponse response = service.validate(version);
+
+        assertThat(response.publishable()).isTrue();
+        assertThat(response.issues())
+                .noneMatch(issue -> issue.message().contains("nenhuma resposta pontua"));
+    }
+
+    @Test
+    void allowsPublicationWhenOptionsHaveNoExplicitCompetencyScores() {
+        SimulationVersionEntity version = singleNodeVersion(Map.of("Empatia", 0.5, "Resolucao", 0.5));
+        for (SimulationNodeEntity node : version.getNodes()) {
+            for (SimulationOptionEntity option : node.getOptions()) {
+                option.getCompetencyScores().clear();
+            }
+        }
+
+        SimulationValidationResponse response = service.validate(version);
+
+        assertThat(response.publishable()).isTrue();
+        assertThat(response.blockerCount()).isZero();
+        assertThat(response.issues())
+                .noneMatch(issue -> issue.message().contains("sem pontuação de competência"));
     }
 
     @Test
@@ -176,24 +206,6 @@ class SimulationValidationServiceTest {
                         && issue.nodeId().equals("turno-1")
                         && issue.message().contains("\"Resolucao\"")
                         && issue.message().contains("configurada"));
-    }
-
-    @Test
-    void blocksPublicationWhenConfiguredCompetencyIsNeverScored() {
-        SimulationVersionEntity version = singleNodeVersion(Map.of("Empatia", 0.5, "Resolucao", 0.5));
-        for (SimulationNodeEntity node : version.getNodes()) {
-            for (SimulationOptionEntity option : node.getOptions()) {
-                option.getCompetencyScores().removeIf(score -> "Resolucao".equals(score.getCompetencyName()));
-            }
-        }
-
-        SimulationValidationResponse response = service.validate(version);
-
-        assertThat(response.publishable()).isFalse();
-        assertThat(response.issues())
-                .anyMatch(issue -> issue.severity() == ValidationIssueSeverity.BLOCKER
-                        && issue.nodeId().equals("Resolucao")
-                        && issue.message().contains("nenhuma resposta"));
     }
 
     @Test
@@ -372,21 +384,7 @@ class SimulationValidationServiceTest {
             String nextNodeId,
             Iterable<String> competencies
     ) {
-        SimulationOptionEntity option = new SimulationOptionEntity();
-        option.setSimulationNode(node);
-        option.setOptionId(optionId);
-        option.setText("Texto");
-        option.setNextNodeId(nextNodeId);
-        option.setCritical(false);
-        option.setAuditNote("Nota");
-        for (String competency : competencies) {
-            OptionCompetencyScoreEntity score = new OptionCompetencyScoreEntity();
-            score.setSimulationOption(option);
-            score.setCompetencyName(competency);
-            score.setScore(50);
-            option.getCompetencyScores().add(score);
-        }
-        return option;
+        return option(node, optionId, nextNodeId, competencies, 50);
     }
 
     private SimulationOptionEntity option(
