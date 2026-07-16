@@ -17,10 +17,11 @@ As duas tarefas que ainda apareciam como pendentes neste documento já estavam i
 
 ## Correções adicionais desta revalidação
 
-- O contrato Gupy passa a aceitar tanto JSON `null` quanto a string `"null"` em `previous_result`, conforme o exemplo oficial publicado.
+- O contrato Gupy aceita tanto JSON `null` quanto a string `"null"` em `previous_result`, conforme o exemplo oficial publicado.
 - `GET /test` preserva `limit=0`, retornando página vazia com o total disponível, sem forçar o valor para `1`.
 - `result_candidate_page_url` apresenta à pessoa candidata somente os resultados `major`, mantendo e-mail, respostas, pesos e regras internas fora da resposta pública.
-- Foram adicionados testes de regressão para os três comportamentos.
+- O callback servidor-servidor duplicado já havia sido desativado pela migration `V1005`; o endpoint de reprocessamento manual foi removido e o histórico legado passou a ser somente leitura.
+- Foram adicionados testes de regressão para os contratos públicos e para a ausência da rota de reprocessamento de callback.
 
 ## Limites externos
 
