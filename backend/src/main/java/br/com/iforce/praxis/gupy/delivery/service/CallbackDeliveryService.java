@@ -5,7 +5,6 @@ import br.com.iforce.praxis.gupy.delivery.dto.CallbackDeliveryResponse;
 import br.com.iforce.praxis.gupy.delivery.model.ResultDeliveryStatus;
 import br.com.iforce.praxis.shared.outbox.persistence.entity.OutboxEventEntity;
 import br.com.iforce.praxis.shared.outbox.persistence.repository.OutboxEventRepository;
-import br.com.iforce.praxis.shared.outbox.service.OutboxProcessor;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.http.HttpStatus;
@@ -24,18 +23,15 @@ public class CallbackDeliveryService {
 
     private final OutboxEventRepository outboxEventRepository;
     private final CurrentEmpresaService currentEmpresaService;
-    private final OutboxProcessor outboxProcessor;
     private final ObjectMapper objectMapper;
 
     public CallbackDeliveryService(
             OutboxEventRepository outboxEventRepository,
             CurrentEmpresaService currentEmpresaService,
-            OutboxProcessor outboxProcessor,
             ObjectMapper objectMapper
     ) {
         this.outboxEventRepository = outboxEventRepository;
         this.currentEmpresaService = currentEmpresaService;
-        this.outboxProcessor = outboxProcessor;
         this.objectMapper = objectMapper;
     }
 
@@ -50,25 +46,6 @@ public class CallbackDeliveryService {
                         OutboxEventEntity.OutboxEventStatus.valueOf(status.name())
                 );
         return events.stream().map(this::toResponse).toList();
-    }
-
-    public CallbackDeliveryResponse reprocess(Long deliveryId) {
-        String empresaId = currentEmpresaService.requiredEmpresaId();
-        OutboxEventEntity event = findCallbackDelivery(deliveryId, empresaId);
-        outboxProcessor.reprocessEvent(event.getId(), empresaId);
-        return toResponse(findCallbackDelivery(deliveryId, empresaId));
-    }
-
-    private OutboxEventEntity findCallbackDelivery(Long deliveryId, String empresaId) {
-        OutboxEventEntity event = outboxEventRepository.findByIdAndEmpresaId(deliveryId, empresaId)
-                .orElseThrow(() -> new ResponseStatusException(
-                        HttpStatus.NOT_FOUND,
-                        "Entrega de callback não encontrada."
-                ));
-        if (!CALLBACK_EVENT.equals(event.getEventType())) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Entrega de callback não encontrada.");
-        }
-        return event;
     }
 
     private CallbackDeliveryResponse toResponse(OutboxEventEntity event) {
