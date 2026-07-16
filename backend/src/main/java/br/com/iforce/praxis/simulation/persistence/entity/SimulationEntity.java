@@ -55,7 +55,8 @@ public class SimulationEntity implements EmpresaAwareEntity {
      * Versões antigas do assistente serializavam cargo, situação, competências
      * e uso do resultado em {@code description}. Esses dados já possuem campos
      * próprios no domínio. Antes de gravar, convertemos somente esse formato
-     * reconhecido em uma descrição pública simples; textos livres são mantidos.
+     * multilinha reconhecido em uma descrição pública simples; textos livres e
+     * resumos antigos de uma única linha são mantidos.
      */
     @PrePersist
     @PreUpdate
@@ -77,14 +78,11 @@ public class SimulationEntity implements EmpresaAwareEntity {
         }
 
         int recognizedLines = 0;
-        int nonBlankLines = 0;
-        boolean singleLinePlanningSummary = false;
         for (String rawLine : value.split("\\R")) {
             String line = rawLine.trim();
             if (line.isBlank()) {
                 continue;
             }
-            nonBlankLines++;
             int separator = line.indexOf(':');
             if (separator <= 0) {
                 return false;
@@ -95,14 +93,9 @@ public class SimulationEntity implements EmpresaAwareEntity {
                 return false;
             }
             recognizedLines++;
-
-            if (isRoleLabel(label) && line.contains(" - ")) {
-                singleLinePlanningSummary = true;
-            }
         }
 
-        return recognizedLines >= 2
-                || (recognizedLines == 1 && nonBlankLines == 1 && singleLinePlanningSummary);
+        return recognizedLines >= 2;
     }
 
     private boolean isPlanningLabel(String label) {
