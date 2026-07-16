@@ -41,6 +41,15 @@ class GupyCandidateContractValidationTest {
     }
 
     @Test
+    void acceptsOfficialStringNullAsNoPreviousResult() throws Exception {
+        mockMvc.perform(post("/test/candidate")
+                        .header("Authorization", AUTHORIZATION)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(candidateRequest(4398157507L, "external", "\"null\"")))
+                .andExpect(status().isCreated());
+    }
+
+    @Test
     void acceptsOmittedOptionalContractFieldsAsNull() throws Exception {
         mockMvc.perform(post("/test/candidate")
                         .header("Authorization", AUTHORIZATION)
@@ -72,11 +81,6 @@ class GupyCandidateContractValidationTest {
     @Test
     void rejectsPreviousResultPass() throws Exception {
         assertInvalidContractValue(candidateRequest(4398157506L, "external", "\"pass\""));
-    }
-
-    @Test
-    void rejectsStringNullInsteadOfJsonNull() throws Exception {
-        assertInvalidContractValue(candidateRequest(4398157507L, "external", "\"null\""));
     }
 
     private void assertInvalidContractValue(String requestBody) throws Exception {

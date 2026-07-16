@@ -3,6 +3,7 @@ package br.com.iforce.praxis.candidate.dto;
 import io.swagger.v3.oas.annotations.media.Schema;
 
 import java.time.Instant;
+import java.util.List;
 
 @Schema(description = "Dados seguros para a página final da pessoa candidata.")
 public record CandidateResultPageResponse(
@@ -21,6 +22,9 @@ public record CandidateResultPageResponse(
         String redirectUrl,
 
         @Schema(example = "2026-07-15T14:30:00Z")
-        Instant concluidoEm
+        Instant concluidoEm,
+
+        @Schema(description = "Resultados major permitidos pelo contrato Gupy para exibição à pessoa candidata.")
+        List<CandidateResultItemResponse> resultados
 ) {
 }

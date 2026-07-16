@@ -78,6 +78,7 @@ function CandidateResultContent({
   privacyNotice: string;
 }) {
   const completed = result.status === "concluida";
+  const candidateResults = result.resultados ?? [];
   const title = completed
     ? "Avaliação concluída"
     : result.finalizado
@@ -118,6 +119,28 @@ function CandidateResultContent({
           </>
         )}
       </dl>
+
+      {completed && candidateResults.length > 0 && (
+        <section className="mt-6" aria-labelledby="candidate-results-title">
+          <h2 id="candidate-results-title" className="text-base font-semibold text-foreground">
+            Seu resultado
+          </h2>
+          <p className="mt-1 text-sm leading-6 text-muted-foreground">
+            As pontuações abaixo mostram as dimensões principais da avaliação e não determinam,
+            isoladamente, a decisão do processo seletivo.
+          </p>
+          <dl className="mt-3 grid gap-3 sm:grid-cols-2">
+            {candidateResults.map((item) => (
+              <div key={item.titulo} className="rounded-xl border border-border bg-background/60 p-4">
+                <dt className="text-sm font-medium text-foreground">{item.titulo}</dt>
+                <dd className="mt-2 text-2xl font-semibold text-primary" aria-label={`${item.titulo}: ${item.resultado}`}>
+                  {item.resultado}
+                </dd>
+              </div>
+            ))}
+          </dl>
+        </section>
+      )}
 
       <div className="mt-6 grid gap-3">
         {completed && result.redirectUrl ? (
