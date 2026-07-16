@@ -87,6 +87,25 @@ class CreateCandidateRequestTest {
     }
 
     @Test
+    void deserializesLiteralNullPreviousResultFromOfficialExample() throws Exception {
+        CreateCandidateRequest request = objectMapper.readValue("""
+                {
+                  "company_id": 1,
+                  "document_id": 4398157034,
+                  "test_id": "sim-atendimento",
+                  "name": "Candidato Teste",
+                  "email": "candidato@example.com",
+                  "callback_url": "https://cliente.gupy.io/candidate-return",
+                  "candidate_type": "external",
+                  "previous_result": "null"
+                }
+                """, CreateCandidateRequest.class);
+
+        assertThat(request.previousResult()).isNull();
+        assertThat(request.isRetestRequested()).isFalse();
+    }
+
+    @Test
     void rejectsIdentifiersOutsideTheInt64JsonContract() {
         assertThatThrownBy(() -> objectMapper.readValue("""
                 {
@@ -125,6 +144,7 @@ class CreateCandidateRequestTest {
         assertThat(CreateCandidateRequest.PreviousResult.fromValue("fail"))
                 .isEqualTo(CreateCandidateRequest.PreviousResult.FAIL);
         assertThat(CreateCandidateRequest.PreviousResult.fromValue(null)).isNull();
+        assertThat(CreateCandidateRequest.PreviousResult.fromValue("null")).isNull();
     }
 
     @Test
@@ -136,9 +156,6 @@ class CreateCandidateRequestTest {
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("previous_result deve ser fail ou null.");
         assertThatThrownBy(() -> CreateCandidateRequest.PreviousResult.fromValue("pass"))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("previous_result deve ser fail ou null.");
-        assertThatThrownBy(() -> CreateCandidateRequest.PreviousResult.fromValue("null"))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("previous_result deve ser fail ou null.");
     }
