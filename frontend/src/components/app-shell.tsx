@@ -6,6 +6,7 @@ import type { ReactNode } from "react";
 import {
   BarChart3,
   Bell,
+  BookOpenCheck,
   Building2,
   ClipboardList,
   CreditCard,
@@ -15,7 +16,6 @@ import {
   ListChecks,
   Link2,
   Menu,
-  Settings,
   ShieldCheck,
   Sparkles,
   Target,
@@ -71,6 +71,7 @@ function SidebarContent({
       label: t.common.situationalAssessment,
       items: [
         { to: "/avaliacoes", label: t.common.situationalAssessment, icon: ListChecks },
+        { to: "/competencias", label: t.common.competencies, icon: BookOpenCheck },
         { to: "/enviar-link", label: t.common.sendLink, icon: Link2 },
         { to: "/jornadas", label: t.common.journeys, icon: Workflow },
       ],
@@ -80,7 +81,6 @@ function SidebarContent({
       items: [
         { to: "/results", label: t.common.results, icon: ClipboardList },
         { to: "/talent-match", label: t.common.talentMatch, icon: Target },
-        { to: "/competencias", label: t.common.competencies, icon: Settings },
       ],
     },
     {
@@ -115,10 +115,11 @@ function SidebarContent({
           {t.common.tagline}
         </div>
       </div>
-      <nav className="flex-1 overflow-y-auto px-3 py-4">
+      <nav className="flex-1 overflow-y-auto px-3 py-4" aria-label={t.common.menu}>
         <ShellLink closeOnSelect={closeOnSelect}>
           <Link
             to="/comecar"
+            aria-current={pathname === "/comecar" ? "page" : undefined}
             className={cn(
               "mb-3 flex items-start gap-3 rounded-lg border px-3 py-2.5 text-sm transition",
               pathname === "/comecar" ? "border-primary/40 bg-primary/10" : "border-border bg-card hover:bg-accent",
@@ -139,21 +140,24 @@ function SidebarContent({
               {group.label}
             </div>
             {group.items.map((item) => {
-              const active =
-                item.to === "/dashboard"
-                  ? pathname === "/dashboard"
-                  : pathname === item.to || pathname.startsWith(item.to + "/");
+              const active = isActivePath(pathname, item.to);
               const badge = "badge" in item ? item.badge : 0;
               return (
                 <ShellLink key={item.to} closeOnSelect={closeOnSelect}>
                   <Link
                     to={item.to}
+                    aria-current={active ? "page" : undefined}
                     className={cn(
                       "mb-1 flex items-center gap-3 rounded-md px-3 py-2 text-sm transition",
                       active ? "bg-accent text-accent-foreground" : "text-foreground/85 hover:bg-accent",
                     )}
                   >
-                    <item.icon className="h-4 w-4 shrink-0 text-muted-foreground" />
+                    <item.icon
+                      className={cn(
+                        "h-4 w-4 shrink-0",
+                        active ? "text-accent-foreground" : "text-muted-foreground",
+                      )}
+                    />
                     <span className="min-w-0 flex-1">{item.label}</span>
                     {badge > 0 && (
                       <span className="rounded-full bg-danger px-1.5 py-0.5 text-[10px] font-semibold text-danger-foreground">
@@ -176,9 +180,9 @@ function SidebarContent({
           <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary font-semibold text-primary-foreground">
             {session.userName.trim().charAt(0).toUpperCase() || "?"}
           </div>
-          <div>
-            <div className="font-medium text-foreground">{session.userName}</div>
-            <div className="text-muted-foreground">{session.userRole}</div>
+          <div className="min-w-0">
+            <div className="truncate font-medium text-foreground">{session.userName}</div>
+            <div className="truncate text-muted-foreground">{session.userRole}</div>
           </div>
         </div>
       </div>
@@ -186,31 +190,51 @@ function SidebarContent({
   );
 }
 
-function pageLabel(pathname: string, t: TranslationMap, copy: CopyMap) {
-  if (pathname === "/dashboard") return t.common.dashboard;
-  if (pathname === "/avaliacoes") return t.common.situationalAssessment;
-  if (pathname.startsWith("/nova")) return t.common.createAssessment;
-  if (pathname === "/results" || pathname.startsWith("/results/")) return t.common.results;
-  if (pathname === "/enviar-link") return t.common.sendLink;
-  if (pathname === "/monitoramento") return t.common.operationCenter;
-  if (pathname === "/notifications") return copy.notificationsLabel;
-  if (pathname === "/jornadas") return t.common.journeys;
-  if (pathname === "/talent-match") return t.common.talentMatch;
-  if (pathname === "/billing") return t.common.plan;
-  if (pathname === "/compliance") return t.common.compliance;
-  if (pathname.startsWith("/configuracoes")) return t.common.profile;
-  if (pathname === "/competencias") return t.common.competencies;
-  if (pathname === "/comecar") return t.common.startHere;
-  if (pathname === "/team") return t.common.myTeam;
-  if (pathname.startsWith("/candidato")) return t.common.candidateView;
-  if (pathname.startsWith("/integrations")) return t.common.integrations;
-  return "Práxis";
+function isActivePath(pathname: string, itemPath: string) {
+  if (itemPath === "/dashboard") return pathname === itemPath;
+  return pathname === itemPath || pathname.startsWith(`${itemPath}/`);
+}
+
+function pageContext(pathname: string, t: TranslationMap, copy: CopyMap) {
+  if (pathname === "/dashboard") return { section: t.common.workspace, label: t.common.dashboard };
+  if (pathname === "/notifications") return { section: t.common.workspace, label: copy.notificationsLabel };
+  if (pathname === "/comecar") return { section: t.common.workspace, label: t.common.startHere };
+
+  if (pathname === "/avaliacoes") return { section: t.common.situationalAssessment, label: t.common.situationalAssessment };
+  if (pathname.startsWith("/nova")) return { section: t.common.situationalAssessment, label: t.common.createAssessment };
+  if (pathname === "/competencias") return { section: t.common.situationalAssessment, label: t.common.competencies };
+  if (pathname === "/enviar-link") return { section: t.common.situationalAssessment, label: t.common.sendLink };
+  if (pathname === "/jornadas" || pathname.startsWith("/jornada/")) {
+    return { section: t.common.situationalAssessment, label: t.common.journeys };
+  }
+
+  if (pathname === "/results" || pathname.startsWith("/results/")) {
+    return { section: t.common.results, label: t.common.results };
+  }
+  if (pathname === "/talent-match") return { section: t.common.results, label: t.common.talentMatch };
+
+  if (pathname === "/monitoramento") return { section: t.common.operation, label: t.common.operationCenter };
+  if (pathname === "/compliance") return { section: t.common.operation, label: t.common.compliance };
+
+  if (pathname === "/configuracoes/perfil") return { section: t.common.settings, label: t.common.profile };
+  if (pathname === "/configuracoes/conta") return { section: t.common.settings, label: t.common.myAccount };
+  if (pathname === "/configuracoes/api" || pathname.startsWith("/docs/integracao-api-propria")) {
+    return { section: t.common.settings, label: "API" };
+  }
+  if (pathname === "/team") return { section: t.common.settings, label: t.common.myTeam };
+  if (pathname.startsWith("/integrations")) return { section: t.common.settings, label: t.common.integrations };
+  if (pathname === "/billing") return { section: t.common.settings, label: t.common.plan };
+  if (pathname.startsWith("/configuracoes")) return { section: t.common.settings, label: t.common.settings };
+
+  if (pathname.startsWith("/candidato")) return { section: t.common.workspace, label: t.common.candidateView };
+  return { section: t.common.workspace, label: "Práxis" };
 }
 
 export function AppShell({ children }: { children: ReactNode }) {
   const pathname = useRouterState({ select: (state) => state.location.pathname });
   const { language, t } = useLanguage();
   const copy = appShellCopy[language];
+  const context = pageContext(pathname, t, copy);
   const unreadNotificationsQuery = useQuery({
     queryKey: ["notifications", "unread-count"],
     queryFn: getUnreadNotificationsCount,
@@ -241,7 +265,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             </SheetContent>
           </Sheet>
           <div className="min-w-0 truncate text-sm text-muted-foreground">
-            {t.common.workspace} <span className="text-foreground">/ {pageLabel(pathname, t, copy)}</span>
+            {context.section} <span className="text-foreground">/ {context.label}</span>
           </div>
           <div className="ml-auto flex shrink-0 items-center justify-end gap-2 text-xs">
             <LanguageSelector />
