@@ -12,3 +12,11 @@
   aspect-ratio: 15 / 4;
   object-fit: contain;
 }
+
+/*
+ * Selos de campos obrigatórios mantêm o vermelho na borda e no fundo.
+ * A cor principal do texto garante contraste AA nos temas claro e escuro.
+ */
+span[class~="border-danger/40"][class~="bg-danger/10"][class~="text-danger"] {
+  color: var(--color-foreground);
+}
