@@ -1,6 +1,7 @@
 import { getApiBaseUrl } from "@/lib/runtime-config";
 import { getSession } from "@/lib/session";
-import { PraxisApiError, type DashboardResponse } from "./praxis-legacy";
+import type { DashboardResponse } from "./praxis-contract";
+import { PraxisApiError } from "./praxis-legacy";
 
 export class DashboardCompatibilityError extends PraxisApiError {
   constructor() {
@@ -37,7 +38,7 @@ export async function getDashboard(): Promise<DashboardResponse> {
   return response.json() as Promise<DashboardResponse>;
 }
 
-async function readApiErrorMessage(response: Response): Promise<string> {
+async function readApiErrorMessage(response: Response) {
   const fallback = `Falha na API (${response.status})`;
 
   try {
