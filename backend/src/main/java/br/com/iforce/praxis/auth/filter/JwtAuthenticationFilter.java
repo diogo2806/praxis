@@ -1,42 +1,30 @@
 package br.com.iforce.praxis.auth.filter;
 
 import br.com.iforce.praxis.auth.service.CurrentEmpresaService;
-
 import br.com.iforce.praxis.auth.service.JwtService;
-
 import io.jsonwebtoken.Claims;
-
 import io.jsonwebtoken.JwtException;
-
 import jakarta.servlet.FilterChain;
-
 import jakarta.servlet.ServletException;
-
 import jakarta.servlet.http.HttpServletRequest;
-
 import jakarta.servlet.http.HttpServletResponse;
-
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
-
 import org.springframework.security.core.context.SecurityContextHolder;
-
 import org.springframework.stereotype.Component;
-
 import org.springframework.web.filter.OncePerRequestFilter;
 
-
 import java.io.IOException;
-
 import java.util.List;
-
 
 @Component
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private static final String BEARER_PREFIX = "Bearer ";
-    private static final String GUPY_TEST_PATH = "/test";
+    private static final List<String> OPAQUE_TOKEN_PATHS = List.of(
+            "/test",
+            "/recrutei/test"
+    );
 
     private final JwtService jwtService;
 
@@ -51,7 +39,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         String path = contextPath == null || contextPath.isBlank()
                 ? requestUri
                 : requestUri.substring(contextPath.length());
-        return GUPY_TEST_PATH.equals(path) || path.startsWith(GUPY_TEST_PATH + "/");
+        return OPAQUE_TOKEN_PATHS.stream().anyMatch(root -> matchesPathOrDescendant(path, root));
     }
 
     @Override
@@ -98,5 +86,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 .map(role -> role.startsWith("ROLE_") ? role : "ROLE_" + role)
                 .map(SimpleGrantedAuthority::new)
                 .toList();
+    }
+
+    private static boolean matchesPathOrDescendant(String path, String rootPath) {
+        return rootPath.equals(path) || path.startsWith(rootPath + "/");
     }
 }
