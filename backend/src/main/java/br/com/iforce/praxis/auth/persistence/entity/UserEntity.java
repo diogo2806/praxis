@@ -68,8 +68,13 @@ public class UserEntity {
     @Column(name = "invited_at")
     private Instant invitedAt;
 
+    /** Hash BCrypt usado para comprovar o token de convite sem persistir o valor puro. */
     @Column(name = "invite_token_hash", length = 120)
     private String inviteTokenHash;
+
+    /** SHA-256 usado somente para localizar diretamente o convite aleatório. */
+    @Column(name = "invite_token_lookup_hash", length = 64)
+    private String inviteTokenLookupHash;
 
     @Column(name = "invite_expires_at")
     private Instant inviteExpiresAt;
