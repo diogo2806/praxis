@@ -1,6 +1,8 @@
 -- Second empresa with its own published simulation, used to assert cross-empresa isolation.
 -- empresa-2 carries an integration_token_hash matching the bearer token "empresa2-token".
 
+ALTER TABLE audit_events DISABLE TRIGGER USER;
+
 DELETE FROM audit_events
 WHERE aggregate_id IN ('sim-empresa2', 'sim-empresa2:v1');
 
@@ -8,6 +10,8 @@ DELETE FROM audit_events
 WHERE empresa_id = 'empresa-2'
   AND aggregate_type = 'Integration'
   AND aggregate_id = 'GUPY';
+
+ALTER TABLE audit_events ENABLE TRIGGER USER;
 
 DELETE FROM outbox_events
 WHERE aggregate_type = 'CandidateAttempt'

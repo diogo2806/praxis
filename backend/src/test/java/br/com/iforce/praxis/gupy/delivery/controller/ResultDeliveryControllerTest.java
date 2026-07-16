@@ -195,25 +195,22 @@ class ResultDeliveryControllerTest {
                 .andReturn();
 
         String responseBody = createResult.getResponse().getContentAsString();
-        String attemptId = attemptIdFromResponse(responseBody);
+        String testUrl = JsonPath.read(responseBody, "$.test_url");
+        String attemptToken = testUrl.substring(testUrl.lastIndexOf('/') + 1);
+        String attemptId = jwtService.parseCandidateAttemptToken(attemptToken).attemptId();
 
-        mockMvc.perform(post("/candidate/attempts/" + attemptId + "/answers")
+        mockMvc.perform(post("/candidate/attempts/" + attemptToken + "/answers")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
-                                  "nodeId": "turno-1",
-                                  "optionId": "opcao-equilibrada"
+                                  "etapaId": "turno-1",
+                                  "respostaId": "opcao-equilibrada",
+                                  "tempoEsgotado": false
                                 }
                                 """))
                 .andExpect(status().isOk());
 
         return attemptId;
-    }
-
-    private String attemptIdFromResponse(String responseBody) {
-        String testUrl = JsonPath.read(responseBody, "$.test_url");
-        String token = testUrl.substring(testUrl.lastIndexOf('/') + 1);
-        return jwtService.parseCandidateAttemptToken(token).attemptId();
     }
 
     private Long findDeliveryId(String attemptId, String deliveryStatus) throws Exception {

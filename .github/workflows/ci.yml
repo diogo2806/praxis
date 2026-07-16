@@ -40,13 +40,19 @@ jobs:
           java-version: "21"
           cache: maven
 
-      # Suíte completa + empacotamento. O tee mantém um log integral mesmo quando
-      # a compilação falha antes de o Surefire criar relatórios de teste.
       - name: Build & test (verify)
         shell: bash
         run: |
           set -o pipefail
-          mvn -B -ntp verify 2>&1 | tee build.log
+          {
+            echo "=== MIGRATIONS ==="
+            find src/main/resources/db/migration -type f | sort
+            if [ -d src/test/resources/db/migration ]; then
+              find src/test/resources/db/migration -type f | sort
+            fi
+            echo "=== MAVEN ==="
+          } | tee build.log
+          mvn -B -ntp verify 2>&1 | tee -a build.log
 
       - name: Upload backend diagnostics on failure
         if: failure()

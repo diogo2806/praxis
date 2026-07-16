@@ -23,12 +23,12 @@ class GupyCandidateContractValidationTest {
     private MockMvc mockMvc;
 
     @Test
-    void acceptsOfficialCandidateTypeAndPreviousResult() throws Exception {
+    void acceptsOfficialPreviousResultValueAndAppliesRetestRule() throws Exception {
         mockMvc.perform(post("/test/candidate")
                         .header("Authorization", AUTHORIZATION)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(candidateRequest(4398157501L, "internal", "\"fail\"")))
-                .andExpect(status().isCreated());
+                .andExpect(status().isConflict());
     }
 
     @Test

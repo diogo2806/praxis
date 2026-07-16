@@ -51,7 +51,7 @@ class StrictGupyPreflightServiceTest {
         when(tokenRepository.findFirstByEmpresaIdAndProvider("empresa-1", "gupy"))
                 .thenReturn(Optional.empty());
 
-        GupyPreflightResponse response = service.evaluate(version);
+        GupyPreflightResponse response = service.getPreflight("sim-1", 1);
 
         assertThat(response.ok()).isFalse();
         assertThat(checkFor(response, GupyPreflightCheckCode.INTEGRATION_TOKEN).status())
@@ -59,13 +59,27 @@ class StrictGupyPreflightServiceTest {
     }
 
     @Test
-    void publishedVersionWithRealTokenPasses() {
+    void missingTokenDoesNotPreventPublishingForOtherChannels() {
+        SimulationVersionEntity version = version(SimulationVersionStatus.DRAFT);
+        stubBase(version);
+        when(tokenRepository.findFirstByEmpresaIdAndProvider("empresa-1", "gupy"))
+                .thenReturn(Optional.empty());
+
+        GupyPreflightResponse response = service.evaluate(version);
+
+        assertThat(response.ok()).isTrue();
+        assertThat(checkFor(response, GupyPreflightCheckCode.INTEGRATION_TOKEN).status())
+                .isEqualTo(GupyPreflightCheckStatus.WARNING);
+    }
+
+    @Test
+    void publishedVersionWithRealTokenPassesActivation() {
         SimulationVersionEntity version = version(SimulationVersionStatus.PUBLISHED);
         stubBase(version);
         when(tokenRepository.findFirstByEmpresaIdAndProvider("empresa-1", "gupy"))
                 .thenReturn(Optional.of(mock(IntegrationTokenEntity.class)));
 
-        GupyPreflightResponse response = service.evaluate(version);
+        GupyPreflightResponse response = service.getPreflight("sim-1", 1);
 
         assertThat(response.ok()).isTrue();
         assertThat(checkFor(response, GupyPreflightCheckCode.PUBLICATION_STATUS).status())
@@ -81,7 +95,7 @@ class StrictGupyPreflightServiceTest {
         when(tokenRepository.findFirstByEmpresaIdAndProvider("empresa-1", "gupy"))
                 .thenReturn(Optional.of(mock(IntegrationTokenEntity.class)));
 
-        GupyPreflightResponse response = service.evaluate(version);
+        GupyPreflightResponse response = service.getPreflight("sim-1", 1);
 
         assertThat(response.ok()).isFalse();
         assertThat(checkFor(response, GupyPreflightCheckCode.PUBLICATION_STATUS).status())
@@ -91,6 +105,9 @@ class StrictGupyPreflightServiceTest {
     private void stubBase(SimulationVersionEntity version) {
         when(currentEmpresaService.requiredEmpresaId()).thenReturn("empresa-1");
         when(empresaRepository.findById("empresa-1")).thenReturn(Optional.empty());
+        when(versionRepository.findBySimulationEmpresaIdAndSimulationIdAndVersionNumber(
+                "empresa-1", "sim-1", 1
+        )).thenReturn(Optional.of(version));
         when(validationService.validate(any(SimulationVersionEntity.class)))
                 .thenReturn(new SimulationValidationResponse("sim-1", 1, true, 0, 0, 100, List.of()));
     }
