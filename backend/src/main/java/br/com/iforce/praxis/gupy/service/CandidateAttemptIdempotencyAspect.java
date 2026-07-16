@@ -40,15 +40,20 @@ public class CandidateAttemptIdempotencyAspect {
     @Around("execution(* br.com.iforce.praxis.gupy.service.CandidateAttemptService.createOrReuse(..))"
             + " && args(request, empresaContext)")
     @Transactional
-    public Object enforceEquivalentRetry(ProceedingJoinPoint joinPoint, CreateCandidateRequest request,
-                                         IntegrationEmpresaContext empresaContext) throws Throwable {
+    public Object enforceEquivalentRetry(
+            ProceedingJoinPoint joinPoint,
+            CreateCandidateRequest request,
+            IntegrationEmpresaContext empresaContext
+    ) throws Throwable {
         String empresaId = empresaContext.empresaId();
         String initialSource = CandidateAttemptIdempotencyKeyFactory.initialSource(request, empresaContext);
+        String serviceSource = CandidateAttemptIdempotencyKeyFactory.serviceSource(request, empresaContext);
         String idempotencyKey = CandidateAttemptIdempotencyKeyFactory.currentKey(request, empresaContext);
         String fingerprint = fingerprint(request);
 
         CandidateAttemptEntity existing = candidateAttemptRepository
-                .findByEmpresaIdAndIdempotencyKey(empresaId, idempotencyKey).orElse(null);
+                .findByEmpresaIdAndIdempotencyKey(empresaId, idempotencyKey)
+                .orElse(null);
 
         if (existing == null && CandidateAttemptIdempotencyKeyFactory.isGupyRetest(request, empresaContext)) {
             assertRetestAllowed(request, empresaContext);
@@ -58,12 +63,8 @@ public class CandidateAttemptIdempotencyAspect {
         }
 
         Object response;
-        if (CandidateAttemptIdempotencyKeyFactory.isGupyRetest(request, empresaContext)) {
-            try (CandidateAttemptIdempotencyScope ignored =
-                         CandidateAttemptIdempotencyScope.open(initialSource, idempotencyKey)) {
-                response = joinPoint.proceed();
-            }
-        } else {
+        try (CandidateAttemptIdempotencyScope ignored =
+                     CandidateAttemptIdempotencyScope.open(serviceSource, idempotencyKey)) {
             response = joinPoint.proceed();
         }
 
@@ -92,8 +93,11 @@ public class CandidateAttemptIdempotencyAspect {
         }
     }
 
-    private static void assertEquivalent(CandidateAttemptEntity existing, CreateCandidateRequest request,
-                                         String currentFingerprint) {
+    private static void assertEquivalent(
+            CandidateAttemptEntity existing,
+            CreateCandidateRequest request,
+            String currentFingerprint
+    ) {
         if (existing.getRequestFingerprint() == null) {
             if (!matchesLegacySnapshot(existing, request)) {
                 throw conflict();
@@ -155,7 +159,8 @@ public class CandidateAttemptIdempotencyAspect {
                 && Objects.equals(entity.getGupyJobId(), request.jobId())
                 && normalized(entity.getCallbackUrl()).equals(normalized(request.callbackUrl()))
                 && normalized(entity.getResultWebhookUrl()).equals(normalized(request.resultWebhookUrl()))
-                && normalized(entity.getAccommodationTimeMultiplier()).equals(normalized(request.accommodationTimeMultiplier()));
+                && normalized(entity.getAccommodationTimeMultiplier())
+                .equals(normalized(request.accommodationTimeMultiplier()));
     }
 
     private static String field(String name, String value) {
@@ -163,7 +168,9 @@ public class CandidateAttemptIdempotencyAspect {
     }
 
     private static String normalized(Object value, boolean lowercase) {
-        if (value == null) return "";
+        if (value == null) {
+            return "";
+        }
         String result = value.toString().trim();
         return lowercase ? result.toLowerCase(Locale.ROOT) : result;
     }
@@ -173,7 +180,9 @@ public class CandidateAttemptIdempotencyAspect {
     }
 
     private static String normalized(String value) {
-        if (value == null || value.isBlank()) return "";
+        if (value == null || value.isBlank()) {
+            return "";
+        }
         try {
             return URI.create(value.trim()).normalize().toASCIIString();
         } catch (IllegalArgumentException exception) {
@@ -183,22 +192,29 @@ public class CandidateAttemptIdempotencyAspect {
 
     private static String normalized(BigDecimal value) {
         BigDecimal normalized = value == null || value.compareTo(BigDecimal.ONE) < 0
-                ? BigDecimal.ONE : value.min(BigDecimal.valueOf(9.99));
+                ? BigDecimal.ONE
+                : value.min(BigDecimal.valueOf(9.99));
         return normalized.stripTrailingZeros().toPlainString();
     }
 
     private static ResponseStatusException conflict() {
-        return new ResponseStatusException(HttpStatus.CONFLICT,
-                "A chave de idempotência já foi usada com dados diferentes.");
+        return new ResponseStatusException(
+                HttpStatus.CONFLICT,
+                "A chave de idempotência já foi usada com dados diferentes."
+        );
     }
 
     private static ResponseStatusException retestWithoutPreviousAttempt() {
-        return new ResponseStatusException(HttpStatus.CONFLICT,
-                "Reteste Gupy exige uma tentativa anterior para a mesma empresa, pessoa candidata, teste e vaga.");
+        return new ResponseStatusException(
+                HttpStatus.CONFLICT,
+                "Reteste Gupy exige uma tentativa anterior para a mesma empresa, pessoa candidata, teste e vaga."
+        );
     }
 
     private static ResponseStatusException retestBeforeTerminalState() {
-        return new ResponseStatusException(HttpStatus.CONFLICT,
-                "Reteste Gupy permitido somente após tentativa concluída, abandonada ou expirada.");
+        return new ResponseStatusException(
+                HttpStatus.CONFLICT,
+                "Reteste Gupy permitido somente após tentativa concluída, abandonada ou expirada."
+        );
     }
 }
