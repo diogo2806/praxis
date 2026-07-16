@@ -73,7 +73,8 @@ public class AttemptEngagementWebhookService {
 
     /**
      * Envia um evento de engajamento usando a URL e o segredo da integração
-     * CUSTOM_API. A URL da Gupy nunca participa deste fluxo.
+     * CUSTOM_API. Metadados internos de destino da Gupy são removidos antes da
+     * assinatura e nunca chegam ao consumidor proprietário.
      */
     public void deliver(String empresaId, String eventType, JsonNode payload) {
         ActiveSettings activeSettings = findActiveSettings(empresaId, eventType);
@@ -88,7 +89,11 @@ public class AttemptEngagementWebhookService {
 
         try {
             URI destination = outboundUrlValidator.validate(activeSettings.webhookUrl());
-            String body = objectMapper.writeValueAsString(payload);
+            ObjectNode externalPayload = payload instanceof ObjectNode objectNode
+                    ? objectNode.deepCopy()
+                    : objectMapper.valueToTree(payload);
+            externalPayload.remove("webhookUrl");
+            String body = objectMapper.writeValueAsString(externalPayload);
             String signature = hmacSignatureService.sign(body, activeSettings.secret());
 
             restClient.post()
