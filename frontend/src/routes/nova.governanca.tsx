@@ -449,24 +449,44 @@ function AuditLog({ events, loading }: { events: AuditEventResponse[]; loading: 
   }
 
   return (
-    <ul className="mt-4 divide-y divide-border">
-      {events.map((event) => (
-        <li key={event.id} className="flex items-start gap-3 py-3 text-sm">
-          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-muted text-[11px] font-medium">
-            {event.eventType[0]?.toUpperCase() ?? "A"}
-          </div>
-          <div className="min-w-0 flex-1">
-            <div className="truncate font-medium">{event.message}</div>
-            <div className="truncate text-xs text-muted-foreground">
-              {formatEventType(event.eventType)} - {event.aggregateId}
-            </div>
-          </div>
-          <div className="text-xs tabular-nums text-muted-foreground">
-            {formatDateTime(event.createdAt)}
-          </div>
-        </li>
-      ))}
-    </ul>
+    <div className="mt-4 rounded-md border border-border bg-background p-4">
+      <div className="overflow-x-auto">
+        <table className="w-full text-sm">
+          <thead className="border-b border-border text-xs uppercase text-muted-foreground">
+            <tr>
+              <th className="px-3 py-2 text-left font-medium">Evento</th>
+              <th className="px-3 py-2 text-left font-medium">Identificador</th>
+              <th className="px-3 py-2 text-right font-medium">Data</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-border">
+            {events.map((event) => (
+              <tr key={event.id}>
+                <td className="px-3 py-3 align-top">
+                  <div className="flex min-w-72 items-start gap-3">
+                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-muted text-[11px] font-medium">
+                      {event.eventType[0]?.toUpperCase() ?? "A"}
+                    </div>
+                    <div className="min-w-0">
+                      <div className="font-medium">{event.message}</div>
+                      <div className="mt-0.5 text-xs text-muted-foreground">
+                        {formatEventType(event.eventType)}
+                      </div>
+                    </div>
+                  </div>
+                </td>
+                <td className="px-3 py-3 align-top text-xs text-muted-foreground">
+                  {event.aggregateId}
+                </td>
+                <td className="whitespace-nowrap px-3 py-3 text-right align-top text-xs tabular-nums text-muted-foreground">
+                  {formatDateTime(event.createdAt)}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
   );
 }
 
