@@ -1,10 +1,13 @@
 package br.com.iforce.praxis.candidate.service;
 
 import br.com.iforce.praxis.auth.service.JwtService;
+import br.com.iforce.praxis.candidate.dto.CandidateResultItemResponse;
 import br.com.iforce.praxis.candidate.dto.CandidateResultPageResponse;
 import br.com.iforce.praxis.gupy.model.AttemptStatus;
 import br.com.iforce.praxis.gupy.model.CandidateAttempt;
 import br.com.iforce.praxis.gupy.model.PublishedSimulation;
+import br.com.iforce.praxis.gupy.model.ResultItem;
+import br.com.iforce.praxis.gupy.model.ResultTier;
 import br.com.iforce.praxis.gupy.persistence.entity.CandidateAttemptEntity;
 import br.com.iforce.praxis.gupy.persistence.repository.CandidateAttemptRepository;
 import br.com.iforce.praxis.gupy.service.CandidateAttemptMapper;
@@ -13,6 +16,9 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
+
+import java.util.Comparator;
+import java.util.List;
 
 @Service
 public class CandidateResultPageService {
@@ -49,8 +55,24 @@ public class CandidateResultPageService {
                 publicStatus(attempt.status()),
                 finished,
                 attempt.status() == AttemptStatus.COMPLETED ? entity.getCallbackUrl() : null,
-                attempt.finishedAt()
+                attempt.finishedAt(),
+                candidateResults(attempt)
         );
+    }
+
+    private List<CandidateResultItemResponse> candidateResults(CandidateAttempt attempt) {
+        if (attempt.status() != AttemptStatus.COMPLETED) {
+            return List.of();
+        }
+        return attempt.results().stream()
+                .filter(result -> result.tier() == ResultTier.MAJOR)
+                .sorted(Comparator.comparing(ResultItem::name))
+                .map(result -> new CandidateResultItemResponse(
+                        result.name(),
+                        result.score(),
+                        result.score() + "%"
+                ))
+                .toList();
     }
 
     private JwtService.CandidateResultToken parseToken(String token) {

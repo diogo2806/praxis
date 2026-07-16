@@ -7,12 +7,19 @@ export type CandidateResultPageStatus =
   | "abandonada"
   | "expirada";
 
+export interface CandidateResultItemResponse {
+  titulo: string;
+  pontuacao: number;
+  resultado: string;
+}
+
 export interface CandidateResultPageResponse {
   avaliacaoNome: string;
   status: CandidateResultPageStatus;
   finalizado: boolean;
   redirectUrl?: string | null;
   concluidoEm?: string | null;
+  resultados: CandidateResultItemResponse[];
 }
 
 export async function getCandidateResultPage(token: string): Promise<CandidateResultPageResponse> {

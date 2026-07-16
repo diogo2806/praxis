@@ -74,7 +74,7 @@ public final class CreateCandidateRequest {
     private final CandidateType candidateType;
 
     @JsonProperty("previous_result")
-    @Schema(example = "fail", allowableValues = {"fail"}, nullable = true,
+    @Schema(example = "fail", allowableValues = {"fail", "null"}, nullable = true,
             description = "Resultado anterior. fail autoriza o ciclo contratual de reteste após uma tentativa terminal; null identifica o ciclo inicial.")
     private final PreviousResult previousResult;
 
@@ -252,7 +252,7 @@ public final class CreateCandidateRequest {
 
         @JsonCreator(mode = JsonCreator.Mode.DELEGATING)
         public static PreviousResult fromValue(String value) {
-            if (value == null) {
+            if (value == null || "null".equals(value)) {
                 return null;
             }
             for (PreviousResult previousResult : values()) {
