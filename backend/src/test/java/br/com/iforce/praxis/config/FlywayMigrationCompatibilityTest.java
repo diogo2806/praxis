@@ -44,6 +44,14 @@ class FlywayMigrationCompatibilityTest {
     }
 
     @Test
+    void outOfOrderMigrationsRemainEnabledForProvisionedDatabases() throws IOException {
+        String properties = readResource("/application.properties");
+
+        assertThat(properties)
+                .contains("spring.flyway.out-of-order=${SPRING_FLYWAY_OUT_OF_ORDER:true}");
+    }
+
+    @Test
     void versionedMigrationsUseUniqueVersions() throws IOException {
         Path migrationRoot = Path.of("src/main/resources/db/migration");
         Map<String, List<Path>> migrationsByVersion = new TreeMap<>();
