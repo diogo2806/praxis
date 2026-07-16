@@ -52,6 +52,15 @@ class FlywayMigrationCompatibilityTest {
     }
 
     @Test
+    void testProfileUsesOnlyTheCanonicalFlywayLocation() throws IOException {
+        String properties = readResource("/application.properties");
+
+        assertThat(properties)
+                .contains("spring.flyway.locations=classpath:db/migration")
+                .doesNotContain("classpath:db/migration/{vendor}");
+    }
+
+    @Test
     void versionedMigrationsUseUniqueVersions() throws IOException {
         Path migrationRoot = Path.of("src/main/resources/db/migration");
         Map<String, List<Path>> migrationsByVersion = new TreeMap<>();
