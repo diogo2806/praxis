@@ -99,12 +99,14 @@ public class GupyIntegrationController {
     ) {
         IntegrationEmpresaContext empresaContext = integrationAuthService.validateBearerToken(authorization, PROVIDER);
         int normalizedOffset = Math.max(offset, 0);
-        int normalizedLimit = Math.min(Math.max(limit, 1), 400);
+        int normalizedLimit = Math.min(Math.max(limit, 0), 400);
 
-        List<GupyTestResponse> tests = simulationCatalogService
-                .findPublished(empresaContext.empresaId(), searchString, normalizedOffset, normalizedLimit).stream()
-                .map(gupyTestCatalogMapper::toResponse)
-                .toList();
+        List<GupyTestResponse> tests = normalizedLimit == 0
+                ? List.of()
+                : simulationCatalogService
+                        .findPublished(empresaContext.empresaId(), searchString, normalizedOffset, normalizedLimit).stream()
+                        .map(gupyTestCatalogMapper::toResponse)
+                        .toList();
 
         int totalTests = simulationCatalogService.countPublished(empresaContext.empresaId(), searchString);
         TestItemsResponse response = new TestItemsResponse(normalizedLimit, normalizedOffset, totalTests, tests);
