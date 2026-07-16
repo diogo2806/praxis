@@ -42,12 +42,6 @@ public class RestClientResultWebhookClient implements ResultWebhookClient {
     }
 
     @Override
-    public void postPayload(String webhookUrl, Object payload) {
-        // O result_webhook_url pertence ao contrato Gupy e aceita exclusivamente TestResult.
-        // Eventos proprietários de engajamento não podem reutilizar esse destino.
-    }
-
-    @Override
     public int getCallback(String callbackUrl) {
         URI uri = outboundUrlValidator.validate(callbackUrl);
         ResponseEntity<Void> response = callbackRestClient.get()
