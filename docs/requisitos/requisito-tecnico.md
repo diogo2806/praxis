@@ -20,7 +20,9 @@ As duas tarefas que ainda apareciam como pendentes neste documento já estavam i
 - O contrato Gupy passa a aceitar tanto JSON `null` quanto a string `"null"` em `previous_result`, conforme o exemplo oficial publicado.
 - `GET /test` preserva `limit=0`, retornando página vazia com o total disponível, sem forçar o valor para `1`.
 - `result_candidate_page_url` apresenta à pessoa candidata somente os resultados `major`, mantendo e-mail, respostas, pesos e regras internas fora da resposta pública.
-- Foram adicionados testes de regressão para os três comportamentos.
+- O endpoint legado `GET /api/v1/candidate-links` preserva seu formato de lista, mas percorre todas as páginas da consulta oficial e deixa de cortar silenciosamente registros após o primeiro lote.
+- Novas aplicações públicas exigem `applicationCycleId`; o ciclo legado permanece restrito aos fluxos internos que ainda usam o construtor de compatibilidade.
+- Foram adicionados testes de regressão para os comportamentos corrigidos.
 
 ## Limites externos
 
