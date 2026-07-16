@@ -30,7 +30,14 @@ public interface UserRepository extends JpaRepository<UserEntity, Long> {
 
     boolean existsByEmpresaIdAndEmail(String empresaId, String email);
 
-    List<UserEntity> findByStatusAndInviteTokenHashIsNotNull(UserStatus status);
+    /** Localiza diretamente um convite novo pelo SHA-256 indexado do token. */
+    Optional<UserEntity> findFirstByInviteTokenLookupHash(String inviteTokenLookupHash);
+
+    /**
+     * Recupera somente convites legados criados antes da inclusão do hash de localização.
+     * Esse caminho existe apenas para não invalidar links ainda dentro do TTL durante a implantação.
+     */
+    List<UserEntity> findByStatusAndInviteTokenHashIsNotNullAndInviteTokenLookupHashIsNull(UserStatus status);
 
     /** Localiza diretamente uma solicitação nova pelo SHA-256 indexado do token. */
     Optional<UserEntity> findFirstByPasswordResetTokenLookupHash(String passwordResetTokenLookupHash);
