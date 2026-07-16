@@ -9,15 +9,16 @@ import {
   Building2,
   ClipboardList,
   CreditCard,
+  FilePlus2,
   HelpCircle,
   Home,
-  KeyRound,
-  ListChecks,
   Link2,
+  ListChecks,
   Menu,
-  Settings,
+  PlugZap,
   ShieldCheck,
   Sparkles,
+  Tags,
   Target,
   UserRound,
   Users,
@@ -63,14 +64,21 @@ function SidebarContent({
     {
       label: t.common.workspace,
       items: [
+        { to: "/comecar", label: t.common.startHere, icon: Sparkles },
         { to: "/dashboard", label: t.common.dashboard, icon: Home },
-        { to: "/notifications", label: copy.notificationsLabel, icon: Bell, badge: unreadNotifications },
       ],
     },
     {
       label: t.common.situationalAssessment,
       items: [
-        { to: "/avaliacoes", label: t.common.situationalAssessment, icon: ListChecks },
+        {
+          to: "/nova/avaliacao",
+          label: t.common.createAssessment,
+          icon: FilePlus2,
+          activePrefix: "/nova",
+        },
+        { to: "/avaliacoes", label: t.common.seeAndEdit, icon: ListChecks },
+        { to: "/competencias", label: t.common.competencies, icon: Tags },
         { to: "/enviar-link", label: t.common.sendLink, icon: Link2 },
         { to: "/jornadas", label: t.common.journeys, icon: Workflow },
       ],
@@ -80,13 +88,19 @@ function SidebarContent({
       items: [
         { to: "/results", label: t.common.results, icon: ClipboardList },
         { to: "/talent-match", label: t.common.talentMatch, icon: Target },
-        { to: "/competencias", label: t.common.competencies, icon: Settings },
       ],
     },
     {
       label: t.common.operation,
       items: [
         { to: "/monitoramento", label: t.common.operationCenter, icon: BarChart3 },
+        {
+          to: "/notifications",
+          label: copy.notificationsLabel,
+          icon: Bell,
+          badge: unreadNotifications,
+        },
+        { to: "/integrations", label: t.common.integrations, icon: PlugZap },
         { to: "/compliance", label: t.common.compliance, icon: ShieldCheck },
       ],
     },
@@ -95,7 +109,6 @@ function SidebarContent({
       items: [
         { to: "/configuracoes/perfil", label: t.common.profile, icon: Building2 },
         { to: "/team", label: t.common.myTeam, icon: Users },
-        { to: "/integrations", label: t.common.integrations, icon: KeyRound },
         { to: "/billing", label: t.common.plan, icon: CreditCard },
         { to: "/configuracoes/conta", label: t.common.myAccount, icon: UserRound },
       ],
@@ -116,23 +129,6 @@ function SidebarContent({
         </div>
       </div>
       <nav className="flex-1 overflow-y-auto px-3 py-4">
-        <ShellLink closeOnSelect={closeOnSelect}>
-          <Link
-            to="/comecar"
-            className={cn(
-              "mb-3 flex items-start gap-3 rounded-lg border px-3 py-2.5 text-sm transition",
-              pathname === "/comecar" ? "border-primary/40 bg-primary/10" : "border-border bg-card hover:bg-accent",
-            )}
-          >
-            <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
-            <span>
-              <span className="block font-medium">{t.common.startHere}</span>
-              <span className="mt-0.5 block text-[11px] leading-snug text-muted-foreground">
-                {t.common.whatIsPraxis}
-              </span>
-            </span>
-          </Link>
-        </ShellLink>
         {navGroups.map((group, groupIndex) => (
           <div key={group.label} className={cn(groupIndex > 0 && "mt-5 border-t border-border/70 pt-5")}>
             <div className="px-3 pb-2 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
@@ -140,9 +136,11 @@ function SidebarContent({
             </div>
             {group.items.map((item) => {
               const active =
-                item.to === "/dashboard"
-                  ? pathname === "/dashboard"
-                  : pathname === item.to || pathname.startsWith(item.to + "/");
+                "activePrefix" in item
+                  ? pathname.startsWith(item.activePrefix)
+                  : item.to === "/dashboard"
+                    ? pathname === "/dashboard"
+                    : pathname === item.to || pathname.startsWith(item.to + "/");
               const badge = "badge" in item ? item.badge : 0;
               return (
                 <ShellLink key={item.to} closeOnSelect={closeOnSelect}>
@@ -188,20 +186,24 @@ function SidebarContent({
 
 function pageLabel(pathname: string, t: TranslationMap, copy: CopyMap) {
   if (pathname === "/dashboard") return t.common.dashboard;
-  if (pathname === "/avaliacoes") return t.common.situationalAssessment;
+  if (pathname === "/comecar") return t.common.startHere;
+  if (pathname === "/avaliacoes") return t.common.seeAndEdit;
   if (pathname.startsWith("/nova")) return t.common.createAssessment;
   if (pathname === "/results" || pathname.startsWith("/results/")) return t.common.results;
   if (pathname === "/enviar-link") return t.common.sendLink;
   if (pathname === "/monitoramento") return t.common.operationCenter;
   if (pathname === "/notifications") return copy.notificationsLabel;
-  if (pathname === "/jornadas") return t.common.journeys;
+  if (pathname === "/jornadas" || pathname.startsWith("/jornada/")) return t.common.journeys;
   if (pathname === "/talent-match") return t.common.talentMatch;
   if (pathname === "/billing") return t.common.plan;
   if (pathname === "/compliance") return t.common.compliance;
-  if (pathname.startsWith("/configuracoes")) return t.common.profile;
   if (pathname === "/competencias") return t.common.competencies;
-  if (pathname === "/comecar") return t.common.startHere;
   if (pathname === "/team") return t.common.myTeam;
+  if (pathname === "/configuracoes/conta") return t.common.myAccount;
+  if (pathname === "/configuracoes/perfil") return t.common.profile;
+  if (pathname.startsWith("/configuracoes/integracoes") || pathname.startsWith("/configuracoes/api")) {
+    return t.common.integrations;
+  }
   if (pathname.startsWith("/candidato")) return t.common.candidateView;
   if (pathname.startsWith("/integrations")) return t.common.integrations;
   return "Práxis";
