@@ -1,53 +1,36 @@
 package br.com.iforce.praxis.auth.service;
 
 import br.com.iforce.praxis.admin.model.EmpresaStatus;
-
 import br.com.iforce.praxis.admin.model.UserStatus;
-
+import br.com.iforce.praxis.auth.dto.AcceptInviteRequest;
 import br.com.iforce.praxis.auth.dto.LoginRequest;
-
 import br.com.iforce.praxis.auth.dto.LoginResponse;
-
 import br.com.iforce.praxis.auth.persistence.entity.EmpresaEntity;
-
 import br.com.iforce.praxis.auth.persistence.entity.UserEntity;
-
 import br.com.iforce.praxis.auth.persistence.repository.EmpresaRepository;
-
 import br.com.iforce.praxis.auth.persistence.repository.UserRepository;
-
 import org.junit.jupiter.api.Test;
-
 import org.junit.jupiter.api.extension.ExtendWith;
-
 import org.mockito.Mock;
-
 import org.mockito.junit.jupiter.MockitoExtension;
-
 import org.springframework.http.HttpStatus;
-
 import org.springframework.security.crypto.password.PasswordEncoder;
-
 import org.springframework.web.server.ResponseStatusException;
 
-
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
+import java.util.List;
 import java.util.Optional;
-
 import java.util.Set;
 
-
 import static org.assertj.core.api.Assertions.assertThat;
-
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-
 import static org.mockito.ArgumentMatchers.any;
-
 import static org.mockito.ArgumentMatchers.anyString;
-
 import static org.mockito.Mockito.lenient;
-
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-
 
 @ExtendWith(MockitoExtension.class)
 class AuthServiceTest {
@@ -74,6 +57,14 @@ class AuthServiceTest {
         user.setRoles(Set.of("EMPRESA"));
         user.setPasswordHash("hash");
         user.setStatus(status);
+        return user;
+    }
+
+    private UserEntity invitedUser(String token, boolean indexed) {
+        UserEntity user = user(UserStatus.CONVIDADO);
+        user.setInviteTokenHash("bcrypt-invite");
+        user.setInviteTokenLookupHash(indexed ? TokenLookupHasher.sha256(token) : null);
+        user.setInviteExpiresAt(Instant.now().plus(1, ChronoUnit.HOURS));
         return user;
     }
 
@@ -124,5 +115,51 @@ class AuthServiceTest {
         assertThatThrownBy(() -> service().login(request()))
                 .isInstanceOf(ResponseStatusException.class)
                 .hasFieldOrPropertyWithValue("statusCode", HttpStatus.FORBIDDEN);
+    }
+
+    @Test
+    void acceptInviteUsesDirectIndexedLookupAndClearsBothHashes() {
+        String token = "invite-indexed";
+        UserEntity invited = invitedUser(token, true);
+        when(userRepository.findFirstByInviteTokenLookupHash(TokenLookupHasher.sha256(token)))
+                .thenReturn(Optional.of(invited));
+        when(passwordEncoder.matches(token, "bcrypt-invite")).thenReturn(true);
+        when(passwordEncoder.encode("NovaSenha123")).thenReturn("new-password-hash");
+        when(empresaRepository.findById("tnt_1")).thenReturn(Optional.of(activeEmpresa()));
+        when(jwtService.generateToken(anyString(), anyString(), any())).thenReturn("jwt");
+
+        LoginResponse response = service().acceptInvite(
+                new AcceptInviteRequest(token, "NovaSenha123", "NovaSenha123")
+        );
+
+        assertThat(response.token()).isEqualTo("jwt");
+        assertThat(invited.getStatus()).isEqualTo(UserStatus.ATIVO);
+        assertThat(invited.getInviteTokenHash()).isNull();
+        assertThat(invited.getInviteTokenLookupHash()).isNull();
+        assertThat(invited.getInviteExpiresAt()).isNull();
+        verify(userRepository, never())
+                .findByStatusAndInviteTokenHashIsNotNullAndInviteTokenLookupHashIsNull(UserStatus.CONVIDADO);
+    }
+
+    @Test
+    void acceptInviteSupportsLegacyTokenDuringMigration() {
+        String token = "invite-legacy";
+        UserEntity invited = invitedUser(token, false);
+        when(userRepository.findFirstByInviteTokenLookupHash(TokenLookupHasher.sha256(token)))
+                .thenReturn(Optional.empty());
+        when(userRepository.findByStatusAndInviteTokenHashIsNotNullAndInviteTokenLookupHashIsNull(
+                UserStatus.CONVIDADO
+        )).thenReturn(List.of(invited));
+        when(passwordEncoder.matches(token, "bcrypt-invite")).thenReturn(true);
+        when(passwordEncoder.encode("NovaSenha123")).thenReturn("new-password-hash");
+        when(empresaRepository.findById("tnt_1")).thenReturn(Optional.of(activeEmpresa()));
+        when(jwtService.generateToken(anyString(), anyString(), any())).thenReturn("jwt");
+
+        LoginResponse response = service().acceptInvite(
+                new AcceptInviteRequest(token, "NovaSenha123", "NovaSenha123")
+        );
+
+        assertThat(response.token()).isEqualTo("jwt");
+        assertThat(invited.getStatus()).isEqualTo(UserStatus.ATIVO);
     }
 }
