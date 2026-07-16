@@ -38,6 +38,8 @@ import static org.mockito.Mockito.when;
 @ExtendWith(MockitoExtension.class)
 class CandidateLinkQueryServiceTest {
 
+    private static final Instant ATTEMPT_CREATED_AT = Instant.parse("2026-07-15T20:00:00Z");
+
     @Mock
     private CandidateAttemptRepository candidateAttemptRepository;
     @Mock
@@ -80,8 +82,12 @@ class CandidateLinkQueryServiceTest {
         when(candidateAttemptRepository.findAll(any(Specification.class), any(Pageable.class)))
                 .thenReturn(new PageImpl<>(List.of(entity), PageRequest.of(0, 100), 201));
         when(simulationCatalogService.findByVersionId(10L)).thenReturn(Optional.of(simulation()));
-        when(jwtService.generateCandidateAttemptToken("empresa-1", "att_1234567890123456", 168))
-                .thenReturn("candidate-token");
+        when(jwtService.generateCandidateAttemptToken(
+                "empresa-1",
+                "att_1234567890123456",
+                168,
+                ATTEMPT_CREATED_AT
+        )).thenReturn("candidate-token");
 
         CandidateLinkPageResponse response = service.search(
                 -1,
@@ -110,7 +116,8 @@ class CandidateLinkQueryServiceTest {
         verify(jwtService).generateCandidateAttemptToken(
                 eq("empresa-1"),
                 eq("att_1234567890123456"),
-                eq(168)
+                eq(168),
+                eq(ATTEMPT_CREATED_AT)
         );
     }
 
@@ -131,7 +138,7 @@ class CandidateLinkQueryServiceTest {
         entity.setCandidateName("Maria Silva");
         entity.setCandidateEmail("maria@example.com");
         entity.setStatus(AttemptStatus.COMPLETED);
-        entity.setCreatedAt(Instant.parse("2026-07-15T20:00:00Z"));
+        entity.setCreatedAt(ATTEMPT_CREATED_AT);
         return entity;
     }
 
