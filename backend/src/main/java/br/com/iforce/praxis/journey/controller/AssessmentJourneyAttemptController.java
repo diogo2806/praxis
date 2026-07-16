@@ -12,6 +12,8 @@ import br.com.iforce.praxis.journey.dto.JourneyConsolidatedResultResponse;
 
 import br.com.iforce.praxis.journey.service.AssessmentJourneyAttemptService;
 
+import br.com.iforce.praxis.journey.service.AssessmentJourneyInvitationService;
+
 import io.swagger.v3.oas.annotations.Operation;
 
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -52,28 +54,33 @@ import java.util.List;
 public class AssessmentJourneyAttemptController {
 
     private final AssessmentJourneyAttemptService attemptService;
+    private final AssessmentJourneyInvitationService invitationService;
     private final AuditEventService auditEventService;
 
     public AssessmentJourneyAttemptController(
             AssessmentJourneyAttemptService attemptService,
+            AssessmentJourneyInvitationService invitationService,
             AuditEventService auditEventService
     ) {
         this.attemptService = attemptService;
+        this.invitationService = invitationService;
         this.auditEventService = auditEventService;
     }
 
     /**
-     * Cria a tentativa de uma jornada para um candidato.
+     * Cria a tentativa de uma jornada para um candidato e envia o convite por e-mail.
      *
      * @param request jornada, dados do candidato e sequência
      * @return o progresso inicial da tentativa
      */
     @PostMapping
-    @Operation(summary = "Cria tentativa da jornada para um candidato")
+    @Operation(summary = "Cria tentativa da jornada e envia o convite ao candidato")
     public ResponseEntity<AssessmentJourneyAttemptResponse> create(
             @Valid @RequestBody CreateJourneyAttemptRequest request
     ) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(attemptService.createAttempt(request));
+        AssessmentJourneyAttemptResponse response = attemptService.createAttempt(request);
+        invitationService.sendInvitation(response);
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
     /**
