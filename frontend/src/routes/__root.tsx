@@ -11,6 +11,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { useEffect, type ReactNode } from "react";
 
 import appCss from "../styles/app.css?url";
+import accessibilityOverridesCss from "../styles/accessibility-overrides.css?url";
 import tablesCss from "../styles/tables.css?url";
 import landingAccessibilityCss from "../styles/landing-accessibility.css?url";
 import { GlobalTablePagination } from "../components/global-table-pagination";
@@ -120,6 +121,10 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       {
         rel: "stylesheet",
         href: landingAccessibilityCss,
+      },
+      {
+        rel: "stylesheet",
+        href: accessibilityOverridesCss,
       },
     ],
   }),
