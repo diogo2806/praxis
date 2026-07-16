@@ -11,6 +11,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -24,10 +25,7 @@ class InviteTokenLookupIndexServiceTest {
 
     @Test
     void indexesInviteTokenFromReturnedUrl() {
-        UserEntity user = new UserEntity();
-        user.setId(7L);
-        user.setStatus(UserStatus.CONVIDADO);
-        user.setInviteTokenHash("bcrypt-token");
+        UserEntity user = invitedUser();
         when(userRepository.findById(7L)).thenReturn(Optional.of(user));
 
         InviteTokenLookupIndexService service = new InviteTokenLookupIndexService(userRepository);
@@ -39,20 +37,55 @@ class InviteTokenLookupIndexServiceTest {
     }
 
     @Test
-    void ignoresMissingInvitationUrl() {
+    void ignoresQueryStringAndFragmentWhenExtractingToken() {
+        UserEntity user = invitedUser();
+        when(userRepository.findById(7L)).thenReturn(Optional.of(user));
+
+        InviteTokenLookupIndexService service = new InviteTokenLookupIndexService(userRepository);
+        service.index(7L, "https://praxis.example.com/convite/token-aleatorio?utm=mail#access");
+
+        assertThat(user.getInviteTokenLookupHash())
+                .isEqualTo(TokenLookupHasher.sha256("token-aleatorio"));
+        verify(userRepository).save(user);
+    }
+
+    @Test
+    void ignoresMissingInvitationData() {
         InviteTokenLookupIndexService service = new InviteTokenLookupIndexService(userRepository);
 
+        service.index(null, "https://praxis.example.com/convite/token");
         service.index(7L, null);
+        service.index(7L, "");
+        service.index(7L, "   ");
 
         verifyNoInteractions(userRepository);
     }
 
     @Test
+    void rejectsInvitationUrlWithoutToken() {
+        InviteTokenLookupIndexService service = new InviteTokenLookupIndexService(userRepository);
+
+        assertThatThrownBy(() -> service.index(7L, "https://praxis.example.com/convite/"))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("URL de convite sem token");
+
+        verifyNoInteractions(userRepository);
+    }
+
+    @Test
+    void ignoresUnknownUser() {
+        when(userRepository.findById(7L)).thenReturn(Optional.empty());
+
+        InviteTokenLookupIndexService service = new InviteTokenLookupIndexService(userRepository);
+        service.index(7L, "https://praxis.example.com/convite/token-aleatorio");
+
+        verify(userRepository, never()).save(org.mockito.ArgumentMatchers.any(UserEntity.class));
+    }
+
+    @Test
     void doesNotIndexUserThatIsNoLongerInvited() {
-        UserEntity user = new UserEntity();
-        user.setId(7L);
+        UserEntity user = invitedUser();
         user.setStatus(UserStatus.ATIVO);
-        user.setInviteTokenHash("bcrypt-token");
         when(userRepository.findById(7L)).thenReturn(Optional.of(user));
 
         InviteTokenLookupIndexService service = new InviteTokenLookupIndexService(userRepository);
@@ -60,5 +93,26 @@ class InviteTokenLookupIndexServiceTest {
 
         assertThat(user.getInviteTokenLookupHash()).isNull();
         verify(userRepository, never()).save(user);
+    }
+
+    @Test
+    void doesNotIndexInvitationWithoutCryptographicProofHash() {
+        UserEntity user = invitedUser();
+        user.setInviteTokenHash(null);
+        when(userRepository.findById(7L)).thenReturn(Optional.of(user));
+
+        InviteTokenLookupIndexService service = new InviteTokenLookupIndexService(userRepository);
+        service.index(7L, "https://praxis.example.com/convite/token-aleatorio");
+
+        assertThat(user.getInviteTokenLookupHash()).isNull();
+        verify(userRepository, never()).save(user);
+    }
+
+    private UserEntity invitedUser() {
+        UserEntity user = new UserEntity();
+        user.setId(7L);
+        user.setStatus(UserStatus.CONVIDADO);
+        user.setInviteTokenHash("bcrypt-token");
+        return user;
     }
 }
