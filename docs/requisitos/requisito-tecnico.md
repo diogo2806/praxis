@@ -1,49 +1,28 @@
 # Requisitos técnicos pendentes — praxis
 
-Status: atualizado em 2026-07-15 após conclusão de `ASYNC11`, `BUS13`, `INT18`, `DATA13`, `DATA14` e `INT17`.
+Status: revalidado em 2026-07-15 sobre a `main` no commit `2519605f74776905944ac01002b222908f926a8e`.
 
-Este arquivo contém somente pendências técnicas implementáveis e comprovadas no sistema. Não inclui CI/CD, testes, QA, métricas observacionais, publicação ou marketing.
+Este arquivo contém somente pendências técnicas implementáveis e comprovadas no sistema. Não inclui CI/CD, QA, homologação externa, métricas observacionais, publicação, marketing ou refatoração estética.
 
 ## Contexto da auditoria
 
-- Commit auditado da branch principal: `8a499412482fa956d0809c9fd40841cbfb047c79`.
-- Finalidade identificada: plataforma de avaliações situacionais para recrutamento, com versionamento, pontuação determinística, revisão humana, trilha auditável e integrações com ATS.
+- Finalidade: plataforma de avaliações situacionais para recrutamento, com versionamento, pontuação determinística, revisão humana, trilha auditável e integrações com ATS.
 - Stack principal: Java 21, Spring Boot 3.5, Spring Security, JPA, PostgreSQL/Flyway, React 19, TanStack Start/Router e TypeScript.
-- Arquitetura predominante: frontend React consumindo API Spring Boot; persistência PostgreSQL; autenticação JWT nas rotas internas; Bearer token nas integrações; entrega assíncrona por outbox transacional.
-- Fluxos de código revalidados: criação e repetição de tentativas, links diretos, execução do candidato, cálculo e comparação de resultados, callback Gupy, entrega de webhook, processamento do outbox, monitoramento operacional e relatórios de engajamento.
-- Os Markdown foram tratados apenas como referência secundária. A classificação abaixo foi mantida após leitura da implementação alcançável.
-- `LEGACY12` permanece concluído: `docs/backlog.txt` foi removido e não é fonte normativa.
-- `INT17` foi concluído e transferido para `docs/implementados/requisitos-implementados.md`: `result_webhook_url` está reservado ao `TestResult`, e eventos proprietários dependem exclusivamente da integração `CUSTOM_API` explicitamente configurada.
+- Arquitetura: frontend React consumindo API Spring Boot; autenticação JWT nas rotas internas; Bearer token nas integrações; persistência PostgreSQL e entrega assíncrona por outbox transacional.
+- A implementação alcançável foi tratada como fonte da verdade; documentos foram usados como referência secundária.
 
-## 1. Regras de negócio
+## Resultado
 
-| ID | Tarefa técnica | Critério de conclusão | Status |
-|---|---|---|---|
-| BUS12 | Garantir comparabilidade de pontuação entre caminhos ou bloquear comparações incompatíveis. | Resultados comparados usam base comum de competências, pesos e máximos alcançáveis; alternativamente, o backend classifica incompatibilidade e o Talent Match bloqueia ou sinaliza claramente a comparação. | ⬜ Pendente |
+Não há pendência técnica canônica remanescente entre os itens revalidados nesta rodada.
 
-### BUS12 — comparabilidade entre caminhos
+| ID | Situação comprovada | Evidência principal |
+|---|---|---|
+| BUS12 | Concluído. Publicações com bases máximas diferentes por competência são bloqueadas antes de chegarem ao Talent Match. | `ComparableSimulationValidationService` adiciona bloqueador por competência e `ComparableSimulationValidationServiceTest` cobre caminhos incompatíveis. |
+| UI13 | Concluído. O centro operacional e a consulta de links possuem paginação, filtros e todos os estados relevantes. O endpoint legado de links percorre todas as páginas e não corta silenciosamente em 200 registros. | `CandidateAttemptMonitoringQueryService`, `CandidateLinkQueryService`, `CandidateLinkQueryController` e `LegacyCandidateLinkQueryService`. |
+| DATA14 | Revalidado. Novas aplicações públicas exigem `applicationCycleId`; repetição equivalente reutiliza apenas o mesmo ciclo e reenvio possui comando próprio. | `CreateCandidateLinkRequest`, `CompanyCandidateLinkService` e `CompanyCandidateLinkController`. |
 
-| Caminho completo | Método/campo/contrato | Como está | O que fazer |
-|---|---|---|---|
-| `backend/src/main/java/br/com/iforce/praxis/gupy/service/ResultScoringService.java` | `calculate()` | O máximo é somado por nó do caminho percorrido usando a melhor alternativa daquele nó; competências sem máximo positivo são removidas e os pesos restantes são renormalizados. Caminhos diferentes podem produzir bases efetivas diferentes. | Definir matriz comum de competências e máximos por versão ou gerar assinatura explícita de comparabilidade por caminho. |
-| `backend/src/main/java/br/com/iforce/praxis/simulation/service/SimulationValidationService.java` | `validatePathCompetencyCoverage()` | A cobertura desigual entre caminhos não impede necessariamente a publicação. | Bloquear publicação quando a política exigir base comum ou registrar formalmente grupos de caminhos comparáveis. |
-| `frontend/src/routes/talent-match.tsx` | consulta e exibição do Talent Match | Seleciona e exibe candidatos da mesma avaliação sem validar assinatura comum de competências, pesos e máximos efetivos. | Consumir metadado de comparabilidade e bloquear, separar ou sinalizar resultados incompatíveis. |
+## Regras de manutenção
 
-## 2. Operação e interface
-
-| ID | Tarefa técnica | Critério de conclusão | Status |
-|---|---|---|---|
-| UI13 | Paginar o centro operacional e incluir todos os estados relevantes. | API e interface suportam paginação e filtros por estado, incluindo não iniciadas, em andamento, concluídas, abandonadas e expiradas, sem corte silencioso fixo em 200 registros. | ⬜ Pendente |
-
-### UI13 — paginação e estados do centro operacional
-
-| Caminho completo | Método/campo/contrato | Como está | O que fazer |
-|---|---|---|---|
-| `backend/src/main/java/br/com/iforce/praxis/gupy/service/CandidateAttemptService.java` | `listLiveAttempts()` | Consulta somente `IN_PROGRESS` e `COMPLETED` com `PageRequest.of(0, 200)`. | Criar endpoint paginado com filtros por estado, período, avaliação e candidato. |
-| `backend/src/main/java/br/com/iforce/praxis/gupy/service/CandidateAttemptService.java` | `listCompanyLinks()` | Limita a listagem aos 200 registros mais recentes e retorna apenas lista, sem total ou cursor. | Retornar página, total, cursor ou metadados equivalentes, sem corte invisível. |
-| `frontend/src/routes/monitoramento.tsx` | centro operacional | A interface depende do conjunto parcial devolvido pela API e não oferece visão completa de convites não iniciados, abandonos e expirações. | Adicionar filtros, paginação e estados coerentes com a API paginada. |
-
-## Ordem recomendada
-
-1. `BUS12` — tornar resultados comparáveis ou bloquear comparações incompatíveis.
-2. `UI13` — paginar e completar o centro operacional.
+- Uma nova pendência só deve ser registrada depois de verificação direta do código e do fluxo alcançável.
+- Uma conclusão histórica invalidada por nova evidência deve ser reaberta com caminho, método e comportamento reproduzível.
+- `docs/backlog.txt` permanece removido e não deve voltar a concorrer com este arquivo.
