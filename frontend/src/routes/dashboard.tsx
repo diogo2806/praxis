@@ -20,15 +20,16 @@ import { AppShell } from "@/components/app-shell";
 import { StateBanner } from "@/components/praxis-ui";
 import { DashboardCompatibilityError, getDashboard } from "@/lib/api/dashboard-strict";
 import { type DashboardActionSeverity, type DashboardResponse } from "@/lib/api/praxis";
+import { canonicalAppRoute } from "@/lib/canonical-app-route";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/dashboard")({
   head: () => ({
     meta: [
-      { title: "Dashboard - Práxis" },
+      { title: "Painel - Práxis" },
       {
         name: "description",
-        content: "Visão consolidada do cliente, operação, integrações, jornadas e uso do plano.",
+        content: "Visão consolidada de avaliações, participantes, jornadas, integrações e uso do plano.",
       },
     ],
   }),
@@ -36,10 +37,10 @@ export const Route = createFileRoute("/dashboard")({
 });
 
 const quickActions = [
-  { label: "Criar avaliação", to: "/simulations/new", icon: FilePlus2, primary: true },
+  { label: "Criar avaliação", to: "/nova/avaliacao", icon: FilePlus2, primary: true },
   { label: "Ver avaliações", to: "/avaliacoes", icon: ListChecks, primary: false },
   { label: "Ver resultados", to: "/results", icon: ClipboardCheck, primary: false },
-  { label: "Gerar link", to: "/candidate-links/new", icon: Link2, primary: false },
+  { label: "Enviar link", to: "/enviar-link", icon: Link2, primary: false },
   { label: "Configurar integrações", to: "/integrations", icon: PlugZap, primary: false },
 ] as const;
 
@@ -57,10 +58,7 @@ function DashboardPage() {
       ) : dashboardQuery.isError ? (
         <ErrorState error={dashboardQuery.error} onReload={() => dashboardQuery.refetch()} />
       ) : dashboardQuery.data ? (
-        <DashboardContent
-          dashboard={dashboardQuery.data}
-          onReload={() => dashboardQuery.refetch()}
-        />
+        <DashboardContent dashboard={dashboardQuery.data} onReload={() => dashboardQuery.refetch()} />
       ) : null}
     </AppShell>
   );
@@ -92,7 +90,7 @@ function DashboardContent({
           icon={RouteIcon}
         />
         <DashboardMetricCard
-          title="Candidatos em andamento"
+          title="Participantes em andamento"
           value={dashboard.candidatesInProgress}
           hint="Avaliações ou jornadas abertas"
           icon={Users}
@@ -100,7 +98,7 @@ function DashboardContent({
         <DashboardMetricCard
           title="Concluídas nos últimos 30 dias"
           value={dashboard.completedAttemptsLast30Days}
-          hint="Uso recente informado pelo backend"
+          hint="Participações concluídas no período"
           icon={BarChart3}
         />
       </div>
@@ -126,13 +124,11 @@ function DashboardHeader({
   return (
     <div className="flex flex-wrap items-end justify-between gap-4">
       <div>
-        <div className="text-xs uppercase text-muted-foreground">Centro da operação</div>
-        <h1 className="mt-1 text-3xl font-semibold text-foreground">
-          Dashboard da {dashboard.empresaName}
-        </h1>
+        <div className="text-xs uppercase text-muted-foreground">Visão geral</div>
+        <h1 className="mt-1 text-3xl font-semibold text-foreground">Painel da {dashboard.empresaName}</h1>
         <p className="mt-1 flex items-center gap-2 text-sm text-muted-foreground">
           <CalendarClock className="h-4 w-4" />
-          Dados consolidados pelo endpoint oficial do dashboard.
+          Acompanhe avaliações, participantes, integrações e uso do plano em um só lugar.
         </p>
       </div>
       <button
@@ -141,7 +137,7 @@ function DashboardHeader({
         className="inline-flex items-center gap-2 rounded-md border border-border bg-card px-3 py-2 text-sm hover:bg-accent"
       >
         <RefreshCw className="h-4 w-4" />
-        Recarregar
+        Atualizar dados
       </button>
     </div>
   );
@@ -152,9 +148,7 @@ function DashboardQuickActions() {
     <section className="rounded-md border border-border bg-card p-4">
       <div className="mb-3">
         <h2 className="text-lg font-semibold">Ações principais</h2>
-        <p className="text-sm text-muted-foreground">
-          Acesse os principais processos sem alterar o estado exibido no dashboard.
-        </p>
+        <p className="text-sm text-muted-foreground">Atalhos para as tarefas mais usadas no dia a dia.</p>
       </div>
       <div className="flex flex-wrap gap-2">
         {quickActions.map((action) => (
@@ -211,7 +205,7 @@ function RecommendedActionsPanel({
     <section className="rounded-md border border-border bg-card p-4">
       <h2 className="text-lg font-semibold">Próximos passos</h2>
       {actions.length === 0 ? (
-        <EmptyPanel message="Nenhuma recomendação foi informada pelo backend." />
+        <EmptyPanel message="Nenhuma ação pendente no momento." />
       ) : (
         <div className="mt-3 space-y-3">
           {actions.map((action) => (
@@ -227,7 +221,7 @@ function RecommendedActionsPanel({
                 </div>
               </div>
               <a
-                href={action.route}
+                href={canonicalAppRoute(action.route)}
                 className="inline-flex shrink-0 items-center rounded-md border border-border bg-card px-3 py-1.5 text-xs font-medium hover:bg-accent"
               >
                 {action.buttonLabel}
@@ -243,17 +237,17 @@ function RecommendedActionsPanel({
 function LatestResultsTable({ dashboard }: { dashboard: DashboardResponse }) {
   return (
     <section className="rounded-md border border-border bg-card">
-      <SectionHeader title="Últimos resultados" href="/results" actionLabel="Ver resultados" />
+      <SectionHeader title="Últimos resultados" to="/results" actionLabel="Ver resultados" />
       {dashboard.latestResults.length === 0 ? (
-        <EmptyPanel message="Nenhum resultado foi informado pelo backend." />
+        <EmptyPanel message="Nenhum resultado disponível ainda." />
       ) : (
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto" data-no-pagination>
           <table className="w-full text-sm">
             <thead className="border-b border-border bg-muted/45 text-xs uppercase text-muted-foreground">
               <tr>
-                <th className="px-4 py-3 text-left font-medium">Candidato</th>
-                <th className="px-4 py-3 text-left font-medium">Avaliação/Jornada</th>
-                <th className="px-4 py-3 text-left font-medium">Status</th>
+                <th className="px-4 py-3 text-left font-medium">Participante</th>
+                <th className="px-4 py-3 text-left font-medium">Avaliação ou jornada</th>
+                <th className="px-4 py-3 text-left font-medium">Estado</th>
                 <th className="px-4 py-3 text-left font-medium">Data</th>
                 <th className="px-4 py-3 text-left font-medium">Resultado</th>
                 <th className="px-4 py-3 text-right font-medium">Ação</th>
@@ -263,16 +257,17 @@ function LatestResultsTable({ dashboard }: { dashboard: DashboardResponse }) {
               {dashboard.latestResults.map((result) => (
                 <tr key={result.attemptId} className="border-b border-border last:border-0">
                   <td className="px-4 py-3 font-medium">{result.candidateName}</td>
-                  <td className="px-4 py-3 text-muted-foreground">
-                    {result.simulationOrJourneyName}
-                  </td>
+                  <td className="px-4 py-3 text-muted-foreground">{result.simulationOrJourneyName}</td>
                   <td className="px-4 py-3">{attemptStatusLabel(result.status)}</td>
                   <td className="px-4 py-3 text-muted-foreground">{formatDate(result.date)}</td>
                   <td className="px-4 py-3 tabular-nums">
                     {result.result == null ? "Não informado" : `${result.result}%`}
                   </td>
                   <td className="px-4 py-3 text-right">
-                    <a href={result.actionRoute} className="font-medium text-primary hover:underline">
+                    <a
+                      href={canonicalAppRoute(result.actionRoute)}
+                      className="font-medium text-primary hover:underline"
+                    >
                       {result.actionLabel}
                     </a>
                   </td>
@@ -289,13 +284,9 @@ function LatestResultsTable({ dashboard }: { dashboard: DashboardResponse }) {
 function AssessmentJourneySummary({ dashboard }: { dashboard: DashboardResponse }) {
   return (
     <section className="rounded-md border border-border bg-card">
-      <SectionHeader
-        title="Jornadas de avaliação"
-        href="/assessment-journeys"
-        actionLabel="Ver jornadas"
-      />
+      <SectionHeader title="Jornadas de avaliação" to="/jornadas" actionLabel="Ver jornadas" />
       {dashboard.journeys.length === 0 ? (
-        <EmptyPanel message="Nenhuma jornada foi informada pelo backend." />
+        <EmptyPanel message="Nenhuma jornada criada ainda." />
       ) : (
         <div className="divide-y divide-border">
           {dashboard.journeys.map((journey) => (
@@ -303,10 +294,13 @@ function AssessmentJourneySummary({ dashboard }: { dashboard: DashboardResponse 
               <div>
                 <div className="font-medium">{journey.name}</div>
                 <div className="mt-1 text-xs text-muted-foreground">
-                  {journeyStatusLabel(journey.status)} · {journey.candidatesInProgress} candidatos em andamento
+                  {journeyStatusLabel(journey.status)} · {journey.candidatesInProgress} participantes em andamento
                 </div>
               </div>
-              <a href={journey.actionRoute} className="text-sm font-medium text-primary hover:underline">
+              <a
+                href={canonicalAppRoute(journey.actionRoute)}
+                className="text-sm font-medium text-primary hover:underline"
+              >
                 {journey.actionLabel}
               </a>
             </div>
@@ -322,19 +316,16 @@ function IntegrationsStatusPanel({ dashboard }: { dashboard: DashboardResponse }
     <section className="rounded-md border border-border bg-card p-4">
       <div className="flex items-center justify-between gap-3">
         <h2 className="text-lg font-semibold">Integrações</h2>
-        <a href="/integrations" className="text-sm font-medium text-primary hover:underline">
+        <Link to="/integrations" className="text-sm font-medium text-primary hover:underline">
           Configurar
-        </a>
+        </Link>
       </div>
       {dashboard.integrations.length === 0 ? (
-        <EmptyPanel message="Nenhum status de integração foi informado pelo backend." />
+        <EmptyPanel message="Nenhuma integração disponível." />
       ) : (
         <div className="mt-3 space-y-3">
           {dashboard.integrations.map((integration) => (
-            <div
-              key={integration.provider}
-              className="rounded-md border border-border bg-background p-3"
-            >
+            <div key={integration.provider} className="rounded-md border border-border bg-background p-3">
               <div className="flex items-center justify-between gap-3">
                 <div className="font-medium">{integration.name}</div>
                 <span className={cn("rounded-md px-2 py-1 text-xs font-medium", integrationTone(integration.status))}>
@@ -344,7 +335,7 @@ function IntegrationsStatusPanel({ dashboard }: { dashboard: DashboardResponse }
               <div className="mt-1 text-xs text-muted-foreground">
                 {integration.lastSyncAt
                   ? `Última sincronização: ${formatDate(integration.lastSyncAt)}`
-                  : "Sem sincronização comprovada"}
+                  : "Ainda não houve sincronização"}
               </div>
             </div>
           ))}
@@ -364,23 +355,17 @@ function BillingUsageCard({ dashboard }: { dashboard: DashboardResponse }) {
       </div>
       <dl className="mt-4 space-y-3 text-sm">
         <BillingLine label="Plano" value={planLabel(billing.plan)} />
-        <BillingLine label="Status" value={billing.status} />
+        <BillingLine label="Estado" value={billing.status} />
         <BillingLine
           label="Uso no período"
           value={`${billing.usedInPeriod.toLocaleString("pt-BR")} avaliações concluídas`}
         />
         {billing.plan === "AVULSO" && (
-          <BillingLine
-            label="Saldo de créditos"
-            value={billing.creditBalance.toLocaleString("pt-BR")}
-          />
+          <BillingLine label="Saldo de créditos" value={billing.creditBalance.toLocaleString("pt-BR")} />
         )}
         {billing.plan === "PROFISSIONAL" && (
           <>
-            <BillingLine
-              label="Assinatura"
-              value={billing.subscriptionStatus ?? "Não informada"}
-            />
+            <BillingLine label="Assinatura" value={billing.subscriptionStatus ?? "Não informada"} />
             <BillingLine
               label="Próxima renovação"
               value={billing.nextRenewalAt ? formatDate(billing.nextRenewalAt) : "Não informada"}
@@ -388,37 +373,34 @@ function BillingUsageCard({ dashboard }: { dashboard: DashboardResponse }) {
           </>
         )}
         {billing.plan === "ENTERPRISE" && (
-          <BillingLine
-            label="Condição comercial"
-            value={billing.commercialCondition ?? "Não informada"}
-          />
+          <BillingLine label="Condição comercial" value={billing.commercialCondition ?? "Não informada"} />
         )}
       </dl>
-      <a
-        href="/billing"
+      <Link
+        to="/billing"
         className="mt-4 inline-flex w-full items-center justify-center rounded-md border border-border bg-background px-3 py-2 text-sm font-medium hover:bg-accent"
       >
         Ver detalhes do plano
-      </a>
+      </Link>
     </section>
   );
 }
 
 function SectionHeader({
   title,
-  href,
+  to,
   actionLabel,
 }: {
   title: string;
-  href: string;
+  to: "/results" | "/jornadas";
   actionLabel: string;
 }) {
   return (
     <div className="flex items-center justify-between gap-3 border-b border-border p-4">
       <h2 className="text-lg font-semibold">{title}</h2>
-      <a href={href} className="text-sm font-medium text-primary hover:underline">
+      <Link to={to} className="text-sm font-medium text-primary hover:underline">
         {actionLabel}
-      </a>
+      </Link>
     </div>
   );
 }
@@ -439,7 +421,7 @@ function BillingLine({ label, value }: { label: string; value: string }) {
 function LoadingState() {
   return (
     <section className="rounded-md border border-border bg-card p-6">
-      <div className="text-sm font-medium">Carregando seu dashboard...</div>
+      <div className="text-sm font-medium">Carregando seu painel...</div>
       <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         {Array.from({ length: 4 }).map((_, index) => (
           <div key={index} className="h-28 animate-pulse rounded-md bg-muted" />
@@ -451,29 +433,24 @@ function LoadingState() {
 
 function ErrorState({ error, onReload }: { error: unknown; onReload: () => void }) {
   const incompatible = error instanceof DashboardCompatibilityError;
-  const message =
-    error instanceof Error ? error.message : "O dashboard não pôde ser carregado nesta tentativa.";
+  const message = error instanceof Error ? error.message : "O painel não pôde ser carregado nesta tentativa.";
 
   return (
     <StateBanner
       tone={incompatible ? "warn" : "danger"}
-      title={
-        incompatible
-          ? "Dashboard indisponível por incompatibilidade de versão."
-          : "Não foi possível carregar o dashboard."
-      }
+      title={incompatible ? "Painel indisponível nesta versão do sistema." : "Não foi possível carregar o painel."}
       action={
         <button
           type="button"
           onClick={onReload}
           className="rounded-md border border-current/20 bg-background/60 px-3 py-1.5 text-xs font-medium"
         >
-          Recarregar
+          Tentar novamente
         </button>
       }
     >
       {incompatible
-        ? `${message} Nenhum plano, status operacional ou conexão de integração foi inferido a partir de tokens ou de respostas auxiliares.`
+        ? "A interface e o serviço conectado estão em versões diferentes. Atualize a aplicação e tente novamente."
         : message}
     </StateBanner>
   );
@@ -556,9 +533,7 @@ function planLabel(plan: string) {
 
 function formatDate(value: string) {
   const date = new Date(value);
-  if (!Number.isFinite(date.getTime())) {
-    return "Data não informada";
-  }
+  if (!Number.isFinite(date.getTime())) return "Data não informada";
 
   return new Intl.DateTimeFormat("pt-BR", {
     day: "2-digit",
