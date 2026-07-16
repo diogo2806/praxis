@@ -74,7 +74,27 @@ public class JwtService {
      * é renovada silenciosamente a cada consulta.
      */
     public String generateCandidateAttemptToken(String empresaId, String attemptId, int ttlHours) {
-        Instant issuedAt = candidateAttemptIssuedAt(attemptId);
+        return generateCandidateAttemptToken(
+                empresaId,
+                attemptId,
+                ttlHours,
+                candidateAttemptIssuedAt(attemptId)
+        );
+    }
+
+    /**
+     * Gera o token usando o instante persistido já carregado pelo chamador.
+     * Evita uma nova consulta por tentativa em listagens paginadas.
+     */
+    public String generateCandidateAttemptToken(
+            String empresaId,
+            String attemptId,
+            int ttlHours,
+            Instant issuedAt
+    ) {
+        if (issuedAt == null) {
+            throw new IllegalArgumentException("O instante de criação da tentativa é obrigatório.");
+        }
         return generateCandidateScopedToken(
                 empresaId,
                 attemptId,
