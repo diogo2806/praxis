@@ -12,3 +12,11 @@
   aspect-ratio: 15 / 4;
   object-fit: contain;
 }
+
+/*
+ * O modal de conformidade é aberto por parâmetros da URL e recebe dados assíncronos.
+ * A área do resumo mantém a mesma altura durante a troca do estado de carregamento.
+ */
+[role="dialog"][class~="max-h-[88vh]"] > .space-y-8 > :first-child {
+  min-height: 7rem;
+}
