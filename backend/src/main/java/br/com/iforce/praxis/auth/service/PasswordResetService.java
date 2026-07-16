@@ -1,77 +1,53 @@
 package br.com.iforce.praxis.auth.service;
 
 import br.com.iforce.praxis.admin.model.UserStatus;
-
 import br.com.iforce.praxis.audit.model.AuditEventType;
-
 import br.com.iforce.praxis.audit.service.AuditEventService;
-
 import br.com.iforce.praxis.audit.service.AuditMetadata;
-
 import br.com.iforce.praxis.auth.dto.ForgotPasswordRequest;
-
 import br.com.iforce.praxis.auth.dto.ResetPasswordRequest;
-
 import br.com.iforce.praxis.auth.dto.ResetPasswordTokenResponse;
-
 import br.com.iforce.praxis.auth.persistence.entity.EmpresaEntity;
-
 import br.com.iforce.praxis.auth.persistence.entity.UserEntity;
-
 import br.com.iforce.praxis.auth.persistence.repository.EmpresaRepository;
-
 import br.com.iforce.praxis.auth.persistence.repository.UserRepository;
-
 import org.slf4j.Logger;
-
 import org.slf4j.LoggerFactory;
-
 import org.springframework.beans.factory.annotation.Value;
-
 import org.springframework.http.HttpStatus;
-
 import org.springframework.security.crypto.password.PasswordEncoder;
-
 import org.springframework.stereotype.Service;
-
 import org.springframework.transaction.annotation.Transactional;
-
 import org.springframework.web.server.ResponseStatusException;
 
-
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
-
 import java.time.Instant;
-
 import java.time.temporal.ChronoUnit;
-
 import java.util.Base64;
-
+import java.util.HexFormat;
 import java.util.Optional;
-
 
 /**
  * Orquestra a recuperação de senha de usuários autenticáveis (EMPRESA e ADMIN).
  *
- * <p>Reaproveita a própria {@link UserEntity} para guardar o estado do fluxo: apenas o hash BCrypt
- * do token é persistido, junto com o momento da solicitação e a expiração. O token puro de 32 bytes
- * só existe em memória e dentro do link enviado por e-mail.</p>
+ * <p>O token possui 256 bits aleatórios e nunca é persistido em texto puro. O registro guarda
+ * um SHA-256 indexado para localização direta e um BCrypt para comprovação final do token.</p>
  *
  * <p>Princípios de segurança aplicados:</p>
  * <ul>
  *   <li>A solicitação retorna sempre a mesma resposta, sem revelar se o usuário, e-mail ou empresa
  *       existem.</li>
- *   <li>O token expira automaticamente (TTL configurável, padrão de 2 horas) e é invalidado após o
- *       uso, impedindo reutilização do mesmo link.</li>
- *   <li>Todo o fluxo respeita o isolamento por empresa (ADMIN usa o empresa técnico PLATFORM).</li>
- *   <li>Solicitação e conclusão geram eventos de auditoria, sem nunca registrar token, senha ou
- *       hashes.</li>
+ *   <li>O token expira automaticamente e é invalidado após o uso.</li>
+ *   <li>Todo o fluxo respeita o isolamento por empresa.</li>
+ *   <li>Solicitação e conclusão geram eventos de auditoria sem token, senha ou hashes.</li>
  * </ul>
  */
 @Service
 public class PasswordResetService {
 
-    /** Empresa técnico do operador ADMIN, assumido quando a solicitação não informa empresa. */
     public static final String PLATFORM_EMPRESA_ID = "PLATFORM";
 
     private static final Logger log = LoggerFactory.getLogger(PasswordResetService.class);
@@ -107,17 +83,6 @@ public class PasswordResetService {
         this.ttlHours = ttlHours;
     }
 
-    /**
-     * Processa a solicitação de recuperação de senha.
-     *
-     * <p>Se houver um usuário ativo correspondente (respeitando o empresa), gera um token, grava o
-     * hash, define a expiração, registra auditoria e envia o e-mail. Caso contrário, não faz nada.
-     * Em ambos os casos a operação termina silenciosamente para que a resposta da API seja sempre
-     * idêntica.</p>
-     *
-     * @param request dados informados (e-mail e, para EMPRESA, o empresa)
-     * @param ip      IP de origem, quando disponível, apenas para auditoria
-     */
     @Transactional
     public void requestReset(ForgotPasswordRequest request, String ip) {
         String empresaId = resolveEmpresaId(request.empresaId());
@@ -128,7 +93,6 @@ public class PasswordResetService {
                 .filter(user -> !empresaBlocksAccess(user.getEmpresaId()));
 
         if (match.isEmpty()) {
-            // Resposta uniforme: não revela usuário, e-mail ou empresa inexistente.
             log.info("Solicitação de recuperação de senha sem correspondência ativa (empresa={}).", empresaId);
             return;
         }
@@ -153,14 +117,6 @@ public class PasswordResetService {
         emailSender.sendPasswordResetEmail(user.getEmail(), user.getName(), resetUrl(token), ttlHours);
     }
 
-    /**
-     * Valida um token de recuperação sem alterar nenhum dado.
-     *
-     * @param token token puro recebido do link
-     * @return dados de apresentação quando o token é válido
-     * @throws ResponseStatusException {@code 404} se o token é inválido/desconhecido,
-     *                                 {@code 410 Gone} se expirou
-     */
     @Transactional(readOnly = true)
     public ResetPasswordTokenResponse validateToken(String token) {
         UserEntity user = findActiveUserByToken(token)
@@ -173,17 +129,6 @@ public class PasswordResetService {
         return new ResetPasswordTokenResponse(true, user.getPasswordResetExpiresAt(), user.getName());
     }
 
-    /**
-     * Conclui a redefinição de senha a partir do token.
-     *
-     * <p>Valida hash, expiração, usuário ativo, confirmação e política de senha. Em caso de sucesso,
-     * troca a senha, invalida o token (impedindo reutilização do mesmo link) e registra auditoria.</p>
-     *
-     * @param request token, nova senha e confirmação
-     * @param ip      IP de origem, quando disponível, apenas para auditoria
-     * @throws ResponseStatusException {@code 400} para token/confirmação/política inválidos,
-     *                                 {@code 410 Gone} quando expirado
-     */
     @Transactional
     public void confirmReset(ResetPasswordRequest request, String ip) {
         if (!request.newPassword().equals(request.confirmPassword())) {
@@ -194,7 +139,6 @@ public class PasswordResetService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Token inválido ou já utilizado."));
 
         if (isExpired(user)) {
-            // Limpa o token expirado para que não permaneça pendente.
             clearResetState(user);
             userRepository.save(user);
             throw new ResponseStatusException(HttpStatus.GONE, "Token expirado.");
@@ -229,7 +173,7 @@ public class PasswordResetService {
     }
 
     private String resolveEmpresaId(String requested) {
-        return (requested == null || requested.isBlank()) ? PLATFORM_EMPRESA_ID : requested.trim();
+        return requested == null || requested.isBlank() ? PLATFORM_EMPRESA_ID : requested.trim();
     }
 
     private String generateToken(UserEntity user) {
@@ -238,6 +182,7 @@ public class PasswordResetService {
         String token = URL_ENCODER.encodeToString(bytes);
         Instant now = Instant.now();
         user.setPasswordResetTokenHash(passwordEncoder.encode(token));
+        user.setPasswordResetTokenLookupHash(tokenLookupHash(token));
         user.setPasswordResetRequestedAt(now);
         user.setPasswordResetExpiresAt(now.plus(ttlHours, ChronoUnit.HOURS));
         return token;
@@ -247,11 +192,35 @@ public class PasswordResetService {
         if (token == null || token.isBlank()) {
             return Optional.empty();
         }
-        return userRepository.findByPasswordResetTokenHashIsNotNull().stream()
-                .filter(user -> user.getStatus() == UserStatus.ATIVO)
-                .filter(user -> user.getPasswordResetTokenHash() != null)
+
+        Optional<UserEntity> indexed = userRepository
+                .findFirstByPasswordResetTokenLookupHash(tokenLookupHash(token))
+                .filter(this::isActiveResetUser)
+                .filter(user -> passwordEncoder.matches(token, user.getPasswordResetTokenHash()));
+        if (indexed.isPresent()) {
+            return indexed;
+        }
+
+        return userRepository
+                .findByPasswordResetTokenHashIsNotNullAndPasswordResetTokenLookupHashIsNull()
+                .stream()
+                .filter(this::isActiveResetUser)
                 .filter(user -> passwordEncoder.matches(token, user.getPasswordResetTokenHash()))
                 .findFirst();
+    }
+
+    private boolean isActiveResetUser(UserEntity user) {
+        return user.getStatus() == UserStatus.ATIVO && user.getPasswordResetTokenHash() != null;
+    }
+
+    private String tokenLookupHash(String token) {
+        try {
+            byte[] digest = MessageDigest.getInstance("SHA-256")
+                    .digest(token.getBytes(StandardCharsets.UTF_8));
+            return HexFormat.of().formatHex(digest);
+        } catch (NoSuchAlgorithmException exception) {
+            throw new IllegalStateException("SHA-256 indisponível.", exception);
+        }
     }
 
     private boolean isExpired(UserEntity user) {
@@ -261,6 +230,7 @@ public class PasswordResetService {
 
     private void clearResetState(UserEntity user) {
         user.setPasswordResetTokenHash(null);
+        user.setPasswordResetTokenLookupHash(null);
         user.setPasswordResetRequestedAt(null);
         user.setPasswordResetExpiresAt(null);
     }
