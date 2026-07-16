@@ -4,6 +4,7 @@ import { useLanguage } from "@/lib/language-context";
 const DEFAULT_PAGE_SIZE = 10;
 const PAGE_SIZE_OPTIONS = [10, 25, 50];
 const PAGINATION_HIDDEN_ATTRIBUTE = "data-table-pagination-hidden";
+const COLLECTION_PAGINATION_HIDDEN_ATTRIBUTE = "data-collection-pagination-hidden";
 
 type PaginationCopy = {
   previous: string;
@@ -11,7 +12,9 @@ type PaginationCopy = {
   next: string;
   nextAria: string;
   navigationAria: string;
+  collectionNavigationAria: string;
   rowsPerPage: string;
+  itemsPerPage: string;
   empty: string;
   range: (start: number, end: number, total: number) => string;
   page: (current: number, total: number) => string;
@@ -24,7 +27,9 @@ const COPY: Record<string, PaginationCopy> = {
     next: "Próxima",
     nextAria: "Ir para a próxima página",
     navigationAria: "Paginação da tabela",
+    collectionNavigationAria: "Paginação da lista",
     rowsPerPage: "Linhas por página",
+    itemsPerPage: "Itens por página",
     empty: "0 registros",
     range: (start, end, total) => `${start}–${end} de ${total}`,
     page: (current, total) => `Página ${current} de ${total}`,
@@ -35,7 +40,9 @@ const COPY: Record<string, PaginationCopy> = {
     next: "Next",
     nextAria: "Go to the next page",
     navigationAria: "Table pagination",
+    collectionNavigationAria: "List pagination",
     rowsPerPage: "Rows per page",
+    itemsPerPage: "Items per page",
     empty: "0 records",
     range: (start, end, total) => `${start}–${end} of ${total}`,
     page: (current, total) => `Page ${current} of ${total}`,
@@ -46,17 +53,19 @@ const COPY: Record<string, PaginationCopy> = {
     next: "Siguiente",
     nextAria: "Ir a la página siguiente",
     navigationAria: "Paginación de la tabla",
+    collectionNavigationAria: "Paginación de la lista",
     rowsPerPage: "Filas por página",
+    itemsPerPage: "Elementos por página",
     empty: "0 registros",
     range: (start, end, total) => `${start}–${end} de ${total}`,
     page: (current, total) => `Página ${current} de ${total}`,
   },
 };
 
-type TablePaginationState = {
+type PaginationState = {
   page: number;
   pageSize: number;
-  rowCount: number;
+  itemCount: number;
   controls: HTMLDivElement;
   summary: HTMLSpanElement;
   pageLabel: HTMLSpanElement;
@@ -72,12 +81,18 @@ export function GlobalTablePagination() {
     if (typeof document === "undefined") return;
 
     const copy = COPY[language] ?? COPY["pt-BR"];
-    const states = new Map<HTMLTableElement, TablePaginationState>();
+    const tableStates = new Map<HTMLTableElement, PaginationState>();
+    const collectionStates = new Map<HTMLElement, PaginationState>();
     const style = document.createElement("style");
     let scheduledFrame: number | null = null;
 
     style.dataset.tablePaginationStyles = "true";
-    style.textContent = `tr[${PAGINATION_HIDDEN_ATTRIBUTE}="true"] { display: none !important; }`;
+    style.textContent = `
+      tr[${PAGINATION_HIDDEN_ATTRIBUTE}="true"],
+      [${COLLECTION_PAGINATION_HIDDEN_ATTRIBUTE}="true"] {
+        display: none !important;
+      }
+    `;
     document.head.appendChild(style);
 
     function getRows(table: HTMLTableElement) {
@@ -86,12 +101,28 @@ export function GlobalTablePagination() {
       );
     }
 
-    function shouldSkip(table: HTMLTableElement) {
+    function getCollectionItems(collection: HTMLElement) {
+      return Array.from(collection.children).filter(
+        (item): item is HTMLElement =>
+          item instanceof HTMLElement && !item.hasAttribute("data-pagination-ignore"),
+      );
+    }
+
+    function getCollections() {
+      return Array.from(
+        document.querySelectorAll<HTMLElement>("section > div.divide-y.divide-border"),
+      ).filter((collection) => {
+        const items = getCollectionItems(collection);
+        return items.length > 0 && items.every((item) => item instanceof HTMLButtonElement);
+      });
+    }
+
+    function shouldSkip(target: HTMLElement) {
       return (
-        table.hasAttribute("data-no-pagination") ||
-        table.hasAttribute("data-server-pagination") ||
-        table.closest("[data-no-pagination]") != null ||
-        table.closest("[data-server-pagination]") != null
+        target.hasAttribute("data-no-pagination") ||
+        target.hasAttribute("data-server-pagination") ||
+        target.closest("[data-no-pagination]") != null ||
+        target.closest("[data-server-pagination]") != null
       );
     }
 
@@ -105,7 +136,14 @@ export function GlobalTablePagination() {
       return button;
     }
 
-    function createControls(table: HTMLTableElement) {
+    function createControls(
+      target: HTMLElement,
+      navigationAria: string,
+      pageSizeTextValue: string,
+      getItemCount: () => number,
+      renderTarget: () => void,
+      datasetKey: "tablePagination" | "collectionPagination",
+    ) {
       const controls = document.createElement("div");
       const summary = document.createElement("span");
       const actions = document.createElement("div");
@@ -116,9 +154,9 @@ export function GlobalTablePagination() {
       const pageLabel = document.createElement("span");
       const nextButton = createButton(copy.next, copy.nextAria);
 
-      controls.dataset.tablePagination = "true";
+      controls.dataset[datasetKey] = "true";
       controls.setAttribute("role", "navigation");
-      controls.setAttribute("aria-label", copy.navigationAria);
+      controls.setAttribute("aria-label", navigationAria);
       controls.className =
         "mt-3 flex w-full flex-wrap items-center justify-between gap-3 border-t border-border pt-3 text-sm text-muted-foreground";
 
@@ -126,10 +164,10 @@ export function GlobalTablePagination() {
       summary.className = "tabular-nums";
       actions.className = "flex flex-wrap items-center gap-2";
       pageSizeLabel.className = "flex items-center gap-2";
-      pageSizeText.textContent = copy.rowsPerPage;
+      pageSizeText.textContent = pageSizeTextValue;
       pageSizeText.className = "sr-only sm:not-sr-only";
 
-      pageSizeSelect.setAttribute("aria-label", copy.rowsPerPage);
+      pageSizeSelect.setAttribute("aria-label", pageSizeTextValue);
       pageSizeSelect.className =
         "h-9 rounded-md border border-border bg-background px-2 text-sm text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring";
 
@@ -146,12 +184,12 @@ export function GlobalTablePagination() {
       pageSizeLabel.append(pageSizeText, pageSizeSelect);
       actions.append(pageSizeLabel, previousButton, pageLabel, nextButton);
       controls.append(summary, actions);
-      table.insertAdjacentElement("afterend", controls);
+      target.insertAdjacentElement("afterend", controls);
 
-      const state: TablePaginationState = {
+      const state: PaginationState = {
         page: 1,
         pageSize: DEFAULT_PAGE_SIZE,
-        rowCount: 0,
+        itemCount: 0,
         controls,
         summary,
         pageLabel,
@@ -162,23 +200,22 @@ export function GlobalTablePagination() {
 
       previousButton.addEventListener("click", () => {
         state.page = Math.max(1, state.page - 1);
-        renderTable(table, state);
+        renderTarget();
       });
 
       nextButton.addEventListener("click", () => {
-        const totalPages = Math.max(1, Math.ceil(getRows(table).length / state.pageSize));
+        const totalPages = Math.max(1, Math.ceil(getItemCount() / state.pageSize));
         state.page = Math.min(totalPages, state.page + 1);
-        renderTable(table, state);
+        renderTarget();
       });
 
       pageSizeSelect.addEventListener("change", () => {
         const nextPageSize = Number(pageSizeSelect.value);
         state.pageSize = Number.isFinite(nextPageSize) ? nextPageSize : DEFAULT_PAGE_SIZE;
         state.page = 1;
-        renderTable(table, state);
+        renderTarget();
       });
 
-      states.set(table, state);
       return state;
     }
 
@@ -186,92 +223,197 @@ export function GlobalTablePagination() {
       if (element.textContent !== value) element.textContent = value;
     }
 
-    function showAllRows(table: HTMLTableElement) {
-      getRows(table).forEach((row) => row.removeAttribute(PAGINATION_HIDDEN_ATTRIBUTE));
-    }
+    function updateControls(
+      target: HTMLElement,
+      state: PaginationState,
+      totalItems: number,
+      setVisibility: (startIndex: number, endIndex: number) => void,
+    ) {
+      if (state.itemCount !== totalItems) state.page = 1;
+      state.itemCount = totalItems;
 
-    function renderTable(table: HTMLTableElement, state: TablePaginationState) {
-      const rows = getRows(table);
-      if (state.rowCount !== rows.length) state.page = 1;
-      state.rowCount = rows.length;
-
-      const totalRows = rows.length;
-      const totalPages = Math.max(1, Math.ceil(totalRows / state.pageSize));
+      const totalPages = Math.max(1, Math.ceil(totalItems / state.pageSize));
       state.page = Math.min(Math.max(1, state.page), totalPages);
 
       const startIndex = (state.page - 1) * state.pageSize;
-      const endIndex = Math.min(startIndex + state.pageSize, totalRows);
+      const endIndex = Math.min(startIndex + state.pageSize, totalItems);
+      setVisibility(startIndex, endIndex);
 
-      rows.forEach((row, index) => {
-        if (index >= startIndex && index < endIndex) {
-          row.removeAttribute(PAGINATION_HIDDEN_ATTRIBUTE);
-        } else {
-          row.setAttribute(PAGINATION_HIDDEN_ATTRIBUTE, "true");
-        }
-      });
-
-      setText(state.summary, totalRows === 0 ? copy.empty : copy.range(startIndex + 1, endIndex, totalRows));
+      setText(
+        state.summary,
+        totalItems === 0 ? copy.empty : copy.range(startIndex + 1, endIndex, totalItems),
+      );
       setText(state.pageLabel, copy.page(state.page, totalPages));
       state.previousButton.disabled = state.page <= 1;
       state.nextButton.disabled = state.page >= totalPages;
       state.controls.hidden =
-        totalRows <= DEFAULT_PAGE_SIZE || table.hidden || table.closest("[hidden]") != null;
+        totalItems <= DEFAULT_PAGE_SIZE || target.hidden || target.closest("[hidden]") != null;
     }
 
-    function removeState(table: HTMLTableElement) {
-      const state = states.get(table);
+    function showAllRows(table: HTMLTableElement) {
+      getRows(table).forEach((row) => row.removeAttribute(PAGINATION_HIDDEN_ATTRIBUTE));
+    }
+
+    function showAllCollectionItems(collection: HTMLElement) {
+      getCollectionItems(collection).forEach((item) =>
+        item.removeAttribute(COLLECTION_PAGINATION_HIDDEN_ATTRIBUTE),
+      );
+    }
+
+    function renderTable(table: HTMLTableElement, state: PaginationState) {
+      const rows = getRows(table);
+      updateControls(table, state, rows.length, (startIndex, endIndex) => {
+        rows.forEach((row, index) => {
+          if (index >= startIndex && index < endIndex) {
+            row.removeAttribute(PAGINATION_HIDDEN_ATTRIBUTE);
+          } else {
+            row.setAttribute(PAGINATION_HIDDEN_ATTRIBUTE, "true");
+          }
+        });
+      });
+    }
+
+    function renderCollection(collection: HTMLElement, state: PaginationState) {
+      const items = getCollectionItems(collection);
+      updateControls(collection, state, items.length, (startIndex, endIndex) => {
+        items.forEach((item, index) => {
+          if (index >= startIndex && index < endIndex) {
+            item.removeAttribute(COLLECTION_PAGINATION_HIDDEN_ATTRIBUTE);
+          } else {
+            item.setAttribute(COLLECTION_PAGINATION_HIDDEN_ATTRIBUTE, "true");
+          }
+        });
+      });
+    }
+
+    function createTableControls(table: HTMLTableElement) {
+      let state: PaginationState;
+      state = createControls(
+        table,
+        copy.navigationAria,
+        copy.rowsPerPage,
+        () => getRows(table).length,
+        () => renderTable(table, state),
+        "tablePagination",
+      );
+      tableStates.set(table, state);
+      return state;
+    }
+
+    function createCollectionControls(collection: HTMLElement) {
+      let state: PaginationState;
+      state = createControls(
+        collection,
+        copy.collectionNavigationAria,
+        copy.itemsPerPage,
+        () => getCollectionItems(collection).length,
+        () => renderCollection(collection, state),
+        "collectionPagination",
+      );
+      collectionStates.set(collection, state);
+      return state;
+    }
+
+    function removeTableState(table: HTMLTableElement) {
+      const state = tableStates.get(table);
       if (!state) return;
       showAllRows(table);
       state.controls.remove();
-      states.delete(table);
+      tableStates.delete(table);
     }
 
-    function removeDisconnectedTables() {
-      states.forEach((_state, table) => {
-        if (!table.isConnected) removeState(table);
+    function removeCollectionState(collection: HTMLElement) {
+      const state = collectionStates.get(collection);
+      if (!state) return;
+      showAllCollectionItems(collection);
+      state.controls.remove();
+      collectionStates.delete(collection);
+    }
+
+    function removeDisconnectedTargets() {
+      tableStates.forEach((_state, table) => {
+        if (!table.isConnected) removeTableState(table);
+      });
+      collectionStates.forEach((_state, collection) => {
+        if (!collection.isConnected) removeCollectionState(collection);
       });
     }
 
     function refreshTables() {
-      scheduledFrame = null;
-      removeDisconnectedTables();
-
       document.querySelectorAll<HTMLTableElement>("table").forEach((table) => {
         if (shouldSkip(table)) {
-          removeState(table);
+          removeTableState(table);
           showAllRows(table);
           return;
         }
 
-        let state = states.get(table);
+        let state = tableStates.get(table);
         if (state && !state.controls.isConnected) {
-          states.delete(table);
+          tableStates.delete(table);
           state = undefined;
         }
 
-        renderTable(table, state ?? createControls(table));
+        renderTable(table, state ?? createTableControls(table));
       });
+    }
+
+    function refreshCollections() {
+      const collections = new Set(getCollections());
+
+      collectionStates.forEach((_state, collection) => {
+        if (!collections.has(collection) || shouldSkip(collection)) {
+          removeCollectionState(collection);
+        }
+      });
+
+      collections.forEach((collection) => {
+        if (shouldSkip(collection)) {
+          removeCollectionState(collection);
+          showAllCollectionItems(collection);
+          return;
+        }
+
+        let state = collectionStates.get(collection);
+        if (state && !state.controls.isConnected) {
+          collectionStates.delete(collection);
+          state = undefined;
+        }
+
+        renderCollection(collection, state ?? createCollectionControls(collection));
+      });
+    }
+
+    function refreshTargets() {
+      scheduledFrame = null;
+      removeDisconnectedTargets();
+      refreshTables();
+      refreshCollections();
     }
 
     function scheduleRefresh() {
       if (scheduledFrame != null) return;
-      scheduledFrame = window.requestAnimationFrame(refreshTables);
+      scheduledFrame = window.requestAnimationFrame(refreshTargets);
     }
 
     const observer = new MutationObserver((mutations) => {
       const hasRelevantMutation = mutations.some(
-        (mutation) => !(mutation.target instanceof Element && mutation.target.closest("[data-table-pagination]")),
+        (mutation) =>
+          !(
+            mutation.target instanceof Element &&
+            mutation.target.closest("[data-table-pagination], [data-collection-pagination]")
+          ),
       );
       if (hasRelevantMutation) scheduleRefresh();
     });
 
-    refreshTables();
+    refreshTargets();
     observer.observe(document.body, { childList: true, subtree: true });
 
     return () => {
       observer.disconnect();
       if (scheduledFrame != null) window.cancelAnimationFrame(scheduledFrame);
-      Array.from(states.keys()).forEach(removeState);
+      Array.from(tableStates.keys()).forEach(removeTableState);
+      Array.from(collectionStates.keys()).forEach(removeCollectionState);
       style.remove();
     };
   }, [language]);
