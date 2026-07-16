@@ -1,29 +1,11 @@
 # Requisitos técnicos pendentes — praxis
 
-Status: revalidado em 2026-07-16 contra a implementação atual da `main`.
+Status: atualizado em 2026-07-16 após auditoria da branch `main`.
 
-Este arquivo contém somente pendências técnicas implementáveis e comprovadas no sistema. Não inclui CI/CD, homologação externa, QA manual, publicação ou marketing.
+Este arquivo contém somente pendências técnicas implementáveis e comprovadas no sistema. Não inclui CI/CD, testes, QA, métricas observacionais, publicação ou marketing.
 
-## Resultado da revalidação
+## Resultado da auditoria
 
-Nenhuma pendência técnica confirmada permanece nesta auditoria.
+Nenhuma pendência técnica real, comprovada e implementável permanece aberta na HEAD auditada.
 
-As duas tarefas que ainda apareciam como pendentes neste documento já estavam implementadas no código:
-
-| ID | Evidência atual | Estado |
-|---|---|---|
-| BUS12 | `ComparableSimulationValidationService`, registrada como `@Primary`, bloqueia a publicação quando caminhos da mesma avaliação possuem bases máximas diferentes ou zeradas por competência. | ✅ Concluído |
-| UI13 | A central operacional usa consulta paginada, filtros por estado, avaliação e candidato, e contempla tentativas não iniciadas, em andamento, concluídas, abandonadas e expiradas. A listagem de links também possui paginação sem corte silencioso em 200 registros. | ✅ Concluído |
-
-## Correções adicionais desta revalidação
-
-- O contrato Gupy passa a aceitar tanto JSON `null` quanto a string `"null"` em `previous_result`, conforme o exemplo oficial publicado.
-- `GET /test` preserva `limit=0`, retornando página vazia com o total disponível, sem forçar o valor para `1`.
-- `result_candidate_page_url` apresenta à pessoa candidata somente os resultados `major`, mantendo e-mail, respostas, pesos e regras internas fora da resposta pública.
-- O endpoint legado `GET /api/v1/candidate-links` preserva seu formato de lista, mas percorre todas as páginas da consulta oficial e deixa de cortar silenciosamente registros após o primeiro lote.
-- Novas aplicações públicas exigem `applicationCycleId`; o ciclo legado permanece restrito aos fluxos internos que ainda usam o construtor de compatibilidade.
-- Foram adicionados testes de regressão para os comportamentos corrigidos.
-
-## Limites externos
-
-A homologação completa da integração Gupy continua dependendo de uma vaga real, porque o provedor não disponibiliza ambiente de sandbox para esse fluxo. Isso é uma validação externa e não uma pendência de implementação comprovada no repositório.
+A implementação atual foi considerada fonte da verdade. Limitações de homologação externa da integração Gupy, ausência de sandbox do provedor e atividades de validação operacional não foram incluídas por estarem fora do escopo deste backlog.
