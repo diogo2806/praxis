@@ -59,24 +59,47 @@ function SidebarContent({
   const session = useSession();
   const { language, t } = useLanguage();
   const copy = appShellCopy[language];
-  const nav = [
-    { to: "/dashboard", label: t.common.dashboard, icon: Home },
-    { to: "/avaliacoes", label: t.common.situationalAssessment, icon: ListChecks },
-    { to: "/results", label: t.common.results, icon: ClipboardList },
-    { to: "/enviar-link", label: t.common.sendLink, icon: Link2 },
-    { to: "/notifications", label: copy.notificationsLabel, icon: Bell, badge: unreadNotifications },
-    { to: "/jornadas", label: t.common.journeys, icon: Workflow },
-    { to: "/talent-match", label: t.common.talentMatch, icon: Target },
-  ] as const;
-  const secondary = [
-    { to: "/billing", label: t.common.plan, icon: CreditCard },
-    { to: "/compliance", label: t.common.compliance, icon: ShieldCheck },
-    { to: "/monitoramento", label: t.common.operationCenter, icon: BarChart3 },
-    { to: "/configuracoes/perfil", label: t.common.profile, icon: Building2 },
-    { to: "/configuracoes/conta", label: t.common.myAccount, icon: UserRound },
-    { to: "/team", label: t.common.myTeam, icon: Users },
-    { to: "/competencias", label: t.common.competencies, icon: Settings },
-    { to: "/integrations", label: t.common.integrations, icon: KeyRound },
+  const navGroups = [
+    {
+      label: t.common.workspace,
+      items: [
+        { to: "/dashboard", label: t.common.dashboard, icon: Home },
+        { to: "/notifications", label: copy.notificationsLabel, icon: Bell, badge: unreadNotifications },
+      ],
+    },
+    {
+      label: t.common.situationalAssessment,
+      items: [
+        { to: "/avaliacoes", label: t.common.situationalAssessment, icon: ListChecks },
+        { to: "/enviar-link", label: t.common.sendLink, icon: Link2 },
+        { to: "/jornadas", label: t.common.journeys, icon: Workflow },
+      ],
+    },
+    {
+      label: t.common.results,
+      items: [
+        { to: "/results", label: t.common.results, icon: ClipboardList },
+        { to: "/talent-match", label: t.common.talentMatch, icon: Target },
+        { to: "/competencias", label: t.common.competencies, icon: Settings },
+      ],
+    },
+    {
+      label: t.common.operation,
+      items: [
+        { to: "/monitoramento", label: t.common.operationCenter, icon: BarChart3 },
+        { to: "/compliance", label: t.common.compliance, icon: ShieldCheck },
+      ],
+    },
+    {
+      label: t.common.settings,
+      items: [
+        { to: "/configuracoes/perfil", label: t.common.profile, icon: Building2 },
+        { to: "/team", label: t.common.myTeam, icon: Users },
+        { to: "/integrations", label: t.common.integrations, icon: KeyRound },
+        { to: "/billing", label: t.common.plan, icon: CreditCard },
+        { to: "/configuracoes/conta", label: t.common.myAccount, icon: UserRound },
+      ],
+    },
   ] as const;
 
   return (
@@ -110,52 +133,39 @@ function SidebarContent({
             </span>
           </Link>
         </ShellLink>
-        <div className="px-3 pb-2 text-[10px] font-semibold uppercase text-muted-foreground">
-          {t.common.operation}
-        </div>
-        {nav.map((item) => {
-          const active = item.to === "/dashboard" ? pathname === "/dashboard" : pathname === item.to || pathname.startsWith(item.to + "/");
-          const badge = "badge" in item ? item.badge : 0;
-          return (
-            <ShellLink key={item.to} closeOnSelect={closeOnSelect}>
-              <Link
-                to={item.to}
-                className={cn(
-                  "mb-1.5 flex items-center gap-3 rounded-md px-3 py-2 text-sm transition",
-                  active ? "bg-accent text-accent-foreground" : "text-foreground/85 hover:bg-accent",
-                )}
-              >
-                <item.icon className="h-4 w-4 shrink-0 text-muted-foreground" />
-                <span className="min-w-0 flex-1">{item.label}</span>
-                {badge > 0 && (
-                  <span className="rounded-full bg-danger px-1.5 py-0.5 text-[10px] font-semibold text-danger-foreground">
-                    {badge > 99 ? "99+" : badge}
-                  </span>
-                )}
-              </Link>
-            </ShellLink>
-          );
-        })}
-        <div className="mt-6 px-3 pb-2 text-[10px] font-semibold uppercase text-muted-foreground">
-          {t.common.settings}
-        </div>
-        {secondary.map((item) => {
-          const active = pathname === item.to || pathname.startsWith(item.to + "/");
-          return (
-            <ShellLink key={item.to} closeOnSelect={closeOnSelect}>
-              <Link
-                to={item.to}
-                className={cn(
-                  "mb-1.5 flex items-center gap-3 rounded-md px-3 py-2 text-sm transition",
-                  active ? "bg-accent text-accent-foreground" : "text-foreground/85 hover:bg-accent",
-                )}
-              >
-                <item.icon className="h-4 w-4 shrink-0 text-muted-foreground" />
-                <span className="min-w-0 flex-1">{item.label}</span>
-              </Link>
-            </ShellLink>
-          );
-        })}
+        {navGroups.map((group, groupIndex) => (
+          <div key={group.label} className={cn(groupIndex > 0 && "mt-5 border-t border-border/70 pt-5")}>
+            <div className="px-3 pb-2 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+              {group.label}
+            </div>
+            {group.items.map((item) => {
+              const active =
+                item.to === "/dashboard"
+                  ? pathname === "/dashboard"
+                  : pathname === item.to || pathname.startsWith(item.to + "/");
+              const badge = "badge" in item ? item.badge : 0;
+              return (
+                <ShellLink key={item.to} closeOnSelect={closeOnSelect}>
+                  <Link
+                    to={item.to}
+                    className={cn(
+                      "mb-1 flex items-center gap-3 rounded-md px-3 py-2 text-sm transition",
+                      active ? "bg-accent text-accent-foreground" : "text-foreground/85 hover:bg-accent",
+                    )}
+                  >
+                    <item.icon className="h-4 w-4 shrink-0 text-muted-foreground" />
+                    <span className="min-w-0 flex-1">{item.label}</span>
+                    {badge > 0 && (
+                      <span className="rounded-full bg-danger px-1.5 py-0.5 text-[10px] font-semibold text-danger-foreground">
+                        {badge > 99 ? "99+" : badge}
+                      </span>
+                    )}
+                  </Link>
+                </ShellLink>
+              );
+            })}
+          </div>
+        ))}
       </nav>
       <div className="border-t border-border p-4">
         <div className="rounded-md border border-border bg-accent/40 p-3 text-xs text-muted-foreground" title={t.common.scoringTooltip}>
