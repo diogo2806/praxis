@@ -63,8 +63,11 @@ class CandidateAttemptIdempotencyAspectTest {
 
     @Test
     void shouldCreateRetestAfterTerminalAttempt() throws Throwable {
-        CreateCandidateRequest request = request("Candidato Teste", "candidato@example.com",
-                CreateCandidateRequest.PreviousResult.FAIL);
+        CreateCandidateRequest request = request(
+                "Candidato Teste",
+                "candidato@example.com",
+                CreateCandidateRequest.PreviousResult.FAIL
+        );
         String initialKey = CandidateAttemptIdempotencyKeyFactory.initialKey(request, context);
         String retestKey = CandidateAttemptIdempotencyKeyFactory.currentKey(request, context);
         CandidateAttemptEntity previous = legacySnapshot("Candidato Teste", "candidato@example.com");
@@ -78,7 +81,7 @@ class CandidateAttemptIdempotencyAspectTest {
                 .thenReturn(Optional.of(previous));
         when(joinPoint.proceed()).thenAnswer(invocation -> {
             assertThat(IdempotencyKeyHasher.sha256Hex(
-                    CandidateAttemptIdempotencyKeyFactory.initialSource(request, context)))
+                    CandidateAttemptIdempotencyKeyFactory.serviceSource(request, context)))
                     .isEqualTo(retestKey);
             return "ok";
         });
@@ -96,8 +99,11 @@ class CandidateAttemptIdempotencyAspectTest {
 
     @Test
     void shouldReuseEquivalentRetestInsteadOfCreatingAnotherCycle() throws Throwable {
-        CreateCandidateRequest request = request("Candidato Teste", "candidato@example.com",
-                CreateCandidateRequest.PreviousResult.FAIL);
+        CreateCandidateRequest request = request(
+                "Candidato Teste",
+                "candidato@example.com",
+                CreateCandidateRequest.PreviousResult.FAIL
+        );
         CandidateAttemptEntity existingRetest = legacySnapshot("Candidato Teste", "candidato@example.com");
         existingRetest.setStatus(AttemptStatus.IN_PROGRESS);
         when(repository.findByEmpresaIdAndIdempotencyKey(anyString(), anyString()))
@@ -113,8 +119,11 @@ class CandidateAttemptIdempotencyAspectTest {
 
     @Test
     void shouldRejectRetestWithoutPreviousAttempt() throws Throwable {
-        CreateCandidateRequest request = request("Candidato Teste", "candidato@example.com",
-                CreateCandidateRequest.PreviousResult.FAIL);
+        CreateCandidateRequest request = request(
+                "Candidato Teste",
+                "candidato@example.com",
+                CreateCandidateRequest.PreviousResult.FAIL
+        );
         when(repository.findByEmpresaIdAndIdempotencyKey(anyString(), anyString()))
                 .thenReturn(Optional.empty());
 
@@ -129,8 +138,11 @@ class CandidateAttemptIdempotencyAspectTest {
 
     @Test
     void shouldRejectRetestWhilePreviousAttemptIsActive() throws Throwable {
-        CreateCandidateRequest request = request("Candidato Teste", "candidato@example.com",
-                CreateCandidateRequest.PreviousResult.FAIL);
+        CreateCandidateRequest request = request(
+                "Candidato Teste",
+                "candidato@example.com",
+                CreateCandidateRequest.PreviousResult.FAIL
+        );
         String initialKey = CandidateAttemptIdempotencyKeyFactory.initialKey(request, context);
         String retestKey = CandidateAttemptIdempotencyKeyFactory.currentKey(request, context);
         CandidateAttemptEntity previous = legacySnapshot("Candidato Teste", "candidato@example.com");
@@ -152,8 +164,11 @@ class CandidateAttemptIdempotencyAspectTest {
     @Test
     void shouldKeepInitialAndRetestKeysDistinctAndStable() {
         CreateCandidateRequest initial = request("Candidato Teste", "candidato@example.com", null);
-        CreateCandidateRequest retest = request("Candidato Teste", "candidato@example.com",
-                CreateCandidateRequest.PreviousResult.FAIL);
+        CreateCandidateRequest retest = request(
+                "Candidato Teste",
+                "candidato@example.com",
+                CreateCandidateRequest.PreviousResult.FAIL
+        );
 
         assertThat(CandidateAttemptIdempotencyKeyFactory.currentKey(initial, context))
                 .isEqualTo(CandidateAttemptIdempotencyKeyFactory.initialKey(initial, context));
@@ -163,13 +178,72 @@ class CandidateAttemptIdempotencyAspectTest {
                 .isEqualTo(CandidateAttemptIdempotencyKeyFactory.currentKey(retest, context));
     }
 
-    private static CreateCandidateRequest request(String name, String email,
-                                                   CreateCandidateRequest.PreviousResult previousResult) {
+    @Test
+    void shouldKeepRecruteiVacanciesInDistinctIdempotencyScopes() {
+        IntegrationEmpresaContext recruteiContext = new IntegrationEmpresaContext("empresa-1", "1", "recrutei");
+        CreateCandidateRequest vacancyOne = recruteiRequest("vacancy-1");
+        CreateCandidateRequest vacancyTwo = recruteiRequest("vacancy-2");
+
+        assertThat(CandidateAttemptIdempotencyKeyFactory.currentKey(vacancyOne, recruteiContext))
+                .isNotEqualTo(CandidateAttemptIdempotencyKeyFactory.currentKey(vacancyTwo, recruteiContext));
+        assertThat(CandidateAttemptIdempotencyKeyFactory.serviceSource(vacancyOne, recruteiContext))
+                .isEqualTo(CandidateAttemptIdempotencyKeyFactory.serviceSource(vacancyTwo, recruteiContext));
+    }
+
+    @Test
+    void shouldResolveServiceHashToRecruteiVacancyKeyInsideAspect() throws Throwable {
+        IntegrationEmpresaContext recruteiContext = new IntegrationEmpresaContext("empresa-1", "1", "recrutei");
+        CreateCandidateRequest request = recruteiRequest("vacancy-1");
+        String vacancyKey = CandidateAttemptIdempotencyKeyFactory.currentKey(request, recruteiContext);
+        CandidateAttemptEntity saved = legacySnapshot("Candidato Teste", "candidato@example.com");
+
+        when(repository.findByEmpresaIdAndIdempotencyKey("empresa-1", vacancyKey))
+                .thenReturn(Optional.empty(), Optional.of(saved));
+        when(joinPoint.proceed()).thenAnswer(invocation -> {
+            String serviceSource = CandidateAttemptIdempotencyKeyFactory.serviceSource(request, recruteiContext);
+            assertThat(IdempotencyKeyHasher.sha256Hex(serviceSource)).isEqualTo(vacancyKey);
+            return "ok";
+        });
+
+        Object response = aspect.enforceEquivalentRetry(joinPoint, request, recruteiContext);
+
+        assertThat(response).isEqualTo("ok");
+        assertThat(saved.getRequestFingerprintVersion()).isEqualTo(2);
+        verify(repository).save(saved);
+    }
+
+    private static CreateCandidateRequest request(
+            String name,
+            String email,
+            CreateCandidateRequest.PreviousResult previousResult
+    ) {
         return new CreateCandidateRequest(
-                1L, 4398157034L, "sim-atendimento-n2", name, email, 100L,
+                1L,
+                4398157034L,
+                "sim-atendimento-n2",
+                name,
+                email,
+                100L,
                 URI.create("https://cliente.gupy.io/candidates/return"),
                 URI.create("https://cliente.gupy.io/result-webhook"),
-                new BigDecimal("1.50"), CreateCandidateRequest.CandidateType.EXTERNAL, previousResult
+                new BigDecimal("1.50"),
+                CreateCandidateRequest.CandidateType.EXTERNAL,
+                previousResult
+        );
+    }
+
+    private static CreateCandidateRequest recruteiRequest(String vacancyId) {
+        return new CreateCandidateRequest(
+                "1",
+                "candidate-1",
+                "sim-atendimento-n2",
+                "Candidato Teste",
+                "candidato@example.com",
+                vacancyId,
+                URI.create("https://recrutei.example/result-webhook"),
+                BigDecimal.ONE,
+                null,
+                null
         );
     }
 
