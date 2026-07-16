@@ -91,6 +91,35 @@ class CandidateAttemptMonitoringQueryServiceTest {
         assertThat(response.items().getFirst().active()).isFalse();
     }
 
+    @Test
+    @SuppressWarnings("unchecked")
+    void searchUsesPublishedSimulationForLegacyAttemptWithoutPinnedVersion() {
+        CandidateAttemptEntity entity = attemptEntity();
+        entity.setSimulationVersionId(null);
+        entity.setSimulationVersionNumber(null);
+        ScenarioNode rootNode = rootNodeWithTerminalOption();
+        PublishedSimulation simulation = simulation(rootNode);
+        CandidateAttempt attempt = CandidateAttempt.builder()
+                .answersByNodeId(Map.of())
+                .build();
+
+        when(candidateAttemptRepository.findAll(any(Specification.class), any(Pageable.class)))
+                .thenReturn(new PageImpl<>(List.of(entity), PageRequest.of(0, 25), 1));
+        when(simulationCatalogService.findPublishedById("empresa-1", "sim-1"))
+                .thenReturn(Optional.of(simulation));
+        when(simulationCatalogService.findNode(simulation, rootNode.id())).thenReturn(Optional.of(rootNode));
+        when(candidateAttemptMapper.toDomain(entity)).thenReturn(attempt);
+
+        CandidateAttemptMonitoringPageResponse response = service.search(0, 25, null, null, null);
+
+        assertThat(response.items()).hasSize(1);
+        assertThat(response.items().getFirst().simulationName()).isEqualTo("Atendimento N2");
+        assertThat(response.items().getFirst().versionNumber()).isEqualTo(3);
+        assertThat(response.items().getFirst().currentTurn()).isEqualTo(1);
+        assertThat(response.items().getFirst().estimatedTurns()).isEqualTo(1);
+        assertThat(response.items().getFirst().progressPercent()).isEqualTo(100);
+    }
+
     private CandidateAttemptEntity attemptEntity() {
         CandidateAttemptEntity entity = new CandidateAttemptEntity();
         entity.setId("att_1234567890123456");
