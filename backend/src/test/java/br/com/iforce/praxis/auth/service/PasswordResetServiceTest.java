@@ -1,83 +1,49 @@
 package br.com.iforce.praxis.auth.service;
 
 import br.com.iforce.praxis.admin.model.EmpresaStatus;
-
 import br.com.iforce.praxis.admin.model.UserStatus;
-
 import br.com.iforce.praxis.audit.model.AuditEventType;
-
 import br.com.iforce.praxis.audit.service.AuditEventService;
-
 import br.com.iforce.praxis.audit.service.AuditMetadata;
-
 import br.com.iforce.praxis.auth.dto.ForgotPasswordRequest;
-
 import br.com.iforce.praxis.auth.dto.ResetPasswordRequest;
-
 import br.com.iforce.praxis.auth.dto.ResetPasswordTokenResponse;
-
 import br.com.iforce.praxis.auth.persistence.entity.EmpresaEntity;
-
 import br.com.iforce.praxis.auth.persistence.entity.UserEntity;
-
 import br.com.iforce.praxis.auth.persistence.repository.EmpresaRepository;
-
 import br.com.iforce.praxis.auth.persistence.repository.UserRepository;
-
 import org.junit.jupiter.api.BeforeEach;
-
 import org.junit.jupiter.api.Test;
-
 import org.junit.jupiter.api.extension.ExtendWith;
-
 import org.mockito.ArgumentCaptor;
-
 import org.mockito.Mock;
-
 import org.mockito.junit.jupiter.MockitoExtension;
-
 import org.springframework.http.HttpStatus;
-
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-
 import org.springframework.security.crypto.password.PasswordEncoder;
-
 import org.springframework.web.server.ResponseStatusException;
 
-
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
-
 import java.time.temporal.ChronoUnit;
-
+import java.util.HexFormat;
 import java.util.List;
-
 import java.util.Optional;
-
 import java.util.Set;
 
-
 import static org.assertj.core.api.Assertions.assertThat;
-
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-
 import static org.mockito.ArgumentMatchers.any;
-
 import static org.mockito.ArgumentMatchers.anyInt;
-
 import static org.mockito.ArgumentMatchers.anyString;
-
 import static org.mockito.ArgumentMatchers.eq;
-
 import static org.mockito.Mockito.never;
-
 import static org.mockito.Mockito.times;
-
 import static org.mockito.Mockito.verify;
-
 import static org.mockito.Mockito.verifyNoInteractions;
-
 import static org.mockito.Mockito.when;
-
 
 @ExtendWith(MockitoExtension.class)
 class PasswordResetServiceTest {
@@ -131,12 +97,8 @@ class PasswordResetServiceTest {
         return empresa;
     }
 
-    // ------------------------------------------------------------------
-    // Solicitação (forgot)
-    // ------------------------------------------------------------------
-
     @Test
-    void requestResetGeneratesTokenAndSendsEmailForActiveUser() {
+    void requestResetGeneratesIndexedTokenAndSendsEmailForActiveUser() {
         UserEntity user = activeUser();
         when(userRepository.findFirstByEmailAndEmpresaId("usuario@empresa.com", "empresa123"))
                 .thenReturn(Optional.of(user));
@@ -144,8 +106,8 @@ class PasswordResetServiceTest {
 
         service().requestReset(new ForgotPasswordRequest("empresa123", "usuario@empresa.com"), "1.2.3.4");
 
-        // Apenas o hash é gravado; o expirador é definido.
         assertThat(user.getPasswordResetTokenHash()).isNotBlank();
+        assertThat(user.getPasswordResetTokenLookupHash()).hasSize(64);
         assertThat(user.getPasswordResetExpiresAt()).isAfter(Instant.now());
         verify(userRepository).save(user);
         verify(emailSender).sendPasswordResetEmail(eq("usuario@empresa.com"), eq("João"), anyString(), anyInt());
@@ -191,17 +153,31 @@ class PasswordResetServiceTest {
         verifyNoInteractions(emailSender);
     }
 
-    // ------------------------------------------------------------------
-    // Validação do token
-    // ------------------------------------------------------------------
+    @Test
+    void validateTokenUsesDirectIndexedLookup() {
+        String token = "tok_valido";
+        UserEntity user = indexedTokenUser(token, Instant.now().plus(1, ChronoUnit.HOURS));
+        when(userRepository.findFirstByPasswordResetTokenLookupHash(sha256(token)))
+                .thenReturn(Optional.of(user));
+
+        ResetPasswordTokenResponse response = service().validateToken(token);
+
+        assertThat(response.valid()).isTrue();
+        assertThat(response.userName()).isEqualTo("João");
+        verify(userRepository, never())
+                .findByPasswordResetTokenHashIsNotNullAndPasswordResetTokenLookupHashIsNull();
+    }
 
     @Test
-    void validateTokenReturnsDetailsForValidToken() {
-        String token = "tok_valido";
+    void validateTokenSupportsLegacyBcryptTokenDuringMigration() {
+        String token = "tok_legado";
         UserEntity user = activeUser();
         user.setPasswordResetTokenHash(passwordEncoder.encode(token));
         user.setPasswordResetExpiresAt(Instant.now().plus(1, ChronoUnit.HOURS));
-        when(userRepository.findByPasswordResetTokenHashIsNotNull()).thenReturn(List.of(user));
+        when(userRepository.findFirstByPasswordResetTokenLookupHash(sha256(token)))
+                .thenReturn(Optional.empty());
+        when(userRepository.findByPasswordResetTokenHashIsNotNullAndPasswordResetTokenLookupHashIsNull())
+                .thenReturn(List.of(user));
 
         ResetPasswordTokenResponse response = service().validateToken(token);
 
@@ -211,9 +187,13 @@ class PasswordResetServiceTest {
 
     @Test
     void validateTokenReturns404WhenUnknown() {
-        when(userRepository.findByPasswordResetTokenHashIsNotNull()).thenReturn(List.of());
+        String token = "desconhecido";
+        when(userRepository.findFirstByPasswordResetTokenLookupHash(sha256(token)))
+                .thenReturn(Optional.empty());
+        when(userRepository.findByPasswordResetTokenHashIsNotNullAndPasswordResetTokenLookupHashIsNull())
+                .thenReturn(List.of());
 
-        assertThatThrownBy(() -> service().validateToken("desconhecido"))
+        assertThatThrownBy(() -> service().validateToken(token))
                 .isInstanceOf(ResponseStatusException.class)
                 .hasFieldOrPropertyWithValue("statusCode", HttpStatus.NOT_FOUND);
     }
@@ -221,33 +201,28 @@ class PasswordResetServiceTest {
     @Test
     void validateTokenReturns410WhenExpired() {
         String token = "tok_expirado";
-        UserEntity user = activeUser();
-        user.setPasswordResetTokenHash(passwordEncoder.encode(token));
-        user.setPasswordResetExpiresAt(Instant.now().minus(1, ChronoUnit.HOURS));
-        when(userRepository.findByPasswordResetTokenHashIsNotNull()).thenReturn(List.of(user));
+        UserEntity user = indexedTokenUser(token, Instant.now().minus(1, ChronoUnit.HOURS));
+        when(userRepository.findFirstByPasswordResetTokenLookupHash(sha256(token)))
+                .thenReturn(Optional.of(user));
 
         assertThatThrownBy(() -> service().validateToken(token))
                 .isInstanceOf(ResponseStatusException.class)
                 .hasFieldOrPropertyWithValue("statusCode", HttpStatus.GONE);
     }
 
-    // ------------------------------------------------------------------
-    // Confirmação (reset)
-    // ------------------------------------------------------------------
-
     @Test
-    void confirmResetChangesPasswordAndInvalidatesToken() {
+    void confirmResetChangesPasswordAndInvalidatesBothTokenHashes() {
         String token = "tok_ok";
-        UserEntity user = activeUser();
-        user.setPasswordResetTokenHash(passwordEncoder.encode(token));
-        user.setPasswordResetExpiresAt(Instant.now().plus(1, ChronoUnit.HOURS));
-        when(userRepository.findByPasswordResetTokenHashIsNotNull()).thenReturn(List.of(user));
+        UserEntity user = indexedTokenUser(token, Instant.now().plus(1, ChronoUnit.HOURS));
+        when(userRepository.findFirstByPasswordResetTokenLookupHash(sha256(token)))
+                .thenReturn(Optional.of(user));
         when(empresaRepository.findById("empresa123")).thenReturn(Optional.of(activeEmpresa("empresa123")));
 
         service().confirmReset(new ResetPasswordRequest(token, "novaSenha123", "novaSenha123"), "1.2.3.4");
 
         assertThat(passwordEncoder.matches("novaSenha123", user.getPasswordHash())).isTrue();
         assertThat(user.getPasswordResetTokenHash()).isNull();
+        assertThat(user.getPasswordResetTokenLookupHash()).isNull();
         assertThat(user.getPasswordResetExpiresAt()).isNull();
         assertThat(user.getLastPasswordResetAt()).isNotNull();
         verify(auditEventService).appendUserEvent(
@@ -266,10 +241,9 @@ class PasswordResetServiceTest {
     @Test
     void confirmResetRejectsSameAsCurrentPassword() {
         String token = "tok_ok";
-        UserEntity user = activeUser();
-        user.setPasswordResetTokenHash(passwordEncoder.encode(token));
-        user.setPasswordResetExpiresAt(Instant.now().plus(1, ChronoUnit.HOURS));
-        when(userRepository.findByPasswordResetTokenHashIsNotNull()).thenReturn(List.of(user));
+        UserEntity user = indexedTokenUser(token, Instant.now().plus(1, ChronoUnit.HOURS));
+        when(userRepository.findFirstByPasswordResetTokenLookupHash(sha256(token)))
+                .thenReturn(Optional.of(user));
         when(empresaRepository.findById("empresa123")).thenReturn(Optional.of(activeEmpresa("empresa123")));
 
         assertThatThrownBy(() -> service().confirmReset(
@@ -282,31 +256,34 @@ class PasswordResetServiceTest {
     @Test
     void confirmResetRejectsExpiredTokenAndClearsState() {
         String token = "tok_expirado";
-        UserEntity user = activeUser();
-        user.setPasswordResetTokenHash(passwordEncoder.encode(token));
-        user.setPasswordResetExpiresAt(Instant.now().minus(1, ChronoUnit.HOURS));
-        when(userRepository.findByPasswordResetTokenHashIsNotNull()).thenReturn(List.of(user));
+        UserEntity user = indexedTokenUser(token, Instant.now().minus(1, ChronoUnit.HOURS));
+        when(userRepository.findFirstByPasswordResetTokenLookupHash(sha256(token)))
+                .thenReturn(Optional.of(user));
 
         assertThatThrownBy(() -> service().confirmReset(
                 new ResetPasswordRequest(token, "novaSenha123", "novaSenha123"), null))
                 .isInstanceOf(ResponseStatusException.class)
                 .hasFieldOrPropertyWithValue("statusCode", HttpStatus.GONE);
         assertThat(user.getPasswordResetTokenHash()).isNull();
+        assertThat(user.getPasswordResetTokenLookupHash()).isNull();
     }
 
     @Test
     void confirmResetRejectsReusedToken() {
-        // Após o uso o token é removido, então uma nova busca não encontra usuário.
-        when(userRepository.findByPasswordResetTokenHashIsNotNull()).thenReturn(List.of());
+        String token = "tok_ja_usado";
+        when(userRepository.findFirstByPasswordResetTokenLookupHash(sha256(token)))
+                .thenReturn(Optional.empty());
+        when(userRepository.findByPasswordResetTokenHashIsNotNullAndPasswordResetTokenLookupHashIsNull())
+                .thenReturn(List.of());
 
         assertThatThrownBy(() -> service().confirmReset(
-                new ResetPasswordRequest("tok_ja_usado", "novaSenha123", "novaSenha123"), null))
+                new ResetPasswordRequest(token, "novaSenha123", "novaSenha123"), null))
                 .isInstanceOf(ResponseStatusException.class)
                 .hasFieldOrPropertyWithValue("statusCode", HttpStatus.BAD_REQUEST);
     }
 
     @Test
-    void requestResetNeverIncludesRawTokenInAuditMetadata() {
+    void requestResetNeverIncludesRawTokenOrHashesInAuditMetadata() {
         UserEntity user = activeUser();
         when(userRepository.findFirstByEmailAndEmpresaId(anyString(), anyString())).thenReturn(Optional.of(user));
         when(empresaRepository.findById("empresa123")).thenReturn(Optional.of(activeEmpresa("empresa123")));
@@ -317,6 +294,25 @@ class PasswordResetServiceTest {
         verify(auditEventService, times(1)).appendUserEvent(
                 anyString(), anyString(), any(), anyString(), metadata.capture());
         assertThat(metadata.getValue()).doesNotContain(user.getPasswordResetTokenHash());
+        assertThat(metadata.getValue()).doesNotContain(user.getPasswordResetTokenLookupHash());
         assertThat(metadata.getValue().toLowerCase()).doesNotContain("password");
+    }
+
+    private UserEntity indexedTokenUser(String token, Instant expiresAt) {
+        UserEntity user = activeUser();
+        user.setPasswordResetTokenHash(passwordEncoder.encode(token));
+        user.setPasswordResetTokenLookupHash(sha256(token));
+        user.setPasswordResetExpiresAt(expiresAt);
+        return user;
+    }
+
+    private String sha256(String value) {
+        try {
+            byte[] digest = MessageDigest.getInstance("SHA-256")
+                    .digest(value.getBytes(StandardCharsets.UTF_8));
+            return HexFormat.of().formatHex(digest);
+        } catch (NoSuchAlgorithmException exception) {
+            throw new IllegalStateException(exception);
+        }
     }
 }
