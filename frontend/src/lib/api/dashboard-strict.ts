@@ -3,6 +3,13 @@ import { getSession } from "@/lib/session";
 import type { DashboardResponse } from "./praxis-contract";
 import { PraxisApiError } from "./praxis-legacy";
 
+const CANONICAL_ROUTES: Record<string, string> = {
+  "/simulations/new": "/nova/avaliacao",
+  "/candidate-links/new": "/enviar-link",
+  "/assessment-journeys": "/jornadas",
+  "/assessment-journeys/new": "/jornadas",
+};
+
 export class DashboardCompatibilityError extends PraxisApiError {
   constructor() {
     super(
@@ -35,7 +42,29 @@ export async function getDashboard(): Promise<DashboardResponse> {
     throw new PraxisApiError(await readApiErrorMessage(response), response.status);
   }
 
-  return response.json() as Promise<DashboardResponse>;
+  return normalizeDashboardRoutes(await response.json() as DashboardResponse);
+}
+
+function normalizeDashboardRoutes(dashboard: DashboardResponse): DashboardResponse {
+  return {
+    ...dashboard,
+    latestResults: dashboard.latestResults.map((item) => ({
+      ...item,
+      actionRoute: canonicalRoute(item.actionRoute),
+    })),
+    journeys: dashboard.journeys.map((item) => ({
+      ...item,
+      actionRoute: canonicalRoute(item.actionRoute),
+    })),
+    recommendedActions: dashboard.recommendedActions.map((item) => ({
+      ...item,
+      route: canonicalRoute(item.route),
+    })),
+  };
+}
+
+function canonicalRoute(route: string) {
+  return CANONICAL_ROUTES[route] ?? route;
 }
 
 async function readApiErrorMessage(response: Response): Promise<string> {
