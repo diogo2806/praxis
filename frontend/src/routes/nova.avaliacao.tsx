@@ -5,6 +5,7 @@ import { AppShell } from "@/components/app-shell";
 import { StateBanner } from "@/components/praxis-ui";
 import { WizardStepper } from "@/components/wizard-stepper";
 import {
+  cloneSimulationVersionToDraft,
   createSimulationDraft,
   getSimulationVersion,
   updateSimulationBlueprint,
@@ -13,6 +14,7 @@ import {
 } from "@/lib/api/praxis";
 import { useLanguage } from "@/lib/language-context";
 import { useEmpresaConfig } from "@/lib/empresa-config";
+import { canEditSimulationVersion } from "@/lib/simulation-meta";
 import { getTranslations, type Language } from "@/lib/translations";
 
 export const Route = createFileRoute("/nova/avaliacao")({
@@ -81,32 +83,41 @@ function Page() {
   const roleMaxLength = 180;
   const criticalSituationMaxLength = 1200;
   const [competencySearch, setCompetencySearch] = useState("");
+
   const visibleCompetencies = useMemo(() => {
     const normalizedSearch = competencySearch.trim().toLowerCase();
     return [...competencies]
       .filter((competency) => competency.label.toLowerCase().includes(normalizedSearch))
       .sort((a, b) => a.label.localeCompare(b.label, "pt-BR", { sensitivity: "base" }));
   }, [competencies, competencySearch]);
+
   const missingFields = [
     role.trim().length === 0 && copy.missingRole,
     criticalSituation.trim().length === 0 && copy.missingCriticalSituation,
     selectedCompetencies.length === 0 && copy.missingCompetency,
   ].filter((field): field is string => Boolean(field));
+
   const canGoNext =
     role.trim().length > 0 &&
     criticalSituation.trim().length > 0 &&
     selectedCompetencies.length > 0;
+
   const normalizedCompetencies = competencies.map((competency) =>
     competency.value.trim().toLowerCase(),
   );
   const canAddCompetency =
     newCompetency.trim().length > 0 &&
     !normalizedCompetencies.includes(newCompetency.trim().toLowerCase());
+
   const versionQuery = useQuery({
     queryKey: ["simulation-version", search.simulationId, search.versionNumber],
     queryFn: () => getSimulationVersion(search.simulationId!, search.versionNumber!),
     enabled: hasVersionContext,
   });
+
+  const versionStatus = versionQuery.data?.status;
+  const isEditable =
+    !hasVersionContext || (versionStatus ? canEditSimulationVersion(versionStatus) : false);
 
   useEffect(() => {
     if (!versionQuery.data || empresaConfigLoading) {
@@ -157,15 +168,20 @@ function Page() {
   });
 
   const updateExistingMutation = useMutation({
-    mutationFn: () =>
-      updateSimulationBlueprint(search.simulationId!, search.versionNumber!, {
+    mutationFn: () => {
+      if (!isEditable) {
+        throw new Error("Esta versão não pode ser editada. Crie um rascunho antes de alterar.");
+      }
+
+      return updateSimulationBlueprint(search.simulationId!, search.versionNumber!, {
         rootNodeId: versionQuery.data?.blueprint.rootNodeId ?? "turno-1",
         competencies: buildCompetencyWeights(
           selectedCompetencies,
           versionQuery.data?.blueprint.competencies,
         ),
         criticalSituation: criticalSituation.trim(),
-      }),
+      });
+    },
     onSuccess: async (simulation) => {
       await queryClient.invalidateQueries({
         queryKey: ["simulation-version", search.simulationId, search.versionNumber],
@@ -181,8 +197,26 @@ function Page() {
     },
   });
 
+  const cloneDraftMutation = useMutation({
+    mutationFn: () => cloneSimulationVersionToDraft(search.simulationId!, search.versionNumber!),
+    onSuccess: async (draft) => {
+      await queryClient.invalidateQueries({ queryKey: ["simulations"] });
+      void navigate({
+        to: "/nova/avaliacao",
+        search: {
+          simulationId: draft.simulationId,
+          versionNumber: draft.newVersionNumber,
+        },
+      });
+    },
+  });
+
   const addCompetencyMutation = useMutation({
     mutationFn: async (value: string) => {
+      if (!isEditable) {
+        throw new Error("Crie um rascunho antes de alterar as competências.");
+      }
+
       const nextCompetencies = [
         ...competencies,
         { value, label: value, locked: false, selectedByDefault: false, active: true },
@@ -199,6 +233,10 @@ function Page() {
   });
 
   function toggleCompetency(competency: string) {
+    if (!isEditable) {
+      return;
+    }
+
     setSelectedCompetencies((current) =>
       current.includes(competency)
         ? current.filter((item) => item !== competency)
@@ -208,7 +246,10 @@ function Page() {
 
   return (
     <AppShell>
-      <WizardStepper current="avaliacao" unlockedThrough={canGoNext ? "cenario" : "avaliacao"} />
+      <WizardStepper
+        current="avaliacao"
+        unlockedThrough={isEditable && canGoNext ? "cenario" : "avaliacao"}
+      />
 
       {empresaConfigLoading && (
         <StateBanner tone="info" title={copy.loadingConfigTitle}>
@@ -244,6 +285,16 @@ function Page() {
         </div>
       )}
 
+      {cloneDraftMutation.isError && (
+        <div className="mb-5">
+          <StateBanner tone="danger" title="Não foi possível criar o rascunho">
+            {cloneDraftMutation.error instanceof Error
+              ? cloneDraftMutation.error.message
+              : "Tente novamente."}
+          </StateBanner>
+        </div>
+      )}
+
       {versionQuery.isLoading && (
         <div className="mb-5">
           <StateBanner tone="info" title={copy.loadingPlanTitle}>
@@ -269,6 +320,29 @@ function Page() {
           <div className="space-y-6">
             <Header kicker={copy.kicker} title={copy.heading} lede={copy.lede} />
 
+            {versionStatus && !isEditable && (
+              <StateBanner
+                tone="warn"
+                title="Esta versão não pode ser editada"
+                action={
+                  versionStatus === "published" ? (
+                    <button
+                      type="button"
+                      onClick={() => cloneDraftMutation.mutate()}
+                      disabled={cloneDraftMutation.isPending}
+                      className="shrink-0 rounded-md border border-current/20 bg-background/70 px-3 py-2 text-xs font-medium hover:bg-background disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      {cloneDraftMutation.isPending ? "Criando..." : "Criar rascunho"}
+                    </button>
+                  ) : undefined
+                }
+              >
+                {versionStatus === "published"
+                  ? "A versão no ar permanece protegida. Crie um rascunho para alterar o plano sem afetar candidatos em andamento."
+                  : "Esta versão está arquivada e não pode receber alterações."}
+              </StateBanner>
+            )}
+
             <p className="text-sm text-muted-foreground">
               Prefere começar de um modelo pronto?{" "}
               <Link to="/nova/rapido" className="font-medium text-primary hover:underline">
@@ -289,6 +363,7 @@ function Page() {
                   required
                   aria-required="true"
                   value={role}
+                  disabled={!isEditable}
                   onChange={(event) => setRole(event.target.value)}
                 />
                 <FieldMeta
@@ -309,6 +384,7 @@ function Page() {
                 required
                 aria-required="true"
                 value={criticalSituation}
+                disabled={!isEditable}
                 onChange={(event) => setCriticalSituation(event.target.value)}
               />
               <FieldMeta
@@ -330,7 +406,7 @@ function Page() {
                   placeholder={copy.searchCompetencyPlaceholder}
                   value={competencySearch}
                   onChange={(event) => setCompetencySearch(event.target.value)}
-                  disabled={empresaConfigLoading || addCompetencyMutation.isPending}
+                  disabled={!isEditable || empresaConfigLoading || addCompetencyMutation.isPending}
                 />
                 <div className="mt-1 text-xs text-muted-foreground">
                   {copy.competenciesAvailable
@@ -338,6 +414,7 @@ function Page() {
                     .replace("{total}", String(competencies.length))}
                 </div>
               </div>
+
               <div className="flex flex-wrap gap-2">
                 {visibleCompetencies.length === 0 ? (
                   <p className="text-sm text-muted-foreground">{copy.noCompetencyFound}</p>
@@ -346,7 +423,9 @@ function Page() {
                     <label
                       key={competency.value}
                       title={competencyHint(competency.label, copy.competencyHintTemplate)}
-                      className={`cursor-pointer rounded-full border px-3 py-1.5 text-sm ${
+                      className={`rounded-full border px-3 py-1.5 text-sm ${
+                        isEditable ? "cursor-pointer" : "cursor-not-allowed opacity-70"
+                      } ${
                         selectedCompetencies.includes(competency.value)
                           ? "border-primary bg-primary/10 text-foreground"
                           : "border-border bg-card text-foreground/75 hover:bg-accent"
@@ -355,6 +434,7 @@ function Page() {
                       <input
                         type="checkbox"
                         checked={selectedCompetencies.includes(competency.value)}
+                        disabled={!isEditable}
                         onChange={() => toggleCompetency(competency.value)}
                         className="sr-only"
                       />
@@ -363,22 +443,25 @@ function Page() {
                   ))
                 )}
               </div>
+
               <div className="mt-4 grid gap-2 md:grid-cols-[1fr_auto]">
                 <input
                   className="input"
                   placeholder={copy.addCompetencyPlaceholder}
                   value={newCompetency}
+                  disabled={!isEditable}
                   onChange={(event) => setNewCompetency(event.target.value)}
                 />
                 <button
                   type="button"
                   onClick={() => addCompetencyMutation.mutate(newCompetency.trim())}
-                  disabled={!canAddCompetency || addCompetencyMutation.isPending}
+                  disabled={!isEditable || !canAddCompetency || addCompetencyMutation.isPending}
                   className="rounded-md border border-border bg-card px-4 py-2 text-sm hover:bg-accent disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   {addCompetencyMutation.isPending ? copy.saving : copy.addAndSave}
                 </button>
               </div>
+
               <Help>{copy.addedCompetencyHelp}</Help>
               {addCompetencyMutation.isError && (
                 <p className="mt-2 text-xs text-danger">
@@ -397,8 +480,9 @@ function Page() {
               >
                 {copy.cancel}
               </Link>
+
               <div className="flex flex-col items-start gap-2 sm:items-end">
-                {!canGoNext && (
+                {isEditable && !canGoNext && (
                   <p
                     className={`text-xs ${submitAttempted ? "text-danger" : "text-muted-foreground"}`}
                     aria-live="polite"
@@ -406,29 +490,62 @@ function Page() {
                     {copy.missingFieldsPrefix} {missingFields.join(", ")}.
                   </p>
                 )}
+
                 <button
                   type="button"
-                  disabled={createDraftMutation.isPending || updateExistingMutation.isPending}
-                  title={canGoNext ? copy.createDraftTitle : copy.disabledNextTitle}
+                  disabled={
+                    createDraftMutation.isPending ||
+                    updateExistingMutation.isPending ||
+                    cloneDraftMutation.isPending ||
+                    (!isEditable && versionStatus !== "published")
+                  }
+                  title={
+                    !isEditable
+                      ? versionStatus === "published"
+                        ? "Criar uma nova versão em rascunho"
+                        : "Esta versão não pode ser editada"
+                      : canGoNext
+                        ? copy.createDraftTitle
+                        : copy.disabledNextTitle
+                  }
                   onClick={() => {
+                    if (!isEditable && versionStatus === "published" && hasVersionContext) {
+                      cloneDraftMutation.mutate();
+                      return;
+                    }
+
                     if (!canGoNext) {
                       setSubmitAttempted(true);
                       return;
                     }
+
                     if (hasVersionContext) {
                       updateExistingMutation.mutate();
                       return;
                     }
+
                     createDraftMutation.mutate();
                   }}
-                  aria-disabled={!canGoNext}
+                  aria-disabled={isEditable && !canGoNext}
                   className={`rounded-md bg-primary px-5 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 ${
-                    !canGoNext || createDraftMutation.isPending || updateExistingMutation.isPending
+                    (isEditable && !canGoNext) ||
+                    createDraftMutation.isPending ||
+                    updateExistingMutation.isPending ||
+                    cloneDraftMutation.isPending ||
+                    (!isEditable && versionStatus !== "published")
                       ? "cursor-not-allowed opacity-50"
                       : ""
                   }`}
                 >
-                  {createDraftMutation.isPending ? copy.creatingDraft : copy.next}
+                  {!isEditable
+                    ? versionStatus === "published"
+                      ? cloneDraftMutation.isPending
+                        ? "Criando rascunho..."
+                        : "Criar rascunho"
+                      : "Versão não editável"
+                    : createDraftMutation.isPending
+                      ? copy.creatingDraft
+                      : copy.next}
                 </button>
               </div>
             </div>
@@ -584,6 +701,7 @@ function Card({
       : tone === "danger"
         ? "before:bg-danger"
         : "before:bg-transparent";
+
   return (
     <section
       className={`relative overflow-hidden rounded-xl border border-border bg-card p-5 before:absolute before:left-0 before:top-0 before:h-full before:w-1 ${accent}`}
