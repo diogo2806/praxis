@@ -1,49 +1,27 @@
 # Requisitos técnicos pendentes — praxis
 
-Status: atualizado em 2026-07-15 após conclusão de `ASYNC11`, `BUS13`, `INT18`, `DATA13`, `DATA14` e `INT17`.
+Status: revalidado em 2026-07-16 contra a implementação atual da `main`.
 
-Este arquivo contém somente pendências técnicas implementáveis e comprovadas no sistema. Não inclui CI/CD, testes, QA, métricas observacionais, publicação ou marketing.
+Este arquivo contém somente pendências técnicas implementáveis e comprovadas no sistema. Não inclui CI/CD, homologação externa, QA manual, publicação ou marketing.
 
-## Contexto da auditoria
+## Resultado da revalidação
 
-- Commit auditado da branch principal: `8a499412482fa956d0809c9fd40841cbfb047c79`.
-- Finalidade identificada: plataforma de avaliações situacionais para recrutamento, com versionamento, pontuação determinística, revisão humana, trilha auditável e integrações com ATS.
-- Stack principal: Java 21, Spring Boot 3.5, Spring Security, JPA, PostgreSQL/Flyway, React 19, TanStack Start/Router e TypeScript.
-- Arquitetura predominante: frontend React consumindo API Spring Boot; persistência PostgreSQL; autenticação JWT nas rotas internas; Bearer token nas integrações; entrega assíncrona por outbox transacional.
-- Fluxos de código revalidados: criação e repetição de tentativas, links diretos, execução do candidato, cálculo e comparação de resultados, callback Gupy, entrega de webhook, processamento do outbox, monitoramento operacional e relatórios de engajamento.
-- Os Markdown foram tratados apenas como referência secundária. A classificação abaixo foi mantida após leitura da implementação alcançável.
-- `LEGACY12` permanece concluído: `docs/backlog.txt` foi removido e não é fonte normativa.
-- `INT17` foi concluído e transferido para `docs/implementados/requisitos-implementados.md`: `result_webhook_url` está reservado ao `TestResult`, e eventos proprietários dependem exclusivamente da integração `CUSTOM_API` explicitamente configurada.
+Nenhuma pendência técnica confirmada permanece nesta auditoria.
 
-## 1. Regras de negócio
+As duas tarefas que ainda apareciam como pendentes neste documento já estavam implementadas no código:
 
-| ID | Tarefa técnica | Critério de conclusão | Status |
-|---|---|---|---|
-| BUS12 | Garantir comparabilidade de pontuação entre caminhos ou bloquear comparações incompatíveis. | Resultados comparados usam base comum de competências, pesos e máximos alcançáveis; alternativamente, o backend classifica incompatibilidade e o Talent Match bloqueia ou sinaliza claramente a comparação. | ⬜ Pendente |
+| ID | Evidência atual | Estado |
+|---|---|---|
+| BUS12 | `ComparableSimulationValidationService`, registrada como `@Primary`, bloqueia a publicação quando caminhos da mesma avaliação possuem bases máximas diferentes ou zeradas por competência. | ✅ Concluído |
+| UI13 | A central operacional usa consulta paginada, filtros por estado, avaliação e candidato, e contempla tentativas não iniciadas, em andamento, concluídas, abandonadas e expiradas. A listagem de links também possui paginação sem corte silencioso em 200 registros. | ✅ Concluído |
 
-### BUS12 — comparabilidade entre caminhos
+## Correções adicionais desta revalidação
 
-| Caminho completo | Método/campo/contrato | Como está | O que fazer |
-|---|---|---|---|
-| `backend/src/main/java/br/com/iforce/praxis/gupy/service/ResultScoringService.java` | `calculate()` | O máximo é somado por nó do caminho percorrido usando a melhor alternativa daquele nó; competências sem máximo positivo são removidas e os pesos restantes são renormalizados. Caminhos diferentes podem produzir bases efetivas diferentes. | Definir matriz comum de competências e máximos por versão ou gerar assinatura explícita de comparabilidade por caminho. |
-| `backend/src/main/java/br/com/iforce/praxis/simulation/service/SimulationValidationService.java` | `validatePathCompetencyCoverage()` | A cobertura desigual entre caminhos não impede necessariamente a publicação. | Bloquear publicação quando a política exigir base comum ou registrar formalmente grupos de caminhos comparáveis. |
-| `frontend/src/routes/talent-match.tsx` | consulta e exibição do Talent Match | Seleciona e exibe candidatos da mesma avaliação sem validar assinatura comum de competências, pesos e máximos efetivos. | Consumir metadado de comparabilidade e bloquear, separar ou sinalizar resultados incompatíveis. |
+- O contrato Gupy passa a aceitar tanto JSON `null` quanto a string `"null"` em `previous_result`, conforme o exemplo oficial publicado.
+- `GET /test` preserva `limit=0`, retornando página vazia com o total disponível, sem forçar o valor para `1`.
+- `result_candidate_page_url` apresenta à pessoa candidata somente os resultados `major`, mantendo e-mail, respostas, pesos e regras internas fora da resposta pública.
+- Foram adicionados testes de regressão para os três comportamentos.
 
-## 2. Operação e interface
+## Limites externos
 
-| ID | Tarefa técnica | Critério de conclusão | Status |
-|---|---|---|---|
-| UI13 | Paginar o centro operacional e incluir todos os estados relevantes. | API e interface suportam paginação e filtros por estado, incluindo não iniciadas, em andamento, concluídas, abandonadas e expiradas, sem corte silencioso fixo em 200 registros. | ⬜ Pendente |
-
-### UI13 — paginação e estados do centro operacional
-
-| Caminho completo | Método/campo/contrato | Como está | O que fazer |
-|---|---|---|---|
-| `backend/src/main/java/br/com/iforce/praxis/gupy/service/CandidateAttemptService.java` | `listLiveAttempts()` | Consulta somente `IN_PROGRESS` e `COMPLETED` com `PageRequest.of(0, 200)`. | Criar endpoint paginado com filtros por estado, período, avaliação e candidato. |
-| `backend/src/main/java/br/com/iforce/praxis/gupy/service/CandidateAttemptService.java` | `listCompanyLinks()` | Limita a listagem aos 200 registros mais recentes e retorna apenas lista, sem total ou cursor. | Retornar página, total, cursor ou metadados equivalentes, sem corte invisível. |
-| `frontend/src/routes/monitoramento.tsx` | centro operacional | A interface depende do conjunto parcial devolvido pela API e não oferece visão completa de convites não iniciados, abandonos e expirações. | Adicionar filtros, paginação e estados coerentes com a API paginada. |
-
-## Ordem recomendada
-
-1. `BUS12` — tornar resultados comparáveis ou bloquear comparações incompatíveis.
-2. `UI13` — paginar e completar o centro operacional.
+A homologação completa da integração Gupy continua dependendo de uma vaga real, porque o provedor não disponibiliza ambiente de sandbox para esse fluxo. Isso é uma validação externa e não uma pendência de implementação comprovada no repositório.
