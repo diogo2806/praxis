@@ -99,7 +99,7 @@ export function getSimulationVersion(
   return getSimulationVersionLegacy(
     simulationId,
     versionNumber,
-  ) as Promise<SimulationVersionDetailResponse>;
+  ) as unknown as Promise<SimulationVersionDetailResponse>;
 }
 
 export function createSimulationNode(
