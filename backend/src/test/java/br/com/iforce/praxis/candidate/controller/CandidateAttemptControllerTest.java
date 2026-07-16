@@ -487,7 +487,8 @@ class CandidateAttemptControllerTest {
                                 {
                                   "simulationId": "sim-atendimento-caos",
                                   "candidateName": "Thiago Souza",
-                                  "candidateEmail": "thiago.company-link@example.com"
+                                  "candidateEmail": "thiago.company-link@example.com",
+                                  "applicationCycleId": "test-company-link-thiago-20260716"
                                 }
                                 """))
                 .andExpect(status().isCreated())
@@ -511,7 +512,8 @@ class CandidateAttemptControllerTest {
                                 {
                                   "simulationId": "sim-atendimento-caos",
                                   "candidateName": "Maria Souza",
-                                  "candidateEmail": "maria.company-link@example.com"
+                                  "candidateEmail": "maria.company-link@example.com",
+                                  "applicationCycleId": "test-company-link-maria-20260716"
                                 }
                                 """))
                 .andExpect(status().isCreated())
