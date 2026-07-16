@@ -1,6 +1,8 @@
 -- Agenda a confirmação servidor-servidor do callback na mesma transação que conclui a tentativa.
 -- A chave inclui a URL porque a Gupy pode renovar o callback de uma tentativa já concluída.
-CREATE UNIQUE INDEX uq_outbox_gupy_callback_confirmation
+-- IF NOT EXISTS mantém compatibilidade com bancos que executaram este mesmo conteúdo
+-- quando o arquivo ainda usava a versão V1001.
+CREATE UNIQUE INDEX IF NOT EXISTS uq_outbox_gupy_callback_confirmation
     ON outbox_events (
         empresa_id,
         event_type,
