@@ -17,7 +17,9 @@ class MercadoPagoSignatureValidatorTest {
     @Test
     void acceptsValidSignatureRegardlessOfHeaderOrderAndHexCase() throws Exception {
         MercadoPagoSignatureValidator validator = new MercadoPagoSignatureValidator(properties(true, SECRET));
-        String header = signature("1700000000", "123456", "req-1").toUpperCase();
+        String timestamp = "1700000000";
+        String hash = signatureHash(timestamp, "123456", "req-1").toUpperCase();
+        String header = "v1=" + hash + ", ts=" + timestamp;
 
         assertThat(validator.isValid(header, "req-1", "123456")).isTrue();
     }
@@ -84,11 +86,14 @@ class MercadoPagoSignatureValidatorTest {
         );
     }
 
-    private String signature(String ts, String dataId, String requestId) throws Exception {
-        String manifest = "id:" + dataId + ";request-id:" + requestId + ";ts:" + ts + ";";
+    private String signature(String timestamp, String dataId, String requestId) throws Exception {
+        return "v1=" + signatureHash(timestamp, dataId, requestId) + ", ts=" + timestamp;
+    }
+
+    private String signatureHash(String timestamp, String dataId, String requestId) throws Exception {
+        String manifest = "id:" + dataId + ";request-id:" + requestId + ";ts:" + timestamp + ";";
         Mac mac = Mac.getInstance("HmacSHA256");
         mac.init(new SecretKeySpec(SECRET.getBytes(StandardCharsets.UTF_8), "HmacSHA256"));
-        String hash = HexFormat.of().formatHex(mac.doFinal(manifest.getBytes(StandardCharsets.UTF_8)));
-        return "v1=" + hash + ", ts=" + ts;
+        return HexFormat.of().formatHex(mac.doFinal(manifest.getBytes(StandardCharsets.UTF_8)));
     }
 }
