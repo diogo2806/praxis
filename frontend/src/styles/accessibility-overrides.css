@@ -1,3 +1,14 @@
 :root:not(.dark) {
   --success: oklch(0.5 0.13 150);
 }
+
+/*
+ * O VLibras injeta a imagem do balão de orientação sem dimensões no HTML.
+ * Reservar o espaço antes do carregamento evita deslocamento cumulativo de layout.
+ */
+[vw] img.vp-pop-up {
+  width: 150px !important;
+  height: 40px !important;
+  aspect-ratio: 15 / 4;
+  object-fit: contain;
+}
