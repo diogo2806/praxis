@@ -1,5 +1,6 @@
 package br.com.iforce.praxis.recrutei.controller;
 
+import br.com.iforce.praxis.gupy.dto.CreateCandidateRequest;
 import br.com.iforce.praxis.gupy.dto.CreateCandidateResponse;
 import br.com.iforce.praxis.gupy.model.CandidateAttempt;
 import br.com.iforce.praxis.gupy.model.PublishedSimulation;
@@ -13,6 +14,7 @@ import br.com.iforce.praxis.shared.integration.IntegrationEmpresaContext;
 import br.com.iforce.praxis.shared.integration.IntegrationManagementService;
 import br.com.iforce.praxis.shared.integration.model.IntegrationProvider;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 
 import java.math.BigDecimal;
 import java.net.URI;
@@ -60,7 +62,7 @@ class RecruteiIntegrationActivityControllerTest {
     }
 
     @Test
-    void createCandidateRecordsAuthenticatedEndpointAfterSuccess() {
+    void createCandidateRecordsAuthenticatedEndpointAndPreservesVacancyScope() {
         RecruteiCreateCandidateRequest request = new RecruteiCreateCandidateRequest(
                 "1",
                 "candidate-1",
@@ -82,6 +84,12 @@ class RecruteiIntegrationActivityControllerTest {
         assertThat(response.getStatusCode().value()).isEqualTo(201);
         assertThat(response.getBody()).isNotNull();
         assertThat(response.getBody().testResultId()).isEqualTo("result-1");
+        assertThat(response.getBody().vacancyId()).isEqualTo("vacancy-1");
+
+        ArgumentCaptor<CreateCandidateRequest> requestCaptor = ArgumentCaptor.forClass(CreateCandidateRequest.class);
+        verify(candidateAttemptService).createOrReuse(requestCaptor.capture(), eq(CONTEXT));
+        assertThat(requestCaptor.getValue().idempotencyScopeId()).isEqualTo("vacancy-1");
+
         verify(integrationManagementService).recordActivity(
                 "empresa-1",
                 IntegrationProvider.RECRUTEI,

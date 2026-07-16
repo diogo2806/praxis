@@ -9,9 +9,7 @@ import com.fasterxml.jackson.core.JsonToken;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonDeserializer;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-
 import io.swagger.v3.oas.annotations.media.Schema;
-
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -84,6 +82,9 @@ public final class CreateCandidateRequest {
     @JsonIgnore
     private final String normalizedDocumentId;
 
+    @JsonIgnore
+    private final String idempotencyScopeId;
+
     @JsonCreator
     public CreateCandidateRequest(
             @JsonProperty("company_id")
@@ -115,6 +116,7 @@ public final class CreateCandidateRequest {
         this.previousResult = previousResult;
         this.normalizedCompanyId = companyId == null ? null : Long.toString(companyId);
         this.normalizedDocumentId = documentId == null ? null : Long.toString(documentId);
+        this.idempotencyScopeId = jobId == null ? null : Long.toString(jobId);
     }
 
     /**
@@ -133,6 +135,37 @@ public final class CreateCandidateRequest {
             CandidateType candidateType,
             PreviousResult previousResult
     ) {
+        this(
+                companyId,
+                documentId,
+                testId,
+                candidateName,
+                candidateEmail,
+                null,
+                resultWebhookUrl,
+                accommodationTimeMultiplier,
+                candidateType,
+                previousResult
+        );
+    }
+
+    /**
+     * Construtor interno com escopo externo de idempotência. O escopo identifica
+     * o contexto do processo seletivo no provedor, como a vaga da Recrutei, sem
+     * alterar o contrato JSON da Gupy.
+     */
+    public CreateCandidateRequest(
+            String companyId,
+            String documentId,
+            String testId,
+            String candidateName,
+            String candidateEmail,
+            String idempotencyScopeId,
+            URI resultWebhookUrl,
+            BigDecimal accommodationTimeMultiplier,
+            CandidateType candidateType,
+            PreviousResult previousResult
+    ) {
         this.companyId = null;
         this.documentId = null;
         this.testId = testId;
@@ -146,6 +179,7 @@ public final class CreateCandidateRequest {
         this.previousResult = previousResult;
         this.normalizedCompanyId = companyId;
         this.normalizedDocumentId = documentId;
+        this.idempotencyScopeId = normalizeScope(idempotencyScopeId);
     }
 
     @JsonIgnore
@@ -195,6 +229,11 @@ public final class CreateCandidateRequest {
     }
 
     @JsonIgnore
+    public String idempotencyScopeId() {
+        return idempotencyScopeId;
+    }
+
+    @JsonIgnore
     public boolean isRetestRequested() {
         return previousResult == PreviousResult.FAIL;
     }
@@ -205,6 +244,10 @@ public final class CreateCandidateRequest {
 
     public Long contractDocumentId() {
         return documentId;
+    }
+
+    private static String normalizeScope(String value) {
+        return value == null || value.isBlank() ? null : value.trim();
     }
 
     public enum CandidateType {

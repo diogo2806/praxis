@@ -25,8 +25,21 @@ final class CandidateAttemptIdempotencyKeyFactory {
     }
 
     static String initialSource(CreateCandidateRequest request, IntegrationEmpresaContext context) {
-        String source = context.empresaId() + "|" + context.companyId() + "|" + request.documentId()
-                + "|" + request.testId();
+        String source = baseSource(request, context);
+        String scopeId = request.idempotencyScopeId();
+        if (scopeId != null && !scopeId.isBlank()) {
+            source += "|" + scopeId.trim();
+        }
+        return source;
+    }
+
+    /**
+     * Composição que o serviço legado ainda calcula antes de persistir. O aspecto
+     * usa este valor como chave de interceptação e o resolve para a composição
+     * contratual completa, que também inclui o escopo textual de outros ATS.
+     */
+    static String serviceSource(CreateCandidateRequest request, IntegrationEmpresaContext context) {
+        String source = baseSource(request, context);
         if (request.jobId() != null) {
             source += "|" + request.jobId();
         }
@@ -35,5 +48,10 @@ final class CandidateAttemptIdempotencyKeyFactory {
 
     static boolean isGupyRetest(CreateCandidateRequest request, IntegrationEmpresaContext context) {
         return GUPY_PROVIDER.equalsIgnoreCase(context.provider()) && request.isRetestRequested();
+    }
+
+    private static String baseSource(CreateCandidateRequest request, IntegrationEmpresaContext context) {
+        return context.empresaId() + "|" + context.companyId() + "|" + request.documentId()
+                + "|" + request.testId();
     }
 }
