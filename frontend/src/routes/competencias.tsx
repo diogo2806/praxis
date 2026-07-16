@@ -31,6 +31,9 @@ export const Route = createFileRoute("/competencias")({
 
 type EditingOption = EmpresaConfigOption & { originalValue: string };
 
+const DEFAULT_PAGE_SIZE = 10;
+const PAGE_SIZE_OPTIONS = [10, 25, 50];
+
 function CompetenciasManagement() {
   const queryClient = useQueryClient();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -38,6 +41,8 @@ function CompetenciasManagement() {
   const [editingOption, setEditingOption] = useState<EditingOption | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [pendingDeleteOption, setPendingDeleteOption] = useState<EditingOption | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
 
   const empresaConfigQuery = useQuery({
     queryKey: ["empresa-config"],
@@ -62,6 +67,13 @@ function CompetenciasManagement() {
       .filter((competencia) => competencia.label.toLowerCase().includes(normalizedSearch))
       .sort((a, b) => a.label.localeCompare(b.label, "pt-BR", { sensitivity: "base" }));
   }, [competencias, searchTerm]);
+
+  const totalPages = Math.max(1, Math.ceil(visibleCompetencias.length / pageSize));
+  const safeCurrentPage = Math.min(currentPage, totalPages);
+  const pageStartIndex = (safeCurrentPage - 1) * pageSize;
+  const pageEndIndex = Math.min(pageStartIndex + pageSize, visibleCompetencias.length);
+  const paginatedCompetencias = visibleCompetencias.slice(pageStartIndex, pageEndIndex);
+  const pageRangeStart = visibleCompetencias.length === 0 ? 0 : pageStartIndex + 1;
 
   const handleOpenCreateDialog = () => {
     setEditingOption(null);
@@ -209,7 +221,10 @@ function CompetenciasManagement() {
                 id="filter-competencias"
                 placeholder="Digite parte do nome da competência"
                 value={searchTerm}
-                onChange={(event) => setSearchTerm(event.target.value)}
+                onChange={(event) => {
+                  setSearchTerm(event.target.value);
+                  setCurrentPage(1);
+                }}
                 disabled={saveCatalogMutation.isPending}
               />
             </div>
@@ -220,7 +235,7 @@ function CompetenciasManagement() {
 
           <div className="rounded-md border border-border bg-card">
             <div className="overflow-x-auto">
-              <table className="w-full text-sm">
+              <table className="w-full text-sm" data-no-pagination>
                 <thead className="border-b border-border bg-muted/45 text-xs uppercase text-muted-foreground">
                   <tr>
                     <th className="px-4 py-3 text-left font-medium">Competência</th>
@@ -236,7 +251,7 @@ function CompetenciasManagement() {
                       </td>
                     </tr>
                   ) : (
-                    visibleCompetencias.map((competencia) => {
+                    paginatedCompetencias.map((competencia) => {
                       const showIdentifier =
                         competencia.value.trim().toLowerCase() !==
                         competencia.label.trim().toLowerCase();
@@ -285,6 +300,60 @@ function CompetenciasManagement() {
                   )}
                 </tbody>
               </table>
+            </div>
+
+            <div
+              className="flex w-full flex-wrap items-center justify-between gap-3 border-t border-border px-4 py-3 text-sm text-muted-foreground"
+              role="navigation"
+              aria-label="Paginação da tabela de competências"
+            >
+              <span className="tabular-nums" aria-live="polite">
+                {visibleCompetencias.length === 0
+                  ? "0 registros"
+                  : `${pageRangeStart}–${pageEndIndex} de ${visibleCompetencias.length}`}
+              </span>
+              <div className="flex flex-wrap items-center gap-2">
+                <label htmlFor="competencias-page-size" className="flex items-center gap-2">
+                  <span className="sr-only sm:not-sr-only">Linhas por página</span>
+                  <select
+                    id="competencias-page-size"
+                    aria-label="Linhas por página"
+                    value={pageSize}
+                    onChange={(event) => {
+                      setPageSize(Number(event.target.value));
+                      setCurrentPage(1);
+                    }}
+                    className="h-9 rounded-md border border-border bg-background px-2 text-sm text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  >
+                    {PAGE_SIZE_OPTIONS.map((option) => (
+                      <option key={option} value={option}>
+                        {option}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <button
+                  type="button"
+                  onClick={() => setCurrentPage(Math.max(1, safeCurrentPage - 1))}
+                  disabled={safeCurrentPage <= 1}
+                  aria-label="Ir para a página anterior"
+                  className="inline-flex h-9 items-center justify-center rounded-md border border-border bg-background px-3 text-sm font-medium text-foreground transition-colors hover:bg-accent disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  Anterior
+                </button>
+                <span className="min-w-24 text-center tabular-nums text-foreground" aria-live="polite">
+                  Página {safeCurrentPage} de {totalPages}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setCurrentPage(Math.min(totalPages, safeCurrentPage + 1))}
+                  disabled={safeCurrentPage >= totalPages}
+                  aria-label="Ir para a próxima página"
+                  className="inline-flex h-9 items-center justify-center rounded-md border border-border bg-background px-3 text-sm font-medium text-foreground transition-colors hover:bg-accent disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  Próxima
+                </button>
+              </div>
             </div>
           </div>
         </div>
