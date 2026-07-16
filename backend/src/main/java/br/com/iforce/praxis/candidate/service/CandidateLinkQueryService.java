@@ -3,7 +3,6 @@ package br.com.iforce.praxis.candidate.service;
 import br.com.iforce.praxis.auth.service.JwtService;
 import br.com.iforce.praxis.candidate.dto.CandidateLinkPageResponse;
 import br.com.iforce.praxis.candidate.dto.CandidateLinkResponse;
-import br.com.iforce.praxis.candidate.service.BlindMasking;
 import br.com.iforce.praxis.config.PraxisProperties;
 import br.com.iforce.praxis.gupy.model.AttemptStatus;
 import br.com.iforce.praxis.gupy.model.PublishedSimulation;
@@ -146,7 +145,8 @@ public class CandidateLinkQueryService {
         String token = jwtService.generateCandidateAttemptToken(
                 entity.getEmpresaId(),
                 entity.getId(),
-                praxisProperties.attemptLinkTtlHours()
+                praxisProperties.attemptLinkTtlHours(),
+                entity.getCreatedAt()
         );
         return praxisProperties.candidatePageBaseUrl() + "/candidato/" + token;
     }
