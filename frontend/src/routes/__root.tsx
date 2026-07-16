@@ -144,35 +144,100 @@ function RootShell({ children }: { children: ReactNode }) {
           <HeadContent />
           <script
             dangerouslySetInnerHTML={{
-              __html: `window.__PRAXIS_CONFIG__=${JSON.stringify(runtimeConfig)};
-              (function() {
-                const lang = localStorage.getItem('praxis-language') || 'pt-BR';
-                document.documentElement.lang = lang;
-              })();`,
+              __html: `window.__PRAXIS_CONFIG__=${JSON.stringify(runtimeConfig)};`,
             }}
           />
         </head>
         <body>
           {children}
+          <VLibrasWidget />
           <Scripts />
-          <div
-            dangerouslySetInnerHTML={{
-              __html: `<div vw class="enabled"><div vw-access-button class="active"></div><div vw-plugin-wrapper><div class="vw-plugin-top-wrapper"></div></div></div>`,
-            }}
-          />
-          <script src="https://vlibras.gov.br/app/vlibras-plugin.js" defer />
-          <script
-            dangerouslySetInnerHTML={{
-              __html: `document.addEventListener('DOMContentLoaded', function() {
-                if (window.VLibras) new window.VLibras.Widget('https://vlibras.gov.br/app');
-                var brand = document.querySelector('a.brand');
-                if (brand) brand.removeAttribute('aria-label');
-              });`,
-            }}
-          />
         </body>
       </html>
     </LanguageProvider>
+  );
+}
+
+type VLibrasApi = {
+  Widget: new (baseUrl: string) => unknown;
+};
+
+type VLibrasWindow = Window & {
+  VLibras?: VLibrasApi;
+};
+
+function VLibrasWidget() {
+  useEffect(() => {
+    const widgetWindow = window as VLibrasWindow;
+    let disposed = false;
+    let script: HTMLScriptElement | null = null;
+
+    const applyPopupDimensions = () => {
+      document.querySelectorAll<HTMLImageElement>("img.vp-pop-up").forEach((image) => {
+        image.width = 150;
+        image.height = 40;
+      });
+    };
+
+    const observer = new MutationObserver(applyPopupDimensions);
+    observer.observe(document.body, { childList: true, subtree: true });
+
+    const initializeWidget = () => {
+      if (disposed || !widgetWindow.VLibras) return;
+      new widgetWindow.VLibras.Widget("https://vlibras.gov.br/app");
+      applyPopupDimensions();
+    };
+
+    const loadWidget = () => {
+      if (disposed) return;
+
+      const existingScript = document.querySelector<HTMLScriptElement>(
+        'script[data-praxis-vlibras="true"]',
+      );
+      if (existingScript) {
+        script = existingScript;
+        if (widgetWindow.VLibras) {
+          initializeWidget();
+        } else {
+          existingScript.addEventListener("load", initializeWidget, { once: true });
+        }
+        return;
+      }
+
+      script = document.createElement("script");
+      script.src = "https://vlibras.gov.br/app/vlibras-plugin.js";
+      script.async = true;
+      script.dataset.praxisVlibras = "true";
+      script.addEventListener("load", initializeWidget, { once: true });
+      document.body.appendChild(script);
+    };
+
+    const startAfterLoad = () => window.setTimeout(loadWidget, 0);
+    let timeoutId: number | undefined;
+
+    if (document.readyState === "complete") {
+      timeoutId = startAfterLoad();
+    } else {
+      window.addEventListener("load", startAfterLoad, { once: true });
+    }
+
+    document.querySelector<HTMLAnchorElement>("a.brand")?.removeAttribute("aria-label");
+
+    return () => {
+      disposed = true;
+      observer.disconnect();
+      if (timeoutId !== undefined) window.clearTimeout(timeoutId);
+      window.removeEventListener("load", startAfterLoad);
+      script?.removeEventListener("load", initializeWidget);
+    };
+  }, []);
+
+  return (
+    <div
+      dangerouslySetInnerHTML={{
+        __html: `<div vw class="enabled"><div vw-access-button class="active"></div><div vw-plugin-wrapper><div class="vw-plugin-top-wrapper"></div></div></div>`,
+      }}
+    />
   );
 }
 
