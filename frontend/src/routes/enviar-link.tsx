@@ -65,6 +65,9 @@ const candidateLinkSchema = z.object({
     .email("Informe um e-mail válido."),
 });
 
+const DEFAULT_PAGE_SIZE = 10;
+const PAGE_SIZE_OPTIONS = [10, 25, 50];
+
 function EnviarLinkPage() {
   const { t } = useLanguage();
   const queryClient = useQueryClient();
@@ -491,6 +494,15 @@ function CandidateLinksTable({
   const [copiedAttemptId, setCopiedAttemptId] = useState<string | null>(null);
   const [resendingAttemptId, setResendingAttemptId] = useState<string | null>(null);
   const [resendError, setResendError] = useState<string | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
+
+  const totalPages = Math.max(1, Math.ceil(links.length / pageSize));
+  const safeCurrentPage = Math.min(currentPage, totalPages);
+  const pageStartIndex = (safeCurrentPage - 1) * pageSize;
+  const pageEndIndex = Math.min(pageStartIndex + pageSize, links.length);
+  const paginatedLinks = links.slice(pageStartIndex, pageEndIndex);
+  const pageRangeStart = links.length === 0 ? 0 : pageStartIndex + 1;
 
   async function copyLink(link: CandidateLinkResponse) {
     await navigator.clipboard.writeText(getParticipantLink(link));
@@ -556,85 +568,138 @@ function CandidateLinksTable({
       ) : links.length === 0 ? (
         <div className="p-5 text-sm text-muted-foreground">{t.sendLinkPage.noLinksYet}</div>
       ) : (
-        <div className="overflow-x-auto">
-          <Table className="min-w-[820px]">
-            <TableHeader>
-              <TableRow>
-                <TableHead>{t.sendLinkPage.tableParticipant}</TableHead>
-                <TableHead>{t.sendLinkPage.tableEvaluationFlow}</TableHead>
-                <TableHead>{t.common.status}</TableHead>
-                <TableHead>{t.sendLinkPage.tableLink}</TableHead>
-                <TableHead className="w-[220px] text-right">
-                  {t.sendLinkPage.tableActions}
-                </TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {links.map((link) => {
-                const participantLink = getParticipantLink(link);
-                const copied = copiedAttemptId === link.attemptId;
-                const resending = resendingAttemptId === link.attemptId;
-                return (
-                  <TableRow key={link.attemptId}>
-                    <TableCell className="min-w-[220px]">
-                      <div className="font-medium text-foreground">{link.candidateName}</div>
-                      {link.candidateEmail && (
-                        <div className="mt-0.5 text-xs text-muted-foreground">
-                          {link.candidateEmail}
+        <div>
+          <div className="overflow-x-auto">
+            <Table className="min-w-[820px]">
+              <TableHeader>
+                <TableRow>
+                  <TableHead>{t.sendLinkPage.tableParticipant}</TableHead>
+                  <TableHead>{t.sendLinkPage.tableEvaluationFlow}</TableHead>
+                  <TableHead>{t.common.status}</TableHead>
+                  <TableHead>{t.sendLinkPage.tableLink}</TableHead>
+                  <TableHead className="w-[220px] text-right">
+                    {t.sendLinkPage.tableActions}
+                  </TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {paginatedLinks.map((link) => {
+                  const participantLink = getParticipantLink(link);
+                  const copied = copiedAttemptId === link.attemptId;
+                  const resending = resendingAttemptId === link.attemptId;
+                  return (
+                    <TableRow key={link.attemptId}>
+                      <TableCell className="min-w-[220px]">
+                        <div className="font-medium text-foreground">{link.candidateName}</div>
+                        {link.candidateEmail && (
+                          <div className="mt-0.5 text-xs text-muted-foreground">
+                            {link.candidateEmail}
+                          </div>
+                        )}
+                      </TableCell>
+                      <TableCell className="min-w-[220px]">
+                        <div className="font-medium text-foreground">{link.simulationName}</div>
+                        <div className="mt-0.5 max-w-[220px] truncate text-xs text-muted-foreground">
+                          ID: {link.simulationId}
                         </div>
-                      )}
-                    </TableCell>
-                    <TableCell className="min-w-[220px]">
-                      <div className="font-medium text-foreground">{link.simulationName}</div>
-                      <div className="mt-0.5 max-w-[220px] truncate text-xs text-muted-foreground">
-                        ID: {link.simulationId}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <span className="rounded-md border border-border bg-background px-2 py-1 text-xs text-muted-foreground">
-                        {candidateStatusLabel(link.status, t)}
-                      </span>
-                    </TableCell>
-                    <TableCell className="max-w-[320px]">
-                      <code className="block truncate rounded-md border border-border bg-background px-2 py-1.5 text-xs text-muted-foreground">
-                        {participantLink}
-                      </code>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex justify-end gap-2 whitespace-nowrap">
-                        <button
-                          type="button"
-                          onClick={() => void copyLink(link)}
-                          className={cn(
-                            "inline-flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-xs font-medium hover:bg-accent",
-                            copied
-                              ? "border-success bg-success/10 text-success"
-                              : "border-border bg-card",
-                          )}
-                        >
-                          {copied ? (
-                            <CheckCircle2 className="h-3.5 w-3.5" />
-                          ) : (
-                            <Copy className="h-3.5 w-3.5" />
-                          )}
-                          {copied ? t.sendLinkPage.copied : t.sendLinkPage.copy}
-                        </button>
-                        <button
-                          type="button"
-                          disabled={resending}
-                          onClick={() => void shareExistingLink(link)}
-                          className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-60"
-                        >
-                          <RefreshCw className={cn("h-3.5 w-3.5", resending && "animate-spin")} />
-                          {resending ? "Validando..." : "Reenviar link"}
-                        </button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                );
-              })}
-            </TableBody>
-          </Table>
+                      </TableCell>
+                      <TableCell>
+                        <span className="rounded-md border border-border bg-background px-2 py-1 text-xs text-muted-foreground">
+                          {candidateStatusLabel(link.status, t)}
+                        </span>
+                      </TableCell>
+                      <TableCell className="max-w-[320px]">
+                        <code className="block truncate rounded-md border border-border bg-background px-2 py-1.5 text-xs text-muted-foreground">
+                          {participantLink}
+                        </code>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex justify-end gap-2 whitespace-nowrap">
+                          <button
+                            type="button"
+                            onClick={() => void copyLink(link)}
+                            className={cn(
+                              "inline-flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-xs font-medium hover:bg-accent",
+                              copied
+                                ? "border-success bg-success/10 text-success"
+                                : "border-border bg-card",
+                            )}
+                          >
+                            {copied ? (
+                              <CheckCircle2 className="h-3.5 w-3.5" />
+                            ) : (
+                              <Copy className="h-3.5 w-3.5" />
+                            )}
+                            {copied ? t.sendLinkPage.copied : t.sendLinkPage.copy}
+                          </button>
+                          <button
+                            type="button"
+                            disabled={resending}
+                            onClick={() => void shareExistingLink(link)}
+                            className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-60"
+                          >
+                            <RefreshCw className={cn("h-3.5 w-3.5", resending && "animate-spin")} />
+                            {resending ? "Validando..." : "Reenviar link"}
+                          </button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          </div>
+          <div
+            className="flex w-full flex-wrap items-center justify-between gap-3 border-t border-border px-4 py-3 text-sm text-muted-foreground"
+            role="navigation"
+            aria-label="Paginação dos links enviados"
+          >
+            <span className="tabular-nums" aria-live="polite">
+              {pageRangeStart}–{pageEndIndex} de {links.length}
+            </span>
+            <div className="flex flex-wrap items-center gap-2">
+              <label htmlFor="candidate-links-page-size" className="flex items-center gap-2">
+                <span className="sr-only sm:not-sr-only">Linhas por página</span>
+                <select
+                  id="candidate-links-page-size"
+                  aria-label="Linhas por página"
+                  value={pageSize}
+                  onChange={(event) => {
+                    setPageSize(Number(event.target.value));
+                    setCurrentPage(1);
+                  }}
+                  className="h-9 rounded-md border border-border bg-background px-2 text-sm text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                >
+                  {PAGE_SIZE_OPTIONS.map((option) => (
+                    <option key={option} value={option}>
+                      {option}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <button
+                type="button"
+                onClick={() => setCurrentPage(Math.max(1, safeCurrentPage - 1))}
+                disabled={safeCurrentPage <= 1}
+                aria-label="Ir para a página anterior"
+                className="inline-flex h-9 items-center justify-center rounded-md border border-border bg-background px-3 text-sm font-medium text-foreground transition-colors hover:bg-accent disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                Anterior
+              </button>
+              <span className="min-w-24 text-center tabular-nums text-foreground" aria-live="polite">
+                Página {safeCurrentPage} de {totalPages}
+              </span>
+              <button
+                type="button"
+                onClick={() => setCurrentPage(Math.min(totalPages, safeCurrentPage + 1))}
+                disabled={safeCurrentPage >= totalPages}
+                aria-label="Ir para a próxima página"
+                className="inline-flex h-9 items-center justify-center rounded-md border border-border bg-background px-3 text-sm font-medium text-foreground transition-colors hover:bg-accent disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                Próxima
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </section>
