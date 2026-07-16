@@ -53,6 +53,8 @@ export const Route = createFileRoute("/talent-match")({
 });
 
 const MAX_SELECTED = 5;
+const DEFAULT_CANDIDATE_PAGE_SIZE = 10;
+const CANDIDATE_PAGE_SIZE_OPTIONS = [10, 25, 50];
 const palette = ["#0f766e", "#b45309", "#2563eb", "#be123c", "#6d28d9"];
 
 const BLIND_MODE_STORAGE_KEY = "praxis.talent-match.blindMode";
@@ -217,6 +219,7 @@ function TalentMatchPage() {
                 </span>
               </label>
               <CandidateSelector
+                key={`${search.simulationId}-${search.versionNumber}-${blindMode}`}
                 candidates={completedCandidates}
                 loading={candidateLinksQuery.isLoading}
                 selectedAttemptIds={selectedAttemptIds}
@@ -281,7 +284,55 @@ function CandidateSelector({
   selectedAttemptIds: string[];
   onToggle: (attemptId: string) => void;
 }) {
-  const { t } = useLanguage();
+  const { language, t } = useLanguage();
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(DEFAULT_CANDIDATE_PAGE_SIZE);
+  const paginationCopy =
+    language === "en"
+      ? {
+          navigation: "Participant pagination",
+          rowsPerPage: "Participants per page",
+          previous: "Previous",
+          previousAria: "Go to the previous participant page",
+          next: "Next",
+          nextAria: "Go to the next participant page",
+          page: "Page",
+          of: "of",
+        }
+      : language === "es-MX"
+        ? {
+            navigation: "Paginación de participantes",
+            rowsPerPage: "Participantes por página",
+            previous: "Anterior",
+            previousAria: "Ir a la página anterior de participantes",
+            next: "Siguiente",
+            nextAria: "Ir a la página siguiente de participantes",
+            page: "Página",
+            of: "de",
+          }
+        : {
+            navigation: "Paginação de participantes",
+            rowsPerPage: "Participantes por página",
+            previous: "Anterior",
+            previousAria: "Ir para a página anterior de participantes",
+            next: "Próxima",
+            nextAria: "Ir para a próxima página de participantes",
+            page: "Página",
+            of: "de",
+          };
+
+  const totalPages = Math.max(1, Math.ceil(candidates.length / pageSize));
+  const safeCurrentPage = Math.min(currentPage, totalPages);
+  const pageStartIndex = (safeCurrentPage - 1) * pageSize;
+  const pageEndIndex = Math.min(pageStartIndex + pageSize, candidates.length);
+  const pageRangeStart = candidates.length === 0 ? 0 : pageStartIndex + 1;
+  const paginatedCandidates = candidates.slice(pageStartIndex, pageEndIndex);
+
+  useEffect(() => {
+    if (currentPage !== safeCurrentPage) {
+      setCurrentPage(safeCurrentPage);
+    }
+  }, [currentPage, safeCurrentPage]);
 
   if (loading) {
     return (
@@ -302,40 +353,96 @@ function CandidateSelector({
   const limitReached = selectedAttemptIds.length >= MAX_SELECTED;
 
   return (
-    <div className="space-y-2">
-      {candidates.map((candidate) => {
-        const selected = selectedAttemptIds.includes(candidate.attemptId);
-        const disabled = limitReached && !selected;
-        return (
-          <button
-            key={candidate.attemptId}
-            type="button"
-            disabled={disabled}
-            onClick={() => onToggle(candidate.attemptId)}
-            className={cn(
-              "flex w-full items-center gap-3 rounded-md border border-border bg-background p-3 text-left text-sm hover:bg-accent disabled:cursor-not-allowed disabled:opacity-50",
-              selected && "border-primary/50 bg-primary/10",
-            )}
-          >
-            <span
+    <div className="space-y-3">
+      <div className="space-y-2">
+        {paginatedCandidates.map((candidate) => {
+          const selected = selectedAttemptIds.includes(candidate.attemptId);
+          const disabled = limitReached && !selected;
+          return (
+            <button
+              key={candidate.attemptId}
+              type="button"
+              disabled={disabled}
+              onClick={() => onToggle(candidate.attemptId)}
               className={cn(
-                "flex h-5 w-5 shrink-0 items-center justify-center rounded border border-border",
-                selected && "border-primary bg-primary text-primary-foreground",
+                "flex w-full items-center gap-3 rounded-md border border-border bg-background p-3 text-left text-sm hover:bg-accent disabled:cursor-not-allowed disabled:opacity-50",
+                selected && "border-primary/50 bg-primary/10",
               )}
             >
-              {selected && <Check className="h-3.5 w-3.5" />}
+              <span
+                className={cn(
+                  "flex h-5 w-5 shrink-0 items-center justify-center rounded border border-border",
+                  selected && "border-primary bg-primary text-primary-foreground",
+                )}
+              >
+                {selected && <Check className="h-3.5 w-3.5" />}
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="block truncate font-medium">{candidate.candidateName}</span>
+                {candidate.candidateEmail && (
+                  <span className="mt-0.5 block truncate text-xs text-muted-foreground">
+                    {candidate.candidateEmail}
+                  </span>
+                )}
+              </span>
+            </button>
+          );
+        })}
+      </div>
+
+      {candidates.length > DEFAULT_CANDIDATE_PAGE_SIZE && (
+        <div
+          className="flex flex-wrap items-center justify-between gap-3 border-t border-border pt-3 text-xs text-muted-foreground"
+          role="navigation"
+          aria-label={paginationCopy.navigation}
+        >
+          <span className="tabular-nums" aria-live="polite">
+            {pageRangeStart}–{pageEndIndex} {paginationCopy.of} {candidates.length}
+          </span>
+          <div className="flex flex-wrap items-center gap-2">
+            <label htmlFor="talent-match-candidate-page-size" className="flex items-center gap-2">
+              <span className="sr-only">{paginationCopy.rowsPerPage}</span>
+              <select
+                id="talent-match-candidate-page-size"
+                aria-label={paginationCopy.rowsPerPage}
+                value={pageSize}
+                onChange={(event) => {
+                  setPageSize(Number(event.target.value));
+                  setCurrentPage(1);
+                }}
+                className="h-8 rounded-md border border-border bg-background px-2 text-xs text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              >
+                {CANDIDATE_PAGE_SIZE_OPTIONS.map((option) => (
+                  <option key={option} value={option}>
+                    {option}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <button
+              type="button"
+              onClick={() => setCurrentPage(Math.max(1, safeCurrentPage - 1))}
+              disabled={safeCurrentPage <= 1}
+              aria-label={paginationCopy.previousAria}
+              className="inline-flex h-8 items-center justify-center rounded-md border border-border bg-background px-2.5 font-medium text-foreground hover:bg-accent disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {paginationCopy.previous}
+            </button>
+            <span className="min-w-20 text-center tabular-nums text-foreground" aria-live="polite">
+              {paginationCopy.page} {safeCurrentPage} {paginationCopy.of} {totalPages}
             </span>
-            <span className="min-w-0 flex-1">
-              <span className="block truncate font-medium">{candidate.candidateName}</span>
-              {candidate.candidateEmail && (
-                <span className="mt-0.5 block truncate text-xs text-muted-foreground">
-                  {candidate.candidateEmail}
-                </span>
-              )}
-            </span>
-          </button>
-        );
-      })}
+            <button
+              type="button"
+              onClick={() => setCurrentPage(Math.min(totalPages, safeCurrentPage + 1))}
+              disabled={safeCurrentPage >= totalPages}
+              aria-label={paginationCopy.nextAria}
+              className="inline-flex h-8 items-center justify-center rounded-md border border-border bg-background px-2.5 font-medium text-foreground hover:bg-accent disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {paginationCopy.next}
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
