@@ -1,46 +1,26 @@
 package br.com.iforce.praxis.auth.persistence.entity;
 
 import br.com.iforce.praxis.admin.model.UserStatus;
-
 import jakarta.persistence.CollectionTable;
-
 import jakarta.persistence.Column;
-
 import jakarta.persistence.ElementCollection;
-
 import jakarta.persistence.Entity;
-
 import jakarta.persistence.EnumType;
-
 import jakarta.persistence.Enumerated;
-
 import jakarta.persistence.FetchType;
-
 import jakarta.persistence.GeneratedValue;
-
 import jakarta.persistence.GenerationType;
-
 import jakarta.persistence.Id;
-
 import jakarta.persistence.JoinColumn;
-
 import jakarta.persistence.Table;
-
 import jakarta.persistence.UniqueConstraint;
-
 import lombok.Getter;
-
 import lombok.NoArgsConstructor;
-
 import lombok.Setter;
 
-
 import java.time.Instant;
-
 import java.util.LinkedHashSet;
-
 import java.util.Set;
-
 
 @Getter
 @Setter
@@ -94,9 +74,13 @@ public class UserEntity {
     @Column(name = "invite_expires_at")
     private Instant inviteExpiresAt;
 
-    /** Hash BCrypt do token de recuperação de senha. O token puro nunca é persistido. */
+    /** Hash BCrypt usado para comprovar o token de recuperação sem persistir o valor puro. */
     @Column(name = "password_reset_token_hash", length = 120)
     private String passwordResetTokenHash;
+
+    /** SHA-256 usado somente para localizar diretamente o registro associado ao token aleatório. */
+    @Column(name = "password_reset_token_lookup_hash", length = 64)
+    private String passwordResetTokenLookupHash;
 
     @Column(name = "password_reset_requested_at")
     private Instant passwordResetRequestedAt;
