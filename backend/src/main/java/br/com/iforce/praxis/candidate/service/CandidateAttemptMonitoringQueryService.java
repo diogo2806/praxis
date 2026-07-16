@@ -162,11 +162,11 @@ public class CandidateAttemptMonitoringQueryService {
                 nodeId = node.timeoutNextNodeId();
                 continue;
             }
-            nodeId = node.options().stream()
+            ScenarioOption selectedOption = node.options().stream()
                     .filter(option -> option.id().equals(answer.optionId()))
-                    .map(ScenarioOption::nextNodeId)
                     .findFirst()
                     .orElse(null);
+            nodeId = selectedOption == null ? null : selectedOption.nextNodeId();
         }
         return null;
     }
