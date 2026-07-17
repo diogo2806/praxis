@@ -11,6 +11,7 @@ import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.Id;
 import jakarta.persistence.OneToMany;
+import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -121,4 +122,14 @@ public class CandidateAttemptEntity implements EmpresaAwareEntity {
 
     @OneToMany(mappedBy = "candidateAttempt", cascade = CascadeType.ALL, orphanRemoval = true)
     private Set<ResultItemEntity> resultItems = new LinkedHashSet<>();
+
+    @PrePersist
+    void initializeCandidateTokenIssuedAt() {
+        if (candidateTokenIssuedAt == null) {
+            if (createdAt == null) {
+                throw new IllegalStateException("A data de criação da tentativa é obrigatória.");
+            }
+            candidateTokenIssuedAt = createdAt;
+        }
+    }
 }
