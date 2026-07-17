@@ -1,5 +1,6 @@
 package br.com.iforce.praxis.auth.service;
 
+import br.com.iforce.praxis.auth.service.CandidateTokenWindowService.CandidateTokenWindow;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
@@ -7,7 +8,6 @@ import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
@@ -67,48 +67,71 @@ public class JwtService {
                 .compact();
     }
 
-    /**
-     * Resolve a janela canônica persistida da tentativa antes de assinar o token.
-     * Em transações somente leitura, a eventual renovação ocorre em uma transação própria.
-     */
+    /** Gera a credencial usando exatamente a janela persistida da tentativa. */
     public String generateCandidateAttemptToken(String empresaId, String attemptId, int ttlHours) {
-        CandidateTokenWindowService tokenWindowService = requiredCandidateTokenWindowService();
-        boolean readOnlyTransaction = TransactionSynchronizationManager.isActualTransactionActive()
-                && TransactionSynchronizationManager.isCurrentTransactionReadOnly();
-        Instant issuedAt = readOnlyTransaction
-                ? tokenWindowService.currentIssuedAtInNewTransaction(empresaId, attemptId, ttlHours)
-                : tokenWindowService.currentIssuedAt(empresaId, attemptId, ttlHours);
-        return generateCandidateAttemptToken(empresaId, attemptId, ttlHours, issuedAt);
+        CandidateTokenWindow window = requiredCandidateTokenWindowService()
+                .currentWindow(empresaId, attemptId, ttlHours);
+        return generateCandidateAttemptToken(
+                empresaId,
+                attemptId,
+                window.issuedAt(),
+                window.expiresAt()
+        );
     }
 
-    /**
-     * Assina o token usando exclusivamente o instante canônico fornecido pelo chamador.
-     */
+    /** Mantém compatibilidade com consumidores que usam uma duração fixa. */
     public String generateCandidateAttemptToken(
             String empresaId,
             String attemptId,
             int ttlHours,
             Instant issuedAt
     ) {
+        if (ttlHours <= 0) {
+            throw new IllegalArgumentException("A validade do token deve ser maior que zero.");
+        }
         if (issuedAt == null) {
             throw new IllegalArgumentException("O instante canônico do token da tentativa é obrigatório.");
+        }
+        return generateCandidateAttemptToken(
+                empresaId,
+                attemptId,
+                issuedAt,
+                issuedAt.plusSeconds(ttlHours * 60L * 60L)
+        );
+    }
+
+    public String generateCandidateAttemptToken(
+            String empresaId,
+            String attemptId,
+            Instant issuedAt,
+            Instant expiresAt
+    ) {
+        if (issuedAt == null || expiresAt == null) {
+            throw new IllegalArgumentException("A emissão e a expiração do token da tentativa são obrigatórias.");
+        }
+        if (!expiresAt.isAfter(issuedAt)) {
+            throw new IllegalArgumentException("A expiração do token deve ser posterior à emissão.");
         }
         return generateCandidateScopedToken(
                 empresaId,
                 attemptId,
                 CANDIDATE_ATTEMPT_TOKEN_TYPE,
-                ttlHours,
-                issuedAt
+                issuedAt,
+                expiresAt
         );
     }
 
     public String generateCandidateResultToken(String empresaId, String attemptId, int ttlHours) {
+        if (ttlHours <= 0) {
+            throw new IllegalArgumentException("A validade do token deve ser maior que zero.");
+        }
+        Instant now = Instant.now();
         return generateCandidateScopedToken(
                 empresaId,
                 attemptId,
                 CANDIDATE_RESULT_TOKEN_TYPE,
-                ttlHours,
-                Instant.now()
+                now,
+                now.plusSeconds(ttlHours * 60L * 60L)
         );
     }
 
@@ -137,19 +160,16 @@ public class JwtService {
             String empresaId,
             String attemptId,
             String type,
-            int ttlHours,
-            Instant issuedAt
+            Instant issuedAt,
+            Instant expiresAt
     ) {
-        if (ttlHours <= 0) {
-            throw new IllegalArgumentException("A validade do token deve ser maior que zero.");
-        }
         return Jwts.builder()
                 .subject(attemptId)
                 .claim("typ", type)
                 .claim("empresa_id", empresaId)
                 .claim("attempt_id", attemptId)
                 .issuedAt(Date.from(issuedAt))
-                .expiration(Date.from(issuedAt.plusSeconds(ttlHours * 60L * 60L)))
+                .expiration(Date.from(expiresAt))
                 .signWith(secretKey)
                 .compact();
     }

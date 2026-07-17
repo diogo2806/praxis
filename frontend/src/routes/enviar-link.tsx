@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { z } from "zod";
 import {
+  CalendarPlus,
   CheckCircle2,
   Copy,
   Link2,
@@ -23,6 +24,7 @@ import {
 } from "@/components/ui/table";
 import {
   createCandidateLink,
+  extendCandidateLink,
   listCandidateLinks,
   resendCandidateLink,
   type CandidateLinkOperation,
@@ -67,6 +69,7 @@ const candidateLinkSchema = z.object({
 
 const DEFAULT_PAGE_SIZE = 10;
 const PAGE_SIZE_OPTIONS = [10, 25, 50];
+const EXTENSION_DAY_OPTIONS = [1, 3, 7, 15, 30, 60, 90];
 
 function EnviarLinkPage() {
   const { t } = useLanguage();
@@ -479,6 +482,21 @@ function candidateStatusLabel(
   return labels[status];
 }
 
+function linkStatusLabel(link: CandidateLinkResponse) {
+  if (link.linkStatus === "expired") return "Expirado";
+  if (link.linkStatus === "expiringSoon") {
+    return `Expira em ${link.remainingDays} ${link.remainingDays === 1 ? "dia" : "dias"}`;
+  }
+  return `${link.remainingDays} ${link.remainingDays === 1 ? "dia restante" : "dias restantes"}`;
+}
+
+function formatDateTime(value: string) {
+  return new Intl.DateTimeFormat("pt-BR", {
+    dateStyle: "short",
+    timeStyle: "short",
+  }).format(new Date(value));
+}
+
 function CandidateLinksTable({
   links,
   loading,
@@ -491,9 +509,13 @@ function CandidateLinksTable({
   errorMessage?: string;
 }) {
   const { t } = useLanguage();
+  const queryClient = useQueryClient();
   const [copiedAttemptId, setCopiedAttemptId] = useState<string | null>(null);
   const [resendingAttemptId, setResendingAttemptId] = useState<string | null>(null);
-  const [resendError, setResendError] = useState<string | null>(null);
+  const [extendingAttemptId, setExtendingAttemptId] = useState<string | null>(null);
+  const [extensionDays, setExtensionDays] = useState<Record<string, number>>({});
+  const [actionError, setActionError] = useState<string | null>(null);
+  const [actionMessage, setActionMessage] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
 
@@ -505,14 +527,17 @@ function CandidateLinksTable({
   const pageRangeStart = links.length === 0 ? 0 : pageStartIndex + 1;
 
   async function copyLink(link: CandidateLinkResponse) {
+    if (link.linkStatus === "expired") return;
     await navigator.clipboard.writeText(getParticipantLink(link));
     setCopiedAttemptId(link.attemptId);
     window.setTimeout(() => setCopiedAttemptId(null), 2000);
   }
 
   async function shareExistingLink(link: CandidateLinkResponse) {
+    if (link.linkStatus === "expired") return;
     setResendingAttemptId(link.attemptId);
-    setResendError(null);
+    setActionError(null);
+    setActionMessage(null);
     try {
       const response = await resendCandidateLink(link.attemptId);
       const url = toParticipantPageUrl(response.candidateUrl);
@@ -531,11 +556,35 @@ function CandidateLinksTable({
       setCopiedAttemptId(link.attemptId);
       window.setTimeout(() => setCopiedAttemptId(null), 2000);
     } catch (shareError) {
-      setResendError(
+      setActionError(
         shareError instanceof Error ? shareError.message : "Não foi possível reenviar o link.",
       );
     } finally {
       setResendingAttemptId(null);
+    }
+  }
+
+  async function addValidityDays(link: CandidateLinkResponse) {
+    const additionalDays = extensionDays[link.attemptId] ?? 7;
+    setExtendingAttemptId(link.attemptId);
+    setActionError(null);
+    setActionMessage(null);
+    try {
+      await extendCandidateLink(link.attemptId, additionalDays);
+      await queryClient.invalidateQueries({ queryKey: ["candidate-links"] });
+      setActionMessage(
+        link.linkStatus === "expired"
+          ? `Link de ${link.candidateName} reativado por mais ${additionalDays} dias.`
+          : `Foram adicionados ${additionalDays} dias ao link de ${link.candidateName}.`,
+      );
+    } catch (extensionError) {
+      setActionError(
+        extensionError instanceof Error
+          ? extensionError.message
+          : "Não foi possível alterar a validade do link.",
+      );
+    } finally {
+      setExtendingAttemptId(null);
     }
   }
 
@@ -544,14 +593,21 @@ function CandidateLinksTable({
       <div className="border-b border-border p-5">
         <h2 className="text-xl font-semibold">{t.sendLinkPage.linksHeading}</h2>
         <p className="mt-1 text-sm text-muted-foreground">
-          Reenviar devolve exatamente a tentativa existente. Nenhuma nova aplicação é criada e
-          nenhum crédito adicional é associado a essa ação.
+          A validade é independente do andamento da avaliação. Links expirados não podem ser
+          copiados ou reenviados até que a empresa acrescente novos dias.
         </p>
       </div>
-      {resendError && (
+      {actionError && (
         <div className="p-5 pb-0">
-          <StateBanner tone="danger" title="Falha ao reenviar link">
-            {resendError}
+          <StateBanner tone="danger" title="Falha ao atualizar o link">
+            {actionError}
+          </StateBanner>
+        </div>
+      )}
+      {actionMessage && (
+        <div className="p-5 pb-0">
+          <StateBanner tone="ok" title="Validade atualizada">
+            {actionMessage}
           </StateBanner>
         </div>
       )}
@@ -570,14 +626,17 @@ function CandidateLinksTable({
       ) : (
         <div>
           <div className="overflow-x-auto">
-            <Table className="min-w-[820px]">
+            <Table className="min-w-[1500px]">
               <TableHeader>
                 <TableRow>
                   <TableHead>{t.sendLinkPage.tableParticipant}</TableHead>
                   <TableHead>{t.sendLinkPage.tableEvaluationFlow}</TableHead>
-                  <TableHead>{t.common.status}</TableHead>
+                  <TableHead>Andamento</TableHead>
+                  <TableHead>Situação do link</TableHead>
+                  <TableHead>Criado em</TableHead>
+                  <TableHead>Válido até</TableHead>
                   <TableHead>{t.sendLinkPage.tableLink}</TableHead>
-                  <TableHead className="w-[220px] text-right">
+                  <TableHead className="w-[390px] text-right">
                     {t.sendLinkPage.tableActions}
                   </TableHead>
                 </TableRow>
@@ -587,6 +646,8 @@ function CandidateLinksTable({
                   const participantLink = getParticipantLink(link);
                   const copied = copiedAttemptId === link.attemptId;
                   const resending = resendingAttemptId === link.attemptId;
+                  const extending = extendingAttemptId === link.attemptId;
+                  const expired = link.linkStatus === "expired";
                   return (
                     <TableRow key={link.attemptId}>
                       <TableCell className="min-w-[220px]">
@@ -608,18 +669,51 @@ function CandidateLinksTable({
                           {candidateStatusLabel(link.status, t)}
                         </span>
                       </TableCell>
-                      <TableCell className="max-w-[320px]">
-                        <code className="block truncate rounded-md border border-border bg-background px-2 py-1.5 text-xs text-muted-foreground">
+                      <TableCell>
+                        <span
+                          className={cn(
+                            "inline-flex rounded-md border px-2 py-1 text-xs font-medium",
+                            link.linkStatus === "expired" &&
+                              "border-danger/40 bg-danger/10 text-danger",
+                            link.linkStatus === "expiringSoon" &&
+                              "border-warning/40 bg-warning/10 text-warning-foreground",
+                            link.linkStatus === "active" &&
+                              "border-success/40 bg-success/10 text-success",
+                          )}
+                        >
+                          {linkStatusLabel(link)}
+                        </span>
+                      </TableCell>
+                      <TableCell className="whitespace-nowrap text-xs text-muted-foreground">
+                        {formatDateTime(link.createdAt)}
+                      </TableCell>
+                      <TableCell className="whitespace-nowrap text-xs">
+                        <div className={cn(expired ? "font-medium text-danger" : "text-foreground")}>
+                          {formatDateTime(link.linkExpiresAt)}
+                        </div>
+                        <div className="mt-0.5 text-[11px] text-muted-foreground">
+                          Emitido em {formatDateTime(link.linkIssuedAt)}
+                        </div>
+                      </TableCell>
+                      <TableCell className="max-w-[260px]">
+                        <code
+                          className={cn(
+                            "block truncate rounded-md border border-border bg-background px-2 py-1.5 text-xs",
+                            expired ? "text-danger line-through" : "text-muted-foreground",
+                          )}
+                        >
                           {participantLink}
                         </code>
                       </TableCell>
                       <TableCell className="text-right">
-                        <div className="flex justify-end gap-2 whitespace-nowrap">
+                        <div className="flex flex-wrap justify-end gap-2">
                           <button
                             type="button"
+                            disabled={expired}
+                            title={expired ? "Reative o link antes de copiar." : undefined}
                             onClick={() => void copyLink(link)}
                             className={cn(
-                              "inline-flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-xs font-medium hover:bg-accent",
+                              "inline-flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-xs font-medium hover:bg-accent disabled:cursor-not-allowed disabled:opacity-50",
                               copied
                                 ? "border-success bg-success/10 text-success"
                                 : "border-border bg-card",
@@ -634,13 +728,45 @@ function CandidateLinksTable({
                           </button>
                           <button
                             type="button"
-                            disabled={resending}
+                            disabled={expired || resending}
+                            title={expired ? "Reative o link antes de reenviar." : undefined}
                             onClick={() => void shareExistingLink(link)}
-                            className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-60"
+                            className="inline-flex items-center gap-1.5 rounded-md border border-border bg-card px-3 py-1.5 text-xs font-medium hover:bg-accent disabled:cursor-not-allowed disabled:opacity-50"
                           >
                             <RefreshCw className={cn("h-3.5 w-3.5", resending && "animate-spin")} />
-                            {resending ? "Validando..." : "Reenviar link"}
+                            {resending ? "Enviando..." : "Reenviar"}
                           </button>
+                          <div className="flex items-center rounded-md border border-border bg-background">
+                            <label className="sr-only" htmlFor={`extension-days-${link.attemptId}`}>
+                              Dias adicionais
+                            </label>
+                            <select
+                              id={`extension-days-${link.attemptId}`}
+                              value={extensionDays[link.attemptId] ?? 7}
+                              onChange={(event) =>
+                                setExtensionDays((current) => ({
+                                  ...current,
+                                  [link.attemptId]: Number(event.target.value),
+                                }))
+                              }
+                              className="h-8 border-0 bg-transparent px-2 text-xs outline-none"
+                            >
+                              {EXTENSION_DAY_OPTIONS.map((days) => (
+                                <option key={days} value={days}>
+                                  +{days} {days === 1 ? "dia" : "dias"}
+                                </option>
+                              ))}
+                            </select>
+                            <button
+                              type="button"
+                              disabled={extending}
+                              onClick={() => void addValidityDays(link)}
+                              className="inline-flex h-8 items-center gap-1 border-l border-border px-2 text-xs font-medium text-primary hover:bg-accent disabled:cursor-not-allowed disabled:opacity-50"
+                            >
+                              <CalendarPlus className={cn("h-3.5 w-3.5", extending && "animate-pulse")} />
+                              {extending ? "Atualizando..." : expired ? "Reativar" : "Adicionar"}
+                            </button>
+                          </div>
                         </div>
                       </TableCell>
                     </TableRow>

@@ -9,18 +9,17 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.Clock;
-import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 
 /**
- * Mantém o instante canônico da janela de validade do token público de uma tentativa.
- *
- * <p>A tentativa é bloqueada durante a renovação para que chamadas concorrentes reutilizem
- * exatamente o mesmo instante persistido e, consequentemente, produzam o mesmo JWT.</p>
+ * Mantém a janela canônica de validade do token público de uma tentativa.
+ * Leituras nunca renovam um link expirado; a extensão depende de comando explícito da empresa.
  */
 @Service
 public class CandidateTokenWindowService {
+
+    private static final int MAX_EXTENSION_DAYS = 365;
 
     private final CandidateAttemptRepository candidateAttemptRepository;
     private final Clock clock;
@@ -34,46 +33,76 @@ public class CandidateTokenWindowService {
         this.clock = clock;
     }
 
+    @Transactional(readOnly = true)
+    public CandidateTokenWindow currentWindow(String empresaId, String attemptId, int ttlHours) {
+        validate(empresaId, attemptId, ttlHours);
+        CandidateAttemptEntity entity = candidateAttemptRepository
+                .findByEmpresaIdAndId(empresaId, attemptId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Tentativa não encontrada."));
+        return window(entity, ttlHours);
+    }
+
+    @Transactional(propagation = Propagation.REQUIRES_NEW, readOnly = true)
+    public CandidateTokenWindow currentWindowInNewTransaction(String empresaId, String attemptId, int ttlHours) {
+        return currentWindow(empresaId, attemptId, ttlHours);
+    }
+
+    public Instant currentIssuedAt(String empresaId, String attemptId, int ttlHours) {
+        return currentWindow(empresaId, attemptId, ttlHours).issuedAt();
+    }
+
+    public Instant currentIssuedAtInNewTransaction(String empresaId, String attemptId, int ttlHours) {
+        return currentWindowInNewTransaction(empresaId, attemptId, ttlHours).issuedAt();
+    }
+
     /**
-     * Resolve a janela dentro da transação atual ou abre uma transação quando não houver uma ativa.
+     * Soma dias ao vencimento atual. Quando já expirado, inicia uma nova janela a partir de agora.
      */
     @Transactional
-    public Instant currentIssuedAt(String empresaId, String attemptId, int ttlHours) {
-        return resolveCurrentIssuedAt(empresaId, attemptId, ttlHours);
-    }
-
-    /**
-     * Resolve a janela em uma transação própria, inclusive quando o chamador estiver em leitura.
-     */
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
-    public Instant currentIssuedAtInNewTransaction(String empresaId, String attemptId, int ttlHours) {
-        return resolveCurrentIssuedAt(empresaId, attemptId, ttlHours);
-    }
-
-    private Instant resolveCurrentIssuedAt(String empresaId, String attemptId, int ttlHours) {
+    public CandidateTokenWindow extendValidity(
+            String empresaId,
+            String attemptId,
+            int ttlHours,
+            int additionalDays
+    ) {
         validate(empresaId, attemptId, ttlHours);
+        if (additionalDays < 1 || additionalDays > MAX_EXTENSION_DAYS) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Informe uma quantidade entre 1 e 365 dias."
+            );
+        }
 
         CandidateAttemptEntity entity = candidateAttemptRepository
                 .findOneByEmpresaIdAndId(empresaId, attemptId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Tentativa não encontrada."));
-
-        Instant issuedAt = entity.getCandidateTokenIssuedAt();
-        if (issuedAt == null) {
-            throw new IllegalStateException("A tentativa não possui uma janela canônica de token persistida.");
-        }
-
+        CandidateTokenWindow current = window(entity, ttlHours);
         Instant now = Instant.now(clock).truncatedTo(ChronoUnit.SECONDS);
-        Instant expiration = issuedAt.plus(Duration.ofHours(ttlHours));
-        if (expiration.isAfter(now)) {
-            return issuedAt;
-        }
+        Instant extensionBase = current.expiresAt().isAfter(now) ? current.expiresAt() : now;
 
         entity.setCandidateTokenIssuedAt(now);
+        entity.setCandidateTokenExpiresAt(extensionBase.plus(additionalDays, ChronoUnit.DAYS));
         CandidateAttemptEntity saved = candidateAttemptRepository.saveAndFlush(entity);
-        if (saved.getCandidateTokenIssuedAt() == null) {
-            throw new IllegalStateException("Não foi possível persistir a janela canônica do token da tentativa.");
+        return window(saved, ttlHours);
+    }
+
+    public boolean isExpired(CandidateTokenWindow window) {
+        return !window.expiresAt().isAfter(Instant.now(clock));
+    }
+
+    private CandidateTokenWindow window(CandidateAttemptEntity entity, int ttlHours) {
+        Instant issuedAt = entity.getCandidateTokenIssuedAt();
+        if (issuedAt == null) {
+            throw new IllegalStateException("A tentativa não possui emissão canônica do token persistida.");
         }
-        return saved.getCandidateTokenIssuedAt();
+        Instant expiresAt = entity.getCandidateTokenExpiresAt();
+        if (expiresAt == null) {
+            expiresAt = issuedAt.plusSeconds(ttlHours * 60L * 60L);
+        }
+        if (!expiresAt.isAfter(issuedAt)) {
+            throw new IllegalStateException("A expiração do link deve ser posterior à emissão.");
+        }
+        return new CandidateTokenWindow(issuedAt, expiresAt);
     }
 
     private void validate(String empresaId, String attemptId, int ttlHours) {
@@ -84,7 +113,10 @@ public class CandidateTokenWindowService {
             throw new IllegalArgumentException("O identificador da tentativa é obrigatório.");
         }
         if (ttlHours <= 0) {
-            throw new IllegalArgumentException("A validade do token deve ser maior que zero.");
+            throw new IllegalArgumentException("A validade padrão do token deve ser maior que zero.");
         }
+    }
+
+    public record CandidateTokenWindow(Instant issuedAt, Instant expiresAt) {
     }
 }

@@ -6,6 +6,7 @@ import br.com.iforce.praxis.candidate.dto.CandidateLinkResponse;
 import br.com.iforce.praxis.candidate.dto.CreateCandidateLinkRequest;
 import br.com.iforce.praxis.candidate.dto.CreateCandidateLinkResponse;
 import br.com.iforce.praxis.candidate.dto.EvidenceReport;
+import br.com.iforce.praxis.candidate.dto.ExtendCandidateLinkRequest;
 import br.com.iforce.praxis.candidate.dto.RegisterDispositionRequest;
 import br.com.iforce.praxis.candidate.service.CandidateAttemptMonitoringQueryService;
 import br.com.iforce.praxis.candidate.service.CandidateDispositionService;
@@ -28,9 +29,6 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
-/**
- * Porta de entrada (API) para a empresa gerar e acompanhar links de avaliação.
- */
 @RestController
 @RequestMapping("/api/v1/candidate-links")
 @Tag(name = "Company Candidate Links", description = "Geração de links de simulação para envio direto ao candidato pela empresa.")
@@ -60,34 +58,21 @@ public class CompanyCandidateLinkController {
     }
 
     @GetMapping
-    @Operation(
-            summary = "Lista links de candidatos (legado)",
-            description = "Mantém o contrato de lista para consumidores existentes, percorrendo internamente todas as páginas. Novos consumidores devem preferir GET /page."
-    )
+    @Operation(summary = "Lista links de candidatos (legado)")
     public ResponseEntity<List<CandidateLinkResponse>> listCandidateLinks(
             @RequestParam(name = "blind", defaultValue = "false") boolean blind
     ) {
         return ResponseEntity.ok(legacyCandidateLinkQueryService.listAll(blind));
     }
 
-    /**
-     * Endpoint legado mantido para consumidores existentes. Novas telas devem
-     * usar /attempts, que possui paginação, filtros e todos os estados.
-     */
     @GetMapping("/live-attempts")
-    @Operation(
-            summary = "Lista tentativas monitoradas (legado)",
-            description = "Retorna a visão resumida antiga. Prefira GET /attempts."
-    )
+    @Operation(summary = "Lista tentativas monitoradas (legado)")
     public ResponseEntity<List<CandidateAttemptMonitoringResponse>> listLiveAttempts() {
         return ResponseEntity.ok(candidateAttemptService.listLiveAttempts());
     }
 
     @GetMapping("/attempts")
-    @Operation(
-            summary = "Pesquisa tentativas para o centro operacional",
-            description = "Retorna página completa com filtros por estado, avaliação e candidato. Inclui não iniciadas, em andamento, concluídas, abandonadas e expiradas."
-    )
+    @Operation(summary = "Pesquisa tentativas para o centro operacional")
     public ResponseEntity<CandidateAttemptMonitoringPageResponse> searchAttempts(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "25") int size,
@@ -101,10 +86,7 @@ public class CompanyCandidateLinkController {
     }
 
     @PostMapping
-    @Operation(
-            summary = "Cria nova aplicação para candidato",
-            description = "Cria uma tentativa independente por applicationCycleId. Repetir o mesmo ciclo apenas reconcilia a mesma requisição; para reenviar um link existente use POST /{attemptId}/resend."
-    )
+    @Operation(summary = "Cria nova aplicação para candidato")
     public ResponseEntity<CreateCandidateLinkResponse> createCandidateLink(
             @Valid @RequestBody CreateCandidateLinkRequest request
     ) {
@@ -115,18 +97,29 @@ public class CompanyCandidateLinkController {
 
     @PostMapping("/{attemptId}/resend")
     @Operation(
-            summary = "Reenvia link existente",
-            description = "Valida a empresa autenticada e retorna exatamente o link da tentativa informada, sem criar nova aplicação ou consumir crédito adicional."
+            summary = "Reenvia link vigente",
+            description = "Links expirados devem ser reativados antes pelo endpoint de extensão."
     )
     public ResponseEntity<CreateCandidateLinkResponse> resendCandidateLink(@PathVariable String attemptId) {
         return ResponseEntity.ok(companyCandidateLinkService.resendExisting(attemptId));
     }
 
-    @PostMapping("/{attemptId}/disposition")
+    @PostMapping("/{attemptId}/extend")
     @Operation(
-            summary = "Registra a decisão humana sobre o candidato",
-            description = "Registra na trilha append-only quem decidiu, quando e por quê. A pontuação é apenas apoio: a decisão final cabe a uma pessoa."
+            summary = "Adiciona dias à validade do link",
+            description = "Soma dias ao vencimento atual ou reativa a partir de agora quando o link já expirou."
     )
+    public ResponseEntity<CreateCandidateLinkResponse> extendCandidateLink(
+            @PathVariable String attemptId,
+            @Valid @RequestBody ExtendCandidateLinkRequest request
+    ) {
+        return ResponseEntity.ok(
+                companyCandidateLinkService.extendValidity(attemptId, request.additionalDays())
+        );
+    }
+
+    @PostMapping("/{attemptId}/disposition")
+    @Operation(summary = "Registra a decisão humana sobre o candidato")
     public ResponseEntity<Void> registerDisposition(
             @PathVariable String attemptId,
             @Valid @RequestBody RegisterDispositionRequest request
@@ -136,10 +129,7 @@ public class CompanyCandidateLinkController {
     }
 
     @GetMapping("/{attemptId}/evidence-report")
-    @Operation(
-            summary = "Relatório de transparência do scoring",
-            description = "Documento consolidado: declaração de scoring determinístico, fórmula e versão do blueprint, caminho do candidato, pontos por competência, trilha append-only e decisão humana."
-    )
+    @Operation(summary = "Relatório de transparência do scoring")
     public ResponseEntity<EvidenceReport> evidenceReport(@PathVariable String attemptId) {
         return ResponseEntity.ok(evidenceReportService.build(attemptId));
     }

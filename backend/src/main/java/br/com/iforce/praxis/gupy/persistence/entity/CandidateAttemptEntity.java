@@ -29,6 +29,8 @@ import java.util.Set;
 @Table(name = "candidate_attempts")
 public class CandidateAttemptEntity implements EmpresaAwareEntity {
 
+    private static final long DEFAULT_LINK_TTL_HOURS = 168L;
+
     @Id
     @Column(name = "id", nullable = false, length = 80)
     private String id;
@@ -105,6 +107,9 @@ public class CandidateAttemptEntity implements EmpresaAwareEntity {
     @Column(name = "candidate_token_issued_at", nullable = false)
     private Instant candidateTokenIssuedAt;
 
+    @Column(name = "candidate_token_expires_at", nullable = false)
+    private Instant candidateTokenExpiresAt;
+
     @Column(name = "started_at")
     private Instant startedAt;
 
@@ -124,12 +129,15 @@ public class CandidateAttemptEntity implements EmpresaAwareEntity {
     private Set<ResultItemEntity> resultItems = new LinkedHashSet<>();
 
     @PrePersist
-    void initializeCandidateTokenIssuedAt() {
+    void initializeCandidateTokenWindow() {
+        if (createdAt == null) {
+            throw new IllegalStateException("A data de criação da tentativa é obrigatória.");
+        }
         if (candidateTokenIssuedAt == null) {
-            if (createdAt == null) {
-                throw new IllegalStateException("A data de criação da tentativa é obrigatória.");
-            }
             candidateTokenIssuedAt = createdAt;
+        }
+        if (candidateTokenExpiresAt == null) {
+            candidateTokenExpiresAt = candidateTokenIssuedAt.plusSeconds(DEFAULT_LINK_TTL_HOURS * 60L * 60L);
         }
     }
 }

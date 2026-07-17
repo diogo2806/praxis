@@ -2,6 +2,7 @@ package br.com.iforce.praxis.candidate.service;
 
 import br.com.iforce.praxis.auth.context.EmpresaContextHolder;
 import br.com.iforce.praxis.auth.service.CandidateTokenWindowService;
+import br.com.iforce.praxis.auth.service.CandidateTokenWindowService.CandidateTokenWindow;
 import br.com.iforce.praxis.auth.service.JwtService;
 import br.com.iforce.praxis.candidate.dto.CandidateLinkPageResponse;
 import br.com.iforce.praxis.config.PraxisProperties;
@@ -32,23 +33,20 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class CandidateLinkQueryServiceTest {
 
-    private static final Instant ATTEMPT_CREATED_AT = Instant.parse("2026-07-15T20:00:00Z");
+    private static final Instant CREATED_AT = Instant.parse("2026-07-15T20:00:00Z");
+    private static final Instant ISSUED_AT = Instant.parse("2026-07-16T20:00:00Z");
+    private static final Instant EXPIRES_AT = Instant.parse("2099-07-23T20:00:00Z");
 
-    @Mock
-    private CandidateAttemptRepository candidateAttemptRepository;
-    @Mock
-    private SimulationCatalogService simulationCatalogService;
-    @Mock
-    private CandidateTokenWindowService candidateTokenWindowService;
-    @Mock
-    private JwtService jwtService;
+    @Mock private CandidateAttemptRepository candidateAttemptRepository;
+    @Mock private SimulationCatalogService simulationCatalogService;
+    @Mock private CandidateTokenWindowService candidateTokenWindowService;
+    @Mock private JwtService jwtService;
 
     private CandidateLinkQueryService service;
 
@@ -81,57 +79,45 @@ class CandidateLinkQueryServiceTest {
 
     @Test
     @SuppressWarnings("unchecked")
-    void searchReturnsPageWithoutExposingIdentityInBlindMode() {
+    void searchReturnsValidityWithoutExposingIdentityInBlindMode() {
         CandidateAttemptEntity entity = attempt();
+        CandidateTokenWindow window = new CandidateTokenWindow(ISSUED_AT, EXPIRES_AT);
         when(candidateAttemptRepository.findAll(any(Specification.class), any(Pageable.class)))
                 .thenReturn(new PageImpl<>(List.of(entity), PageRequest.of(0, 100), 201));
         when(simulationCatalogService.findByVersionId(10L)).thenReturn(Optional.of(simulation()));
-        when(candidateTokenWindowService.currentIssuedAtInNewTransaction(
-                "empresa-1",
-                "att_1234567890123456",
-                168
-        )).thenReturn(ATTEMPT_CREATED_AT);
+        when(candidateTokenWindowService.currentWindowInNewTransaction(
+                "empresa-1", "att_1234567890123456", 168
+        )).thenReturn(window);
         when(jwtService.generateCandidateAttemptToken(
-                "empresa-1",
-                "att_1234567890123456",
-                168,
-                ATTEMPT_CREATED_AT
+                "empresa-1", "att_1234567890123456", ISSUED_AT, EXPIRES_AT
         )).thenReturn("candidate-token");
 
         CandidateLinkPageResponse response = service.search(
-                -1,
-                500,
-                true,
-                "completed",
-                "sim-1",
-                3,
-                "maria"
+                -1, 500, true, "completed", "sim-1", 3, "maria"
         );
 
         assertThat(response.page()).isZero();
         assertThat(response.size()).isEqualTo(100);
         assertThat(response.totalElements()).isEqualTo(201);
-        assertThat(response.totalPages()).isEqualTo(3);
         assertThat(response.items()).hasSize(1);
         assertThat(response.items().getFirst().candidateName()).startsWith("Candidato ");
         assertThat(response.items().getFirst().candidateEmail()).isNull();
         assertThat(response.items().getFirst().candidateUrl())
                 .isEqualTo("https://app.praxis.test/candidato/candidate-token");
+        assertThat(response.items().getFirst().linkIssuedAt()).isEqualTo(ISSUED_AT);
+        assertThat(response.items().getFirst().linkExpiresAt()).isEqualTo(EXPIRES_AT);
+        assertThat(response.items().getFirst().remainingDays()).isPositive();
+        assertThat(response.items().getFirst().linkStatus()).isEqualTo("active");
 
         ArgumentCaptor<Pageable> pageable = ArgumentCaptor.forClass(Pageable.class);
         verify(candidateAttemptRepository).findAll(any(Specification.class), pageable.capture());
         assertThat(pageable.getValue().getPageNumber()).isZero();
         assertThat(pageable.getValue().getPageSize()).isEqualTo(100);
-        verify(candidateTokenWindowService).currentIssuedAtInNewTransaction(
-                eq("empresa-1"),
-                eq("att_1234567890123456"),
-                eq(168)
+        verify(candidateTokenWindowService).currentWindowInNewTransaction(
+                "empresa-1", "att_1234567890123456", 168
         );
         verify(jwtService).generateCandidateAttemptToken(
-                eq("empresa-1"),
-                eq("att_1234567890123456"),
-                eq(168),
-                eq(ATTEMPT_CREATED_AT)
+                "empresa-1", "att_1234567890123456", ISSUED_AT, EXPIRES_AT
         );
     }
 
@@ -152,8 +138,9 @@ class CandidateLinkQueryServiceTest {
         entity.setCandidateName("Maria Silva");
         entity.setCandidateEmail("maria@example.com");
         entity.setStatus(AttemptStatus.COMPLETED);
-        entity.setCreatedAt(ATTEMPT_CREATED_AT);
-        entity.setCandidateTokenIssuedAt(ATTEMPT_CREATED_AT);
+        entity.setCreatedAt(CREATED_AT);
+        entity.setCandidateTokenIssuedAt(ISSUED_AT);
+        entity.setCandidateTokenExpiresAt(EXPIRES_AT);
         return entity;
     }
 
