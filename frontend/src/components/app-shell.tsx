@@ -70,7 +70,7 @@ const cognitiveCopy = {
     accessibility: "Acessibilidade",
     accessibilityDescription: "Ajuste a interface para reduzir distrações e facilitar a leitura.",
     simpleNavigation: "Menu simples",
-    simpleNavigationDescription: "Mostra primeiro apenas as tarefas mais usadas.",
+    simpleNavigationDescription: "Mostra primeiro o fluxo principal do processo de avaliação.",
     largeText: "Texto maior",
     largeTextDescription: "Aumenta textos, campos e áreas de clique.",
     reducedMotion: "Menos movimento",
@@ -80,10 +80,9 @@ const cognitiveCopy = {
     reset: "Restaurar ajustes",
     enabled: "Ativado",
     disabled: "Desativado",
-    mainTasks: "Tarefas principais",
+    mainTasks: "Fluxo principal",
     moreOptions: "Mais opções",
-    participants: "Participantes",
-    assessmentProcesses: "Processos de avaliação",
+    inviteParticipant: "Convidar participante",
     administration: "Administração",
     skipToContent: "Ir para o conteúdo principal",
     pageGoal: "Objetivo desta tela",
@@ -93,7 +92,7 @@ const cognitiveCopy = {
     accessibility: "Accessibility",
     accessibilityDescription: "Adjust the interface to reduce distractions and improve readability.",
     simpleNavigation: "Simple menu",
-    simpleNavigationDescription: "Shows the most common tasks first.",
+    simpleNavigationDescription: "Shows the main assessment process first.",
     largeText: "Larger text",
     largeTextDescription: "Increases text, fields and click targets.",
     reducedMotion: "Less motion",
@@ -103,10 +102,9 @@ const cognitiveCopy = {
     reset: "Reset adjustments",
     enabled: "Enabled",
     disabled: "Disabled",
-    mainTasks: "Main tasks",
+    mainTasks: "Main flow",
     moreOptions: "More options",
-    participants: "Participants",
-    assessmentProcesses: "Assessment processes",
+    inviteParticipant: "Invite participant",
     administration: "Administration",
     skipToContent: "Skip to main content",
     pageGoal: "Goal of this page",
@@ -116,7 +114,7 @@ const cognitiveCopy = {
     accessibility: "Accesibilidad",
     accessibilityDescription: "Ajusta la interfaz para reducir distracciones y facilitar la lectura.",
     simpleNavigation: "Menú simple",
-    simpleNavigationDescription: "Muestra primero las tareas más utilizadas.",
+    simpleNavigationDescription: "Muestra primero el flujo principal del proceso de evaluación.",
     largeText: "Texto más grande",
     largeTextDescription: "Aumenta textos, campos y áreas de interacción.",
     reducedMotion: "Menos movimiento",
@@ -126,10 +124,9 @@ const cognitiveCopy = {
     reset: "Restaurar ajustes",
     enabled: "Activado",
     disabled: "Desactivado",
-    mainTasks: "Tareas principales",
+    mainTasks: "Flujo principal",
     moreOptions: "Más opciones",
-    participants: "Participantes",
-    assessmentProcesses: "Procesos de evaluación",
+    inviteParticipant: "Invitar participante",
     administration: "Administración",
     skipToContent: "Ir al contenido principal",
     pageGoal: "Objetivo de esta pantalla",
@@ -140,27 +137,27 @@ const cognitiveCopy = {
 const pageGoalCopy = {
   "pt-BR": {
     dashboard: "Veja primeiro o que precisa da sua atenção hoje.",
-    assessments: "Crie, continue, publique ou arquive avaliações.",
-    participants: "Convide uma pessoa e acompanhe os links já enviados.",
-    journeys: "Organize várias avaliações em uma sequência única.",
+    assessments: "Crie e publique as avaliações que serão usadas dentro das jornadas.",
+    journeys: "Monte a jornada, publique o processo e convide os participantes por ela.",
+    participants: "Use esta opção somente para enviar uma avaliação isolada, fora de uma jornada.",
     results: "Consulte resultados e evidências antes da decisão humana.",
     settings: "Ajuste empresa, equipe, integrações e plano.",
     default: "Conclua uma tarefa por vez. As opções adicionais continuam disponíveis no menu.",
   },
   en: {
     dashboard: "See what needs your attention today first.",
-    assessments: "Create, continue, publish or archive assessments.",
-    participants: "Invite a person and track links already sent.",
-    journeys: "Organize several assessments into one sequence.",
+    assessments: "Create and publish the assessments that will be used inside journeys.",
+    journeys: "Build the journey, publish the process and invite participants through it.",
+    participants: "Use this option only to send an isolated assessment outside a journey.",
     results: "Review results and evidence before the human decision.",
     settings: "Adjust company, team, integrations and plan.",
     default: "Complete one task at a time. Additional options remain available in the menu.",
   },
   "es-MX": {
     dashboard: "Vea primero lo que necesita su atención hoy.",
-    assessments: "Cree, continúe, publique o archive evaluaciones.",
-    participants: "Invite a una persona y acompañe los enlaces enviados.",
-    journeys: "Organice varias evaluaciones en una sola secuencia.",
+    assessments: "Cree y publique las evaluaciones que se usarán dentro de las jornadas.",
+    journeys: "Monte la jornada, publique el proceso e invite participantes a través de ella.",
+    participants: "Use esta opción solo para enviar una evaluación aislada fuera de una jornada.",
     results: "Revise resultados y evidencias antes de la decisión humana.",
     settings: "Ajuste empresa, equipo, integraciones y plan.",
     default: "Complete una tarea a la vez. Las opciones adicionales siguen disponibles en el menú.",
@@ -212,6 +209,49 @@ function useCognitivePreferences() {
   return { preferences, toggle, reset };
 }
 
+type NavigationItemData = {
+  to: string;
+  label: string;
+  icon: typeof Home;
+  badge?: number;
+};
+
+function NavigationItem({
+  item,
+  active,
+  closeOnSelect,
+}: {
+  item: NavigationItemData;
+  active: boolean;
+  closeOnSelect: boolean;
+}) {
+  return (
+    <ShellLink closeOnSelect={closeOnSelect}>
+      <Link
+        to={item.to}
+        aria-current={active ? "page" : undefined}
+        className={cn(
+          "mb-1 flex min-h-11 items-center gap-3 rounded-md px-3 py-2 text-sm transition",
+          active ? "bg-accent font-medium text-accent-foreground" : "text-foreground/85 hover:bg-accent",
+        )}
+      >
+        <item.icon
+          className={cn(
+            "h-4 w-4 shrink-0",
+            active ? "text-accent-foreground" : "text-muted-foreground",
+          )}
+        />
+        <span className="min-w-0 flex-1">{item.label}</span>
+        {(item.badge ?? 0) > 0 && (
+          <span className="rounded-full bg-danger px-1.5 py-0.5 text-[10px] font-semibold text-danger-foreground">
+            {(item.badge ?? 0) > 99 ? "99+" : item.badge}
+          </span>
+        )}
+      </Link>
+    </ShellLink>
+  );
+}
+
 function SidebarContent({
   closeOnSelect = false,
   pathname,
@@ -231,7 +271,7 @@ function SidebarContent({
   const primaryItems = [
     { to: "/dashboard", label: t.common.dashboard, icon: Home },
     { to: "/avaliacoes", label: t.common.situationalAssessment, icon: ListChecks },
-    { to: "/enviar-link", label: cognitive.participants, icon: Link2 },
+    { to: "/jornadas", label: t.common.journeys, icon: Workflow },
     { to: "/results", label: t.common.results, icon: ClipboardList },
   ] as const;
 
@@ -240,7 +280,7 @@ function SidebarContent({
       label: t.common.situationalAssessment,
       items: [
         { to: "/competencias", label: t.common.competencies, icon: BookOpenCheck },
-        { to: "/jornadas", label: cognitive.assessmentProcesses, icon: Workflow },
+        { to: "/enviar-link", label: cognitive.inviteParticipant, icon: Link2 },
         { to: "/talent-match", label: t.common.talentMatch, icon: Target },
       ],
     },
@@ -356,49 +396,6 @@ function SidebarContent({
         </div>
       </div>
     </>
-  );
-}
-
-type NavigationItemData = {
-  to: string;
-  label: string;
-  icon: typeof Home;
-  badge?: number;
-};
-
-function NavigationItem({
-  item,
-  active,
-  closeOnSelect,
-}: {
-  item: NavigationItemData;
-  active: boolean;
-  closeOnSelect: boolean;
-}) {
-  return (
-    <ShellLink closeOnSelect={closeOnSelect}>
-      <Link
-        to={item.to}
-        aria-current={active ? "page" : undefined}
-        className={cn(
-          "mb-1 flex min-h-11 items-center gap-3 rounded-md px-3 py-2 text-sm transition",
-          active ? "bg-accent font-medium text-accent-foreground" : "text-foreground/85 hover:bg-accent",
-        )}
-      >
-        <item.icon
-          className={cn(
-            "h-4 w-4 shrink-0",
-            active ? "text-accent-foreground" : "text-muted-foreground",
-          )}
-        />
-        <span className="min-w-0 flex-1">{item.label}</span>
-        {(item.badge ?? 0) > 0 && (
-          <span className="rounded-full bg-danger px-1.5 py-0.5 text-[10px] font-semibold text-danger-foreground">
-            {(item.badge ?? 0) > 99 ? "99+" : item.badge}
-          </span>
-        )}
-      </Link>
-    </ShellLink>
   );
 }
 
@@ -525,8 +522,8 @@ function PageGoal({ pathname, language }: { pathname: string; language: Language
 function pageGoalKey(pathname: string): keyof (typeof pageGoalCopy)["pt-BR"] {
   if (pathname === "/dashboard") return "dashboard";
   if (pathname.startsWith("/avaliacoes") || pathname.startsWith("/nova")) return "assessments";
-  if (pathname === "/enviar-link") return "participants";
   if (pathname === "/jornadas" || pathname.startsWith("/jornada/")) return "journeys";
+  if (pathname === "/enviar-link") return "participants";
   if (pathname.startsWith("/results") || pathname === "/talent-match") return "results";
   if (
     pathname.startsWith("/configuracoes") ||
@@ -581,8 +578,8 @@ function pageContext(pathname: string, t: TranslationMap, copy: CopyMap) {
 
 function routeDataKey(pathname: string) {
   if (pathname.startsWith("/avaliacoes")) return "avaliacoes";
-  if (pathname === "/enviar-link") return "enviar-link";
   if (pathname === "/jornadas" || pathname.startsWith("/jornada/")) return "jornadas";
+  if (pathname === "/enviar-link") return "enviar-link";
   if (pathname.startsWith("/results")) return "results";
   if (pathname === "/dashboard") return "dashboard";
   return "other";
