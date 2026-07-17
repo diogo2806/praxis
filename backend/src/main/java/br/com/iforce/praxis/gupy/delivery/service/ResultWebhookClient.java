@@ -17,12 +17,4 @@ public interface ResultWebhookClient {
                 "result_webhook_url aceita exclusivamente o TestResult contratual da Gupy."
         );
     }
-
-    /**
-     * Executa o callback contratual e devolve o status HTTP confirmado.
-     *
-     * @param callbackUrl URL fornecida pelo ATS
-     * @return status HTTP 2xx devolvido pelo callback
-     */
-    int getCallback(String callbackUrl);
 }
