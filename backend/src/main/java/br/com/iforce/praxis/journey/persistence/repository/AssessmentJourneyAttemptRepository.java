@@ -2,18 +2,15 @@ package br.com.iforce.praxis.journey.persistence.repository;
 
 import br.com.iforce.praxis.journey.model.AssessmentJourneyAttemptStatus;
 import br.com.iforce.praxis.journey.persistence.entity.AssessmentJourneyAttemptEntity;
-
 import org.springframework.data.jpa.repository.EntityGraph;
-
 import org.springframework.data.jpa.repository.JpaRepository;
 
-
 import java.util.List;
-
 import java.util.Optional;
 
-
-public interface AssessmentJourneyAttemptRepository extends JpaRepository<AssessmentJourneyAttemptEntity, String> {
+public interface AssessmentJourneyAttemptRepository extends
+        JpaRepository<AssessmentJourneyAttemptEntity, String>,
+        AssessmentJourneyAttemptRepositoryCustom {
 
     @EntityGraph(attributePaths = {"steps"})
     Optional<AssessmentJourneyAttemptEntity> findByEmpresaIdAndId(String empresaId, String id);
@@ -30,12 +27,6 @@ public interface AssessmentJourneyAttemptRepository extends JpaRepository<Assess
             String journeyId,
             String candidateEmail,
             String sequenceKey
-    );
-
-    @EntityGraph(attributePaths = {"steps"})
-    List<AssessmentJourneyAttemptEntity> findDistinctByEmpresaIdAndStepsCandidateAttemptIdOrderByCreatedAtDesc(
-            String empresaId,
-            String candidateAttemptId
     );
 
     long countByEmpresaIdAndStatusIn(String empresaId, List<AssessmentJourneyAttemptStatus> statuses);
