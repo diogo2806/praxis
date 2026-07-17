@@ -1,6 +1,7 @@
 package br.com.iforce.praxis.candidate.service;
 
 import br.com.iforce.praxis.auth.context.EmpresaContextHolder;
+import br.com.iforce.praxis.auth.service.CandidateTokenWindowService;
 import br.com.iforce.praxis.auth.service.JwtService;
 import br.com.iforce.praxis.candidate.dto.CandidateLinkPageResponse;
 import br.com.iforce.praxis.config.PraxisProperties;
@@ -45,6 +46,8 @@ class CandidateLinkQueryServiceTest {
     @Mock
     private SimulationCatalogService simulationCatalogService;
     @Mock
+    private CandidateTokenWindowService candidateTokenWindowService;
+    @Mock
     private JwtService jwtService;
 
     private CandidateLinkQueryService service;
@@ -65,6 +68,7 @@ class CandidateLinkQueryServiceTest {
         service = new CandidateLinkQueryService(
                 candidateAttemptRepository,
                 simulationCatalogService,
+                candidateTokenWindowService,
                 jwtService,
                 properties
         );
@@ -82,6 +86,11 @@ class CandidateLinkQueryServiceTest {
         when(candidateAttemptRepository.findAll(any(Specification.class), any(Pageable.class)))
                 .thenReturn(new PageImpl<>(List.of(entity), PageRequest.of(0, 100), 201));
         when(simulationCatalogService.findByVersionId(10L)).thenReturn(Optional.of(simulation()));
+        when(candidateTokenWindowService.currentIssuedAtInNewTransaction(
+                "empresa-1",
+                "att_1234567890123456",
+                168
+        )).thenReturn(ATTEMPT_CREATED_AT);
         when(jwtService.generateCandidateAttemptToken(
                 "empresa-1",
                 "att_1234567890123456",
@@ -113,6 +122,11 @@ class CandidateLinkQueryServiceTest {
         verify(candidateAttemptRepository).findAll(any(Specification.class), pageable.capture());
         assertThat(pageable.getValue().getPageNumber()).isZero();
         assertThat(pageable.getValue().getPageSize()).isEqualTo(100);
+        verify(candidateTokenWindowService).currentIssuedAtInNewTransaction(
+                eq("empresa-1"),
+                eq("att_1234567890123456"),
+                eq(168)
+        );
         verify(jwtService).generateCandidateAttemptToken(
                 eq("empresa-1"),
                 eq("att_1234567890123456"),
@@ -139,6 +153,7 @@ class CandidateLinkQueryServiceTest {
         entity.setCandidateEmail("maria@example.com");
         entity.setStatus(AttemptStatus.COMPLETED);
         entity.setCreatedAt(ATTEMPT_CREATED_AT);
+        entity.setCandidateTokenIssuedAt(ATTEMPT_CREATED_AT);
         return entity;
     }
 
