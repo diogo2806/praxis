@@ -42,11 +42,19 @@ const steps = [
   },
   {
     number: "04",
-    title: "Aplique e acompanhe",
+    title: "Monte a jornada",
     description:
-      "Envie um link diretamente ou conecte um ATS. Depois acompanhe tentativas, resultados e entregas.",
-    to: "/enviar-link" as const,
-    action: "Enviar link",
+      "Organize uma ou mais avaliações na ordem em que a pessoa candidata deverá realizá-las.",
+    to: "/jornadas" as const,
+    action: "Criar jornada",
+  },
+  {
+    number: "05",
+    title: "Convide e acompanhe",
+    description:
+      "Publique a jornada, gere o convite da pessoa participante e acompanhe o andamento do processo.",
+    to: "/jornadas" as const,
+    action: "Abrir jornadas",
   },
 ];
 
@@ -88,10 +96,10 @@ function StartPage() {
           <div className="text-xs font-semibold uppercase tracking-[0.2em] text-primary">
             Comece aqui
           </div>
-          <h1 className="mt-2 font-display text-4xl">Da definição do cenário à decisão humana</h1>
+          <h1 className="mt-2 font-display text-4xl">Da avaliação à jornada e à decisão humana</h1>
           <p className="mt-3 text-sm leading-6 text-muted-foreground">
-            O Práxis organiza avaliações situacionais com critérios explícitos, pontuação
-            determinística e histórico auditável. O sistema apoia a análise; a decisão sobre a
+            A avaliação define o conteúdo do teste. A jornada organiza como esse conteúdo será
+            aplicado às pessoas participantes. O sistema apoia a análise; a decisão sobre a
             candidatura continua sendo de uma pessoa.
           </p>
         </header>
