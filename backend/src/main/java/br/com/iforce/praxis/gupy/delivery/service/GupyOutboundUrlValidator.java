@@ -49,6 +49,9 @@ public class GupyOutboundUrlValidator {
         if (host.isBlank() || uri.getUserInfo() != null || uri.getFragment() != null) {
             throw new IllegalArgumentException("URL externa inválida.");
         }
+        if (isLocalHostname(host)) {
+            throw new IllegalArgumentException("URL externa não pode apontar para rede local ou reservada.");
+        }
 
         assertPublicLiteralAddress(host);
     }
@@ -77,6 +80,12 @@ public class GupyOutboundUrlValidator {
         } catch (UnknownHostException exception) {
             throw new IllegalArgumentException("Host externo não resolvido.", exception);
         }
+    }
+
+    private boolean isLocalHostname(String host) {
+        return host.equals("localhost")
+                || host.endsWith(".localhost")
+                || host.endsWith(".local");
     }
 
     private boolean isIpLiteral(String host) {
