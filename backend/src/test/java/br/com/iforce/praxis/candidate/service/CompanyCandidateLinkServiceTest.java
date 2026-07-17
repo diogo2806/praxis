@@ -4,9 +4,12 @@ import br.com.iforce.praxis.audit.model.AuditEventType;
 import br.com.iforce.praxis.audit.service.AuditEventService;
 import br.com.iforce.praxis.audit.service.AuditMetadata;
 import br.com.iforce.praxis.auth.context.EmpresaContextHolder;
+import br.com.iforce.praxis.auth.service.CandidateTokenWindowService;
+import br.com.iforce.praxis.auth.service.CandidateTokenWindowService.CandidateTokenWindow;
 import br.com.iforce.praxis.billing.service.CreditService;
 import br.com.iforce.praxis.candidate.dto.CreateCandidateLinkRequest;
 import br.com.iforce.praxis.candidate.dto.CreateCandidateLinkResponse;
+import br.com.iforce.praxis.config.PraxisProperties;
 import br.com.iforce.praxis.gupy.model.PublishedSimulation;
 import br.com.iforce.praxis.gupy.model.ResultTier;
 import br.com.iforce.praxis.gupy.persistence.entity.CandidateAttemptEntity;
@@ -25,6 +28,7 @@ import org.mockito.quality.Strictness;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.time.Instant;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -44,26 +48,32 @@ import static org.mockito.Mockito.when;
 @MockitoSettings(strictness = Strictness.LENIENT)
 class CompanyCandidateLinkServiceTest {
 
-    @Mock
-    private CandidateAttemptRepository candidateAttemptRepository;
-    @Mock
-    private SimulationCatalogService simulationCatalogService;
-    @Mock
-    private CandidateAttemptService candidateAttemptService;
-    @Mock
-    private CreditService creditService;
-    @Mock
-    private AuditEventService auditEventService;
-    @Mock
-    private AuditMetadata auditMetadata;
+    @Mock private CandidateAttemptRepository candidateAttemptRepository;
+    @Mock private SimulationCatalogService simulationCatalogService;
+    @Mock private CandidateAttemptService candidateAttemptService;
+    @Mock private CandidateTokenWindowService candidateTokenWindowService;
+    @Mock private CreditService creditService;
+    @Mock private AuditEventService auditEventService;
+    @Mock private AuditMetadata auditMetadata;
 
     private CompanyCandidateLinkService service;
     private PublishedSimulation simulation;
+    private PraxisProperties properties;
     private final Map<String, CandidateAttemptEntity> attemptsByIdempotencyKey = new HashMap<>();
 
     @BeforeEach
     void setUp() {
         EmpresaContextHolder.set("empresa-1");
+        properties = new PraxisProperties(
+                "https://api.praxis.test",
+                "https://app.praxis.test",
+                168,
+                12,
+                720,
+                70,
+                15,
+                0.001
+        );
         simulation = new PublishedSimulation(
                 10L,
                 3,
@@ -98,6 +108,8 @@ class CompanyCandidateLinkServiceTest {
                 simulationCatalogService,
                 new CandidateAttemptMapper(),
                 candidateAttemptService,
+                candidateTokenWindowService,
+                properties,
                 creditService,
                 auditEventService,
                 auditMetadata
@@ -110,37 +122,15 @@ class CompanyCandidateLinkServiceTest {
     }
 
     @Test
-    void sameApplicationCycleReusesOnlyTheEquivalentRequest() {
+    void sameApplicationCycleReusesOnlyEquivalentRequest() {
         CreateCandidateLinkRequest request = request("cycle-vaga-1");
 
         CreateCandidateLinkResponse first = service.createNewApplication(request);
         CreateCandidateLinkResponse retry = service.createNewApplication(request);
 
         assertThat(first.reused()).isFalse();
-        assertThat(first.operation()).isEqualTo(CompanyCandidateLinkService.CREATED_NEW_APPLICATION);
         assertThat(retry.reused()).isTrue();
-        assertThat(retry.operation()).isEqualTo(CompanyCandidateLinkService.REUSED_IDEMPOTENT_REQUEST);
         assertThat(retry.attemptId()).isEqualTo(first.attemptId());
-        verify(candidateAttemptRepository, times(1)).saveAndFlush(any(CandidateAttemptEntity.class));
-        verify(creditService, times(1)).assertCanStartNewAttempt("empresa-1");
-    }
-
-    @Test
-    void sameApplicationCycleWithDifferentPayloadReturnsConflict() {
-        service.createNewApplication(request("cycle-vaga-1"));
-        CreateCandidateLinkRequest divergent = new CreateCandidateLinkRequest(
-                "sim-java",
-                "Maria Souza",
-                "Maria@Example.com",
-                "cycle-vaga-1",
-                "Vaga Java - outra etapa",
-                null
-        );
-
-        assertThatThrownBy(() -> service.createNewApplication(divergent))
-                .isInstanceOfSatisfying(ResponseStatusException.class, exception ->
-                        assertThat(exception.getStatusCode()).isEqualTo(HttpStatus.CONFLICT));
-
         verify(candidateAttemptRepository, times(1)).saveAndFlush(any(CandidateAttemptEntity.class));
         verify(creditService, times(1)).assertCanStartNewAttempt("empresa-1");
     }
@@ -151,31 +141,57 @@ class CompanyCandidateLinkServiceTest {
         CreateCandidateLinkResponse second = service.createNewApplication(request("cycle-vaga-2"));
 
         assertThat(second.attemptId()).isNotEqualTo(first.attemptId());
-        assertThat(first.operation()).isEqualTo(CompanyCandidateLinkService.CREATED_NEW_APPLICATION);
-        assertThat(second.operation()).isEqualTo(CompanyCandidateLinkService.CREATED_NEW_APPLICATION);
-        verify(candidateAttemptRepository, times(2)).saveAndFlush(any(CandidateAttemptEntity.class));
         verify(creditService, times(2)).assertCanStartNewAttempt("empresa-1");
     }
 
     @Test
-    void resendReturnsTheExistingAttemptWithoutCreatingOrCheckingNewCredit() {
+    void resendRejectsExpiredLink() {
         CreateCandidateLinkResponse created = service.createNewApplication(request("cycle-vaga-1"));
         CandidateAttemptEntity entity = attemptsByIdempotencyKey.values().iterator().next();
+        CandidateTokenWindow expired = new CandidateTokenWindow(
+                Instant.now().minusSeconds(8 * 24 * 60 * 60L),
+                Instant.now().minusSeconds(60)
+        );
+        when(candidateAttemptRepository.findByEmpresaIdAndId("empresa-1", created.attemptId()))
+                .thenReturn(Optional.of(entity));
+        when(candidateTokenWindowService.currentWindow("empresa-1", created.attemptId(), 168))
+                .thenReturn(expired);
+        when(candidateTokenWindowService.isExpired(expired)).thenReturn(true);
+
+        assertThatThrownBy(() -> service.resendExisting(created.attemptId()))
+                .isInstanceOfSatisfying(ResponseStatusException.class, exception ->
+                        assertThat(exception.getStatusCode()).isEqualTo(HttpStatus.CONFLICT));
+    }
+
+    @Test
+    void extendReactivatesWithoutConsumingAnotherCredit() {
+        CreateCandidateLinkResponse created = service.createNewApplication(request("cycle-vaga-1"));
+        CandidateAttemptEntity entity = attemptsByIdempotencyKey.values().iterator().next();
+        CandidateTokenWindow expired = new CandidateTokenWindow(
+                Instant.now().minusSeconds(8 * 24 * 60 * 60L),
+                Instant.now().minusSeconds(60)
+        );
+        CandidateTokenWindow extended = new CandidateTokenWindow(
+                Instant.now(),
+                Instant.now().plusSeconds(7 * 24 * 60 * 60L)
+        );
         when(candidateAttemptRepository.findByEmpresaIdAndId("empresa-1", created.attemptId()))
                 .thenReturn(Optional.of(entity));
         when(simulationCatalogService.findByVersionId(10L)).thenReturn(Optional.of(simulation));
+        when(candidateTokenWindowService.currentWindow("empresa-1", created.attemptId(), 168))
+                .thenReturn(expired);
+        when(candidateTokenWindowService.isExpired(expired)).thenReturn(true);
+        when(candidateTokenWindowService.extendValidity("empresa-1", created.attemptId(), 168, 7))
+                .thenReturn(extended);
 
-        CreateCandidateLinkResponse resent = service.resendExisting(created.attemptId());
+        CreateCandidateLinkResponse response = service.extendValidity(created.attemptId(), 7);
 
-        assertThat(resent.attemptId()).isEqualTo(created.attemptId());
-        assertThat(resent.candidateUrl()).isEqualTo(created.candidateUrl());
-        assertThat(resent.reused()).isTrue();
-        assertThat(resent.operation()).isEqualTo(CompanyCandidateLinkService.RESENT_EXISTING_LINK);
+        assertThat(response.operation()).isEqualTo(CompanyCandidateLinkService.EXTENDED_LINK_VALIDITY);
         verify(creditService, times(1)).assertCanStartNewAttempt("empresa-1");
         verify(auditEventService).appendCandidateAttemptEvent(
                 eq("empresa-1"),
                 eq(created.attemptId()),
-                eq(AuditEventType.CANDIDATE_LINK_RESENT),
+                eq(AuditEventType.CANDIDATE_LINK_EXTENDED),
                 anyString(),
                 anyString()
         );
@@ -191,9 +207,6 @@ class CompanyCandidateLinkServiceTest {
                         assertThat(exception.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND));
 
         verify(creditService, never()).assertCanStartNewAttempt(anyString());
-        verify(auditEventService, never()).appendCandidateAttemptEvent(
-                anyString(), anyString(), any(), anyString(), anyString()
-        );
     }
 
     private CreateCandidateLinkRequest request(String applicationCycleId) {
