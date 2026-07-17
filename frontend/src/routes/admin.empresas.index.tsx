@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
-import { Download, Plus } from "lucide-react";
+import { ChevronLeft, ChevronRight, Download, Plus } from "lucide-react";
 import { AdminShell, StatusBadge, planLabel } from "@/components/admin-shell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,11 +14,11 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { searchAdminEmpresas } from "@/lib/api/admin-empresas";
 import {
   cancelAdminEmpresa,
   createAdminEmpresa,
   grantAdminEmpresaCredits,
-  listAdminEmpresas,
   reactivateAdminEmpresa,
   suspendAdminEmpresa,
   type CommercialPlanType,
@@ -37,6 +37,7 @@ const STATUS_OPTIONS: EmpresaStatus[] = ["ATIVO", "EM_TESTE", "SUSPENSO", "CANCE
 
 function AdminEmpresasPage() {
   const queryClient = useQueryClient();
+  const [page, setPage] = useState(0);
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState<EmpresaStatus | "">("");
   const [plan, setPlan] = useState<CommercialPlanType | "">("");
@@ -48,28 +49,49 @@ function AdminEmpresasPage() {
   const [creditEmpresa, setCreditEmpresa] = useState<EmpresaAdminSummary | null>(null);
 
   const empresasQuery = useQuery({
-    queryKey: ["admin-empresas", search, status, plan],
+    queryKey: ["admin-empresas", page, search, status, plan],
     queryFn: () =>
-      listAdminEmpresas({
+      searchAdminEmpresas(page, {
         search: search || undefined,
         status: status || undefined,
         plan: plan || undefined,
       }),
   });
 
-  const empresas = empresasQuery.data ?? [];
+  const response = empresasQuery.data;
+  const empresas = response?.items ?? [];
+  const totalElements = response?.totalElements ?? 0;
+  const totalPages = response?.totalPages ?? 0;
+  const pageSize = response?.size ?? 100;
+  const firstItem = totalElements === 0 ? 0 : page * pageSize + 1;
+  const lastItem = Math.min((page + 1) * pageSize, totalElements);
+
+  function changeSearch(value: string) {
+    setSearch(value);
+    setPage(0);
+  }
+
+  function changeStatus(value: EmpresaStatus | "") {
+    setStatus(value);
+    setPage(0);
+  }
+
+  function changePlan(value: CommercialPlanType | "") {
+    setPlan(value);
+    setPage(0);
+  }
 
   function exportCsv() {
     const header = ["Nome", "CNPJ", "E-mail", "Plano", "Status", "Uso no período", "Créditos", "Criado em"];
-    const rows = empresas.map((t) => [
-      t.name,
-      t.taxId ?? "",
-      t.corporateEmail ?? "",
-      t.commercialPlanType,
-      t.status,
-      String(t.completedAttemptsInPeriod),
-      String(t.creditBalance),
-      t.createdAt,
+    const rows = empresas.map((empresa) => [
+      empresa.name,
+      empresa.taxId ?? "",
+      empresa.corporateEmail ?? "",
+      empresa.commercialPlanType,
+      empresa.status,
+      String(empresa.completedAttemptsInPeriod),
+      String(empresa.creditBalance),
+      empresa.createdAt,
     ]);
     const csv = [header, ...rows]
       .map((row) => row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(","))
@@ -78,23 +100,23 @@ function AdminEmpresasPage() {
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
-    link.download = "clientes.csv";
+    link.download = `clientes-pagina-${page + 1}.csv`;
     link.click();
     URL.revokeObjectURL(url);
   }
 
   return (
     <AdminShell>
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-semibold">Clientes</h1>
           <p className="mt-1 text-sm text-slate-500">
-            Cada linha é um cliente da plataforma (empresa).
+            Consulta paginada com uso e saldo agregados em lote.
           </p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" onClick={exportCsv}>
-            <Download className="size-4" /> Exportar CSV
+          <Button variant="outline" disabled={empresas.length === 0} onClick={exportCsv}>
+            <Download className="size-4" /> Exportar página
           </Button>
           <Button onClick={() => setCreateOpen(true)}>
             <Plus className="size-4" /> Novo cliente
@@ -103,11 +125,11 @@ function AdminEmpresasPage() {
       </div>
 
       <div className="mt-6 flex flex-wrap items-end gap-3 rounded-xl border border-slate-200 bg-white p-4">
-        <div className="flex-1 min-w-[220px]">
+        <div className="min-w-[220px] flex-1">
           <Label className="text-xs text-slate-500">Busca livre</Label>
           <Input
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={(event) => changeSearch(event.target.value)}
             placeholder="Nome, CNPJ ou e-mail"
           />
         </div>
@@ -115,13 +137,13 @@ function AdminEmpresasPage() {
           <Label className="text-xs text-slate-500">Status</Label>
           <select
             value={status}
-            onChange={(e) => setStatus(e.target.value as EmpresaStatus | "")}
+            onChange={(event) => changeStatus(event.target.value as EmpresaStatus | "")}
             className="block h-9 rounded-md border border-input bg-background px-3 text-sm"
           >
             <option value="">Todos</option>
-            {STATUS_OPTIONS.map((s) => (
-              <option key={s} value={s}>
-                {s}
+            {STATUS_OPTIONS.map((option) => (
+              <option key={option} value={option}>
+                {option}
               </option>
             ))}
           </select>
@@ -130,13 +152,13 @@ function AdminEmpresasPage() {
           <Label className="text-xs text-slate-500">Plano comercial</Label>
           <select
             value={plan}
-            onChange={(e) => setPlan(e.target.value as CommercialPlanType | "")}
+            onChange={(event) => changePlan(event.target.value as CommercialPlanType | "")}
             className="block h-9 rounded-md border border-input bg-background px-3 text-sm"
           >
             <option value="">Todos</option>
-            {PLAN_OPTIONS.map((p) => (
-              <option key={p} value={p}>
-                {p}
+            {PLAN_OPTIONS.map((option) => (
+              <option key={option} value={option}>
+                {option}
               </option>
             ))}
           </select>
@@ -144,113 +166,139 @@ function AdminEmpresasPage() {
       </div>
 
       <div className="mt-4 overflow-hidden rounded-xl border border-slate-200 bg-white">
-        <table className="w-full text-sm">
-          <thead className="bg-slate-50 text-left text-xs uppercase text-slate-500">
-            <tr>
-              <th className="px-4 py-3">Nome</th>
-              <th className="px-4 py-3">CNPJ</th>
-              <th className="px-4 py-3">E-mail</th>
-              <th className="px-4 py-3">Plano</th>
-              <th className="px-4 py-3">Status</th>
-              <th className="px-4 py-3">Uso</th>
-              <th className="px-4 py-3">Créditos</th>
-              <th className="px-4 py-3">Criado em</th>
-              <th className="px-4 py-3 text-right">Ações</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-slate-100">
-            {empresasQuery.isLoading ? (
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead className="bg-slate-50 text-left text-xs uppercase text-slate-500">
               <tr>
-                <td colSpan={9} className="px-4 py-8 text-center text-slate-500">
-                  Carregando…
-                </td>
+                <th className="px-4 py-3">Nome</th>
+                <th className="px-4 py-3">CNPJ</th>
+                <th className="px-4 py-3">E-mail</th>
+                <th className="px-4 py-3">Plano</th>
+                <th className="px-4 py-3">Status</th>
+                <th className="px-4 py-3">Uso</th>
+                <th className="px-4 py-3">Créditos</th>
+                <th className="px-4 py-3">Criado em</th>
+                <th className="px-4 py-3 text-right">Ações</th>
               </tr>
-            ) : empresas.length === 0 ? (
-              <tr>
-                <td colSpan={9} className="px-4 py-8 text-center text-slate-500">
-                  Nenhum cliente encontrado.
-                </td>
-              </tr>
-            ) : (
-              empresas.map((empresa) => (
-                <tr key={empresa.empresaId} className="hover:bg-slate-50">
-                  <td className="px-4 py-3 font-medium">
-                    <Link
-                      to="/admin/empresas/$empresaId"
-                      params={{ empresaId: empresa.empresaId }}
-                      className="text-primary hover:underline"
-                    >
-                      {empresa.name}
-                    </Link>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {empresasQuery.isLoading ? (
+                <tr>
+                  <td colSpan={9} className="px-4 py-8 text-center text-slate-500">
+                    Carregando…
                   </td>
-                  <td className="px-4 py-3 text-slate-600">{empresa.taxId ?? "—"}</td>
-                  <td className="px-4 py-3 text-slate-600">{empresa.corporateEmail ?? "—"}</td>
-                  <td className="px-4 py-3 text-slate-600">{planLabel(empresa.commercialPlanType)}</td>
-                  <td className="px-4 py-3">
-                    <StatusBadge status={empresa.status} />
+                </tr>
+              ) : empresasQuery.isError ? (
+                <tr>
+                  <td colSpan={9} className="px-4 py-8 text-center text-rose-600">
+                    Não foi possível carregar os clientes.
                   </td>
-                  <td className="px-4 py-3 text-slate-600">{empresa.completedAttemptsInPeriod}</td>
-                  <td className="px-4 py-3">
-                    <span className="font-medium tabular-nums text-slate-700">
-                      {empresa.creditBalance}
-                    </span>
+                </tr>
+              ) : empresas.length === 0 ? (
+                <tr>
+                  <td colSpan={9} className="px-4 py-8 text-center text-slate-500">
+                    Nenhum cliente encontrado.
                   </td>
-                  <td className="px-4 py-3 text-slate-600">
-                    {new Date(empresa.createdAt).toLocaleDateString("pt-BR")}
-                  </td>
-                  <td className="px-4 py-3">
-                    <div className="flex justify-end gap-1.5">
+                </tr>
+              ) : (
+                empresas.map((empresa) => (
+                  <tr key={empresa.empresaId} className="hover:bg-slate-50">
+                    <td className="px-4 py-3 font-medium">
                       <Link
                         to="/admin/empresas/$empresaId"
                         params={{ empresaId: empresa.empresaId }}
+                        className="text-primary hover:underline"
                       >
-                        <Button variant="ghost" size="sm">
-                          Ver
-                        </Button>
+                        {empresa.name}
                       </Link>
-                      {empresa.status !== "CANCELADO" && (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => setCreditEmpresa(empresa)}
-                        >
-                          Créditos
-                        </Button>
-                      )}
-                      {empresa.status === "SUSPENSO" || empresa.status === "CANCELADO" ? (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => setReasonAction({ kind: "reactivate", empresa })}
-                        >
-                          Reativar
-                        </Button>
-                      ) : (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => setReasonAction({ kind: "suspend", empresa })}
-                        >
-                          Suspender
-                        </Button>
-                      )}
-                      {empresa.status !== "CANCELADO" && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="text-rose-600"
-                          onClick={() => setReasonAction({ kind: "cancel", empresa })}
-                        >
-                          Cancelar
-                        </Button>
-                      )}
-                    </div>
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
+                    </td>
+                    <td className="px-4 py-3 text-slate-600">{empresa.taxId ?? "—"}</td>
+                    <td className="px-4 py-3 text-slate-600">{empresa.corporateEmail ?? "—"}</td>
+                    <td className="px-4 py-3 text-slate-600">{planLabel(empresa.commercialPlanType)}</td>
+                    <td className="px-4 py-3">
+                      <StatusBadge status={empresa.status} />
+                    </td>
+                    <td className="px-4 py-3 text-slate-600">{empresa.completedAttemptsInPeriod}</td>
+                    <td className="px-4 py-3 font-medium tabular-nums text-slate-700">
+                      {empresa.creditBalance}
+                    </td>
+                    <td className="px-4 py-3 text-slate-600">
+                      {new Date(empresa.createdAt).toLocaleDateString("pt-BR")}
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="flex justify-end gap-1.5">
+                        <Link to="/admin/empresas/$empresaId" params={{ empresaId: empresa.empresaId }}>
+                          <Button variant="ghost" size="sm">
+                            Ver
+                          </Button>
+                        </Link>
+                        {empresa.status !== "CANCELADO" && (
+                          <Button variant="outline" size="sm" onClick={() => setCreditEmpresa(empresa)}>
+                            Créditos
+                          </Button>
+                        )}
+                        {empresa.status === "SUSPENSO" || empresa.status === "CANCELADO" ? (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setReasonAction({ kind: "reactivate", empresa })}
+                          >
+                            Reativar
+                          </Button>
+                        ) : (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setReasonAction({ kind: "suspend", empresa })}
+                          >
+                            Suspender
+                          </Button>
+                        )}
+                        {empresa.status !== "CANCELADO" && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="text-rose-600"
+                            onClick={() => setReasonAction({ kind: "cancel", empresa })}
+                          >
+                            Cancelar
+                          </Button>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+
+        <div className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-200 px-4 py-3">
+          <span className="text-sm text-slate-500">
+            {totalElements === 0 ? "Nenhum registro" : `${firstItem}–${lastItem} de ${totalElements}`}
+          </span>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={page === 0 || empresasQuery.isFetching}
+              onClick={() => setPage((current) => Math.max(0, current - 1))}
+            >
+              <ChevronLeft className="size-4" /> Anterior
+            </Button>
+            <span className="min-w-28 text-center text-sm text-slate-600">
+              Página {totalPages === 0 ? 0 : page + 1} de {totalPages}
+            </span>
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={totalPages === 0 || page + 1 >= totalPages || empresasQuery.isFetching}
+              onClick={() => setPage((current) => current + 1)}
+            >
+              Próxima <ChevronRight className="size-4" />
+            </Button>
+          </div>
+        </div>
       </div>
 
       <CreateEmpresaDialog
@@ -285,7 +333,6 @@ function GrantCreditsDialog({
 }) {
   const [amount, setAmount] = useState("10");
   const [note, setNote] = useState("");
-
   const parsedAmount = Number(amount);
   const validAmount = Number.isInteger(parsedAmount) && parsedAmount > 0 && parsedAmount <= 100000;
 
@@ -308,8 +355,7 @@ function GrantCreditsDialog({
         <DialogHeader>
           <DialogTitle>Dar créditos de cortesia</DialogTitle>
           <DialogDescription>
-            {empresa?.name} — os créditos são somados ao saldo atual ({empresa?.creditBalance ?? 0})
-            para liberar testes. A ação fica registrada na auditoria.
+            {empresa?.name} — os créditos são somados ao saldo atual ({empresa?.creditBalance ?? 0}).
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-3">
@@ -320,7 +366,7 @@ function GrantCreditsDialog({
               min={1}
               max={100000}
               value={amount}
-              onChange={(e) => setAmount(e.target.value)}
+              onChange={(event) => setAmount(event.target.value)}
               autoFocus
             />
           </div>
@@ -328,7 +374,7 @@ function GrantCreditsDialog({
             <Label>Observação (opcional)</Label>
             <Input
               value={note}
-              onChange={(e) => setNote(e.target.value)}
+              onChange={(event) => setNote(event.target.value)}
               placeholder="Ex.: liberação para teste"
             />
           </div>
@@ -386,12 +432,12 @@ function ReasonDialog({
         <DialogHeader>
           <DialogTitle>{action ? titles[action.kind] : ""}</DialogTitle>
           <DialogDescription>
-            {action?.empresa.name} — informe o motivo (obrigatório, registrado em auditoria).
+            {action?.empresa.name} — informe o motivo obrigatório para auditoria.
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-2">
           <Label>Motivo</Label>
-          <Input value={reason} onChange={(e) => setReason(e.target.value)} autoFocus />
+          <Input value={reason} onChange={(event) => setReason(event.target.value)} autoFocus />
           {mutation.isError && (
             <p className="text-sm text-rose-600">Falha ao aplicar a ação. Tente novamente.</p>
           )}
@@ -450,7 +496,7 @@ function CreateEmpresaDialog({
   });
 
   function field(key: keyof CreateEmpresaAdminRequest, value: string | boolean) {
-    setForm((prev) => ({ ...prev, [key]: value }));
+    setForm((previous) => ({ ...previous, [key]: value }));
   }
 
   return (
@@ -459,7 +505,7 @@ function CreateEmpresaDialog({
         <DialogHeader>
           <DialogTitle>Novo cliente</DialogTitle>
           <DialogDescription>
-            O usuário responsável é criado com papel EMPRESA (nunca ADMIN).
+            O usuário responsável é criado com papel EMPRESA.
           </DialogDescription>
         </DialogHeader>
 
@@ -469,7 +515,7 @@ function CreateEmpresaDialog({
             {inviteUrl && (
               <div>
                 <Label>Link de convite do responsável</Label>
-                <Input readOnly value={inviteUrl} onFocus={(e) => e.target.select()} />
+                <Input readOnly value={inviteUrl} onFocus={(event) => event.target.select()} />
               </div>
             )}
             <DialogFooter>
@@ -485,23 +531,27 @@ function CreateEmpresaDialog({
           </div>
         ) : (
           <div className="grid gap-3 sm:grid-cols-2">
-            <Text label="Nome da empresa *" value={form.name} onChange={(v) => field("name", v)} />
-            <Text label="Nome fantasia" value={form.tradeName ?? ""} onChange={(v) => field("tradeName", v)} />
-            <Text label="Razão social" value={form.legalName ?? ""} onChange={(v) => field("legalName", v)} />
-            <Text label="CNPJ" value={form.taxId ?? ""} onChange={(v) => field("taxId", v)} />
-            <Text label="E-mail corporativo" value={form.corporateEmail ?? ""} onChange={(v) => field("corporateEmail", v)} />
-            <Text label="Telefone" value={form.phone ?? ""} onChange={(v) => field("phone", v)} />
-            <Text label="Website" value={form.website ?? ""} onChange={(v) => field("website", v)} />
+            <Text label="Nome da empresa *" value={form.name} onChange={(value) => field("name", value)} />
+            <Text label="Nome fantasia" value={form.tradeName ?? ""} onChange={(value) => field("tradeName", value)} />
+            <Text label="Razão social" value={form.legalName ?? ""} onChange={(value) => field("legalName", value)} />
+            <Text label="CNPJ" value={form.taxId ?? ""} onChange={(value) => field("taxId", value)} />
+            <Text
+              label="E-mail corporativo"
+              value={form.corporateEmail ?? ""}
+              onChange={(value) => field("corporateEmail", value)}
+            />
+            <Text label="Telefone" value={form.phone ?? ""} onChange={(value) => field("phone", value)} />
+            <Text label="Website" value={form.website ?? ""} onChange={(value) => field("website", value)} />
             <div>
               <Label className="text-xs text-slate-500">Plano comercial</Label>
               <select
                 value={form.commercialPlanType}
-                onChange={(e) => field("commercialPlanType", e.target.value)}
+                onChange={(event) => field("commercialPlanType", event.target.value)}
                 className="block h-9 w-full rounded-md border border-input bg-background px-3 text-sm"
               >
-                {PLAN_OPTIONS.map((p) => (
-                  <option key={p} value={p}>
-                    {p}
+                {PLAN_OPTIONS.map((option) => (
+                  <option key={option} value={option}>
+                    {option}
                   </option>
                 ))}
               </select>
@@ -510,12 +560,12 @@ function CreateEmpresaDialog({
               <Label className="text-xs text-slate-500">Status inicial</Label>
               <select
                 value={form.initialStatus ?? "EM_TESTE"}
-                onChange={(e) => field("initialStatus", e.target.value)}
+                onChange={(event) => field("initialStatus", event.target.value)}
                 className="block h-9 w-full rounded-md border border-input bg-background px-3 text-sm"
               >
-                {(["EM_TESTE", "ATIVO"] as EmpresaStatus[]).map((s) => (
-                  <option key={s} value={s}>
-                    {s}
+                {(["EM_TESTE", "ATIVO"] as EmpresaStatus[]).map((option) => (
+                  <option key={option} value={option}>
+                    {option}
                   </option>
                 ))}
               </select>
@@ -524,32 +574,32 @@ function CreateEmpresaDialog({
               <Text
                 label="Condição comercial"
                 value={form.commercialCondition ?? ""}
-                onChange={(v) => field("commercialCondition", v)}
+                onChange={(value) => field("commercialCondition", value)}
               />
             </div>
             <Text
               label="Nome do responsável *"
               value={form.responsibleName}
-              onChange={(v) => field("responsibleName", v)}
+              onChange={(value) => field("responsibleName", value)}
             />
             <Text
               label="E-mail do responsável *"
               value={form.responsibleEmail}
-              onChange={(v) => field("responsibleEmail", v)}
+              onChange={(value) => field("responsibleEmail", value)}
             />
             <label className="flex items-center gap-2 text-sm sm:col-span-2">
               <input
                 type="checkbox"
                 checked={form.healthVertical}
-                onChange={(e) => field("healthVertical", e.target.checked)}
+                onChange={(event) => field("healthVertical", event.target.checked)}
               />
-              Vertical de saúde (LGPD — dado sensível)
+              Vertical de saúde
             </label>
             <label className="flex items-center gap-2 text-sm sm:col-span-2">
               <input
                 type="checkbox"
                 checked={form.sendInvite}
-                onChange={(e) => field("sendInvite", e.target.checked)}
+                onChange={(event) => field("sendInvite", event.target.checked)}
               />
               Gerar link de convite para o responsável
             </label>
@@ -595,7 +645,7 @@ function Text({
   return (
     <div>
       <Label className="text-xs text-slate-500">{label}</Label>
-      <Input value={value} onChange={(e) => onChange(e.target.value)} />
+      <Input value={value} onChange={(event) => onChange(event.target.value)} />
     </div>
   );
 }
