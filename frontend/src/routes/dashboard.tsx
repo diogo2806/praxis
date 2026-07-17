@@ -6,11 +6,6 @@ import {
   CalendarClock,
   CheckCircle2,
   ClipboardCheck,
-  CreditCard,
-  FilePlus2,
-  Link2,
-  ListChecks,
-  PlugZap,
   RefreshCw,
   Route as RouteIcon,
   Users,
@@ -29,20 +24,12 @@ export const Route = createFileRoute("/dashboard")({
       { title: "Painel - Práxis" },
       {
         name: "description",
-        content: "Visão consolidada de avaliações, participantes, jornadas, integrações e uso do plano.",
+        content: "Resumo das pendências e dos números essenciais do processo de avaliação.",
       },
     ],
   }),
   component: DashboardPage,
 });
-
-const quickActions = [
-  { label: "Criar avaliação", to: "/nova/avaliacao", icon: FilePlus2, primary: true },
-  { label: "Ver avaliações", to: "/avaliacoes", icon: ListChecks, primary: false },
-  { label: "Ver resultados", to: "/results", icon: ClipboardCheck, primary: false },
-  { label: "Enviar link", to: "/enviar-link", icon: Link2, primary: false },
-  { label: "Configurar integrações", to: "/integrations", icon: PlugZap, primary: false },
-] as const;
 
 function DashboardPage() {
   const dashboardQuery = useQuery({
@@ -72,44 +59,51 @@ function DashboardContent({
   onReload: () => void;
 }) {
   return (
-    <div className="space-y-6">
+    <div className="mx-auto max-w-7xl space-y-6">
       <DashboardHeader dashboard={dashboard} onReload={onReload} />
-      <DashboardQuickActions />
 
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        <DashboardMetricCard
-          title="Avaliações ativas"
-          value={dashboard.activeSimulations}
-          hint="Publicadas e disponíveis"
-          icon={ClipboardCheck}
-        />
-        <DashboardMetricCard
-          title="Jornadas de avaliação"
-          value={dashboard.assessmentJourneys.total}
-          hint={`${dashboard.assessmentJourneys.published} publicadas · ${dashboard.assessmentJourneys.draft} rascunhos`}
-          icon={RouteIcon}
-        />
-        <DashboardMetricCard
-          title="Participantes em andamento"
-          value={dashboard.candidatesInProgress}
-          hint="Avaliações ou jornadas abertas"
-          icon={Users}
-        />
-        <DashboardMetricCard
-          title="Concluídas nos últimos 30 dias"
-          value={dashboard.completedAttemptsLast30Days}
-          hint="Participações concluídas no período"
-          icon={BarChart3}
-        />
-      </div>
+      <PriorityAction actions={dashboard.recommendedActions} />
 
-      <div className="space-y-6">
-        <RecommendedActionsPanel actions={dashboard.recommendedActions} />
-        <LatestResultsTable dashboard={dashboard} />
-        <AssessmentJourneySummary dashboard={dashboard} />
-        <IntegrationsStatusPanel dashboard={dashboard} />
-        <BillingUsageCard dashboard={dashboard} />
-      </div>
+      <section aria-labelledby="dashboard-summary-title">
+        <div className="mb-3 flex items-center justify-between gap-3">
+          <h2 id="dashboard-summary-title" className="text-lg font-semibold">
+            Resumo do processo
+          </h2>
+          <span className="text-xs text-muted-foreground">Abra um número para ver os detalhes</span>
+        </div>
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          <DashboardMetricCard
+            title="Avaliações ativas"
+            value={dashboard.activeSimulations}
+            hint="Publicadas e disponíveis"
+            icon={ClipboardCheck}
+            to="/avaliacoes"
+          />
+          <DashboardMetricCard
+            title="Jornadas"
+            value={dashboard.assessmentJourneys.total}
+            hint={`${dashboard.assessmentJourneys.published} publicadas · ${dashboard.assessmentJourneys.draft} rascunhos`}
+            icon={RouteIcon}
+            to="/jornadas"
+          />
+          <DashboardMetricCard
+            title="Em andamento"
+            value={dashboard.candidatesInProgress}
+            hint="Participantes com processo aberto"
+            icon={Users}
+            to="/jornadas"
+          />
+          <DashboardMetricCard
+            title="Concluídas em 30 dias"
+            value={dashboard.completedAttemptsLast30Days}
+            hint="Participações concluídas"
+            icon={BarChart3}
+            to="/results"
+          />
+        </div>
+      </section>
+
+      <LatestResultsTable dashboard={dashboard} />
     </div>
   );
 }
@@ -122,50 +116,67 @@ function DashboardHeader({
   onReload: () => void;
 }) {
   return (
-    <div className="flex flex-wrap items-end justify-between gap-4">
+    <header className="flex flex-wrap items-end justify-between gap-4">
       <div>
-        <div className="text-xs uppercase text-muted-foreground">Visão geral</div>
-        <h1 className="mt-1 text-3xl font-semibold text-foreground">Painel da {dashboard.empresaName}</h1>
+        <h1 className="text-3xl font-semibold text-foreground">Painel da {dashboard.empresaName}</h1>
         <p className="mt-1 flex items-center gap-2 text-sm text-muted-foreground">
           <CalendarClock className="h-4 w-4" />
-          Acompanhe avaliações, participantes, integrações e uso do plano em um só lugar.
+          Veja primeiro o que precisa de ação. Os detalhes permanecem nas telas específicas.
         </p>
       </div>
       <button
         type="button"
         onClick={onReload}
-        className="inline-flex items-center gap-2 rounded-md border border-border bg-card px-3 py-2 text-sm hover:bg-accent"
+        className="inline-flex min-h-10 items-center gap-2 rounded-md border border-border bg-card px-3 py-2 text-sm hover:bg-accent"
       >
         <RefreshCw className="h-4 w-4" />
-        Atualizar dados
+        Atualizar
       </button>
-    </div>
+    </header>
   );
 }
 
-function DashboardQuickActions() {
+function PriorityAction({ actions }: { actions: DashboardResponse["recommendedActions"] }) {
+  const firstAction = actions[0];
+
+  if (!firstAction) {
+    return (
+      <section className="flex items-start gap-3 rounded-md border border-success/35 bg-success/10 p-4">
+        <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-success" />
+        <div>
+          <h2 className="font-semibold text-foreground">Nenhuma pendência prioritária</h2>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Continue acompanhando as jornadas e os resultados conforme forem atualizados.
+          </p>
+        </div>
+      </section>
+    );
+  }
+
   return (
-    <section className="rounded-md border border-border bg-card p-4">
-      <div className="mb-3">
-        <h2 className="text-lg font-semibold">Ações principais</h2>
-        <p className="text-sm text-muted-foreground">Atalhos para as tarefas mais usadas no dia a dia.</p>
-      </div>
-      <div className="flex flex-wrap gap-2">
-        {quickActions.map((action) => (
-          <Link
-            key={action.to}
-            to={action.to}
-            className={cn(
-              "inline-flex items-center gap-2 rounded-md border px-3 py-2 text-sm font-medium",
-              action.primary
-                ? "border-primary bg-primary text-primary-foreground hover:bg-primary/90"
-                : "border-border bg-background text-foreground hover:bg-accent",
+    <section className="rounded-md border border-primary/30 bg-primary/5 p-4" aria-labelledby="priority-action-title">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div className="flex min-w-0 gap-3">
+          <ActionIcon severity={firstAction.severity} />
+          <div>
+            <div className="text-xs font-semibold uppercase tracking-wide text-primary">Próxima ação</div>
+            <h2 id="priority-action-title" className="mt-1 text-lg font-semibold text-foreground">
+              {firstAction.title}
+            </h2>
+            <p className="mt-1 max-w-3xl text-sm text-muted-foreground">{firstAction.description}</p>
+            {actions.length > 1 && (
+              <p className="mt-2 text-xs text-muted-foreground">
+                Há mais {actions.length - 1} {actions.length === 2 ? "pendência" : "pendências"} nas telas relacionadas.
+              </p>
             )}
-          >
-            <action.icon className="h-4 w-4" />
-            {action.label}
-          </Link>
-        ))}
+          </div>
+        </div>
+        <a
+          href={canonicalAppRoute(firstAction.route)}
+          className="inline-flex min-h-10 shrink-0 items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
+        >
+          {firstAction.buttonLabel}
+        </a>
       </div>
     </section>
   );
@@ -176,14 +187,19 @@ function DashboardMetricCard({
   value,
   hint,
   icon: Icon,
+  to,
 }: {
   title: string;
   value: number;
   hint: string;
   icon: LucideIcon;
+  to: "/avaliacoes" | "/jornadas" | "/results";
 }) {
   return (
-    <section className="rounded-md border border-border bg-card p-4">
+    <Link
+      to={to}
+      className="block rounded-md border border-border bg-card p-4 transition hover:border-primary/40 hover:bg-accent"
+    >
       <div className="flex items-center justify-between gap-3">
         <div className="text-xs uppercase text-muted-foreground">{title}</div>
         <Icon className="h-4 w-4 text-muted-foreground" />
@@ -192,77 +208,53 @@ function DashboardMetricCard({
         {value.toLocaleString("pt-BR")}
       </div>
       <div className="mt-1 text-xs text-muted-foreground">{hint}</div>
-    </section>
-  );
-}
-
-function RecommendedActionsPanel({
-  actions,
-}: {
-  actions: DashboardResponse["recommendedActions"];
-}) {
-  return (
-    <section className="rounded-md border border-border bg-card p-4">
-      <h2 className="text-lg font-semibold">Próximos passos</h2>
-      {actions.length === 0 ? (
-        <EmptyPanel message="Nenhuma ação pendente no momento." />
-      ) : (
-        <div className="mt-3 space-y-3">
-          {actions.map((action) => (
-            <div
-              key={`${action.type}-${action.route}`}
-              className="flex flex-wrap items-start justify-between gap-3 rounded-md border border-border bg-background p-3"
-            >
-              <div className="flex min-w-0 gap-3">
-                <ActionIcon severity={action.severity} />
-                <div>
-                  <div className="font-medium text-foreground">{action.title}</div>
-                  <p className="mt-0.5 text-sm text-muted-foreground">{action.description}</p>
-                </div>
-              </div>
-              <a
-                href={canonicalAppRoute(action.route)}
-                className="inline-flex shrink-0 items-center rounded-md border border-border bg-card px-3 py-1.5 text-xs font-medium hover:bg-accent"
-              >
-                {action.buttonLabel}
-              </a>
-            </div>
-          ))}
-        </div>
-      )}
-    </section>
+    </Link>
   );
 }
 
 function LatestResultsTable({ dashboard }: { dashboard: DashboardResponse }) {
+  const latestResults = dashboard.latestResults.slice(0, 5);
+
   return (
-    <section className="rounded-md border border-border bg-card">
-      <SectionHeader title="Últimos resultados" to="/results" actionLabel="Ver resultados" />
-      {dashboard.latestResults.length === 0 ? (
-        <EmptyPanel message="Nenhum resultado disponível ainda." />
+    <section className="rounded-md border border-border bg-card" aria-labelledby="latest-results-title">
+      <div className="flex items-center justify-between gap-3 border-b border-border p-4">
+        <div>
+          <h2 id="latest-results-title" className="text-lg font-semibold">
+            Resultados recentes
+          </h2>
+          <p className="mt-0.5 text-xs text-muted-foreground">Somente os cinco registros mais recentes.</p>
+        </div>
+        <Link to="/results" className="text-sm font-medium text-primary hover:underline">
+          Ver todos
+        </Link>
+      </div>
+
+      {latestResults.length === 0 ? (
+        <div className="p-4 text-sm text-muted-foreground">Nenhum resultado disponível ainda.</div>
       ) : (
         <div className="overflow-x-auto" data-no-pagination>
           <table className="w-full text-sm">
             <thead className="border-b border-border bg-muted/45 text-xs uppercase text-muted-foreground">
               <tr>
                 <th className="px-4 py-3 text-left font-medium">Participante</th>
-                <th className="px-4 py-3 text-left font-medium">Avaliação ou jornada</th>
-                <th className="px-4 py-3 text-left font-medium">Estado</th>
+                <th className="px-4 py-3 text-left font-medium">Processo</th>
+                <th className="px-4 py-3 text-left font-medium">Situação</th>
                 <th className="px-4 py-3 text-left font-medium">Data</th>
-                <th className="px-4 py-3 text-left font-medium">Resultado</th>
                 <th className="px-4 py-3 text-right font-medium">Ação</th>
               </tr>
             </thead>
             <tbody>
-              {dashboard.latestResults.map((result) => (
+              {latestResults.map((result) => (
                 <tr key={result.attemptId} className="border-b border-border last:border-0">
                   <td className="px-4 py-3 font-medium">{result.candidateName}</td>
                   <td className="px-4 py-3 text-muted-foreground">{result.simulationOrJourneyName}</td>
-                  <td className="px-4 py-3">{attemptStatusLabel(result.status)}</td>
-                  <td className="px-4 py-3 text-muted-foreground">{formatDate(result.date)}</td>
-                  <td className="px-4 py-3 tabular-nums">
-                    {result.result == null ? "Não informado" : `${result.result}%`}
+                  <td className="px-4 py-3">
+                    <div>{attemptStatusLabel(result.status)}</div>
+                    {result.result != null && (
+                      <div className="mt-0.5 text-xs tabular-nums text-muted-foreground">{result.result}%</div>
+                    )}
                   </td>
+                  <td className="px-4 py-3 text-muted-foreground">{formatDate(result.date)}</td>
                   <td className="px-4 py-3 text-right">
                     <a
                       href={canonicalAppRoute(result.actionRoute)}
@@ -278,143 +270,6 @@ function LatestResultsTable({ dashboard }: { dashboard: DashboardResponse }) {
         </div>
       )}
     </section>
-  );
-}
-
-function AssessmentJourneySummary({ dashboard }: { dashboard: DashboardResponse }) {
-  return (
-    <section className="rounded-md border border-border bg-card">
-      <SectionHeader title="Jornadas de avaliação" to="/jornadas" actionLabel="Ver jornadas" />
-      {dashboard.journeys.length === 0 ? (
-        <EmptyPanel message="Nenhuma jornada criada ainda." />
-      ) : (
-        <div className="divide-y divide-border">
-          {dashboard.journeys.map((journey) => (
-            <div key={journey.id} className="flex flex-wrap items-center justify-between gap-3 p-4">
-              <div>
-                <div className="font-medium">{journey.name}</div>
-                <div className="mt-1 text-xs text-muted-foreground">
-                  {journeyStatusLabel(journey.status)} · {journey.candidatesInProgress} participantes em andamento
-                </div>
-              </div>
-              <a
-                href={canonicalAppRoute(journey.actionRoute)}
-                className="text-sm font-medium text-primary hover:underline"
-              >
-                {journey.actionLabel}
-              </a>
-            </div>
-          ))}
-        </div>
-      )}
-    </section>
-  );
-}
-
-function IntegrationsStatusPanel({ dashboard }: { dashboard: DashboardResponse }) {
-  return (
-    <section className="rounded-md border border-border bg-card p-4">
-      <div className="flex items-center justify-between gap-3">
-        <h2 className="text-lg font-semibold">Integrações</h2>
-        <Link to="/integrations" className="text-sm font-medium text-primary hover:underline">
-          Configurar
-        </Link>
-      </div>
-      {dashboard.integrations.length === 0 ? (
-        <EmptyPanel message="Nenhuma integração disponível." />
-      ) : (
-        <div className="mt-3 space-y-3">
-          {dashboard.integrations.map((integration) => (
-            <div key={integration.provider} className="rounded-md border border-border bg-background p-3">
-              <div className="flex items-center justify-between gap-3">
-                <div className="font-medium">{integration.name}</div>
-                <span className={cn("rounded-md px-2 py-1 text-xs font-medium", integrationTone(integration.status))}>
-                  {integrationLabel(integration.status)}
-                </span>
-              </div>
-              <div className="mt-1 text-xs text-muted-foreground">
-                {integration.lastSyncAt
-                  ? `Última sincronização: ${formatDate(integration.lastSyncAt)}`
-                  : "Ainda não houve sincronização"}
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-    </section>
-  );
-}
-
-function BillingUsageCard({ dashboard }: { dashboard: DashboardResponse }) {
-  const billing = dashboard.billing;
-  return (
-    <section className="rounded-md border border-border bg-card p-4">
-      <div className="flex items-center justify-between gap-3">
-        <h2 className="text-lg font-semibold">Plano e uso</h2>
-        <CreditCard className="h-4 w-4 text-muted-foreground" />
-      </div>
-      <dl className="mt-4 space-y-3 text-sm">
-        <BillingLine label="Plano" value={planLabel(billing.plan)} />
-        <BillingLine label="Estado" value={billing.status} />
-        <BillingLine
-          label="Uso no período"
-          value={`${billing.usedInPeriod.toLocaleString("pt-BR")} avaliações concluídas`}
-        />
-        {billing.plan === "AVULSO" && (
-          <BillingLine label="Saldo de créditos" value={billing.creditBalance.toLocaleString("pt-BR")} />
-        )}
-        {billing.plan === "PROFISSIONAL" && (
-          <>
-            <BillingLine label="Assinatura" value={billing.subscriptionStatus ?? "Não informada"} />
-            <BillingLine
-              label="Próxima renovação"
-              value={billing.nextRenewalAt ? formatDate(billing.nextRenewalAt) : "Não informada"}
-            />
-          </>
-        )}
-        {billing.plan === "ENTERPRISE" && (
-          <BillingLine label="Condição comercial" value={billing.commercialCondition ?? "Não informada"} />
-        )}
-      </dl>
-      <Link
-        to="/billing"
-        className="mt-4 inline-flex w-full items-center justify-center rounded-md border border-border bg-background px-3 py-2 text-sm font-medium hover:bg-accent"
-      >
-        Ver detalhes do plano
-      </Link>
-    </section>
-  );
-}
-
-function SectionHeader({
-  title,
-  to,
-  actionLabel,
-}: {
-  title: string;
-  to: "/results" | "/jornadas";
-  actionLabel: string;
-}) {
-  return (
-    <div className="flex items-center justify-between gap-3 border-b border-border p-4">
-      <h2 className="text-lg font-semibold">{title}</h2>
-      <Link to={to} className="text-sm font-medium text-primary hover:underline">
-        {actionLabel}
-      </Link>
-    </div>
-  );
-}
-
-function EmptyPanel({ message }: { message: string }) {
-  return <div className="p-4 text-sm text-muted-foreground">{message}</div>;
-}
-
-function BillingLine({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="flex items-start justify-between gap-4">
-      <dt className="text-muted-foreground">{label}</dt>
-      <dd className="text-right font-medium">{value}</dd>
-    </div>
   );
 }
 
@@ -475,30 +330,6 @@ function ActionIcon({ severity }: { severity: DashboardActionSeverity }) {
   );
 }
 
-function integrationTone(status: string) {
-  return (
-    {
-      CONECTADA: "bg-success/10 text-success",
-      PENDENTE: "bg-warning/10 text-warning",
-      ERRO: "bg-danger/10 text-danger",
-      DESATIVADA: "bg-muted text-muted-foreground",
-      NAO_CONFIGURADA: "bg-muted text-muted-foreground",
-    }[status] ?? "bg-muted text-muted-foreground"
-  );
-}
-
-function integrationLabel(status: string) {
-  return (
-    {
-      CONECTADA: "Conectada",
-      PENDENTE: "Pendente",
-      ERRO: "Erro",
-      DESATIVADA: "Desativada",
-      NAO_CONFIGURADA: "Não configurada",
-    }[status] ?? status
-  );
-}
-
 function attemptStatusLabel(status: string) {
   return (
     {
@@ -508,26 +339,6 @@ function attemptStatusLabel(status: string) {
       abandoned: "Abandonada",
       expired: "Expirada",
     }[status] ?? status
-  );
-}
-
-function journeyStatusLabel(status: string) {
-  return (
-    {
-      draft: "Rascunho",
-      published: "Publicada",
-      archived: "Arquivada",
-    }[status] ?? status
-  );
-}
-
-function planLabel(plan: string) {
-  return (
-    {
-      AVULSO: "Avulso",
-      PROFISSIONAL: "Profissional",
-      ENTERPRISE: "Enterprise",
-    }[plan] ?? plan
   );
 }
 
