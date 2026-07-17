@@ -54,7 +54,7 @@ public class CandidateTokenWindowService {
         validate(empresaId, attemptId, ttlHours);
 
         CandidateAttemptEntity entity = candidateAttemptRepository
-                .findByEmpresaIdAndIdForUpdate(empresaId, attemptId)
+                .findOneByEmpresaIdAndId(empresaId, attemptId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Tentativa não encontrada."));
 
         Instant issuedAt = entity.getCandidateTokenIssuedAt();
