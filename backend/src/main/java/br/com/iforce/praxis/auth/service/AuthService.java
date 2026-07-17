@@ -15,7 +15,6 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.Instant;
-import java.util.Optional;
 
 /**
  * Gerencia a autenticação de usuários no sistema.
@@ -124,20 +123,10 @@ public class AuthService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Token de convite obrigatório.");
         }
 
-        Optional<UserEntity> indexed = userRepository
+        return userRepository
                 .findFirstByInviteTokenLookupHash(TokenLookupHasher.sha256(token))
                 .filter(this::isPendingInvite)
-                .filter(user -> passwordEncoder.matches(token, user.getInviteTokenHash()));
-        if (indexed.isPresent()) {
-            return indexed.get();
-        }
-
-        return userRepository
-                .findByStatusAndInviteTokenHashIsNotNullAndInviteTokenLookupHashIsNull(UserStatus.CONVIDADO)
-                .stream()
-                .filter(this::isPendingInvite)
                 .filter(user -> passwordEncoder.matches(token, user.getInviteTokenHash()))
-                .findFirst()
                 .orElseThrow(() -> new ResponseStatusException(
                         HttpStatus.BAD_REQUEST,
                         "Convite inválido ou já utilizado."
