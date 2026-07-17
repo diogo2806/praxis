@@ -5,34 +5,27 @@ import br.com.iforce.praxis.auth.filter.JwtAuthenticationFilter;
 import jakarta.servlet.http.HttpServletRequest;
 
 import org.springframework.beans.factory.annotation.Value;
-
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
-
 import org.springframework.context.annotation.Bean;
-
 import org.springframework.context.annotation.Configuration;
-
 import org.springframework.http.HttpHeaders;
-
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
-
 import org.springframework.security.config.http.SessionCreationPolicy;
-
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-
 import org.springframework.security.crypto.password.PasswordEncoder;
-
 import org.springframework.security.provisioning.InMemoryUserDetailsManager;
-
 import org.springframework.security.web.SecurityFilterChain;
-
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
-
+import org.springframework.security.web.header.writers.ReferrerPolicyHeaderWriter;
 
 @Configuration
 public class SecurityConfig {
 
     private static final String BEARER_PREFIX = "Bearer ";
+    private static final String CONTENT_SECURITY_POLICY =
+            "base-uri 'self'; form-action 'self'; frame-ancestors 'none'; object-src 'none'";
+    private static final String PERMISSIONS_POLICY =
+            "camera=(), microphone=(), geolocation=(), payment=(), usb=()";
 
     private final JwtAuthenticationFilter jwtFilter;
     private final boolean securityEnabled;
@@ -50,12 +43,10 @@ public class SecurityConfig {
         http.csrf(csrf -> csrf.ignoringRequestMatchers(this::isCsrfExemptRequest))
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
 
+        configureSecurityHeaders(http);
+
         if (!securityEnabled) {
             http.authorizeHttpRequests(auth -> auth.anyRequest().permitAll());
-            http.headers(headers -> headers
-                    .frameOptions(frame -> frame.deny())
-                    .contentTypeOptions(contentType -> {})
-            );
             return http.build();
         }
 
@@ -103,12 +94,23 @@ public class SecurityConfig {
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
-        http.headers(headers -> headers
-                .frameOptions(frame -> frame.deny())
-                .contentTypeOptions(contentType -> {})
-        );
 
         return http.build();
+    }
+
+    private void configureSecurityHeaders(HttpSecurity http) throws Exception {
+        http.headers(headers -> headers
+                .frameOptions(frame -> frame.deny())
+                .contentTypeOptions(contentType -> { })
+                .httpStrictTransportSecurity(hsts -> hsts
+                        .includeSubDomains(true)
+                        .preload(true)
+                        .maxAgeInSeconds(31_536_000))
+                .referrerPolicy(referrer -> referrer
+                        .policy(ReferrerPolicyHeaderWriter.ReferrerPolicy.STRICT_ORIGIN_WHEN_CROSS_ORIGIN))
+                .permissionsPolicyHeader(permissions -> permissions.policy(PERMISSIONS_POLICY))
+                .contentSecurityPolicy(csp -> csp.policyDirectives(CONTENT_SECURITY_POLICY))
+        );
     }
 
     /**
