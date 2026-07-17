@@ -1,20 +1,13 @@
 package br.com.iforce.praxis.shared.integration;
 
 import org.springframework.http.HttpStatus;
-
 import org.springframework.stereotype.Service;
-
 import org.springframework.web.server.ResponseStatusException;
 
-
 import java.nio.charset.StandardCharsets;
-
 import java.security.MessageDigest;
-
 import java.security.NoSuchAlgorithmException;
-
 import java.util.Base64;
-
 
 /**
  * Valida tokens de integração vindo de sistemas externos.
@@ -27,6 +20,7 @@ import java.util.Base64;
 public class IntegrationAuthService {
 
     private static final String BEARER_PREFIX = "Bearer ";
+    private static final int MAX_TOKEN_LENGTH = 512;
 
     private final IntegrationTokenRepository integrationTokenRepository;
 
@@ -36,13 +30,6 @@ public class IntegrationAuthService {
 
     /**
      * Valida um token Bearer e identifica qual empresa ele pertence.
-     *
-     * O cabeçalho Authorization da requisição contém "Bearer <token>".
-     * Este método extrai o token, calcula seu hash, e busca qual empresa
-     * possui aquele token no banco de dados.
-     *
-     * Isso garante que apenas a Gupy/Recrutei que temos registrado conseguem
-     * enviar dados para a Praxis.
      *
      * @param authorizationHeader Valor do cabeçalho Authorization da requisição
      * @param provider Nome da plataforma (Gupy, Recrutei, etc)
@@ -55,8 +42,11 @@ public class IntegrationAuthService {
         }
 
         String token = authorizationHeader.substring(BEARER_PREFIX.length());
-        String tokenHash = sha256(token);
+        if (token.isBlank() || token.length() > MAX_TOKEN_LENGTH || containsWhitespace(token)) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Token Bearer inválido.");
+        }
 
+        String tokenHash = sha256(token);
         return integrationTokenRepository.findFirstByProviderAndTokenHash(provider, tokenHash)
                 .map(entity -> new IntegrationEmpresaContext(
                         entity.getEmpresa().getId(),
@@ -64,6 +54,10 @@ public class IntegrationAuthService {
                         entity.getProvider()
                 ))
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Token Bearer inválido."));
+    }
+
+    private boolean containsWhitespace(String token) {
+        return token.codePoints().anyMatch(Character::isWhitespace);
     }
 
     private String sha256(String value) {
