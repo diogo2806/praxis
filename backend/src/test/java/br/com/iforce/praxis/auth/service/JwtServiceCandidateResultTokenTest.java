@@ -1,9 +1,14 @@
 package br.com.iforce.praxis.auth.service;
 
+import io.jsonwebtoken.Claims;
 import org.junit.jupiter.api.Test;
+
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class JwtServiceCandidateResultTokenTest {
 
@@ -19,6 +24,30 @@ class JwtServiceCandidateResultTokenTest {
 
         assertEquals("empresa-1", parsed.empresaId());
         assertEquals("att-123", parsed.attemptId());
+    }
+
+    @Test
+    void preservesCandidateAttemptTokenWhileOriginalWindowIsValid() {
+        Instant issuedAt = Instant.now().minus(1, ChronoUnit.HOURS).truncatedTo(ChronoUnit.SECONDS);
+
+        String token = jwtService.generateCandidateAttemptToken("empresa-1", "att-123", 24, issuedAt);
+        Claims claims = jwtService.parse(token);
+
+        assertEquals(issuedAt, claims.getIssuedAt().toInstant());
+    }
+
+    @Test
+    void renewsCandidateAttemptTokenWhenOriginalWindowExpired() {
+        Instant expiredIssuedAt = Instant.now().minus(8, ChronoUnit.DAYS);
+        Instant generationStartedAt = Instant.now().minusSeconds(1);
+
+        String token = jwtService.generateCandidateAttemptToken("empresa-1", "att-123", 168, expiredIssuedAt);
+        Claims claims = jwtService.parse(token);
+
+        assertTrue(!claims.getIssuedAt().toInstant().isBefore(generationStartedAt));
+        assertTrue(claims.getExpiration().toInstant().isAfter(Instant.now()));
+        assertEquals("empresa-1", claims.get("empresa_id", String.class));
+        assertEquals("att-123", claims.get("attempt_id", String.class));
     }
 
     @Test

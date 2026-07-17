@@ -69,9 +69,10 @@ public class JwtService {
     }
 
     /**
-     * O instante de emissão da credencial de execução vem da criação persistida
-     * da tentativa. Repetições idempotentes geram o mesmo JWT e a expiração não
-     * é renovada silenciosamente a cada consulta.
+     * O instante inicial da credencial vem da criação persistida da tentativa.
+     * Enquanto a credencial estiver válida, repetições idempotentes geram o mesmo JWT.
+     * Quando ela já expirou, uma nova geração de link emite outra janela de validade,
+     * evitando que as ações autenticadas de copiar ou reenviar devolvam um link morto.
      */
     public String generateCandidateAttemptToken(String empresaId, String attemptId, int ttlHours) {
         return generateCandidateAttemptToken(
@@ -100,7 +101,7 @@ public class JwtService {
                 attemptId,
                 CANDIDATE_ATTEMPT_TOKEN_TYPE,
                 ttlHours,
-                issuedAt
+                renewedIssuedAtWhenExpired(issuedAt, ttlHours)
         );
     }
 
@@ -136,6 +137,15 @@ public class JwtService {
                 .map(CandidateAttemptEntity::getCreatedAt)
                 .filter(createdAt -> createdAt != null)
                 .orElseGet(Instant::now);
+    }
+
+    private Instant renewedIssuedAtWhenExpired(Instant issuedAt, int ttlHours) {
+        if (ttlHours <= 0) {
+            throw new IllegalArgumentException("A validade do token deve ser maior que zero.");
+        }
+        Instant now = Instant.now();
+        Instant expiration = issuedAt.plusSeconds(ttlHours * 60L * 60L);
+        return expiration.isAfter(now) ? issuedAt : now;
     }
 
     private String generateCandidateScopedToken(
