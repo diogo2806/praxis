@@ -1,38 +1,28 @@
 package br.com.iforce.praxis.journey.service;
 
-import jakarta.mail.MessagingException;
-import jakarta.mail.internet.MimeMessage;
+import br.com.iforce.praxis.shared.notification.service.EmailDeliveryService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.mail.javamail.JavaMailSender;
-import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Component;
 
 /**
- * Envia o convite da jornada por e-mail quando o provedor está habilitado.
- * Em desenvolvimento e homologação, registra somente uma evidência segura no log.
+ * Envia o convite da jornada por e-mail. O fallback em log só é permitido quando habilitado
+ * explicitamente para desenvolvimento ou homologação.
  */
 @Component
 public class LoggingAssessmentJourneyInvitationEmailSender implements AssessmentJourneyInvitationEmailSender {
 
     private static final Logger log = LoggerFactory.getLogger(LoggingAssessmentJourneyInvitationEmailSender.class);
 
-    private final JavaMailSender mailSender;
-    private final boolean emailEnabled;
-    private final String from;
+    private final EmailDeliveryService emailDeliveryService;
     private final boolean logLink;
 
     public LoggingAssessmentJourneyInvitationEmailSender(
-            ObjectProvider<JavaMailSender> mailSender,
-            @Value("${praxis.email.enabled:false}") boolean emailEnabled,
-            @Value("${praxis.email.from:no-reply@praxis.local}") String from,
+            EmailDeliveryService emailDeliveryService,
             @Value("${praxis.journey.invitation-log-link:false}") boolean logLink
     ) {
-        this.mailSender = mailSender.getIfAvailable();
-        this.emailEnabled = emailEnabled;
-        this.from = from;
+        this.emailDeliveryService = emailDeliveryService;
         this.logLink = logLink;
     }
 
@@ -43,30 +33,25 @@ public class LoggingAssessmentJourneyInvitationEmailSender implements Assessment
             String journeyName,
             String invitationUrl
     ) {
-        if (emailEnabled && mailSender != null) {
-            MimeMessage message = mailSender.createMimeMessage();
-            try {
-                MimeMessageHelper helper = new MimeMessageHelper(message, "UTF-8");
-                helper.setFrom(from);
-                helper.setTo(recipientEmail);
-                helper.setSubject("Convite para jornada de avaliação - Práxis");
-                helper.setText(text(candidateName, journeyName, invitationUrl), false);
-                mailSender.send(message);
-                return;
-            } catch (MessagingException exception) {
-                throw new IllegalStateException("Não foi possível montar o convite da jornada.", exception);
-            }
+        boolean delivered = emailDeliveryService.sendPlainText(
+                recipientEmail,
+                "Convite para jornada de avaliação - Práxis",
+                text(candidateName, journeyName, invitationUrl)
+        );
+        if (delivered) {
+            return;
         }
 
         if (logLink) {
-            log.info(
-                    "Convite da jornada '{}' registrado para {}: url={}.",
+            log.warn(
+                    "Fallback de console para convite da jornada '{}', destinatário {}: url={}.",
                     journeyName,
                     mask(recipientEmail),
                     invitationUrl
             );
         } else {
-            log.info("Convite da jornada '{}' registrado para {}.", journeyName, mask(recipientEmail));
+            log.warn("Fallback de console para convite da jornada '{}', destinatário {}.",
+                    journeyName, mask(recipientEmail));
         }
     }
 

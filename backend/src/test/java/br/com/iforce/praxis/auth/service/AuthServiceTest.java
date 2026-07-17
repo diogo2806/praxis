@@ -19,7 +19,6 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
-import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
@@ -60,10 +59,10 @@ class AuthServiceTest {
         return user;
     }
 
-    private UserEntity invitedUser(String token, boolean indexed) {
+    private UserEntity invitedUser(String token) {
         UserEntity user = user(UserStatus.CONVIDADO);
         user.setInviteTokenHash("bcrypt-invite");
-        user.setInviteTokenLookupHash(indexed ? TokenLookupHasher.sha256(token) : null);
+        user.setInviteTokenLookupHash(TokenLookupHasher.sha256(token));
         user.setInviteExpiresAt(Instant.now().plus(1, ChronoUnit.HOURS));
         return user;
     }
@@ -120,7 +119,7 @@ class AuthServiceTest {
     @Test
     void acceptInviteUsesDirectIndexedLookupAndClearsBothHashes() {
         String token = "invite-indexed";
-        UserEntity invited = invitedUser(token, true);
+        UserEntity invited = invitedUser(token);
         when(userRepository.findFirstByInviteTokenLookupHash(TokenLookupHasher.sha256(token)))
                 .thenReturn(Optional.of(invited));
         when(passwordEncoder.matches(token, "bcrypt-invite")).thenReturn(true);
@@ -137,29 +136,20 @@ class AuthServiceTest {
         assertThat(invited.getInviteTokenHash()).isNull();
         assertThat(invited.getInviteTokenLookupHash()).isNull();
         assertThat(invited.getInviteExpiresAt()).isNull();
-        verify(userRepository, never())
-                .findByStatusAndInviteTokenHashIsNotNullAndInviteTokenLookupHashIsNull(UserStatus.CONVIDADO);
     }
 
     @Test
-    void acceptInviteSupportsLegacyTokenDuringMigration() {
+    void acceptInviteRejectsTokenWithoutIndexedLookup() {
         String token = "invite-legacy";
-        UserEntity invited = invitedUser(token, false);
         when(userRepository.findFirstByInviteTokenLookupHash(TokenLookupHasher.sha256(token)))
                 .thenReturn(Optional.empty());
-        when(userRepository.findByStatusAndInviteTokenHashIsNotNullAndInviteTokenLookupHashIsNull(
-                UserStatus.CONVIDADO
-        )).thenReturn(List.of(invited));
-        when(passwordEncoder.matches(token, "bcrypt-invite")).thenReturn(true);
-        when(passwordEncoder.encode("NovaSenha123")).thenReturn("new-password-hash");
-        when(empresaRepository.findById("tnt_1")).thenReturn(Optional.of(activeEmpresa()));
-        when(jwtService.generateToken(anyString(), anyString(), any())).thenReturn("jwt");
 
-        LoginResponse response = service().acceptInvite(
+        assertThatThrownBy(() -> service().acceptInvite(
                 new AcceptInviteRequest(token, "NovaSenha123", "NovaSenha123")
-        );
+        ))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasFieldOrPropertyWithValue("statusCode", HttpStatus.BAD_REQUEST);
 
-        assertThat(response.token()).isEqualTo("jwt");
-        assertThat(invited.getStatus()).isEqualTo(UserStatus.ATIVO);
+        verify(passwordEncoder, never()).matches(anyString(), anyString());
     }
 }
