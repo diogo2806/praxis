@@ -39,6 +39,8 @@ import static org.mockito.Mockito.when;
 class CandidateLinkQueryServiceTest {
 
     private static final Instant ATTEMPT_CREATED_AT = Instant.parse("2026-07-15T20:00:00Z");
+    private static final Instant TOKEN_ISSUED_AT = Instant.parse("2026-07-16T20:00:00Z");
+    private static final Instant TOKEN_EXPIRES_AT = Instant.parse("2099-07-23T20:00:00Z");
 
     @Mock
     private CandidateAttemptRepository candidateAttemptRepository;
@@ -85,8 +87,8 @@ class CandidateLinkQueryServiceTest {
         when(jwtService.generateCandidateAttemptToken(
                 "empresa-1",
                 "att_1234567890123456",
-                168,
-                ATTEMPT_CREATED_AT
+                TOKEN_ISSUED_AT,
+                TOKEN_EXPIRES_AT
         )).thenReturn("candidate-token");
 
         CandidateLinkPageResponse response = service.search(
@@ -108,6 +110,10 @@ class CandidateLinkQueryServiceTest {
         assertThat(response.items().getFirst().candidateEmail()).isNull();
         assertThat(response.items().getFirst().candidateUrl())
                 .isEqualTo("https://app.praxis.test/candidato/candidate-token");
+        assertThat(response.items().getFirst().linkIssuedAt()).isEqualTo(TOKEN_ISSUED_AT);
+        assertThat(response.items().getFirst().linkExpiresAt()).isEqualTo(TOKEN_EXPIRES_AT);
+        assertThat(response.items().getFirst().remainingDays()).isPositive();
+        assertThat(response.items().getFirst().linkStatus()).isEqualTo("active");
 
         ArgumentCaptor<Pageable> pageable = ArgumentCaptor.forClass(Pageable.class);
         verify(candidateAttemptRepository).findAll(any(Specification.class), pageable.capture());
@@ -116,8 +122,8 @@ class CandidateLinkQueryServiceTest {
         verify(jwtService).generateCandidateAttemptToken(
                 eq("empresa-1"),
                 eq("att_1234567890123456"),
-                eq(168),
-                eq(ATTEMPT_CREATED_AT)
+                eq(TOKEN_ISSUED_AT),
+                eq(TOKEN_EXPIRES_AT)
         );
     }
 
@@ -139,6 +145,8 @@ class CandidateLinkQueryServiceTest {
         entity.setCandidateEmail("maria@example.com");
         entity.setStatus(AttemptStatus.COMPLETED);
         entity.setCreatedAt(ATTEMPT_CREATED_AT);
+        entity.setCandidateTokenIssuedAt(TOKEN_ISSUED_AT);
+        entity.setCandidateTokenExpiresAt(TOKEN_EXPIRES_AT);
         return entity;
     }
 
