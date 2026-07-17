@@ -1,0 +1,76 @@
+@layer components {
+  /*
+   * O validador é um editor visual: o mapa deve receber a maior parte da área útil.
+   * O painel de propriedades passa a funcionar como drawer sobre o canvas, sem reduzir
+   * permanentemente a largura do mapa.
+   */
+  body:has(.vx-root) .vx-stage {
+    position: relative;
+    grid-template-columns: 240px minmax(0, 1fr) !important;
+    height: clamp(680px, calc(100dvh - 12rem), 980px) !important;
+    max-height: none !important;
+  }
+
+  body:has(.vx-root) .vx-stage:has(.vx-nav-compact) {
+    grid-template-columns: 74px minmax(0, 1fr) !important;
+  }
+
+  body:has(.vx-root) .vx-nav {
+    min-width: 0 !important;
+  }
+
+  body:has(.vx-root) .vx-nav-compact {
+    width: 74px !important;
+    min-width: 74px !important;
+  }
+
+  body:has(.vx-root) .vx-inspector {
+    position: absolute;
+    inset: 0 0 0 auto;
+    z-index: 30;
+    display: block !important;
+    width: min(320px, 32vw);
+    border-left: 1px solid var(--color-border);
+    box-shadow: -12px 0 28px rgb(23 33 40 / 14%);
+  }
+
+  body:has(.vx-root) .vx-stage:has(.vx-insp-empty) .vx-inspector {
+    display: none !important;
+  }
+
+  /* O rodapé de publicação não pode cobrir a área de edição do mapa. */
+  body:has(.vx-root) .sticky.bottom-0 {
+    position: static !important;
+  }
+}
+
+@media (max-width: 1180px) {
+  @layer components {
+    body:has(.vx-root) .vx-stage {
+      grid-template-columns: 220px minmax(0, 1fr) !important;
+    }
+
+    body:has(.vx-root) .vx-stage:has(.vx-nav-compact) {
+      grid-template-columns: 74px minmax(0, 1fr) !important;
+    }
+
+    body:has(.vx-root) .vx-inspector {
+      width: min(320px, 42vw);
+    }
+  }
+}
+
+@media (max-width: 760px) {
+  @layer components {
+    body:has(.vx-root) .vx-stage,
+    body:has(.vx-root) .vx-stage:has(.vx-nav-compact) {
+      grid-template-columns: 1fr !important;
+      height: 72dvh !important;
+      min-height: 520px !important;
+    }
+
+    body:has(.vx-root) .vx-inspector {
+      width: min(340px, 92vw);
+    }
+  }
+}
