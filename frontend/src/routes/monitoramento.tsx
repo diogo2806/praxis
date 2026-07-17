@@ -6,7 +6,6 @@ import {
   Bell,
   CheckCircle2,
   Clock3,
-  Eye,
   RefreshCw,
   Send,
   UserRoundSearch,
@@ -52,7 +51,6 @@ function MonitoringPage() {
   const [status, setStatus] = useState<StatusFilter>("all");
   const [simulationId, setSimulationId] = useState("");
   const [candidate, setCandidate] = useState("");
-  const [revealed, setRevealed] = useState(false);
 
   const attemptsQuery = useQuery({
     queryKey: ["monitoring-attempts", page, status, simulationId, candidate],
@@ -112,27 +110,16 @@ function MonitoringPage() {
               total exibido vem diretamente do banco de dados.
             </p>
           </div>
-          <div className="flex gap-2">
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() => setRevealed((current) => !current)}
-            >
-              <Eye className="mr-2 h-4 w-4" />
-              {revealed ? "Ocultar nomes" : "Revelar nomes"}
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() => attemptsQuery.refetch()}
-              disabled={attemptsQuery.isFetching}
-            >
-              <RefreshCw className={cn("mr-2 h-4 w-4", attemptsQuery.isFetching && "animate-spin")} />
-              Atualizar
-            </Button>
-          </div>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => attemptsQuery.refetch()}
+            disabled={attemptsQuery.isFetching}
+          >
+            <RefreshCw className={cn("mr-2 h-4 w-4", attemptsQuery.isFetching && "animate-spin")} />
+            Atualizar
+          </Button>
         </header>
 
         <section className="grid grid-cols-2 gap-3 lg:grid-cols-5">
@@ -221,7 +208,7 @@ function MonitoringPage() {
                 </thead>
                 <tbody>
                   {attempts.map((attempt) => (
-                    <AttemptRow key={attempt.attemptId} attempt={attempt} revealed={revealed} />
+                    <AttemptRow key={attempt.attemptId} attempt={attempt} />
                   ))}
                   {attempts.length === 0 && (
                     <tr>
@@ -264,12 +251,12 @@ function MonitoringPage() {
   );
 }
 
-function AttemptRow({ attempt, revealed }: { attempt: MonitoringAttempt; revealed: boolean }) {
+function AttemptRow({ attempt }: { attempt: MonitoringAttempt }) {
   return (
     <tr className="border-b border-border last:border-0">
       <td className="px-4 py-3">
-        <div className="font-medium">{revealed ? attempt.candidateName : maskName(attempt.candidateName)}</div>
-        <div className="text-xs text-muted-foreground">{revealed ? attempt.candidateEmail : "dados ocultos"}</div>
+        <div className="font-medium">{attempt.candidateName}</div>
+        <div className="text-xs text-muted-foreground">{attempt.candidateEmail}</div>
       </td>
       <td className="px-4 py-3 text-muted-foreground">
         {attempt.simulationName} · v{attempt.versionNumber}
@@ -327,11 +314,6 @@ function Metric({ icon, label, value, warning = false }: { icon: React.ReactNode
       <div className="mt-2 text-2xl font-semibold">{value}</div>
     </div>
   );
-}
-
-function maskName(name: string) {
-  const parts = name.trim().split(/\s+/).filter(Boolean);
-  return parts.map((part) => `${part.charAt(0)}${"•".repeat(Math.max(2, Math.min(6, part.length - 1)))}`).join(" ");
 }
 
 function formatElapsed(seconds: number) {
