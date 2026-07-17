@@ -1,13 +1,12 @@
 package br.com.iforce.praxis.auth.service;
 
+import br.com.iforce.praxis.auth.service.CandidateTokenWindowService.CandidateTokenWindow;
 import br.com.iforce.praxis.gupy.persistence.entity.CandidateAttemptEntity;
 import br.com.iforce.praxis.gupy.persistence.repository.CandidateAttemptRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.http.HttpStatus;
-import org.springframework.web.server.ResponseStatusException;
 
 import java.time.Clock;
 import java.time.Instant;
@@ -15,7 +14,6 @@ import java.time.ZoneOffset;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -29,51 +27,49 @@ class CandidateTokenWindowServiceTest {
     private CandidateAttemptRepository candidateAttemptRepository;
 
     @Test
-    void reusesPersistedIssuedAtWhileWindowIsValid() {
-        Instant issuedAt = NOW.minusSeconds(60);
-        CandidateAttemptEntity entity = attempt(issuedAt);
-        when(candidateAttemptRepository.findOneByEmpresaIdAndId("empresa-1", "att-1"))
+    void readingExpiredWindowDoesNotRenewIt() {
+        CandidateAttemptEntity entity = attempt(
+                NOW.minusSeconds(8 * 24 * 60 * 60L),
+                NOW.minusSeconds(24 * 60 * 60L)
+        );
+        when(candidateAttemptRepository.findByEmpresaIdAndId("empresa-1", "att-1"))
                 .thenReturn(Optional.of(entity));
 
-        Instant resolved = service().currentIssuedAt("empresa-1", "att-1", 1);
+        CandidateTokenWindow window = service().currentWindow("empresa-1", "att-1", 168);
 
-        assertThat(resolved).isEqualTo(issuedAt);
+        assertThat(window.expiresAt()).isBefore(NOW);
+        assertThat(service().isExpired(window)).isTrue();
         verify(candidateAttemptRepository, never()).saveAndFlush(entity);
     }
 
     @Test
-    void persistsSingleCanonicalIssuedAtWhenWindowExpired() {
-        CandidateAttemptEntity entity = attempt(NOW.minusSeconds(3600));
+    void extendingExpiredWindowReactivatesFromNow() {
+        CandidateAttemptEntity entity = attempt(
+                NOW.minusSeconds(8 * 24 * 60 * 60L),
+                NOW.minusSeconds(24 * 60 * 60L)
+        );
         when(candidateAttemptRepository.findOneByEmpresaIdAndId("empresa-1", "att-1"))
                 .thenReturn(Optional.of(entity));
         when(candidateAttemptRepository.saveAndFlush(entity)).thenReturn(entity);
 
-        Instant resolved = service().currentIssuedAt("empresa-1", "att-1", 1);
+        CandidateTokenWindow window = service().extendValidity("empresa-1", "att-1", 168, 7);
 
-        assertThat(resolved).isEqualTo(NOW);
-        assertThat(entity.getCandidateTokenIssuedAt()).isEqualTo(NOW);
+        assertThat(window.issuedAt()).isEqualTo(NOW);
+        assertThat(window.expiresAt()).isEqualTo(NOW.plusSeconds(7 * 24 * 60 * 60L));
         verify(candidateAttemptRepository).saveAndFlush(entity);
     }
 
     @Test
-    void failsWhenAttemptDoesNotExist() {
-        when(candidateAttemptRepository.findOneByEmpresaIdAndId("empresa-1", "att-1"))
-                .thenReturn(Optional.empty());
-
-        assertThatThrownBy(() -> service().currentIssuedAt("empresa-1", "att-1", 1))
-                .isInstanceOf(ResponseStatusException.class)
-                .hasFieldOrPropertyWithValue("statusCode", HttpStatus.NOT_FOUND);
-    }
-
-    @Test
-    void failsWhenCanonicalIssuedAtIsMissing() {
-        CandidateAttemptEntity entity = attempt(null);
+    void extendingActiveWindowAddsDaysToCurrentExpiration() {
+        Instant currentExpiration = NOW.plusSeconds(2 * 24 * 60 * 60L);
+        CandidateAttemptEntity entity = attempt(NOW.minusSeconds(60), currentExpiration);
         when(candidateAttemptRepository.findOneByEmpresaIdAndId("empresa-1", "att-1"))
                 .thenReturn(Optional.of(entity));
+        when(candidateAttemptRepository.saveAndFlush(entity)).thenReturn(entity);
 
-        assertThatThrownBy(() -> service().currentIssuedAt("empresa-1", "att-1", 1))
-                .isInstanceOf(IllegalStateException.class)
-                .hasMessageContaining("janela canônica");
+        CandidateTokenWindow window = service().extendValidity("empresa-1", "att-1", 168, 3);
+
+        assertThat(window.expiresAt()).isEqualTo(currentExpiration.plusSeconds(3 * 24 * 60 * 60L));
     }
 
     private CandidateTokenWindowService service() {
@@ -83,11 +79,12 @@ class CandidateTokenWindowServiceTest {
         );
     }
 
-    private CandidateAttemptEntity attempt(Instant issuedAt) {
+    private CandidateAttemptEntity attempt(Instant issuedAt, Instant expiresAt) {
         CandidateAttemptEntity entity = new CandidateAttemptEntity();
         entity.setId("att-1");
         entity.setEmpresaId("empresa-1");
         entity.setCandidateTokenIssuedAt(issuedAt);
+        entity.setCandidateTokenExpiresAt(expiresAt);
         return entity;
     }
 }
