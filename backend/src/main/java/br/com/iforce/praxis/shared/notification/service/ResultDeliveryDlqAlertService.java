@@ -1,40 +1,28 @@
 package br.com.iforce.praxis.shared.notification.service;
 
 import br.com.iforce.praxis.auth.persistence.entity.UserEntity;
-
 import br.com.iforce.praxis.auth.persistence.repository.UserRepository;
-
 import br.com.iforce.praxis.gupy.persistence.entity.CandidateAttemptEntity;
-
 import br.com.iforce.praxis.gupy.persistence.repository.CandidateAttemptRepository;
-
 import br.com.iforce.praxis.shared.notification.model.InAppNotificationType;
-
 import br.com.iforce.praxis.shared.notification.persistence.entity.InAppNotificationEntity;
-
 import br.com.iforce.praxis.shared.notification.persistence.repository.InAppNotificationRepository;
-
 import br.com.iforce.praxis.shared.outbox.persistence.entity.OutboxEventEntity;
 
 import com.fasterxml.jackson.databind.JsonNode;
-
 import com.fasterxml.jackson.databind.ObjectMapper;
+
+import io.micrometer.core.instrument.MeterRegistry;
 
 import lombok.extern.slf4j.Slf4j;
 
 import org.springframework.stereotype.Service;
-
 import org.springframework.transaction.annotation.Propagation;
-
 import org.springframework.transaction.annotation.Transactional;
 
-
 import java.time.Instant;
-
 import java.util.List;
-
 import java.util.Optional;
-
 
 /**
  * Notifica administradores quando um resultado falha na entrega.
@@ -42,48 +30,37 @@ import java.util.Optional;
  * Quando um evento entra em "Dead Letter Queue" (DLQ) porque falhou 5 vezes
  * de entregar o resultado para a Gupy, este serviço cria uma notificação
  * in-app para alertar os administradores da empresa.
- *
- * A notificação inclui detalhes do candidato afetado para que possam
- * investigar e corrigir o problema manualmente se necessário.
  */
 @Slf4j
 @Service
 public class ResultDeliveryDlqAlertService {
 
     private static final String ADMIN_ROLE = "EMPRESA";
+    private static final String UNASSIGNED_DLQ_METRIC = "praxis.outbox.dlq.unassigned";
 
     private final UserRepository userRepository;
     private final CandidateAttemptRepository candidateAttemptRepository;
     private final InAppNotificationRepository inAppNotificationRepository;
     private final ObjectMapper objectMapper;
+    private final MeterRegistry meterRegistry;
 
     public ResultDeliveryDlqAlertService(
             UserRepository userRepository,
             CandidateAttemptRepository candidateAttemptRepository,
             InAppNotificationRepository inAppNotificationRepository,
-            ObjectMapper objectMapper
+            ObjectMapper objectMapper,
+            MeterRegistry meterRegistry
     ) {
         this.userRepository = userRepository;
         this.candidateAttemptRepository = candidateAttemptRepository;
         this.inAppNotificationRepository = inAppNotificationRepository;
         this.objectMapper = objectMapper;
+        this.meterRegistry = meterRegistry;
     }
 
     /**
      * Cria notificações para alertar administradores de um evento não-entregável.
-     *
-     * Quando um evento não consegue ser entregue após várias tentativas,
-     * todos os administradores da empresa recebem uma notificação alertando
-     * que:
-     * - Um resultado de candidato não foi enviado para a Gupy
-     * - O sistema tentou várias vezes mas falhou
-     * - Precisa de intervenção manual para corrigir
-     *
      * Evita notificar o mesmo administrador mais de uma vez para o mesmo evento.
-     *
-     * Este método DEVE ser chamado dentro de uma transação de banco de dados existente.
-     *
-     * @param event O evento que falhou em todas as tentativas de entrega
      */
     @Transactional(propagation = Propagation.MANDATORY)
     public void alertEmpresaAdmins(OutboxEventEntity event) {
@@ -92,10 +69,13 @@ public class ResultDeliveryDlqAlertService {
         List<UserEntity> admins = userRepository.findByEmpresaIdAndRole(event.getEmpresaId(), ADMIN_ROLE);
 
         if (admins.isEmpty()) {
+            meterRegistry.counter(UNASSIGNED_DLQ_METRIC).increment();
             log.error(
-                    "Evento {} entrou em DLQ, mas nenhum administrador foi encontrado para empresa={}",
+                    "Evento {} entrou em DLQ sem destinatario administrativo para empresa={}. "
+                            + "A metrica {} foi incrementada e deve gerar alerta operacional.",
                     event.getId(),
-                    event.getEmpresaId()
+                    event.getEmpresaId(),
+                    UNASSIGNED_DLQ_METRIC
             );
             return;
         }
@@ -142,7 +122,12 @@ public class ResultDeliveryDlqAlertService {
     private CandidateImpact resolveCandidateImpact(String empresaId, String attemptId) {
         Optional<CandidateAttemptEntity> attempt = candidateAttemptRepository.findByEmpresaIdAndId(empresaId, attemptId);
         if (attempt.isEmpty()) {
-            return new CandidateImpact(attemptId, "Candidato não localizado", "email-nao-localizado@praxis.local", "resultado-nao-localizado");
+            return new CandidateImpact(
+                    attemptId,
+                    "Candidato não localizado",
+                    "email-nao-localizado@praxis.local",
+                    "resultado-nao-localizado"
+            );
         }
 
         CandidateAttemptEntity entity = attempt.get();
