@@ -6,6 +6,7 @@ import br.com.iforce.praxis.candidate.dto.CandidateLinkResponse;
 import br.com.iforce.praxis.candidate.dto.CreateCandidateLinkRequest;
 import br.com.iforce.praxis.candidate.dto.CreateCandidateLinkResponse;
 import br.com.iforce.praxis.candidate.dto.EvidenceReport;
+import br.com.iforce.praxis.candidate.dto.ExtendCandidateLinkRequest;
 import br.com.iforce.praxis.candidate.dto.RegisterDispositionRequest;
 import br.com.iforce.praxis.candidate.service.CandidateAttemptMonitoringQueryService;
 import br.com.iforce.praxis.candidate.service.CandidateDispositionService;
@@ -115,11 +116,25 @@ public class CompanyCandidateLinkController {
 
     @PostMapping("/{attemptId}/resend")
     @Operation(
-            summary = "Reenvia link existente",
-            description = "Valida a empresa autenticada e retorna exatamente o link da tentativa informada, sem criar nova aplicação ou consumir crédito adicional."
+            summary = "Reenvia link vigente",
+            description = "Retorna o link vigente sem criar aplicação ou consumir crédito. Links expirados devem ser reativados antes pelo endpoint de extensão."
     )
     public ResponseEntity<CreateCandidateLinkResponse> resendCandidateLink(@PathVariable String attemptId) {
         return ResponseEntity.ok(companyCandidateLinkService.resendExisting(attemptId));
+    }
+
+    @PostMapping("/{attemptId}/extend")
+    @Operation(
+            summary = "Adiciona dias à validade do link",
+            description = "Soma dias ao vencimento atual ou reativa a tentativa a partir de agora quando o link já expirou. Não cria aplicação nem consome crédito."
+    )
+    public ResponseEntity<CreateCandidateLinkResponse> extendCandidateLink(
+            @PathVariable String attemptId,
+            @Valid @RequestBody ExtendCandidateLinkRequest request
+    ) {
+        return ResponseEntity.ok(
+                companyCandidateLinkService.extendValidity(attemptId, request.additionalDays())
+        );
     }
 
     @PostMapping("/{attemptId}/disposition")
