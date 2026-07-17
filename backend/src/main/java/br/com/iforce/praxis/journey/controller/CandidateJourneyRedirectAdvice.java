@@ -5,9 +5,8 @@ import br.com.iforce.praxis.candidate.controller.CandidateAttemptController;
 import br.com.iforce.praxis.candidate.dto.ParticipacaoResponse;
 import br.com.iforce.praxis.candidate.dto.RegistrarRespostaResponse;
 import br.com.iforce.praxis.config.PraxisProperties;
-import br.com.iforce.praxis.journey.persistence.entity.AssessmentJourneyAttemptEntity;
-import br.com.iforce.praxis.journey.persistence.entity.AssessmentJourneyAttemptStepEntity;
 import br.com.iforce.praxis.journey.persistence.repository.AssessmentJourneyAttemptRepository;
+import br.com.iforce.praxis.journey.persistence.repository.JourneyRedirectTarget;
 import br.com.iforce.praxis.shared.security.EmpresaSecurity;
 import org.springframework.core.MethodParameter;
 import org.springframework.core.Ordered;
@@ -18,8 +17,6 @@ import org.springframework.http.server.ServerHttpRequest;
 import org.springframework.http.server.ServerHttpResponse;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseBodyAdvice;
-
-import java.util.List;
 
 /**
  * Acrescenta o retorno para a Jornada de Avaliacao quando uma tentativa individual
@@ -117,23 +114,18 @@ public class CandidateJourneyRedirectAdvice implements ResponseBodyAdvice<Object
         }
 
         String empresaId = EmpresaSecurity.requiredEmpresa();
-        List<AssessmentJourneyAttemptEntity> journeys = journeyAttemptRepository
-                .findDistinctByEmpresaIdAndStepsCandidateAttemptIdOrderByCreatedAtDesc(empresaId, attemptId);
-
-        for (AssessmentJourneyAttemptEntity journey : journeys) {
-            AssessmentJourneyAttemptStepEntity matchingStep = journey.getSteps().stream()
-                    .filter(step -> attemptId.equals(step.getCandidateAttemptId()))
-                    .findFirst()
-                    .orElse(null);
-            if (matchingStep != null && matchingStep.getId() != null) {
-                return journeyPageBaseUrl()
-                        + "/jornada/"
-                        + journey.getId()
-                        + "?completedStepId="
-                        + matchingStep.getId();
-            }
+        JourneyRedirectTarget target = journeyAttemptRepository
+                .findJourneyRedirectTarget(empresaId, attemptId)
+                .orElse(null);
+        if (target == null || target.journeyAttemptId() == null || target.stepId() == null) {
+            return null;
         }
-        return null;
+
+        return journeyPageBaseUrl()
+                + "/jornada/"
+                + target.journeyAttemptId()
+                + "?completedStepId="
+                + target.stepId();
     }
 
     private String extractAttemptToken(String path) {
