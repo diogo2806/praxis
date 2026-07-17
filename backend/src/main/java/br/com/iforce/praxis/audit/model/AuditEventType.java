@@ -9,6 +9,7 @@ public enum AuditEventType implements DescribedEnum {
 
     ATTEMPT_CREATED("attemptCreated"),
     CANDIDATE_LINK_RESENT("candidateLinkResent"),
+    CANDIDATE_LINK_EXTENDED("candidateLinkExtended"),
     ATTEMPT_STARTED("attemptStarted"),
     ATTEMPT_ABANDONED("attemptAbandoned"),
     ATTEMPT_EXPIRED("attemptExpired"),
