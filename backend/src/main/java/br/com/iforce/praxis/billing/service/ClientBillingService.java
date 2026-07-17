@@ -34,6 +34,10 @@ import java.util.List;
 @Service
 public class ClientBillingService {
 
+    private static final long MIN_ADOPTION_BASELINE = 3L;
+    private static final double ATTENTION_DROP_PERCENT = -30.0;
+    private static final double GROWTH_PERCENT = 10.0;
+
     private final EmpresaRepository empresaRepository;
     private final EmpresaSubscriptionRepository subscriptionRepository;
     private final EmpresaBillingEventRepository eventRepository;
@@ -68,10 +72,14 @@ public class ClientBillingService {
     public ClientBillingResponse getBilling(String empresaId) {
         EmpresaEntity empresa = requireEmpresa(empresaId);
         Instant now = Instant.now();
+        Instant currentPeriodStart = now.minus(30, ChronoUnit.DAYS);
+        Instant previousPeriodStart = now.minus(60, ChronoUnit.DAYS);
         long last7 = attemptRepository.countByEmpresaIdAndStatusAndFinishedAtAfter(
                 empresaId, AttemptStatus.COMPLETED, now.minus(7, ChronoUnit.DAYS));
-        long last30 = attemptRepository.countByEmpresaIdAndStatusAndFinishedAtAfter(
-                empresaId, AttemptStatus.COMPLETED, now.minus(30, ChronoUnit.DAYS));
+        long last30 = attemptRepository.countByEmpresaIdAndStatusAndFinishedAtBetween(
+                empresaId, AttemptStatus.COMPLETED, currentPeriodStart, now);
+        long previous30 = attemptRepository.countByEmpresaIdAndStatusAndFinishedAtBetween(
+                empresaId, AttemptStatus.COMPLETED, previousPeriodStart, currentPeriodStart);
         long allTime = attemptRepository.countByEmpresaIdAndStatus(empresaId, AttemptStatus.COMPLETED);
 
         EmpresaSubscriptionEntity subscription = subscriptionRepository
@@ -116,7 +124,7 @@ public class ClientBillingService {
                 empresa.getStatus(),
                 financialStatusLabel(empresa.getStatus()),
                 creditBalance,
-                new ClientBillingResponse.UsageSummary(last7, last30, allTime),
+                usageSummary(last7, last30, previous30, allTime),
                 subscriptionInfo,
                 resolveActions(empresa.getCommercialPlanType(), empresa.getStatus(), creditBalance),
                 events,
@@ -226,6 +234,32 @@ public class ClientBillingService {
     private EmpresaEntity requireEmpresa(String empresaId) {
         return empresaRepository.findById(empresaId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Cliente não encontrado."));
+    }
+
+    private static ClientBillingResponse.UsageSummary usageSummary(
+            long last7,
+            long last30,
+            long previous30,
+            long allTime
+    ) {
+        if (previous30 < MIN_ADOPTION_BASELINE) {
+            return new ClientBillingResponse.UsageSummary(
+                    last7, last30, previous30, allTime, null, "SEM_BASE"
+            );
+        }
+
+        double variationPercent = ((double) (last30 - previous30) / (double) previous30) * 100.0;
+        String level;
+        if (variationPercent <= ATTENTION_DROP_PERCENT) {
+            level = "ATENCAO";
+        } else if (variationPercent >= GROWTH_PERCENT) {
+            level = "CRESCIMENTO";
+        } else {
+            level = "ESTAVEL";
+        }
+        return new ClientBillingResponse.UsageSummary(
+                last7, last30, previous30, allTime, variationPercent, level
+        );
     }
 
     private static List<String> resolveActions(CommercialPlanType plan, EmpresaStatus status, int creditBalance) {
