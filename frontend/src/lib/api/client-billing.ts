@@ -8,12 +8,13 @@ export type SubscriptionStatus = "PENDING" | "AUTHORIZED" | "DELINQUENT" | "PAUS
 export type FinancialStatus = "REGULAR" | "PENDENTE_PAGAMENTO" | "INADIMPLENTE" | "SEM_CREDITO" | "CANCELADO";
 export type PlanChangeRequestType = "CHANGE_PLAN" | "CANCEL_CONTRACT";
 export type AutoRechargeStatus = "IDLE" | "PENDING";
+export type AdoptionLevel = "SEM_BASE" | "ATENCAO" | "CRESCIMENTO" | "ESTAVEL";
 
 export interface SubscriptionPlan { id: number; code: string; name: string; planType: CommercialPlanType; priceCents: number; currency: string; creditAmount: number | null; }
 export interface BillingEvent { id: number; eventType: string; mpResourceType: string | null; mpResourceId: string | null; mpStatus: string | null; amountCents: number | null; currency: string | null; createdAt: string; }
 export interface CreditMovement { id: number; delta: number; reason: string; balanceAfter: number; note: string | null; createdAt: string; }
 export interface CheckoutResult { kind: string; mpResourceId: string | null; initPoint: string | null; externalReference: string; }
-export interface ClientBillingUsage { completedLast7Days: number; completedLast30Days: number; completedAllTime: number; }
+export interface ClientBillingUsage { completedLast7Days: number; completedLast30Days: number; completedPrevious30Days: number; completedAllTime: number; variationPercent: number | null; adoptionLevel: AdoptionLevel; }
 export interface ClientBillingSubscription { status: SubscriptionStatus; initPoint: string | null; currentPeriodEnd: string | null; lastPaymentAt: string | null; graceUntil: string | null; }
 export interface ClientBillingResponse { empresaId: string; plan: CommercialPlanType | null; empresaStatus: EmpresaStatus; financialStatus: FinancialStatus; creditBalance: number; usage: ClientBillingUsage; subscription: ClientBillingSubscription | null; availableActions: string[]; events: BillingEvent[]; creditMovements: CreditMovement[]; }
 export interface PlanChangeRequest { id: number; requestType: PlanChangeRequestType; currentPlan: CommercialPlanType; requestedPlan: CommercialPlanType | null; status: string; note: string | null; createdAt: string; updatedAt: string; }
