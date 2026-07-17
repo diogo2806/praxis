@@ -3,9 +3,12 @@ package br.com.iforce.praxis.candidate.service;
 import br.com.iforce.praxis.audit.model.AuditEventType;
 import br.com.iforce.praxis.audit.service.AuditEventService;
 import br.com.iforce.praxis.audit.service.AuditMetadata;
+import br.com.iforce.praxis.auth.service.CandidateTokenWindowService;
+import br.com.iforce.praxis.auth.service.CandidateTokenWindowService.CandidateTokenWindow;
 import br.com.iforce.praxis.billing.service.CreditService;
 import br.com.iforce.praxis.candidate.dto.CreateCandidateLinkRequest;
 import br.com.iforce.praxis.candidate.dto.CreateCandidateLinkResponse;
+import br.com.iforce.praxis.config.PraxisProperties;
 import br.com.iforce.praxis.gupy.model.AttemptStatus;
 import br.com.iforce.praxis.gupy.model.CandidateAttempt;
 import br.com.iforce.praxis.gupy.model.PublishedSimulation;
@@ -34,10 +37,6 @@ import java.util.UUID;
 
 /**
  * Controla o ciclo de vida dos links criados diretamente pela empresa.
- *
- * <p>Uma nova aplicação é identificada por {@code applicationCycleId}. Repetir a mesma
- * requisição reaproveita apenas a tentativa daquele ciclo, enquanto o reenvio usa o
- * identificador da tentativa e nunca cria ou cobra uma nova aplicação.</p>
  */
 @Service
 public class CompanyCandidateLinkService {
@@ -45,12 +44,15 @@ public class CompanyCandidateLinkService {
     public static final String CREATED_NEW_APPLICATION = "CREATED_NEW_APPLICATION";
     public static final String REUSED_IDEMPOTENT_REQUEST = "REUSED_IDEMPOTENT_REQUEST";
     public static final String RESENT_EXISTING_LINK = "RESENT_EXISTING_LINK";
+    public static final String EXTENDED_LINK_VALIDITY = "EXTENDED_LINK_VALIDITY";
     private static final int REQUEST_FINGERPRINT_VERSION = 1;
 
     private final CandidateAttemptRepository candidateAttemptRepository;
     private final SimulationCatalogService simulationCatalogService;
     private final CandidateAttemptMapper candidateAttemptMapper;
     private final CandidateAttemptService candidateAttemptService;
+    private final CandidateTokenWindowService candidateTokenWindowService;
+    private final PraxisProperties praxisProperties;
     private final CreditService creditService;
     private final AuditEventService auditEventService;
     private final AuditMetadata auditMetadata;
@@ -60,6 +62,8 @@ public class CompanyCandidateLinkService {
             SimulationCatalogService simulationCatalogService,
             CandidateAttemptMapper candidateAttemptMapper,
             CandidateAttemptService candidateAttemptService,
+            CandidateTokenWindowService candidateTokenWindowService,
+            PraxisProperties praxisProperties,
             CreditService creditService,
             AuditEventService auditEventService,
             AuditMetadata auditMetadata
@@ -68,15 +72,13 @@ public class CompanyCandidateLinkService {
         this.simulationCatalogService = simulationCatalogService;
         this.candidateAttemptMapper = candidateAttemptMapper;
         this.candidateAttemptService = candidateAttemptService;
+        this.candidateTokenWindowService = candidateTokenWindowService;
+        this.praxisProperties = praxisProperties;
         this.creditService = creditService;
         this.auditEventService = auditEventService;
         this.auditMetadata = auditMetadata;
     }
 
-    /**
-     * Cria uma nova tentativa para um ciclo de aplicação ou reaproveita somente uma
-     * repetição idempotente do mesmo ciclo.
-     */
     @Transactional
     public CreateCandidateLinkResponse createNewApplication(CreateCandidateLinkRequest request) {
         String empresaId = EmpresaSecurity.requiredEmpresa();
@@ -123,30 +125,81 @@ public class CompanyCandidateLinkService {
         );
     }
 
-    /**
-     * Reenvia exatamente o link de uma tentativa existente, sem gerar tentativa ou
-     * consumir crédito adicional. A busca por empresa impede acesso entre locatários.
-     */
-    @Transactional
+    /** Reenvia somente links ainda vigentes. */
+    @Transactional(readOnly = true)
     public CreateCandidateLinkResponse resendExisting(String attemptId) {
         String empresaId = EmpresaSecurity.requiredEmpresa();
         CandidateAttemptEntity entity = candidateAttemptRepository
                 .findByEmpresaIdAndId(empresaId, attemptId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Tentativa não encontrada."));
+        CandidateTokenWindow window = currentWindow(empresaId, attemptId);
+        if (candidateTokenWindowService.isExpired(window)) {
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "O link está expirado. Adicione dias de validade para reativá-lo antes de reenviar."
+            );
+        }
         PublishedSimulation simulation = findSimulation(entity);
 
         auditEventService.appendCandidateAttemptEvent(
                 empresaId,
                 entity.getId(),
                 AuditEventType.CANDIDATE_LINK_RESENT,
-                "Link existente reenviado pela empresa sem criar uma nova tentativa.",
+                "Link vigente reenviado pela empresa sem criar uma nova tentativa.",
                 auditMetadata.of(
                         "simulationId", entity.getSimulationId(),
-                        "candidateEmail", entity.getCandidateEmail()
+                        "candidateEmail", entity.getCandidateEmail(),
+                        "linkExpiresAt", window.expiresAt()
                 )
         );
 
         return response(empresaId, entity, simulation, true, RESENT_EXISTING_LINK);
+    }
+
+    /**
+     * Soma dias ao vencimento ou reativa o link a partir do instante atual.
+     * Não cria tentativa e não consome crédito.
+     */
+    @Transactional
+    public CreateCandidateLinkResponse extendValidity(String attemptId, int additionalDays) {
+        String empresaId = EmpresaSecurity.requiredEmpresa();
+        CandidateAttemptEntity entity = candidateAttemptRepository
+                .findByEmpresaIdAndId(empresaId, attemptId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Tentativa não encontrada."));
+        PublishedSimulation simulation = findSimulation(entity);
+        CandidateTokenWindow previous = currentWindow(empresaId, attemptId);
+        boolean reactivated = candidateTokenWindowService.isExpired(previous);
+        CandidateTokenWindow extended = candidateTokenWindowService.extendValidity(
+                empresaId,
+                attemptId,
+                praxisProperties.attemptLinkTtlHours(),
+                additionalDays
+        );
+
+        auditEventService.appendCandidateAttemptEvent(
+                empresaId,
+                entity.getId(),
+                AuditEventType.CANDIDATE_LINK_EXTENDED,
+                "Validade do link do candidato ampliada pela empresa.",
+                auditMetadata.of(
+                        "simulationId", entity.getSimulationId(),
+                        "candidateEmail", entity.getCandidateEmail(),
+                        "additionalDays", additionalDays,
+                        "previousExpiration", previous.expiresAt(),
+                        "newExpiration", extended.expiresAt(),
+                        "reactivated", reactivated
+                )
+        );
+
+        return response(empresaId, entity, simulation, true, EXTENDED_LINK_VALIDITY);
+    }
+
+    private CandidateTokenWindow currentWindow(String empresaId, String attemptId) {
+        return candidateTokenWindowService.currentWindow(
+                empresaId,
+                attemptId,
+                praxisProperties.attemptLinkTtlHours()
+        );
     }
 
     private CompanyLinkResolution resolveApplication(
@@ -242,7 +295,8 @@ public class CompanyCandidateLinkService {
                         "applicationCycleId", applicationCycleId,
                         "applicationContext", normalizedContext(request.applicationContext()),
                         "simulationVersionId", publishedSimulation.versionId(),
-                        "simulationVersionNumber", publishedSimulation.versionNumber()
+                        "simulationVersionNumber", publishedSimulation.versionNumber(),
+                        "linkExpiresAt", saved.getCandidateTokenExpiresAt()
                 )
         );
         return saved;
