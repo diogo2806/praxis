@@ -2,6 +2,7 @@ package br.com.iforce.praxis.gupy.service;
 
 import br.com.iforce.praxis.candidate.dto.EtapaAtualResponse;
 import br.com.iforce.praxis.candidate.dto.RespostaResponse;
+import br.com.iforce.praxis.config.PraxisProperties;
 import br.com.iforce.praxis.gupy.dto.CreateCandidateRequest;
 import br.com.iforce.praxis.gupy.model.AttemptAnswer;
 import br.com.iforce.praxis.gupy.model.AttemptStatus;
@@ -16,6 +17,7 @@ import br.com.iforce.praxis.gupy.persistence.entity.AttemptAnswerEntity;
 import br.com.iforce.praxis.gupy.persistence.entity.AttemptNodeServeEntity;
 import br.com.iforce.praxis.gupy.persistence.entity.CandidateAttemptEntity;
 import br.com.iforce.praxis.gupy.persistence.entity.ResultItemEntity;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
@@ -36,6 +38,27 @@ import java.util.UUID;
  */
 @Component
 public class CandidateAttemptMapper {
+
+    private static final int DEFAULT_ATTEMPT_LINK_TTL_HOURS = 168;
+
+    private final int attemptLinkTtlHours;
+
+    /** Construtor mantido para testes unitários isolados. */
+    public CandidateAttemptMapper() {
+        this(DEFAULT_ATTEMPT_LINK_TTL_HOURS);
+    }
+
+    @Autowired
+    public CandidateAttemptMapper(PraxisProperties praxisProperties) {
+        this(praxisProperties.attemptLinkTtlHours());
+    }
+
+    CandidateAttemptMapper(int attemptLinkTtlHours) {
+        if (attemptLinkTtlHours <= 0) {
+            throw new IllegalArgumentException("A validade padrão do link deve ser maior que zero.");
+        }
+        this.attemptLinkTtlHours = attemptLinkTtlHours;
+    }
 
     public CandidateAttemptEntity newEntity(
             String empresaId,
@@ -110,6 +133,7 @@ public class CandidateAttemptMapper {
         candidateAttemptEntity.setAccommodationTimeMultiplier(normalizeAccommodationMultiplier(attempt.accommodationTimeMultiplier()));
         candidateAttemptEntity.setCompanyResultString(attempt.companyResultString());
         candidateAttemptEntity.setCreatedAt(attempt.createdAt());
+        initializeCandidateTokenWindow(candidateAttemptEntity, attempt.createdAt());
         candidateAttemptEntity.setStartedAt(attempt.startedAt());
         candidateAttemptEntity.setFinishedAt(attempt.finishedAt());
 
@@ -172,6 +196,17 @@ public class CandidateAttemptMapper {
             resultItemEntity.setScore(resultItem.score());
             resultItemEntity.setTier(resultItem.tier());
             candidateAttemptEntity.getResultItems().add(resultItemEntity);
+        }
+    }
+
+    private void initializeCandidateTokenWindow(CandidateAttemptEntity entity, Instant createdAt) {
+        if (entity.getCandidateTokenIssuedAt() == null) {
+            entity.setCandidateTokenIssuedAt(createdAt);
+        }
+        if (entity.getCandidateTokenExpiresAt() == null) {
+            entity.setCandidateTokenExpiresAt(
+                    entity.getCandidateTokenIssuedAt().plusSeconds(attemptLinkTtlHours * 60L * 60L)
+            );
         }
     }
 
