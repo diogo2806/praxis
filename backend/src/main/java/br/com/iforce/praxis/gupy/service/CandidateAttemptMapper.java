@@ -110,6 +110,9 @@ public class CandidateAttemptMapper {
         candidateAttemptEntity.setAccommodationTimeMultiplier(normalizeAccommodationMultiplier(attempt.accommodationTimeMultiplier()));
         candidateAttemptEntity.setCompanyResultString(attempt.companyResultString());
         candidateAttemptEntity.setCreatedAt(attempt.createdAt());
+        if (candidateAttemptEntity.getCandidateTokenIssuedAt() == null) {
+            candidateAttemptEntity.setCandidateTokenIssuedAt(attempt.createdAt());
+        }
         candidateAttemptEntity.setStartedAt(attempt.startedAt());
         candidateAttemptEntity.setFinishedAt(attempt.finishedAt());
 
