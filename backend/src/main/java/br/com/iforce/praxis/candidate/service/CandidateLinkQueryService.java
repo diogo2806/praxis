@@ -20,6 +20,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -97,8 +98,9 @@ public class CandidateLinkQueryService {
                 )
         );
 
+        Instant now = Instant.now();
         List<CandidateLinkResponse> items = result.getContent().stream()
-                .map(entity -> toResponse(entity, blind))
+                .map(entity -> toResponse(entity, blind, now))
                 .toList();
 
         return new CandidateLinkPageResponse(
@@ -110,19 +112,31 @@ public class CandidateLinkQueryService {
         );
     }
 
-    private CandidateLinkResponse toResponse(CandidateAttemptEntity entity, boolean blind) {
+    private CandidateLinkResponse toResponse(CandidateAttemptEntity entity, boolean blind, Instant now) {
         PublishedSimulation simulation = findSimulation(entity);
         String candidateName = blind ? BlindMasking.maskedName(entity.getId()) : entity.getCandidateName();
         String candidateEmail = blind ? null : entity.getCandidateEmail();
+        Instant issuedAt = requiredInstant(
+                entity.getCandidateTokenIssuedAt(),
+                "A emissão vigente do link não foi encontrada."
+        );
+        Instant expiresAt = requiredInstant(
+                entity.getCandidateTokenExpiresAt(),
+                "A expiração vigente do link não foi encontrada."
+        );
         return new CandidateLinkResponse(
                 entity.getId(),
-                candidatePageUrl(entity),
+                candidatePageUrl(entity, issuedAt, expiresAt),
                 candidateName,
                 candidateEmail,
                 entity.getSimulationId(),
                 simulation.name(),
                 entity.getStatus(),
-                entity.getCreatedAt()
+                entity.getCreatedAt(),
+                issuedAt,
+                expiresAt,
+                CandidateLinkResponse.remainingDays(now, expiresAt),
+                CandidateLinkResponse.linkStatus(now, expiresAt)
         );
     }
 
@@ -141,14 +155,21 @@ public class CandidateLinkQueryService {
                 ));
     }
 
-    private String candidatePageUrl(CandidateAttemptEntity entity) {
+    private String candidatePageUrl(CandidateAttemptEntity entity, Instant issuedAt, Instant expiresAt) {
         String token = jwtService.generateCandidateAttemptToken(
                 entity.getEmpresaId(),
                 entity.getId(),
-                praxisProperties.attemptLinkTtlHours(),
-                entity.getCreatedAt()
+                issuedAt,
+                expiresAt
         );
         return praxisProperties.candidatePageBaseUrl() + "/candidato/" + token;
+    }
+
+    private Instant requiredInstant(Instant value, String message) {
+        if (value == null) {
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, message);
+        }
+        return value;
     }
 
     private AttemptStatus parseStatus(String status) {
