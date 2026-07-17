@@ -1,42 +1,29 @@
 package br.com.iforce.praxis.gupy.delivery.service;
 
 import br.com.iforce.praxis.auth.service.CurrentEmpresaService;
-
 import br.com.iforce.praxis.gupy.delivery.dto.ProcessReadyDeliveriesResponse;
-
 import br.com.iforce.praxis.gupy.delivery.dto.ReprocessDeliveryResponse;
-
 import br.com.iforce.praxis.gupy.delivery.dto.ResultDeliveryResponse;
-
 import br.com.iforce.praxis.gupy.delivery.model.ResultDeliveryStatus;
-
 import br.com.iforce.praxis.gupy.persistence.entity.CandidateAttemptEntity;
-
 import br.com.iforce.praxis.gupy.persistence.repository.CandidateAttemptRepository;
-
 import br.com.iforce.praxis.shared.outbox.persistence.entity.OutboxEventEntity;
-
 import br.com.iforce.praxis.shared.outbox.persistence.repository.OutboxEventRepository;
-
 import br.com.iforce.praxis.shared.outbox.service.OutboxProcessor;
 
 import com.fasterxml.jackson.databind.JsonNode;
-
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import org.springframework.http.HttpStatus;
-
 import org.springframework.stereotype.Service;
-
 import org.springframework.transaction.annotation.Transactional;
-
 import org.springframework.web.server.ResponseStatusException;
 
-
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.time.Instant;
-
 import java.util.List;
-
+import java.util.regex.Pattern;
 
 /**
  * Gerencia a fila de entrega dos resultados de prova para a Gupy.
@@ -52,6 +39,11 @@ import java.util.List;
 public class OutboxResultDeliveryService {
 
     private static final String RESULT_READY_EVENT = "RESULT_READY";
+    private static final int MAX_PUBLIC_ERROR_LENGTH = 500;
+    private static final Pattern BEARER_PATTERN = Pattern.compile("(?i)Bearer\\s+[^\\s,;]+");
+    private static final Pattern SECRET_PATTERN = Pattern.compile(
+            "(?i)(authorization|token|secret|api[-_]?key)(\\s*[=:]\\s*)[^\\s&,;]+"
+    );
 
     private final OutboxEventRepository outboxEventRepository;
     private final CandidateAttemptRepository candidateAttemptRepository;
@@ -73,17 +65,6 @@ public class OutboxResultDeliveryService {
         this.objectMapper = objectMapper;
     }
 
-    /**
-     * Lista as entregas de resultado da empresa atual para acompanhamento.
-     *
-     * <p>Permite filtrar pela situação da entrega e/ou pela prova e versão
-     * específicas. É apenas consulta.</p>
-     *
-     * @param status situação desejada (ou nulo para todas)
-     * @param simulationId prova específica (opcional)
-     * @param versionNumber versão específica da prova (opcional)
-     * @return as entregas que atendem aos filtros
-     */
     @Transactional(readOnly = true)
     public List<ResultDeliveryResponse> listDeliveries(
             ResultDeliveryStatus status,
@@ -101,18 +82,15 @@ public class OutboxResultDeliveryService {
 
         return events.stream()
                 .map(this::toResponse)
-                .filter(response -> matchesSimulationFilter(response, simulationId, versionNumber))
+                .filter(response -> matchesSimulationFilter(
+                        empresaId,
+                        response,
+                        simulationId,
+                        versionNumber
+                ))
                 .toList();
     }
 
-    /**
-     * Lista as entregas que já estão prontas para uma nova tentativa de envio.
-     *
-     * <p>São as entregas pendentes ou em retentativa cujo horário agendado
-     * para nova tentativa já passou.</p>
-     *
-     * @return as entregas prontas para reenvio
-     */
     @Transactional(readOnly = true)
     public List<ResultDeliveryResponse> listReadyForRetry() {
         return outboxEventRepository
@@ -127,14 +105,6 @@ public class OutboxResultDeliveryService {
                 .toList();
     }
 
-    /**
-     * Processa, de uma vez, todas as entregas prontas da empresa atual.
-     *
-     * <p>Dispara o envio de cada entrega cujo prazo de espera já venceu e
-     * devolve quantas foram processadas, junto com as que ainda restam.</p>
-     *
-     * @return o total processado e as entregas ainda pendentes
-     */
     // Sem @Transactional: o OutboxProcessor faz a entrega HTTP fora de qualquer transação
     // aberta e persiste o resultado em transações curtas próprias.
     public ProcessReadyDeliveriesResponse processReadyDeliveries() {
@@ -144,15 +114,6 @@ public class OutboxResultDeliveryService {
         return new ProcessReadyDeliveriesResponse(processed, deliveries);
     }
 
-    /**
-     * Reenvia manualmente uma entrega específica.
-     *
-     * <p>Força uma nova tentativa de envio do resultado para a Gupy e devolve
-     * a situação atualizada da entrega.</p>
-     *
-     * @param deliveryId identificador da entrega a reenviar
-     * @return a situação atualizada da entrega após a tentativa
-     */
     // Sem @Transactional: idem processReadyDeliveries — a entrega HTTP roda fora de transação.
     public ReprocessDeliveryResponse reprocessDelivery(Long deliveryId) {
         String empresaId = currentEmpresaService.requiredEmpresaId();
@@ -162,31 +123,41 @@ public class OutboxResultDeliveryService {
         return new ReprocessDeliveryResponse(toResponse(event));
     }
 
-    private boolean matchesSimulationFilter(ResultDeliveryResponse response, String simulationId, Integer versionNumber) {
+    private boolean matchesSimulationFilter(
+            String empresaId,
+            ResultDeliveryResponse response,
+            String simulationId,
+            Integer versionNumber
+    ) {
         if ((simulationId == null || simulationId.isBlank()) && versionNumber == null) {
             return true;
         }
-        CandidateAttemptEntity attempt = candidateAttemptRepository.findById(response.attemptId())
+        CandidateAttemptEntity attempt = candidateAttemptRepository
+                .findByEmpresaIdAndId(empresaId, response.attemptId())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Tentativa não encontrada."));
-        boolean matchesSimulation = simulationId == null || simulationId.isBlank() || simulationId.equals(attempt.getSimulationId());
-        boolean matchesVersion = versionNumber == null || versionNumber.equals(attempt.getSimulationVersionNumber());
+        boolean matchesSimulation = simulationId == null
+                || simulationId.isBlank()
+                || simulationId.equals(attempt.getSimulationId());
+        boolean matchesVersion = versionNumber == null
+                || versionNumber.equals(attempt.getSimulationVersionNumber());
         return matchesSimulation && matchesVersion;
     }
 
     private ResultDeliveryResponse toResponse(OutboxEventEntity event) {
-        CandidateAttemptEntity attempt = candidateAttemptRepository.findByEmpresaIdAndId(event.getEmpresaId(), event.getAggregateId())
+        CandidateAttemptEntity attempt = candidateAttemptRepository
+                .findByEmpresaIdAndId(event.getEmpresaId(), event.getAggregateId())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Tentativa não encontrada."));
         return new ResultDeliveryResponse(
                 event.getId(),
                 attempt.getId(),
                 attempt.getResultId(),
-                webhookUrl(event),
+                maskWebhookUrl(webhookUrl(event)),
                 toResultDeliveryStatus(event.getStatus()),
                 event.getAttempts(),
                 event.getNextAttemptAt(),
                 event.getLastAttemptAt(),
                 event.getSentAt(),
-                event.getLastError(),
+                sanitizeLastError(event.getLastError()),
                 event.getCreatedAt()
         );
     }
@@ -199,6 +170,37 @@ public class OutboxResultDeliveryService {
         } catch (Exception exception) {
             throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Ocorreu um erro interno.", exception);
         }
+    }
+
+    private String maskWebhookUrl(String webhookUrl) {
+        if (webhookUrl == null || webhookUrl.isBlank()) {
+            return webhookUrl;
+        }
+        try {
+            URI uri = URI.create(webhookUrl);
+            return new URI(
+                    uri.getScheme(),
+                    null,
+                    uri.getHost(),
+                    uri.getPort(),
+                    uri.getPath(),
+                    null,
+                    null
+            ).toASCIIString();
+        } catch (IllegalArgumentException | URISyntaxException exception) {
+            return null;
+        }
+    }
+
+    private String sanitizeLastError(String lastError) {
+        if (lastError == null || lastError.isBlank()) {
+            return lastError;
+        }
+        String sanitized = BEARER_PATTERN.matcher(lastError).replaceAll("Bearer [REDACTED]");
+        sanitized = SECRET_PATTERN.matcher(sanitized).replaceAll("$1$2[REDACTED]");
+        return sanitized.length() <= MAX_PUBLIC_ERROR_LENGTH
+                ? sanitized
+                : sanitized.substring(0, MAX_PUBLIC_ERROR_LENGTH) + "...";
     }
 
     private OutboxEventEntity.OutboxEventStatus toOutboxStatus(ResultDeliveryStatus status) {
