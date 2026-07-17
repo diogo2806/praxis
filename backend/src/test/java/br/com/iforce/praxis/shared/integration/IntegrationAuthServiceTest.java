@@ -1,6 +1,7 @@
 package br.com.iforce.praxis.shared.integration;
 
 import br.com.iforce.praxis.auth.persistence.entity.EmpresaEntity;
+
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.server.ResponseStatusException;
@@ -25,23 +26,31 @@ class IntegrationAuthServiceTest {
 
     @Test
     void rejectsMissingAuthorizationHeader() {
-        assertThatThrownBy(() -> service.validateBearerToken(null, "gupy"))
-                .isInstanceOfSatisfying(ResponseStatusException.class, exception -> {
-                    assertThat(exception.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
-                    assertThat(exception.getReason()).isEqualTo("Token Bearer obrigatório.");
-                });
-
+        assertUnauthorizedWithMandatoryMessage(null);
         verifyNoInteractions(repository);
     }
 
     @Test
     void rejectsAuthorizationHeaderWithoutBearerPrefix() {
-        assertThatThrownBy(() -> service.validateBearerToken("Basic abc", "gupy"))
-                .isInstanceOfSatisfying(ResponseStatusException.class, exception -> {
-                    assertThat(exception.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
-                    assertThat(exception.getReason()).isEqualTo("Token Bearer obrigatório.");
-                });
+        assertUnauthorizedWithMandatoryMessage("Basic abc");
+        verifyNoInteractions(repository);
+    }
 
+    @Test
+    void rejectsBlankBearerTokenBeforeHashing() {
+        assertInvalidToken("Bearer   ");
+        verifyNoInteractions(repository);
+    }
+
+    @Test
+    void rejectsBearerTokenContainingWhitespaceBeforeHashing() {
+        assertInvalidToken("Bearer abc def");
+        verifyNoInteractions(repository);
+    }
+
+    @Test
+    void rejectsOversizedBearerTokenBeforeHashing() {
+        assertInvalidToken("Bearer " + "a".repeat(513));
         verifyNoInteractions(repository);
     }
 
@@ -90,6 +99,22 @@ class IntegrationAuthServiceTest {
                 .isInstanceOf(ResponseStatusException.class);
 
         verify(repository).findFirstByProviderAndTokenHash("recrutei", sha256(token));
+    }
+
+    private void assertUnauthorizedWithMandatoryMessage(String authorizationHeader) {
+        assertThatThrownBy(() -> service.validateBearerToken(authorizationHeader, "gupy"))
+                .isInstanceOfSatisfying(ResponseStatusException.class, exception -> {
+                    assertThat(exception.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
+                    assertThat(exception.getReason()).isEqualTo("Token Bearer obrigatório.");
+                });
+    }
+
+    private void assertInvalidToken(String authorizationHeader) {
+        assertThatThrownBy(() -> service.validateBearerToken(authorizationHeader, "gupy"))
+                .isInstanceOfSatisfying(ResponseStatusException.class, exception -> {
+                    assertThat(exception.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
+                    assertThat(exception.getReason()).isEqualTo("Token Bearer inválido.");
+                });
     }
 
     private String sha256(String value) {
