@@ -101,33 +101,18 @@ html[data-simple-navigation="true"] .praxis-page-shell p {
 }
 
 /*
- * No menu simples, tabelas de operação mostram somente o necessário para decidir a próxima ação.
- * Os detalhes continuam disponíveis ao abrir o registro ou ao desativar o menu simples.
+ * Cada tela já possui título e orientação própria. No modo simples, o cartão global
+ * de objetivo repetia essa explicação antes do conteúdo e aumentava a carga cognitiva.
  */
-@media (min-width: 768px) {
-  html[data-simple-navigation="true"][data-praxis-route="avaliacoes"] table th:nth-child(2),
-  html[data-simple-navigation="true"][data-praxis-route="avaliacoes"] table td:nth-child(2),
-  html[data-simple-navigation="true"][data-praxis-route="avaliacoes"] table th:nth-child(4),
-  html[data-simple-navigation="true"][data-praxis-route="avaliacoes"] table td:nth-child(4),
-  html[data-simple-navigation="true"][data-praxis-route="avaliacoes"] table th:nth-child(5),
-  html[data-simple-navigation="true"][data-praxis-route="avaliacoes"] table td:nth-child(5),
-  html[data-simple-navigation="true"][data-praxis-route="avaliacoes"] table th:nth-child(6),
-  html[data-simple-navigation="true"][data-praxis-route="avaliacoes"] table td:nth-child(6) {
-    display: none;
-  }
-
-  html[data-simple-navigation="true"][data-praxis-route="enviar-link"] table th:nth-child(2),
-  html[data-simple-navigation="true"][data-praxis-route="enviar-link"] table td:nth-child(2),
-  html[data-simple-navigation="true"][data-praxis-route="enviar-link"] table th:nth-child(4),
-  html[data-simple-navigation="true"][data-praxis-route="enviar-link"] table td:nth-child(4),
-  html[data-simple-navigation="true"][data-praxis-route="enviar-link"] table th:nth-child(5),
-  html[data-simple-navigation="true"][data-praxis-route="enviar-link"] table td:nth-child(5),
-  html[data-simple-navigation="true"][data-praxis-route="enviar-link"] table th:nth-child(6),
-  html[data-simple-navigation="true"][data-praxis-route="enviar-link"] table td:nth-child(6) {
-    display: none;
-  }
+html[data-simple-navigation="true"] .praxis-page-goal {
+  display: none;
 }
 
+/*
+ * As tabelas consolidadas já apresentam somente os dados necessários para decidir a
+ * próxima ação. Não removemos colunas por posição, pois telas diferentes podem ter
+ * quantidades e significados distintos. Em larguras menores, a rolagem é explícita.
+ */
 @media (max-width: 767px) {
   html[data-simple-navigation="true"] table {
     min-width: 42rem !important;
