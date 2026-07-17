@@ -21,10 +21,17 @@ public record ClientBillingResponse(
         List<CreditMovementResponse> creditMovements
 ) {
 
+    /**
+     * Indicadores de adoção exibidos ao cliente. A comparação mostra utilização da plataforma e não
+     * deve ser apresentada como prova de retorno financeiro.
+     */
     public record UsageSummary(
             long completedLast7Days,
             long completedLast30Days,
-            long completedAllTime
+            long completedPrevious30Days,
+            long completedAllTime,
+            Double variationPercent,
+            String adoptionLevel
     ) {
     }
 
