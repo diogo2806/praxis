@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
-import { Archive, ExternalLink, FilePlus2, PlayCircle, Search, Target } from "lucide-react";
+import { Archive, Copy, ExternalLink, FilePlus2, PlayCircle, Search, Target } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
 import { EmptyState, SkeletonRows, StateBanner, StatusBadge } from "@/components/praxis-ui";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -11,6 +11,7 @@ import {
   type SimulationVersionStatus,
 } from "@/lib/api/praxis";
 import { archiveSimulation } from "@/lib/api/archive-simulation";
+import { duplicateSimulation } from "@/lib/api/simulation-duplicates";
 
 export const Route = createFileRoute("/avaliacoes")({
   head: () => ({
@@ -42,6 +43,7 @@ const filterLabels: Record<(typeof filters)[number], string> = {
 function AvaliacoesPage() {
   const [filter, setFilter] = useState<(typeof filters)[number]>("todas");
   const [query, setQuery] = useState("");
+  const [duplicatedName, setDuplicatedName] = useState<string | null>(null);
   const queryClient = useQueryClient();
   const simulationsQuery = useQuery({
     queryKey: ["simulations"],
@@ -51,6 +53,14 @@ function AvaliacoesPage() {
   const archiveMutation = useMutation({
     mutationFn: archiveSimulation,
     onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["simulations"] });
+    },
+  });
+  const duplicateMutation = useMutation({
+    mutationFn: ({ simulation, name }: { simulation: SimulationSummaryResponse; name: string }) =>
+      duplicateSimulation(simulation.id, simulation.versionNumber, name),
+    onSuccess: async (_created, variables) => {
+      setDuplicatedName(variables.name);
       await queryClient.invalidateQueries({ queryKey: ["simulations"] });
     },
   });
@@ -70,6 +80,17 @@ function AvaliacoesPage() {
       return byStatus && byQuery;
     });
   }, [filter, query, simulations]);
+
+  function requestDuplicate(simulation: SimulationSummaryResponse) {
+    const suggestedName = `${simulation.name} - cópia`;
+    const name = window.prompt(
+      "Informe o nome da nova avaliação. A origem não será alterada.",
+      suggestedName,
+    )?.trim();
+    if (!name) return;
+    setDuplicatedName(null);
+    duplicateMutation.mutate({ simulation, name });
+  }
 
   return (
     <AppShell>
@@ -96,12 +117,39 @@ function AvaliacoesPage() {
           </StateBanner>
         )}
 
+        {duplicateMutation.isError && (
+          <StateBanner tone="danger" title="Não foi possível duplicar a avaliação">
+            {duplicateMutation.error instanceof Error
+              ? duplicateMutation.error.message
+              : "Tente novamente sem alterar a avaliação de origem."}
+          </StateBanner>
+        )}
+
+        {duplicatedName && (
+          <StateBanner tone="ok" title="Avaliação reutilizada com segurança">
+            “{duplicatedName}” foi criada como um novo rascunho independente. A avaliação de origem
+            permanece inalterada.
+          </StateBanner>
+        )}
+
         {simulationsQuery.isLoading ? (
           <section className="rounded-md border border-border bg-card p-4">
             <SkeletonRows rows={5} />
           </section>
         ) : simulationsQuery.isError ? (
-          <StateBanner tone="danger" title="Não foi possível carregar as avaliações">
+          <StateBanner
+            tone="danger"
+            title="Não foi possível carregar as avaliações"
+            action={
+              <button
+                type="button"
+                onClick={() => simulationsQuery.refetch()}
+                className="rounded-md border border-current/20 bg-background/60 px-3 py-1.5 text-xs font-medium"
+              >
+                Tentar novamente
+              </button>
+            }
+          >
             {simulationsQuery.error instanceof Error
               ? simulationsQuery.error.message
               : "Verifique se o sistema está disponível e tente novamente."}
@@ -175,7 +223,7 @@ function AvaliacoesPage() {
               <section className="overflow-hidden rounded-md border border-border bg-card">
                 <div className="overflow-x-auto">
                   <TooltipProvider delayDuration={150}>
-                    <table className="w-full min-w-[760px] text-sm">
+                    <table className="w-full min-w-[820px] text-sm">
                       <thead className="border-b border-border bg-muted/45 text-xs uppercase text-muted-foreground">
                         <tr>
                           <th className="px-4 py-3 text-left font-medium">Avaliação</th>
@@ -215,6 +263,20 @@ function AvaliacoesPage() {
                             </td>
                             <td className="px-4 py-3 text-right">
                               <div className="inline-flex gap-1">
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <button
+                                      type="button"
+                                      aria-label={`Duplicar ${simulation.name}`}
+                                      onClick={() => requestDuplicate(simulation)}
+                                      disabled={duplicateMutation.isPending}
+                                      className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-border bg-background text-primary hover:bg-primary/10 disabled:cursor-not-allowed disabled:opacity-50"
+                                    >
+                                      <Copy className="h-4 w-4" />
+                                    </button>
+                                  </TooltipTrigger>
+                                  <TooltipContent>Duplicar como novo rascunho reutilizável</TooltipContent>
+                                </Tooltip>
                                 <Tooltip>
                                   <TooltipTrigger asChild>
                                     <button
