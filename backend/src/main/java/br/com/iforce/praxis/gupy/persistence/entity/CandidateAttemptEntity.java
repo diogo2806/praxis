@@ -101,6 +101,12 @@ public class CandidateAttemptEntity implements EmpresaAwareEntity {
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
 
+    @Column(name = "candidate_token_issued_at", nullable = false)
+    private Instant candidateTokenIssuedAt;
+
+    @Column(name = "candidate_token_expires_at", nullable = false)
+    private Instant candidateTokenExpiresAt;
+
     @Column(name = "started_at")
     private Instant startedAt;
 
