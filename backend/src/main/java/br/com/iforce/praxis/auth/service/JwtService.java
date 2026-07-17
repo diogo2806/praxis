@@ -1,7 +1,5 @@
 package br.com.iforce.praxis.auth.service;
 
-import br.com.iforce.praxis.gupy.persistence.entity.CandidateAttemptEntity;
-import br.com.iforce.praxis.gupy.persistence.repository.CandidateAttemptRepository;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
@@ -9,6 +7,7 @@ import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
@@ -27,7 +26,7 @@ public class JwtService {
 
     private final SecretKey secretKey;
     private final int expirationHours;
-    private final ObjectProvider<CandidateAttemptRepository> candidateAttemptRepositoryProvider;
+    private final ObjectProvider<CandidateTokenWindowService> candidateTokenWindowServiceProvider;
 
     /** Construtor mantido para testes unitários isolados. */
     public JwtService(String secret, int expirationHours, boolean securityEnabled) {
@@ -39,7 +38,7 @@ public class JwtService {
             @Value("${praxis.jwt-secret}") String secret,
             @Value("${praxis.jwt-expiration-hours:8}") int expirationHours,
             @Value("${praxis.security.enabled:true}") boolean securityEnabled,
-            ObjectProvider<CandidateAttemptRepository> candidateAttemptRepositoryProvider
+            ObjectProvider<CandidateTokenWindowService> candidateTokenWindowServiceProvider
     ) {
         String effectiveSecret = secret;
         if (securityEnabled && (secret == null
@@ -53,7 +52,7 @@ public class JwtService {
         }
         this.secretKey = Keys.hmacShaKeyFor(effectiveSecret.getBytes(StandardCharsets.UTF_8));
         this.expirationHours = expirationHours;
-        this.candidateAttemptRepositoryProvider = candidateAttemptRepositoryProvider;
+        this.candidateTokenWindowServiceProvider = candidateTokenWindowServiceProvider;
     }
 
     public String generateToken(String userId, String empresaId, Set<String> roles) {
@@ -69,23 +68,21 @@ public class JwtService {
     }
 
     /**
-     * O instante inicial da credencial vem da criação persistida da tentativa.
-     * Enquanto a credencial estiver válida, repetições idempotentes geram o mesmo JWT.
-     * Quando ela já expirou, uma nova geração de link emite outra janela de validade,
-     * evitando que as ações autenticadas de copiar ou reenviar devolvam um link morto.
+     * Resolve a janela canônica persistida da tentativa antes de assinar o token.
+     * Em transações somente leitura, a eventual renovação ocorre em uma transação própria.
      */
     public String generateCandidateAttemptToken(String empresaId, String attemptId, int ttlHours) {
-        return generateCandidateAttemptToken(
-                empresaId,
-                attemptId,
-                ttlHours,
-                candidateAttemptIssuedAt(attemptId)
-        );
+        CandidateTokenWindowService tokenWindowService = requiredCandidateTokenWindowService();
+        boolean readOnlyTransaction = TransactionSynchronizationManager.isActualTransactionActive()
+                && TransactionSynchronizationManager.isCurrentTransactionReadOnly();
+        Instant issuedAt = readOnlyTransaction
+                ? tokenWindowService.currentIssuedAtInNewTransaction(empresaId, attemptId, ttlHours)
+                : tokenWindowService.currentIssuedAt(empresaId, attemptId, ttlHours);
+        return generateCandidateAttemptToken(empresaId, attemptId, ttlHours, issuedAt);
     }
 
     /**
-     * Gera o token usando o instante persistido já carregado pelo chamador.
-     * Evita uma nova consulta por tentativa em listagens paginadas.
+     * Assina o token usando exclusivamente o instante canônico fornecido pelo chamador.
      */
     public String generateCandidateAttemptToken(
             String empresaId,
@@ -94,14 +91,14 @@ public class JwtService {
             Instant issuedAt
     ) {
         if (issuedAt == null) {
-            throw new IllegalArgumentException("O instante de criação da tentativa é obrigatório.");
+            throw new IllegalArgumentException("O instante canônico do token da tentativa é obrigatório.");
         }
         return generateCandidateScopedToken(
                 empresaId,
                 attemptId,
                 CANDIDATE_ATTEMPT_TOKEN_TYPE,
                 ttlHours,
-                renewedIssuedAtWhenExpired(issuedAt, ttlHours)
+                issuedAt
         );
     }
 
@@ -125,27 +122,15 @@ public class JwtService {
         return new CandidateResultToken(parsed.empresaId(), parsed.attemptId());
     }
 
-    private Instant candidateAttemptIssuedAt(String attemptId) {
-        if (candidateAttemptRepositoryProvider == null) {
-            return Instant.now();
+    private CandidateTokenWindowService requiredCandidateTokenWindowService() {
+        if (candidateTokenWindowServiceProvider == null) {
+            throw new IllegalStateException("O serviço da janela canônica do token da tentativa não está disponível.");
         }
-        CandidateAttemptRepository repository = candidateAttemptRepositoryProvider.getIfAvailable();
-        if (repository == null) {
-            return Instant.now();
+        CandidateTokenWindowService service = candidateTokenWindowServiceProvider.getIfAvailable();
+        if (service == null) {
+            throw new IllegalStateException("O serviço da janela canônica do token da tentativa não está disponível.");
         }
-        return repository.findById(attemptId)
-                .map(CandidateAttemptEntity::getCreatedAt)
-                .filter(createdAt -> createdAt != null)
-                .orElseGet(Instant::now);
-    }
-
-    private Instant renewedIssuedAtWhenExpired(Instant issuedAt, int ttlHours) {
-        if (ttlHours <= 0) {
-            throw new IllegalArgumentException("A validade do token deve ser maior que zero.");
-        }
-        Instant now = Instant.now();
-        Instant expiration = issuedAt.plusSeconds(ttlHours * 60L * 60L);
-        return expiration.isAfter(now) ? issuedAt : now;
+        return service;
     }
 
     private String generateCandidateScopedToken(

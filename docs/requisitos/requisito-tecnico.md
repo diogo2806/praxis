@@ -1,21 +1,11 @@
 # Requisitos técnicos pendentes — praxis
 
-Status: atualizado em 2026-07-17 após auditoria da branch `main`.
+Status: atualizado em 2026-07-17 após conclusão de `DATA15`.
 
 Este arquivo contém somente pendências técnicas implementáveis e comprovadas no sistema. Não inclui CI/CD, testes, QA, métricas observacionais, publicação ou marketing.
 
-## 1. Persistência, estado e idempotência
+## Situação atual
 
-| ID | Tarefa técnica | Critério de conclusão | Status |
-|---|---|---|---|
-| DATA15 | Persistir a janela renovada do token de tentativa do candidato e reutilizá-la nas gerações seguintes. | Após a expiração da janela original, a primeira renovação grava um novo instante canônico na tentativa; consultas, reenvios e respostas subsequentes usam esse mesmo instante até a nova expiração, inclusive sob concorrência, sem gerar um JWT diferente a cada leitura. | ⬜ Pendente |
+Nenhuma pendência técnica permanece registrada neste backlog.
 
-### DATA15 — arquivos e métodos
-
-| Caminho completo | Método/campo/contrato | Como está | O que fazer |
-|---|---|---|---|
-| `backend/src/main/java/br/com/iforce/praxis/auth/service/JwtService.java` | `generateCandidateAttemptToken(...)`, `renewedIssuedAtWhenExpired(...)` e `candidateAttemptIssuedAt(...)` | Quando `createdAt + ttl` já expirou, `renewedIssuedAtWhenExpired(...)` troca o instante apenas em memória por `Instant.now()`. Como a tentativa continua fornecendo `createdAt` nas chamadas seguintes, cada nova consulta depois da expiração calcula outro `iat` e outro JWT, contrariando a estabilidade declarada para a janela renovada. O fallback para `Instant.now()` quando o repositório ou a tentativa não estão disponíveis também converte ausência da fonte canônica em emissão válida. | Adicionar e persistir na tentativa um instante canônico da credencial, por exemplo `candidateTokenIssuedAt`, inicializado na criação. Na renovação expirada, atualizar esse campo transacionalmente com controle de concorrência e retornar o valor efetivamente persistido. Remover o fallback que emite token quando a tentativa ou o repositório não estão disponíveis; falhar explicitamente nesses casos. |
-| `backend/src/main/java/br/com/iforce/praxis/candidate/service/CandidateLinkQueryService.java` | `candidatePageUrl(CandidateAttemptEntity)` | A listagem é `readOnly` e passa sempre `entity.getCreatedAt()` ao gerador. Depois da expiração original, cada montagem da página produz nova janela sem registrar a renovação. | Fazer a consulta reutilizar o instante canônico persistido. Quando a renovação for necessária, delegar a um caso de uso transacional específico antes de montar a resposta, evitando escrita escondida em transação somente leitura. |
-| `backend/src/main/java/br/com/iforce/praxis/gupy/service/CandidateAttemptService.java` | `candidatePageUrl(...)`, criação e reaproveitamento de tentativas | Os fluxos de criação/reaproveitamento geram o link a partir do instante original da tentativa. Uma tentativa antiga reaproveitada recebe tokens sucessivamente diferentes após o TTL, sem atualização de estado que represente a janela vigente. | Inicializar e preservar o instante canônico do token ao criar a tentativa e usar o caso de uso de renovação nos fluxos de reaproveitamento e reenvio. A renovação deve ocorrer uma única vez por janela, sem consumir crédito nem criar nova tentativa. |
-| `backend/src/main/java/br/com/iforce/praxis/candidate/service/CompanyCandidateLinkService.java` | reenvio e montagem de `candidatePageUrl(...)` | O reenvio depende do mesmo gerador, mas não possui estado persistido que torne a nova credencial estável. Reenvios consecutivos de uma tentativa cuja janela original expirou podem entregar links diferentes. | Conectar o reenvio ao mesmo instante persistido e transacional de renovação usado pelas consultas e integrações, mantendo um único link válido por janela renovada. |
-| `backend/src/main/java/br/com/iforce/praxis/gupy/persistence/entity/CandidateAttemptEntity.java` e `backend/src/main/resources/db/migration/` | novo campo sugerido: `candidateTokenIssuedAt` e migration correspondente | A entidade persiste `createdAt`, mas não registra o início da janela vigente do JWT de tentativa. Portanto, o estado renovado não sobrevive à requisição e não pode ser coordenado entre instâncias da aplicação. | Criar coluna não nula compatível com registros existentes, preenchendo-a inicialmente com `created_at`; mapear o campo na entidade e aplicar atualização atômica ou lock otimista/pessimista para impedir renovações concorrentes divergentes. |
+A implementação e os critérios comprovados de `DATA15` estão documentados em `docs/implementados/data15-janela-token-candidato.md`.

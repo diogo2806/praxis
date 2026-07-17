@@ -1,5 +1,6 @@
 package br.com.iforce.praxis.candidate.service;
 
+import br.com.iforce.praxis.auth.service.CandidateTokenWindowService;
 import br.com.iforce.praxis.auth.service.JwtService;
 import br.com.iforce.praxis.candidate.dto.CandidateLinkPageResponse;
 import br.com.iforce.praxis.candidate.dto.CandidateLinkResponse;
@@ -20,6 +21,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -31,17 +33,20 @@ public class CandidateLinkQueryService {
 
     private final CandidateAttemptRepository candidateAttemptRepository;
     private final SimulationCatalogService simulationCatalogService;
+    private final CandidateTokenWindowService candidateTokenWindowService;
     private final JwtService jwtService;
     private final PraxisProperties praxisProperties;
 
     public CandidateLinkQueryService(
             CandidateAttemptRepository candidateAttemptRepository,
             SimulationCatalogService simulationCatalogService,
+            CandidateTokenWindowService candidateTokenWindowService,
             JwtService jwtService,
             PraxisProperties praxisProperties
     ) {
         this.candidateAttemptRepository = candidateAttemptRepository;
         this.simulationCatalogService = simulationCatalogService;
+        this.candidateTokenWindowService = candidateTokenWindowService;
         this.jwtService = jwtService;
         this.praxisProperties = praxisProperties;
     }
@@ -142,11 +147,16 @@ public class CandidateLinkQueryService {
     }
 
     private String candidatePageUrl(CandidateAttemptEntity entity) {
+        Instant issuedAt = candidateTokenWindowService.currentIssuedAtInNewTransaction(
+                entity.getEmpresaId(),
+                entity.getId(),
+                praxisProperties.attemptLinkTtlHours()
+        );
         String token = jwtService.generateCandidateAttemptToken(
                 entity.getEmpresaId(),
                 entity.getId(),
                 praxisProperties.attemptLinkTtlHours(),
-                entity.getCreatedAt()
+                issuedAt
         );
         return praxisProperties.candidatePageBaseUrl() + "/candidato/" + token;
     }

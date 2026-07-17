@@ -30,6 +30,9 @@ public interface CandidateAttemptRepository extends JpaRepository<CandidateAttem
     @EntityGraph(attributePaths = {"answers", "resultItems"})
     Optional<CandidateAttemptEntity> findByEmpresaIdAndId(String empresaId, String id);
 
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    Optional<CandidateAttemptEntity> findOneByEmpresaIdAndId(String empresaId, String id);
+
     @EntityGraph(attributePaths = {"resultItems"})
     @Query("SELECT c FROM CandidateAttemptEntity c WHERE c.id IN :ids")
     List<CandidateAttemptEntity> findAllByIdInWithResultItems(@Param("ids") List<String> ids);
