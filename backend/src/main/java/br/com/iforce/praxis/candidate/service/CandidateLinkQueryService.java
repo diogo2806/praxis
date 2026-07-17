@@ -1,6 +1,7 @@
 package br.com.iforce.praxis.candidate.service;
 
 import br.com.iforce.praxis.auth.service.CandidateTokenWindowService;
+import br.com.iforce.praxis.auth.service.CandidateTokenWindowService.CandidateTokenWindow;
 import br.com.iforce.praxis.auth.service.JwtService;
 import br.com.iforce.praxis.candidate.dto.CandidateLinkPageResponse;
 import br.com.iforce.praxis.candidate.dto.CandidateLinkResponse;
@@ -95,15 +96,12 @@ public class CandidateLinkQueryService {
 
         Page<CandidateAttemptEntity> result = candidateAttemptRepository.findAll(
                 specification,
-                PageRequest.of(
-                        normalizedPage,
-                        normalizedSize,
-                        Sort.by(Sort.Direction.DESC, "createdAt")
-                )
+                PageRequest.of(normalizedPage, normalizedSize, Sort.by(Sort.Direction.DESC, "createdAt"))
         );
 
+        Instant now = Instant.now();
         List<CandidateLinkResponse> items = result.getContent().stream()
-                .map(entity -> toResponse(entity, blind))
+                .map(entity -> toResponse(entity, blind, now))
                 .toList();
 
         return new CandidateLinkPageResponse(
@@ -115,19 +113,34 @@ public class CandidateLinkQueryService {
         );
     }
 
-    private CandidateLinkResponse toResponse(CandidateAttemptEntity entity, boolean blind) {
+    private CandidateLinkResponse toResponse(CandidateAttemptEntity entity, boolean blind, Instant now) {
         PublishedSimulation simulation = findSimulation(entity);
         String candidateName = blind ? BlindMasking.maskedName(entity.getId()) : entity.getCandidateName();
         String candidateEmail = blind ? null : entity.getCandidateEmail();
+        CandidateTokenWindow window = candidateTokenWindowService.currentWindowInNewTransaction(
+                entity.getEmpresaId(),
+                entity.getId(),
+                praxisProperties.attemptLinkTtlHours()
+        );
+        String token = jwtService.generateCandidateAttemptToken(
+                entity.getEmpresaId(),
+                entity.getId(),
+                window.issuedAt(),
+                window.expiresAt()
+        );
         return new CandidateLinkResponse(
                 entity.getId(),
-                candidatePageUrl(entity),
+                praxisProperties.candidatePageBaseUrl() + "/candidato/" + token,
                 candidateName,
                 candidateEmail,
                 entity.getSimulationId(),
                 simulation.name(),
                 entity.getStatus(),
-                entity.getCreatedAt()
+                entity.getCreatedAt(),
+                window.issuedAt(),
+                window.expiresAt(),
+                CandidateLinkResponse.remainingDays(now, window.expiresAt()),
+                CandidateLinkResponse.linkStatus(now, window.expiresAt())
         );
     }
 
@@ -144,21 +157,6 @@ public class CandidateLinkQueryService {
                         HttpStatus.INTERNAL_SERVER_ERROR,
                         "A avaliação associada à tentativa não foi encontrada."
                 ));
-    }
-
-    private String candidatePageUrl(CandidateAttemptEntity entity) {
-        Instant issuedAt = candidateTokenWindowService.currentIssuedAtInNewTransaction(
-                entity.getEmpresaId(),
-                entity.getId(),
-                praxisProperties.attemptLinkTtlHours()
-        );
-        String token = jwtService.generateCandidateAttemptToken(
-                entity.getEmpresaId(),
-                entity.getId(),
-                praxisProperties.attemptLinkTtlHours(),
-                issuedAt
-        );
-        return praxisProperties.candidatePageBaseUrl() + "/candidato/" + token;
     }
 
     private AttemptStatus parseStatus(String status) {
