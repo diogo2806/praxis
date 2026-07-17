@@ -24,18 +24,16 @@ class ComparableSimulationValidationServiceTest {
             );
 
     @Test
-    void blocksPublicationWhenPathsUseDifferentMaximums() {
+    void allowsPublicationWhenPathsUseDifferentMaximums() {
         SimulationVersionEntity version = versionWithDifferentPathMaximums();
 
         SimulationValidationResponse response = service.validate(version);
 
-        assertThat(response.publishable()).isFalse();
+        assertThat(response.publishable()).isTrue();
+        assertThat(response.blockerCount()).isZero();
         assertThat(response.issues())
-                .anySatisfy(issue -> {
-                    assertThat(issue.severity()).isEqualTo(ValidationIssueSeverity.BLOCKER);
-                    assertThat(issue.message()).contains("bases máximas diferentes");
-                    assertThat(issue.message()).contains("Comunicação");
-                });
+                .noneMatch(issue -> issue.severity() == ValidationIssueSeverity.BLOCKER
+                        && issue.message().contains("bases máximas diferentes"));
     }
 
     private SimulationVersionEntity versionWithDifferentPathMaximums() {
