@@ -166,6 +166,16 @@
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
+                <executions>
+                    <!-- Grava META-INF/build-info.properties (versão e horário exato da
+                         compilação) para o /actuator/info. Permite confirmar, em produção,
+                         qual build está de fato em execução no container. -->
+                    <execution>
+                        <goals>
+                            <goal>build-info</goal>
+                        </goals>
+                    </execution>
+                </executions>
             </plugin>
         </plugins>
     </build>
