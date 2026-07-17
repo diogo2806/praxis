@@ -1,12 +1,10 @@
 package br.com.iforce.praxis.candidate.dto;
 
 import br.com.iforce.praxis.gupy.model.AttemptStatus;
-
 import io.swagger.v3.oas.annotations.media.Schema;
 
-
+import java.time.Duration;
 import java.time.Instant;
-
 
 @Schema(description = "Link de candidato gerado para uma tentativa de simulacao.")
 public record CandidateLinkResponse(
@@ -30,6 +28,66 @@ public record CandidateLinkResponse(
 
         AttemptStatus status,
 
-        Instant createdAt
+        Instant createdAt,
+
+        @Schema(description = "Início da janela vigente do token público.")
+        Instant linkIssuedAt,
+
+        @Schema(description = "Fim da janela vigente do token público.")
+        Instant linkExpiresAt,
+
+        @Schema(description = "Dias inteiros restantes, arredondados para cima.", example = "7")
+        long remainingDays,
+
+        @Schema(description = "Situação operacional do link.", allowableValues = {"active", "expiringSoon", "expired"})
+        String linkStatus
 ) {
+
+    private static final long LEGACY_DEFAULT_TTL_HOURS = 168;
+
+    /**
+     * Mantém compatibilidade com consumidores internos legados até que todos carreguem
+     * os campos persistidos da janela do token.
+     */
+    public CandidateLinkResponse(
+            String attemptId,
+            String candidateUrl,
+            String candidateName,
+            String candidateEmail,
+            String simulationId,
+            String simulationName,
+            AttemptStatus status,
+            Instant createdAt
+    ) {
+        this(
+                attemptId,
+                candidateUrl,
+                candidateName,
+                candidateEmail,
+                simulationId,
+                simulationName,
+                status,
+                createdAt,
+                createdAt,
+                createdAt.plusSeconds(LEGACY_DEFAULT_TTL_HOURS * 60L * 60L),
+                remainingDays(Instant.now(), createdAt.plusSeconds(LEGACY_DEFAULT_TTL_HOURS * 60L * 60L)),
+                linkStatus(Instant.now(), createdAt.plusSeconds(LEGACY_DEFAULT_TTL_HOURS * 60L * 60L))
+        );
+    }
+
+    public static long remainingDays(Instant now, Instant expiresAt) {
+        if (expiresAt == null || !expiresAt.isAfter(now)) {
+            return 0;
+        }
+        long seconds = Duration.between(now, expiresAt).getSeconds();
+        return Math.max(1, (seconds + 86_399L) / 86_400L);
+    }
+
+    public static String linkStatus(Instant now, Instant expiresAt) {
+        long days = remainingDays(now, expiresAt);
+        if (days == 0) {
+            return "expired";
+        }
+        return days <= 3 ? "expiringSoon" : "active";
+    }
 }
