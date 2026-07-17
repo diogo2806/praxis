@@ -1,4 +1,4 @@
-import { useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { LanguageSelector } from "@/components/language-selector";
@@ -17,6 +17,14 @@ function TokenCandidatePage() {
   const [ready, setReady] = useState(false);
   const attempt = useQuery({ queryKey: ["candidate-attempt", token], queryFn: () => getCandidateAttempt(token), enabled: ready });
   const terminal = useMemo(() => !attempt.data || attempt.data.etapaAtual ? null : statusCopy(attempt.data, copy), [attempt.data, copy]);
+  const redirectUrl = attempt.data?.finalizado ? attempt.data.redirectUrl ?? null : null;
+
+  useEffect(() => {
+    if (!redirectUrl) return;
+    const timeout = window.setTimeout(() => window.location.assign(redirectUrl), 1200);
+    return () => window.clearTimeout(timeout);
+  }, [redirectUrl]);
+
   if (!ready) return <Start copy={copy} onStart={() => setReady(true)} />;
   if (attempt.isLoading) return <Shell><Status label={copy.loadingLabel} title={copy.loadingTitle} description={copy.loadingDescription} /></Shell>;
   if (terminal) return <Shell><Status {...terminal} notice={copy.privacyNotice} /></Shell>;

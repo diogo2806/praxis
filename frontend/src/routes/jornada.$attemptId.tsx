@@ -1,3 +1,4 @@
+import { useEffect, useRef } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { CheckCircle2, ClipboardCheck, ExternalLink, Loader2, Play, RefreshCw } from "lucide-react";
@@ -30,6 +31,7 @@ export const Route = createFileRoute("/jornada/$attemptId")({
 function CandidateJourneyPage() {
   const { attemptId } = Route.useParams();
   const queryClient = useQueryClient();
+  const autoAdvanceHandled = useRef(false);
   const attemptQuery = useQuery({
     queryKey: ["public-assessment-journey-attempt", attemptId],
     queryFn: () => getPublicAssessmentJourneyAttempt(attemptId),
@@ -49,22 +51,65 @@ function CandidateJourneyPage() {
     mutationFn: (stepId: number) => startPublicAssessmentJourneyAttemptStep(attemptId, stepId),
     onSuccess: async (attempt) => {
       await invalidateAttempt(queryClient, attemptId);
-      const startedStep = attempt.steps.find(
-        (step) => step.status === "inProgress" && step.candidateUrl,
-      );
-      if (startedStep?.candidateUrl) {
-        window.location.href = toParticipantPageUrl(startedStep.candidateUrl);
-      }
+      redirectToStartedStep(attempt);
     },
   });
   const completeStepMutation = useMutation({
     mutationFn: (stepId: number) => completePublicAssessmentJourneyAttemptStep(attemptId, stepId),
     onSuccess: async () => invalidateAttempt(queryClient, attemptId),
   });
+  const autoAdvanceMutation = useMutation({
+    mutationFn: async (completedStepId: number) => {
+      const updatedAttempt = await completePublicAssessmentJourneyAttemptStep(attemptId, completedStepId);
+      if (updatedAttempt.status === "completed") {
+        return updatedAttempt;
+      }
+      const nextStep = findNextPendingStep(updatedAttempt);
+      if (!nextStep) {
+        return updatedAttempt;
+      }
+      return startPublicAssessmentJourneyAttemptStep(attemptId, nextStep.id);
+    },
+    onSuccess: async (updatedAttempt) => {
+      await invalidateAttempt(queryClient, attemptId);
+      redirectToStartedStep(updatedAttempt);
+    },
+  });
 
   const attempt = attemptQuery.data;
+
+  useEffect(() => {
+    if (autoAdvanceHandled.current || !attempt || typeof window === "undefined") return;
+
+    const searchParams = new URLSearchParams(window.location.search);
+    const completedStepValue = searchParams.get("completedStepId");
+    if (!completedStepValue) return;
+
+    const completedStepId = Number(completedStepValue);
+    if (!Number.isSafeInteger(completedStepId) || completedStepId <= 0) return;
+
+    autoAdvanceHandled.current = true;
+    removeCompletedStepSearchParam(searchParams);
+
+    const completedStep = attempt.steps.find((step) => step.id === completedStepId);
+    if (!completedStep || attempt.status === "completed") return;
+
+    if (completedStep.status === "completed") {
+      const nextStep = findNextPendingStep(attempt);
+      if (nextStep) {
+        startStepMutation.mutate(nextStep.id);
+      }
+      return;
+    }
+
+    autoAdvanceMutation.mutate(completedStepId);
+  }, [attempt, autoAdvanceMutation, startStepMutation]);
+
   const mutationError =
-    startJourneyMutation.error || startStepMutation.error || completeStepMutation.error;
+    startJourneyMutation.error
+    || startStepMutation.error
+    || completeStepMutation.error
+    || autoAdvanceMutation.error;
 
   return (
     <main className="min-h-screen bg-background px-4 py-8 text-foreground sm:px-6 lg:px-8">
@@ -139,8 +184,8 @@ function CandidateJourneyPage() {
               <div className="border-b border-border p-5">
                 <h2 className="text-xl font-semibold">Avaliações da jornada</h2>
                 <p className="mt-1 text-sm text-muted-foreground">
-                  Siga a ordem abaixo. Ao concluir uma avaliação, volte para esta página e confirme a
-                  etapa.
+                  Siga a ordem abaixo. Ao concluir uma avaliação, a próxima será aberta
+                  automaticamente. Os controles manuais permanecem disponíveis como contingência.
                 </p>
               </div>
               <div className="divide-y divide-border">
@@ -154,7 +199,7 @@ function CandidateJourneyPage() {
                     onStart={() => startStepMutation.mutate(step.id)}
                     startPending={startStepMutation.isPending}
                     onComplete={() => completeStepMutation.mutate(step.id)}
-                    completePending={completeStepMutation.isPending}
+                    completePending={completeStepMutation.isPending || autoAdvanceMutation.isPending}
                   />
                 ))}
               </div>
@@ -305,6 +350,28 @@ function canStartStep(
   return attempt.steps
     .filter((step) => step.orderIndex < target.orderIndex && step.required)
     .every((step) => step.status === "completed");
+}
+
+function findNextPendingStep(attempt: AssessmentJourneyAttemptResponse) {
+  return attempt.steps
+    .filter((step) => step.status === "pending" && canStartStep(attempt, step))
+    .sort((left, right) => left.orderIndex - right.orderIndex)[0];
+}
+
+function redirectToStartedStep(attempt: AssessmentJourneyAttemptResponse) {
+  const startedStep = attempt.steps.find(
+    (step) => step.status === "inProgress" && step.candidateUrl,
+  );
+  if (startedStep?.candidateUrl) {
+    window.location.href = toParticipantPageUrl(startedStep.candidateUrl);
+  }
+}
+
+function removeCompletedStepSearchParam(searchParams: URLSearchParams) {
+  searchParams.delete("completedStepId");
+  const search = searchParams.toString();
+  const nextUrl = `${window.location.pathname}${search ? `?${search}` : ""}${window.location.hash}`;
+  window.history.replaceState(window.history.state, "", nextUrl);
 }
 
 function stepStatusLabel(status: JourneyAttemptStepResponse["status"]) {
