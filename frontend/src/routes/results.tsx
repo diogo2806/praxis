@@ -1,7 +1,7 @@
 import { createFileRoute, Link, Outlet, useNavigate, useRouterState } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { BarChart3, CheckCircle2, Clock3, ExternalLink, RefreshCw, Search, TimerOff } from "lucide-react";
-import { useMemo } from "react";
+import { ExternalLink, RefreshCw, Search, SlidersHorizontal, X } from "lucide-react";
+import { useMemo, useState } from "react";
 import { AppShell } from "@/components/app-shell";
 import { EmptyState, StateBanner } from "@/components/praxis-ui";
 import {
@@ -13,16 +13,18 @@ import {
 } from "@/lib/api/praxis";
 import { useLanguage } from "@/lib/language-context";
 import type { Language } from "@/lib/translations";
+import { cn } from "@/lib/utils";
 
 const PAGE_SIZE = 20;
 
 type ResultsCopy = {
   locale: string;
-  eyebrow: string;
   title: string;
   description: string;
   reload: string;
   filters: string;
+  hideFilters: string;
+  clearFilters: string;
   searchPlaceholder: string;
   assessment: string;
   status: string;
@@ -34,15 +36,9 @@ type ResultsCopy = {
   emptyTitle: string;
   emptyDescription: string;
   generateAssessmentLink: string;
-  completed: string;
-  inProgress: string;
-  expired: string;
-  average: string;
-  noFinalResult: string;
-  tableTitle: string;
   candidate: string;
-  highlightedCompetency: string;
-  result: string;
+  process: string;
+  situation: string;
   action: string;
   viewDetails: string;
   followUp: string;
@@ -55,39 +51,35 @@ type ResultsCopy = {
   errorTitle: string;
   retry: string;
   errorDescription: string;
+  noFinalResult: string;
   statuses: Record<AttemptStatus, string>;
 };
 
 const resultsCopy: Record<Language, ResultsCopy> = {
   "pt-BR": {
     locale: "pt-BR",
-    eyebrow: "Práxis / Resultados",
     title: "Resultados",
-    description: "Acompanhe candidatos, status da avaliação e resultados finais quando eles estiverem disponíveis.",
-    reload: "Recarregar",
+    description: "Acompanhe cada participante e abra o registro somente quando precisar analisar as evidências.",
+    reload: "Atualizar",
     filters: "Filtros",
-    searchPlaceholder: "Buscar candidato...",
+    hideFilters: "Ocultar filtros",
+    clearFilters: "Limpar filtros",
+    searchPlaceholder: "Buscar participante",
     assessment: "Avaliação",
-    status: "Status",
+    status: "Situação",
     period: "Período",
     last7Days: "Últimos 7 dias",
     last30Days: "Últimos 30 dias",
     last90Days: "Últimos 90 dias",
-    integration: "Integração",
-    emptyTitle: "Nenhum resultado encontrado.",
-    emptyDescription: "Assim que candidatos concluírem avaliações, os resultados aparecerão aqui.",
-    generateAssessmentLink: "Gerar link de avaliação",
-    completed: "Concluídos",
-    inProgress: "Em andamento",
-    expired: "Expirados",
-    average: "Média geral",
-    noFinalResult: "Sem resultado final",
-    tableTitle: "Tabela de resultados",
-    candidate: "Candidato",
-    highlightedCompetency: "Competência destaque",
-    result: "Resultado",
+    integration: "Origem",
+    emptyTitle: "Nenhum resultado encontrado",
+    emptyDescription: "Os registros aparecerão aqui quando uma participação for criada.",
+    generateAssessmentLink: "Convidar participante",
+    candidate: "Participante",
+    process: "Processo",
+    situation: "Situação",
     action: "Ação",
-    viewDetails: "Ver detalhes",
+    viewDetails: "Analisar",
     followUp: "Acompanhar",
     resultSingular: "resultado",
     resultPlural: "resultados",
@@ -95,11 +87,12 @@ const resultsCopy: Record<Language, ResultsCopy> = {
     pageOf: "Página {current} de {total}",
     next: "Próxima",
     loading: "Carregando resultados...",
-    errorTitle: "Não foi possível carregar os resultados.",
-    retry: "Recarregar",
-    errorDescription: "Tente novamente.",
+    errorTitle: "Não foi possível carregar os resultados",
+    retry: "Tentar novamente",
+    errorDescription: "Verifique a conexão e tente novamente.",
+    noFinalResult: "Aguardando conclusão",
     statuses: {
-      notStarted: "Criado",
+      notStarted: "Não iniciado",
       inProgress: "Em andamento",
       completed: "Concluído",
       expired: "Expirado",
@@ -108,33 +101,28 @@ const resultsCopy: Record<Language, ResultsCopy> = {
   },
   en: {
     locale: "en-US",
-    eyebrow: "Práxis / Results",
     title: "Results",
-    description: "Track candidates, assessment status, and final results when they are available.",
-    reload: "Reload",
+    description: "Track each participant and open a record only when you need to review the evidence.",
+    reload: "Refresh",
     filters: "Filters",
-    searchPlaceholder: "Search candidate...",
+    hideFilters: "Hide filters",
+    clearFilters: "Clear filters",
+    searchPlaceholder: "Search participant",
     assessment: "Assessment",
     status: "Status",
     period: "Period",
     last7Days: "Last 7 days",
     last30Days: "Last 30 days",
     last90Days: "Last 90 days",
-    integration: "Integration",
-    emptyTitle: "No results found.",
-    emptyDescription: "Results will appear here as candidates complete assessments.",
-    generateAssessmentLink: "Generate assessment link",
-    completed: "Completed",
-    inProgress: "In progress",
-    expired: "Expired",
-    average: "Overall average",
-    noFinalResult: "No final result",
-    tableTitle: "Results table",
-    candidate: "Candidate",
-    highlightedCompetency: "Highlighted competency",
-    result: "Result",
+    integration: "Source",
+    emptyTitle: "No results found",
+    emptyDescription: "Records will appear here when a participation is created.",
+    generateAssessmentLink: "Invite participant",
+    candidate: "Participant",
+    process: "Process",
+    situation: "Status",
     action: "Action",
-    viewDetails: "View details",
+    viewDetails: "Review",
     followUp: "Follow up",
     resultSingular: "result",
     resultPlural: "results",
@@ -142,11 +130,12 @@ const resultsCopy: Record<Language, ResultsCopy> = {
     pageOf: "Page {current} of {total}",
     next: "Next",
     loading: "Loading results...",
-    errorTitle: "Could not load the results.",
-    retry: "Reload",
-    errorDescription: "Try again.",
+    errorTitle: "Could not load results",
+    retry: "Try again",
+    errorDescription: "Check the connection and try again.",
+    noFinalResult: "Waiting for completion",
     statuses: {
-      notStarted: "Created",
+      notStarted: "Not started",
       inProgress: "In progress",
       completed: "Completed",
       expired: "Expired",
@@ -155,33 +144,28 @@ const resultsCopy: Record<Language, ResultsCopy> = {
   },
   "es-MX": {
     locale: "es-MX",
-    eyebrow: "Práxis / Resultados",
     title: "Resultados",
-    description: "Acompaña a las personas candidatas, el estado de la evaluación y los resultados finales cuando estén disponibles.",
-    reload: "Recargar",
+    description: "Acompaña a cada participante y abre el registro solo cuando necesites revisar las evidencias.",
+    reload: "Actualizar",
     filters: "Filtros",
-    searchPlaceholder: "Buscar candidato...",
+    hideFilters: "Ocultar filtros",
+    clearFilters: "Limpiar filtros",
+    searchPlaceholder: "Buscar participante",
     assessment: "Evaluación",
     status: "Estado",
     period: "Período",
     last7Days: "Últimos 7 días",
     last30Days: "Últimos 30 días",
     last90Days: "Últimos 90 días",
-    integration: "Integración",
-    emptyTitle: "No se encontraron resultados.",
-    emptyDescription: "Los resultados aparecerán aquí cuando las personas candidatas completen las evaluaciones.",
-    generateAssessmentLink: "Generar enlace de evaluación",
-    completed: "Completados",
-    inProgress: "En curso",
-    expired: "Vencidos",
-    average: "Promedio general",
-    noFinalResult: "Sin resultado final",
-    tableTitle: "Tabla de resultados",
-    candidate: "Candidato",
-    highlightedCompetency: "Competencia destacada",
-    result: "Resultado",
+    integration: "Origen",
+    emptyTitle: "No se encontraron resultados",
+    emptyDescription: "Los registros aparecerán aquí cuando se cree una participación.",
+    generateAssessmentLink: "Invitar participante",
+    candidate: "Participante",
+    process: "Proceso",
+    situation: "Estado",
     action: "Acción",
-    viewDetails: "Ver detalles",
+    viewDetails: "Analizar",
     followUp: "Acompañar",
     resultSingular: "resultado",
     resultPlural: "resultados",
@@ -189,11 +173,12 @@ const resultsCopy: Record<Language, ResultsCopy> = {
     pageOf: "Página {current} de {total}",
     next: "Siguiente",
     loading: "Cargando resultados...",
-    errorTitle: "No se pudieron cargar los resultados.",
-    retry: "Recargar",
-    errorDescription: "Inténtalo de nuevo.",
+    errorTitle: "No se pudieron cargar los resultados",
+    retry: "Intentar de nuevo",
+    errorDescription: "Verifica la conexión e inténtalo de nuevo.",
+    noFinalResult: "Esperando finalización",
     statuses: {
-      notStarted: "Creado",
+      notStarted: "No iniciado",
       inProgress: "En curso",
       completed: "Completado",
       expired: "Vencido",
@@ -214,7 +199,7 @@ export const Route = createFileRoute("/results")({
   head: () => ({
     meta: [
       { title: "Resultados - Práxis" },
-      { name: "description", content: "Lista, filtros e análise de resultados de candidatos avaliados no Práxis." },
+      { name: "description", content: "Acompanhe participantes e analise os resultados das avaliações." },
     ],
   }),
   component: ResultsPage,
@@ -230,7 +215,11 @@ function ResultsIndexPage() {
   const copy = resultsCopy[language];
   const filters = Route.useSearch();
   const navigate = useNavigate({ from: "/results" });
+  const [showAdvancedFilters, setShowAdvancedFilters] = useState(
+    Boolean(filters.simulationId || filters.status || filters.period || filters.integrationProvider),
+  );
   const periodRange = useMemo(() => rangeForPeriod(filters.period), [filters.period]);
+
   const updateFilters = (next: Partial<typeof filters>, resetPage = true) => {
     void navigate({
       to: "/results",
@@ -238,6 +227,7 @@ function ResultsIndexPage() {
       search: (current) => ({ ...current, ...next, page: resetPage ? 0 : next.page ?? current.page }),
     });
   };
+
   const resultsQuery = useQuery({
     queryKey: ["results", filters],
     queryFn: () =>
@@ -254,188 +244,198 @@ function ResultsIndexPage() {
     retry: false,
   });
   const simulationsQuery = useQuery({ queryKey: ["simulations"], queryFn: listSimulations, retry: false });
+  const advancedFilterCount = [
+    filters.simulationId,
+    filters.status,
+    filters.period,
+    filters.integrationProvider,
+  ].filter(Boolean).length;
+
+  function clearAdvancedFilters() {
+    updateFilters({ simulationId: "", status: "", period: "", integrationProvider: "" });
+  }
 
   return (
     <AppShell>
-      <div className="space-y-6">
-        <ResultsHeader copy={copy} onReload={() => resultsQuery.refetch()} />
-        <ResultsFilters
-          copy={copy}
-          search={filters.search}
-          simulationId={filters.simulationId}
-          status={filters.status}
-          period={filters.period}
-          integrationProvider={filters.integrationProvider}
-          simulations={simulationsQuery.data ?? []}
-          onSearch={(value) => updateFilters({ search: value })}
-          onSimulationId={(value) => updateFilters({ simulationId: value })}
-          onStatus={(value) => updateFilters({ status: value })}
-          onPeriod={(value) => updateFilters({ period: value })}
-          onIntegrationProvider={(value) => updateFilters({ integrationProvider: value })}
-        />
+      <div className="mx-auto max-w-7xl space-y-5">
+        <header className="flex flex-wrap items-end justify-between gap-4">
+          <div>
+            <h1 className="text-3xl font-semibold">{copy.title}</h1>
+            <p className="mt-1 max-w-2xl text-sm text-muted-foreground">{copy.description}</p>
+          </div>
+          <button
+            type="button"
+            onClick={() => resultsQuery.refetch()}
+            className="inline-flex min-h-10 items-center gap-2 rounded-md border border-border bg-card px-3 py-2 text-sm hover:bg-accent"
+          >
+            <RefreshCw className="h-4 w-4" />
+            {copy.reload}
+          </button>
+        </header>
+
+        <section className="rounded-md border border-border bg-card p-4">
+          <div className="flex flex-wrap items-center gap-2">
+            <label className="relative min-w-[240px] flex-1">
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <input
+                value={filters.search}
+                onChange={(event) => updateFilters({ search: event.target.value })}
+                placeholder={copy.searchPlaceholder}
+                className="h-10 w-full rounded-md border border-border bg-background pl-9 pr-3 text-sm"
+              />
+            </label>
+            <button
+              type="button"
+              aria-expanded={showAdvancedFilters}
+              onClick={() => setShowAdvancedFilters((current) => !current)}
+              className={cn(
+                "inline-flex min-h-10 items-center gap-2 rounded-md border px-3 py-2 text-sm font-medium",
+                showAdvancedFilters || advancedFilterCount > 0
+                  ? "border-primary/40 bg-primary/10 text-primary"
+                  : "border-border bg-background hover:bg-accent",
+              )}
+            >
+              <SlidersHorizontal className="h-4 w-4" />
+              {showAdvancedFilters ? copy.hideFilters : copy.filters}
+              {advancedFilterCount > 0 && (
+                <span className="rounded-full bg-primary px-1.5 py-0.5 text-[10px] text-primary-foreground">
+                  {advancedFilterCount}
+                </span>
+              )}
+            </button>
+          </div>
+
+          {showAdvancedFilters && (
+            <div className="mt-4 border-t border-border pt-4">
+              <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                <select
+                  value={filters.simulationId}
+                  onChange={(event) => updateFilters({ simulationId: event.target.value })}
+                  className="h-10 rounded-md border border-border bg-background px-3 text-sm"
+                  aria-label={copy.assessment}
+                >
+                  <option value="">{copy.assessment}</option>
+                  {(simulationsQuery.data ?? []).map((simulation) => (
+                    <option key={simulation.id} value={simulation.id}>
+                      {simulation.name}
+                    </option>
+                  ))}
+                </select>
+                <select
+                  value={filters.status}
+                  onChange={(event) => updateFilters({ status: event.target.value as AttemptStatus | "" })}
+                  className="h-10 rounded-md border border-border bg-background px-3 text-sm"
+                  aria-label={copy.status}
+                >
+                  <option value="">{copy.status}</option>
+                  {statusOptions(copy).map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+                <select
+                  value={filters.period}
+                  onChange={(event) => updateFilters({ period: event.target.value })}
+                  className="h-10 rounded-md border border-border bg-background px-3 text-sm"
+                  aria-label={copy.period}
+                >
+                  <option value="">{copy.period}</option>
+                  <option value="7">{copy.last7Days}</option>
+                  <option value="30">{copy.last30Days}</option>
+                  <option value="90">{copy.last90Days}</option>
+                </select>
+                <select
+                  value={filters.integrationProvider}
+                  onChange={(event) => updateFilters({ integrationProvider: event.target.value })}
+                  className="h-10 rounded-md border border-border bg-background px-3 text-sm"
+                  aria-label={copy.integration}
+                >
+                  <option value="">{copy.integration}</option>
+                  <option value="GUPY">Gupy</option>
+                  <option value="RECRUTEI">Recrutei</option>
+                  <option value="API">API</option>
+                  <option value="MANUAL">Manual</option>
+                </select>
+              </div>
+              {advancedFilterCount > 0 && (
+                <button
+                  type="button"
+                  onClick={clearAdvancedFilters}
+                  className="mt-3 inline-flex min-h-9 items-center gap-2 rounded-md border border-border bg-background px-3 py-1.5 text-xs font-medium hover:bg-accent"
+                >
+                  <X className="h-3.5 w-3.5" />
+                  {copy.clearFilters}
+                </button>
+              )}
+            </div>
+          )}
+        </section>
+
         {resultsQuery.isLoading ? (
           <ResultsLoadingState copy={copy} />
         ) : resultsQuery.isError ? (
           <ResultsErrorState copy={copy} onReload={() => resultsQuery.refetch()} />
         ) : resultsQuery.data ? (
-          <ResultsContent copy={copy} data={resultsQuery.data} page={filters.page} onPageChange={(page) => updateFilters({ page }, false)} />
+          <ResultsContent
+            copy={copy}
+            data={resultsQuery.data}
+            page={filters.page}
+            onPageChange={(page) => updateFilters({ page }, false)}
+          />
         ) : null}
       </div>
     </AppShell>
   );
 }
 
-function ResultsHeader({ copy, onReload }: { copy: ResultsCopy; onReload: () => void }) {
-  return (
-    <div className="flex flex-wrap items-end justify-between gap-4">
-      <div>
-        <div className="text-xs uppercase text-primary">{copy.eyebrow}</div>
-        <h1 className="mt-1 text-3xl font-semibold">{copy.title}</h1>
-        <p className="mt-1 max-w-2xl text-sm text-muted-foreground">{copy.description}</p>
-      </div>
-      <button type="button" onClick={onReload} className="inline-flex items-center gap-2 rounded-md border border-border bg-card px-3 py-2 text-sm hover:bg-accent">
-        <RefreshCw className="h-4 w-4" />
-        {copy.reload}
-      </button>
-    </div>
-  );
-}
-
-function ResultsFilters({
+function ResultsContent({
   copy,
-  search,
-  simulationId,
-  status,
-  period,
-  integrationProvider,
-  simulations,
-  onSearch,
-  onSimulationId,
-  onStatus,
-  onPeriod,
-  onIntegrationProvider,
+  data,
+  page,
+  onPageChange,
 }: {
   copy: ResultsCopy;
-  search: string;
-  simulationId: string;
-  status: AttemptStatus | "";
-  period: string;
-  integrationProvider: string;
-  simulations: Array<{ id: string; name: string }>;
-  onSearch: (value: string) => void;
-  onSimulationId: (value: string) => void;
-  onStatus: (value: AttemptStatus | "") => void;
-  onPeriod: (value: string) => void;
-  onIntegrationProvider: (value: string) => void;
+  data: ResultsPageResponse;
+  page: number;
+  onPageChange: (page: number) => void;
 }) {
-  return (
-    <section className="rounded-md border border-border bg-card p-4">
-      <div className="mb-3 text-sm font-semibold">{copy.filters}</div>
-      <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-[minmax(240px,1.4fr)_repeat(4,minmax(160px,1fr))]">
-        <label className="relative block">
-          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <input value={search} onChange={(event) => onSearch(event.target.value)} placeholder={copy.searchPlaceholder} className="h-10 w-full rounded-md border border-border bg-background pl-9 pr-3 text-sm" />
-        </label>
-        <select value={simulationId} onChange={(event) => onSimulationId(event.target.value)} className="h-10 rounded-md border border-border bg-background px-3 text-sm">
-          <option value="">{copy.assessment}</option>
-          {simulations.map((simulation) => (
-            <option key={simulation.id} value={simulation.id}>
-              {simulation.name}
-            </option>
-          ))}
-        </select>
-        <select value={status} onChange={(event) => onStatus(event.target.value as AttemptStatus | "")} className="h-10 rounded-md border border-border bg-background px-3 text-sm">
-          <option value="">{copy.status}</option>
-          {statusOptions(copy).map((option) => (
-            <option key={option.value} value={option.value}>
-              {option.label}
-            </option>
-          ))}
-        </select>
-        <select value={period} onChange={(event) => onPeriod(event.target.value)} className="h-10 rounded-md border border-border bg-background px-3 text-sm">
-          <option value="">{copy.period}</option>
-          <option value="7">{copy.last7Days}</option>
-          <option value="30">{copy.last30Days}</option>
-          <option value="90">{copy.last90Days}</option>
-        </select>
-        <select value={integrationProvider} onChange={(event) => onIntegrationProvider(event.target.value)} className="h-10 rounded-md border border-border bg-background px-3 text-sm">
-          <option value="">{copy.integration}</option>
-          <option value="GUPY">Gupy</option>
-          <option value="RECRUTEI">Recrutei</option>
-          <option value="API">API</option>
-          <option value="MANUAL">Manual</option>
-        </select>
-      </div>
-    </section>
-  );
-}
-
-function ResultsContent({ copy, data, page, onPageChange }: { copy: ResultsCopy; data: ResultsPageResponse; page: number; onPageChange: (page: number) => void }) {
   if (data.items.length === 0) {
     return (
-      <>
-        <ResultsSummaryCards copy={copy} data={data} />
-        <EmptyState
-          title={copy.emptyTitle}
-          description={copy.emptyDescription}
-          actions={
-            <Link to="/candidate-links/new" className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90">
-              {copy.generateAssessmentLink}
-              <ExternalLink className="h-4 w-4" />
-            </Link>
-          }
-        />
-      </>
+      <EmptyState
+        title={copy.emptyTitle}
+        description={copy.emptyDescription}
+        actions={
+          <Link
+            to="/enviar-link"
+            className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
+          >
+            {copy.generateAssessmentLink}
+            <ExternalLink className="h-4 w-4" />
+          </Link>
+        }
+      />
     );
   }
 
   return (
-    <>
-      <ResultsSummaryCards copy={copy} data={data} />
+    <div className="space-y-4">
       <ResultsTable copy={copy} items={data.items} />
       <ResultsPagination copy={copy} data={data} page={page} onPageChange={onPageChange} />
-    </>
-  );
-}
-
-function ResultsSummaryCards({ copy, data }: { copy: ResultsCopy; data: ResultsPageResponse }) {
-  const cards = [
-    { title: copy.completed, value: data.summary.completed, icon: CheckCircle2 },
-    { title: copy.inProgress, value: data.summary.inProgress, icon: Clock3 },
-    { title: copy.expired, value: data.summary.expired, icon: TimerOff },
-    { title: copy.average, value: data.summary.averageScore == null ? copy.noFinalResult : `${data.summary.averageScore}%`, icon: BarChart3 },
-  ];
-
-  return (
-    <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-      {cards.map((card) => (
-        <div key={card.title} className="rounded-md border border-border bg-card p-4">
-          <div className="flex items-center justify-between gap-3">
-            <div className="text-xs uppercase text-muted-foreground">{card.title}</div>
-            <card.icon className="h-4 w-4 text-muted-foreground" />
-          </div>
-          <div className="mt-2 text-3xl font-semibold tabular-nums">{card.value}</div>
-        </div>
-      ))}
-    </section>
+    </div>
   );
 }
 
 function ResultsTable({ copy, items }: { copy: ResultsCopy; items: ResultListItemResponse[] }) {
   return (
-    <section className="rounded-md border border-border bg-card">
-      <div className="border-b border-border p-4">
-        <h2 className="text-lg font-semibold">{copy.tableTitle}</h2>
-      </div>
+    <section className="overflow-hidden rounded-md border border-border bg-card">
       <div className="overflow-x-auto">
-        <table className="w-full min-w-[980px] text-sm">
+        <table className="w-full min-w-[760px] text-sm">
           <thead className="border-b border-border bg-muted/45 text-xs uppercase text-muted-foreground">
             <tr>
               <th className="px-4 py-3 text-left font-medium">{copy.candidate}</th>
-              <th className="px-4 py-3 text-left font-medium">{copy.assessment}</th>
-              <th className="px-4 py-3 text-left font-medium">{copy.status}</th>
-              <th className="px-4 py-3 text-left font-medium">{copy.highlightedCompetency}</th>
-              <th className="px-4 py-3 text-left font-medium">{copy.result}</th>
+              <th className="px-4 py-3 text-left font-medium">{copy.process}</th>
+              <th className="px-4 py-3 text-left font-medium">{copy.situation}</th>
               <th className="px-4 py-3 text-left font-medium">{copy.integration}</th>
               <th className="px-4 py-3 text-right font-medium">{copy.action}</th>
             </tr>
@@ -450,12 +450,20 @@ function ResultsTable({ copy, items }: { copy: ResultsCopy; items: ResultListIte
                 <td className="px-4 py-3 text-muted-foreground">{item.simulationTitle}</td>
                 <td className="px-4 py-3">
                   <ResultStatusBadge copy={copy} status={item.status} />
+                  <div className="mt-1 text-xs font-medium tabular-nums text-muted-foreground">
+                    {formatResultScore(item.status, item.overallScore, copy)}
+                  </div>
+                  {isFinalResultStatus(item.status) && item.highlightCompetency && (
+                    <div className="mt-1 text-[11px] text-muted-foreground">{item.highlightCompetency}</div>
+                  )}
                 </td>
-                <td className="px-4 py-3">{isFinalResultStatus(item.status) ? item.highlightCompetency ?? "-" : copy.noFinalResult}</td>
-                <td className="px-4 py-3 font-medium tabular-nums">{formatResultScore(item.status, item.overallScore, copy)}</td>
                 <td className="px-4 py-3 text-muted-foreground">{providerLabel(item.integrationProvider)}</td>
                 <td className="px-4 py-3 text-right">
-                  <Link to="/results/$attemptId" params={{ attemptId: item.attemptId }} className="text-sm font-medium text-primary hover:underline">
+                  <Link
+                    to="/results/$attemptId"
+                    params={{ attemptId: item.attemptId }}
+                    className="text-sm font-medium text-primary hover:underline"
+                  >
                     {item.status === "completed" ? copy.viewDetails : copy.followUp}
                   </Link>
                 </td>
@@ -468,19 +476,43 @@ function ResultsTable({ copy, items }: { copy: ResultsCopy; items: ResultListIte
   );
 }
 
-function ResultsPagination({ copy, data, page, onPageChange }: { copy: ResultsCopy; data: ResultsPageResponse; page: number; onPageChange: (page: number) => void }) {
+function ResultsPagination({
+  copy,
+  data,
+  page,
+  onPageChange,
+}: {
+  copy: ResultsCopy;
+  data: ResultsPageResponse;
+  page: number;
+  onPageChange: (page: number) => void;
+}) {
   const resultsLabel = data.totalItems === 1 ? copy.resultSingular : copy.resultPlural;
   const currentPage = data.totalPages === 0 ? 0 : page + 1;
 
   return (
     <div className="flex flex-wrap items-center justify-between gap-3 text-sm">
-      <div className="text-muted-foreground">{data.totalItems.toLocaleString(copy.locale)} {resultsLabel}</div>
+      <div className="text-muted-foreground">
+        {data.totalItems.toLocaleString(copy.locale)} {resultsLabel}
+      </div>
       <div className="flex items-center gap-2">
-        <button type="button" disabled={page <= 0} onClick={() => onPageChange(page - 1)} className="rounded-md border border-border bg-card px-3 py-2 disabled:cursor-not-allowed disabled:opacity-50">
+        <button
+          type="button"
+          disabled={page <= 0}
+          onClick={() => onPageChange(page - 1)}
+          className="rounded-md border border-border bg-card px-3 py-2 disabled:cursor-not-allowed disabled:opacity-50"
+        >
           {copy.previous}
         </button>
-        <span className="text-muted-foreground">{copy.pageOf.replace("{current}", String(currentPage)).replace("{total}", String(data.totalPages))}</span>
-        <button type="button" disabled={page + 1 >= data.totalPages} onClick={() => onPageChange(page + 1)} className="rounded-md border border-border bg-card px-3 py-2 disabled:cursor-not-allowed disabled:opacity-50">
+        <span className="text-muted-foreground">
+          {copy.pageOf.replace("{current}", String(currentPage)).replace("{total}", String(data.totalPages))}
+        </span>
+        <button
+          type="button"
+          disabled={page + 1 >= data.totalPages}
+          onClick={() => onPageChange(page + 1)}
+          className="rounded-md border border-border bg-card px-3 py-2 disabled:cursor-not-allowed disabled:opacity-50"
+        >
           {copy.next}
         </button>
       </div>
@@ -492,9 +524,9 @@ function ResultsLoadingState({ copy }: { copy: ResultsCopy }) {
   return (
     <section className="rounded-md border border-border bg-card p-6">
       <div className="text-sm font-medium">{copy.loading}</div>
-      <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        {Array.from({ length: 4 }).map((_, index) => (
-          <div key={index} className="h-24 animate-pulse rounded-md bg-muted" />
+      <div className="mt-4 space-y-3">
+        {Array.from({ length: 5 }).map((_, index) => (
+          <div key={index} className="h-14 animate-pulse rounded-md bg-muted" />
         ))}
       </div>
     </section>
@@ -507,7 +539,11 @@ function ResultsErrorState({ copy, onReload }: { copy: ResultsCopy; onReload: ()
       tone="danger"
       title={copy.errorTitle}
       action={
-        <button type="button" onClick={onReload} className="rounded-md border border-current/20 bg-background/60 px-3 py-1.5 text-xs font-medium">
+        <button
+          type="button"
+          onClick={onReload}
+          className="rounded-md border border-current/20 bg-background/60 px-3 py-1.5 text-xs font-medium"
+        >
           {copy.retry}
         </button>
       }
