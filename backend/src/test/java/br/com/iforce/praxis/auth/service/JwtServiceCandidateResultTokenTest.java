@@ -1,6 +1,7 @@
 package br.com.iforce.praxis.auth.service;
 
 import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.ExpiredJwtException;
 import org.junit.jupiter.api.Test;
 
 import java.time.Instant;
@@ -8,7 +9,6 @@ import java.time.temporal.ChronoUnit;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class JwtServiceCandidateResultTokenTest {
 
@@ -27,32 +27,60 @@ class JwtServiceCandidateResultTokenTest {
     }
 
     @Test
-    void preservesCandidateAttemptTokenWhileOriginalWindowIsValid() {
+    void preservesCandidateAttemptTokenWhileWindowIsValid() {
         Instant issuedAt = Instant.now().minus(1, ChronoUnit.HOURS).truncatedTo(ChronoUnit.SECONDS);
 
-        String token = jwtService.generateCandidateAttemptToken("empresa-1", "att-123", 24, issuedAt);
-        Claims claims = jwtService.parse(token);
+        String first = jwtService.generateCandidateAttemptToken("empresa-1", "att-123", 24, issuedAt);
+        String second = jwtService.generateCandidateAttemptToken("empresa-1", "att-123", 24, issuedAt);
+        Claims claims = jwtService.parse(first);
 
+        assertEquals(first, second);
         assertEquals(issuedAt, claims.getIssuedAt().toInstant());
     }
 
     @Test
-    void renewsCandidateAttemptTokenWhenOriginalWindowExpired() {
-        Instant expiredIssuedAt = Instant.now().minus(8, ChronoUnit.DAYS);
-        Instant generationStartedAt = Instant.now().minusSeconds(1);
+    void usesExactPersistedExpiration() {
+        Instant issuedAt = Instant.now().minus(2, ChronoUnit.HOURS).truncatedTo(ChronoUnit.SECONDS);
+        Instant expiresAt = Instant.now().plus(10, ChronoUnit.DAYS).truncatedTo(ChronoUnit.SECONDS);
 
-        String token = jwtService.generateCandidateAttemptToken("empresa-1", "att-123", 168, expiredIssuedAt);
+        String token = jwtService.generateCandidateAttemptToken(
+                "empresa-1",
+                "att-123",
+                issuedAt,
+                expiresAt
+        );
         Claims claims = jwtService.parse(token);
 
-        assertTrue(!claims.getIssuedAt().toInstant().isBefore(generationStartedAt));
-        assertTrue(claims.getExpiration().toInstant().isAfter(Instant.now()));
+        assertEquals(issuedAt, claims.getIssuedAt().toInstant());
+        assertEquals(expiresAt, claims.getExpiration().toInstant());
         assertEquals("empresa-1", claims.get("empresa_id", String.class));
         assertEquals("att-123", claims.get("attempt_id", String.class));
     }
 
     @Test
+    void doesNotRenewExpiredWindowImplicitly() {
+        Instant issuedAt = Instant.now().minus(8, ChronoUnit.DAYS).truncatedTo(ChronoUnit.SECONDS);
+        Instant expiresAt = Instant.now().minus(1, ChronoUnit.DAYS).truncatedTo(ChronoUnit.SECONDS);
+
+        String token = jwtService.generateCandidateAttemptToken(
+                "empresa-1",
+                "att-123",
+                issuedAt,
+                expiresAt
+        );
+
+        assertThrows(ExpiredJwtException.class, () -> jwtService.parse(token));
+    }
+
+    @Test
     void resultParserRejectsAttemptToken() {
-        String attemptToken = jwtService.generateCandidateAttemptToken("empresa-1", "att-123", 24);
+        Instant issuedAt = Instant.now().truncatedTo(ChronoUnit.SECONDS);
+        String attemptToken = jwtService.generateCandidateAttemptToken(
+                "empresa-1",
+                "att-123",
+                24,
+                issuedAt
+        );
 
         assertThrows(
                 IllegalArgumentException.class,
