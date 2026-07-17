@@ -29,7 +29,6 @@ import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.HexFormat;
-import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
@@ -164,25 +163,17 @@ class PasswordResetServiceTest {
 
         assertThat(response.valid()).isTrue();
         assertThat(response.userName()).isEqualTo("João");
-        verify(userRepository, never())
-                .findByPasswordResetTokenHashIsNotNullAndPasswordResetTokenLookupHashIsNull();
     }
 
     @Test
-    void validateTokenSupportsLegacyBcryptTokenDuringMigration() {
+    void validateTokenRejectsTokenWithoutIndexedLookup() {
         String token = "tok_legado";
-        UserEntity user = activeUser();
-        user.setPasswordResetTokenHash(passwordEncoder.encode(token));
-        user.setPasswordResetExpiresAt(Instant.now().plus(1, ChronoUnit.HOURS));
         when(userRepository.findFirstByPasswordResetTokenLookupHash(sha256(token)))
                 .thenReturn(Optional.empty());
-        when(userRepository.findByPasswordResetTokenHashIsNotNullAndPasswordResetTokenLookupHashIsNull())
-                .thenReturn(List.of(user));
 
-        ResetPasswordTokenResponse response = service().validateToken(token);
-
-        assertThat(response.valid()).isTrue();
-        assertThat(response.userName()).isEqualTo("João");
+        assertThatThrownBy(() -> service().validateToken(token))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasFieldOrPropertyWithValue("statusCode", HttpStatus.NOT_FOUND);
     }
 
     @Test
@@ -190,8 +181,6 @@ class PasswordResetServiceTest {
         String token = "desconhecido";
         when(userRepository.findFirstByPasswordResetTokenLookupHash(sha256(token)))
                 .thenReturn(Optional.empty());
-        when(userRepository.findByPasswordResetTokenHashIsNotNullAndPasswordResetTokenLookupHashIsNull())
-                .thenReturn(List.of());
 
         assertThatThrownBy(() -> service().validateToken(token))
                 .isInstanceOf(ResponseStatusException.class)
@@ -273,8 +262,6 @@ class PasswordResetServiceTest {
         String token = "tok_ja_usado";
         when(userRepository.findFirstByPasswordResetTokenLookupHash(sha256(token)))
                 .thenReturn(Optional.empty());
-        when(userRepository.findByPasswordResetTokenHashIsNotNullAndPasswordResetTokenLookupHashIsNull())
-                .thenReturn(List.of());
 
         assertThatThrownBy(() -> service().confirmReset(
                 new ResetPasswordRequest(token, "novaSenha123", "novaSenha123"), null))
