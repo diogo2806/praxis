@@ -1,45 +1,25 @@
 package br.com.iforce.praxis.admin.service;
 
 import br.com.iforce.praxis.admin.dto.EmpresaHealthResponse;
-
 import br.com.iforce.praxis.admin.model.CustomerHealthLevel;
-
 import br.com.iforce.praxis.admin.model.EmpresaStatus;
-
 import br.com.iforce.praxis.auth.persistence.entity.EmpresaEntity;
-
 import br.com.iforce.praxis.auth.persistence.repository.EmpresaRepository;
-
 import br.com.iforce.praxis.gupy.model.AttemptStatus;
-
 import br.com.iforce.praxis.gupy.persistence.repository.CandidateAttemptRepository;
-
 import org.springframework.beans.factory.annotation.Value;
-
 import org.springframework.stereotype.Service;
-
 import org.springframework.transaction.annotation.Transactional;
 
-
 import java.time.Instant;
-
 import java.time.temporal.ChronoUnit;
-
 import java.util.Comparator;
-
+import java.util.HashMap;
 import java.util.List;
-
+import java.util.Map;
 
 /**
- * Calcula a "Saúde do Cliente" (Health Score) de retenção: compara o volume de avaliações
- * concluídas nos últimos {@code health-period-days} dias com o período imediatamente anterior de
- * mesmo tamanho e classifica cada cliente ativo como saudável, em risco ou sem base suficiente.
- *
- * <p>Na visão do processo, é o motor por trás de duas entregas de retenção proativa: o painel de
- * saúde do ADMIN e a fila de atuação para o time de Customer Success ({@code
- * /api/admin/empresas/at-risk}). Um cliente entra em risco quando a queda de uso ultrapassa o
- * limite configurado (por padrão, mais de 30%) — o gatilho para intervir antes que ele decida
- * cancelar. Clientes sem histórico relevante no período anterior não geram alarme falso.</p>
+ * Calcula a saúde de retenção dos clientes comparando duas janelas consecutivas de uso.
  */
 @Service
 public class CustomerHealthService {
@@ -65,37 +45,47 @@ public class CustomerHealthService {
     }
 
     /**
-     * Fila de atuação para Customer Success: clientes ativos cuja utilização caiu além do limite.
-     *
-     * <p>Percorre apenas os clientes com acesso liberado ({@link EmpresaStatus#ATIVO}) — os que
-     * mais interessa reter — calcula a saúde de cada um e devolve os que estão em risco, ordenados
-     * da maior queda para a menor, para que o time priorize quem está evadindo mais rápido.</p>
-     *
-     * @param now instante de referência das janelas de 30 dias (injetável para testes determinísticos)
-     * @return clientes em risco, do mais crítico ao menos crítico
+     * Retorna somente clientes em risco. As volumetrias são agregadas em lote para evitar N+1.
      */
     @Transactional(readOnly = true)
     public List<EmpresaHealthResponse> atRiskEmpresas(Instant now) {
-        return empresaRepository.findByStatuses(List.of(EmpresaStatus.ATIVO)).stream()
-                .map(empresa -> healthFor(empresa, now))
+        List<EmpresaEntity> empresas = empresaRepository.findByStatuses(List.of(EmpresaStatus.ATIVO));
+        if (empresas.isEmpty()) {
+            return List.of();
+        }
+
+        Instant currentStart = now.minus(periodDays, ChronoUnit.DAYS);
+        Instant previousStart = now.minus(2L * periodDays, ChronoUnit.DAYS);
+        List<String> empresaIds = empresas.stream().map(EmpresaEntity::getId).toList();
+
+        Map<String, HealthWindow> windows = loadHealthWindows(
+                empresaIds,
+                previousStart,
+                currentStart,
+                now
+        );
+        Map<String, Instant> lastCompletedAt = loadLastCompletedAt(empresaIds);
+
+        return empresas.stream()
+                .map(empresa -> {
+                    HealthWindow window = windows.getOrDefault(empresa.getId(), HealthWindow.EMPTY);
+                    return toResponse(
+                            empresa,
+                            now,
+                            previousStart,
+                            currentStart,
+                            window.current(),
+                            window.previous(),
+                            lastCompletedAt.get(empresa.getId())
+                    );
+                })
                 .filter(health -> health.level() == CustomerHealthLevel.AT_RISK)
                 .sorted(Comparator.comparing(EmpresaHealthResponse::dropPercent).reversed())
                 .toList();
     }
 
     /**
-     * Calcula a saúde de retenção de um cliente comparando duas janelas de mesmo tamanho.
-     *
-     * <p>Fluxo do cálculo: conta as avaliações concluídas na janela atual ({@code now - N dias} até
-     * {@code now}) e na janela anterior ({@code now - 2N dias} até {@code now - N dias}). Se o
-     * cliente não tinha uso relevante antes (base menor que {@code min-baseline-completions}), a
-     * queda não é confiável e ele é marcado como {@link CustomerHealthLevel#NO_BASELINE}. Caso
-     * contrário, mede-se a queda relativa e o índice de saúde: acima do limite de queda o cliente
-     * fica {@link CustomerHealthLevel#AT_RISK}; caso contrário, {@link CustomerHealthLevel#HEALTHY}.</p>
-     *
-     * @param empresa cliente a avaliar
-     * @param now     instante de referência das janelas
-     * @return a saúde consolidada do cliente
+     * Calcula a saúde de um único cliente. Mantido para consultas pontuais e testes determinísticos.
      */
     @Transactional(readOnly = true)
     public EmpresaHealthResponse healthFor(EmpresaEntity empresa, Instant now) {
@@ -106,10 +96,67 @@ public class CustomerHealthService {
                 empresa.getId(), AttemptStatus.COMPLETED, currentStart, now);
         long previous = candidateAttemptRepository.countByEmpresaIdAndStatusAndFinishedAtBetween(
                 empresa.getId(), AttemptStatus.COMPLETED, previousStart, currentStart);
+        Instant lastCompletedAt = candidateAttemptRepository
+                .findLastFinishedAt(empresa.getId(), AttemptStatus.COMPLETED)
+                .orElse(null);
 
+        return toResponse(
+                empresa,
+                now,
+                previousStart,
+                currentStart,
+                current,
+                previous,
+                lastCompletedAt
+        );
+    }
+
+    private Map<String, HealthWindow> loadHealthWindows(
+            List<String> empresaIds,
+            Instant previousStart,
+            Instant currentStart,
+            Instant currentEnd
+    ) {
+        Map<String, HealthWindow> result = new HashMap<>();
+        for (Object[] row : candidateAttemptRepository.summarizeHealthPeriods(
+                empresaIds,
+                AttemptStatus.COMPLETED,
+                previousStart,
+                currentStart,
+                currentEnd
+        )) {
+            result.put(
+                    (String) row[0],
+                    new HealthWindow(number(row[1]), number(row[2]))
+            );
+        }
+        return result;
+    }
+
+    private Map<String, Instant> loadLastCompletedAt(List<String> empresaIds) {
+        Map<String, Instant> result = new HashMap<>();
+        for (Object[] row : candidateAttemptRepository.findLastFinishedAtByEmpresaIds(
+                empresaIds,
+                AttemptStatus.COMPLETED
+        )) {
+            result.put((String) row[0], (Instant) row[1]);
+        }
+        return result;
+    }
+
+    private EmpresaHealthResponse toResponse(
+            EmpresaEntity empresa,
+            Instant now,
+            Instant previousStart,
+            Instant currentStart,
+            long current,
+            long previous,
+            Instant lastCompletedAt
+    ) {
         CustomerHealthLevel level;
         Double dropPercent;
         Integer healthScore;
+
         if (previous < minBaselineCompletions) {
             level = CustomerHealthLevel.NO_BASELINE;
             dropPercent = null;
@@ -119,12 +166,10 @@ public class CustomerHealthService {
             dropPercent = drop;
             double retentionRatio = Math.min(1.0, (double) current / (double) previous);
             healthScore = (int) Math.round(retentionRatio * 100);
-            level = drop > atRiskDropThreshold ? CustomerHealthLevel.AT_RISK : CustomerHealthLevel.HEALTHY;
+            level = drop > atRiskDropThreshold
+                    ? CustomerHealthLevel.AT_RISK
+                    : CustomerHealthLevel.HEALTHY;
         }
-
-        Instant lastCompletedAt = candidateAttemptRepository
-                .findLastFinishedAt(empresa.getId(), AttemptStatus.COMPLETED)
-                .orElse(null);
 
         return new EmpresaHealthResponse(
                 empresa.getId(),
@@ -144,5 +189,13 @@ public class CustomerHealthService {
                 previousStart,
                 currentStart
         );
+    }
+
+    private static long number(Object value) {
+        return value == null ? 0L : ((Number) value).longValue();
+    }
+
+    private record HealthWindow(long current, long previous) {
+        private static final HealthWindow EMPTY = new HealthWindow(0L, 0L);
     }
 }

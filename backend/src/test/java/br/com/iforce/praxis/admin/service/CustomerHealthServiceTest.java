@@ -1,45 +1,27 @@
 package br.com.iforce.praxis.admin.service;
 
 import br.com.iforce.praxis.admin.dto.EmpresaHealthResponse;
-
 import br.com.iforce.praxis.admin.model.CommercialPlanType;
-
 import br.com.iforce.praxis.admin.model.CustomerHealthLevel;
-
 import br.com.iforce.praxis.admin.model.EmpresaStatus;
-
 import br.com.iforce.praxis.auth.persistence.entity.EmpresaEntity;
-
 import br.com.iforce.praxis.auth.persistence.repository.EmpresaRepository;
-
 import br.com.iforce.praxis.gupy.model.AttemptStatus;
-
 import br.com.iforce.praxis.gupy.persistence.repository.CandidateAttemptRepository;
-
 import org.junit.jupiter.api.BeforeEach;
-
 import org.junit.jupiter.api.Test;
-
 import org.junit.jupiter.api.extension.ExtendWith;
-
 import org.mockito.Mock;
-
 import org.mockito.junit.jupiter.MockitoExtension;
 
-
 import java.time.Instant;
-
 import java.time.temporal.ChronoUnit;
-
 import java.util.List;
-
 import java.util.Optional;
 
-
 import static org.assertj.core.api.Assertions.assertThat;
-
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-
 
 @ExtendWith(MockitoExtension.class)
 class CustomerHealthServiceTest {
@@ -48,8 +30,10 @@ class CustomerHealthServiceTest {
     private static final Instant CURRENT_START = NOW.minus(30, ChronoUnit.DAYS);
     private static final Instant PREVIOUS_START = NOW.minus(60, ChronoUnit.DAYS);
 
-    @Mock private EmpresaRepository empresaRepository;
-    @Mock private CandidateAttemptRepository candidateAttemptRepository;
+    @Mock
+    private EmpresaRepository empresaRepository;
+    @Mock
+    private CandidateAttemptRepository candidateAttemptRepository;
 
     private CustomerHealthService service;
 
@@ -113,16 +97,35 @@ class CustomerHealthServiceTest {
     }
 
     @Test
-    void atRiskQueueReturnsOnlyAtRiskClientsSortedByDeepestDrop() {
-        when(empresaRepository.findByStatuses(List.of(EmpresaStatus.ATIVO)))
-                .thenReturn(List.of(empresa("t1"), empresa("t2"), empresa("t3")));
-        stubCounts("t1", 10, 3); // queda de 70%
-        stubCounts("t2", 10, 6); // queda de 40%
-        stubCounts("t3", 10, 10); // estável
+    void atRiskQueueUsesBatchQueriesAndSortsByDeepestDrop() {
+        List<EmpresaEntity> empresas = List.of(empresa("t1"), empresa("t2"), empresa("t3"));
+        List<String> ids = List.of("t1", "t2", "t3");
+        when(empresaRepository.findByStatuses(List.of(EmpresaStatus.ATIVO))).thenReturn(empresas);
+        when(candidateAttemptRepository.summarizeHealthPeriods(
+                ids,
+                AttemptStatus.COMPLETED,
+                PREVIOUS_START,
+                CURRENT_START,
+                NOW
+        )).thenReturn(List.of(
+                new Object[]{"t1", 3L, 10L},
+                new Object[]{"t2", 6L, 10L},
+                new Object[]{"t3", 10L, 10L}
+        ));
+        when(candidateAttemptRepository.findLastFinishedAtByEmpresaIds(ids, AttemptStatus.COMPLETED))
+                .thenReturn(List.of());
 
         List<EmpresaHealthResponse> atRisk = service.atRiskEmpresas(NOW);
 
         assertThat(atRisk).extracting(EmpresaHealthResponse::empresaId).containsExactly("t1", "t2");
         assertThat(atRisk.get(0).dropPercent()).isGreaterThan(atRisk.get(1).dropPercent());
+        verify(candidateAttemptRepository).summarizeHealthPeriods(
+                ids,
+                AttemptStatus.COMPLETED,
+                PREVIOUS_START,
+                CURRENT_START,
+                NOW
+        );
+        verify(candidateAttemptRepository).findLastFinishedAtByEmpresaIds(ids, AttemptStatus.COMPLETED);
     }
 }

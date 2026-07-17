@@ -4,36 +4,33 @@ import br.com.iforce.praxis.admin.model.UserStatus;
 import br.com.iforce.praxis.auth.persistence.entity.UserEntity;
 import br.com.iforce.praxis.auth.persistence.repository.UserRepository;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Propagation;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.net.URI;
 
 /**
- * Registra o hash de localização de um convite depois que o fluxo gerador
- * conclui sua própria transação.
+ * Persiste explicitamente o índice determinístico de localização do token de convite.
+ * Deve ser chamado dentro da mesma transação que gera ou renova o convite.
  */
 @Service
-public class InviteTokenLookupIndexService {
+public class InviteTokenLookupIndexWriter {
 
     private final UserRepository userRepository;
 
-    public InviteTokenLookupIndexService(UserRepository userRepository) {
+    public InviteTokenLookupIndexWriter(UserRepository userRepository) {
         this.userRepository = userRepository;
     }
 
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void index(Long userId, String inviteUrl) {
         if (userId == null || inviteUrl == null || inviteUrl.isBlank()) {
             return;
         }
 
         String token = extractToken(inviteUrl);
-        UserEntity user = userRepository.findById(userId).orElse(null);
-        if (user == null
-                || user.getStatus() != UserStatus.CONVIDADO
-                || user.getInviteTokenHash() == null) {
-            return;
+        UserEntity user = userRepository.findById(userId)
+                .orElseThrow(() -> new IllegalStateException("Usuário do convite não encontrado."));
+
+        if (user.getStatus() != UserStatus.CONVIDADO || user.getInviteTokenHash() == null) {
+            throw new IllegalStateException("O índice só pode ser gravado para convite pendente.");
         }
 
         user.setInviteTokenLookupHash(TokenLookupHasher.sha256(token));
