@@ -32,7 +32,7 @@ class CandidateTokenWindowServiceTest {
     void reusesPersistedIssuedAtWhileWindowIsValid() {
         Instant issuedAt = NOW.minusSeconds(60);
         CandidateAttemptEntity entity = attempt(issuedAt);
-        when(candidateAttemptRepository.findByEmpresaIdAndIdForUpdate("empresa-1", "att-1"))
+        when(candidateAttemptRepository.findOneByEmpresaIdAndId("empresa-1", "att-1"))
                 .thenReturn(Optional.of(entity));
 
         Instant resolved = service().currentIssuedAt("empresa-1", "att-1", 1);
@@ -44,7 +44,7 @@ class CandidateTokenWindowServiceTest {
     @Test
     void persistsSingleCanonicalIssuedAtWhenWindowExpired() {
         CandidateAttemptEntity entity = attempt(NOW.minusSeconds(3600));
-        when(candidateAttemptRepository.findByEmpresaIdAndIdForUpdate("empresa-1", "att-1"))
+        when(candidateAttemptRepository.findOneByEmpresaIdAndId("empresa-1", "att-1"))
                 .thenReturn(Optional.of(entity));
         when(candidateAttemptRepository.saveAndFlush(entity)).thenReturn(entity);
 
@@ -57,7 +57,7 @@ class CandidateTokenWindowServiceTest {
 
     @Test
     void failsWhenAttemptDoesNotExist() {
-        when(candidateAttemptRepository.findByEmpresaIdAndIdForUpdate("empresa-1", "att-1"))
+        when(candidateAttemptRepository.findOneByEmpresaIdAndId("empresa-1", "att-1"))
                 .thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> service().currentIssuedAt("empresa-1", "att-1", 1))
@@ -68,7 +68,7 @@ class CandidateTokenWindowServiceTest {
     @Test
     void failsWhenCanonicalIssuedAtIsMissing() {
         CandidateAttemptEntity entity = attempt(null);
-        when(candidateAttemptRepository.findByEmpresaIdAndIdForUpdate("empresa-1", "att-1"))
+        when(candidateAttemptRepository.findOneByEmpresaIdAndId("empresa-1", "att-1"))
                 .thenReturn(Optional.of(entity));
 
         assertThatThrownBy(() -> service().currentIssuedAt("empresa-1", "att-1", 1))
