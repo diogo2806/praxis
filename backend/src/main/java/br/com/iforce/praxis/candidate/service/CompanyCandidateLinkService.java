@@ -35,9 +35,6 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
 
-/**
- * Controla o ciclo de vida dos links criados diretamente pela empresa.
- */
 @Service
 public class CompanyCandidateLinkService {
 
@@ -86,19 +83,11 @@ public class CompanyCandidateLinkService {
         String normalizedEmail = normalizeEmail(request.candidateEmail());
         PublishedSimulation publishedSimulation = simulationCatalogService
                 .findPublishedById(empresaId, request.simulationId())
-                .orElseThrow(() -> new ResponseStatusException(
-                        HttpStatus.NOT_FOUND,
-                        "Não encontramos o teste publicado."
-                ));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Não encontramos o teste publicado."));
 
         String idempotencyKey = IdempotencyKeyHasher.sha256Hex(
-                empresaId
-                        + "|company-application|"
-                        + normalizedEmail
-                        + "|"
-                        + request.simulationId().trim()
-                        + "|"
-                        + applicationCycleId
+                empresaId + "|company-application|" + normalizedEmail + "|"
+                        + request.simulationId().trim() + "|" + applicationCycleId
         );
         String requestFingerprint = requestFingerprint(
                 request,
@@ -125,8 +114,7 @@ public class CompanyCandidateLinkService {
         );
     }
 
-    /** Reenvia somente links ainda vigentes. */
-    @Transactional(readOnly = true)
+    @Transactional
     public CreateCandidateLinkResponse resendExisting(String attemptId) {
         String empresaId = EmpresaSecurity.requiredEmpresa();
         CandidateAttemptEntity entity = candidateAttemptRepository
@@ -156,10 +144,6 @@ public class CompanyCandidateLinkService {
         return response(empresaId, entity, simulation, true, RESENT_EXISTING_LINK);
     }
 
-    /**
-     * Soma dias ao vencimento ou reativa o link a partir do instante atual.
-     * Não cria tentativa e não consome crédito.
-     */
     @Transactional
     public CreateCandidateLinkResponse extendValidity(String attemptId, int additionalDays) {
         String empresaId = EmpresaSecurity.requiredEmpresa();
@@ -220,15 +204,17 @@ public class CompanyCandidateLinkService {
 
         creditService.assertCanStartNewAttempt(empresaId);
         try {
-            CandidateAttemptEntity created = createAttempt(
-                    empresaId,
-                    idempotencyKey,
-                    requestFingerprint,
-                    applicationCycleId,
-                    request,
-                    publishedSimulation
+            return new CompanyLinkResolution(
+                    createAttempt(
+                            empresaId,
+                            idempotencyKey,
+                            requestFingerprint,
+                            applicationCycleId,
+                            request,
+                            publishedSimulation
+                    ),
+                    false
             );
-            return new CompanyLinkResolution(created, false);
         } catch (DataIntegrityViolationException exception) {
             CandidateAttemptEntity concurrent = candidateAttemptRepository
                     .findByEmpresaIdAndIdempotencyKey(empresaId, idempotencyKey)
@@ -321,20 +307,13 @@ public class CompanyCandidateLinkService {
     ) {
         BigDecimal multiplier = normalizeAccommodationMultiplier(request.accommodationTimeMultiplier());
         String source = REQUEST_FINGERPRINT_VERSION
-                + "|"
-                + request.simulationId().trim()
-                + "|"
-                + publishedSimulation.versionId()
-                + "|"
-                + request.candidateName().trim()
-                + "|"
-                + normalizedEmail
-                + "|"
-                + applicationCycleId
-                + "|"
-                + normalizedContext(request.applicationContext())
-                + "|"
-                + multiplier.stripTrailingZeros().toPlainString();
+                + "|" + request.simulationId().trim()
+                + "|" + publishedSimulation.versionId()
+                + "|" + request.candidateName().trim()
+                + "|" + normalizedEmail
+                + "|" + applicationCycleId
+                + "|" + normalizedContext(request.applicationContext())
+                + "|" + multiplier.stripTrailingZeros().toPlainString();
         return IdempotencyKeyHasher.sha256Hex(source);
     }
 
@@ -357,16 +336,10 @@ public class CompanyCandidateLinkService {
     private PublishedSimulation findSimulation(CandidateAttemptEntity entity) {
         if (entity.getSimulationVersionId() != null) {
             return simulationCatalogService.findByVersionId(entity.getSimulationVersionId())
-                    .orElseThrow(() -> new ResponseStatusException(
-                            HttpStatus.NOT_FOUND,
-                            "Não encontramos esta versão do teste."
-                    ));
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Não encontramos esta versão do teste."));
         }
         return simulationCatalogService.findPublishedById(entity.getEmpresaId(), entity.getSimulationId())
-                .orElseThrow(() -> new ResponseStatusException(
-                        HttpStatus.NOT_FOUND,
-                        "Não encontramos o teste publicado."
-                ));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Não encontramos o teste publicado."));
     }
 
     private String requiredApplicationCycleId(String value) {
