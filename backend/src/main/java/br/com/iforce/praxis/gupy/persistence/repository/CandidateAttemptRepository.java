@@ -101,6 +101,43 @@ public interface CandidateAttemptRepository extends JpaRepository<CandidateAttem
             @Param("to") Instant to
     );
 
+    /**
+     * Calcula, em lote, o volume atual e anterior usado pelo indicador de saúde dos clientes.
+     */
+    @Query("""
+            SELECT c.empresaId,
+                   SUM(CASE WHEN c.finishedAt >= :currentStart AND c.finishedAt <= :currentEnd THEN 1 ELSE 0 END),
+                   SUM(CASE WHEN c.finishedAt >= :previousStart AND c.finishedAt < :currentStart THEN 1 ELSE 0 END)
+            FROM CandidateAttemptEntity c
+            WHERE c.empresaId IN :empresaIds
+              AND c.status = :status
+              AND c.finishedAt >= :previousStart
+              AND c.finishedAt <= :currentEnd
+            GROUP BY c.empresaId
+            """)
+    List<Object[]> summarizeHealthPeriods(
+            @Param("empresaIds") List<String> empresaIds,
+            @Param("status") AttemptStatus status,
+            @Param("previousStart") Instant previousStart,
+            @Param("currentStart") Instant currentStart,
+            @Param("currentEnd") Instant currentEnd
+    );
+
+    /**
+     * Busca, em lote, a última conclusão registrada para cada cliente.
+     */
+    @Query("""
+            SELECT c.empresaId, MAX(c.finishedAt)
+            FROM CandidateAttemptEntity c
+            WHERE c.empresaId IN :empresaIds
+              AND c.status = :status
+            GROUP BY c.empresaId
+            """)
+    List<Object[]> findLastFinishedAtByEmpresaIds(
+            @Param("empresaIds") List<String> empresaIds,
+            @Param("status") AttemptStatus status
+    );
+
     long countByEmpresaIdAndSimulationVersionId(String empresaId, Long simulationVersionId);
 
     @EntityGraph(attributePaths = {"answers", "resultItems"})
