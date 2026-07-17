@@ -1,6 +1,6 @@
 # Requisitos técnicos implementados — praxis
 
-Status: atualizado em 2026-07-16 após conclusão e revalidação de `BUS12`, `UI13`, `DATA14`, `ASYNC11`, `BUS13`, `INT18`, `DATA13` e `INT17`.
+Status: atualizado em 2026-07-17 após correção da regra `BUS12` e revalidação de `UI13`, `DATA14`, `ASYNC11`, `BUS13`, `INT18`, `DATA13` e `INT17`.
 
 Este arquivo registra comportamentos comprovadamente entregues no código e preserva a rastreabilidade de conclusões históricas posteriormente reclassificadas. Entregas parciais ou invalidadas apontam obrigatoriamente para o backlog canônico.
 
@@ -8,7 +8,7 @@ Este arquivo registra comportamentos comprovadamente entregues no código e pres
 
 | Origem | Situação registrada | Entrega comprovada | Pendência remanescente |
 |---|---|---|---|
-| `BUS12` | Concluído | `ComparableSimulationValidationService`, registrado como `@Primary`, acrescenta bloqueadores quando caminhos da mesma versão possuem máximos distintos ou zero para uma competência. Assim, avaliações incompatíveis não podem ser publicadas nem chegar ao Talent Match como se compartilhassem a mesma escala. | Nenhuma para comparabilidade entre caminhos publicados. |
+| `BUS12` | Reclassificado e corrigido em 2026-07-17 | Diferenças de pontuação e de base máxima entre caminhos são válidas no modelo situacional. `ComparableSimulationValidationService` mantém a validação estrutural padrão, sem acrescentar bloqueadores de comparabilidade, permitindo publicar caminhos com pontuações distintas. | Nenhuma para publicação de caminhos com escalas de pontuação próprias. |
 | `UI13` | Concluído | O centro operacional possui consulta paginada e filtrável para todos os estados; links possuem `GET /api/v1/candidate-links/page`; o endpoint legado mantém o formato de lista, mas percorre internamente todas as páginas, sem corte silencioso em 200 registros. | Nenhuma para paginação e cobertura dos estados operacionais. |
 | `INT18` | Reclassificado | O GET servidor-servidor de `callback_url` foi desativado pela migration `V1005__disable_duplicate_gupy_callback_confirmation.sql`, porque duplicava o redirecionamento executado pelo navegador. Eventos legados pendentes foram enviados para DLQ; a API mantém apenas consulta histórica e não oferece reprocessamento. | Confirmar o redirecionamento em vaga real da Gupy. |
 | `INT17` | Concluído | `result_webhook_url` ficou reservado ao `TestResult` contratual. `ATTEMPT_STARTED` e `ATTEMPT_ABANDONED` somente são publicados quando o evento foi explicitamente selecionado na integração `CUSTOM_API`, cuja entrega usa URL própria e assinatura HMAC. Chamadas legadas a `postPayload()` agora falham explicitamente em vez de descartar o conteúdo. | Nenhuma para a separação dos contratos de webhook. |
@@ -42,8 +42,8 @@ Este arquivo registra comportamentos comprovadamente entregues no código e pres
 
 | Caminho completo | Método/campo/contrato | Comportamento comprovado |
 |---|---|---|
-| `backend/src/main/java/br/com/iforce/praxis/simulation/service/ComparableSimulationValidationService.java` | `validate()` e `addComparabilityBlockers()` | Recalcula a publicação com bloqueadores quando os máximos por competência variam entre caminhos ou incluem zero. |
-| `backend/src/test/java/br/com/iforce/praxis/simulation/service/ComparableSimulationValidationServiceTest.java` | caminhos com máximos 100 e 50 | Comprova que a versão fica não publicável e apresenta bloqueador de bases máximas diferentes. |
+| `backend/src/main/java/br/com/iforce/praxis/simulation/service/ComparableSimulationValidationService.java` | herança de `SimulationValidationService` sem sobrescrever `validate()` | Mantém a validação estrutural padrão e não cria bloqueadores quando máximos por competência variam entre caminhos ou incluem zero. |
+| `backend/src/test/java/br/com/iforce/praxis/simulation/service/ComparableSimulationValidationServiceTest.java` | caminhos com máximos 100 e 50 | Comprova que a versão permanece publicável, com zero bloqueadores de bases máximas diferentes. |
 | `backend/src/main/java/br/com/iforce/praxis/candidate/service/CandidateAttemptMonitoringQueryService.java` | consulta do centro operacional | Aplica paginação e filtros por estado, avaliação e candidato, incluindo `NOT_STARTED`, `IN_PROGRESS`, `COMPLETED`, `ABANDONED` e `EXPIRED`. |
 | `backend/src/main/java/br/com/iforce/praxis/candidate/service/CandidateLinkQueryService.java` | `search()` | Retorna página de links com filtros por estado, avaliação, versão e candidato, tamanho máximo de 100 e isolamento por empresa. |
 | `backend/src/main/java/br/com/iforce/praxis/candidate/service/LegacyCandidateLinkQueryService.java` | `listAll()` | Preserva o retorno em lista do endpoint legado, percorrendo todas as páginas da consulta oficial. |
