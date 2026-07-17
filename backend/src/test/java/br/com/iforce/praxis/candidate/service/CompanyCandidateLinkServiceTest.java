@@ -25,6 +25,7 @@ import org.mockito.quality.Strictness;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.time.Instant;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -176,6 +177,50 @@ class CompanyCandidateLinkServiceTest {
                 eq("empresa-1"),
                 eq(created.attemptId()),
                 eq(AuditEventType.CANDIDATE_LINK_RESENT),
+                anyString(),
+                anyString()
+        );
+    }
+
+    @Test
+    void expiredLinkMustBeExtendedBeforeResend() {
+        CreateCandidateLinkResponse created = service.createNewApplication(request("cycle-vaga-1"));
+        CandidateAttemptEntity entity = attemptsByIdempotencyKey.values().iterator().next();
+        entity.setCandidateTokenIssuedAt(Instant.now().minusSeconds(8 * 24 * 60 * 60L));
+        entity.setCandidateTokenExpiresAt(Instant.now().minusSeconds(60));
+        when(candidateAttemptRepository.findByEmpresaIdAndId("empresa-1", created.attemptId()))
+                .thenReturn(Optional.of(entity));
+
+        assertThatThrownBy(() -> service.resendExisting(created.attemptId()))
+                .isInstanceOfSatisfying(ResponseStatusException.class, exception -> {
+                    assertThat(exception.getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
+                    assertThat(exception.getReason()).contains("Adicione dias");
+                });
+    }
+
+    @Test
+    void extendingExpiredLinkCreatesPersistedFutureWindowWithoutConsumingCredit() {
+        CreateCandidateLinkResponse created = service.createNewApplication(request("cycle-vaga-1"));
+        CandidateAttemptEntity entity = attemptsByIdempotencyKey.values().iterator().next();
+        Instant previousExpiration = Instant.now().minusSeconds(60);
+        entity.setCandidateTokenIssuedAt(previousExpiration.minusSeconds(7 * 24 * 60 * 60L));
+        entity.setCandidateTokenExpiresAt(previousExpiration);
+        when(candidateAttemptRepository.findByEmpresaIdAndIdForUpdate("empresa-1", created.attemptId()))
+                .thenReturn(Optional.of(entity));
+        when(simulationCatalogService.findByVersionId(10L)).thenReturn(Optional.of(simulation));
+
+        Instant before = Instant.now();
+        CreateCandidateLinkResponse extended = service.extendValidity(created.attemptId(), 7);
+
+        assertThat(extended.operation()).isEqualTo(CompanyCandidateLinkService.EXTENDED_LINK_VALIDITY);
+        assertThat(entity.getCandidateTokenIssuedAt()).isAfterOrEqualTo(before);
+        assertThat(entity.getCandidateTokenExpiresAt()).isAfter(before.plusSeconds(6 * 24 * 60 * 60L));
+        verify(candidateAttemptRepository, times(2)).saveAndFlush(any(CandidateAttemptEntity.class));
+        verify(creditService, times(1)).assertCanStartNewAttempt("empresa-1");
+        verify(auditEventService).appendCandidateAttemptEvent(
+                eq("empresa-1"),
+                eq(created.attemptId()),
+                eq(AuditEventType.CANDIDATE_LINK_EXTENDED),
                 anyString(),
                 anyString()
         );
