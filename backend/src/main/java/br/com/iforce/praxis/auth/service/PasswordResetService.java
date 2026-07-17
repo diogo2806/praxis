@@ -193,20 +193,10 @@ public class PasswordResetService {
             return Optional.empty();
         }
 
-        Optional<UserEntity> indexed = userRepository
+        return userRepository
                 .findFirstByPasswordResetTokenLookupHash(tokenLookupHash(token))
                 .filter(this::isActiveResetUser)
                 .filter(user -> passwordEncoder.matches(token, user.getPasswordResetTokenHash()));
-        if (indexed.isPresent()) {
-            return indexed;
-        }
-
-        return userRepository
-                .findByPasswordResetTokenHashIsNotNullAndPasswordResetTokenLookupHashIsNull()
-                .stream()
-                .filter(this::isActiveResetUser)
-                .filter(user -> passwordEncoder.matches(token, user.getPasswordResetTokenHash()))
-                .findFirst();
     }
 
     private boolean isActiveResetUser(UserEntity user) {
