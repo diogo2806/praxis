@@ -256,12 +256,13 @@ function LatestResultsTable({ dashboard }: { dashboard: DashboardResponse }) {
                   </td>
                   <td className="px-4 py-3 text-muted-foreground">{formatDate(result.date)}</td>
                   <td className="px-4 py-3 text-right">
-                    <a
-                      href={canonicalAppRoute(result.actionRoute)}
+                    <Link
+                      to="/results/$attemptId"
+                      params={{ attemptId: result.attemptId }}
                       className="font-medium text-primary hover:underline"
                     >
                       {result.actionLabel}
-                    </a>
+                    </Link>
                   </td>
                 </tr>
               ))}
