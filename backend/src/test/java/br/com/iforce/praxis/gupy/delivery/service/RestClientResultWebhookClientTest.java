@@ -48,6 +48,15 @@ class RestClientResultWebhookClientTest {
     }
 
     @Test
+    void rejectsLocalHostnameBeforePersistence() {
+        GupyOutboundUrlValidator validator = validator();
+
+        assertThatThrownBy(() -> validator.validateForPersistence(URI.create("https://localhost/result")))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("URL externa não pode apontar para rede local ou reservada.");
+    }
+
+    @Test
     void rejectsLocalNetworkWebhookAtDeliveryTime() {
         RestClientResultWebhookClient client = new RestClientResultWebhookClient(
                 RestClient.builder(),
