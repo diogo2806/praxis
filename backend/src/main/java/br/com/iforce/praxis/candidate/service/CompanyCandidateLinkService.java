@@ -28,6 +28,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
@@ -45,7 +46,9 @@ public class CompanyCandidateLinkService {
     public static final String CREATED_NEW_APPLICATION = "CREATED_NEW_APPLICATION";
     public static final String REUSED_IDEMPOTENT_REQUEST = "REUSED_IDEMPOTENT_REQUEST";
     public static final String RESENT_EXISTING_LINK = "RESENT_EXISTING_LINK";
+    public static final String EXTENDED_LINK_VALIDITY = "EXTENDED_LINK_VALIDITY";
     private static final int REQUEST_FINGERPRINT_VERSION = 1;
+    private static final int MAX_EXTENSION_DAYS = 365;
 
     private final CandidateAttemptRepository candidateAttemptRepository;
     private final SimulationCatalogService simulationCatalogService;
@@ -124,8 +127,8 @@ public class CompanyCandidateLinkService {
     }
 
     /**
-     * Reenvia exatamente o link de uma tentativa existente, sem gerar tentativa ou
-     * consumir crédito adicional. A busca por empresa impede acesso entre locatários.
+     * Reenvia exatamente o link vigente de uma tentativa existente, sem gerar tentativa ou
+     * consumir crédito adicional. Links expirados precisam ser reativados explicitamente.
      */
     @Transactional
     public CreateCandidateLinkResponse resendExisting(String attemptId) {
@@ -133,20 +136,62 @@ public class CompanyCandidateLinkService {
         CandidateAttemptEntity entity = candidateAttemptRepository
                 .findByEmpresaIdAndId(empresaId, attemptId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Tentativa não encontrada."));
+        assertLinkActive(entity);
         PublishedSimulation simulation = findSimulation(entity);
 
         auditEventService.appendCandidateAttemptEvent(
                 empresaId,
                 entity.getId(),
                 AuditEventType.CANDIDATE_LINK_RESENT,
-                "Link existente reenviado pela empresa sem criar uma nova tentativa.",
+                "Link vigente reenviado pela empresa sem criar uma nova tentativa.",
                 auditMetadata.of(
                         "simulationId", entity.getSimulationId(),
-                        "candidateEmail", entity.getCandidateEmail()
+                        "candidateEmail", entity.getCandidateEmail(),
+                        "linkExpiresAt", entity.getCandidateTokenExpiresAt()
                 )
         );
 
         return response(empresaId, entity, simulation, true, RESENT_EXISTING_LINK);
+    }
+
+    /**
+     * Acrescenta dias à validade vigente. Se o link já expirou, a nova janela começa agora;
+     * se ainda está ativo, os dias são somados ao vencimento atual.
+     */
+    @Transactional
+    public CreateCandidateLinkResponse extendValidity(String attemptId, int additionalDays) {
+        validateAdditionalDays(additionalDays);
+        String empresaId = EmpresaSecurity.requiredEmpresa();
+        CandidateAttemptEntity entity = candidateAttemptRepository
+                .findByEmpresaIdAndIdForUpdate(empresaId, attemptId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Tentativa não encontrada."));
+        PublishedSimulation simulation = findSimulation(entity);
+
+        Instant now = Instant.now();
+        Instant previousExpiration = requiredExpiration(entity);
+        Instant extensionBase = previousExpiration.isAfter(now) ? previousExpiration : now;
+        Instant newExpiration = extensionBase.plus(additionalDays, ChronoUnit.DAYS);
+
+        entity.setCandidateTokenIssuedAt(now);
+        entity.setCandidateTokenExpiresAt(newExpiration);
+        entity = candidateAttemptRepository.saveAndFlush(entity);
+
+        auditEventService.appendCandidateAttemptEvent(
+                empresaId,
+                entity.getId(),
+                AuditEventType.CANDIDATE_LINK_EXTENDED,
+                "Validade do link do candidato ampliada pela empresa.",
+                auditMetadata.of(
+                        "simulationId", entity.getSimulationId(),
+                        "candidateEmail", entity.getCandidateEmail(),
+                        "additionalDays", additionalDays,
+                        "previousExpiration", previousExpiration,
+                        "newExpiration", newExpiration,
+                        "reactivated", !previousExpiration.isAfter(now)
+                )
+        );
+
+        return response(empresaId, entity, simulation, true, EXTENDED_LINK_VALIDITY);
     }
 
     private CompanyLinkResolution resolveApplication(
@@ -242,7 +287,8 @@ public class CompanyCandidateLinkService {
                         "applicationCycleId", applicationCycleId,
                         "applicationContext", normalizedContext(request.applicationContext()),
                         "simulationVersionId", publishedSimulation.versionId(),
-                        "simulationVersionNumber", publishedSimulation.versionNumber()
+                        "simulationVersionNumber", publishedSimulation.versionNumber(),
+                        "linkExpiresAt", saved.getCandidateTokenExpiresAt()
                 )
         );
         return saved;
@@ -313,6 +359,35 @@ public class CompanyCandidateLinkService {
                         HttpStatus.NOT_FOUND,
                         "Não encontramos o teste publicado."
                 ));
+    }
+
+    private void assertLinkActive(CandidateAttemptEntity entity) {
+        Instant expiration = requiredExpiration(entity);
+        if (!expiration.isAfter(Instant.now())) {
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "O link está expirado. Adicione dias de validade para reativá-lo antes de reenviar."
+            );
+        }
+    }
+
+    private Instant requiredExpiration(CandidateAttemptEntity entity) {
+        if (entity.getCandidateTokenExpiresAt() == null) {
+            throw new ResponseStatusException(
+                    HttpStatus.INTERNAL_SERVER_ERROR,
+                    "A validade do link da tentativa não foi encontrada."
+            );
+        }
+        return entity.getCandidateTokenExpiresAt();
+    }
+
+    private void validateAdditionalDays(int additionalDays) {
+        if (additionalDays < 1 || additionalDays > MAX_EXTENSION_DAYS) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Informe uma quantidade entre 1 e 365 dias."
+            );
+        }
     }
 
     private String requiredApplicationCycleId(String value) {
