@@ -1,8 +1,26 @@
 # Requisitos técnicos implementados — praxis
 
-Status: atualizado em 2026-07-16 após conclusão e revalidação de `BUS12`, `UI13`, `DATA14`, `ASYNC11`, `BUS13`, `INT18`, `DATA13` e `INT17`.
+Status: atualizado em 2026-07-17 após conclusão de `DATA15`.
 
 Este arquivo registra comportamentos comprovadamente entregues no código e preserva a rastreabilidade de conclusões históricas posteriormente reclassificadas. Entregas parciais ou invalidadas apontam obrigatoriamente para o backlog canônico.
+
+## 2026-07-17
+
+| Origem | Situação registrada | Entrega comprovada | Pendência remanescente |
+|---|---|---|---|
+| `DATA15` | Concluído | A janela do JWT público passou a ter emissão e expiração persistidas na tentativa. Consultas apenas leem o estado canônico; links expirados permanecem bloqueados; a empresa pode acrescentar de 1 a 365 dias por comando transacional com lock pessimista, auditoria, isolamento por empresa e sem criar tentativa ou consumir crédito. A tela exibe andamento, situação do link, criação, emissão, vencimento e dias restantes. | Nenhuma para persistência, visibilidade e reativação explícita dos links diretos. |
+
+### Entregas e comportamentos comprovados em `DATA15`
+
+| Caminho completo | Método/campo/contrato | Comportamento comprovado |
+|---|---|---|
+| `backend/src/main/resources/db/migration/V74__add_candidate_token_validity_window.sql` | `candidate_token_issued_at` e `candidate_token_expires_at` | Migra registros existentes, torna a janela obrigatória e cria índice por empresa e vencimento. |
+| `backend/src/main/java/br/com/iforce/praxis/gupy/persistence/entity/CandidateAttemptEntity.java` | campos da janela do token | Persiste o início e o fim da validade vigente. |
+| `backend/src/main/java/br/com/iforce/praxis/auth/service/JwtService.java` | geração de token da tentativa | Usa exatamente a janela persistida e não renova credenciais por simples leitura. |
+| `backend/src/main/java/br/com/iforce/praxis/candidate/service/CompanyCandidateLinkService.java` | `extendValidity()` e `resendExisting()` | Reativa ou amplia a validade sob lock pessimista; bloqueia reenvio expirado e registra os eventos de auditoria. |
+| `backend/src/main/java/br/com/iforce/praxis/candidate/dto/CandidateLinkResponse.java` | metadados operacionais | Expõe emissão, vencimento, dias restantes e estado `active`, `expiringSoon` ou `expired`. |
+| `frontend/src/routes/enviar-link.tsx` | tabela de links e ação de validade | Separa andamento e validade, destaca links expirados, bloqueia cópia/reenvio e oferece seleção de dias para adicionar ou reativar. |
+| `backend/src/test/java/br/com/iforce/praxis/candidate/service/CompanyCandidateLinkServiceTest.java` | expiração e extensão | Cobre bloqueio do reenvio expirado, criação de nova janela persistida e ausência de cobrança adicional. |
 
 ## 2026-07-16
 
