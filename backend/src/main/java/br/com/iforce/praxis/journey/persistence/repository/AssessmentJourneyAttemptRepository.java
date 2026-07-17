@@ -32,6 +32,12 @@ public interface AssessmentJourneyAttemptRepository extends JpaRepository<Assess
             String sequenceKey
     );
 
+    @EntityGraph(attributePaths = {"steps"})
+    List<AssessmentJourneyAttemptEntity> findDistinctByEmpresaIdAndStepsCandidateAttemptIdOrderByCreatedAtDesc(
+            String empresaId,
+            String candidateAttemptId
+    );
+
     long countByEmpresaIdAndStatusIn(String empresaId, List<AssessmentJourneyAttemptStatus> statuses);
 
     long countByEmpresaIdAndJourneyIdAndStatusIn(
