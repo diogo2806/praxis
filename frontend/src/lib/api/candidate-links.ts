@@ -14,7 +14,10 @@ export interface CreateCandidateLinkRequest {
 export type CandidateLinkOperation =
   | "CREATED_NEW_APPLICATION"
   | "REUSED_IDEMPOTENT_REQUEST"
-  | "RESENT_EXISTING_LINK";
+  | "RESENT_EXISTING_LINK"
+  | "EXTENDED_LINK_VALIDITY";
+
+export type CandidateLinkStatus = "active" | "expiringSoon" | "expired";
 
 export interface CreateCandidateLinkResponse {
   attemptId: string;
@@ -33,6 +36,10 @@ export interface CandidateLinkResponse {
   simulationName: string;
   status: AttemptStatus;
   createdAt: string;
+  linkIssuedAt: string;
+  linkExpiresAt: string;
+  remainingDays: number;
+  linkStatus: CandidateLinkStatus;
 }
 
 export interface CandidateLinkPageResponse {
@@ -100,6 +107,16 @@ export function resendCandidateLink(attemptId: string) {
   return request<CreateCandidateLinkResponse>(
     `/api/v1/candidate-links/${encodeURIComponent(attemptId)}/resend`,
     { method: "POST" },
+  );
+}
+
+export function extendCandidateLink(attemptId: string, additionalDays: number) {
+  return request<CreateCandidateLinkResponse>(
+    `/api/v1/candidate-links/${encodeURIComponent(attemptId)}/extend`,
+    {
+      method: "POST",
+      body: JSON.stringify({ additionalDays }),
+    },
   );
 }
 
