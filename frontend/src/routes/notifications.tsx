@@ -56,7 +56,7 @@ function NotificationsPage() {
         <div>
           <h1 className="text-3xl font-semibold text-foreground">Notificações e falhas de entrega</h1>
           <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
-            Acompanhe alertas internos, marque pendências como lidas e reenvie resultados que não chegaram à integração externa.
+            Acompanhe alertas internos. As entregas abaixo só aparecem quando as tentativas automáticas terminam e a causa precisa ser corrigida.
           </p>
         </div>
         <Link to="/monitoramento" className="inline-flex items-center gap-2 rounded-md border border-border bg-card px-4 py-2 text-sm hover:bg-accent">
@@ -187,49 +187,69 @@ function FailedDeliveriesPanel({
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-2">
           <AlertTriangle className="h-4 w-4 text-warning" />
-          <h2 className="text-lg font-semibold">Entregas com falha</h2>
+          <h2 className="text-lg font-semibold">Entregas que exigem intervenção</h2>
         </div>
         <span className="rounded-full border border-border px-2 py-0.5 text-xs text-muted-foreground">
           {deliveries.length} pendente{deliveries.length === 1 ? "" : "s"}
         </span>
       </div>
       {error && (
-        <StateBanner tone="danger" title="Reenvio não concluído">
+        <StateBanner tone="danger" title="Nova tentativa não concluída">
           {error instanceof Error ? error.message : "Tente novamente."}
         </StateBanner>
       )}
       {deliveries.length === 0 ? (
         <div className="rounded-md border border-border bg-background p-8 text-center">
           <CheckCircle2 className="mx-auto h-8 w-8 text-success" />
-          <p className="mt-3 text-sm font-medium">Nenhuma entrega com falha.</p>
-          <p className="mt-1 text-sm text-muted-foreground">Todos os resultados foram enviados ou ainda estão dentro das tentativas automáticas.</p>
+          <p className="mt-3 text-sm font-medium">Nenhuma entrega exige intervenção.</p>
+          <p className="mt-1 text-sm text-muted-foreground">O job continua processando automaticamente os envios pendentes e as retentativas agendadas.</p>
         </div>
       ) : (
         <div className="space-y-3">
-          {deliveries.map((delivery) => (
-            <article key={delivery.id} className="rounded-md border border-border bg-background p-4">
-              <div className="flex flex-wrap items-start justify-between gap-3">
-                <div>
-                  <div className="font-medium">Envio #{delivery.id}</div>
-                  <a href={resultHref(delivery.attemptId)} className="text-sm font-medium text-primary hover:underline">
-                    Resultado da tentativa {delivery.attemptId}
-                  </a>
-                  <p className="mt-1 text-xs text-muted-foreground">
-                    {delivery.lastError || "Sem detalhe registrado. Tente reenviar ou acione o suporte se a falha continuar."}
-                  </p>
+          <div className="rounded-md border border-warning/30 bg-warning/10 p-3 text-sm text-foreground">
+            As retentativas automáticas já foram encerradas. Corrija a causa indicada no último erro antes de iniciar uma nova tentativa manual.
+          </div>
+          {deliveries.map((delivery) => {
+            const current = isReprocessing && reprocessingId === delivery.id;
+            return (
+              <article key={delivery.id} className="rounded-md border border-border bg-background p-4">
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <div className="font-medium">Envio #{delivery.id}</div>
+                      <span className="rounded-full border border-warning/30 bg-warning/10 px-2 py-0.5 text-xs font-medium text-warning-foreground">
+                        Retentativas encerradas
+                      </span>
+                    </div>
+                    <a href={resultHref(delivery.attemptId)} className="mt-1 inline-block text-sm font-medium text-primary hover:underline">
+                      Resultado da tentativa {delivery.attemptId}
+                    </a>
+                    <div className="mt-2 flex flex-wrap gap-2 text-xs text-muted-foreground">
+                      <span>{delivery.attemptCount} tentativa{delivery.attemptCount === 1 ? "" : "s"}</span>
+                      {delivery.lastAttemptAt && <span>• Última tentativa em {formatDateTime(delivery.lastAttemptAt)}</span>}
+                      <span>• Status: intervenção necessária</span>
+                    </div>
+                    <div className="mt-3 rounded-md border border-border bg-card p-3">
+                      <p className="text-xs font-medium text-foreground">Último erro</p>
+                      <p className="mt-1 break-words text-xs text-muted-foreground">
+                        {delivery.lastError || "Sem detalhe registrado. Verifique a configuração da integração antes de tentar novamente."}
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    disabled={isReprocessing}
+                    onClick={() => onReprocess(delivery.id)}
+                    title="Use esta ação somente após corrigir a causa da falha"
+                    className="inline-flex items-center gap-2 rounded-md border border-border bg-background px-3 py-2 text-xs hover:bg-accent disabled:opacity-60"
+                  >
+                    {current ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
+                    {current ? "Tentando novamente..." : "Tentar novamente agora"}
+                  </button>
                 </div>
-                <button
-                  type="button"
-                  disabled={isReprocessing && reprocessingId === delivery.id}
-                  onClick={() => onReprocess(delivery.id)}
-                  className="inline-flex items-center gap-2 rounded-md border border-border bg-background px-3 py-2 text-xs hover:bg-accent disabled:opacity-60"
-                >
-                  {isReprocessing && reprocessingId === delivery.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
-                  Reenviar resultado
-                </button>
-              </div>
-            </article>
-          ))}
+              </article>
+            );
+          })}
         </div>
       )}
     </section>
