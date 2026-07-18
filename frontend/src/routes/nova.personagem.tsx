@@ -98,20 +98,21 @@ function Page() {
     ].filter(Boolean);
     return parts.join("\n\n");
   }, [context, emotion, name]);
+  const draftValue = useMemo<CharacterDraft>(() => ({ name, emotion, context }), [context, emotion, name]);
 
   const localDraft = usePersistentDraft<CharacterDraft>({
     key: draftStorageKey,
-    value: { name, emotion, context },
+    value: draftValue,
     enabled: hasDraftContext && isEditable && hydratedVersionKey === versionKey,
   });
 
-  async function persistCharacter() {
+  async function persistCharacter(message: string) {
     if (!isEditable) {
       throw new Error("Esta versão não pode ser editada. Crie um rascunho antes de alterar.");
     }
     if (rootNode) {
       await updateSimulationNode(search.simulationId!, search.versionNumber!, rootNode.id, {
-        clientMessage,
+        clientMessage: message,
         timeLimitSeconds: rootNode.timeLimitSeconds,
       });
       return rootNode.id;
@@ -120,17 +121,18 @@ function Page() {
       throw new Error("A configuração da empresa ainda não foi carregada pelo sistema.");
     }
     return createSimulationNode(search.simulationId!, search.versionNumber!, {
-      clientMessage,
+      clientMessage: message,
       timeLimitSeconds: defaultAnswerTimeLimitSeconds(config),
     });
   }
 
   const autosaveMutation = useMutation({
     mutationFn: persistCharacter,
-    onSuccess: () => {
-      lastServerMessageRef.current = clientMessage;
+    onSuccess: (_nodeId, submittedMessage) => {
+      lastServerMessageRef.current = submittedMessage;
     },
   });
+  const triggerAutosave = autosaveMutation.mutate;
 
   const saveCharacterMutation = useMutation({
     mutationFn: persistCharacter,
@@ -194,16 +196,18 @@ function Page() {
     ) {
       return;
     }
-    const timer = window.setTimeout(() => autosaveMutation.mutate(), 1200);
+    const messageToSave = clientMessage;
+    const timer = window.setTimeout(() => triggerAutosave(messageToSave), 1200);
     return () => window.clearTimeout(timer);
   }, [
-    autosaveMutation,
+    autosaveMutation.isPending,
     canGoNext,
     clientMessage,
     hydratedVersionKey,
     isEditable,
     rootNode,
     saveCharacterMutation.isPending,
+    triggerAutosave,
     versionKey,
   ]);
 
@@ -401,7 +405,7 @@ function Page() {
               onClick={() => {
                 setSubmitAttempted(true);
                 if (!canGoNext) return;
-                saveCharacterMutation.mutate();
+                saveCharacterMutation.mutate(clientMessage);
               }}
               disabled={!isEditable || !canGoNext || saveCharacterMutation.isPending}
               className="inline-flex min-h-11 items-center justify-center rounded-md bg-primary px-5 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50"
