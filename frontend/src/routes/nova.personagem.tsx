@@ -131,6 +131,7 @@ function Page() {
       lastServerMessageRef.current = submittedMessage;
       if (submittedMessage === latestClientMessageRef.current) {
         clearPersistentDraft(draftStorageKey);
+        setRecoveredLocalDraft(false);
       }
     },
   });
@@ -480,15 +481,11 @@ function parseCharacterMessage(message: string) {
   const namePrefix = "Personagem:";
   const namePart = parts.at(-1)?.startsWith(namePrefix) ? parts.pop() : undefined;
 
-  if (namePart) {
-    return {
-      emotion: parts.length > 1 ? parts[0] : "",
-      context: parts.length > 1 ? parts.slice(1).join("\n\n") : (parts[0] ?? ""),
-      name: namePart.slice(namePrefix.length).trim(),
-    };
-  }
-
-  return { emotion: "", context: message.trim(), name: "" };
+  return {
+    emotion: parts.length > 1 ? parts[0] : "",
+    context: parts.length > 1 ? parts.slice(1).join("\n\n") : (parts[0] ?? ""),
+    name: namePart ? namePart.slice(namePrefix.length).trim() : "",
+  };
 }
 
 function SimulationLinks({
