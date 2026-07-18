@@ -9,6 +9,7 @@ import {
   type AutoRechargeConfigResponse,
   type ClientBillingResponse,
   type CommercialPlanType,
+  type CreditCapacityResponse,
   type FinancialStatus,
   cancelClientSubscription,
   changeClientPlan,
@@ -17,6 +18,7 @@ import {
   getAutoRechargeConfig,
   getClientBilling,
   getClientPlanManagement,
+  getCreditCapacity,
   listClientBillingPlans,
   syncClientSubscription,
 } from "@/lib/api/client-billing";
@@ -30,6 +32,7 @@ export const Route = createFileRoute("/billing")({
 function BillingPage() {
   const client = useQueryClient();
   const billing = useQuery({ queryKey: ["billing"], queryFn: getClientBilling, retry: false });
+  const capacity = useQuery({ queryKey: ["billing", "credit-capacity"], queryFn: getCreditCapacity, retry: false });
   const plans = useQuery({ queryKey: ["billing", "plans"], queryFn: listClientBillingPlans, retry: false });
   const management = useQuery({ queryKey: ["billing", "management"], queryFn: getClientPlanManagement, retry: false });
   const autoRecharge = useQuery({
@@ -52,12 +55,15 @@ function BillingPage() {
 
   return <AppShell><main className="space-y-4">
     <header className="mb-6 space-y-2"><h1 className="text-2xl font-semibold">Planos, pagamentos e créditos</h1><p className="text-sm text-muted-foreground">Contrate, altere ou cancele sua cobrança e acompanhe pagamentos e créditos em um só lugar.</p></header>
-    {billing.isLoading ? <Loading /> : billing.isError || !billing.data ? <Failure retry={() => billing.refetch()} /> : <BillingView data={billing.data} plans={plans.data ?? []} management={management.data} autoRecharge={autoRecharge.data} autoRechargeLoading={autoRecharge.isLoading} autoRechargeError={autoRecharge.isError} plansLoading={plans.isLoading || management.isLoading} busy={busy} error={error} onCredit={(id) => credit.mutate(id)} onChange={(id) => change.mutate(id)} onSync={() => sync.mutate()} onCancel={() => cancel.mutate()} onEnterpriseRequest={(type, plan, note) => enterprise.mutate({ type, plan, note })} />}
+    {billing.isLoading ? <Loading /> : billing.isError || !billing.data ? <Failure retry={() => billing.refetch()} /> : <BillingView data={billing.data} capacity={capacity.data} capacityLoading={capacity.isLoading} capacityError={capacity.isError} plans={plans.data ?? []} management={management.data} autoRecharge={autoRecharge.data} autoRechargeLoading={autoRecharge.isLoading} autoRechargeError={autoRecharge.isError} plansLoading={plans.isLoading || management.isLoading} busy={busy} error={error} onCredit={(id) => credit.mutate(id)} onChange={(id) => change.mutate(id)} onSync={() => sync.mutate()} onCancel={() => cancel.mutate()} onEnterpriseRequest={(type, plan, note) => enterprise.mutate({ type, plan, note })} />}
   </main></AppShell>;
 }
 
-function BillingView({ data, plans, management, autoRecharge, autoRechargeLoading, autoRechargeError, plansLoading, busy, error, onCredit, onChange, onSync, onCancel, onEnterpriseRequest }: {
+function BillingView({ data, capacity, capacityLoading, capacityError, plans, management, autoRecharge, autoRechargeLoading, autoRechargeError, plansLoading, busy, error, onCredit, onChange, onSync, onCancel, onEnterpriseRequest }: {
   data: ClientBillingResponse;
+  capacity: CreditCapacityResponse | undefined;
+  capacityLoading: boolean;
+  capacityError: boolean;
   plans: ReturnType<typeof listClientBillingPlans> extends Promise<infer T> ? T : never;
   management: ReturnType<typeof getClientPlanManagement> extends Promise<infer T> ? T | undefined : never;
   autoRecharge: AutoRechargeConfigResponse | undefined;
@@ -79,7 +85,7 @@ function BillingView({ data, plans, management, autoRecharge, autoRechargeLoadin
     {error && <div className="rounded-md border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm text-destructive">{error}</div>}
     {autoRecharge && autoRechargeNeedsAttention(autoRecharge) && <AutoRechargeFailureAlert config={autoRecharge} busy={busy} onRecover={recoverNow} />}
     <StatusCard data={data} />
-    {data.plan === "AVULSO" && <CreditBalance data={data} />}
+    {(data.plan === "AVULSO" || data.plan === "PROFISSIONAL") && <CreditCapacityCard data={data} capacity={capacity} loading={capacityLoading} failed={capacityError} />}
     {data.plan === "AVULSO" && <AutoRechargeCard config={autoRecharge} loading={autoRechargeLoading} failed={autoRechargeError} plans={plans} busy={busy} onRecover={recoverNow} />}
     {data.plan === "PROFISSIONAL" && data.subscription && <SubscriptionCard data={data} busy={busy} onSync={onSync} onCancel={onCancel} />}
     {plansLoading || !management ? <section className="rounded-md border border-border bg-card p-6 text-sm text-muted-foreground"><Loader2 className="mr-2 inline h-4 w-4 animate-spin" />Carregando opções de plano...</section> : <BillingPlanActions management={management} plans={plans} busy={busy} onBuyCredits={onCredit} onChangePlan={onChange} onEnterpriseRequest={onEnterpriseRequest} />}
@@ -109,8 +115,21 @@ function AutoRechargeCard({ config, loading, failed, plans, busy, onRecover }: {
   </Card>;
 }
 
-function StatusCard({ data }: { data: ClientBillingResponse }) { return <Card title="Situação atual" icon={<BadgeCheck className="h-4 w-4" />}><div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4"><Info label="Plano" value={planName(data.plan)} /><Info label="Situação" value={<Badge text={empresaStatus(data.empresaStatus)} tone={data.empresaStatus === "ATIVO" ? "success" : "neutral"} />} /><Info label="Situação financeira" value={<Financial status={data.financialStatus} />} />{data.plan === "AVULSO" && <Info label="Créditos disponíveis" value={`${data.creditBalance} crédito${data.creditBalance !== 1 ? "s" : ""}`} />}</div></Card>; }
-function CreditBalance({ data }: { data: ClientBillingResponse }) { const empty = data.creditBalance === 0; return <Card title="Saldo de créditos" icon={<CreditCard className="h-4 w-4" />}><div className="flex items-center gap-3">{empty ? <AlertCircle className="h-5 w-5 text-destructive" /> : <CheckCircle2 className="h-5 w-5 text-emerald-600" />}<div><p className="text-2xl font-bold">{data.creditBalance}</p><p className="text-sm text-muted-foreground">{empty ? "Não há créditos disponíveis. Escolha um pacote em Gerenciar plano." : "créditos disponíveis para novas avaliações"}</p></div></div></Card>; }
+function StatusCard({ data }: { data: ClientBillingResponse }) { return <Card title="Situação atual" icon={<BadgeCheck className="h-4 w-4" />}><div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4"><Info label="Plano" value={planName(data.plan)} /><Info label="Situação" value={<Badge text={empresaStatus(data.empresaStatus)} tone={data.empresaStatus === "ATIVO" ? "success" : "neutral"} />} /><Info label="Situação financeira" value={<Financial status={data.financialStatus} />} />{data.plan === "ENTERPRISE" && <Info label="Modelo de consumo" value="Conforme contrato" />}</div></Card>; }
+
+function CreditCapacityCard({ data, capacity, loading, failed }: { data: ClientBillingResponse; capacity: CreditCapacityResponse | undefined; loading: boolean; failed: boolean }) {
+  if (loading) return <Card title="Capacidade de novas avaliações" icon={<CreditCard className="h-4 w-4" />}><p className="text-sm text-muted-foreground"><Loader2 className="mr-2 inline h-4 w-4 animate-spin" />Calculando saldo e reservas...</p></Card>;
+  if (failed || !capacity) return <Card title="Capacidade de novas avaliações" icon={<CreditCard className="h-4 w-4" />}><p className="text-sm text-destructive">Não foi possível separar o saldo livre das avaliações em andamento.</p></Card>;
+  const empty = capacity.availableCredits === 0;
+  return <Card title="Capacidade de novas avaliações" icon={<CreditCard className="h-4 w-4" />}>
+    <div className="grid gap-3 sm:grid-cols-3"><Info label="Saldo total" value={`${capacity.creditBalance} crédito${capacity.creditBalance !== 1 ? "s" : ""}`} /><Info label="Reservados" value={`${capacity.reservedCredits} crédito${capacity.reservedCredits !== 1 ? "s" : ""}`} /><Info label="Livres para novas aplicações" value={<span className={empty ? "text-destructive" : "text-emerald-700"}>{capacity.availableCredits} crédito{capacity.availableCredits !== 1 ? "s" : ""}</span>} /></div>
+    <div className={cn("rounded-md border px-4 py-3 text-sm", empty ? "border-destructive/30 bg-destructive/5" : "border-border bg-muted/20")}>
+      <p className="font-medium">Como o consumo funciona</p>
+      <p className="mt-1 text-muted-foreground">Criar uma nova aplicação reserva 1 crédito. O débito acontece somente quando a avaliação é concluída. Reenviar um link ou ampliar sua validade não cria outra cobrança.</p>
+      {data.plan === "PROFISSIONAL" && <p className="mt-1 text-xs text-muted-foreground">A assinatura usa a mesma regra de reserva e débito para a cota creditada no ciclo.</p>}
+    </div>
+  </Card>;
+}
 
 function SubscriptionCard({ data, busy, onSync, onCancel }: { data: ClientBillingResponse; busy: boolean; onSync: () => void; onCancel: () => void; }) {
   const [confirm, setConfirm] = useState(false); const sub = data.subscription!;
