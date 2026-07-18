@@ -4,6 +4,7 @@ import {
   Link,
   createRootRouteWithContext,
   useRouter,
+  useRouterState,
   HeadContent,
   Scripts,
 } from "@tanstack/react-router";
@@ -16,6 +17,7 @@ import accessibilityOverridesCss from "../styles/accessibility-overrides.css?url
 import tablesCss from "../styles/tables.css?url";
 import landingAccessibilityCss from "../styles/landing-accessibility.css?url";
 import { GlobalTablePagination } from "../components/global-table-pagination";
+import { ScreenManual } from "../components/screen-manual";
 import { reportAppError } from "../lib/app-error-reporting";
 import { resolveRuntimeConfigFromEnv } from "../lib/runtime-config.server";
 import { LanguageProvider, useLanguage } from "../lib/language-context";
@@ -253,8 +255,19 @@ function RootComponent() {
     <QueryClientProvider client={queryClient}>
       <SessionExpiryRedirect />
       <GlobalTablePagination />
+      <GlobalScreenManual />
       <Outlet />
     </QueryClientProvider>
+  );
+}
+
+function GlobalScreenManual() {
+  const pathname = useRouterState({ select: (state) => state.location.pathname });
+
+  return (
+    <div className="fixed right-4 top-20 z-40 sm:right-6">
+      <ScreenManual pathname={pathname} iconOnly />
+    </div>
   );
 }
 
