@@ -1,18 +1,12 @@
 package br.com.iforce.praxis.simulation.persistence.repository;
 
 import br.com.iforce.praxis.simulation.model.SimulationVersionStatus;
-
 import br.com.iforce.praxis.simulation.persistence.entity.SimulationVersionEntity;
-
 import org.springframework.data.jpa.repository.EntityGraph;
-
 import org.springframework.data.jpa.repository.JpaRepository;
 
-
 import java.util.List;
-
 import java.util.Optional;
-
 
 public interface SimulationVersionRepository extends JpaRepository<SimulationVersionEntity, Long> {
 
@@ -96,4 +90,6 @@ public interface SimulationVersionRepository extends JpaRepository<SimulationVer
             String simulationId,
             SimulationVersionStatus status
     );
+
+    long countBySimulationEmpresaIdAndStatus(String empresaId, SimulationVersionStatus status);
 }
