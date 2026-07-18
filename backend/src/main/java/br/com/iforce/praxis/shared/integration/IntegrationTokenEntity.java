@@ -54,6 +54,12 @@ public class IntegrationTokenEntity {
     @Column(name = "token_hash", nullable = false, length = 120)
     private String tokenHash;
 
+    @Column(name = "partner_client_id", length = 120)
+    private String partnerClientId;
+
+    @Column(name = "client_company_id", length = 120)
+    private String clientCompanyId;
+
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
 }
