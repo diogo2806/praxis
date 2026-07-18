@@ -60,10 +60,18 @@ public class IntegrationAuthService {
         return integrationTokenRepository.findFirstByProviderAndTokenHash(provider, tokenHash)
                 .map(entity -> new IntegrationEmpresaContext(
                         entity.getEmpresa().getId(),
-                        entity.getEmpresa().getCompanyId(),
-                        entity.getProvider()
+                        resolveCompanyId(entity),
+                        entity.getProvider(),
+                        entity.getPartnerClientId()
                 ))
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Token Bearer inválido."));
+    }
+
+    private String resolveCompanyId(IntegrationTokenEntity entity) {
+        if (entity.getPartnerClientId() != null && entity.getClientCompanyId() != null) {
+            return entity.getClientCompanyId();
+        }
+        return entity.getEmpresa().getCompanyId();
     }
 
     private String sha256(String value) {

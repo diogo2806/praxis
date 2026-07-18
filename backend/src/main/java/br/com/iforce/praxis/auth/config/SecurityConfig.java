@@ -1,6 +1,7 @@
 package br.com.iforce.praxis.auth.config;
 
 import br.com.iforce.praxis.auth.filter.JwtAuthenticationFilter;
+import br.com.iforce.praxis.auth.filter.PartnerSpecialistAuthorizationFilter;
 
 import jakarta.servlet.http.HttpServletRequest;
 
@@ -35,13 +36,16 @@ public class SecurityConfig {
     private static final String BEARER_PREFIX = "Bearer ";
 
     private final JwtAuthenticationFilter jwtFilter;
+    private final PartnerSpecialistAuthorizationFilter specialistAuthorizationFilter;
     private final boolean securityEnabled;
 
     public SecurityConfig(
             JwtAuthenticationFilter jwtFilter,
+            PartnerSpecialistAuthorizationFilter specialistAuthorizationFilter,
             @Value("${praxis.security.enabled:true}") boolean securityEnabled
     ) {
         this.jwtFilter = jwtFilter;
+        this.specialistAuthorizationFilter = specialistAuthorizationFilter;
         this.securityEnabled = securityEnabled;
     }
 
@@ -84,15 +88,15 @@ public class SecurityConfig {
                         // Painel administrativo da plataforma: exige operador ADMIN e não
                         // depende do empresa do usuário logado (empresa alvo vem na rota).
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
-                        .requestMatchers("/api/v1/account/**").hasAnyRole("EMPRESA", "ADMIN")
+                        .requestMatchers("/api/v1/account/**").hasAnyRole("EMPRESA", "ADMIN", "PARTNER_SPECIALIST")
                         .requestMatchers("/api/v1/company-profile/**").hasRole("EMPRESA")
                         .requestMatchers("/api/v1/dashboard/**").hasRole("EMPRESA")
                         .requestMatchers("/api/v1/integrations/**").hasRole("EMPRESA")
-                        .requestMatchers("/api/v1/simulations/**").hasRole("EMPRESA")
+                        .requestMatchers("/api/v1/simulations/**").hasAnyRole("EMPRESA", "PARTNER_SPECIALIST")
                         .requestMatchers("/api/v1/assessment-journeys/**").hasRole("EMPRESA")
                         .requestMatchers("/api/v1/assessment-journey-attempts/**").hasRole("EMPRESA")
-                        .requestMatchers("/api/v1/media/**").hasRole("EMPRESA")
-                        .requestMatchers("/api/v1/empresa-config/**").hasRole("EMPRESA")
+                        .requestMatchers("/api/v1/media/**").hasAnyRole("EMPRESA", "PARTNER_SPECIALIST")
+                        .requestMatchers("/api/v1/empresa-config/**").hasAnyRole("EMPRESA", "PARTNER_SPECIALIST")
                         .requestMatchers("/api/v1/gupy/result-deliveries/**").hasRole("EMPRESA")
                         .requestMatchers("/api/v1/results/**").hasRole("EMPRESA")
                         .requestMatchers("/api/v1/notifications/**").hasRole("EMPRESA")
@@ -101,9 +105,11 @@ public class SecurityConfig {
                         .requestMatchers("/api/v1/candidate-links", "/api/v1/candidate-links/**").hasRole("EMPRESA")
                         .requestMatchers("/api/v1/billing", "/api/v1/billing/**").hasRole("EMPRESA")
                         .requestMatchers("/api/v1/team", "/api/v1/team/**").hasRole("EMPRESA")
+                        .requestMatchers("/api/v1/partners", "/api/v1/partners/**").hasRole("EMPRESA")
                         .anyRequest().authenticated()
                 )
-                .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
+                .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class)
+                .addFilterAfter(specialistAuthorizationFilter, JwtAuthenticationFilter.class);
         http.headers(headers -> headers
                 .frameOptions(frame -> frame.deny())
                 .contentTypeOptions(contentType -> {})
@@ -164,6 +170,15 @@ public class SecurityConfig {
     @Bean
     public FilterRegistrationBean<JwtAuthenticationFilter> jwtAuthenticationFilterRegistration(JwtAuthenticationFilter filter) {
         FilterRegistrationBean<JwtAuthenticationFilter> registration = new FilterRegistrationBean<>(filter);
+        registration.setEnabled(false);
+        return registration;
+    }
+
+    @Bean
+    public FilterRegistrationBean<PartnerSpecialistAuthorizationFilter> partnerSpecialistFilterRegistration(
+            PartnerSpecialistAuthorizationFilter filter
+    ) {
+        FilterRegistrationBean<PartnerSpecialistAuthorizationFilter> registration = new FilterRegistrationBean<>(filter);
         registration.setEnabled(false);
         return registration;
     }

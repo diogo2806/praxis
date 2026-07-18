@@ -1,8 +1,17 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { z } from "zod";
-import { Ban, CheckCircle2, Clock, Plus, RefreshCw, ShieldOff, Users } from "lucide-react";
+import {
+  Ban,
+  BriefcaseBusiness,
+  CheckCircle2,
+  Clock,
+  Plus,
+  RefreshCw,
+  ShieldOff,
+  Users,
+} from "lucide-react";
 
 import { AppShell } from "@/components/app-shell";
 import { Button } from "@/components/ui/button";
@@ -232,7 +241,13 @@ function TeamPage() {
       <div className="mx-auto max-w-5xl space-y-6">
         <div className="flex items-start justify-between gap-4">
           <div><h1 className="text-2xl font-semibold tracking-tight text-foreground">Minha equipe</h1><p className="mt-1 text-sm text-muted-foreground">Gerencie quem pode acessar o Práxis pela sua empresa.</p></div>
-          <Button onClick={() => setInviteOpen(true)}><Plus className="mr-2 h-4 w-4" />Convidar usuário</Button>
+          <div className="flex flex-wrap justify-end gap-2">
+            <Button variant="outline" asChild><Link to="/parceiros"><BriefcaseBusiness className="mr-2 h-4 w-4" />Parceiros e especialistas</Link></Button>
+            <Button onClick={() => setInviteOpen(true)}><Plus className="mr-2 h-4 w-4" />Convidar usuário</Button>
+          </div>
+        </div>
+        <div className="rounded-lg border border-border bg-muted/20 p-4 text-sm text-muted-foreground">
+          Empresas parceiras podem cadastrar especialistas, clientes e liberar um catálogo diferente para cada integração.
         </div>
         <InviteUserModal open={inviteOpen} onClose={() => setInviteOpen(false)} />
         {teamQuery.isLoading ? <div className="space-y-2">{[1, 2, 3].map((i) => <div key={i} className="h-14 animate-pulse rounded-lg bg-muted" />)}</div> : teamQuery.isError ? <div className="rounded-lg border border-destructive/30 bg-destructive/10 p-6 text-center"><p className="text-sm text-destructive">Não foi possível carregar a equipe. Tente novamente.</p><Button variant="outline" size="sm" className="mt-4" onClick={() => teamQuery.refetch()}><RefreshCw className="mr-2 h-3.5 w-3.5" />Tentar novamente</Button></div> : <div className="space-y-2"><h2 className="text-sm font-medium uppercase tracking-wide text-muted-foreground">Usuários</h2><TeamUsersTable users={teamQuery.data ?? []} onInviteClick={() => setInviteOpen(true)} /></div>}
