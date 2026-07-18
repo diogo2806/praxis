@@ -4,7 +4,6 @@ import br.com.iforce.praxis.auth.persistence.entity.EmpresaEntity;
 import br.com.iforce.praxis.auth.persistence.entity.UserEntity;
 import br.com.iforce.praxis.auth.persistence.repository.EmpresaRepository;
 import br.com.iforce.praxis.auth.persistence.repository.UserRepository;
-import br.com.iforce.praxis.gupy.model.PublishedSimulation;
 import br.com.iforce.praxis.gupy.service.SimulationCatalogService;
 import br.com.iforce.praxis.partner.dto.CreatePartnerClientRequest;
 import br.com.iforce.praxis.partner.dto.CreatePartnerSpecialistRequest;
@@ -33,7 +32,6 @@ import java.security.SecureRandom;
 import java.time.Instant;
 import java.util.Base64;
 import java.util.HashSet;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
@@ -43,6 +41,7 @@ import java.util.UUID;
 public class PartnerService {
 
     public static final String PARTNER_SPECIALIST_ROLE = "PARTNER_SPECIALIST";
+    private static final String EMPRESA_ROLE = "EMPRESA";
     private static final int TOKEN_BYTES = 32;
 
     private final SecureRandom secureRandom = new SecureRandom();
@@ -75,13 +74,7 @@ public class PartnerService {
     @Transactional(readOnly = true)
     public List<PartnerModuleResponse.Specialist> listSpecialists(String empresaId) {
         return userRepository.findByEmpresaIdAndRole(empresaId, PARTNER_SPECIALIST_ROLE).stream()
-                .map(user -> new PartnerModuleResponse.Specialist(
-                        user.getId(),
-                        user.getName(),
-                        user.getEmail(),
-                        user.getStatus(),
-                        user.getCreatedAt()
-                ))
+                .map(this::toSpecialist)
                 .toList();
     }
 
@@ -98,15 +91,13 @@ public class PartnerService {
                 new InviteTeamUserRequest(request.name(), request.email())
         );
         UserEntity user = requireUser(empresaId, invited.user().id());
-        Set<String> roles = new LinkedHashSet<>(user.getRoles());
-        roles.add(PARTNER_SPECIALIST_ROLE);
-        user.setRoles(roles);
+        user.setRoles(Set.of(PARTNER_SPECIALIST_ROLE));
 
         TeamUserResponse response = new TeamUserResponse(
                 user.getId(),
                 user.getName(),
                 user.getEmail(),
-                Set.copyOf(roles),
+                user.getRoles(),
                 user.getStatus(),
                 user.getLastLoginAt(),
                 user.getCreatedAt()
@@ -122,9 +113,7 @@ public class PartnerService {
     ) {
         requirePartnerManager(actorUserId, empresaId);
         UserEntity user = requireUser(empresaId, userId);
-        Set<String> roles = new LinkedHashSet<>(user.getRoles());
-        roles.add(PARTNER_SPECIALIST_ROLE);
-        user.setRoles(roles);
+        user.setRoles(Set.of(PARTNER_SPECIALIST_ROLE));
         return toSpecialist(user);
     }
 
@@ -132,9 +121,7 @@ public class PartnerService {
     public void removeSpecialist(String actorUserId, String empresaId, Long userId) {
         requirePartnerManager(actorUserId, empresaId);
         UserEntity user = requireUser(empresaId, userId);
-        Set<String> roles = new LinkedHashSet<>(user.getRoles());
-        roles.remove(PARTNER_SPECIALIST_ROLE);
-        user.setRoles(roles);
+        user.setRoles(Set.of(EMPRESA_ROLE));
     }
 
     @Transactional(readOnly = true)
