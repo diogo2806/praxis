@@ -9,7 +9,7 @@ import {
   Scripts,
 } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
-import { useEffect, useLayoutEffect, type ReactNode } from "react";
+import { useEffect, type ReactNode } from "react";
 
 import appCss from "../styles/app.css?url";
 import flowCanvasWorkspaceCss from "../styles/flow-canvas-workspace.css?url";
@@ -26,6 +26,91 @@ import { clearAuthenticatedSession } from "../lib/session";
 const getRuntimeConfig = createServerFn({ method: "GET" }).handler(() =>
   resolveRuntimeConfigFromEnv(),
 );
+
+const landingPricingBootstrap = String.raw`
+(() => {
+  const version = "2026-07-18-annual-v2";
+  const rows = [
+    ["100", "54,90", "5.490,00"],
+    ["300", "49,90", "14.970,00"],
+    ["1.000", "44,90", "44.900,00"],
+    ["3.000", "39,90", "119.700,00"],
+  ];
+  const expectedQuantities = rows.map((row) => row[0]).join("|");
+
+  const apply = () => {
+    if (window.location.pathname !== "/") return false;
+
+    const section = document.getElementById("contratacao");
+    const table = section && section.querySelector("table.tiers");
+    const tbody = table && table.querySelector("tbody");
+    if (!section || !table || !tbody) return false;
+
+    const quantityHeader = table.querySelector("#thQty");
+    const totalHeader = table.querySelector("#thTotal");
+    const renderedQuantities = Array.from(tbody.querySelectorAll("td.q"))
+      .map((cell) => cell.textContent.trim())
+      .join("|");
+    const alreadyApplied =
+      section.dataset.pricingVersion === version &&
+      quantityHeader && quantityHeader.textContent.trim() === "Avaliações/ano" &&
+      totalHeader && totalHeader.textContent.trim() === "Total/ano" &&
+      renderedQuantities === expectedQuantities;
+    if (alreadyApplied) return true;
+
+    const cycle = section.querySelector(".cycle");
+    if (cycle) cycle.remove();
+
+    const cycleHint = section.querySelector(".cycle-hint");
+    if (cycleHint) {
+      cycleHint.textContent = "A assinatura Profissional é anual. O pacote completo entra no saldo após a confirmação do pagamento e pode ser usado durante os 12 meses.";
+    }
+
+    const description = section.querySelector(".plan.feature .pfor");
+    if (description) {
+      description.textContent = "Para quem avalia com volume recorrente. Quanto maior o pacote anual, menor o preço de cada avaliação.";
+    }
+
+    table.setAttribute("aria-label", "Pacotes anuais por volume");
+    if (quantityHeader) quantityHeader.textContent = "Avaliações/ano";
+    if (totalHeader) totalHeader.textContent = "Total/ano";
+
+    tbody.innerHTML = rows.map((row) =>
+      '<tr><td class="q">' + row[0] + '</td><td class="u">R$ ' + row[1] + '</td><td class="t">R$ ' + row[2] + '</td></tr>'
+    ).join("");
+
+    const note = section.querySelector("#tierNote");
+    if (note) {
+      note.textContent = "Cobrança anual: o pacote completo entra no seu saldo após o pagamento, e o que não for usado permanece disponível durante a vigência de 12 meses.";
+    }
+
+    document.querySelectorAll("#faq .qa").forEach((item) => {
+      const question = item.querySelector(".q");
+      if (!question || question.textContent.trim() !== "Como funciona a contratação?") return;
+      const answer = item.querySelector(".ans p");
+      if (answer) {
+        answer.textContent = "Há compra avulsa para demandas pontuais e assinatura anual Profissional com pacotes de 100, 300, 1.000 ou 3.000 avaliações. O pagamento anual libera o pacote completo no saldo para uso durante os 12 meses. Operações Enterprise, integrações, suporte específico e condições contratuais ficam sob consulta conforme volume e escopo.";
+      }
+    });
+
+    section.dataset.pricingVersion = version;
+    return true;
+  };
+
+  const observer = new MutationObserver(() => {
+    apply();
+  });
+  observer.observe(document.documentElement, { childList: true, subtree: true });
+
+  apply();
+  window.addEventListener("DOMContentLoaded", apply, { once: true });
+  window.addEventListener("load", apply, { once: true });
+  window.setTimeout(apply, 0);
+  window.setTimeout(apply, 250);
+  window.setTimeout(apply, 1000);
+  window.setTimeout(() => observer.disconnect(), 15000);
+})();
+`;
 
 function NotFoundComponent() {
   const { t } = useLanguage();
@@ -91,6 +176,9 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
+      { httpEquiv: "Cache-Control", content: "no-cache, no-store, must-revalidate" },
+      { httpEquiv: "Pragma", content: "no-cache" },
+      { httpEquiv: "Expires", content: "0" },
       { title: "Práxis — Avaliações por cenários estruturadas e rastreáveis" },
       {
         name: "description",
@@ -153,6 +241,10 @@ function RootShell({ children }: { children: ReactNode }) {
             dangerouslySetInnerHTML={{
               __html: `window.__PRAXIS_CONFIG__=${JSON.stringify(runtimeConfig)};`,
             }}
+          />
+          <script
+            data-praxis-pricing-version="2026-07-18-annual-v2"
+            dangerouslySetInnerHTML={{ __html: landingPricingBootstrap }}
           />
         </head>
         <body>
@@ -256,76 +348,9 @@ function RootComponent() {
       <SessionExpiryRedirect />
       <GlobalTablePagination />
       <GlobalScreenManual />
-      <LandingProfessionalPricing />
       <Outlet />
     </QueryClientProvider>
   );
-}
-
-function LandingProfessionalPricing() {
-  const pathname = useRouterState({ select: (state) => state.location.pathname });
-
-  useLayoutEffect(() => {
-    if (pathname !== "/") return;
-
-    const applyAnnualPricing = () => {
-      const section = document.getElementById("contratacao");
-      const table = section?.querySelector<HTMLTableElement>("table.tiers");
-      const tbody = table?.querySelector<HTMLTableSectionElement>("tbody");
-      if (!section || !table || !tbody) return false;
-
-      section.querySelector<HTMLElement>(".cycle")?.remove();
-      const cycleHint = section.querySelector<HTMLElement>(".cycle-hint");
-      if (cycleHint) {
-        cycleHint.textContent = "A assinatura Profissional é anual. O pacote completo entra no saldo após a confirmação do pagamento e pode ser usado durante os 12 meses.";
-      }
-
-      const description = section.querySelector<HTMLElement>(".plan.feature .pfor");
-      if (description) {
-        description.textContent = "Para quem avalia com volume recorrente. Quanto maior o pacote anual, menor o preço de cada avaliação.";
-      }
-
-      const quantityHeader = table.querySelector<HTMLElement>("#thQty");
-      const totalHeader = table.querySelector<HTMLElement>("#thTotal");
-      if (quantityHeader) quantityHeader.textContent = "Avaliações/ano";
-      if (totalHeader) totalHeader.textContent = "Total/ano";
-
-      tbody.innerHTML = [
-        ["100", "54,90", "5.490,00"],
-        ["300", "49,90", "14.970,00"],
-        ["1.000", "44,90", "44.900,00"],
-        ["3.000", "39,90", "119.700,00"],
-      ].map(([quantity, unit, total]) =>
-        `<tr><td class="q">${quantity}</td><td class="u">R$ ${unit}</td><td class="t">R$ ${total}</td></tr>`,
-      ).join("");
-
-      const note = section.querySelector<HTMLElement>("#tierNote");
-      if (note) {
-        note.textContent = "Cobrança anual: o pacote completo entra no seu saldo após o pagamento, e o que não for usado permanece disponível durante a vigência de 12 meses.";
-      }
-
-      document.querySelectorAll<HTMLElement>("#faq .qa").forEach((item) => {
-        const question = item.querySelector<HTMLElement>(".q");
-        if (question?.textContent?.trim() !== "Como funciona a contratação?") return;
-        const answer = item.querySelector<HTMLElement>(".ans p");
-        if (answer) {
-          answer.textContent = "Há compra avulsa para demandas pontuais e assinatura anual Profissional com pacotes de 100, 300, 1.000 ou 3.000 avaliações. O pagamento anual libera o pacote completo no saldo para uso durante os 12 meses. Operações Enterprise, integrações, suporte específico e condições contratuais ficam sob consulta conforme volume e escopo.";
-        }
-      });
-
-      return true;
-    };
-
-    if (applyAnnualPricing()) return;
-
-    const observer = new MutationObserver(() => {
-      if (applyAnnualPricing()) observer.disconnect();
-    });
-    observer.observe(document.body, { childList: true, subtree: true });
-    return () => observer.disconnect();
-  }, [pathname]);
-
-  return null;
 }
 
 function GlobalScreenManual() {
