@@ -101,6 +101,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/v1/candidate-links", "/api/v1/candidate-links/**").hasRole("EMPRESA")
                         .requestMatchers("/api/v1/billing", "/api/v1/billing/**").hasRole("EMPRESA")
                         .requestMatchers("/api/v1/team", "/api/v1/team/**").hasRole("EMPRESA")
+                        .requestMatchers("/api/v1/partners", "/api/v1/partners/**").hasRole("EMPRESA")
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
