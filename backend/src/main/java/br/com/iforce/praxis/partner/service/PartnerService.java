@@ -16,6 +16,10 @@ import br.com.iforce.praxis.partner.persistence.repository.PartnerClientReposito
 import br.com.iforce.praxis.shared.integration.IntegrationTokenEntity;
 import br.com.iforce.praxis.shared.integration.IntegrationTokenRepository;
 import br.com.iforce.praxis.shared.integration.model.IntegrationProvider;
+import br.com.iforce.praxis.shared.integration.model.IntegrationStatus;
+import br.com.iforce.praxis.shared.integration.model.IntegrationType;
+import br.com.iforce.praxis.shared.integration.persistence.entity.EmpresaIntegrationEntity;
+import br.com.iforce.praxis.shared.integration.persistence.repository.EmpresaIntegrationRepository;
 import br.com.iforce.praxis.team.dto.InviteTeamUserRequest;
 import br.com.iforce.praxis.team.dto.InviteTeamUserResponse;
 import br.com.iforce.praxis.team.dto.TeamUserResponse;
@@ -42,6 +46,10 @@ public class PartnerService {
 
     public static final String PARTNER_SPECIALIST_ROLE = "PARTNER_SPECIALIST";
     private static final String EMPRESA_ROLE = "EMPRESA";
+    private static final Set<IntegrationProvider> SUPPORTED_CLIENT_PROVIDERS = Set.of(
+            IntegrationProvider.GUPY,
+            IntegrationProvider.RECRUTEI
+    );
     private static final int TOKEN_BYTES = 32;
 
     private final SecureRandom secureRandom = new SecureRandom();
@@ -50,6 +58,7 @@ public class PartnerService {
     private final UserRepository userRepository;
     private final EmpresaRepository empresaRepository;
     private final IntegrationTokenRepository integrationTokenRepository;
+    private final EmpresaIntegrationRepository empresaIntegrationRepository;
     private final SimulationCatalogService simulationCatalogService;
     private final TeamService teamService;
 
@@ -59,6 +68,7 @@ public class PartnerService {
             UserRepository userRepository,
             EmpresaRepository empresaRepository,
             IntegrationTokenRepository integrationTokenRepository,
+            EmpresaIntegrationRepository empresaIntegrationRepository,
             SimulationCatalogService simulationCatalogService,
             TeamService teamService
     ) {
@@ -67,6 +77,7 @@ public class PartnerService {
         this.userRepository = userRepository;
         this.empresaRepository = empresaRepository;
         this.integrationTokenRepository = integrationTokenRepository;
+        this.empresaIntegrationRepository = empresaIntegrationRepository;
         this.simulationCatalogService = simulationCatalogService;
         this.teamService = teamService;
     }
@@ -149,6 +160,7 @@ public class PartnerService {
             CreatePartnerClientRequest request
     ) {
         requirePartnerManager(actorUserId, empresaId);
+        requireSupportedProvider(request.provider());
         String externalCompanyId = request.externalCompanyId().trim();
         if (partnerClientRepository.existsByEmpresaIdAndProviderAndExternalCompanyId(
                 empresaId,
@@ -211,6 +223,7 @@ public class PartnerService {
     ) {
         requirePartnerManager(actorUserId, empresaId);
         PartnerClientEntity client = requireClient(empresaId, clientId);
+        requireSupportedProvider(client.getProvider());
         if (!client.isActive()) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Ative o cliente antes de gerar o token.");
         }
@@ -230,6 +243,7 @@ public class PartnerService {
         entity.setClientCompanyId(client.getExternalCompanyId());
         entity.setCreatedAt(Instant.now());
         IntegrationTokenEntity saved = integrationTokenRepository.save(entity);
+        ensureProviderIntegration(empresa, client.getProvider(), saved.getCreatedAt());
 
         return new PartnerModuleResponse.Token(
                 clientId,
@@ -294,6 +308,33 @@ public class PartnerService {
         return listCatalog(empresaId, clientId);
     }
 
+    private void ensureProviderIntegration(
+            EmpresaEntity empresa,
+            IntegrationProvider provider,
+            Instant configuredAt
+    ) {
+        EmpresaIntegrationEntity integration = empresaIntegrationRepository
+                .findFirstByEmpresaIdAndProvider(empresa.getId(), provider)
+                .orElseGet(EmpresaIntegrationEntity::new);
+        boolean newIntegration = integration.getId() == null;
+        if (newIntegration) {
+            integration.setEmpresa(empresa);
+            integration.setProvider(provider);
+            integration.setCreatedAt(configuredAt);
+        }
+        integration.setType(IntegrationType.ATS);
+        if (newIntegration
+                || integration.getStatus() == IntegrationStatus.NAO_CONFIGURADA
+                || integration.getStatus() == IntegrationStatus.DESATIVADA) {
+            integration.setStatus(IntegrationStatus.PENDENTE);
+        }
+        integration.setConfiguredAt(configuredAt);
+        integration.setDisabledAt(null);
+        integration.setLastErrorMessage(null);
+        integration.setUpdatedAt(configuredAt);
+        empresaIntegrationRepository.save(integration);
+    }
+
     private PartnerCatalogAccessEntity newCatalogAccess(
             String empresaId,
             String clientId,
@@ -338,6 +379,15 @@ public class PartnerService {
             }
         } catch (NumberFormatException ignored) {
             // Usuário técnico usado apenas quando a segurança está desabilitada.
+        }
+    }
+
+    private void requireSupportedProvider(IntegrationProvider provider) {
+        if (!SUPPORTED_CLIENT_PROVIDERS.contains(provider)) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "O catálogo por cliente está disponível para Gupy e Recrutei."
+            );
         }
     }
 
