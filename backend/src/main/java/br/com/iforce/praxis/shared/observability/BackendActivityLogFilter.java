@@ -38,6 +38,7 @@ public class BackendActivityLogFilter extends OncePerRequestFilter {
     static final String REQUEST_ID_MDC_KEY = "requestId";
     private static final String ACTIVITY_LOG_PREFIX = "atividade_http";
     private static final String ANONYMOUS_USER = "anonymousUser";
+    private static final String UNMAPPED_ROUTE = "<unmapped>";
     private static final int MAX_LOG_VALUE_LENGTH = 160;
     private static final Pattern VALID_REQUEST_ID = Pattern.compile("[A-Za-z0-9._:-]{1,100}");
 
@@ -92,7 +93,7 @@ public class BackendActivityLogFilter extends OncePerRequestFilter {
                 0L,
                 TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startedAtNanos)
         );
-        int status = response.getStatus();
+        int status = resolveStatus(response, failure);
         String method = safeLogValue(request.getMethod());
         String route = resolveRoute(request);
         String actor = resolveActor();
@@ -112,8 +113,7 @@ public class BackendActivityLogFilter extends OncePerRequestFilter {
                     actor,
                     empresaId,
                     remoteAddress,
-                    exceptionName,
-                    failure
+                    exceptionName
             );
             return;
         }
@@ -148,12 +148,19 @@ public class BackendActivityLogFilter extends OncePerRequestFilter {
         );
     }
 
+    private int resolveStatus(HttpServletResponse response, Exception failure) {
+        if (failure != null && response.getStatus() < HttpServletResponse.SC_BAD_REQUEST) {
+            return HttpServletResponse.SC_INTERNAL_SERVER_ERROR;
+        }
+        return response.getStatus();
+    }
+
     private String resolveRoute(HttpServletRequest request) {
         Object routePattern = request.getAttribute(HandlerMapping.BEST_MATCHING_PATTERN_ATTRIBUTE);
         if (routePattern instanceof String pattern && !pattern.isBlank()) {
             return safeLogValue(pattern);
         }
-        return safeLogValue(request.getRequestURI());
+        return UNMAPPED_ROUTE;
     }
 
     private String resolveActor() {
