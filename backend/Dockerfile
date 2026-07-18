@@ -28,21 +28,40 @@ RUN --mount=type=cache,target=/root/.m2 <<'EOF'
 set -euo pipefail
 
 POSTGRES_VERSION="$(find /etc/postgresql -mindepth 1 -maxdepth 1 -type d -printf '%f\n' | sort -V | tail -n 1)"
+TEST_DB_NAME="praxis_test"
+TEST_DB_USER="praxis_test"
+TEST_DB_PASSWORD="praxis_test"
+
 pg_ctlcluster "${POSTGRES_VERSION}" main start
 trap 'pg_ctlcluster "${POSTGRES_VERSION}" main stop >/dev/null 2>&1 || true' EXIT
 
-su postgres -c "psql -v ON_ERROR_STOP=1 --command=\"CREATE ROLE praxis_test LOGIN PASSWORD 'praxis_test';\""
-su postgres -c "createdb --owner=praxis_test praxis_test"
+su postgres -c "psql -v ON_ERROR_STOP=1 --command=\"CREATE ROLE ${TEST_DB_USER} LOGIN PASSWORD '${TEST_DB_PASSWORD}';\""
+su postgres -c "createdb --owner=${TEST_DB_USER} ${TEST_DB_NAME}"
 
-echo "[build][backend][maven-verify][start] $(date -u +%Y-%m-%dT%H:%M:%SZ)"
-mvn clean verify \
-    -Dspring.datasource.url=jdbc:postgresql://127.0.0.1:5432/praxis_test \
-    -Dspring.datasource.username=praxis_test \
-    -Dspring.datasource.password=praxis_test \
-    -Dspring.datasource.driver-class-name=org.postgresql.Driver \
-    -B \
-    -ntp \
-    2>&1 | tee build.log
+# Confirma que a credencial criada é válida antes de iniciar a suíte.
+PGPASSWORD="${TEST_DB_PASSWORD}" psql \
+    --host=127.0.0.1 \
+    --username="${TEST_DB_USER}" \
+    --dbname="${TEST_DB_NAME}" \
+    --command='SELECT 1' \
+    >/dev/null
+
+# Variáveis de ambiente são herdadas pelo processo forkado do Surefire.
+# Isso evita que application.properties ou variáveis do ambiente de deploy
+# restaurem as credenciais padrão dos testes baseados em Testcontainers.
+export SPRING_DATASOURCE_URL="jdbc:postgresql://127.0.0.1:5432/${TEST_DB_NAME}"
+export SPRING_DATASOURCE_USERNAME="${TEST_DB_USER}"
+export SPRING_DATASOURCE_PASSWORD="${TEST_DB_PASSWORD}"
+export SPRING_DATASOURCE_DRIVER_CLASS_NAME="org.postgresql.Driver"
+export DB_HOST="127.0.0.1"
+export DB_PORT="5432"
+export DB_NAME="${TEST_DB_NAME}"
+export DB_USER="${TEST_DB_USER}"
+export DB_PASS="${TEST_DB_PASSWORD}"
+export DB_SCHEMA="public"
+
+ echo "[build][backend][maven-verify][start] $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+mvn clean verify -B -ntp 2>&1 | tee build.log
 echo "[build][backend][maven-verify][end] $(date -u +%Y-%m-%dT%H:%M:%SZ) status=0"
 EOF
 
