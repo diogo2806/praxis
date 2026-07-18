@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -33,7 +34,7 @@ public class PartnerIntegrationCatalogService {
     }
 
     @Transactional(readOnly = true)
-    public java.util.List<PublishedSimulation> findPublished(
+    public List<PublishedSimulation> findPublished(
             String empresaId,
             String clientId,
             String search,
@@ -42,8 +43,9 @@ public class PartnerIntegrationCatalogService {
     ) {
         requireActiveClient(empresaId, clientId);
         String normalizedSearch = normalize(search);
+        Set<String> assignedIds = assignedIds(empresaId, clientId);
         return simulationCatalogService.findPublished(empresaId).stream()
-                .filter(simulation -> assignedIds(empresaId, clientId).contains(simulation.id()))
+                .filter(simulation -> assignedIds.contains(simulation.id()))
                 .filter(simulation -> normalizedSearch.isBlank()
                         || normalize(simulation.id()).contains(normalizedSearch)
                         || normalize(simulation.name()).contains(normalizedSearch)
