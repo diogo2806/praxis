@@ -60,6 +60,15 @@ public interface CandidateAttemptRepository extends JpaRepository<CandidateAttem
 
     long countByEmpresaIdAndStatusIn(String empresaId, List<AttemptStatus> statuses);
 
+    long countByEmpresaIdAndCallbackUrlIsNotNull(String empresaId);
+
+    long countByEmpresaIdAndCallbackUrlIsNotNullAndStatus(String empresaId, AttemptStatus status);
+
+    long countByEmpresaIdAndCallbackUrlIsNotNullAndResultWebhookUrlIsNotNull(String empresaId);
+
+    @Query("SELECT MAX(c.createdAt) FROM CandidateAttemptEntity c WHERE c.empresaId = :empresaId AND c.callbackUrl IS NOT NULL")
+    Optional<Instant> findLastGupyAttemptCreatedAt(@Param("empresaId") String empresaId);
+
     long countByStatusAndFinishedAtBetween(AttemptStatus status, Instant from, Instant to);
 
     @Query("SELECT MAX(c.finishedAt) FROM CandidateAttemptEntity c WHERE c.empresaId = :empresaId AND c.status = :status")
