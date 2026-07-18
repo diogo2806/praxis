@@ -2,7 +2,7 @@ import { PraxisApiError } from "@/lib/api/praxis-legacy";
 import { getApiBaseUrl } from "@/lib/runtime-config";
 import { getSession } from "@/lib/session";
 
-export type PartnerProvider = "GUPY" | "RECRUTEI" | "CUSTOM_API";
+export type PartnerProvider = "GUPY" | "RECRUTEI";
 export type PartnerUserStatus = "ATIVO" | "CONVIDADO" | "BLOQUEADO";
 
 export interface PartnerSpecialist {
