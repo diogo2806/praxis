@@ -2,6 +2,15 @@
   --success: oklch(0.5 0.13 150);
 }
 
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+.praxis-page-shell {
+  overflow-wrap: anywhere;
+}
+
 /*
  * O VLibras injeta a imagem do balão de orientação sem dimensões no HTML.
  * Reservar o espaço antes do carregamento evita deslocamento cumulativo de layout.
@@ -54,6 +63,11 @@ span[class~="border-danger/40"][class~="bg-danger/10"][class~="text-danger"] {
 :where(a, button, input, select, textarea, summary):focus-visible {
   outline: 3px solid var(--color-ring);
   outline-offset: 3px;
+}
+
+.cand-root :where(a, button, input, textarea, audio):focus-visible {
+  outline: 3px solid var(--c-primary) !important;
+  outline-offset: 3px !important;
 }
 
 html[data-large-text="true"] {
@@ -109,6 +123,94 @@ html[data-simple-navigation="true"] .praxis-page-goal {
 }
 
 /*
+ * Áreas de toque seguem o mínimo de 44px em dispositivos de ponteiro impreciso.
+ * Controles nativos pequenos, como checkbox e radio, recebem dimensão própria.
+ */
+@media (pointer: coarse) {
+  :where(button, a, select, summary, [role="button"]) {
+    min-height: 44px;
+  }
+
+  :where(input:not([type="checkbox"]):not([type="radio"]), textarea) {
+    min-height: 44px;
+  }
+
+  :where(input[type="checkbox"], input[type="radio"]) {
+    min-width: 1.25rem;
+    min-height: 1.25rem;
+  }
+}
+
+/*
+ * A experiência mobile evita rolagem horizontal acidental, respeita safe areas e
+ * apresenta controles do candidato com área de toque confortável.
+ */
+@media (max-width: 640px) {
+  .praxis-page-shell {
+    padding-right: max(1rem, env(safe-area-inset-right));
+    padding-bottom: max(1.5rem, env(safe-area-inset-bottom));
+    padding-left: max(1rem, env(safe-area-inset-left));
+  }
+
+  .praxis-page-shell :where(code, pre, a) {
+    overflow-wrap: anywhere;
+    word-break: break-word;
+  }
+
+  .cand-root {
+    justify-content: flex-start !important;
+    padding-top: max(0.75rem, env(safe-area-inset-top)) !important;
+    padding-right: max(0.75rem, env(safe-area-inset-right)) !important;
+    padding-bottom: max(1.25rem, env(safe-area-inset-bottom)) !important;
+    padding-left: max(0.75rem, env(safe-area-inset-left)) !important;
+  }
+
+  .cand-root :where(.scenario, .cand-progress, .cand-footer, .cand-consent, .cand-status) {
+    max-width: 100% !important;
+  }
+
+  .cand-root .cand-a11y {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .cand-root .cand-a11y button,
+  .cand-root .opt,
+  .cand-root .sc-confirm button,
+  .cand-root .cc-btn,
+  .cand-root .rev-btn {
+    min-height: 48px;
+  }
+
+  .cand-root .sc-top {
+    align-items: flex-start;
+    gap: 0.75rem;
+  }
+
+  .cand-root .sc-id {
+    min-width: 0;
+  }
+
+  .cand-root .sc-id > div:last-child {
+    min-width: 0;
+  }
+
+  .cand-root .sc-id .who,
+  .cand-root .sc-id .stage {
+    overflow-wrap: anywhere;
+  }
+
+  .cand-root .sc-timer {
+    flex-shrink: 0;
+    white-space: nowrap;
+  }
+
+  .cand-root .sc-body {
+    padding: 1rem;
+  }
+}
+
+/*
  * As tabelas consolidadas já apresentam somente os dados necessários para decidir a
  * próxima ação. Não removemos colunas por posição, pois telas diferentes podem ter
  * quantidades e significados distintos. Em larguras menores, a rolagem é explícita.
@@ -116,6 +218,16 @@ html[data-simple-navigation="true"] .praxis-page-goal {
 @media (max-width: 767px) {
   html[data-simple-navigation="true"] table {
     min-width: 42rem !important;
+  }
+}
+
+@media (prefers-contrast: more) {
+  :where(button, a, input, select, textarea, summary, article, section) {
+    border-color: currentColor;
+  }
+
+  .cand-root :where(.scenario, .opt, .cand-consent, .cand-status) {
+    border-width: 2px !important;
   }
 }
 
@@ -127,5 +239,9 @@ html[data-simple-navigation="true"] .praxis-page-goal {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
+  }
+
+  .cand-root .tdot {
+    animation: none !important;
   }
 }
