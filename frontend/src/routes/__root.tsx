@@ -36,6 +36,7 @@ const landingPricingBootstrap = String.raw`
     ["1.000", "44,90", "44.900,00"],
     ["3.000", "39,90", "119.700,00"],
   ];
+  const expectedQuantities = rows.map((row) => row[0]).join("|");
 
   const apply = () => {
     if (window.location.pathname !== "/") return false;
@@ -45,7 +46,17 @@ const landingPricingBootstrap = String.raw`
     const tbody = table && table.querySelector("tbody");
     if (!section || !table || !tbody) return false;
 
-    if (section.dataset.pricingVersion === version) return true;
+    const quantityHeader = table.querySelector("#thQty");
+    const totalHeader = table.querySelector("#thTotal");
+    const renderedQuantities = Array.from(tbody.querySelectorAll("td.q"))
+      .map((cell) => cell.textContent.trim())
+      .join("|");
+    const alreadyApplied =
+      section.dataset.pricingVersion === version &&
+      quantityHeader && quantityHeader.textContent.trim() === "Avaliações/ano" &&
+      totalHeader && totalHeader.textContent.trim() === "Total/ano" &&
+      renderedQuantities === expectedQuantities;
+    if (alreadyApplied) return true;
 
     const cycle = section.querySelector(".cycle");
     if (cycle) cycle.remove();
@@ -61,8 +72,6 @@ const landingPricingBootstrap = String.raw`
     }
 
     table.setAttribute("aria-label", "Pacotes anuais por volume");
-    const quantityHeader = table.querySelector("#thQty");
-    const totalHeader = table.querySelector("#thTotal");
     if (quantityHeader) quantityHeader.textContent = "Avaliações/ano";
     if (totalHeader) totalHeader.textContent = "Total/ano";
 
@@ -88,13 +97,18 @@ const landingPricingBootstrap = String.raw`
     return true;
   };
 
-  if (apply()) return;
-
   const observer = new MutationObserver(() => {
-    if (apply()) observer.disconnect();
+    apply();
   });
   observer.observe(document.documentElement, { childList: true, subtree: true });
+
+  apply();
   window.addEventListener("DOMContentLoaded", apply, { once: true });
+  window.addEventListener("load", apply, { once: true });
+  window.setTimeout(apply, 0);
+  window.setTimeout(apply, 250);
+  window.setTimeout(apply, 1000);
+  window.setTimeout(() => observer.disconnect(), 15000);
 })();
 `;
 
