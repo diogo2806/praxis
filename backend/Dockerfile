@@ -60,7 +60,7 @@ export DB_USER="${TEST_DB_USER}"
 export DB_PASS="${TEST_DB_PASSWORD}"
 export DB_SCHEMA="public"
 
- echo "[build][backend][maven-verify][start] $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+echo "[build][backend][maven-verify][start] $(date -u +%Y-%m-%dT%H:%M:%SZ)"
 mvn clean verify -B -ntp 2>&1 | tee build.log
 echo "[build][backend][maven-verify][end] $(date -u +%Y-%m-%dT%H:%M:%SZ) status=0"
 EOF
