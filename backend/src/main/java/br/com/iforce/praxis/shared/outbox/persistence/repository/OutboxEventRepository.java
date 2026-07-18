@@ -1,22 +1,14 @@
 package br.com.iforce.praxis.shared.outbox.persistence.repository;
 
 import br.com.iforce.praxis.shared.outbox.persistence.entity.OutboxEventEntity;
-
 import org.springframework.data.jpa.repository.JpaRepository;
-
 import org.springframework.data.jpa.repository.Query;
-
 import org.springframework.data.repository.query.Param;
-
 import org.springframework.stereotype.Repository;
 
-
 import java.time.Instant;
-
 import java.util.List;
-
 import java.util.Optional;
-
 
 @Repository
 public interface OutboxEventRepository extends JpaRepository<OutboxEventEntity, Long> {
@@ -100,4 +92,21 @@ public interface OutboxEventRepository extends JpaRepository<OutboxEventEntity, 
         FOR UPDATE
         """, nativeQuery = true)
     Optional<OutboxEventEntity> findByIdAndEmpresaIdForUpdate(@Param("id") Long id, @Param("empresaId") String empresaId);
+
+    /** Conta entregas RESULT_READY originadas por tentativas do contrato Gupy (callback_url obrigatório). */
+    @Query(value = """
+        SELECT COUNT(*)
+        FROM outbox_events event
+        JOIN candidate_attempts attempt
+          ON attempt.id = event.aggregate_id
+         AND attempt.empresa_id = event.empresa_id
+        WHERE event.empresa_id = :empresaId
+          AND event.event_type = 'RESULT_READY'
+          AND attempt.callback_url IS NOT NULL
+          AND event.status = :status
+        """, nativeQuery = true)
+    long countGupyResultDeliveriesByStatus(
+            @Param("empresaId") String empresaId,
+            @Param("status") String status
+    );
 }

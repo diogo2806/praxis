@@ -250,9 +250,10 @@ function StartPage() {
           })}
         </section>
 
-        <section className="grid gap-4 rounded-xl border border-border bg-card p-5 md:grid-cols-3">
+        <section className="grid gap-4 rounded-xl border border-border bg-card p-5 md:grid-cols-2 lg:grid-cols-4">
           <QuickLink title="Resultados" description="Revise evidências e registre a decisão humana." to="/results" />
           <QuickLink title="Integrações" description="Configure Gupy, Recrutei ou sua API própria." to="/integrations" />
+          <QuickLink title="Homologação Gupy" description="Acompanhe prontidão, endpoints e evidências do fluxo real." to="/integrations/gupy-homologacao" />
           <QuickLink title="Centro operacional" description="Acompanhe tentativas, webhooks, retry e DLQ." to="/monitoramento" />
         </section>
       </main>
@@ -296,7 +297,7 @@ function QuickLink({
 }: {
   title: string;
   description: string;
-  to: "/results" | "/integrations" | "/monitoramento";
+  to: "/results" | "/integrations" | "/integrations/gupy-homologacao" | "/monitoramento";
 }) {
   return (
     <Link to={to} className="rounded-lg border border-border bg-background p-4 hover:bg-accent">
