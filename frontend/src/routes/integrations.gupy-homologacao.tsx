@@ -284,7 +284,7 @@ function checkStatusLabel(status: GupyHomologationCheckStatus) {
 
 function overallStatusLabel(status: GupyHomologationResponse["status"]) {
   return {
-    BLOCKED: "Existem bloqueios internos",
+    BLOCKED: "Existem bloqueios técnicos",
     READY_FOR_EXTERNAL_VALIDATION: "Pronto para validação em vaga real",
     EVIDENCE_READY: "Evidências técnicas prontas para aprovação",
   }[status];
@@ -292,7 +292,7 @@ function overallStatusLabel(status: GupyHomologationResponse["status"]) {
 
 function overallStatusDescription(status: GupyHomologationResponse["status"]) {
   return {
-    BLOCKED: "Corrija os requisitos internos antes de envolver a Gupy ou um cliente piloto.",
+    BLOCKED: "Corrija os requisitos ou falhas operacionais antes de avançar com a homologação.",
     READY_FOR_EXTERNAL_VALIDATION:
       "A configuração interna está pronta. O próximo passo é executar o fluxo com token e vaga reais.",
     EVIDENCE_READY:
