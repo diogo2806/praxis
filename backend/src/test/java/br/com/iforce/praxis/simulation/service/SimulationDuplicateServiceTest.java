@@ -24,6 +24,7 @@ import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -61,7 +62,7 @@ class SimulationDuplicateServiceTest {
         when(simulationVersionRepository.findBySimulationEmpresaIdAndSimulationIdAndVersionNumber(
                 "tenant-1", "sim-origem", 3
         )).thenReturn(Optional.of(sourceVersion));
-        when(simulationRepository.existsById(any())).thenReturn(false);
+        when(simulationRepository.existsById(anyString())).thenReturn(false);
         when(simulationRepository.save(any(SimulationEntity.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
@@ -114,7 +115,7 @@ class SimulationDuplicateServiceTest {
         competency.setSimulationVersion(version);
         competency.setName("Comunicação");
         competency.setWeight(100);
-        competency.setTargetScore(3);
+        competency.setTargetScore(70);
         version.getCompetencies().add(competency);
 
         SimulationNodeEntity node = new SimulationNodeEntity();
