@@ -67,7 +67,9 @@ function Page() {
   const [context, setContext] = useState("");
   const [submitAttempted, setSubmitAttempted] = useState(false);
   const [hydratedVersionKey, setHydratedVersionKey] = useState<string | null>(null);
+  const [recoveredLocalDraft, setRecoveredLocalDraft] = useState(false);
   const lastServerMessageRef = useRef("");
+  const latestClientMessageRef = useRef("");
 
   const simulationsQuery = useQuery({
     queryKey: ["simulations"],
@@ -85,20 +87,17 @@ function Page() {
     [versionQuery.data?.nodes],
   );
   const rootNode = orderedNodes.find((node) => node.id === rootNodeId) ?? orderedNodes[0];
-  const existingMessage = rootNode?.clientMessage;
+  const existingMessage = rootNode?.clientMessage ?? "";
   const versionStatus = versionQuery.data?.status;
   const isEditable = versionStatus ? canEditSimulationVersion(versionStatus) : true;
   const contextMaxLength = 1200;
   const canGoNext = context.trim().length > 0 && emotion.trim().length > 0;
-  const clientMessage = useMemo(() => {
-    const parts = [
-      emotion.trim(),
-      context.trim(),
-      name.trim() ? `Personagem: ${name.trim()}` : "",
-    ].filter(Boolean);
-    return parts.join("\n\n");
-  }, [context, emotion, name]);
   const draftValue = useMemo<CharacterDraft>(() => ({ name, emotion, context }), [context, emotion, name]);
+  const clientMessage = useMemo(() => buildCharacterMessage(draftValue), [draftValue]);
+
+  useEffect(() => {
+    latestClientMessageRef.current = clientMessage;
+  }, [clientMessage]);
 
   const localDraft = usePersistentDraft<CharacterDraft>({
     key: draftStorageKey,
@@ -130,6 +129,9 @@ function Page() {
     mutationFn: persistCharacter,
     onSuccess: (_nodeId, submittedMessage) => {
       lastServerMessageRef.current = submittedMessage;
+      if (submittedMessage === latestClientMessageRef.current) {
+        clearPersistentDraft(draftStorageKey);
+      }
     },
   });
   const triggerAutosave = autosaveMutation.mutate;
@@ -162,25 +164,29 @@ function Page() {
   useEffect(() => {
     if (!versionQuery.data || hydratedVersionKey === versionKey) return;
 
-    if (existingMessage) {
+    const stored = readPersistentDraft<CharacterDraft>(draftStorageKey);
+    const storedMessage = stored ? buildCharacterMessage(stored.data) : "";
+    const shouldRecoverLocal = Boolean(stored && storedMessage && storedMessage !== existingMessage);
+
+    if (shouldRecoverLocal && stored) {
+      setName(stored.data.name ?? "");
+      setEmotion(stored.data.emotion ?? "");
+      setContext(stored.data.context ?? "");
+      setRecoveredLocalDraft(true);
+    } else if (existingMessage) {
       const parsed = parseCharacterMessage(existingMessage);
       setName(parsed.name);
       setEmotion(parsed.emotion);
       setContext(parsed.context);
-      lastServerMessageRef.current = existingMessage;
+      setRecoveredLocalDraft(false);
+      clearPersistentDraft(draftStorageKey);
     } else {
-      const stored = readPersistentDraft<CharacterDraft>(draftStorageKey);
-      if (stored) {
-        setName(stored.data.name ?? "");
-        setEmotion(stored.data.emotion ?? "");
-        setContext(stored.data.context ?? "");
-      } else {
-        setName("");
-        setEmotion("");
-        setContext("");
-      }
-      lastServerMessageRef.current = "";
+      setName("");
+      setEmotion("");
+      setContext("");
+      setRecoveredLocalDraft(false);
     }
+    lastServerMessageRef.current = existingMessage;
     setHydratedVersionKey(versionKey);
   }, [draftStorageKey, existingMessage, hydratedVersionKey, versionKey, versionQuery.data]);
 
@@ -270,7 +276,15 @@ function Page() {
         </StateBanner>
       ) : (
         <>
-          {existingMessage && (
+          {recoveredLocalDraft && (
+            <div className="mb-5">
+              <StateBanner tone="warn" title="Rascunho local recuperado">
+                Encontramos alterações deste dispositivo que ainda não estavam confirmadas no Práxis.
+                Elas foram restauradas e serão salvas automaticamente.
+              </StateBanner>
+            </div>
+          )}
+          {existingMessage && !recoveredLocalDraft && (
             <div className="mb-5">
               <StateBanner tone="info" title={`Primeira etapa atual: ${rootNodeId}`}>
                 {existingMessage}
@@ -440,6 +454,16 @@ function SaveStatus({
       <span>{label}</span>
     </div>
   );
+}
+
+function buildCharacterMessage(draft: CharacterDraft) {
+  return [
+    draft.emotion.trim(),
+    draft.context.trim(),
+    draft.name.trim() ? `Personagem: ${draft.name.trim()}` : "",
+  ]
+    .filter(Boolean)
+    .join("\n\n");
 }
 
 function formatSavedTime(value: string) {
