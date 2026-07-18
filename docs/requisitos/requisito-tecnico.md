@@ -2,22 +2,19 @@
 
 Status: atualizado em 2026-07-18 após auditoria da branch `main`.
 
-Commit auditado: `9396ce58f452b0f3a1b5bb0b7a6faf63d28a9da9`.
+Commit auditado: `bba6e352b48a356757e7d27bdd66bb20003637a2`.
 
 Este arquivo contém somente pendências técnicas implementáveis e comprovadas no sistema. Não inclui CI/CD, testes, QA, métricas observacionais, publicação ou marketing.
 
-Não há pendências técnicas implementáveis comprovadas na HEAD auditada.
+## 1. Inicialização e migrations
 
-A auditoria revalidou os fluxos de criação, publicação e execução de avaliações, persistência de tentativas, resultados, integrações ATS, outbox, autenticação, autorização e isolamento por empresa. As correções históricas registradas em `docs/implementados/requisitos-implementados.md` continuam alcançadas pelos fluxos reais e não foram reabertas.
+| ID | Tarefa técnica | Critério de conclusão | Status |
+|---|---|---|---|
+| MIG10 | Eliminar a duplicidade da versão `V1010` nas migrations Flyway. | Cada migration possuir uma versão exclusiva, preservando a ordem já aplicada e permitindo que o Flyway valide e execute o conjunto sem conflito de versão. | ⬜ Pendente |
 
-O módulo de parceiros mantém clientes, especialistas, tokens e catálogos vinculados à empresa proprietária. Tokens de cliente são armazenados somente por hash, identificam o cliente externo no contexto autenticado e são revogados quando o cliente é desativado. O catálogo liberado é validado nos fluxos externos antes da criação de tentativas.
+### MIG10 — arquivos e métodos
 
-O perfil de especialista passa pela autorização do Spring Security e por filtro restritivo adicional. O acesso permanece limitado à própria conta, mídia, leitura da configuração necessária e autoria/revisão de avaliações, sem publicação, clientes, integrações, resultados, cobrança, monitoramento, calibração ou talent match.
-
-O salvamento automático do editor preserva rascunhos locais sem tratá-los como fonte persistida do sistema. A confirmação de salvamento remoto depende da resposta do backend, falhas mantêm o rascunho e versões publicadas continuam protegidas contra edição direta.
-
-O monitoramento consulta estados persistidos de tentativas, integrações, notificações e entregas. A atualização periódica é somente leitura, não promove integrações, não confirma entregas e não executa reprocessamento automático.
-
-O registro de atividades HTTP é executado após a cadeia da requisição, usa o padrão de rota resolvido, não inclui corpo, query string, cookies ou credenciais e devolve um identificador de requisição sanitizado. Esse recurso é observacional e não foi convertido em requisito de métricas ou coleta de evidências.
-
-Os manuais contextuais adicionados às telas são conteúdo de apoio e navegação. Eles não substituem validações, permissões ou regras implementadas no backend e não introduzem uma fonte concorrente para o estado operacional.
+| Caminho completo | Método/campo/contrato | Como está | O que fazer |
+|---|---|---|---|
+| `backend/src/main/resources/db/migration/V1010__persist_candidate_token_window.sql` | versão Flyway `V1010` | A migration usa a mesma versão da migration de planos anuais. O Flyway exige uma única migration versionada por versão e interrompe a validação quando encontra descrições distintas para `V1010`. | Renomear esta migration ou a migration concorrente para a próxima versão livre, sem alterar a versão de uma migration que já tenha sido aplicada em ambiente persistente. |
+| `backend/src/main/resources/db/migration/V1010__replace_professional_plans_with_annual_pools.sql` | versão Flyway `V1010` | A migration concorre com `V1010__persist_candidate_token_window.sql`, impedindo que o conjunto seja validado de forma determinística na inicialização. | Definir uma versão exclusiva conforme o histórico real de `flyway_schema_history` e manter a ordem necessária entre a inclusão de `candidate_token_issued_at` e a substituição dos planos profissionais. |
