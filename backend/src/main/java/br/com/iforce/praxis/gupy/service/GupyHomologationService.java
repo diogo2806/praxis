@@ -166,12 +166,12 @@ public class GupyHomologationService {
         ));
 
         int readinessPercent = readinessPercent(checks);
-        boolean internalBlocked = checks.stream()
-                .anyMatch(item -> !item.external() && STATUS_BLOCKER.equals(item.status()));
+        boolean hasBlocker = checks.stream()
+                .anyMatch(item -> STATUS_BLOCKER.equals(item.status()));
         String overallStatus;
-        if (internalBlocked) {
+        if (hasBlocker) {
             overallStatus = "BLOCKED";
-        } else if (completedAttempts > 0 && sentWebhooks > 0 && dlqWebhooks == 0) {
+        } else if (completedAttempts > 0 && sentWebhooks > 0) {
             overallStatus = "EVIDENCE_READY";
         } else {
             overallStatus = "READY_FOR_EXTERNAL_VALIDATION";
