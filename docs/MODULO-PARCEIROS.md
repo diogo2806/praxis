@@ -9,17 +9,20 @@ O módulo não calcula preço, comissão, cobrança ou repasse financeiro. A rel
 ## Fluxo operacional
 
 1. O parceiro acessa `/parceiros`.
-2. Convida especialistas, que recebem o perfil adicional `PARTNER_SPECIALIST`.
-3. Os especialistas usam o editor atual do Práxis para criar e publicar avaliações.
-4. O parceiro cadastra seus clientes e informa o identificador da empresa no ATS correspondente.
-5. O parceiro libera avaliações publicadas no catálogo de cada cliente.
-6. O parceiro gera um token exclusivo para o cliente.
-7. Gupy ou Recrutei usa esse token para listar somente o catálogo liberado, registrar candidatos e consultar resultados.
+2. Convida especialistas, que recebem o perfil restrito `PARTNER_SPECIALIST`.
+3. Os especialistas usam o editor atual do Práxis para criar e revisar rascunhos de avaliações.
+4. O parceiro valida e publica as avaliações concluídas.
+5. O parceiro cadastra seus clientes e informa o identificador da empresa no ATS correspondente.
+6. O parceiro libera avaliações publicadas no catálogo de cada cliente.
+7. O parceiro gera um token exclusivo para o cliente.
+8. Gupy ou Recrutei usa esse token para listar somente o catálogo liberado, registrar candidatos e consultar resultados.
 
 ## Permissões
 
-- Usuário `EMPRESA`: pode acessar o módulo.
-- Usuário `PARTNER_SPECIALIST`: pode criar avaliações usando as permissões existentes de empresa, mas não pode administrar clientes, tokens ou outros especialistas.
+- Usuário `EMPRESA`: administra especialistas, clientes, tokens, publicação e catálogo.
+- Usuário `PARTNER_SPECIALIST`: cria e edita rascunhos, inclui mídias e executa validações estruturais.
+- Especialistas não acessam clientes, integrações, resultados, cobrança ou administração da equipe.
+- Especialistas não publicam, arquivam ou clonam versões publicadas.
 - O token do cliente não permite acessar testes fora do catálogo liberado.
 
 ## APIs internas
