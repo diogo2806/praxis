@@ -31,6 +31,19 @@ POSTGRES_VERSION="$(find /etc/postgresql -mindepth 1 -maxdepth 1 -type d -printf
 TEST_DB_NAME="praxis_test"
 TEST_DB_USER="praxis_test"
 TEST_DB_PASSWORD="praxis_test"
+PG_HBA_FILE="/etc/postgresql/${POSTGRES_VERSION}/main/pg_hba.conf"
+PG_HBA_TMP="${PG_HBA_FILE}.tmp"
+
+# O cluster existe somente no estágio builder e é descartado da imagem final.
+# Autoriza exclusivamente o usuário e o banco de testes pelo loopback usado no
+# JDBC, evitando variações de SCRAM/MD5 entre versões da imagem base.
+{
+    printf 'host %s %s 127.0.0.1/32 trust\n' "${TEST_DB_NAME}" "${TEST_DB_USER}"
+    cat "${PG_HBA_FILE}"
+} > "${PG_HBA_TMP}"
+chown --reference="${PG_HBA_FILE}" "${PG_HBA_TMP}"
+chmod --reference="${PG_HBA_FILE}" "${PG_HBA_TMP}"
+mv "${PG_HBA_TMP}" "${PG_HBA_FILE}"
 
 pg_ctlcluster "${POSTGRES_VERSION}" main start
 trap 'pg_ctlcluster "${POSTGRES_VERSION}" main stop >/dev/null 2>&1 || true' EXIT
@@ -38,7 +51,7 @@ trap 'pg_ctlcluster "${POSTGRES_VERSION}" main stop >/dev/null 2>&1 || true' EXI
 su postgres -c "psql -v ON_ERROR_STOP=1 --command=\"CREATE ROLE ${TEST_DB_USER} LOGIN PASSWORD '${TEST_DB_PASSWORD}';\""
 su postgres -c "createdb --owner=${TEST_DB_USER} ${TEST_DB_NAME}"
 
-# Confirma que a credencial criada é válida antes de iniciar a suíte.
+# Confirma que o banco está acessível pelo mesmo endpoint usado pela suíte.
 PGPASSWORD="${TEST_DB_PASSWORD}" psql \
     --host=127.0.0.1 \
     --username="${TEST_DB_USER}" \
