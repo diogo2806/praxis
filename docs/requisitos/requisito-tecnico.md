@@ -2,7 +2,7 @@
 
 Status: atualizado em 2026-07-19 após auditoria da branch `main`.
 
-Commit auditado: `a617325e131e16c882f06e9b92d3d8d184ae67de`.
+Commit auditado: `d20c2c4e43bf67d75e08b7f87dc94ab91fc9c0f0`.
 
 Este arquivo contém somente pendências técnicas implementáveis e comprovadas no sistema. Não inclui CI/CD, testes, QA, métricas observacionais, publicação ou marketing.
 
