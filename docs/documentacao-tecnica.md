@@ -8,7 +8,7 @@ O Praxis é uma plataforma de avaliações situacionais para recrutamento. O flu
 
 1. A empresa configura uma avaliação com competências, alternativas e pesos.
 2. A plataforma valida a estrutura e publica uma versão imutável.
-3. O candidato acessa a jornada pública e responde à avaliação.
+3. A pessoa candidata acessa a jornada pública e responde à avaliação.
 4. O backend calcula a pontuação de forma determinística.
 5. O recrutador consulta evidências e registra a decisão humana.
 
@@ -18,7 +18,7 @@ A aplicação não utiliza IA generativa para julgar candidatos. A decisão cont
 
 | Componente | Responsabilidade | Tecnologia principal |
 | --- | --- | --- |
-| Frontend | Interface para RH e candidato, rotas e comunicação com a API | React 19, TypeScript, TanStack Start/Router, Vite e Tailwind CSS |
+| Frontend | Interface para RH e pessoa candidata, rotas e comunicação com a API | React 19, TypeScript, TanStack Start/Router, Vite e Tailwind CSS |
 | Backend | Regras de negócio, autenticação, API HTTP, persistência e integrações | Java 21, Spring Boot 3.5.3, Spring Security e JPA |
 | Banco de dados | Dados transacionais e histórico de versões | PostgreSQL 17 |
 | Migrações | Evolução versionada do esquema | Flyway |
@@ -47,6 +47,7 @@ backend/                 API Spring Boot e testes
 frontend/                aplicação React/TanStack Start
 docs/                    documentação e guias operacionais
 docs/screenshots/        convenções para capturas
+scripts/                 validações locais e de CI
 docker-compose.yml       composição local dos serviços
 ```
 
@@ -90,7 +91,6 @@ O Compose exige:
 | `POSTGRES_USER` | Usuário do PostgreSQL |
 | `POSTGRES_PASSWORD` | Senha do PostgreSQL e do backend |
 | `PRAXIS_JWT_SECRET` | Assinatura de JWT |
-| `PRAXIS_INTEGRATION_TOKEN` | Exigência legada do `docker-compose.yml`; não autentica `/test/**` |
 
 Também são suportadas:
 
@@ -100,7 +100,9 @@ Também são suportadas:
 | `PRAXIS_PUBLIC_BASE_URL` | `http://localhost` | Base pública de links e resultados |
 | `PRAXIS_CANDIDATE_PAGE_BASE_URL` | `http://localhost` | Página pública da pessoa candidata |
 
-A autenticação Gupy e Recrutei usa tokens gerados na Central de Integrações. O backend persiste apenas o SHA-256 Base64URL em `integration_tokens`. A variável legada do Compose não substitui esse cadastro.
+A autenticação Gupy e Recrutei usa tokens gerados na Central de Integrações. O backend persiste apenas o SHA-256 Base64URL em `integration_tokens`.
+
+`PRAXIS_INTEGRATION_TOKEN` não é exigido pelo Compose e não autentica `/test/**`.
 
 Não versione segredos reais em `.env`, configuração, documentação, imagens ou logs.
 
@@ -123,17 +125,17 @@ Em produção, o Hibernate deve usar `validate`; a evolução do schema pertence
 
 ### Gupy
 
-Os endpoints técnicos existem, mas a compatibilidade oficial é parcial. Não declarar homologação até corrigir callback, redirecionamento e assinatura do endpoint de resultado.
+O contrato de provedor externo está implementado e coberto por testes automatizados. Isso não equivale à homologação formal, que depende de execução em vaga real.
 
-Leia [INTEGRACAO-GUPY-PROVEDOR.md](INTEGRACAO-GUPY-PROVEDOR.md).
+Referências:
+
+- [Fonte canônica da integração Gupy](GUPY-FONTE-CANONICA.md);
+- [Contrato implementado](INTEGRACAO-GUPY-PROVEDOR.md);
+- [Centro de homologação](HOMOLOGACAO-GUPY.md).
 
 ### Outbox
 
-- lote máximo de 100 eventos;
-- estados `PENDING`, `PROCESSING`, `RETRYING`, `SENT`, `DLQ`;
-- backoff de 1, 4, 16 e 64 segundos;
-- 4xx permanente vai para DLQ, exceto `408` e `429`;
-- eventos em `PROCESSING` por mais de cinco minutos podem ser retomados.
+A entrega assíncrona, os estados, o backoff, a classificação de falhas e o reprocessamento são documentados exclusivamente em [ARQUITETURA_OUTBOX_PATTERN.md](ARQUITETURA_OUTBOX_PATTERN.md).
 
 ## Frontend
 
@@ -157,12 +159,16 @@ npm run format
 ```bash
 # Frontend
 cd frontend
-npm run lint
+npm ci
 npm run build
 
 # Backend
 cd ../backend
-mvn test
+mvn -B -ntp verify
+
+# Documentação, a partir da raiz
+cd ..
+python3 scripts/validate_docs.py
 ```
 
 Os testes do backend podem exigir Docker por causa do Testcontainers.
@@ -175,14 +181,19 @@ Os testes do backend podem exigir Docker por causa do Testcontainers.
 - Use dados fictícios ou anonimizados nas imagens.
 - Atualize documentação quando mudar contrato público, operação ou configuração.
 - Não descreva integração externa como homologada apenas porque endpoints locais existem.
+- Não replique contratos externos em vários documentos.
+- Mantenha links diretos para o portal da Gupy somente na fonte canônica.
 
 ## Referências
 
 - [Visão geral](../README.md)
 - [Índice](00-INDICE.md)
+- [Fonte canônica Gupy](GUPY-FONTE-CANONICA.md)
 - [Integração Gupy](INTEGRACAO-GUPY-PROVEDOR.md)
+- [Homologação Gupy](HOMOLOGACAO-GUPY.md)
+- [Arquitetura Outbox](ARQUITETURA_OUTBOX_PATTERN.md)
 - [Implantação](IMPLANTACAO.md)
 - [Operação](OPERACAO.md)
 - [Capturas do README](screenshots/README.md)
 
-Última revisão: 12/07/2026.
+Última revisão: 18/07/2026.

@@ -1,10 +1,8 @@
 # Centro de homologação técnica Gupy
 
-## Objetivo
+> **Finalidade:** mostrar o que o Práxis comprova automaticamente e separar essas evidências da aprovação formal feita pela Gupy e pelo cliente.
 
-O Centro de Homologação separa o que o Práxis consegue comprovar automaticamente do que depende do ambiente real da Gupy e do cliente.
-
-A existência de evidências técnicas não equivale à aprovação formal da homologação.
+O contrato implementado está em [Integração Praxis como provedor](INTEGRACAO-GUPY-PROVEDOR.md). A fonte externa oficial está centralizada em [Fonte canônica da integração Gupy](GUPY-FONTE-CANONICA.md).
 
 ## Acesso
 
@@ -20,67 +18,117 @@ API administrativa:
 GET /api/v1/integrations/gupy/homologation
 ```
 
-A API exige a autenticação administrativa normal do Práxis e respeita o isolamento por empresa.
+A API exige autenticação administrativa e respeita o isolamento por empresa.
 
-## Estados gerais
+## Fluxo operacional
+
+1. Abrir a Central de Integrações e gerar o token Gupy.
+2. Publicar ao menos uma avaliação.
+3. Abrir o Centro de Homologação.
+4. Corrigir todos os itens marcados como bloqueio.
+5. Copiar os endpoints exibidos e informar à Gupy.
+6. Criar uma vaga real de validação.
+7. Executar o fluxo completo da pessoa candidata.
+8. Confirmar callback, consulta de resultado e webhook.
+9. Copiar as evidências da tela.
+10. Encaminhar as evidências para aprovação da Gupy e do cliente.
+
+## Campos e indicadores
+
+| Campo | Explicação |
+| --- | --- |
+| Estado atual | Resultado consolidado das verificações internas. |
+| Prontidão | Percentual das evidências técnicas mensuráveis concluídas. |
+| Avaliações publicadas | Itens disponíveis para `GET /test`. |
+| Tentativas originadas pela Gupy | Tentativas criadas pelo contrato Gupy. |
+| Tentativas concluídas | Execuções Gupy finalizadas. |
+| Tentativas com webhook | Tentativas que receberam `result_webhook_url`. |
+| Webhooks entregues | Entregas de resultado confirmadas. |
+| Entregas em DLQ | Falhas permanentes ou esgotamento das tentativas. |
+| Endpoints | URLs públicas que devem ser configuradas na integração. |
+| Checklist | Evidências internas e externas, com detalhe do bloqueio. |
+
+## Permissões necessárias
+
+- usuário autenticado;
+- vínculo ativo com a empresa;
+- permissão administrativa para consultar integrações;
+- acesso ao Centro Operacional para tratar DLQ;
+- participação da Gupy e do cliente para executar a validação externa.
+
+## Estados possíveis
 
 | Estado | Significado |
 | --- | --- |
-| `BLOCKED` | Há requisito interno ausente, como HTTPS, token ou avaliação publicada. |
-| `READY_FOR_EXTERNAL_VALIDATION` | O Práxis está configurado para iniciar o teste em vaga real. |
-| `EVIDENCE_READY` | Existem evidências de tentativa concluída e webhook entregue, mas a aprovação externa continua pendente. |
+| `BLOCKED` | Há requisito interno ausente ou falha operacional. |
+| `READY_FOR_EXTERNAL_VALIDATION` | A configuração interna permite iniciar a validação em vaga real. |
+| `EVIDENCE_READY` | Tentativa, conclusão e entrega produziram evidências; a aprovação formal ainda está pendente. |
+
+Estados dos itens do checklist:
+
+| Estado | Significado |
+| --- | --- |
+| `OK` | Evidência confirmada. |
+| `PENDING` | Depende de execução futura ou ambiente externo. |
+| `BLOCKER` | Impede avançar até a correção. |
 
 ## Evidências verificadas
 
-O centro consulta fontes reais do sistema:
+O serviço consulta fontes reais:
 
-1. `praxis.public-base-url` usando HTTPS.
-2. Token Gupy cadastrado em `integration_tokens`.
-3. Versões publicadas disponíveis para `GET /test`.
-4. Atividade autenticada registrada pela integração Gupy.
-5. Tentativas criadas por payload com `callback_url`, obrigatório no contrato Gupy.
-6. Tentativas Gupy concluídas.
-7. Presença de `result_webhook_url` nas tentativas.
-8. Eventos `RESULT_READY` entregues ou enviados para DLQ.
+1. `praxis.public-base-url` configurada com HTTPS.
+2. Token Gupy ativo em `integration_tokens`.
+3. Avaliação publicada disponível para o catálogo.
+4. Atividade autenticada registrada para a integração.
+5. Tentativa criada com `callback_url`.
+6. Tentativa Gupy concluída.
+7. Presença de `result_webhook_url`.
+8. Evento `RESULT_READY` entregue.
+9. Ausência de entrega Gupy bloqueada em DLQ.
 
-Tentativas de link direto não possuem `callback_url` e não entram nas métricas. A integração Recrutei cria a requisição compartilhada sem `callback_url`, portanto também não é contabilizada como evidência Gupy.
+Tentativas de link direto e tentativas da Recrutei não contam como evidência Gupy.
 
-## Endpoints apresentados para configuração
+## Motivos de bloqueio
 
-O centro monta os endereços usando `praxis.public-base-url`:
+- URL pública ausente ou sem HTTPS;
+- token Gupy não criado ou inativo;
+- nenhuma avaliação publicada;
+- ausência de tentativa originada pela Gupy;
+- tentativa sem `callback_url`;
+- tentativa ainda não concluída;
+- ausência de `result_webhook_url`;
+- webhook não entregue;
+- evento em DLQ;
+- falha de comunicação com a API administrativa;
+- ambiente real, vaga ou aprovação externa ainda indisponíveis.
 
-```text
-GET  {baseUrl}/test
-POST {baseUrl}/test/candidate
-GET  {baseUrl}/test/result/{resultId}
-```
+## Exemplo de validação completa
 
-Todos exigem:
+1. A Gupy consulta `GET /test`.
+2. A Gupy cria a tentativa em `POST /test/candidate`.
+3. A pessoa candidata abre `test_url`.
+4. A avaliação é concluída.
+5. O navegador acessa `callback_url`.
+6. O Outbox envia `TestResultResponse` para `result_webhook_url`.
+7. A Gupy consulta o mesmo resultado em `GET /test/result/{resultId}`.
+8. O Centro de Homologação passa para `EVIDENCE_READY`.
+9. A Gupy e o cliente aprovam formalmente o fluxo.
 
-```text
-Authorization: Bearer <token-gerado-no-praxis>
-```
+## Atalhos operacionais
+
+- **Atualizar:** recalcula as verificações.
+- **Copiar evidências:** copia o JSON integral retornado pela API.
+- **Voltar para integrações:** abre a configuração dos provedores.
+- **Abrir entregas e DLQ:** leva ao monitoramento e reprocessamento.
+- Use `Tab` e `Shift+Tab` para navegar pelas ações.
+- Use o manual contextual da tela para revisar estados e bloqueios.
 
 ## Critério de prontidão
 
-O percentual considera oito verificações mensuráveis. A etapa de aprovação formal da Gupy permanece sempre externa e não é usada para inflar o percentual técnico.
-
-Uma entrega em DLQ é mostrada como bloqueio operacional. A correção e o reprocessamento permanecem disponíveis no Centro Operacional.
-
-## Fluxo para concluir a homologação
-
-1. Corrigir todos os bloqueios internos.
-2. Gerar o token Gupy no Práxis.
-3. Publicar ao menos uma avaliação.
-4. Configurar os três endpoints no processo de homologação da Gupy.
-5. Executar `GET /test` no ambiente integrado.
-6. Criar uma tentativa por `POST /test/candidate` com `callback_url` e `result_webhook_url` reais.
-7. Abrir `test_url` e concluir a avaliação.
-8. Confirmar o redirecionamento do navegador para `callback_url`.
-9. Confirmar a entrega de `TestResult` para `result_webhook_url`.
-10. Consultar o mesmo resultado por `GET /test/result/{resultId}`.
-11. Copiar as evidências do centro e encaminhar para validação da Gupy e do cliente.
+O percentual considera apenas verificações mensuráveis pelo Práxis. Aprovação comercial, contratual ou formal da Gupy nunca aumenta artificialmente a prontidão técnica.
 
 ## Limite explícito
 
-O Práxis não consegue executar sozinho a etapa final porque a documentação da Gupy não oferece sandbox para provedores externos. Token, vaga, callback, webhook e aprovação precisam vir do ambiente real.
+A documentação da Gupy não oferece sandbox para provedores externos. O Práxis não consegue gerar sozinho token, vaga, callback, webhook ou aprovação do ambiente real.
+
+Última revisão: 18/07/2026.

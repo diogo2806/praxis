@@ -1,54 +1,22 @@
 # Integração Praxis como provedor de testes da Gupy
 
-> **Propósito:** documentar o comportamento realmente implementado e comparar esse comportamento com o contrato oficial de provedores externos da Gupy.
->
-> **Estado em 15/07/2026:** o catálogo, a criação de tentativa, a consulta de resultado, a URL pública assinada da pessoa candidata e a entrega assíncrona estão implementados. A compatibilidade técnica descrita neste documento não equivale a homologação: o fluxo completo ainda precisa ser validado em uma vaga real da Gupy, incluindo callback e `result_webhook_url` reais.
+> **Propósito:** documentar somente o contrato público implementado pelo Práxis. A fonte externa e as regras de governança estão em [Fonte canônica da integração Gupy](GUPY-FONTE-CANONICA.md).
 
-Fonte oficial usada na revisão:
+> **Estado em 18/07/2026:** compatibilidade técnica implementada e coberta por testes. A homologação formal continua dependente de vaga, token, callback, webhook e aprovação no ambiente real da Gupy.
 
-- https://developers.gupy.io/docs/integra%C3%A7%C3%A3o-com-testes-de-provedores-externos
+## Escopo
 
-## Resumo executivo
+O Práxis expõe:
 
-O Praxis expõe:
-
-- `GET /test` para listar avaliações publicadas;
-- `POST /test/candidate` para criar ou reutilizar uma tentativa;
-- `GET /test/result/{resultId}` para consultar o resultado;
-- entrega assíncrona para `result_webhook_url` por outbox.
-
-O fluxo recebe `callback_url`, `job_id`, `result_webhook_url`, `company_id` e `document_id`, valida o contrato de entrada, preserva pertencimento ao token e mantém identidade idempotente canônica. Consulta e webhook usam o mesmo DTO externo de resultado.
-
-`result_candidate_page_url` é formada com um JWT assinado exclusivo do tipo `candidate_result`, contendo empresa e tentativa, com validade própria definida por `praxis.candidate-result-ttl-hours` — 720 horas por padrão. A página pública consome essa credencial por `CandidateResultPageService.findByToken()`, sem reutilizar o token de execução da avaliação.
-
-## Compatibilidade com o contrato oficial
-
-| Item do contrato Gupy | Implementação atual | Estado |
+| Método | Rota | Finalidade |
 | --- | --- | --- |
-| Bearer token no cabeçalho `Authorization` | Validado por `IntegrationAuthService` contra `integration_tokens` | Compatível |
-| `GET /test` com `searchString`, `offset` e `limit` | Implementado; `limit` é normalizado entre 0 e 400 | Compatível |
-| Resposta `TestItems` com `limit`, `offset`, `total_tests` e `payload` | Implementada | Compatível |
-| Campos opcionais `category` e `level` | O mapper mantém ambos nulos e a serialização `NON_NULL` os omite, pois o domínio publicado não possui fonte configurável para esses metadados | Compatível por omissão de campos opcionais |
-| `POST /test/candidate` | Implementado com validação do contrato antes do fluxo | Compatível |
-| `name`, `email`, `document_id`, `test_id`, `company_id` | `document_id` e `company_id` são recebidos como inteiros JSON `int64` positivos | Compatível |
-| `callback_url` obrigatório | Recebido, validado por política de esquema e host, persistido e reapresentado após conclusão | Implementado; homologação real pendente |
-| `job_id` | Recebido e persistido; também participa da idempotência quando informado | Compatível |
-| `candidate_type` | Enum estrito: `internal`, `external`, ausência ou JSON `null` | Compatível |
-| `previous_result` | Aceita `fail`, ausência, JSON `null` e a string literal `"null"` usada no exemplo oficial; demais valores são rejeitados | Compatível |
-| `result_webhook_url` | Recebido como `URI`; resultado é enviado por POST | Implementado; comunicação real pendente |
-| Resposta `201` com `test_result_id` e `test_url` | Implementada | Compatível |
-| `GET /test/result/{resultId}` somente com `resultId` | Implementado sem query adicional; empresa resolvida pelo token | Compatível |
-| Callback GET após conclusão | O frontend navega para a URL; não existe reprocessamento servidor-servidor, evitando uma segunda chamada ao callback | Implementado; homologação real pendente |
-| Payload `TestResult` | O DTO externo contém somente os campos do schema oficial publicado | Compatível para estados representáveis |
-| Status `notStarted`, `paused`, `done` | `NOT_STARTED`, `IN_PROGRESS` e `COMPLETED` são mapeados; `ABANDONED` e `EXPIRED` são rejeitados | Compatível somente para estados representáveis |
-| Resultado numérico de 0 a 100 | Implementado por competência quando a tentativa está concluída | Compatível |
-| `result_page_url` para recrutador | Aponta para `/results/{attemptId}`, página autenticada | Compatível |
-| `result_candidate_page_url` para candidato | Aponta para `/candidato/{token}/resultado`; o token é um JWT `candidate_result` assinado e a página mostra somente resultados `major` | Compatível tecnicamente; homologação real pendente |
-| Campos adicionais de confiabilidade | `reliabilityLevel` permanece interno; `other_informations` é serializado somente em `TestResultItem`, onde o schema permite | Compatível |
+| `GET` | `/test` | Listar avaliações publicadas disponíveis para a empresa autenticada. |
+| `POST` | `/test/candidate` | Criar ou reutilizar uma tentativa e devolver o link de execução. |
+| `GET` | `/test/result/{resultId}` | Consultar o resultado associado ao token da empresa. |
 
-Os estados acima descrevem apenas o comportamento comprovado em código. Eles não equivalem a homologação com a Gupy.
+O callback de conclusão é um redirecionamento do navegador. A entrega de resultado para `result_webhook_url` é assíncrona e usa Outbox.
 
-## Autenticação real
+## Autenticação e isolamento
 
 Todas as rotas `/test/**` exigem:
 
@@ -56,38 +24,37 @@ Todas as rotas `/test/**` exigem:
 Authorization: Bearer <token>
 ```
 
-Fluxo:
+Fluxo de autenticação:
 
-1. `IntegrationAuthService` calcula o SHA-256 do token recebido.
-2. O hash é codificado em Base64URL sem padding.
-3. O hash precisa existir na tabela `integration_tokens` para o provider `gupy`.
-4. A empresa e o `company_id` são resolvidos a partir desse registro.
+1. `IntegrationAuthService` calcula o SHA-256 do token.
+2. O hash é convertido para Base64URL sem padding.
+3. O hash deve existir em `integration_tokens` com o provider `gupy`.
+4. O registro resolve `empresaId` e `company_id`.
+5. Catálogo, tentativa e resultado são consultados dentro da empresa autenticada.
 
-O token é gerado pela Central de Integrações. O valor em claro é retornado uma única vez; somente o hash é persistido.
+O token em claro é devolvido somente no momento da criação. O banco mantém apenas o hash.
 
-O `company_id` cadastrado para a empresa integrada à Gupy deve conter a representação decimal positiva do identificador `int64` informado pela Gupy. O endpoint converte o inteiro recebido para essa forma canônica antes de validar o pertencimento ao token.
+`PRAXIS_INTEGRATION_TOKEN` não autentica `/test/**`.
 
-`PRAXIS_INTEGRATION_TOKEN` não é usado por `/test/**` e não é exigido pelo runtime. Cada integração autentica com o token cadastrado para a empresa e o provedor na tabela `integration_tokens`.
+## `GET /test`
 
-## Contrato implementado
-
-### `GET /test`
+Exemplo:
 
 ```text
-GET /test?searchString=<texto>&offset=0&limit=50
+GET /test?searchString=atendimento&offset=0&limit=50
 Authorization: Bearer <token>
 ```
 
 Regras:
 
-- `searchString`: opcional;
-- `offset`: padrão `0`, valores negativos viram `0`;
-- `limit`: padrão `50`, normalizado entre `0` e `400`;
-- `limit=0`: retorna `payload` vazio, preserva `total_tests` e não consulta os itens do catálogo;
-- somente avaliações publicadas da empresa do token são retornadas;
-- `category` e `level` são omitidos enquanto não existir fonte real configurável no domínio.
+- `searchString` é opcional;
+- `offset` tem padrão `0`; valores negativos são normalizados para `0`;
+- `limit` tem padrão `50` e é limitado ao intervalo de `0` a `400`;
+- `limit=0` devolve `payload` vazio sem perder `total_tests`;
+- somente versões publicadas da empresa do token são retornadas;
+- `category` e `level` são omitidos enquanto não houver fonte configurável no domínio.
 
-Exemplo do payload atualmente produzido:
+Resposta:
 
 ```json
 {
@@ -104,9 +71,9 @@ Exemplo do payload atualmente produzido:
 }
 ```
 
-### `POST /test/candidate`
+## `POST /test/candidate`
 
-Body aceito:
+Exemplo:
 
 ```json
 {
@@ -117,53 +84,52 @@ Body aceito:
   "email": "candidato@example.com",
   "job_id": 100,
   "callback_url": "https://empresa.gupy.io/candidate-return",
-  "result_webhook_url": "https://empresa.gupy.io/webhook",
-  "accommodation_time_multiplier": 1.5,
+  "result_webhook_url": "https://empresa.gupy.io/result-webhook",
   "candidate_type": "external",
   "previous_result": "null"
 }
 ```
 
-Campos:
+### Campos
 
-| Campo | Obrigatório no código | Observação |
+| Campo | Obrigatório | Regra |
 | --- | --- | --- |
-| `company_id` | Sim | Inteiro JSON `int64` positivo. A forma decimal canônica deve ser igual ao `company_id` associado ao token. Strings, zero, negativos e valores fora de `int64` são rejeitados antes do fluxo. |
-| `document_id` | Sim | Inteiro JSON `int64` positivo. A forma decimal canônica participa da chave idempotente. |
-| `test_id` | Sim | Deve identificar avaliação publicada da mesma empresa. |
-| `name` | Sim | Nome da pessoa candidata. |
-| `email` | Sim | Validado como e-mail. |
-| `job_id` | Não | Identificador da vaga; quando informado, diferencia a chave idempotente. |
-| `callback_url` | Sim | URL absoluta. Em produção, exige HTTPS e host autorizado pela política Gupy; HTTP é permitido somente em perfil local para loopback. Credenciais e fragmentos são rejeitados. |
-| `result_webhook_url` | Não | Se presente, recebe `TestResult` por POST. |
-| `accommodation_time_multiplier` | Não | Extensão própria para acessibilidade. |
-| `candidate_type` | Não | Aceita somente `internal`, `external`, ausência ou JSON `null`. |
-| `previous_result` | Não | Aceita `fail`, ausência, JSON `null` ou a string literal `"null"`; não aceita `none`, `pass` ou outro texto. |
+| `company_id` | Sim | Inteiro JSON `int64` positivo e igual ao identificador associado ao token. |
+| `document_id` | Sim | Inteiro JSON `int64` positivo. Participa da identidade idempotente. |
+| `test_id` | Sim | Avaliação publicada pertencente à mesma empresa. |
+| `name` | Sim | Nome completo da pessoa candidata. |
+| `email` | Sim | Endereço de e-mail válido. |
+| `job_id` | Não | Identificador da vaga. Quando presente, diferencia a tentativa. |
+| `callback_url` | Sim | URL absoluta usada pelo navegador após a conclusão. |
+| `result_webhook_url` | Não | URL pública que recebe o resultado por `POST`. |
+| `candidate_type` | Não | `internal`, `external` ou `null`. |
+| `previous_result` | Não | `fail`, JSON `null`, ausência ou a string literal `"null"`. |
+| `accommodation_time_multiplier` | Não | Extensão do Práxis para acomodação de tempo. |
 
-A desserialização estrita e a Bean Validation rejeitam identificadores em formato incorreto, ausentes, não positivos ou fora da faixa de `long`, além de enums desconhecidos, antes de `CandidateAttemptService.createOrReuse()` iniciar a resolução da simulação ou a persistência. O valor textual `"null"` de `previous_result` é normalizado para ausência de resultado anterior, conforme o exemplo de requisição publicado pela Gupy.
+Em produção, `callback_url` e `result_webhook_url` devem usar HTTPS e passar pelas políticas de URL de saída. Credenciais embutidas e fragmentos são rejeitados. HTTP é permitido somente no perfil local para loopback.
 
-O fluxo compartilhado com a Recrutei mantém o contrato textual próprio desse provedor por meio de um construtor interno explícito. Esse caminho não participa da desserialização do endpoint Gupy e não altera o tipo público de `company_id` ou `document_id`.
-
-Após a conclusão, a API pública devolve `redirectUrl`. Consultas posteriores da participação concluída reapresentam a mesma URL. O navegador é o único responsável por efetuar o GET final na `callback_url`; o backend não tenta repetir essa navegação.
-
-Resposta:
+Resposta `201`:
 
 ```json
 {
-  "test_url": "https://app.exemplo.com/candidato/<jwt-de-execucao>",
-  "test_result_id": "res_123"
+  "test_result_id": "res_123",
+  "test_url": "https://app.exemplo.com/candidato/<jwt-candidate-attempt>"
 }
 ```
 
-A idempotência usa o hash de:
+### Idempotência
+
+A identidade canônica usa:
 
 ```text
-empresaId | companyId decimal canônico | documentId decimal canônico | testId | jobId (quando informado)
+empresaId | companyId | documentId | testId | jobId
 ```
 
-Como os identificadores são desserializados como `Long` e convertidos uma única vez com `Long.toString`, chamadas equivalentes não produzem identidades distintas por espaços, sinal positivo, zeros à esquerda ou outra representação textual. Chamadas repetidas com a mesma combinação reutilizam a tentativa existente; vagas diferentes continuam produzindo tentativas distintas.
+`company_id` e `document_id` são desserializados como `Long` e convertidos uma única vez para texto decimal. Assim, representações equivalentes não criam tentativas distintas. O mesmo conjunto reutiliza a tentativa existente; outro `job_id` cria uma identidade diferente.
 
-### `GET /test/result/{resultId}`
+## `GET /test/result/{resultId}`
+
+Exemplo:
 
 ```text
 GET /test/result/res_123
@@ -172,17 +138,17 @@ Authorization: Bearer <token>
 
 O backend valida:
 
-- Bearer token;
-- empresa e `company_id` associados ao token;
-- propriedade do resultado pela empresa autenticada;
-- existência do resultado;
-- estado externamente representável.
+- token Bearer;
+- empresa e `company_id`;
+- propriedade do resultado;
+- existência da tentativa;
+- estado representável no contrato externo.
 
-O endpoint não recebe parâmetros de query. O isolamento permanece garantido pelo token, pelo `empresaId` e pelo `companyId` resolvidos em `integration_tokens`.
+O endpoint não recebe parâmetros adicionais.
 
-## Resultado produzido
+## Resultado externo
 
-O mesmo `TestResultResponse` é usado pelo `GET /test/result/{resultId}` e pelo POST para `result_webhook_url`:
+Consulta e webhook usam o mesmo `TestResultResponse`:
 
 ```json
 {
@@ -191,10 +157,10 @@ O mesmo `TestResultResponse` é usado pelo `GET /test/result/{resultId}` e pelo 
   "description": "Descrição da avaliação",
   "providerName": "Praxis",
   "company_result_string": "Resultado em Markdown para o RH",
-  "providerLink": "https://app.exemplo.com",
+  "providerLink": "https://praxis.iforce.com.br",
   "status": "done",
-  "result_page_url": "https://app.exemplo.com/results/att_123",
-  "result_candidate_page_url": "https://app.exemplo.com/candidato/<jwt-candidate-result>/resultado",
+  "result_page_url": "https://praxis.iforce.com.br/results/att_123",
+  "result_candidate_page_url": "https://praxis.iforce.com.br/candidato/<jwt-candidate-result>/resultado",
   "results": [
     {
       "score": 73,
@@ -210,145 +176,66 @@ O mesmo `TestResultResponse` é usado pelo `GET /test/result/{resultId}` e pelo 
 }
 ```
 
-`GupyTestResultMapper.candidateResultPageUrl()` gera o token apresentado em `result_candidate_page_url` chamando `JwtService.generateCandidateResultToken(empresaId, attemptId, candidateResultTtlHours)`. O token assinado possui tipo `candidate_result`, empresa, tentativa, emissão e expiração; sua validade é independente dos TTLs usados pelo link e pela sessão de execução.
+Regras:
 
-Ao abrir a URL, o frontend usa o segmento como credencial e consulta `/candidate/results/{token}`. `CandidateResultPageService.findByToken()` chama `JwtService.parseCandidateResultToken()`: o parser verifica assinatura e expiração, exige o tipo `candidate_result` e valida a presença de empresa e tentativa. Em seguida, o serviço consulta a tentativa pelo par `empresaId` e `attemptId`, impedindo que o identificador seja usado fora da empresa registrada no token.
+- `score` é inteiro de `0` a `100`;
+- resultados `major` são visíveis para empresa e pessoa candidata;
+- resultados `minor` podem ser usados apenas na visão da empresa;
+- `reliabilityLevel` permanece interno;
+- extensões de topo não são serializadas;
+- `other_informations` só aparece dentro de `TestResultItem`.
 
-O token de execução e o token de resultado não são intercambiáveis:
+## Mapeamento de estados
 
-- `test_url` usa uma credencial `candidate_attempt`, destinada à execução da avaliação;
-- `result_candidate_page_url` usa uma credencial `candidate_result`, destinada somente à consulta da página final.
-
-A página pública apresenta somente fatores `major`, com título, nota numérica e porcentagem. Resultados `minor`, e-mail, respostas, pesos, gabarito e regras internas não são expostos à pessoa candidata.
-
-`reliabilityLevel` e as métricas agregadas de timeout continuam no domínio interno da tentativa e não são serializados no contrato externo. `other_informations` permanece disponível dentro de cada `TestResultItem`, conforme o schema oficial.
-
-Eventos antigos do outbox que ainda contenham extensões de topo continuam processáveis: a desserialização ignora propriedades desconhecidas e o novo envio é normalizado para o DTO oficial.
-
-`result_page_url` abre a página autenticada do recrutador. A rota pública da pessoa candidata é alcançável com a credencial `candidate_result` e expõe somente avaliação, estado, indicador de conclusão, data de término, retorno permitido ao ATS e resultados `major`.
-
-### Mapeamento de estados
-
-| Estado interno | Status Gupy | Comportamento externo |
+| Estado interno | Status Gupy | Resultado |
 | --- | --- | --- |
-| `NOT_STARTED` | `notStarted` | Representável; lista `results` vazia. |
-| `IN_PROGRESS` | `paused` | Representável; lista `results` vazia. |
-| `COMPLETED` | `done` | Representável; publica as pontuações finais. |
-| `ABANDONED` | Nenhum | Rejeitado por `assertExternallyRepresentable()`; não produz `TestResult`. |
-| `EXPIRED` | Nenhum | Rejeitado por `assertExternallyRepresentable()`; não produz `TestResult`. |
+| `NOT_STARTED` | `notStarted` | Lista de resultados vazia. |
+| `IN_PROGRESS` | `paused` | Lista de resultados vazia. |
+| `COMPLETED` | `done` | Pontuações finais publicadas. |
+| `ABANDONED` | Não representável | Consulta e entrega são rejeitadas. |
+| `EXPIRED` | Não representável | Consulta e entrega são rejeitadas. |
 
-Não existe conversão de `ABANDONED` ou `EXPIRED` para `done`.
+Não existe conversão artificial de `ABANDONED` ou `EXPIRED` para `done`.
 
-## Fluxo atual
+## URLs de resultado
 
-```mermaid
-sequenceDiagram
-  participant Gupy
-  participant Praxis
-  participant Candidato
-  participant Resultado as CandidateResultPageService
-  participant JWT as JwtService
-  participant Outbox
+- `test_url` usa JWT do tipo `candidate_attempt`, destinado à execução.
+- `result_candidate_page_url` usa JWT do tipo `candidate_result`, destinado somente à consulta final.
+- O token de resultado contém empresa, tentativa, emissão e expiração.
+- A página pública valida assinatura, expiração, tipo e pertencimento.
+- A pessoa candidata vê apenas avaliação, estado, conclusão, data e fatores `major`.
+- E-mail, respostas, pesos, gabarito e regras internas não são expostos.
 
-  Gupy->>Praxis: GET /test
-  Praxis-->>Gupy: avaliações publicadas sem category/level artificiais
-  Gupy->>Praxis: POST /test/candidate
-  Praxis-->>Gupy: test_url + test_result_id
-  Candidato->>Praxis: abre /candidato/{jwt-candidate-attempt}
-  Candidato->>Praxis: envia respostas
-  Praxis->>Praxis: calcula score determinístico
-  Praxis->>Outbox: grava RESULT_READY
-  Outbox->>Gupy: POST result_webhook_url com TestResultResponse
-  Gupy->>Praxis: GET /test/result/{resultId}
-  Gupy-->>Recrutador: abre /results/{attemptId}
-  Gupy-->>Candidato: publica /candidato/{jwt-candidate-result}/resultado
-  Candidato->>Praxis: abre a página pública de resultado
-  Praxis->>Resultado: GET /candidate/results/{jwt-candidate-result}
-  Resultado->>JWT: parseCandidateResultToken(token)
-  JWT-->>Resultado: empresaId + attemptId validados
-  Resultado->>Praxis: resolve tentativa e avaliação pela empresa
-  Resultado-->>Candidato: avaliação + estado + resultados major + retorno ao ATS
-```
+## Callback e webhook
 
-Fluxo de callback e redirecionamento:
+### `callback_url`
 
-```mermaid
-sequenceDiagram
-  participant Candidato
-  participant Praxis
-  participant Gupy
+Depois da conclusão, o frontend recebe `redirectUrl` e o navegador executa um único `GET` para a URL informada pela Gupy.
 
-  Candidato->>Praxis: conclui teste
-  Praxis-->>Candidato: redirectUrl
-  Candidato->>Gupy: GET callback_url
-```
+O backend não repete esse `GET`. Registros antigos de confirmação permanecem apenas para compatibilidade histórica.
 
-O `callback_url` pertence ao handoff do navegador. Confirmações servidor-servidor foram desativadas porque repetiam o GET já executado pela pessoa candidata. `/api/v1/gupy/callback-deliveries` permanece somente para consulta de registros históricos e não oferece reprocessamento.
+### `result_webhook_url`
 
-## Outbox e entrega assíncrona
+O resultado é persistido no Outbox na mesma transação da conclusão e enviado de forma assíncrona. Retry, backoff, DLQ e reprocessamento pertencem à [Arquitetura de Outbox](ARQUITETURA_OUTBOX_PATTERN.md).
 
-Estados:
+## Segurança
 
-- `pending`;
-- `processing`;
-- `retrying`;
-- `sent`;
-- `dlq`.
+- autenticação por token individual da empresa;
+- isolamento por `empresaId` e `company_id`;
+- token armazenado somente como hash;
+- URLs externas validadas contra SSRF;
+- HTTPS obrigatório em produção;
+- JWTs distintos para execução e resultado;
+- DTO externo limitado ao schema publicado;
+- logs e respostas não expõem o token em claro.
 
-Backoff:
+## Responsabilidades documentais
 
-| Tentativa | Próxima tentativa |
+| Assunto | Documento |
 | --- | --- |
-| 1 | 1 segundo |
-| 2 | 4 segundos |
-| 3 | 16 segundos |
-| 4 | 64 segundos |
-| 5 | DLQ |
+| Contrato e exemplos de payload | Este documento |
+| Fonte externa e aliases proibidos | [Fonte canônica](GUPY-FONTE-CANONICA.md) |
+| Prontidão, evidências e aprovação externa | [Homologação Gupy](HOMOLOGACAO-GUPY.md) |
+| Retry, backoff, DLQ e operação de entregas | [Arquitetura de Outbox](ARQUITETURA_OUTBOX_PATTERN.md) |
 
-Tratamento de erro:
-
-- HTTP 4xx vai para DLQ imediatamente, exceto `408` e `429`;
-- `408`, `429`, erros 5xx, rede, DNS e falhas transitórias entram em retry;
-- após cinco tentativas, o evento vai para DLQ;
-- o processamento reivindica lotes de até 100 eventos;
-- eventos presos em `PROCESSING` por mais de cinco minutos podem ser retomados.
-
-Monitoramento:
-
-```text
-GET  /api/v1/gupy/result-deliveries
-GET  /api/v1/gupy/result-deliveries/ready
-POST /api/v1/gupy/result-deliveries/process-ready
-POST /api/v1/gupy/result-deliveries/{deliveryId}/reprocess
-```
-
-O reprocessamento acima pertence exclusivamente ao POST assíncrono de `result_webhook_url`. Não se aplica ao `callback_url` do navegador.
-
-## Pendências e bloqueadores externos
-
-1. Executar o fluxo completo em vaga real, pois a documentação da Gupy informa que não há ambiente de sandbox para provedores externos.
-2. Validar o POST para uma `result_webhook_url` real da Gupy e confirmar o callback e o redirecionamento na plataforma real.
-
-## Checklist de validação
-
-- [ ] Gerar token Gupy pela Central de Integrações.
-- [ ] Validar `GET /test` em ambiente integrado.
-- [x] Confirmar que o catálogo omite `category` e `level` sem fonte real.
-- [x] Validar paginação, busca e `limit=0` em testes automatizados.
-- [x] Validar tipos, faixa e enums do payload oficial de `POST /test/candidate` em testes automatizados.
-- [x] Confirmar aceitação de JSON `null` e da string literal `"null"` em `previous_result`.
-- [x] Confirmar idempotência e diferenciação por `job_id` em testes automatizados.
-- [ ] Confirmar `test_url` em ambiente integrado.
-- [ ] Concluir uma tentativa em vaga real.
-- [x] Validar política de callback e registro do handoff em testes automatizados.
-- [x] Remover reprocessamento servidor-servidor do callback para impedir GET duplicado.
-- [ ] Confirmar callback e redirecionamento na plataforma real da Gupy.
-- [x] Validar `GET /test/result/{resultId}` sem parâmetros extras e com isolamento pelo token.
-- [x] Validar que consulta e webhook não serializam extensões fora do schema oficial.
-- [x] Confirmar que `ABANDONED` e `EXPIRED` não são publicados como `done`.
-- [x] Confirmar que `result_candidate_page_url` usa JWT `candidate_result`, TTL próprio e mostra somente resultados `major`.
-- [ ] Testar `result_webhook_url` contra uma URL real da Gupy.
-- [x] Testar retry, `408`, `429`, 4xx permanente e DLQ em testes automatizados; falta validar a comunicação real.
-- [ ] Homologar com cliente e vaga real na Gupy.
-
-Última revisão: 15/07/2026.
+Última revisão: 18/07/2026.
