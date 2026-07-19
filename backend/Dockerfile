@@ -31,12 +31,20 @@ POSTGRES_VERSION="$(find /etc/postgresql -mindepth 1 -maxdepth 1 -type d -printf
 TEST_DB_NAME="praxis_test"
 TEST_DB_USER="praxis_test"
 TEST_DB_PASSWORD="praxis_test"
-PG_HBA_FILE="/etc/postgresql/${POSTGRES_VERSION}/main/pg_hba.conf"
+
+# O pacote pode iniciar o cluster durante a instalação. Garante uma instância
+# ativa e consulta no próprio servidor qual pg_hba.conf está realmente em uso.
+if ! pg_ctlcluster "${POSTGRES_VERSION}" main status >/dev/null 2>&1; then
+    pg_ctlcluster "${POSTGRES_VERSION}" main start
+fi
+trap 'pg_ctlcluster "${POSTGRES_VERSION}" main stop >/dev/null 2>&1 || true' EXIT
+
+PG_HBA_FILE="$(su postgres -c "psql -Atqc 'SHOW hba_file'")"
 PG_HBA_TMP="${PG_HBA_FILE}.tmp"
 
 # O cluster existe somente no estágio builder e é descartado da imagem final.
 # Autoriza exclusivamente o usuário e o banco de testes pelo loopback usado no
-# JDBC, evitando variações de SCRAM/MD5 entre versões da imagem base.
+# JDBC. A regra é aplicada ao arquivo efetivo e recarregada antes da conexão.
 {
     printf 'host %s %s 127.0.0.1/32 trust\n' "${TEST_DB_NAME}" "${TEST_DB_USER}"
     cat "${PG_HBA_FILE}"
@@ -44,9 +52,7 @@ PG_HBA_TMP="${PG_HBA_FILE}.tmp"
 chown --reference="${PG_HBA_FILE}" "${PG_HBA_TMP}"
 chmod --reference="${PG_HBA_FILE}" "${PG_HBA_TMP}"
 mv "${PG_HBA_TMP}" "${PG_HBA_FILE}"
-
-pg_ctlcluster "${POSTGRES_VERSION}" main start
-trap 'pg_ctlcluster "${POSTGRES_VERSION}" main stop >/dev/null 2>&1 || true' EXIT
+su postgres -c "psql -v ON_ERROR_STOP=1 --command='SELECT pg_reload_conf();'" >/dev/null
 
 su postgres -c "psql -v ON_ERROR_STOP=1 --command=\"CREATE ROLE ${TEST_DB_USER} LOGIN PASSWORD '${TEST_DB_PASSWORD}';\""
 su postgres -c "createdb --owner=${TEST_DB_USER} ${TEST_DB_NAME}"
