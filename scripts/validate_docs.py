@@ -16,6 +16,9 @@ GUPY_DOCS = (
     ROOT / "docs" / "INTEGRACAO-GUPY-PROVEDOR.md",
     ROOT / "docs" / "HOMOLOGACAO-GUPY.md",
     ROOT / "docs" / "ARQUITETURA_OUTBOX_PATTERN.md",
+    ROOT / "docs" / "IMPLEMENTATION_SUMMARY.md",
+    ROOT / "docs" / "P0_PRODUCT_READINESS.md",
+    ROOT / "docs" / "documentacao-tecnica.md",
 )
 
 MARKDOWN_LINK_RE = re.compile(r"!?\[[^\]]*]\(([^)]+)\)")
