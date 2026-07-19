@@ -27,39 +27,48 @@ COPY src ./src
 RUN --mount=type=cache,target=/root/.m2 <<'EOF'
 set -euo pipefail
 
-POSTGRES_VERSION="$(find /etc/postgresql -mindepth 1 -maxdepth 1 -type d -printf '%f\n' | sort -V | tail -n 1)"
+POSTGRES_VERSION="$(find /usr/lib/postgresql -mindepth 1 -maxdepth 1 -type d -printf '%f\n' | sort -V | tail -n 1)"
+POSTGRES_BIN="/usr/lib/postgresql/${POSTGRES_VERSION}/bin"
 TEST_DB_NAME="praxis_test"
 TEST_DB_USER="praxis_test"
 TEST_DB_PASSWORD="praxis_test"
+TEST_DB_PORT="55432"
+TEST_PGDATA="/tmp/praxis-postgres-data"
+TEST_PGSOCKET="/tmp/praxis-postgres-socket"
 
-# O pacote pode iniciar o cluster durante a instalação. Garante uma instância
-# ativa e consulta no próprio servidor qual pg_hba.conf está realmente em uso.
-if ! pg_ctlcluster "${POSTGRES_VERSION}" main status >/dev/null 2>&1; then
-    pg_ctlcluster "${POSTGRES_VERSION}" main start
-fi
-trap 'pg_ctlcluster "${POSTGRES_VERSION}" main stop >/dev/null 2>&1 || true' EXIT
+# Cria um cluster exclusivo do estágio builder. Isso elimina dependência do
+# cluster Debian criado pelo pacote e garante autenticação host/local trust
+# somente dentro deste estágio descartável.
+install -d -m 0700 -o postgres -g postgres "${TEST_PGDATA}"
+install -d -m 0770 -o postgres -g postgres "${TEST_PGSOCKET}"
 
-PG_HBA_FILE="$(su postgres -c "psql -Atqc 'SHOW hba_file'")"
-PG_HBA_TMP="${PG_HBA_FILE}.tmp"
+su postgres -c "${POSTGRES_BIN}/initdb --pgdata=${TEST_PGDATA} --username=postgres --auth-local=trust --auth-host=trust --encoding=UTF8 --no-locale"
+su postgres -c "${POSTGRES_BIN}/pg_ctl --pgdata=${TEST_PGDATA} --log=${TEST_PGDATA}/postgres.log --options='-c listen_addresses=127.0.0.1 -p ${TEST_DB_PORT} -k ${TEST_PGSOCKET}' --wait start"
 
-# O cluster existe somente no estágio builder e é descartado da imagem final.
-# Autoriza exclusivamente o usuário e o banco de testes pelo loopback usado no
-# JDBC. A regra é aplicada ao arquivo efetivo e recarregada antes da conexão.
-{
-    printf 'host %s %s 127.0.0.1/32 trust\n' "${TEST_DB_NAME}" "${TEST_DB_USER}"
-    cat "${PG_HBA_FILE}"
-} > "${PG_HBA_TMP}"
-chown --reference="${PG_HBA_FILE}" "${PG_HBA_TMP}"
-chmod --reference="${PG_HBA_FILE}" "${PG_HBA_TMP}"
-mv "${PG_HBA_TMP}" "${PG_HBA_FILE}"
-su postgres -c "psql -v ON_ERROR_STOP=1 --command='SELECT pg_reload_conf();'" >/dev/null
+stop_test_postgres() {
+    su postgres -c "${POSTGRES_BIN}/pg_ctl --pgdata=${TEST_PGDATA} --mode=fast --wait stop" >/dev/null 2>&1 || true
+}
+trap stop_test_postgres EXIT
 
-su postgres -c "psql -v ON_ERROR_STOP=1 --command=\"CREATE ROLE ${TEST_DB_USER} LOGIN PASSWORD '${TEST_DB_PASSWORD}';\""
-su postgres -c "createdb --owner=${TEST_DB_USER} ${TEST_DB_NAME}"
+"${POSTGRES_BIN}/psql" \
+    --host=127.0.0.1 \
+    --port="${TEST_DB_PORT}" \
+    --username=postgres \
+    --dbname=postgres \
+    --set=ON_ERROR_STOP=1 \
+    --command="CREATE ROLE ${TEST_DB_USER} LOGIN PASSWORD '${TEST_DB_PASSWORD}';"
+
+"${POSTGRES_BIN}/createdb" \
+    --host=127.0.0.1 \
+    --port="${TEST_DB_PORT}" \
+    --username=postgres \
+    --owner="${TEST_DB_USER}" \
+    "${TEST_DB_NAME}"
 
 # Confirma que o banco está acessível pelo mesmo endpoint usado pela suíte.
-PGPASSWORD="${TEST_DB_PASSWORD}" psql \
+PGPASSWORD="${TEST_DB_PASSWORD}" "${POSTGRES_BIN}/psql" \
     --host=127.0.0.1 \
+    --port="${TEST_DB_PORT}" \
     --username="${TEST_DB_USER}" \
     --dbname="${TEST_DB_NAME}" \
     --command='SELECT 1' \
@@ -68,12 +77,12 @@ PGPASSWORD="${TEST_DB_PASSWORD}" psql \
 # Variáveis de ambiente são herdadas pelo processo forkado do Surefire.
 # Isso evita que application.properties ou variáveis do ambiente de deploy
 # restaurem as credenciais padrão dos testes baseados em Testcontainers.
-export SPRING_DATASOURCE_URL="jdbc:postgresql://127.0.0.1:5432/${TEST_DB_NAME}"
+export SPRING_DATASOURCE_URL="jdbc:postgresql://127.0.0.1:${TEST_DB_PORT}/${TEST_DB_NAME}"
 export SPRING_DATASOURCE_USERNAME="${TEST_DB_USER}"
 export SPRING_DATASOURCE_PASSWORD="${TEST_DB_PASSWORD}"
 export SPRING_DATASOURCE_DRIVER_CLASS_NAME="org.postgresql.Driver"
 export DB_HOST="127.0.0.1"
-export DB_PORT="5432"
+export DB_PORT="${TEST_DB_PORT}"
 export DB_NAME="${TEST_DB_NAME}"
 export DB_USER="${TEST_DB_USER}"
 export DB_PASS="${TEST_DB_PASSWORD}"
