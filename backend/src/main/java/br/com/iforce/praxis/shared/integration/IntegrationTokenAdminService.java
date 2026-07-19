@@ -5,18 +5,15 @@ import br.com.iforce.praxis.auth.persistence.repository.EmpresaRepository;
 import br.com.iforce.praxis.auth.service.CurrentEmpresaService;
 import br.com.iforce.praxis.shared.integration.dto.IntegrationTokenResponse;
 import br.com.iforce.praxis.shared.integration.dto.RotateIntegrationTokenResponse;
+import br.com.iforce.praxis.shared.security.SecureTokens;
+import br.com.iforce.praxis.shared.security.Sha256;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
-import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
-import java.security.SecureRandom;
 import java.time.Instant;
-import java.util.Base64;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -35,8 +32,8 @@ public class IntegrationTokenAdminService {
 
     private static final Set<String> SUPPORTED_PROVIDERS = Set.of("custom_api", "gupy", "recrutei");
     private static final int TOKEN_BYTES = 32;
+    private static final String TOKEN_PREFIX = "prx_";
 
-    private final SecureRandom secureRandom = new SecureRandom();
     private final CurrentEmpresaService currentEmpresaService;
     private final EmpresaRepository empresaRepository;
     private final IntegrationTokenRepository integrationTokenRepository;
@@ -86,14 +83,14 @@ public class IntegrationTokenAdminService {
                         "Não encontramos os dados da sua empresa."
                 ));
 
-        String tokenValue = generateToken();
+        String tokenValue = SecureTokens.prefixed(TOKEN_PREFIX, TOKEN_BYTES);
         integrationTokenRepository.deleteByEmpresaIdAndProvider(empresaId, normalizedProvider);
         integrationTokenRepository.flush();
 
         IntegrationTokenEntity entity = new IntegrationTokenEntity();
         entity.setEmpresa(empresa);
         entity.setProvider(normalizedProvider);
-        entity.setTokenHash(sha256(tokenValue));
+        entity.setTokenHash(Sha256.base64Url(tokenValue));
         entity.setCreatedAt(Instant.now());
 
         IntegrationTokenEntity saved = integrationTokenRepository.save(entity);
@@ -118,21 +115,5 @@ public class IntegrationTokenAdminService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Provedor de integração não suportado.");
         }
         return normalized;
-    }
-
-    private String generateToken() {
-        byte[] bytes = new byte[TOKEN_BYTES];
-        secureRandom.nextBytes(bytes);
-        return "prx_" + Base64.getUrlEncoder().withoutPadding().encodeToString(bytes);
-    }
-
-    private static String sha256(String value) {
-        try {
-            MessageDigest digest = MessageDigest.getInstance("SHA-256");
-            byte[] hash = digest.digest(value.getBytes(StandardCharsets.UTF_8));
-            return Base64.getUrlEncoder().withoutPadding().encodeToString(hash);
-        } catch (NoSuchAlgorithmException exception) {
-            throw new IllegalStateException("SHA-256 indisponível.", exception);
-        }
     }
 }
