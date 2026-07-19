@@ -1,6 +1,4 @@
-import { getApiBaseUrl } from "@/lib/runtime-config";
-import { getSession } from "@/lib/session";
-import { PraxisApiError } from "@/lib/api/praxis";
+import { apiRequest } from "@/lib/api/http";
 
 export type GupyHomologationStatus =
   | "BLOCKED"
@@ -39,29 +37,8 @@ export interface GupyHomologationResponse {
   }>;
 }
 
-export async function getGupyHomologationStatus(): Promise<GupyHomologationResponse> {
-  const session = getSession();
-  const response = await fetch(`${getApiBaseUrl()}/api/v1/integrations/gupy/homologation`, {
-    headers: {
-      "Content-Type": "application/json",
-      ...(session.token ? { Authorization: `Bearer ${session.token}` } : {}),
-    },
-  });
-
-  if (!response.ok) {
-    let message = `Falha na API (${response.status})`;
-    try {
-      const body = (await response.json()) as {
-        mensagem?: string;
-        message?: string;
-        error?: string;
-      };
-      message = body.mensagem ?? body.message ?? body.error ?? message;
-    } catch {
-      // Mantém a mensagem HTTP quando a resposta não vem em JSON.
-    }
-    throw new PraxisApiError(message, response.status);
-  }
-
-  return response.json() as Promise<GupyHomologationResponse>;
+export function getGupyHomologationStatus(): Promise<GupyHomologationResponse> {
+  return apiRequest<GupyHomologationResponse>(
+    "/api/v1/integrations/gupy/homologation",
+  );
 }
