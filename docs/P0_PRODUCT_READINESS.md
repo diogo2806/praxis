@@ -1,7 +1,7 @@
 # P0 — Prontidão de produto antes de venda ou demonstração
 
 > Fonte de verdade complementar para README, `frontend-backend-map.md` e `cadastro_cenarios_rh.md`.
->
+
 > Objetivo: deixar claro o que está pronto para demonstração, o que é operação interna e quais promessas comerciais são seguras.
 
 ## Posicionamento seguro
@@ -16,7 +16,7 @@ Evitar:
 - “livre de discriminação” sem estudo local;
 - “prediz performance” sem validação estatística;
 - “decisão automática” ou ranking eliminatório;
-- “integração Gupy homologada” antes da validação oficial.
+- “integração Gupy homologada” antes da aprovação oficial.
 
 Usar:
 
@@ -24,7 +24,7 @@ Usar:
 - score calculado por regra cadastrada;
 - apoio à triagem e entrevista estruturada;
 - decisão final humana documentada;
-- integração técnica em preparação para homologação, quando esse for o estado real.
+- integração Gupy tecnicamente compatível e aguardando validação formal, enquanto esse for o estado real.
 
 ## Estado real do produto
 
@@ -39,7 +39,7 @@ Usar:
 | Modelo rápido | Implementado | `/nova/rapido` cria rascunho por modelo. |
 | Assistente de 4 passos | Implementado | Teste → Cenário → Revisão → Publicação. |
 | Enviar link | Implementado | Links internos e acompanhamento de tentativas. |
-| Gupy | **Implementação técnica parcial** | `/test/**`, preflight e outbox existem, mas callback, redirecionamento e assinatura oficial do resultado ainda bloqueiam homologação. |
+| Gupy | **Compatibilidade técnica implementada** | Contrato `/test/**`, callback, páginas de resultado, outbox e centro de evidências implementados; homologação em vaga real pendente. |
 | Recrutei | Implementado tecnicamente | Validar homologação comercial separadamente. |
 | API própria | Implementada | Central de integrações, token e webhook próprios. |
 | Resultados | Implementado | Lista, detalhe e decisão humana. |
@@ -55,6 +55,7 @@ Usar:
 | Billing admin | Implementado | Visão consolidada e suporte operacional. |
 | Health Score / CS | Operação interna | Não é fluxo principal de RH. |
 | Engagement mensal | Worker interno | Apoia retenção; não altera avaliação. |
+| Homologação Gupy | Operação técnica | `/integrations/gupy-homologacao` consolida prontidão, bloqueios e evidências. |
 
 ### Rotas secundárias
 
@@ -76,21 +77,31 @@ Começar → Modelo rápido ou Do zero → 4 passos → Publicar → Enviar link
 
 Pode afirmar:
 
-- o Praxis possui endpoints de provedor externo;
-- há autenticação por token de empresa;
-- há idempotência, resultado percentual e entrega assíncrona;
-- há monitoramento, retry e DLQ;
-- existe diagnóstico local em `/nova/gupy`.
+- o Praxis implementa o contrato de provedor externo da Gupy;
+- há autenticação por token individual da empresa;
+- `company_id` e `document_id` seguem o formato `int64`;
+- há idempotência por candidato, avaliação e vaga;
+- o candidato recebe `test_url` e retorna pelo `callback_url`;
+- empresa e candidato possuem URLs de resultado separadas;
+- consulta e webhook usam o mesmo contrato externo;
+- há resultado percentual, monitoramento, retry e DLQ;
+- existe diagnóstico local em `/nova/gupy`;
+- existe centro de evidências em `/integrations/gupy-homologacao`.
 
 Não pode afirmar ainda:
 
-- que a integração está homologada pela Gupy;
-- que o candidato retorna automaticamente à Gupy;
-- que o contrato oficial é atendido integralmente;
+- que a integração está homologada ou certificada pela Gupy;
+- que a Gupy aprovou comercialmente o Práxis como parceiro;
 - que existe sandbox oficial de homologação;
-- que qualquer cliente pode ativar sem validação conjunta.
+- que qualquer cliente pode ativar sem validação conjunta;
+- que evidência técnica interna substitui a aprovação externa.
 
-Documento técnico: [INTEGRACAO-GUPY-PROVEDOR.md](INTEGRACAO-GUPY-PROVEDOR.md).
+## Documentos responsáveis
+
+- [Fonte canônica da integração Gupy](GUPY-FONTE-CANONICA.md);
+- [Contrato implementado](INTEGRACAO-GUPY-PROVEDOR.md);
+- [Centro de homologação](HOMOLOGACAO-GUPY.md);
+- [Arquitetura de Outbox](ARQUITETURA_OUTBOX_PATTERN.md).
 
 ## Verdades que devem permanecer sincronizadas
 
@@ -100,6 +111,8 @@ Documento técnico: [INTEGRACAO-GUPY-PROVEDOR.md](INTEGRACAO-GUPY-PROVEDOR.md).
 - O assistente de 4 passos é o fluxo principal.
 - Rotas standalone são secundárias.
 - Nunca prometer ausência absoluta de viés.
-- Nunca promover Gupy como homologada enquanto houver bloqueadores no contrato oficial.
+- Compatibilidade técnica não significa homologação formal.
+- O callback é executado pelo navegador uma única vez.
+- A aprovação Gupy depende de token, vaga e ambiente reais.
 
-Última revisão: 12/07/2026.
+Última revisão: 18/07/2026.
