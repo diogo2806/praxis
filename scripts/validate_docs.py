@@ -27,6 +27,7 @@ SUSPICIOUS_UPSTREAM_RE = re.compile(
     r"(?:copy-of|(?:^|[-/])copy(?:[-/?#]|$)|/ntegra|(?:/|%2F)[^?#\s]*-(?:[?#]|$))",
     re.IGNORECASE,
 )
+CODE_FENCE_RE = re.compile(r"^\s*(```|~~~)")
 
 
 def markdown_files() -> list[Path]:
@@ -45,6 +46,18 @@ def normalize_link_target(raw_target: str) -> str:
     if " " in target and not target.startswith(("http://", "https://")):
         target = target.split(" ", 1)[0]
     return target
+
+
+def count_markdown_h1(content: str) -> int:
+    count = 0
+    in_code_fence = False
+    for line in content.splitlines():
+        if CODE_FENCE_RE.match(line):
+            in_code_fence = not in_code_fence
+            continue
+        if not in_code_fence and re.match(r"^#\s+\S", line):
+            count += 1
+    return count
 
 
 def validate_required_files(errors: list[str]) -> None:
@@ -106,11 +119,7 @@ def validate_single_h1(errors: list[str]) -> None:
     for source in GUPY_DOCS:
         if not source.is_file():
             continue
-        h1_count = sum(
-            1
-            for line in source.read_text(encoding="utf-8").splitlines()
-            if re.match(r"^#\s+\S", line)
-        )
+        h1_count = count_markdown_h1(source.read_text(encoding="utf-8"))
         if h1_count != 1:
             errors.append(
                 f"{source.relative_to(ROOT)} deve possuir exatamente um título H1; encontrado: {h1_count}"
