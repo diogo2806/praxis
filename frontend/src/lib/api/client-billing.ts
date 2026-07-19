@@ -1,9 +1,15 @@
-import { getApiBaseUrl } from "@/lib/runtime-config";
-import { getSession } from "@/lib/session";
-import { PraxisApiError } from "@/lib/api/praxis";
+import { apiRequest } from "@/lib/api/http";
+import { PraxisApiError } from "@/lib/api/praxis-legacy";
 
 export type CommercialPlanType = "AVULSO" | "PROFISSIONAL" | "ENTERPRISE";
-export type EmpresaStatus = "ATIVO" | "EM_TESTE" | "PENDENTE_PAGAMENTO" | "INADIMPLENTE" | "SEM_CREDITO" | "SUSPENSO" | "CANCELADO";
+export type EmpresaStatus =
+  | "ATIVO"
+  | "EM_TESTE"
+  | "PENDENTE_PAGAMENTO"
+  | "INADIMPLENTE"
+  | "SEM_CREDITO"
+  | "SUSPENSO"
+  | "CANCELADO";
 export type SubscriptionStatus = "PENDING" | "AUTHORIZED" | "DELINQUENT" | "PAUSED" | "CANCELLED";
 export type FinancialStatus = "REGULAR" | "PENDENTE_PAGAMENTO" | "INADIMPLENTE" | "SEM_CREDITO" | "CANCELADO";
 export type PlanChangeRequestType = "CHANGE_PLAN" | "CANCEL_CONTRACT";
@@ -37,35 +43,12 @@ export interface AutoRechargeConfigRequest {
   mpCardId?: string | null;
 }
 
-async function billingRequest<T>(path: string, init?: RequestInit): Promise<T> {
-  const session = getSession();
-  const headers: Record<string, string> = { "Content-Type": "application/json" };
-  if (session.token) headers.Authorization = `Bearer ${session.token}`;
-  const response = await fetch(`${getApiBaseUrl()}${path}`, { ...init, headers: { ...headers, ...init?.headers } });
-  if (!response.ok) {
-    let message = `Falha na API (${response.status})`;
-    try {
-      const body = (await response.json()) as { mensagem?: string; message?: string; error?: string };
-      message = body.mensagem ?? body.message ?? body.error ?? message;
-    } catch { /* mantém a mensagem HTTP */ }
-    throw new PraxisApiError(message, response.status);
-  }
-  if (response.status === 204) return undefined as T;
-  if ((response.headers.get("content-type") ?? "").includes("application/json")) return response.json() as Promise<T>;
-  const text = await response.text();
-  return (text.length > 0 ? text : undefined) as T;
-}
+export const getClientBilling = () => apiRequest<ClientBillingResponse>("/api/v1/billing");
+export const getCreditCapacity = () => apiRequest<CreditCapacityResponse>("/api/v1/billing/credit-capacity");
+export const listClientBillingPlans = () => apiRequest<SubscriptionPlan[]>("/api/v1/billing/plans");
+export const getAutoRechargeConfig = () => apiRequest<AutoRechargeConfigResponse>("/api/v1/billing/auto-recharge");
+export const configureAutoRecharge = (request: AutoRechargeConfigRequest) => apiRequest<AutoRechargeConfigResponse>("/api/v1/billing/auto-recharge", { method: "PUT", body: JSON.stringify(request) });
 
-export const getClientBilling = () => billingRequest<ClientBillingResponse>("/api/v1/billing");
-export const getCreditCapacity = () => billingRequest<CreditCapacityResponse>("/api/v1/billing/credit-capacity");
-export const listClientBillingPlans = () => billingRequest<SubscriptionPlan[]>("/api/v1/billing/plans");
-export const getAutoRechargeConfig = () => billingRequest<AutoRechargeConfigResponse>("/api/v1/billing/auto-recharge");
-export const configureAutoRecharge = (request: AutoRechargeConfigRequest) => billingRequest<AutoRechargeConfigResponse>("/api/v1/billing/auto-recharge", { method: "PUT", body: JSON.stringify(request) });
-
-/**
- * A tela de cobrança já consulta /billing. Reutilizar esse resumo evita quebrar o carregamento
- * quando o frontend é publicado antes do backend que expõe as rotas de gestão de plano.
- */
 export async function getClientPlanManagement(): Promise<PlanManagementResponse> {
   const billing = await getClientBilling();
   if (!billing.plan) {
@@ -74,15 +57,18 @@ export async function getClientPlanManagement(): Promise<PlanManagementResponse>
   return { currentPlan: billing.plan, enterpriseRequests: [] };
 }
 
-export const createClientCreditCheckout = (planId: number) => billingRequest<CheckoutResult>(`/api/v1/billing/credits/checkout?planId=${planId}`, { method: "POST" });
-export const createClientSubscriptionCheckout = (planId: number) => billingRequest<CheckoutResult>(`/api/v1/billing/subscription/checkout?planId=${planId}`, { method: "POST" });
-export const changeClientPlan = (planId: number) => billingRequest<CheckoutResult>(`/api/v1/billing/plan/change?planId=${planId}`, { method: "POST" });
-export const syncClientSubscription = () => billingRequest<ClientBillingResponse>("/api/v1/billing/subscription/sync", { method: "POST" });
-export const cancelClientSubscription = () => billingRequest<ClientBillingResponse>("/api/v1/billing/subscription/cancel", { method: "POST" });
+export const createClientCreditCheckout = (planId: number) => apiRequest<CheckoutResult>(`/api/v1/billing/credits/checkout?planId=${planId}`, { method: "POST" });
+export const createClientSubscriptionCheckout = (planId: number) => apiRequest<CheckoutResult>(`/api/v1/billing/subscription/checkout?planId=${planId}`, { method: "POST" });
+export const changeClientPlan = (planId: number) => apiRequest<CheckoutResult>(`/api/v1/billing/plan/change?planId=${planId}`, { method: "POST" });
+export const syncClientSubscription = () => apiRequest<ClientBillingResponse>("/api/v1/billing/subscription/sync", { method: "POST" });
+export const cancelClientSubscription = () => apiRequest<ClientBillingResponse>("/api/v1/billing/subscription/cancel", { method: "POST" });
 
 export function createEnterprisePlanRequest(type: PlanChangeRequestType, requestedPlan?: CommercialPlanType, note?: string) {
   const params = new URLSearchParams({ type });
   if (requestedPlan) params.set("requestedPlan", requestedPlan);
   if (note?.trim()) params.set("note", note.trim());
-  return billingRequest<PlanChangeRequest>(`/api/v1/billing/enterprise-request?${params.toString()}`, { method: "POST" });
+  return apiRequest<PlanChangeRequest>(
+    `/api/v1/billing/enterprise-request?${params.toString()}`,
+    { method: "POST" },
+  );
 }
