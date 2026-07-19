@@ -56,13 +56,27 @@ export interface CandidateLinkFilters {
   candidate?: string;
 }
 
-const CANDIDATE_LINK_PAGE_SIZE = 100;
+type CandidateLinkPayload = Omit<
+  CandidateLinkResponse,
+  "linkExpiresAt" | "remainingDays" | "linkStatus"
+> & {
+  linkExpiresAt?: string | null;
+  remainingDays?: number | null;
+  linkStatus?: string | null;
+};
 
-export function searchCandidateLinks(
+type CandidateLinkPagePayload = Omit<CandidateLinkPageResponse, "items"> & {
+  items: CandidateLinkPayload[];
+};
+
+const CANDIDATE_LINK_PAGE_SIZE = 100;
+const LEGACY_LINK_TTL_MILLISECONDS = 7 * 24 * 60 * 60 * 1000;
+
+export async function searchCandidateLinks(
   page: number,
   blind = false,
   filters: CandidateLinkFilters = {},
-) {
+): Promise<CandidateLinkPageResponse> {
   const params = new URLSearchParams();
   params.set("page", String(Math.max(0, page)));
   params.set("size", String(CANDIDATE_LINK_PAGE_SIZE));
@@ -71,9 +85,15 @@ export function searchCandidateLinks(
   if (filters.simulationId) params.set("simulationId", filters.simulationId);
   if (filters.versionNumber != null) params.set("versionNumber", String(filters.versionNumber));
   if (filters.candidate?.trim()) params.set("candidate", filters.candidate.trim());
-  return apiRequest<CandidateLinkPageResponse>(
+
+  const response = await apiRequest<CandidateLinkPagePayload>(
     `/api/v1/candidate-links/page?${params.toString()}`,
   );
+
+  return {
+    ...response,
+    items: response.items.map(normalizeCandidateLink),
+  };
 }
 
 export async function listCandidateLinks(
@@ -119,4 +139,69 @@ export function extendCandidateLink(attemptId: string, additionalDays: number) {
       body: JSON.stringify({ additionalDays }),
     },
   );
+}
+
+function normalizeCandidateLink(link: CandidateLinkPayload): CandidateLinkResponse {
+  const linkExpiresAt = normalizeLinkExpiresAt(link.linkExpiresAt, link.createdAt);
+  const remainingDays = normalizeRemainingDays(link.remainingDays, linkExpiresAt);
+
+  return {
+    ...link,
+    linkExpiresAt,
+    remainingDays,
+    linkStatus: normalizeLinkStatus(link.linkStatus, remainingDays),
+  };
+}
+
+function normalizeLinkExpiresAt(value: string | null | undefined, createdAt: string): string {
+  if (value && Number.isFinite(Date.parse(value))) {
+    return value;
+  }
+
+  const createdAtMilliseconds = Date.parse(createdAt);
+  if (Number.isFinite(createdAtMilliseconds)) {
+    return new Date(createdAtMilliseconds + LEGACY_LINK_TTL_MILLISECONDS).toISOString();
+  }
+
+  return new Date(0).toISOString();
+}
+
+function normalizeRemainingDays(value: number | null | undefined, linkExpiresAt: string): number {
+  if (typeof value === "number" && Number.isFinite(value) && value >= 0) {
+    return Math.floor(value);
+  }
+
+  const expiresAtMilliseconds = Date.parse(linkExpiresAt);
+  if (!Number.isFinite(expiresAtMilliseconds)) {
+    return 0;
+  }
+
+  const remainingMilliseconds = expiresAtMilliseconds - Date.now();
+  if (remainingMilliseconds <= 0) {
+    return 0;
+  }
+
+  return Math.max(1, Math.ceil(remainingMilliseconds / (24 * 60 * 60 * 1000)));
+}
+
+function normalizeLinkStatus(
+  value: string | null | undefined,
+  remainingDays: number,
+): CandidateLinkStatus {
+  const normalizedValue = value?.replace(/[\s_-]/g, "").toLowerCase();
+
+  if (normalizedValue === "active") {
+    return "active";
+  }
+  if (normalizedValue === "expiringsoon") {
+    return "expiringSoon";
+  }
+  if (normalizedValue === "expired") {
+    return "expired";
+  }
+
+  if (remainingDays === 0) {
+    return "expired";
+  }
+  return remainingDays <= 3 ? "expiringSoon" : "active";
 }
