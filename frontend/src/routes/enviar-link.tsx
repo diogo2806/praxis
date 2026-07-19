@@ -18,10 +18,10 @@ import { cn } from "@/lib/utils";
 export const Route = createFileRoute("/enviar-link")({
   head: () => ({
     meta: [
-      { title: "Nova avaliação isolada - Práxis" },
+      { title: "Nova participação individual - Práxis" },
       {
         name: "description",
-        content: "Crie uma aplicação isolada e acompanhe o convite pela central de participações.",
+        content: "Crie uma participação individual e acompanhe o convite pela central de participações.",
       },
     ],
   }),
@@ -94,7 +94,7 @@ function EnviarLinkPage() {
       candidateName: candidateName.trim(),
       candidateEmail: candidateEmail.trim(),
       applicationCycleId: newApplicationCycleId(),
-      applicationContext: `Envio isolado - ${selectedSimulation.name}`,
+      applicationContext: `Participação individual - ${selectedSimulation.name}`,
     });
   }
 
@@ -139,12 +139,12 @@ function EnviarLinkPage() {
         <header className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <div className="max-w-3xl">
             <div className="text-xs font-semibold uppercase tracking-[0.18em] text-primary">
-              Avaliação isolada
+              Participação individual
             </div>
-            <h1 className="mt-1 font-display text-3xl">Criar nova aplicação</h1>
+            <h1 className="mt-1 font-display text-3xl">Aplicar avaliação individual</h1>
             <p className="mt-2 text-sm leading-6 text-muted-foreground">
-              Use este fluxo somente quando a avaliação não fizer parte de uma jornada. Depois da
-              criação, reenvio, validade e acompanhamento ficam centralizados em Participações.
+              Use este fluxo quando a avaliação não fizer parte de uma jornada. Depois da criação,
+              reenvio, validade e acompanhamento ficam centralizados em Participações.
             </p>
           </div>
           <Button asChild variant="outline" className="bg-card">
@@ -155,7 +155,7 @@ function EnviarLinkPage() {
         <StepIndicator step={step} />
 
         {createMutation.isError && (
-          <StateBanner tone="danger" title="Não foi possível criar a aplicação">
+          <StateBanner tone="danger" title="Não foi possível criar a participação">
             {createMutation.error instanceof Error
               ? createMutation.error.message
               : "Verifique os dados e tente novamente."}
@@ -219,7 +219,7 @@ function StepIndicator({ step }: { step: Step }) {
   const currentIndex = items.findIndex((item) => item.value === step);
 
   return (
-    <ol className="grid gap-2 sm:grid-cols-3" aria-label="Etapas da aplicação isolada">
+    <ol className="grid gap-2 sm:grid-cols-3" aria-label="Etapas da participação individual">
       {items.map((item, index) => (
         <li
           key={item.value}
@@ -264,7 +264,7 @@ function AssessmentStep({
     return (
       <EmptyState
         title="Nenhuma avaliação publicada"
-        description="Publique uma avaliação antes de criar uma aplicação isolada."
+        description="Publique uma avaliação antes de criar uma participação individual."
         actions={
           <Button asChild>
             <Link to="/nova/avaliacao">Criar avaliação</Link>
@@ -279,7 +279,7 @@ function AssessmentStep({
       <div className="border-b border-border p-5">
         <h2 className="text-lg font-semibold">Selecione a avaliação publicada</h2>
         <p className="mt-1 text-sm text-muted-foreground">
-          A aplicação será independente de jornadas e processos compostos.
+          A participação será independente de jornadas e processos compostos.
         </p>
       </div>
       <div className="divide-y divide-border">
@@ -362,7 +362,7 @@ function ParticipantStep({
         </Button>
         <Button type="button" onClick={onSubmit} disabled={loading} className="gap-2">
           <Link2 className="h-4 w-4" />
-          {loading ? "Criando..." : "Criar aplicação"}
+          {loading ? "Criando..." : "Criar participação"}
         </Button>
       </div>
     </section>
@@ -394,7 +394,7 @@ function ShareStep({
 }) {
   return (
     <div className="space-y-6">
-      <StateBanner tone="ok" title="Aplicação criada">
+      <StateBanner tone="ok" title="Participação criada">
         {operationLabel(operation)} O acompanhamento e as próximas ações estão disponíveis em Participações.
       </StateBanner>
       <section className="rounded-xl border border-border bg-card p-6">
@@ -423,7 +423,7 @@ function ShareStep({
       <div className="flex flex-wrap gap-3">
         <Button type="button" onClick={onReset} className="gap-2">
           <Send className="h-4 w-4" />
-          Criar outra aplicação
+          Criar outra participação
         </Button>
         <Button asChild variant="outline">
           <Link to="/participacoes">Gerenciar em Participações</Link>
