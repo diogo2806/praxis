@@ -11,6 +11,15 @@ permissions:
   contents: read
 
 jobs:
+  docs-validation:
+    name: Documentation — links and Gupy governance
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate documentation
+        run: python3 scripts/validate_docs.py
+
   compose-config:
     name: Docker Compose — config without legacy token
     runs-on: ubuntu-latest
