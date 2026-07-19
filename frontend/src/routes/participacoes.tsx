@@ -165,15 +165,15 @@ function ParticipacoesPage() {
           </div>
           <div className="flex flex-wrap gap-2">
             <Button asChild className="gap-2">
-              <Link to="/jornadas">
-                <Send className="h-4 w-4" />
-                Convidar por jornada
+              <Link to="/enviar-link">
+                <Link2 className="h-4 w-4" />
+                Nova participação individual
               </Link>
             </Button>
             <Button asChild variant="outline" className="gap-2 bg-card">
-              <Link to="/enviar-link">
-                <Link2 className="h-4 w-4" />
-                Nova avaliação isolada
+              <Link to="/jornadas">
+                <Send className="h-4 w-4" />
+                Convidar por jornada
               </Link>
             </Button>
             <Button
@@ -288,16 +288,16 @@ function ParticipacoesPage() {
             title="Nenhuma participação encontrada"
             description={
               processFilter === "all"
-                ? "Crie um convite por jornada ou uma aplicação isolada."
+                ? "Crie um convite por jornada ou uma participação individual."
                 : "Não há registros nesta situação para os filtros atuais."
             }
             actions={
               <div className="flex flex-wrap justify-center gap-2">
                 <Button asChild>
-                  <Link to="/jornadas">Abrir jornadas</Link>
+                  <Link to="/enviar-link">Criar participação individual</Link>
                 </Button>
                 <Button asChild variant="outline">
-                  <Link to="/enviar-link">Criar avaliação isolada</Link>
+                  <Link to="/jornadas">Abrir jornadas</Link>
                 </Button>
               </div>
             }
