@@ -6,7 +6,6 @@ import {
   CheckCircle2,
   ExternalLink,
   Loader2,
-  PlugZap,
   RefreshCw,
   RotateCw,
   XCircle,
@@ -35,7 +34,7 @@ export const Route = createFileRoute("/monitoramento")({
       { title: "Central operacional - Práxis" },
       {
         name: "description",
-        content: "Trate integrações, notificações, retentativas e falhas técnicas do Práxis.",
+        content: "Trate somente alertas, falhas, retentativas e entregas que exigem intervenção.",
       },
     ],
   }),
@@ -72,6 +71,7 @@ function MonitoringPage() {
       ]);
     },
   });
+
   const reprocessMutation = useMutation({
     mutationFn: reprocessDelivery,
     onSuccess: async () => {
@@ -91,13 +91,17 @@ function MonitoringPage() {
     (delivery) => delivery.status === "retrying" || delivery.status === "pending",
   );
   const unreadNotifications = notifications.filter((notification) => !notification.readAt);
-  const connectedIntegrations = integrations.filter((integration) => integration.status === "CONECTADA");
+  const connectedIntegrations = integrations.filter(
+    (integration) => integration.status === "CONECTADA",
+  );
   const integrationAlerts = integrations.filter(
     (integration) => integration.status === "ERRO" || integration.status === "PENDENTE",
   );
-  const loading = integrationsQuery.isLoading || deliveriesQuery.isLoading || notificationsQuery.isLoading;
+  const loading =
+    integrationsQuery.isLoading || deliveriesQuery.isLoading || notificationsQuery.isLoading;
   const error = integrationsQuery.error ?? deliveriesQuery.error ?? notificationsQuery.error;
-  const refreshing = integrationsQuery.isFetching || deliveriesQuery.isFetching || notificationsQuery.isFetching;
+  const refreshing =
+    integrationsQuery.isFetching || deliveriesQuery.isFetching || notificationsQuery.isFetching;
 
   async function refreshAll() {
     await Promise.all([
@@ -117,8 +121,8 @@ function MonitoringPage() {
             </div>
             <h1 className="mt-1 font-display text-3xl">Central operacional</h1>
             <p className="mt-2 text-sm leading-6 text-muted-foreground">
-              Integrações, alertas e falhas de entrega ficam concentrados aqui. O acompanhamento de
-              candidatos foi movido para Participações.
+              Esta tela mostra somente exceções que exigem atenção. Configuração, credenciais e
+              integrações saudáveis permanecem na área de Integrações.
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
@@ -142,11 +146,27 @@ function MonitoringPage() {
         </header>
 
         <section className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-5" aria-label="Resumo operacional">
-          <Metric label="Integrações conectadas" value={connectedIntegrations.length} icon={CheckCircle2} />
-          <Metric label="Integrações com atenção" value={integrationAlerts.length} icon={AlertTriangle} warning={integrationAlerts.length > 0} />
-          <Metric label="Entregas em retentativa" value={retryingDeliveries.length} icon={RotateCw} warning={retryingDeliveries.length > 0} />
-          <Metric label="Entregas em DLQ" value={failedDeliveries.length} icon={XCircle} warning={failedDeliveries.length > 0} />
-          <Metric label="Alertas não lidos" value={unreadNotifications.length} icon={Bell} warning={unreadNotifications.length > 0} />
+          <Metric label="Integrações conectadas" value={connectedIntegrations.length} />
+          <Metric
+            label="Integrações com atenção"
+            value={integrationAlerts.length}
+            warning={integrationAlerts.length > 0}
+          />
+          <Metric
+            label="Entregas em retentativa"
+            value={retryingDeliveries.length}
+            warning={retryingDeliveries.length > 0}
+          />
+          <Metric
+            label="Entregas em DLQ"
+            value={failedDeliveries.length}
+            warning={failedDeliveries.length > 0}
+          />
+          <Metric
+            label="Alertas não lidos"
+            value={unreadNotifications.length}
+            warning={unreadNotifications.length > 0}
+          />
         </section>
 
         {loading ? (
@@ -171,10 +191,10 @@ function MonitoringPage() {
           </StateBanner>
         ) : (
           <>
-            <IntegrationHealthPanel integrations={integrations} />
+            <IntegrationAttentionPanel integrations={integrationAlerts} />
             <div className="grid gap-6 xl:grid-cols-[1fr_1.2fr]">
               <NotificationsPanel
-                notifications={notifications}
+                notifications={unreadNotifications}
                 markingReadId={markReadMutation.variables ?? null}
                 markingRead={markReadMutation.isPending}
                 error={markReadMutation.error}
@@ -198,33 +218,37 @@ function MonitoringPage() {
 function Metric({
   label,
   value,
-  icon: Icon,
   warning = false,
 }: {
   label: string;
   value: number;
-  icon: typeof Bell;
   warning?: boolean;
 }) {
   return (
-    <article className={cn("rounded-xl border bg-card p-4", warning ? "border-warning/40" : "border-border")}>
-      <div className="flex items-center justify-between gap-2">
-        <span className="text-xs text-muted-foreground">{label}</span>
-        <Icon className={cn("h-4 w-4", warning ? "text-warning" : "text-muted-foreground")} />
+    <article
+      className={cn(
+        "rounded-xl border bg-card p-4",
+        warning ? "border-warning/40" : "border-border",
+      )}
+    >
+      <div className="text-xs text-muted-foreground">{label}</div>
+      <div className="mt-2 text-3xl font-semibold tabular-nums">
+        {value.toLocaleString("pt-BR")}
       </div>
-      <div className="mt-2 text-3xl font-semibold tabular-nums">{value.toLocaleString("pt-BR")}</div>
     </article>
   );
 }
 
-function IntegrationHealthPanel({ integrations }: { integrations: IntegrationCenterItem[] }) {
+function IntegrationAttentionPanel({ integrations }: { integrations: IntegrationCenterItem[] }) {
   return (
-    <section className="rounded-xl border border-border bg-card" aria-labelledby="integration-health-title">
+    <section className="rounded-xl border border-border bg-card" aria-labelledby="integration-attention-title">
       <div className="flex flex-wrap items-start justify-between gap-3 border-b border-border p-4">
         <div>
-          <h2 id="integration-health-title" className="text-lg font-semibold">Saúde das integrações</h2>
+          <h2 id="integration-attention-title" className="text-lg font-semibold">
+            Integrações que exigem atenção
+          </h2>
           <p className="mt-1 text-sm text-muted-foreground">
-            Consulte estado, última atividade e erro atual de cada provedor.
+            Somente conexões pendentes ou com erro aparecem nesta central.
           </p>
         </div>
         <Button asChild variant="outline" size="sm" className="bg-background">
@@ -232,19 +256,21 @@ function IntegrationHealthPanel({ integrations }: { integrations: IntegrationCen
         </Button>
       </div>
       {integrations.length === 0 ? (
-        <EmptyState
-          title="Nenhuma integração configurada"
-          description="Configure Gupy, Recrutei ou API própria para acompanhar a saúde da conexão."
-          actions={
-            <Button asChild>
-              <Link to="/integrations">Abrir integrações</Link>
-            </Button>
-          }
-        />
+        <div className="p-6">
+          <div className="flex items-start gap-3 rounded-lg border border-success/30 bg-success/10 p-4">
+            <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-success" />
+            <div>
+              <div className="font-medium">Nenhuma integração exige intervenção</div>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Consulte a configuração completa na área de Integrações.
+              </p>
+            </div>
+          </div>
+        </div>
       ) : (
         <div className="grid gap-3 p-4 lg:grid-cols-3">
           {integrations.map((integration) => (
-            <IntegrationCard key={integration.provider} integration={integration} />
+            <IntegrationAlertCard key={integration.provider} integration={integration} />
           ))}
         </div>
       )}
@@ -252,30 +278,24 @@ function IntegrationHealthPanel({ integrations }: { integrations: IntegrationCen
   );
 }
 
-function IntegrationCard({ integration }: { integration: IntegrationCenterItem }) {
-  const attention = integration.status === "ERRO" || integration.status === "PENDENTE";
-  const slug = { GUPY: "gupy", RECRUTEI: "recrutei", CUSTOM_API: "custom-api" }[integration.provider];
-  const Icon = integration.status === "CONECTADA" ? CheckCircle2 : attention ? AlertTriangle : PlugZap;
+function IntegrationAlertCard({ integration }: { integration: IntegrationCenterItem }) {
+  const slug = {
+    GUPY: "gupy",
+    RECRUTEI: "recrutei",
+    CUSTOM_API: "custom-api",
+  }[integration.provider];
 
   return (
-    <article className={cn("rounded-lg border p-4", attention ? "border-warning/40 bg-warning/5" : "border-border bg-background")}>
+    <article className="rounded-lg border border-warning/40 bg-warning/5 p-4">
       <div className="flex items-start justify-between gap-3">
-        <div className="flex min-w-0 items-center gap-2">
-          <Icon className={cn("h-4 w-4 shrink-0", integration.status === "CONECTADA" ? "text-success" : attention ? "text-warning" : "text-muted-foreground")} />
+        <div className="min-w-0">
           <h3 className="truncate text-sm font-semibold">{integration.name}</h3>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Última atividade: {formatDateTime(integration.lastSyncAt)}
+          </p>
         </div>
         <IntegrationStatus status={integration.status} />
       </div>
-      <dl className="mt-4 grid gap-2 text-xs">
-        <div>
-          <dt className="text-muted-foreground">Última atividade</dt>
-          <dd className="mt-0.5 font-medium">{formatDateTime(integration.lastSyncAt)}</dd>
-        </div>
-        <div>
-          <dt className="text-muted-foreground">Configurada em</dt>
-          <dd className="mt-0.5 font-medium">{formatDateTime(integration.configuredAt)}</dd>
-        </div>
-      </dl>
       {integration.errorMessage && (
         <p className="mt-3 rounded-md bg-danger/10 p-2 text-xs text-danger" role="alert">
           {integration.errorMessage}
@@ -304,10 +324,11 @@ function IntegrationStatus({ status }: { status: IntegrationCenterStatus }) {
     <span
       className={cn(
         "rounded-full border px-2 py-1 text-[10px] font-semibold uppercase tracking-wide",
-        status === "CONECTADA" && "border-success/30 bg-success/10 text-success",
         status === "PENDENTE" && "border-warning/40 bg-warning/10 text-warning-foreground",
         status === "ERRO" && "border-danger/30 bg-danger/10 text-danger",
-        (status === "DESATIVADA" || status === "NAO_CONFIGURADA") && "border-border bg-muted/40 text-muted-foreground",
+        status === "CONECTADA" && "border-success/30 bg-success/10 text-success",
+        (status === "DESATIVADA" || status === "NAO_CONFIGURADA") &&
+          "border-border bg-muted/40 text-muted-foreground",
       )}
     >
       {labels[status]}
@@ -333,8 +354,10 @@ function NotificationsPanel({
       <div className="mb-4 flex items-center gap-2">
         <Bell className="h-4 w-4 text-primary" />
         <div>
-          <h2 className="text-lg font-semibold">Alertas operacionais</h2>
-          <p className="mt-1 text-xs text-muted-foreground">Notificações foram incorporadas à central operacional.</p>
+          <h2 className="text-lg font-semibold">Alertas não lidos</h2>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Alertas lidos deixam de ocupar a fila operacional.
+          </p>
         </div>
       </div>
       {error && (
@@ -343,16 +366,15 @@ function NotificationsPanel({
         </StateBanner>
       )}
       {notifications.length === 0 ? (
-        <EmptyState title="Nenhum alerta" description="Falhas e ocorrências operacionais aparecerão aqui." />
+        <EmptyState title="Nenhum alerta pendente" description="Novas ocorrências aparecerão aqui." />
       ) : (
         <div className="space-y-3">
           {notifications.map((notification) => {
-            const unread = !notification.readAt;
             const current = markingRead && markingReadId === notification.id;
             return (
               <article
                 key={notification.id}
-                className={cn("rounded-md border border-border bg-background p-4", unread && "border-primary/30 bg-primary/5")}
+                className="rounded-md border border-primary/30 bg-primary/5 p-4"
               >
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div className="min-w-0 flex-1">
@@ -372,19 +394,19 @@ function NotificationsPanel({
                       )}
                     </div>
                   </div>
-                  {unread ? (
-                    <button
-                      type="button"
-                      disabled={current}
-                      onClick={() => onMarkRead(notification.id)}
-                      className="inline-flex items-center gap-2 rounded-md border border-border bg-card px-3 py-2 text-xs hover:bg-accent disabled:opacity-60"
-                    >
-                      {current ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <CheckCircle2 className="h-3.5 w-3.5" />}
-                      Marcar como lida
-                    </button>
-                  ) : (
-                    <span className="rounded-md bg-muted px-2 py-1 text-xs text-muted-foreground">Lida</span>
-                  )}
+                  <button
+                    type="button"
+                    disabled={current}
+                    onClick={() => onMarkRead(notification.id)}
+                    className="inline-flex items-center gap-2 rounded-md border border-border bg-card px-3 py-2 text-xs hover:bg-accent disabled:opacity-60"
+                  >
+                    {current ? (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    ) : (
+                      <CheckCircle2 className="h-3.5 w-3.5" />
+                    )}
+                    Marcar como lida
+                  </button>
                 </div>
               </article>
             );
@@ -411,10 +433,12 @@ function FailedDeliveriesPanel({
   return (
     <section className="rounded-xl border border-border bg-card p-5">
       <div className="mb-4 flex items-center gap-2">
-        <AlertTriangle className="h-4 w-4 text-warning" />
+        <XCircle className="h-4 w-4 text-danger" />
         <div>
-          <h2 className="text-lg font-semibold">Entregas que exigem intervenção</h2>
-          <p className="mt-1 text-xs text-muted-foreground">Reprocesse somente depois de corrigir a causa indicada.</p>
+          <h2 className="text-lg font-semibold">Entregas em DLQ</h2>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Retentativas automáticas não aparecem aqui; somente falhas que exigem intervenção.
+          </p>
         </div>
       </div>
       {error && (
@@ -426,7 +450,6 @@ function FailedDeliveriesPanel({
         <div className="rounded-md border border-border bg-background p-8 text-center">
           <CheckCircle2 className="mx-auto h-8 w-8 text-success" />
           <p className="mt-3 text-sm font-medium">Nenhuma entrega exige intervenção.</p>
-          <p className="mt-1 text-sm text-muted-foreground">Retentativas pendentes continuam automáticas.</p>
         </div>
       ) : (
         <div className="space-y-3">
@@ -445,11 +468,13 @@ function FailedDeliveriesPanel({
                       Resultado relacionado
                     </Link>
                     <p className="mt-3 rounded-md border border-border bg-card p-3 text-xs text-muted-foreground">
-                      {delivery.lastError || "Sem detalhe registrado. Revise a configuração da integração."}
+                      {delivery.lastError ||
+                        "Sem detalhe registrado. Revise a configuração da integração."}
                     </p>
                     <div className="mt-2 text-xs text-muted-foreground">
                       {delivery.attemptCount} tentativa{delivery.attemptCount === 1 ? "" : "s"}
-                      {delivery.lastAttemptAt && ` · Última em ${formatDateTime(delivery.lastAttemptAt)}`}
+                      {delivery.lastAttemptAt &&
+                        ` · Última em ${formatDateTime(delivery.lastAttemptAt)}`}
                     </div>
                   </div>
                   <button
@@ -458,7 +483,11 @@ function FailedDeliveriesPanel({
                     onClick={() => onReprocess(delivery.id)}
                     className="inline-flex items-center gap-2 rounded-md border border-border bg-card px-3 py-2 text-xs hover:bg-accent disabled:opacity-60"
                   >
-                    {current ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
+                    {current ? (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    ) : (
+                      <RotateCw className="h-3.5 w-3.5" />
+                    )}
                     {current ? "Reprocessando..." : "Tentar novamente"}
                   </button>
                 </div>

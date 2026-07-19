@@ -1,9 +1,11 @@
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import {
   AlertTriangle,
+  CalendarPlus,
   CheckCircle2,
   Clock3,
+  Copy,
   Link2,
   RefreshCw,
   Search,
@@ -14,6 +16,12 @@ import { useMemo, useState } from "react";
 import { AppShell } from "@/components/app-shell";
 import { EmptyState, StateBanner } from "@/components/praxis-ui";
 import { Button } from "@/components/ui/button";
+import {
+  extendCandidateLink,
+  listCandidateLinks,
+  resendCandidateLink,
+  type CandidateLinkResponse,
+} from "@/lib/api/candidate-links";
 import { listSimulations } from "@/lib/api/praxis";
 import {
   searchMonitoringAttempts,
@@ -28,7 +36,7 @@ export const Route = createFileRoute("/participacoes")({
       { title: "Participações - Práxis" },
       {
         name: "description",
-        content: "Convide participantes e acompanhe o andamento das avaliações em um único lugar.",
+        content: "Centralize convites, validade, andamento e resultados das avaliações.",
       },
     ],
   }),
@@ -45,11 +53,17 @@ const processFilters: Array<{ value: ProcessFilter; label: string }> = [
   { value: "attention", label: "Com problema" },
 ];
 
+const extensionOptions = [1, 3, 7, 15, 30];
+
 function ParticipacoesPage() {
+  const queryClient = useQueryClient();
   const [page, setPage] = useState(0);
   const [processFilter, setProcessFilter] = useState<ProcessFilter>("all");
   const [simulationId, setSimulationId] = useState("");
   const [candidate, setCandidate] = useState("");
+  const [copiedAttemptId, setCopiedAttemptId] = useState<string | null>(null);
+  const [extensionDays, setExtensionDays] = useState<Record<string, number>>({});
+  const [actionMessage, setActionMessage] = useState<string | null>(null);
 
   const attemptsQuery = useQuery({
     queryKey: ["participations", page, simulationId, candidate],
@@ -64,10 +78,40 @@ function ParticipacoesPage() {
     retry: false,
     refetchInterval: 30_000,
   });
+
+  const linksQuery = useQuery({
+    queryKey: ["candidate-links", "participations", simulationId, candidate],
+    queryFn: () =>
+      listCandidateLinks(false, {
+        simulationId: simulationId || undefined,
+        candidate: candidate.trim() || undefined,
+      }),
+    retry: false,
+  });
+
   const simulationsQuery = useQuery({
     queryKey: ["simulations"],
     queryFn: listSimulations,
     retry: false,
+  });
+
+  const resendMutation = useMutation({
+    mutationFn: (attemptId: string) => resendCandidateLink(attemptId),
+    onSuccess: async () => {
+      setActionMessage("O link foi reenviado sem criar uma nova tentativa.");
+      await invalidateParticipationQueries(queryClient);
+    },
+  });
+
+  const extendMutation = useMutation({
+    mutationFn: ({ attemptId, days }: { attemptId: string; days: number }) =>
+      extendCandidateLink(attemptId, days),
+    onSuccess: async (_response, variables) => {
+      setActionMessage(
+        `A validade do link foi ampliada em ${variables.days} ${variables.days === 1 ? "dia" : "dias"}.`,
+      );
+      await invalidateParticipationQueries(queryClient);
+    },
   });
 
   const attemptsPage = attemptsQuery.data;
@@ -75,13 +119,34 @@ function ParticipacoesPage() {
     () => (attemptsPage?.items ?? []).filter((attempt) => matchesProcessFilter(attempt, processFilter)),
     [attemptsPage?.items, processFilter],
   );
+  const linksByAttempt = useMemo(
+    () => new Map((linksQuery.data ?? []).map((link) => [link.attemptId, link] as const)),
+    [linksQuery.data],
+  );
   const simulations = (simulationsQuery.data ?? []).filter(
     (simulation) => simulation.status === "published" || simulation.livePublishedVersionNumber != null,
   );
 
+  const actionError = resendMutation.error ?? extendMutation.error;
+
   function resetPage(action: () => void) {
     setPage(0);
     action();
+  }
+
+  async function copyLink(link: CandidateLinkResponse) {
+    if (link.linkStatus === "expired") return;
+    await navigator.clipboard.writeText(toAbsoluteUrl(link.candidateUrl));
+    setCopiedAttemptId(link.attemptId);
+    window.setTimeout(() => setCopiedAttemptId(null), 2000);
+  }
+
+  async function refreshAll() {
+    await Promise.all([
+      attemptsQuery.refetch(),
+      linksQuery.refetch(),
+      simulationsQuery.refetch(),
+    ]);
   }
 
   return (
@@ -94,8 +159,8 @@ function ParticipacoesPage() {
             </div>
             <h1 className="mt-1 font-display text-3xl">Convites e acompanhamento</h1>
             <p className="mt-2 text-sm leading-6 text-muted-foreground">
-              Este é o ponto único para acompanhar pessoas. Crie convites pelas jornadas e use o
-              envio isolado apenas quando a avaliação não fizer parte de um processo.
+              Este é o ponto único para localizar pessoas, acompanhar o progresso, copiar ou reenviar
+              acessos, ampliar a validade e abrir resultados concluídos.
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
@@ -108,21 +173,38 @@ function ParticipacoesPage() {
             <Button asChild variant="outline" className="gap-2 bg-card">
               <Link to="/enviar-link">
                 <Link2 className="h-4 w-4" />
-                Avaliação isolada
+                Nova avaliação isolada
               </Link>
             </Button>
             <Button
               type="button"
               variant="outline"
               className="gap-2 bg-card"
-              disabled={attemptsQuery.isFetching}
-              onClick={() => void attemptsQuery.refetch()}
+              disabled={attemptsQuery.isFetching || linksQuery.isFetching}
+              onClick={() => void refreshAll()}
             >
-              <RefreshCw className={cn("h-4 w-4", attemptsQuery.isFetching && "animate-spin")} />
+              <RefreshCw
+                className={cn(
+                  "h-4 w-4",
+                  (attemptsQuery.isFetching || linksQuery.isFetching) && "animate-spin",
+                )}
+              />
               Atualizar
             </Button>
           </div>
         </header>
+
+        {actionMessage && (
+          <StateBanner tone="ok" title="Convite atualizado">
+            {actionMessage}
+          </StateBanner>
+        )}
+
+        {actionError && (
+          <StateBanner tone="danger" title="Não foi possível atualizar o convite">
+            {actionError instanceof Error ? actionError.message : "Tente novamente."}
+          </StateBanner>
+        )}
 
         <section className="rounded-xl border border-border bg-card p-4" aria-label="Filtros das participações">
           <div className="flex flex-wrap gap-2" role="tablist" aria-label="Situação do processo">
@@ -177,23 +259,27 @@ function ParticipacoesPage() {
           </div>
         </section>
 
-        {attemptsQuery.isError ? (
+        {attemptsQuery.isError || linksQuery.isError ? (
           <StateBanner
             tone="danger"
             title="Não foi possível carregar as participações"
             action={
               <button
                 type="button"
-                onClick={() => void attemptsQuery.refetch()}
+                onClick={() => void refreshAll()}
                 className="rounded-md border border-current/20 bg-background/60 px-3 py-1.5 text-xs font-medium"
               >
                 Tentar novamente
               </button>
             }
           >
-            {attemptsQuery.error instanceof Error ? attemptsQuery.error.message : "Tente novamente."}
+            {attemptsQuery.error instanceof Error
+              ? attemptsQuery.error.message
+              : linksQuery.error instanceof Error
+                ? linksQuery.error.message
+                : "Tente novamente."}
           </StateBanner>
-        ) : attemptsQuery.isLoading ? (
+        ) : attemptsQuery.isLoading || linksQuery.isLoading ? (
           <section className="rounded-xl border border-border bg-card px-4 py-12 text-center text-sm text-muted-foreground">
             Carregando participações...
           </section>
@@ -202,20 +288,44 @@ function ParticipacoesPage() {
             title="Nenhuma participação encontrada"
             description={
               processFilter === "all"
-                ? "Crie o primeiro convite por uma jornada publicada."
+                ? "Crie um convite por jornada ou uma aplicação isolada."
                 : "Não há registros nesta situação para os filtros atuais."
             }
             actions={
-              <Button asChild>
-                <Link to="/jornadas">Abrir jornadas</Link>
-              </Button>
+              <div className="flex flex-wrap justify-center gap-2">
+                <Button asChild>
+                  <Link to="/jornadas">Abrir jornadas</Link>
+                </Button>
+                <Button asChild variant="outline">
+                  <Link to="/enviar-link">Criar avaliação isolada</Link>
+                </Button>
+              </div>
             }
           />
         ) : (
-          <ParticipationList attempts={attempts} />
+          <ParticipationList
+            attempts={attempts}
+            linksByAttempt={linksByAttempt}
+            copiedAttemptId={copiedAttemptId}
+            extensionDays={extensionDays}
+            resendingAttemptId={resendMutation.isPending ? resendMutation.variables ?? null : null}
+            extendingAttemptId={extendMutation.isPending ? extendMutation.variables?.attemptId ?? null : null}
+            onCopy={copyLink}
+            onResend={(attemptId) => {
+              setActionMessage(null);
+              resendMutation.mutate(attemptId);
+            }}
+            onExtend={(attemptId) => {
+              setActionMessage(null);
+              extendMutation.mutate({ attemptId, days: extensionDays[attemptId] ?? 7 });
+            }}
+            onExtensionDaysChange={(attemptId, days) =>
+              setExtensionDays((current) => ({ ...current, [attemptId]: days }))
+            }
+          />
         )}
 
-        <div className="flex items-center justify-between gap-3">
+        <div className="flex items-center justify-between gap-3" data-manual-pagination>
           <Button
             type="button"
             variant="outline"
@@ -241,55 +351,102 @@ function ParticipacoesPage() {
   );
 }
 
-function ParticipationList({ attempts }: { attempts: MonitoringAttempt[] }) {
+function ParticipationList({
+  attempts,
+  linksByAttempt,
+  copiedAttemptId,
+  extensionDays,
+  resendingAttemptId,
+  extendingAttemptId,
+  onCopy,
+  onResend,
+  onExtend,
+  onExtensionDaysChange,
+}: {
+  attempts: MonitoringAttempt[];
+  linksByAttempt: Map<string, CandidateLinkResponse>;
+  copiedAttemptId: string | null;
+  extensionDays: Record<string, number>;
+  resendingAttemptId: string | null;
+  extendingAttemptId: string | null;
+  onCopy: (link: CandidateLinkResponse) => Promise<void>;
+  onResend: (attemptId: string) => void;
+  onExtend: (attemptId: string) => void;
+  onExtensionDaysChange: (attemptId: string, days: number) => void;
+}) {
   return (
     <section className="overflow-hidden rounded-xl border border-border bg-card">
       <div className="grid gap-3 p-3 md:hidden">
         {attempts.map((attempt) => (
-          <ParticipationCard key={attempt.attemptId} attempt={attempt} />
+          <ParticipationCard
+            key={attempt.attemptId}
+            attempt={attempt}
+            link={linksByAttempt.get(attempt.attemptId)}
+            copied={copiedAttemptId === attempt.attemptId}
+            extensionDays={extensionDays[attempt.attemptId] ?? 7}
+            resending={resendingAttemptId === attempt.attemptId}
+            extending={extendingAttemptId === attempt.attemptId}
+            onCopy={onCopy}
+            onResend={onResend}
+            onExtend={onExtend}
+            onExtensionDaysChange={onExtensionDaysChange}
+          />
         ))}
       </div>
       <div className="hidden overflow-x-auto md:block">
-        <table className="w-full min-w-[900px] text-left text-sm">
+        <table data-server-pagination className="w-full min-w-[1180px] text-left text-sm">
           <thead className="border-b border-border bg-muted/40 text-[11px] uppercase text-muted-foreground">
             <tr>
               <th className="px-4 py-3 font-medium">Participante</th>
               <th className="px-4 py-3 font-medium">Avaliação</th>
               <th className="px-4 py-3 font-medium">Situação</th>
               <th className="px-4 py-3 font-medium">Progresso</th>
+              <th className="px-4 py-3 font-medium">Link</th>
               <th className="px-4 py-3 font-medium">Última atividade</th>
-              <th className="px-4 py-3 text-right font-medium">Ação</th>
+              <th className="px-4 py-3 text-right font-medium">Ações</th>
             </tr>
           </thead>
           <tbody>
-            {attempts.map((attempt) => (
-              <tr key={attempt.attemptId} className="border-b border-border last:border-0 hover:bg-accent/30">
-                <td className="px-4 py-3">
-                  <div className="font-medium">{attempt.candidateName}</div>
-                  <div className="text-xs text-muted-foreground">{attempt.candidateEmail}</div>
-                </td>
-                <td className="px-4 py-3 text-muted-foreground">
-                  {attempt.simulationName} · v{attempt.versionNumber}
-                </td>
-                <td className="px-4 py-3">
-                  <ParticipationStatus attempt={attempt} />
-                </td>
-                <td className="px-4 py-3">
-                  <div className="text-xs text-muted-foreground">
-                    {attempt.currentTurn}/{attempt.estimatedTurns} · {attempt.progressPercent}%
-                  </div>
-                  <div className="mt-1 h-1.5 w-28 overflow-hidden rounded-full bg-muted">
-                    <div className="h-full rounded-full bg-primary" style={{ width: `${attempt.progressPercent}%` }} />
-                  </div>
-                </td>
-                <td className="px-4 py-3 text-xs text-muted-foreground">
-                  {formatRelative(attempt.lastSignalAt)}
-                </td>
-                <td className="px-4 py-3 text-right">
-                  <ParticipationAction attempt={attempt} />
-                </td>
-              </tr>
-            ))}
+            {attempts.map((attempt) => {
+              const link = linksByAttempt.get(attempt.attemptId);
+              return (
+                <tr key={attempt.attemptId} className="border-b border-border last:border-0 hover:bg-accent/30">
+                  <td className="px-4 py-3">
+                    <div className="font-medium">{attempt.candidateName}</div>
+                    <div className="text-xs text-muted-foreground">{attempt.candidateEmail}</div>
+                  </td>
+                  <td className="px-4 py-3 text-muted-foreground">
+                    {attempt.simulationName} · v{attempt.versionNumber}
+                  </td>
+                  <td className="px-4 py-3">
+                    <ParticipationStatus attempt={attempt} />
+                  </td>
+                  <td className="px-4 py-3">
+                    <Progress attempt={attempt} />
+                  </td>
+                  <td className="px-4 py-3">
+                    <LinkStatus link={link} />
+                  </td>
+                  <td className="px-4 py-3 text-xs text-muted-foreground">
+                    {formatRelative(attempt.lastSignalAt)}
+                  </td>
+                  <td className="px-4 py-3 text-right">
+                    <ParticipationActions
+                      attempt={attempt}
+                      link={link}
+                      copied={copiedAttemptId === attempt.attemptId}
+                      extensionDays={extensionDays[attempt.attemptId] ?? 7}
+                      resending={resendingAttemptId === attempt.attemptId}
+                      extending={extendingAttemptId === attempt.attemptId}
+                      onCopy={onCopy}
+                      onResend={onResend}
+                      onExtend={onExtend}
+                      onExtensionDaysChange={onExtensionDaysChange}
+                    />
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>
@@ -297,7 +454,29 @@ function ParticipationList({ attempts }: { attempts: MonitoringAttempt[] }) {
   );
 }
 
-function ParticipationCard({ attempt }: { attempt: MonitoringAttempt }) {
+function ParticipationCard({
+  attempt,
+  link,
+  copied,
+  extensionDays,
+  resending,
+  extending,
+  onCopy,
+  onResend,
+  onExtend,
+  onExtensionDaysChange,
+}: {
+  attempt: MonitoringAttempt;
+  link?: CandidateLinkResponse;
+  copied: boolean;
+  extensionDays: number;
+  resending: boolean;
+  extending: boolean;
+  onCopy: (link: CandidateLinkResponse) => Promise<void>;
+  onResend: (attemptId: string) => void;
+  onExtend: (attemptId: string) => void;
+  onExtensionDaysChange: (attemptId: string, days: number) => void;
+}) {
   return (
     <article className="rounded-lg border border-border bg-background p-4">
       <div className="flex items-start justify-between gap-3">
@@ -310,21 +489,56 @@ function ParticipationCard({ attempt }: { attempt: MonitoringAttempt }) {
       <p className="mt-3 text-sm text-muted-foreground">
         {attempt.simulationName} · v{attempt.versionNumber}
       </p>
-      <div className="mt-3 flex items-center justify-between text-xs text-muted-foreground">
-        <span>{attempt.progressPercent}% concluído</span>
-        <span>{formatRelative(attempt.lastSignalAt)}</span>
+      <div className="mt-3">
+        <Progress attempt={attempt} />
       </div>
-      <div className="mt-2 h-2 overflow-hidden rounded-full bg-muted">
-        <div className="h-full rounded-full bg-primary" style={{ width: `${attempt.progressPercent}%` }} />
+      <div className="mt-3">
+        <LinkStatus link={link} />
       </div>
       <div className="mt-4">
-        <ParticipationAction attempt={attempt} fullWidth />
+        <ParticipationActions
+          attempt={attempt}
+          link={link}
+          copied={copied}
+          extensionDays={extensionDays}
+          resending={resending}
+          extending={extending}
+          onCopy={onCopy}
+          onResend={onResend}
+          onExtend={onExtend}
+          onExtensionDaysChange={onExtensionDaysChange}
+          fullWidth
+        />
       </div>
     </article>
   );
 }
 
-function ParticipationAction({ attempt, fullWidth = false }: { attempt: MonitoringAttempt; fullWidth?: boolean }) {
+function ParticipationActions({
+  attempt,
+  link,
+  copied,
+  extensionDays,
+  resending,
+  extending,
+  onCopy,
+  onResend,
+  onExtend,
+  onExtensionDaysChange,
+  fullWidth = false,
+}: {
+  attempt: MonitoringAttempt;
+  link?: CandidateLinkResponse;
+  copied: boolean;
+  extensionDays: number;
+  resending: boolean;
+  extending: boolean;
+  onCopy: (link: CandidateLinkResponse) => Promise<void>;
+  onResend: (attemptId: string) => void;
+  onExtend: (attemptId: string) => void;
+  onExtensionDaysChange: (attemptId: string, days: number) => void;
+  fullWidth?: boolean;
+}) {
   if (attempt.status === "completed") {
     return (
       <Button asChild variant="outline" size="sm" className={cn(fullWidth && "w-full")}>
@@ -334,10 +548,87 @@ function ParticipationAction({ attempt, fullWidth = false }: { attempt: Monitori
       </Button>
     );
   }
+
+  if (!link) {
+    return <span className="text-xs text-muted-foreground">Ações de link indisponíveis.</span>;
+  }
+
+  const expired = link.linkStatus === "expired";
+
   return (
-    <Button asChild variant="outline" size="sm" className={cn(fullWidth && "w-full")}>
-      <Link to="/enviar-link">Gerenciar convite</Link>
-    </Button>
+    <div className={cn("flex flex-wrap justify-end gap-2", fullWidth && "justify-start")}>
+      <Button
+        type="button"
+        variant="outline"
+        size="sm"
+        disabled={expired}
+        onClick={() => void onCopy(link)}
+        className={cn("gap-1.5", copied && "text-success", fullWidth && "flex-1")}
+      >
+        {copied ? <CheckCircle2 className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
+        {copied ? "Copiado" : "Copiar"}
+      </Button>
+      <Button
+        type="button"
+        variant="outline"
+        size="sm"
+        disabled={expired || resending}
+        onClick={() => onResend(attempt.attemptId)}
+        className={cn(fullWidth && "flex-1")}
+      >
+        {resending ? "Reenviando..." : "Reenviar"}
+      </Button>
+      <div className={cn("flex items-center rounded-md border border-border bg-background", fullWidth && "w-full")}>
+        <select
+          value={extensionDays}
+          onChange={(event) => onExtensionDaysChange(attempt.attemptId, Number(event.target.value))}
+          aria-label="Dias adicionais de validade"
+          className={cn("h-8 border-0 bg-transparent px-2 text-xs outline-none", fullWidth && "flex-1")}
+        >
+          {extensionOptions.map((days) => (
+            <option key={days} value={days}>
+              +{days} {days === 1 ? "dia" : "dias"}
+            </option>
+          ))}
+        </select>
+        <button
+          type="button"
+          disabled={extending}
+          onClick={() => onExtend(attempt.attemptId)}
+          className="inline-flex h-8 items-center gap-1 border-l border-border px-2 text-xs font-medium text-primary hover:bg-accent disabled:opacity-50"
+        >
+          <CalendarPlus className="h-3.5 w-3.5" />
+          {extending ? "Atualizando..." : expired ? "Reativar" : "Ampliar"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function Progress({ attempt }: { attempt: MonitoringAttempt }) {
+  return (
+    <div>
+      <div className="text-xs text-muted-foreground">
+        {attempt.currentTurn}/{attempt.estimatedTurns} · {attempt.progressPercent}%
+      </div>
+      <div className="mt-1 h-1.5 w-28 max-w-full overflow-hidden rounded-full bg-muted">
+        <div className="h-full rounded-full bg-primary" style={{ width: `${attempt.progressPercent}%` }} />
+      </div>
+    </div>
+  );
+}
+
+function LinkStatus({ link }: { link?: CandidateLinkResponse }) {
+  if (!link) return <span className="text-xs text-muted-foreground">Sem informação</span>;
+  const meta = {
+    active: { label: "Ativo", className: "border-success/30 bg-success/10 text-success" },
+    expiringSoon: { label: `Expira em ${link.remainingDays} dia(s)`, className: "border-warning/40 bg-warning/10 text-warning-foreground" },
+    expired: { label: "Expirado", className: "border-danger/30 bg-danger/10 text-danger" },
+  }[link.linkStatus];
+  return (
+    <span className={cn("inline-flex rounded-full border px-2 py-1 text-[11px] font-medium", meta.className)}>
+      {meta.label}
+    </span>
   );
 }
 
@@ -399,7 +690,11 @@ function matchesProcessFilter(attempt: MonitoringAttempt, filter: ProcessFilter)
   if (filter === "waiting") return attempt.status === "notStarted";
   if (filter === "active") return attempt.status === "inProgress" && attempt.active;
   if (filter === "completed") return attempt.status === "completed";
-  return attempt.status === "abandoned" || attempt.status === "expired" || (attempt.status === "inProgress" && !attempt.active);
+  return (
+    attempt.status === "abandoned" ||
+    attempt.status === "expired" ||
+    (attempt.status === "inProgress" && !attempt.active)
+  );
 }
 
 function formatRelative(value: string) {
@@ -409,5 +704,26 @@ function formatRelative(value: string) {
   if (seconds < 60) return "Agora";
   if (seconds < 3600) return `Há ${Math.floor(seconds / 60)} min`;
   if (seconds < 86_400) return `Há ${Math.floor(seconds / 3600)} h`;
-  return new Intl.DateTimeFormat("pt-BR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }).format(date);
+  return new Intl.DateTimeFormat("pt-BR", {
+    day: "2-digit",
+    month: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(date);
+}
+
+function toAbsoluteUrl(value: string) {
+  if (typeof window === "undefined") return value;
+  try {
+    return new URL(value, window.location.origin).toString();
+  } catch {
+    return value;
+  }
+}
+
+async function invalidateParticipationQueries(queryClient: ReturnType<typeof useQueryClient>) {
+  await Promise.all([
+    queryClient.invalidateQueries({ queryKey: ["candidate-links"] }),
+    queryClient.invalidateQueries({ queryKey: ["participations"] }),
+  ]);
 }

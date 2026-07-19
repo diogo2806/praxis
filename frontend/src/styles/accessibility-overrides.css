@@ -123,6 +123,23 @@ html[data-simple-navigation="true"] .praxis-page-goal {
 }
 
 /*
+ * A ajuda contextual permanece no ícone flutuante e a central completa permanece no
+ * menu lateral. O atalho repetido do cabeçalho é ocultado para reduzir opções iguais.
+ */
+main > header a[href="/manual"] {
+  display: none;
+}
+
+/*
+ * O dashboard já orienta a próxima ação. O checklist inicial continua acessível por
+ * URL e documentação, mas não ocupa permanentemente o menu de usuários recorrentes.
+ */
+.praxis-sidebar a[href="/comecar"],
+[role="dialog"] a[href="/comecar"] {
+  display: none;
+}
+
+/*
  * Áreas de toque seguem o mínimo de 44px em dispositivos de ponteiro impreciso.
  * Controles nativos pequenos, como checkbox e radio, recebem dimensão própria.
  */
