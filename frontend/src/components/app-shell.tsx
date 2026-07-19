@@ -6,7 +6,6 @@ import { useEffect, useState, type ReactNode } from "react";
 import {
   Accessibility,
   BarChart3,
-  Bell,
   BookOpenCheck,
   Building2,
   ChevronDown,
@@ -17,13 +16,11 @@ import {
   HelpCircle,
   Home,
   KeyRound,
-  Link2,
   ListChecks,
   Menu,
   RotateCcw,
   ShieldCheck,
   Sparkles,
-  Target,
   Type,
   UserRound,
   Users,
@@ -41,20 +38,23 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { getUnreadNotificationsCount } from "@/lib/api/notifications";
-import { appShellCopy } from "@/lib/app-shell-copy";
 import { useLanguage } from "@/lib/language-context";
 import { useSession } from "@/lib/session";
 import { cn } from "@/lib/utils";
 
-type TranslationMap = ReturnType<typeof useLanguage>["t"];
-type CopyMap = (typeof appShellCopy)[keyof typeof appShellCopy];
 type Language = ReturnType<typeof useLanguage>["language"];
-
 type CognitivePreferences = {
   simpleNavigation: boolean;
   largeText: boolean;
   reducedMotion: boolean;
   focusMode: boolean;
+};
+
+type NavigationItemData = {
+  to: string;
+  label: string;
+  icon: typeof Home;
+  badge?: number;
 };
 
 const COGNITIVE_PREFERENCES_KEY = "praxis-cognitive-preferences";
@@ -65,12 +65,21 @@ const DEFAULT_COGNITIVE_PREFERENCES: CognitivePreferences = {
   focusMode: false,
 };
 
-const cognitiveCopy = {
+const shellCopy = {
   "pt-BR": {
+    mainFlow: "Fluxo principal",
+    moreOptions: "Mais opções",
+    operation: "Operação técnica",
+    administration: "Configurações",
+    helpGroup: "Ajuda",
+    participations: "Participações",
+    competencyCatalog: "Catálogo de competências",
+    startHere: "Primeiros passos",
+    manuals: "Central de manuais",
     accessibility: "Acessibilidade",
     accessibilityDescription: "Ajuste a interface para reduzir distrações e facilitar a leitura.",
     simpleNavigation: "Menu simples",
-    simpleNavigationDescription: "Mostra primeiro o fluxo principal do processo de avaliação.",
+    simpleNavigationDescription: "Destaca somente o fluxo principal do processo de avaliação.",
     largeText: "Texto maior",
     largeTextDescription: "Aumenta textos, campos e áreas de clique.",
     reducedMotion: "Menos movimento",
@@ -80,93 +89,146 @@ const cognitiveCopy = {
     reset: "Restaurar ajustes",
     enabled: "Ativado",
     disabled: "Desativado",
-    mainTasks: "Fluxo principal",
-    moreOptions: "Mais opções",
-    inviteParticipant: "Convidar participante",
-    administration: "Administração",
-    skipToContent: "Ir para o conteúdo principal",
     pageGoal: "Objetivo desta tela",
     exitFocus: "Sair do modo foco",
+    skipToContent: "Ir para o conteúdo principal",
+    openMenu: "Abrir menu",
+    menu: "Menu principal",
+    menuDescription: "Navegação organizada pelo fluxo operacional do cliente.",
+    workspace: "Workspace",
+    settings: "Configurações",
+    results: "Resultados",
+    assessments: "Avaliações",
+    journeys: "Jornadas",
+    operationCenter: "Central operacional",
+    compliance: "Compliance",
+    profile: "Empresa",
+    team: "Equipe",
+    integrations: "Integrações",
+    plan: "Plano",
+    account: "Minha conta",
+    help: "Ajuda",
   },
   en: {
+    mainFlow: "Main flow",
+    moreOptions: "More options",
+    operation: "Technical operations",
+    administration: "Settings",
+    helpGroup: "Help",
+    participations: "Participations",
+    competencyCatalog: "Competency catalog",
+    startHere: "Getting started",
+    manuals: "Manual center",
     accessibility: "Accessibility",
     accessibilityDescription: "Adjust the interface to reduce distractions and improve readability.",
     simpleNavigation: "Simple menu",
-    simpleNavigationDescription: "Shows the main assessment process first.",
+    simpleNavigationDescription: "Highlights only the main assessment process.",
     largeText: "Larger text",
     largeTextDescription: "Increases text, fields and click targets.",
     reducedMotion: "Less motion",
     reducedMotionDescription: "Reduces interface animations and transitions.",
     focusMode: "Focus mode",
-    focusModeDescription: "Hides the sidebar and limits the content width.",
+    focusModeDescription: "Hides the sidebar and limits content width.",
     reset: "Reset adjustments",
     enabled: "Enabled",
     disabled: "Disabled",
-    mainTasks: "Main flow",
-    moreOptions: "More options",
-    inviteParticipant: "Invite participant",
-    administration: "Administration",
-    skipToContent: "Skip to main content",
     pageGoal: "Goal of this page",
     exitFocus: "Exit focus mode",
+    skipToContent: "Skip to main content",
+    openMenu: "Open menu",
+    menu: "Main menu",
+    menuDescription: "Navigation organized by the customer's operational flow.",
+    workspace: "Workspace",
+    settings: "Settings",
+    results: "Results",
+    assessments: "Assessments",
+    journeys: "Journeys",
+    operationCenter: "Operations center",
+    compliance: "Compliance",
+    profile: "Company",
+    team: "Team",
+    integrations: "Integrations",
+    plan: "Plan",
+    account: "My account",
+    help: "Help",
   },
   "es-MX": {
+    mainFlow: "Flujo principal",
+    moreOptions: "Más opciones",
+    operation: "Operación técnica",
+    administration: "Configuración",
+    helpGroup: "Ayuda",
+    participations: "Participaciones",
+    competencyCatalog: "Catálogo de competencias",
+    startHere: "Primeros pasos",
+    manuals: "Central de manuales",
     accessibility: "Accesibilidad",
     accessibilityDescription: "Ajusta la interfaz para reducir distracciones y facilitar la lectura.",
     simpleNavigation: "Menú simple",
-    simpleNavigationDescription: "Muestra primero el flujo principal del proceso de evaluación.",
+    simpleNavigationDescription: "Destaca solo el flujo principal del proceso de evaluación.",
     largeText: "Texto más grande",
     largeTextDescription: "Aumenta textos, campos y áreas de interacción.",
     reducedMotion: "Menos movimiento",
-    reducedMotionDescription: "Reduce animaciones y transiciones de la interfaz.",
+    reducedMotionDescription: "Reduce animaciones y transiciones.",
     focusMode: "Modo enfoque",
     focusModeDescription: "Oculta el menú lateral y limita el ancho del contenido.",
     reset: "Restaurar ajustes",
     enabled: "Activado",
     disabled: "Desactivado",
-    mainTasks: "Flujo principal",
-    moreOptions: "Más opciones",
-    inviteParticipant: "Invitar participante",
-    administration: "Administración",
-    skipToContent: "Ir al contenido principal",
     pageGoal: "Objetivo de esta pantalla",
     exitFocus: "Salir del modo enfoque",
+    skipToContent: "Ir al contenido principal",
+    openMenu: "Abrir menú",
+    menu: "Menú principal",
+    menuDescription: "Navegación organizada por el flujo operativo del cliente.",
+    workspace: "Workspace",
+    settings: "Configuración",
+    results: "Resultados",
+    assessments: "Evaluaciones",
+    journeys: "Jornadas",
+    operationCenter: "Central operativa",
+    compliance: "Compliance",
+    profile: "Empresa",
+    team: "Equipo",
+    integrations: "Integraciones",
+    plan: "Plan",
+    account: "Mi cuenta",
+    help: "Ayuda",
   },
 } as const;
 
 const pageGoalCopy = {
   "pt-BR": {
     dashboard: "Veja primeiro o que precisa da sua atenção hoje.",
-    assessments: "Crie e publique as avaliações que serão usadas dentro das jornadas.",
-    journeys: "Monte a jornada, publique o processo e convide os participantes por ela.",
-    participants: "Use esta opção somente para enviar uma avaliação isolada, fora de uma jornada.",
-    results: "Consulte resultados e evidências antes da decisão humana.",
-    settings: "Ajuste empresa, equipe, integrações e plano.",
-    default: "Conclua uma tarefa por vez. As opções adicionais continuam disponíveis no menu.",
+    assessments: "Crie e publique o conteúdo que será usado nas jornadas.",
+    journeys: "Monte o processo, publique e gere convites por jornada.",
+    participations: "Acompanhe convites, andamento, expirações e conclusões em um único lugar.",
+    results: "Analise somente resultados concluídos, evidências e comparações.",
+    operation: "Trate integrações, alertas, retentativas e falhas técnicas.",
+    settings: "Ajuste empresa, equipe, catálogo, integrações e plano.",
+    default: "Conclua uma tarefa por vez. As opções secundárias permanecem disponíveis no menu.",
   },
   en: {
     dashboard: "See what needs your attention today first.",
-    assessments: "Create and publish the assessments that will be used inside journeys.",
-    journeys: "Build the journey, publish the process and invite participants through it.",
-    participants: "Use this option only to send an isolated assessment outside a journey.",
-    results: "Review results and evidence before the human decision.",
-    settings: "Adjust company, team, integrations and plan.",
-    default: "Complete one task at a time. Additional options remain available in the menu.",
+    assessments: "Create and publish the content used in journeys.",
+    journeys: "Build the process, publish it and invite through the journey.",
+    participations: "Track invitations, progress, expirations and completions in one place.",
+    results: "Review completed results, evidence and comparisons only.",
+    operation: "Handle integrations, alerts, retries and technical failures.",
+    settings: "Adjust company, team, catalog, integrations and plan.",
+    default: "Complete one task at a time. Secondary options remain available in the menu.",
   },
   "es-MX": {
     dashboard: "Vea primero lo que necesita su atención hoy.",
-    assessments: "Cree y publique las evaluaciones que se usarán dentro de las jornadas.",
-    journeys: "Monte la jornada, publique el proceso e invite participantes a través de ella.",
-    participants: "Use esta opción solo para enviar una evaluación aislada fuera de una jornada.",
-    results: "Revise resultados y evidencias antes de la decisión humana.",
-    settings: "Ajuste empresa, equipo, integraciones y plan.",
-    default: "Complete una tarea a la vez. Las opciones adicionales siguen disponibles en el menú.",
+    assessments: "Cree y publique el contenido usado en las jornadas.",
+    journeys: "Monte el proceso, publíquelo e invite mediante la jornada.",
+    participations: "Acompañe invitaciones, avance, vencimientos y conclusiones en un solo lugar.",
+    results: "Analice solo resultados concluidos, evidencias y comparaciones.",
+    operation: "Trate integraciones, alertas, reintentos y fallas técnicas.",
+    settings: "Ajuste empresa, equipo, catálogo, integraciones y plan.",
+    default: "Complete una tarea a la vez. Las opciones secundarias siguen disponibles en el menú.",
   },
 } as const;
-
-function ShellLink({ children, closeOnSelect }: { children: ReactNode; closeOnSelect?: boolean }) {
-  return closeOnSelect ? <SheetClose asChild>{children}</SheetClose> : <>{children}</>;
-}
 
 function useCognitivePreferences() {
   const [preferences, setPreferences] = useState<CognitivePreferences>(DEFAULT_COGNITIVE_PREFERENCES);
@@ -192,7 +254,6 @@ function useCognitivePreferences() {
     root.dataset.largeText = String(preferences.largeText);
     root.dataset.reducedMotion = String(preferences.reducedMotion);
     root.dataset.focusMode = String(preferences.focusMode);
-
     if (hydrated) {
       window.localStorage.setItem(COGNITIVE_PREFERENCES_KEY, JSON.stringify(preferences));
     }
@@ -202,19 +263,16 @@ function useCognitivePreferences() {
     setPreferences((current) => ({ ...current, [preference]: !current[preference] }));
   }
 
-  function reset() {
-    setPreferences(DEFAULT_COGNITIVE_PREFERENCES);
-  }
-
-  return { preferences, toggle, reset };
+  return {
+    preferences,
+    toggle,
+    reset: () => setPreferences(DEFAULT_COGNITIVE_PREFERENCES),
+  };
 }
 
-type NavigationItemData = {
-  to: string;
-  label: string;
-  icon: typeof Home;
-  badge?: number;
-};
+function ShellLink({ children, closeOnSelect }: { children: ReactNode; closeOnSelect?: boolean }) {
+  return closeOnSelect ? <SheetClose asChild>{children}</SheetClose> : <>{children}</>;
+}
 
 function NavigationItem({
   item,
@@ -235,12 +293,7 @@ function NavigationItem({
           active ? "bg-accent font-medium text-accent-foreground" : "text-foreground/85 hover:bg-accent",
         )}
       >
-        <item.icon
-          className={cn(
-            "h-4 w-4 shrink-0",
-            active ? "text-accent-foreground" : "text-muted-foreground",
-          )}
-        />
+        <item.icon className={cn("h-4 w-4 shrink-0", active ? "text-accent-foreground" : "text-muted-foreground")} />
         <span className="min-w-0 flex-1">{item.label}</span>
         {(item.badge ?? 0) > 0 && (
           <span className="rounded-full bg-danger px-1.5 py-0.5 text-[10px] font-semibold text-danger-foreground">
@@ -264,45 +317,49 @@ function SidebarContent({
   simpleNavigation: boolean;
 }) {
   const session = useSession();
-  const { language, t } = useLanguage();
-  const copy = appShellCopy[language];
-  const cognitive = cognitiveCopy[language];
+  const { language } = useLanguage();
+  const copy = shellCopy[language];
 
-  const primaryItems = [
-    { to: "/dashboard", label: t.common.dashboard, icon: Home },
-    { to: "/avaliacoes", label: t.common.situationalAssessment, icon: ListChecks },
-    { to: "/jornadas", label: t.common.journeys, icon: Workflow },
-    { to: "/results", label: t.common.results, icon: ClipboardList },
-  ] as const;
+  const primaryItems: NavigationItemData[] = [
+    { to: "/dashboard", label: "Dashboard", icon: Home },
+    { to: "/avaliacoes", label: copy.assessments, icon: ListChecks },
+    { to: "/jornadas", label: copy.journeys, icon: Workflow },
+    { to: "/participacoes", label: copy.participations, icon: Users },
+    { to: "/results", label: copy.results, icon: ClipboardList },
+  ];
 
-  const secondaryGroups = [
+  const secondaryGroups: Array<{ label: string; items: NavigationItemData[] }> = [
     {
-      label: t.common.situationalAssessment,
+      label: copy.operation,
       items: [
-        { to: "/competencias", label: t.common.competencies, icon: BookOpenCheck },
-        { to: "/enviar-link", label: cognitive.inviteParticipant, icon: Link2 },
-        { to: "/talent-match", label: t.common.talentMatch, icon: Target },
+        {
+          to: "/monitoramento",
+          label: copy.operationCenter,
+          icon: BarChart3,
+          badge: unreadNotifications,
+        },
+        { to: "/compliance", label: copy.compliance, icon: ShieldCheck },
       ],
     },
     {
-      label: t.common.operation,
+      label: copy.administration,
       items: [
-        { to: "/monitoramento", label: t.common.operationCenter, icon: BarChart3 },
-        { to: "/compliance", label: t.common.compliance, icon: ShieldCheck },
-        { to: "/notifications", label: copy.notificationsLabel, icon: Bell, badge: unreadNotifications },
+        { to: "/configuracoes/perfil", label: copy.profile, icon: Building2 },
+        { to: "/competencias", label: copy.competencyCatalog, icon: BookOpenCheck },
+        { to: "/team", label: copy.team, icon: Users },
+        { to: "/integrations", label: copy.integrations, icon: KeyRound },
+        { to: "/billing", label: copy.plan, icon: CreditCard },
+        { to: "/configuracoes/conta", label: copy.account, icon: UserRound },
       ],
     },
     {
-      label: cognitive.administration,
+      label: copy.helpGroup,
       items: [
-        { to: "/configuracoes/perfil", label: t.common.profile, icon: Building2 },
-        { to: "/team", label: t.common.myTeam, icon: Users },
-        { to: "/integrations", label: t.common.integrations, icon: KeyRound },
-        { to: "/billing", label: t.common.plan, icon: CreditCard },
-        { to: "/configuracoes/conta", label: t.common.myAccount, icon: UserRound },
+        { to: "/comecar", label: copy.startHere, icon: Sparkles },
+        { to: "/manual", label: copy.manuals, icon: HelpCircle },
       ],
     },
-  ] as const;
+  ];
 
   const secondaryActive = secondaryGroups.some((group) =>
     group.items.some((item) => isActivePath(pathname, item.to)),
@@ -318,34 +375,15 @@ function SidebarContent({
           </Link>
         </ShellLink>
         {!simpleNavigation && (
-          <div className="mt-3 text-[11px] uppercase leading-relaxed text-muted-foreground">
-            {t.common.tagline}
-          </div>
+          <p className="mt-3 text-xs leading-relaxed text-muted-foreground">
+            Avaliações situacionais organizadas pelo processo do cliente.
+          </p>
         )}
       </div>
 
-      <nav className="flex-1 overflow-y-auto px-3 py-4" aria-label={t.common.menu}>
-        <ShellLink closeOnSelect={closeOnSelect}>
-          <Link
-            to="/comecar"
-            aria-current={pathname === "/comecar" ? "page" : undefined}
-            className={cn(
-              "mb-4 flex items-start gap-3 rounded-lg border px-3 py-3 text-sm transition",
-              pathname === "/comecar" ? "border-primary/40 bg-primary/10" : "border-border bg-card hover:bg-accent",
-            )}
-          >
-            <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
-            <span>
-              <span className="block font-medium">{t.common.startHere}</span>
-              <span className="mt-0.5 block text-[11px] leading-snug text-muted-foreground">
-                {t.common.whatIsPraxis}
-              </span>
-            </span>
-          </Link>
-        </ShellLink>
-
+      <nav className="flex-1 overflow-y-auto px-3 py-4" aria-label={copy.menu}>
         <div className="px-3 pb-2 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-          {cognitive.mainTasks}
+          {copy.mainFlow}
         </div>
         {primaryItems.map((item) => (
           <NavigationItem
@@ -356,12 +394,9 @@ function SidebarContent({
           />
         ))}
 
-        <details
-          className="group mt-5 border-t border-border/70 pt-4"
-          open={!simpleNavigation || secondaryActive}
-        >
+        <details className="group mt-5 border-t border-border/70 pt-4" open={!simpleNavigation || secondaryActive}>
           <summary className="flex cursor-pointer list-none items-center justify-between rounded-md px-3 py-2 text-sm font-medium hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
-            <span>{cognitive.moreOptions}</span>
+            <span>{copy.moreOptions}</span>
             <ChevronDown className="h-4 w-4 transition-transform group-open:rotate-180" />
           </summary>
           <div className="mt-2 space-y-5">
@@ -410,7 +445,7 @@ function AccessibilityPanel({
   toggle: (preference: keyof CognitivePreferences) => void;
   reset: () => void;
 }) {
-  const copy = cognitiveCopy[language];
+  const copy = shellCopy[language];
   const options = [
     {
       key: "simpleNavigation" as const,
@@ -456,9 +491,7 @@ function AccessibilityPanel({
             <Accessibility className="h-5 w-5" />
             {copy.accessibility}
           </SheetTitle>
-          <SheetDescription className="text-sm leading-6">
-            {copy.accessibilityDescription}
-          </SheetDescription>
+          <SheetDescription className="text-sm leading-6">{copy.accessibilityDescription}</SheetDescription>
         </SheetHeader>
         <div className="space-y-3 p-5">
           {options.map((option) => {
@@ -477,9 +510,7 @@ function AccessibilityPanel({
                 <option.icon className="mt-0.5 h-5 w-5 shrink-0 text-primary" />
                 <span className="min-w-0 flex-1">
                   <span className="block font-semibold">{option.title}</span>
-                  <span className="mt-1 block text-sm leading-5 text-muted-foreground">
-                    {option.description}
-                  </span>
+                  <span className="mt-1 block text-sm leading-5 text-muted-foreground">{option.description}</span>
                   <span className="mt-2 block text-xs font-medium text-primary">
                     {enabled ? copy.enabled : copy.disabled}
                   </span>
@@ -502,7 +533,7 @@ function AccessibilityPanel({
 }
 
 function PageGoal({ pathname, language }: { pathname: string; language: Language }) {
-  const copy = cognitiveCopy[language];
+  const copy = shellCopy[language];
   const goals = pageGoalCopy[language];
   const key = pageGoalKey(pathname);
 
@@ -523,74 +554,65 @@ function pageGoalKey(pathname: string): keyof (typeof pageGoalCopy)["pt-BR"] {
   if (pathname === "/dashboard") return "dashboard";
   if (pathname.startsWith("/avaliacoes") || pathname.startsWith("/nova")) return "assessments";
   if (pathname === "/jornadas" || pathname.startsWith("/jornada/")) return "journeys";
-  if (pathname === "/enviar-link") return "participants";
+  if (pathname === "/participacoes" || pathname === "/enviar-link") return "participations";
   if (pathname.startsWith("/results") || pathname === "/talent-match") return "results";
+  if (pathname === "/monitoramento" || pathname === "/notifications") return "operation";
   if (
     pathname.startsWith("/configuracoes") ||
     pathname.startsWith("/integrations") ||
     pathname === "/team" ||
-    pathname === "/billing"
+    pathname === "/billing" ||
+    pathname === "/competencias"
   ) {
     return "settings";
   }
   return "default";
 }
 
-function isActivePath(pathname: string, itemPath: string) {
-  if (itemPath === "/dashboard") return pathname === itemPath;
-  return pathname === itemPath || pathname.startsWith(`${itemPath}/`);
-}
-
-function pageContext(pathname: string, t: TranslationMap, copy: CopyMap) {
-  if (pathname === "/dashboard") return { section: t.common.workspace, label: t.common.dashboard };
-  if (pathname === "/notifications") return { section: t.common.workspace, label: copy.notificationsLabel };
-  if (pathname === "/comecar") return { section: t.common.workspace, label: t.common.startHere };
-
-  if (pathname === "/avaliacoes") return { section: t.common.situationalAssessment, label: t.common.situationalAssessment };
-  if (pathname.startsWith("/nova")) return { section: t.common.situationalAssessment, label: t.common.createAssessment };
-  if (pathname === "/competencias") return { section: t.common.situationalAssessment, label: t.common.competencies };
-  if (pathname === "/enviar-link") return { section: t.common.situationalAssessment, label: t.common.sendLink };
+function pageContext(pathname: string, language: Language) {
+  const copy = shellCopy[language];
+  if (pathname === "/dashboard") return { section: copy.workspace, label: "Dashboard" };
+  if (pathname.startsWith("/avaliacoes") || pathname.startsWith("/nova")) {
+    return { section: copy.workspace, label: copy.assessments };
+  }
   if (pathname === "/jornadas" || pathname.startsWith("/jornada/")) {
-    return { section: t.common.situationalAssessment, label: t.common.journeys };
+    return { section: copy.workspace, label: copy.journeys };
   }
-
-  if (pathname === "/results" || pathname.startsWith("/results/")) {
-    return { section: t.common.results, label: t.common.results };
+  if (pathname === "/participacoes" || pathname === "/enviar-link") {
+    return { section: copy.workspace, label: copy.participations };
   }
-  if (pathname === "/talent-match") return { section: t.common.results, label: t.common.talentMatch };
-
-  if (pathname === "/monitoramento") return { section: t.common.operation, label: t.common.operationCenter };
-  if (pathname === "/compliance") return { section: t.common.operation, label: t.common.compliance };
-
-  if (pathname === "/configuracoes/perfil") return { section: t.common.settings, label: t.common.profile };
-  if (pathname === "/configuracoes/conta") return { section: t.common.settings, label: t.common.myAccount };
-  if (pathname === "/configuracoes/api" || pathname.startsWith("/docs/integracao-api-propria")) {
-    return { section: t.common.settings, label: "API" };
+  if (pathname.startsWith("/results") || pathname === "/talent-match") {
+    return { section: copy.workspace, label: copy.results };
   }
-  if (pathname === "/team") return { section: t.common.settings, label: t.common.myTeam };
-  if (pathname.startsWith("/integrations")) return { section: t.common.settings, label: t.common.integrations };
-  if (pathname === "/billing") return { section: t.common.settings, label: t.common.plan };
-  if (pathname.startsWith("/configuracoes")) return { section: t.common.settings, label: t.common.settings };
-
-  if (pathname.startsWith("/candidato")) return { section: t.common.workspace, label: t.common.candidateView };
-  return { section: t.common.workspace, label: "Práxis" };
+  if (pathname === "/monitoramento" || pathname === "/notifications") {
+    return { section: copy.operation, label: copy.operationCenter };
+  }
+  if (pathname === "/compliance") return { section: copy.operation, label: copy.compliance };
+  if (pathname === "/comecar" || pathname === "/manual") return { section: copy.helpGroup, label: copy.help };
+  return { section: copy.settings, label: copy.settings };
 }
 
 function routeDataKey(pathname: string) {
   if (pathname.startsWith("/avaliacoes")) return "avaliacoes";
   if (pathname === "/jornadas" || pathname.startsWith("/jornada/")) return "jornadas";
-  if (pathname === "/enviar-link") return "enviar-link";
+  if (pathname === "/participacoes" || pathname === "/enviar-link") return "participacoes";
   if (pathname.startsWith("/results")) return "results";
   if (pathname === "/dashboard") return "dashboard";
   return "other";
 }
 
+function isActivePath(pathname: string, itemPath: string) {
+  if (itemPath === "/dashboard") return pathname === itemPath;
+  if (itemPath === "/participacoes") return pathname === itemPath || pathname === "/enviar-link";
+  if (itemPath === "/monitoramento") return pathname === itemPath || pathname === "/notifications";
+  return pathname === itemPath || pathname.startsWith(`${itemPath}/`);
+}
+
 export function AppShell({ children }: { children: ReactNode }) {
   const pathname = useRouterState({ select: (state) => state.location.pathname });
-  const { language, t } = useLanguage();
-  const copy = appShellCopy[language];
-  const cognitive = cognitiveCopy[language];
-  const context = pageContext(pathname, t, copy);
+  const { language } = useLanguage();
+  const copy = shellCopy[language];
+  const context = pageContext(pathname, language);
   const { preferences, toggle, reset } = useCognitivePreferences();
   const unreadNotificationsQuery = useQuery({
     queryKey: ["notifications", "unread-count"],
@@ -607,7 +629,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   return (
     <div className="flex min-h-screen bg-background text-foreground">
       <a href="#conteudo-principal" className="praxis-skip-link">
-        {cognitive.skipToContent}
+        {copy.skipToContent}
       </a>
 
       {!preferences.focusMode && (
@@ -628,15 +650,15 @@ export function AppShell({ children }: { children: ReactNode }) {
                 <button
                   type="button"
                   className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-md border border-border bg-card hover:bg-accent lg:hidden"
-                  aria-label={t.common.openMenu}
+                  aria-label={copy.openMenu}
                 >
                   <Menu className="h-5 w-5" />
                 </button>
               </SheetTrigger>
               <SheetContent side="left" className="flex w-[18rem] max-w-[88vw] flex-col overflow-hidden bg-background p-0 text-foreground sm:max-w-sm">
                 <SheetHeader className="sr-only">
-                  <SheetTitle>{t.common.menu}</SheetTitle>
-                  <SheetDescription>{t.common.menuDescription}</SheetDescription>
+                  <SheetTitle>{copy.menu}</SheetTitle>
+                  <SheetDescription>{copy.menuDescription}</SheetDescription>
                 </SheetHeader>
                 <SidebarContent
                   pathname={pathname}
@@ -660,7 +682,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                 className="inline-flex min-h-10 items-center gap-2 rounded-md border border-primary/40 bg-primary/10 px-3 py-2 text-sm font-medium text-primary hover:bg-primary/15"
               >
                 <Focus className="h-4 w-4" />
-                <span className="hidden sm:inline">{cognitive.exitFocus}</span>
+                <span className="hidden sm:inline">{copy.exitFocus}</span>
               </button>
             )}
             {!preferences.focusMode && <LanguageSelector />}
@@ -672,11 +694,11 @@ export function AppShell({ children }: { children: ReactNode }) {
             />
             {!preferences.focusMode && (
               <Link
-                to="/comecar"
+                to="/manual"
                 className="inline-flex min-h-10 items-center gap-1.5 rounded-md border border-border bg-card px-3 py-2 text-muted-foreground hover:bg-accent"
               >
                 <HelpCircle className="h-4 w-4" />
-                <span className="hidden sm:inline">{t.common.help}</span>
+                <span className="hidden sm:inline">{copy.help}</span>
               </Link>
             )}
           </div>
