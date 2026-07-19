@@ -6,19 +6,18 @@ import br.com.iforce.praxis.candidate.dto.ParticipacaoResponse;
 import br.com.iforce.praxis.candidate.dto.RegistrarRespostaRequest;
 import br.com.iforce.praxis.candidate.dto.RegistrarRespostaResponse;
 import br.com.iforce.praxis.candidate.dto.RespostaResponse;
+import br.com.iforce.praxis.shared.security.Sha256;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 import org.springframework.web.server.ResponseStatusException;
 
-import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
-import java.util.HexFormat;
 import java.util.List;
 
 @Component
 public class PublicCandidateFlowSecurity {
+
+    private static final int OPAQUE_ID_BYTES = 12;
 
     private final JwtService jwtService;
     private final boolean securityEnabled;
@@ -38,8 +37,6 @@ public class PublicCandidateFlowSecurity {
         try {
             jwtService.parseCandidateAttemptToken(token);
         } catch (RuntimeException exception) {
-            // Compatibilidade exclusiva do modo local/teste sem segurança. Em
-            // produção, IDs internos nunca são aceitos como credencial pública.
             if (!securityEnabled && isLegacyAttemptId(token)) {
                 return;
             }
@@ -126,13 +123,7 @@ public class PublicCandidateFlowSecurity {
     }
 
     private String opaque(String value) {
-        try {
-            byte[] digest = MessageDigest.getInstance("SHA-256")
-                    .digest(value.getBytes(StandardCharsets.UTF_8));
-            return "pub_" + HexFormat.of().formatHex(digest, 0, 12);
-        } catch (NoSuchAlgorithmException exception) {
-            throw new IllegalStateException("SHA-256 indisponível.", exception);
-        }
+        return "pub_" + Sha256.hexPrefix(value, OPAQUE_ID_BYTES);
     }
 
     private ResponseStatusException unauthorized() {

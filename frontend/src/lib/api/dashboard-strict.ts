@@ -1,5 +1,4 @@
-import { getApiBaseUrl } from "@/lib/runtime-config";
-import { getSession } from "@/lib/session";
+import { apiRequest } from "@/lib/api/http";
 import type { DashboardResponse } from "./praxis-contract";
 import { PraxisApiError } from "./praxis-legacy";
 
@@ -14,41 +13,12 @@ export class DashboardCompatibilityError extends PraxisApiError {
 }
 
 export async function getDashboard(): Promise<DashboardResponse> {
-  const session = getSession();
-  const headers: Record<string, string> = {
-    "Content-Type": "application/json",
-  };
-
-  if (session.token) {
-    headers.Authorization = `Bearer ${session.token}`;
-  }
-
-  const response = await fetch(`${getApiBaseUrl()}/api/v1/dashboard`, {
-    headers,
-  });
-
-  if (!response.ok) {
-    if (response.status === 404) {
+  try {
+    return await apiRequest<DashboardResponse>("/api/v1/dashboard");
+  } catch (error) {
+    if (error instanceof PraxisApiError && error.status === 404) {
       throw new DashboardCompatibilityError();
     }
-
-    throw new PraxisApiError(await readApiErrorMessage(response), response.status);
-  }
-
-  return response.json() as Promise<DashboardResponse>;
-}
-
-async function readApiErrorMessage(response: Response) {
-  const fallback = `Falha na API (${response.status})`;
-
-  try {
-    const body = (await response.json()) as {
-      mensagem?: string;
-      message?: string;
-      error?: string;
-    };
-    return body.mensagem ?? body.message ?? body.error ?? fallback;
-  } catch {
-    return fallback;
+    throw error;
   }
 }

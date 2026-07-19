@@ -1,57 +1,27 @@
 package br.com.iforce.praxis.gupy.service;
 
-import java.nio.charset.StandardCharsets;
-
-import java.security.MessageDigest;
-
-import java.security.NoSuchAlgorithmException;
-
-import java.util.HexFormat;
-
+import br.com.iforce.praxis.shared.security.Sha256;
 
 /**
  * Deriva a chave de idempotência da participação a partir de um hash estável.
  *
- * <p>Na visão do processo: a chave que identifica de forma única a participação
- * de um candidato é montada a partir de dados que incluem <strong>dado
- * pessoal</strong> (documento/CPF e e-mail). Guardar essa composição em claro em
- * uma coluna indexada exporia o dado sem necessidade. Por isso a chave é
- * reduzida a um hash SHA-256 (hex): mantém a mesma capacidade de reconhecer o
- * mesmo candidato (mesma entrada gera o mesmo hash), sem preservar o dado
- * pessoal original.</p>
+ * <p>A chave composta pode conter dado pessoal. Guardar essa composição em
+ * claro em uma coluna indexada exporia o dado sem necessidade. O SHA-256 em
+ * hexadecimal preserva a comparação determinística sem persistir a entrada.</p>
  *
- * <p><strong>Atenção:</strong> a migração {@code V68} reprocessa as chaves
- * existentes usando exatamente este algoritmo (SHA-256 dos bytes UTF-8, em hex
- * minúsculo). Qualquer mudança aqui precisa ser refletida lá.</p>
+ * <p>A migração {@code V68} usa a mesma representação hexadecimal. Mudanças de
+ * formato precisam permanecer compatíveis com os dados existentes.</p>
  */
 public final class IdempotencyKeyHasher {
 
     private IdempotencyKeyHasher() {
     }
 
-    /**
-     * Devolve o SHA-256 (hex minúsculo) do valor informado.
-     *
-     * <p>Durante a criação de uma tentativa Gupy, o aspecto de idempotência pode
-     * resolver uma chave de ciclo diferente para a mesma composição histórica.
-     * O escopo é local à thread, limitado à chamada interceptada e não altera o
-     * algoritmo padrão nem as migrações existentes.</p>
-     *
-     * @param rawKey chave composta em claro (pode conter dado pessoal)
-     * @return o hash hexadecimal estável da chave
-     */
     public static String sha256Hex(String rawKey) {
         String scopedHash = CandidateAttemptIdempotencyScope.resolve(rawKey);
         if (scopedHash != null) {
             return scopedHash;
         }
-
-        try {
-            MessageDigest digest = MessageDigest.getInstance("SHA-256");
-            byte[] hash = digest.digest(rawKey.getBytes(StandardCharsets.UTF_8));
-            return HexFormat.of().formatHex(hash);
-        } catch (NoSuchAlgorithmException exception) {
-            throw new IllegalStateException("SHA-256 indisponível.", exception);
-        }
+        return Sha256.hex(rawKey);
     }
 }

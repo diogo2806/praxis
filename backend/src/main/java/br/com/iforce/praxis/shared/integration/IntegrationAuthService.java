@@ -1,27 +1,16 @@
 package br.com.iforce.praxis.shared.integration;
 
+import br.com.iforce.praxis.shared.security.Sha256;
 import org.springframework.http.HttpStatus;
-
 import org.springframework.stereotype.Service;
-
 import org.springframework.web.server.ResponseStatusException;
 
-
-import java.nio.charset.StandardCharsets;
-
-import java.security.MessageDigest;
-
-import java.security.NoSuchAlgorithmException;
-
-import java.util.Base64;
-
-
 /**
- * Valida tokens de integração vindo de sistemas externos.
+ * Valida tokens de integração vindos de sistemas externos.
  *
- * Quando a Gupy ou Recrutei enviam dados para a Praxis, eles incluem um token
+ * <p>Quando a Gupy ou Recrutei enviam dados para a Praxis, eles incluem um token
  * na requisição para provar que são realmente eles e não alguém tentando
- * falsificar a integração. Este serviço valida esse token.
+ * falsificar a integração. Este serviço valida esse token.</p>
  */
 @Service
 public class IntegrationAuthService {
@@ -35,19 +24,11 @@ public class IntegrationAuthService {
     }
 
     /**
-     * Valida um token Bearer e identifica qual empresa ele pertence.
+     * Valida um token Bearer e identifica a empresa à qual ele pertence.
      *
-     * O cabeçalho Authorization da requisição contém "Bearer <token>".
-     * Este método extrai o token, calcula seu hash, e busca qual empresa
-     * possui aquele token no banco de dados.
-     *
-     * Isso garante que apenas a Gupy/Recrutei que temos registrado conseguem
-     * enviar dados para a Praxis.
-     *
-     * @param authorizationHeader Valor do cabeçalho Authorization da requisição
-     * @param provider Nome da plataforma (Gupy, Recrutei, etc)
-     * @return ID da empresa e ID corporativo se o token for válido
-     * @throws ResponseStatusException se o token é inválido ou não existe
+     * @param authorizationHeader valor do cabeçalho Authorization
+     * @param provider nome da plataforma externa
+     * @return contexto da empresa quando o token é válido
      */
     public IntegrationEmpresaContext validateBearerToken(String authorizationHeader, String provider) {
         if (authorizationHeader == null || !authorizationHeader.startsWith(BEARER_PREFIX)) {
@@ -55,7 +36,7 @@ public class IntegrationAuthService {
         }
 
         String token = authorizationHeader.substring(BEARER_PREFIX.length());
-        String tokenHash = sha256(token);
+        String tokenHash = Sha256.base64Url(token);
 
         return integrationTokenRepository.findFirstByProviderAndTokenHash(provider, tokenHash)
                 .map(entity -> new IntegrationEmpresaContext(
@@ -72,15 +53,5 @@ public class IntegrationAuthService {
             return entity.getClientCompanyId();
         }
         return entity.getEmpresa().getCompanyId();
-    }
-
-    private String sha256(String value) {
-        try {
-            MessageDigest digest = MessageDigest.getInstance("SHA-256");
-            byte[] hash = digest.digest(value.getBytes(StandardCharsets.UTF_8));
-            return Base64.getUrlEncoder().withoutPadding().encodeToString(hash);
-        } catch (NoSuchAlgorithmException exception) {
-            throw new IllegalStateException("SHA-256 indisponível.", exception);
-        }
     }
 }

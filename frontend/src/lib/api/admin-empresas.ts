@@ -1,10 +1,8 @@
-import { getApiBaseUrl } from "@/lib/runtime-config";
-import { getSession } from "@/lib/session";
-import {
-  PraxisApiError,
-  type CommercialPlanType,
-  type EmpresaAdminSummary,
-  type EmpresaStatus,
+import { apiRequest } from "@/lib/api/http";
+import type {
+  CommercialPlanType,
+  EmpresaAdminSummary,
+  EmpresaStatus,
 } from "@/lib/api/praxis-legacy";
 
 export interface AdminEmpresaFilters {
@@ -34,13 +32,12 @@ export function searchAdminEmpresas(page: number, filters: AdminEmpresaFilters =
   if (filters.plan) params.set("plan", filters.plan);
   if (filters.periodStart) params.set("periodStart", filters.periodStart);
   if (filters.periodEnd) params.set("periodEnd", filters.periodEnd);
-  return adminRequest<EmpresaAdminPageResponse>(`/api/admin/empresas/page?${params.toString()}`);
+  return apiRequest<EmpresaAdminPageResponse>(
+    `/api/admin/empresas/page?${params.toString()}`,
+  );
 }
 
-/**
- * Mantém o contrato de lista usado pelas telas atuais, mas percorre o endpoint paginado.
- * A API executa as métricas de uso e saldo em lote por página.
- */
+/** Mantém o contrato de lista usado pelas telas atuais sobre o endpoint paginado. */
 export async function listAdminEmpresas(
   filters: AdminEmpresaFilters = {},
 ): Promise<EmpresaAdminSummary[]> {
@@ -59,44 +56,4 @@ export async function listAdminEmpresas(
   return Array.from(empresasById.values()).sort(
     (left, right) => Date.parse(right.createdAt) - Date.parse(left.createdAt),
   );
-}
-
-async function adminRequest<T>(path: string, init?: RequestInit): Promise<T> {
-  const session = getSession();
-  const headers: Record<string, string> = {
-    "Content-Type": "application/json",
-  };
-  if (session.token) {
-    headers.Authorization = `Bearer ${session.token}`;
-  }
-
-  const response = await fetch(`${getApiBaseUrl()}${path}`, {
-    ...init,
-    headers: {
-      ...headers,
-      ...init?.headers,
-    },
-  });
-
-  if (!response.ok) {
-    throw new PraxisApiError(await readErrorMessage(response), response.status);
-  }
-  if (response.status === 204) {
-    return undefined as T;
-  }
-  return response.json() as Promise<T>;
-}
-
-async function readErrorMessage(response: Response) {
-  const fallback = `Falha na API (${response.status})`;
-  try {
-    const body = (await response.json()) as {
-      mensagem?: string;
-      message?: string;
-      error?: string;
-    };
-    return body.mensagem ?? body.message ?? body.error ?? fallback;
-  } catch {
-    return fallback;
-  }
 }

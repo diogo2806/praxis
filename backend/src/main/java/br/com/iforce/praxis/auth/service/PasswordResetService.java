@@ -11,6 +11,7 @@ import br.com.iforce.praxis.auth.persistence.entity.EmpresaEntity;
 import br.com.iforce.praxis.auth.persistence.entity.UserEntity;
 import br.com.iforce.praxis.auth.persistence.repository.EmpresaRepository;
 import br.com.iforce.praxis.auth.persistence.repository.UserRepository;
+import br.com.iforce.praxis.shared.security.SecureTokens;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -20,30 +21,14 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
-import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
-import java.security.SecureRandom;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
-import java.util.Base64;
-import java.util.HexFormat;
 import java.util.Optional;
 
 /**
- * Orquestra a recuperação de senha de usuários autenticáveis (EMPRESA e ADMIN).
- *
- * <p>O token possui 256 bits aleatórios e nunca é persistido em texto puro. O registro guarda
- * um SHA-256 indexado para localização direta e um BCrypt para comprovação final do token.</p>
- *
- * <p>Princípios de segurança aplicados:</p>
- * <ul>
- *   <li>A solicitação retorna sempre a mesma resposta, sem revelar se o usuário, e-mail ou empresa
- *       existem.</li>
- *   <li>O token expira automaticamente e é invalidado após o uso.</li>
- *   <li>Todo o fluxo respeita o isolamento por empresa.</li>
- *   <li>Solicitação e conclusão geram eventos de auditoria sem token, senha ou hashes.</li>
- * </ul>
+ * Orquestra a recuperação de senha de usuários autenticáveis.
+ * O token aleatório nunca é persistido em texto puro: o registro mantém um
+ * lookup SHA-256 e um BCrypt para a comprovação definitiva.
  */
 @Service
 public class PasswordResetService {
@@ -51,8 +36,7 @@ public class PasswordResetService {
     public static final String PLATFORM_EMPRESA_ID = "PLATFORM";
 
     private static final Logger log = LoggerFactory.getLogger(PasswordResetService.class);
-    private static final SecureRandom SECURE_RANDOM = new SecureRandom();
-    private static final Base64.Encoder URL_ENCODER = Base64.getUrlEncoder().withoutPadding();
+    private static final int TOKEN_BYTES = 32;
 
     private final UserRepository userRepository;
     private final EmpresaRepository empresaRepository;
@@ -177,12 +161,10 @@ public class PasswordResetService {
     }
 
     private String generateToken(UserEntity user) {
-        byte[] bytes = new byte[32];
-        SECURE_RANDOM.nextBytes(bytes);
-        String token = URL_ENCODER.encodeToString(bytes);
+        String token = SecureTokens.randomUrlSafe(TOKEN_BYTES);
         Instant now = Instant.now();
         user.setPasswordResetTokenHash(passwordEncoder.encode(token));
-        user.setPasswordResetTokenLookupHash(tokenLookupHash(token));
+        user.setPasswordResetTokenLookupHash(TokenLookupHasher.sha256(token));
         user.setPasswordResetRequestedAt(now);
         user.setPasswordResetExpiresAt(now.plus(ttlHours, ChronoUnit.HOURS));
         return token;
@@ -194,23 +176,13 @@ public class PasswordResetService {
         }
 
         return userRepository
-                .findFirstByPasswordResetTokenLookupHash(tokenLookupHash(token))
+                .findFirstByPasswordResetTokenLookupHash(TokenLookupHasher.sha256(token))
                 .filter(this::isActiveResetUser)
                 .filter(user -> passwordEncoder.matches(token, user.getPasswordResetTokenHash()));
     }
 
     private boolean isActiveResetUser(UserEntity user) {
         return user.getStatus() == UserStatus.ATIVO && user.getPasswordResetTokenHash() != null;
-    }
-
-    private String tokenLookupHash(String token) {
-        try {
-            byte[] digest = MessageDigest.getInstance("SHA-256")
-                    .digest(token.getBytes(StandardCharsets.UTF_8));
-            return HexFormat.of().formatHex(digest);
-        } catch (NoSuchAlgorithmException exception) {
-            throw new IllegalStateException("SHA-256 indisponível.", exception);
-        }
     }
 
     private boolean isExpired(UserEntity user) {
