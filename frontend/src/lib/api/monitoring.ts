@@ -1,5 +1,4 @@
-import { getApiBaseUrl } from "@/lib/runtime-config";
-import { getSession } from "@/lib/session";
+import { apiRequest } from "@/lib/api/http";
 
 export type MonitoringAttemptStatus =
   | "notStarted"
@@ -40,7 +39,7 @@ export interface MonitoringAttemptFilters {
   candidate?: string;
 }
 
-export async function searchMonitoringAttempts(
+export function searchMonitoringAttempts(
   filters: MonitoringAttemptFilters,
 ): Promise<MonitoringAttemptPage> {
   const params = new URLSearchParams({
@@ -51,20 +50,9 @@ export async function searchMonitoringAttempts(
   if (filters.simulationId) params.set("simulationId", filters.simulationId);
   if (filters.candidate?.trim()) params.set("candidate", filters.candidate.trim());
 
-  const session = getSession();
-  const response = await fetch(
-    `${getApiBaseUrl()}/api/v1/candidate-links/attempts?${params.toString()}`,
-    {
-      headers: {
-        Accept: "application/json",
-        ...(session.token ? { Authorization: `Bearer ${session.token}` } : {}),
-      },
-    },
+  return apiRequest<MonitoringAttemptPage>(
+    `/api/v1/candidate-links/attempts?${params.toString()}`,
+    {},
+    { fallbackMessage: "Não foi possível carregar as tentativas." },
   );
-
-  if (!response.ok) {
-    const body = await response.json().catch(() => null) as { message?: string; detail?: string } | null;
-    throw new Error(body?.message ?? body?.detail ?? "Não foi possível carregar as tentativas.");
-  }
-  return response.json() as Promise<MonitoringAttemptPage>;
 }
