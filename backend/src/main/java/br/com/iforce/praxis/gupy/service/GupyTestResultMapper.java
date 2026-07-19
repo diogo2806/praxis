@@ -7,9 +7,7 @@ import br.com.iforce.praxis.gupy.dto.TestResultResponse;
 import br.com.iforce.praxis.gupy.model.AttemptStatus;
 import br.com.iforce.praxis.gupy.model.CandidateAttempt;
 import br.com.iforce.praxis.gupy.model.PublishedSimulation;
-import br.com.iforce.praxis.gupy.model.ResultItem;
 import br.com.iforce.praxis.gupy.persistence.entity.CandidateAttemptEntity;
-import br.com.iforce.praxis.gupy.persistence.entity.ResultItemEntity;
 import org.springframework.stereotype.Component;
 
 import java.time.Instant;
@@ -32,6 +30,34 @@ public class GupyTestResultMapper {
     }
 
     public TestResultResponse toResponse(CandidateAttempt attempt, PublishedSimulation simulation) {
+        AttemptView view = new AttemptView(
+                attempt.id(),
+                attempt.empresaId(),
+                attempt.status(),
+                attempt.companyResultString(),
+                attempt.finishedAt(),
+                attempt.results().stream()
+                        .map(item -> new ResultView(item.name(), item.score(), item.tier().getDescricao()))
+                        .toList()
+        );
+        return toResponse(view, simulation);
+    }
+
+    public TestResultResponse toResponse(CandidateAttemptEntity attempt, PublishedSimulation simulation) {
+        AttemptView view = new AttemptView(
+                attempt.getId(),
+                attempt.getEmpresaId(),
+                attempt.getStatus(),
+                attempt.getCompanyResultString(),
+                attempt.getFinishedAt(),
+                attempt.getResultItems().stream()
+                        .map(item -> new ResultView(item.getName(), item.getScore(), item.getTier().getDescricao()))
+                        .toList()
+        );
+        return toResponse(view, simulation);
+    }
+
+    private TestResultResponse toResponse(AttemptView attempt, PublishedSimulation simulation) {
         assertExternallyRepresentable(attempt.status());
         return new TestResultResponse(
                 simulation.name(),
@@ -45,38 +71,12 @@ public class GupyTestResultMapper {
                 candidateResultPageUrl(attempt.empresaId(), attempt.id()),
                 attempt.status() == AttemptStatus.COMPLETED
                         ? attempt.results().stream()
-                                .sorted(Comparator.comparing(ResultItem::name))
-                                .map(resultItem -> toItemResponse(
-                                        resultItem.name(),
-                                        resultItem.score(),
-                                        resultItem.tier().getDescricao(),
+                                .sorted(Comparator.comparing(ResultView::name))
+                                .map(result -> toItemResponse(
+                                        result.name(),
+                                        result.score(),
+                                        result.tier(),
                                         attempt.finishedAt()
-                                ))
-                                .toList()
-                        : List.of()
-        );
-    }
-
-    public TestResultResponse toResponse(CandidateAttemptEntity attempt, PublishedSimulation simulation) {
-        assertExternallyRepresentable(attempt.getStatus());
-        return new TestResultResponse(
-                simulation.name(),
-                simulation.id(),
-                simulation.description(),
-                PROVIDER_NAME,
-                attempt.getCompanyResultString(),
-                praxisProperties.publicBaseUrl(),
-                toGupyStatus(attempt.getStatus()),
-                recruiterResultPageUrl(attempt.getId()),
-                candidateResultPageUrl(attempt.getEmpresaId(), attempt.getId()),
-                attempt.getStatus() == AttemptStatus.COMPLETED
-                        ? attempt.getResultItems().stream()
-                                .sorted(Comparator.comparing(ResultItemEntity::getName))
-                                .map(resultItem -> toItemResponse(
-                                        resultItem.getName(),
-                                        resultItem.getScore(),
-                                        resultItem.getTier().getDescricao(),
-                                        attempt.getFinishedAt()
                                 ))
                                 .toList()
                         : List.of()
@@ -131,5 +131,18 @@ public class GupyTestResultMapper {
     private String frontendBaseUrl() {
         String baseUrl = praxisProperties.candidatePageBaseUrl();
         return baseUrl.endsWith("/") ? baseUrl.substring(0, baseUrl.length() - 1) : baseUrl;
+    }
+
+    private record AttemptView(
+            String id,
+            String empresaId,
+            AttemptStatus status,
+            String companyResultString,
+            Instant finishedAt,
+            List<ResultView> results
+    ) {
+    }
+
+    private record ResultView(String name, int score, String tier) {
     }
 }
