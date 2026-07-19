@@ -736,9 +736,9 @@ const landingMarkup = `<header class="nav" id="nav">
                   </div>
                   <div class="vxsec-l"><span>Competências</span><span>Acum.</span></div>
                   <div class="vxcomp">
-                    <div class="vxcrow"><span class="cn">Pro</span><span class="cin"></span><span class="cacc">50</span></div>
-                    <div class="vxcrow"><span class="cn">RdC</span><span class="cin"></span><span class="cacc">50</span></div>
-                    <div class="vxcrow"><span class="cn">C3</span><span class="cin"></span><span class="cacc z">0</span></div>
+                    <div class="vxcrow"><span class="cn">Comunicação</span><span class="cin"></span><span class="cacc">50</span></div>
+                    <div class="vxcrow"><span class="cn">Resolução de Conflitos</span><span class="cin"></span><span class="cacc">50</span></div>
+                    <div class="vxcrow"><span class="cn">Aderência à Política</span><span class="cin"></span><span class="cacc z">0</span></div>
                   </div>
                   <div class="vxout">
                     <div class="vxsec-l" style="padding:0 0 5px"><span>Saídas (respostas)</span></div>
@@ -768,9 +768,9 @@ const landingMarkup = `<header class="nav" id="nav">
                   </div>
                   <div class="vxsec-l"><span>Competências</span><span>Acum.</span></div>
                   <div class="vxcomp">
-                    <div class="vxcrow"><span class="cn">Pro</span><span class="cin"></span><span class="cacc">100</span></div>
-                    <div class="vxcrow"><span class="cn">RdC</span><span class="cin"></span><span class="cacc">100</span></div>
-                    <div class="vxcrow"><span class="cn">C3</span><span class="cin"></span><span class="cacc z">0</span></div>
+                    <div class="vxcrow"><span class="cn">Comunicação</span><span class="cin"></span><span class="cacc">100</span></div>
+                    <div class="vxcrow"><span class="cn">Resolução de Conflitos</span><span class="cin"></span><span class="cacc">100</span></div>
+                    <div class="vxcrow"><span class="cn">Aderência à Política</span><span class="cin"></span><span class="cacc z">0</span></div>
                   </div>
                   <div class="vxout">
                     <div class="vxsec-l" style="padding:0 0 5px"><span>Saídas (respostas)</span></div>
