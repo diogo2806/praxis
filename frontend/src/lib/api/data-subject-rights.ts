@@ -1,4 +1,4 @@
-import { getApiBaseUrl } from "@/lib/runtime-config";
+import { apiRequest } from "@/lib/api/http";
 
 export const DATA_SUBJECT_REQUEST_TYPES = [
   "confirmationAccess",
@@ -18,40 +18,26 @@ export type DataSubjectRequestPayload = {
   details?: string | null;
 };
 
-type ApiErrorBody = {
-  mensagem?: string;
-  message?: string;
-  error?: string;
-};
-
-export async function requestDataSubjectRight(
+export function requestDataSubjectRight(
   attemptToken: string,
   payload: DataSubjectRequestPayload,
 ): Promise<void> {
-  const response = await fetch(
-    `${getApiBaseUrl()}/candidate/attempts/${encodeURIComponent(attemptToken)}/data-request`,
+  return apiRequest<void>(
+    `/candidate/attempts/${encodeURIComponent(attemptToken)}/data-request`,
     {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         requestType: payload.requestType,
         contact: normalizeOptional(payload.contact),
         details: normalizeOptional(payload.details),
       }),
     },
+    {
+      authenticated: false,
+      fallbackMessage: (status) =>
+        `Não foi possível registrar a solicitação (${status}).`,
+    },
   );
-
-  if (response.ok) return;
-
-  let message = `Não foi possível registrar a solicitação (${response.status}).`;
-  try {
-    const body = (await response.json()) as ApiErrorBody;
-    message = body.mensagem ?? body.message ?? body.error ?? message;
-  } catch {
-    // Mantém a mensagem HTTP quando a API não retorna JSON.
-  }
-
-  throw new Error(message);
 }
 
 function normalizeOptional(value?: string | null) {
