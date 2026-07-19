@@ -1,8 +1,8 @@
 # Requisitos técnicos pendentes — praxis
 
-Status: atualizado em 2026-07-18 após auditoria da branch `main`.
+Status: atualizado em 2026-07-19 após auditoria da branch `main`.
 
-Commit auditado: `0d9e9acecc9048eba31de8e97152ef76115a9916`.
+Commit auditado: `236acae270a3947700e16784c8fec069438cc984`.
 
 Este arquivo contém somente pendências técnicas implementáveis e comprovadas no sistema. Não inclui CI/CD, testes, QA, métricas observacionais, publicação ou marketing.
 
