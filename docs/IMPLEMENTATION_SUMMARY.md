@@ -1,6 +1,6 @@
 # Resumo de Implementação
 
-> Estado técnico resumido do Praxis em 12/07/2026.
+> Estado técnico resumido do Práxis em 18/07/2026.
 
 ## Backend
 
@@ -8,14 +8,15 @@
 - PostgreSQL com Flyway.
 - Segurança por JWT nas rotas internas quando `PRAXIS_SECURITY_ENABLED=true`.
 - Empresa resolvida por contexto de segurança nas rotas internas.
-- Integração Gupy/Recrutei por Bearer token validado contra `integration_tokens` usando SHA-256 Base64URL.
-- Outbox transacional com lotes de até 100 eventos, retry, recuperação de `PROCESSING` órfão e DLQ.
-- HTTP 4xx permanente vai para DLQ; `408` e `429` são tratados como transitórios.
+- Integrações ATS autenticadas por Bearer token validado contra `integration_tokens` usando SHA-256 Base64URL.
+- Outbox transacional com processamento em lote, retry, recuperação de `PROCESSING` órfão e DLQ.
 - Auditoria por tentativa e por versão de avaliação.
 - Upload de mídia por `/api/v1/media`.
 - Configuração da empresa por `/api/v1/empresa-config`.
 - Notificações internas por `GET /api/v1/notifications`.
 - Reprocessamento operacional por `/api/v1/gupy/result-deliveries`.
+
+Detalhes de retry, backoff e DLQ pertencem a [ARQUITETURA_OUTBOX_PATTERN.md](ARQUITETURA_OUTBOX_PATTERN.md).
 
 ## Frontend
 
@@ -23,6 +24,7 @@
 - Rotas em `frontend/src/routes`.
 - `/login` usa `POST /api/v1/auth/login`.
 - `/integrations` configura provedores e gera tokens de integração.
+- `/integrations/gupy-homologacao` mostra prontidão, bloqueios e evidências.
 - `/nova/gupy` executa preflight local da versão e lista entregas.
 - `/notifications` lista alertas e permite reprocessar DLQ.
 - `/monitoramento` consolida tentativas e entregas.
@@ -36,33 +38,42 @@ Implementado:
 - `GET /test`;
 - `POST /test/candidate`;
 - `GET /test/result/{resultId}`;
-- Bearer token por empresa;
-- idempotência de tentativa;
-- `test_url` para `/candidato/{token}`;
-- `result_webhook_url` com outbox;
+- Bearer token individual por empresa;
+- `company_id` e `document_id` como JSON `int64` positivo;
+- `job_id`, `candidate_type` e `previous_result`;
+- `callback_url` validada e redirecionamento final pelo navegador;
+- idempotência canônica por empresa, candidato, avaliação e vaga;
+- `test_url` com JWT `candidate_attempt`;
+- `result_candidate_page_url` com JWT `candidate_result`;
+- `result_webhook_url` com Outbox;
+- consulta e webhook usando o mesmo DTO externo;
 - resultado percentual por competência;
-- retry e DLQ.
+- estados externos `notStarted`, `paused` e `done`;
+- rejeição explícita de `ABANDONED` e `EXPIRED`;
+- proteção contra SSRF, isolamento por empresa e testes de contrato.
 
-Ainda incompatível com o contrato oficial publicado:
+Estado atual:
 
-- ausência de `callback_url`;
-- ausência de callback GET e redirecionamento final;
-- `GET /test/result/{resultId}` exige `company_id` extra;
-- `company_id` e `document_id` usam `String`, não `int64`;
-- `job_id` não é recebido;
-- `previous_result` não segue o enum oficial;
-- `result_candidate_page_url` aponta para API JSON;
-- existem campos extras no `TestResult` que precisam ser validados.
+- **compatibilidade técnica implementada**;
+- **homologação formal pendente**;
+- o fluxo ainda precisa ser executado com token, vaga, callback e webhook reais da Gupy.
 
-Por isso, a integração deve ser descrita como **implementação técnica em preparação para homologação**, não como integração Gupy homologada.
+Documentos responsáveis:
 
-Detalhes: [INTEGRACAO-GUPY-PROVEDOR.md](INTEGRACAO-GUPY-PROVEDOR.md).
+- [Fonte canônica da integração Gupy](GUPY-FONTE-CANONICA.md);
+- [Contrato implementado](INTEGRACAO-GUPY-PROVEDOR.md);
+- [Centro de homologação](HOMOLOGACAO-GUPY.md);
+- [Arquitetura de Outbox](ARQUITETURA_OUTBOX_PATTERN.md).
 
-## Configuração legada do Compose
+## Configuração do Compose
 
-`docker-compose.yml` ainda exige `PRAXIS_INTEGRATION_TOKEN`, mas `/test/**` não lê essa variável. A autenticação real usa tokens gerados na Central de Integrações e persistidos somente como hash em `integration_tokens`.
+O `docker-compose.yml` exige:
 
-Não usar a variável legada como evidência de que a integração está configurada.
+- `POSTGRES_USER`;
+- `POSTGRES_PASSWORD`;
+- `PRAXIS_JWT_SECRET`.
+
+`PRAXIS_INTEGRATION_TOKEN` não é exigido pelo Compose e não autentica `/test/**`. Tokens de integração são gerados pela Central de Integrações e persistidos somente como hash.
 
 ## Verificação recomendada
 
@@ -70,18 +81,21 @@ Backend:
 
 ```bash
 cd backend
-mvn test
+mvn -B -ntp verify
 ```
 
 Frontend:
 
 ```bash
 cd frontend
-pnpm build
+npm ci
+npm run build
 ```
 
 Documentação:
 
 ```bash
-rg -n "Gupy.*homologad|PRAXIS_INTEGRATION_TOKEN|callback_url|company_id" README.md docs
+python3 scripts/validate_docs.py
 ```
+
+Última revisão: 18/07/2026.
