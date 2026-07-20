@@ -31,7 +31,7 @@ export function CandidateIntegrityBoundary({ token, children }: CandidateIntegri
 
   useEffect(() => {
     const previousFetch = window.fetch;
-    const answerPath = `/candidate/attempts/${encodeURIComponent(token)}/answers`;
+    const attemptPath = `/candidate/attempts/${encodeURIComponent(token)}`;
 
     const fetchWithIntegritySession: typeof window.fetch = async (input, init) => {
       const requestUrl =
@@ -40,8 +40,11 @@ export function CandidateIntegrityBoundary({ token, children }: CandidateIntegri
           : input instanceof URL
             ? input.toString()
             : input.url;
+      const pathname = new URL(requestUrl, window.location.origin).pathname;
+      const protectedRequest =
+        pathname.endsWith(attemptPath) || pathname.endsWith(`${attemptPath}/answers`);
       const sessionId = sessionIdRef.current;
-      if (!sessionId || !requestUrl.includes(answerPath)) {
+      if (!sessionId || !protectedRequest) {
         return previousFetch.call(window, input, init);
       }
 
