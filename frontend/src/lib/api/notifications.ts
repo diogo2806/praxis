@@ -1,4 +1,6 @@
+import { isRestrictedPartnerSpecialist } from "@/lib/access-control";
 import { apiRequest } from "@/lib/api/http";
+import { getSession } from "@/lib/session";
 
 export type InAppNotification = {
   id: number;
@@ -22,6 +24,10 @@ export function listNotifications() {
 }
 
 export function getUnreadNotificationsCount() {
+  if (isRestrictedPartnerSpecialist(getSession().roles)) {
+    return Promise.resolve<UnreadNotificationCountResponse>({ count: 0 });
+  }
+
   return apiRequest<UnreadNotificationCountResponse>(
     "/api/v1/notifications/unread-count",
   );
