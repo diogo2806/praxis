@@ -167,6 +167,22 @@ public class CandidateIntegrityService {
         return response(session, false);
     }
 
+    @Transactional(readOnly = true)
+    public void requireActiveSession(String attemptToken, String sessionId) {
+        if ((sessionId == null || sessionId.isBlank()) && !securityEnabled) {
+            return;
+        }
+        if (sessionId == null || sessionId.isBlank()) {
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "A sessão segura da avaliação não foi identificada. Recarregue a página para continuar."
+            );
+        }
+        CandidateScope scope = resolveScope(attemptToken);
+        CandidateIntegritySessionEntity session = requireSession(scope, sessionId);
+        requireActive(session, clock.instant());
+    }
+
     @Transactional
     public void heartbeat(String attemptToken, IntegrityHeartbeatRequest request) {
         CandidateScope scope = resolveScope(attemptToken);
