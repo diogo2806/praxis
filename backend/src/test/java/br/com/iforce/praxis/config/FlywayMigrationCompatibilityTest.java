@@ -1,5 +1,6 @@
 package br.com.iforce.praxis.config;
 
+import org.flywaydb.core.api.MigrationVersion;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -58,6 +59,29 @@ class FlywayMigrationCompatibilityTest {
         assertThat(properties)
                 .contains("spring.flyway.locations=classpath:db/migration")
                 .doesNotContain("classpath:db/migration/{vendor}");
+    }
+
+    @Test
+    void candidateTokenMigrationsPreserveHistoricalVersionsAndDependencyOrder() throws IOException {
+        MigrationVersion issuedAtVersion = MigrationVersion.fromVersion("1009");
+        MigrationVersion partnerVersion = MigrationVersion.fromVersion("1009.1");
+        MigrationVersion expiresAtVersion = MigrationVersion.fromVersion("1010");
+        MigrationVersion auditingVersion = MigrationVersion.fromVersion("1011");
+        MigrationVersion annualPlansVersion = MigrationVersion.fromVersion("1012");
+
+        assertThat(issuedAtVersion).isLessThan(partnerVersion);
+        assertThat(partnerVersion).isLessThan(expiresAtVersion);
+        assertThat(expiresAtVersion).isLessThan(auditingVersion);
+        assertThat(auditingVersion).isLessThan(annualPlansVersion);
+
+        assertThat(readResource("/db/migration/V1009__persist_candidate_token_window.sql"))
+                .contains("ADD COLUMN candidate_token_issued_at");
+        assertThat(readResource("/db/migration/V1009_1__create_partner_distribution_module.sql"))
+                .contains("CREATE TABLE partner_clients");
+        assertThat(readResource("/db/migration/V1010__add_candidate_token_expiration.sql"))
+                .contains("candidate_token_issued_at + INTERVAL '168 hours'");
+        assertThat(readResource("/db/migration/V1012__replace_professional_plans_with_annual_pools.sql"))
+                .contains("'PRO_ANNUAL_100'");
     }
 
     @Test
