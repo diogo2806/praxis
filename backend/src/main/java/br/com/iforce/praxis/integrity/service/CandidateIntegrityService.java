@@ -287,7 +287,7 @@ public class CandidateIntegrityService {
     private void expire(CandidateIntegritySessionEntity session, Instant now) {
         session.setStatus(IntegritySessionStatus.EXPIRED);
         session.setClosedAt(now);
-        sessionRepository.save(session);
+        sessionRepository.saveAndFlush(session);
         recordServerEvent(session, IntegrityEventType.SESSION_EXPIRED, now, now);
     }
 
