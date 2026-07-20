@@ -119,6 +119,27 @@ public class CandidateAttemptEntity implements EmpresaAwareEntity {
     @Column(name = "anonymized_at")
     private Instant anonymizedAt;
 
+    @Column(name = "privacy_notice_acknowledged_at")
+    private Instant privacyNoticeAcknowledgedAt;
+
+    @Column(name = "privacy_notice_version", length = 80)
+    private String privacyNoticeVersion;
+
+    @Column(name = "privacy_notice_language", length = 20)
+    private String privacyNoticeLanguage;
+
+    @Column(name = "privacy_notice_hash", length = 64)
+    private String privacyNoticeHash;
+
+    @Column(name = "human_review_completed_at")
+    private Instant humanReviewCompletedAt;
+
+    @Column(name = "human_reviewed_by", length = 120)
+    private String humanReviewedBy;
+
+    @Column(name = "human_review_resolution", length = 2000)
+    private String humanReviewResolution;
+
     @OneToMany(mappedBy = "candidateAttempt", cascade = CascadeType.ALL, orphanRemoval = true)
     private Set<AttemptAnswerEntity> answers = new LinkedHashSet<>();
 
