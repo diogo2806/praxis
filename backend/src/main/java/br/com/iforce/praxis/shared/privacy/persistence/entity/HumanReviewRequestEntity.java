@@ -52,6 +52,9 @@ public class HumanReviewRequestEntity {
     @Column(name = "resolved_at")
     private Instant resolvedAt;
 
+    @Column(name = "result_released_at")
+    private Instant resultReleasedAt;
+
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
 
