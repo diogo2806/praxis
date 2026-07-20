@@ -36,6 +36,7 @@ public class CandidateReviewRequestService {
     private final AuditEventService auditEventService;
     private final ObjectMapper objectMapper;
     private final HumanReviewRequestRepository humanReviewRequestRepository;
+    private final CandidateAttemptTokenResolver tokenResolver;
     private final int deadlineDays;
 
     public CandidateReviewRequestService(
@@ -43,22 +44,26 @@ public class CandidateReviewRequestService {
             AuditEventService auditEventService,
             ObjectMapper objectMapper,
             HumanReviewRequestRepository humanReviewRequestRepository,
+            CandidateAttemptTokenResolver tokenResolver,
             @Value("${praxis.human-review-deadline-days:5}") int deadlineDays
     ) {
         this.candidateAttemptRepository = candidateAttemptRepository;
         this.auditEventService = auditEventService;
         this.objectMapper = objectMapper;
         this.humanReviewRequestRepository = humanReviewRequestRepository;
+        this.tokenResolver = tokenResolver;
         this.deadlineDays = Math.max(1, deadlineDays);
     }
 
     @Transactional
-    public String register(String attemptId, ReviewRequest request) {
-        CandidateAttemptEntity attempt = candidateAttemptRepository.findById(attemptId)
+    public String register(String attemptToken, ReviewRequest request) {
+        CandidateAttemptTokenResolver.ResolvedAttemptToken resolved = tokenResolver.resolve(attemptToken);
+        CandidateAttemptEntity attempt = candidateAttemptRepository.findById(resolved.attemptId())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Participação não encontrada."));
+        assertTokenEmpresa(resolved, attempt);
 
         HumanReviewRequestEntity existing = humanReviewRequestRepository
-                .findFirstByAttemptIdAndStatusInOrderByRequestedAtDesc(attemptId, OPEN_STATUSES)
+                .findFirstByAttemptIdAndStatusInOrderByRequestedAtDesc(attempt.getId(), OPEN_STATUSES)
                 .orElse(null);
         if (existing != null) {
             return existing.getId();
@@ -68,7 +73,7 @@ public class CandidateReviewRequestService {
         HumanReviewRequestEntity entity = new HumanReviewRequestEntity();
         entity.setId(UUID.randomUUID().toString());
         entity.setEmpresaId(attempt.getEmpresaId());
-        entity.setAttemptId(attemptId);
+        entity.setAttemptId(attempt.getId());
         entity.setReason(normalizeReason(request == null ? null : request.reason()));
         entity.setStatus(ComplianceRequestStatus.PENDING);
         entity.setRequestedAt(requestedAt);
@@ -85,12 +90,21 @@ public class CandidateReviewRequestService {
 
         auditEventService.appendCandidateAttemptEvent(
                 attempt.getEmpresaId(),
-                attemptId,
+                attempt.getId(),
                 AuditEventType.REVIEW_REQUESTED,
                 "Revisão humana solicitada pelo candidato.",
                 buildMetadata(entity)
         );
         return entity.getId();
+    }
+
+    private void assertTokenEmpresa(
+            CandidateAttemptTokenResolver.ResolvedAttemptToken resolved,
+            CandidateAttemptEntity attempt
+    ) {
+        if (resolved.empresaId() != null && !resolved.empresaId().equals(attempt.getEmpresaId())) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Token não pertence a esta participação.");
+        }
     }
 
     private String normalizeReason(String reason) {
