@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from "re
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { ChevronDown, Scale, ShieldCheck } from "lucide-react";
+import { CandidateIntegrityBoundary } from "@/components/candidate-integrity-boundary";
 import { LanguageSelector } from "@/components/language-selector";
 import {
   getCandidateAttempt,
@@ -115,7 +116,11 @@ function TokenCandidatePage() {
     );
   }
 
-  return <CandidateExperience token={token} />;
+  return (
+    <CandidateIntegrityBoundary token={token}>
+      <CandidateExperience token={token} />
+    </CandidateIntegrityBoundary>
+  );
 }
 
 function Start({ copy, onStart }: { copy: CandidateAccessCopy; onStart: () => void }) {
