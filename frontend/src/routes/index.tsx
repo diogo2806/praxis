@@ -532,9 +532,9 @@ const landingStyles = `
   .vxtext{font-size:12px;line-height:1.4;color:#172128}
   .vxsec-l{display:flex;justify-content:space-between;font-size:9.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:#9AA3AA;padding:8px 11px 4px}
   .vxcomp{padding:0 11px 8px;display:flex;flex-direction:column;gap:3px}
-  .vxcrow{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:10px;font-size:11px}
-  .vxcrow .cn{color:#616A71;font-weight:600}
-  .vxcrow .cin{justify-self:start;width:54px;height:18px;border:1px solid #D9DFE3;border-radius:5px;background:#fff}
+  .vxcrow{display:grid;grid-template-columns:1fr 54px auto;align-items:center;gap:10px;font-size:11px}
+  .vxcrow .cn{min-width:0;color:#616A71;font-weight:600}
+  .vxcrow .cin{display:flex;align-items:center;justify-content:flex-start;justify-self:start;width:54px;height:18px;padding:0 6px;border:1px solid #D9DFE3;border-radius:5px;background:#fff;font-family:var(--font-mono);font-size:10.5px;color:#616A71;text-align:left;white-space:nowrap}
   .vxcrow .cacc{font-family:var(--font-mono);font-weight:700;color:#0E5570;font-size:11.5px}
   .vxcrow .cacc.z{color:#9AA3AA}
   .vxout{border-top:1px solid #EBEEF0;padding:7px 11px}
@@ -736,9 +736,9 @@ const landingMarkup = `<header class="nav" id="nav">
                   </div>
                   <div class="vxsec-l"><span>Competências</span><span>Acum.</span></div>
                   <div class="vxcomp">
-                    <div class="vxcrow"><span class="cn">Comunicação</span><span class="cin"></span><span class="cacc">50</span></div>
-                    <div class="vxcrow"><span class="cn">Resolução de Conflitos</span><span class="cin"></span><span class="cacc">50</span></div>
-                    <div class="vxcrow"><span class="cn">Aderência à Política</span><span class="cin"></span><span class="cacc z">0</span></div>
+                    <div class="vxcrow"><span class="cn">Comunicação</span><span class="cin">50</span><span class="cacc">50</span></div>
+                    <div class="vxcrow"><span class="cn">Resolução de Conflitos</span><span class="cin">50</span><span class="cacc">50</span></div>
+                    <div class="vxcrow"><span class="cn">Aderência à Política</span><span class="cin">0</span><span class="cacc z">0</span></div>
                   </div>
                   <div class="vxout">
                     <div class="vxsec-l" style="padding:0 0 5px"><span>Saídas (respostas)</span></div>
@@ -768,9 +768,9 @@ const landingMarkup = `<header class="nav" id="nav">
                   </div>
                   <div class="vxsec-l"><span>Competências</span><span>Acum.</span></div>
                   <div class="vxcomp">
-                    <div class="vxcrow"><span class="cn">Comunicação</span><span class="cin"></span><span class="cacc">100</span></div>
-                    <div class="vxcrow"><span class="cn">Resolução de Conflitos</span><span class="cin"></span><span class="cacc">100</span></div>
-                    <div class="vxcrow"><span class="cn">Aderência à Política</span><span class="cin"></span><span class="cacc z">0</span></div>
+                    <div class="vxcrow"><span class="cn">Comunicação</span><span class="cin">50</span><span class="cacc">100</span></div>
+                    <div class="vxcrow"><span class="cn">Resolução de Conflitos</span><span class="cin">50</span><span class="cacc">100</span></div>
+                    <div class="vxcrow"><span class="cn">Aderência à Política</span><span class="cin">0</span><span class="cacc z">0</span></div>
                   </div>
                   <div class="vxout">
                     <div class="vxsec-l" style="padding:0 0 5px"><span>Saídas (respostas)</span></div>
