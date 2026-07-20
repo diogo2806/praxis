@@ -36,6 +36,7 @@ public class CandidateDataRequestService {
     private final AuditEventService auditEventService;
     private final ObjectMapper objectMapper;
     private final DataSubjectRequestRepository dataSubjectRequestRepository;
+    private final CandidateAttemptTokenResolver tokenResolver;
     private final int deadlineDays;
 
     public CandidateDataRequestService(
@@ -43,26 +44,30 @@ public class CandidateDataRequestService {
             AuditEventService auditEventService,
             ObjectMapper objectMapper,
             DataSubjectRequestRepository dataSubjectRequestRepository,
+            CandidateAttemptTokenResolver tokenResolver,
             @Value("${praxis.privacy-request-deadline-days:15}") int deadlineDays
     ) {
         this.candidateAttemptRepository = candidateAttemptRepository;
         this.auditEventService = auditEventService;
         this.objectMapper = objectMapper;
         this.dataSubjectRequestRepository = dataSubjectRequestRepository;
+        this.tokenResolver = tokenResolver;
         this.deadlineDays = Math.max(1, deadlineDays);
     }
 
     @Transactional
-    public String register(String attemptId, DataSubjectRequest request) {
+    public String register(String attemptToken, DataSubjectRequest request) {
         if (request == null || request.requestType() == null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Tipo de requisição do titular é obrigatório.");
         }
 
-        CandidateAttemptEntity attempt = candidateAttemptRepository.findById(attemptId)
+        CandidateAttemptTokenResolver.ResolvedAttemptToken resolved = tokenResolver.resolve(attemptToken);
+        CandidateAttemptEntity attempt = candidateAttemptRepository.findById(resolved.attemptId())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Participação não encontrada."));
+        assertTokenEmpresa(resolved, attempt);
 
         if (dataSubjectRequestRepository.existsByAttemptIdAndRequestTypeAndStatusIn(
-                attemptId,
+                attempt.getId(),
                 request.requestType(),
                 OPEN_STATUSES
         )) {
@@ -76,7 +81,7 @@ public class CandidateDataRequestService {
         DataSubjectRequestEntity entity = new DataSubjectRequestEntity();
         entity.setId(UUID.randomUUID().toString());
         entity.setEmpresaId(attempt.getEmpresaId());
-        entity.setAttemptId(attemptId);
+        entity.setAttemptId(attempt.getId());
         entity.setRequestType(request.requestType());
         entity.setContact(normalize(request.contact()));
         entity.setDetails(normalize(request.details()));
@@ -89,12 +94,21 @@ public class CandidateDataRequestService {
 
         auditEventService.appendCandidateAttemptEvent(
                 attempt.getEmpresaId(),
-                attemptId,
+                attempt.getId(),
                 AuditEventType.DATA_SUBJECT_REQUEST,
                 "Direito do titular solicitado pelo candidato (LGPD art. 18).",
                 buildMetadata(entity)
         );
         return entity.getId();
+    }
+
+    private void assertTokenEmpresa(
+            CandidateAttemptTokenResolver.ResolvedAttemptToken resolved,
+            CandidateAttemptEntity attempt
+    ) {
+        if (resolved.empresaId() != null && !resolved.empresaId().equals(attempt.getEmpresaId())) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Token não pertence a esta participação.");
+        }
     }
 
     private String buildMetadata(DataSubjectRequestEntity entity) {
