@@ -1,88 +1,112 @@
 package br.com.iforce.praxis.candidate.service;
 
 import br.com.iforce.praxis.audit.model.AuditEventType;
-
 import br.com.iforce.praxis.audit.service.AuditEventService;
-
 import br.com.iforce.praxis.candidate.dto.ReviewRequest;
-
 import br.com.iforce.praxis.gupy.persistence.entity.CandidateAttemptEntity;
-
 import br.com.iforce.praxis.gupy.persistence.repository.CandidateAttemptRepository;
-
+import br.com.iforce.praxis.shared.privacy.model.ComplianceRequestStatus;
+import br.com.iforce.praxis.shared.privacy.persistence.entity.HumanReviewRequestEntity;
+import br.com.iforce.praxis.shared.privacy.persistence.repository.HumanReviewRequestRepository;
 import com.fasterxml.jackson.core.JsonProcessingException;
-
 import com.fasterxml.jackson.databind.ObjectMapper;
-
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
-
 import org.springframework.stereotype.Service;
-
 import org.springframework.transaction.annotation.Transactional;
-
 import org.springframework.web.server.ResponseStatusException;
 
-
 import java.time.Instant;
-
+import java.time.temporal.ChronoUnit;
 import java.util.LinkedHashMap;
-
+import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
-
-/**
- * Registra o pedido de revisão humana feito pelo candidato (REQ-L5 / LGPD art. 20). O candidato
- * acessa pelo próprio link (rota pública, sem empresa no contexto): resolvemos o empresa a partir da
- * tentativa e gravamos o pedido na trilha append-only, de onde o recrutador o vê (e ele entra no
- * relatório de evidência). A revisão em si é a decisão humana já garantida pelo REQ-L1.
- */
+/** Registra e acompanha a revisão humana prevista no art. 20 da LGPD. */
 @Service
 public class CandidateReviewRequestService {
+
+    private static final List<ComplianceRequestStatus> OPEN_STATUSES = List.of(
+            ComplianceRequestStatus.PENDING,
+            ComplianceRequestStatus.IN_PROGRESS
+    );
 
     private final CandidateAttemptRepository candidateAttemptRepository;
     private final AuditEventService auditEventService;
     private final ObjectMapper objectMapper;
+    private final HumanReviewRequestRepository humanReviewRequestRepository;
+    private final CandidateAttemptTokenResolver tokenResolver;
+    private final int deadlineDays;
 
     public CandidateReviewRequestService(
             CandidateAttemptRepository candidateAttemptRepository,
             AuditEventService auditEventService,
-            ObjectMapper objectMapper
+            ObjectMapper objectMapper,
+            HumanReviewRequestRepository humanReviewRequestRepository,
+            CandidateAttemptTokenResolver tokenResolver,
+            @Value("${praxis.human-review-deadline-days:5}") int deadlineDays
     ) {
         this.candidateAttemptRepository = candidateAttemptRepository;
         this.auditEventService = auditEventService;
         this.objectMapper = objectMapper;
+        this.humanReviewRequestRepository = humanReviewRequestRepository;
+        this.tokenResolver = tokenResolver;
+        this.deadlineDays = Math.max(1, deadlineDays);
     }
 
-    /**
-     * Registra o pedido do candidato para que um humano revise o resultado.
-     *
-     * <p>Fluxo do processo: como o candidato acessa por um link público (sem
-     * empresa no contexto), o sistema descobre a empresa a partir da
-     * participação e grava o pedido na trilha de auditoria, de onde o
-     * recrutador o vê. É o direito de revisão por pessoa natural previsto na
-     * LGPD (art. 20).</p>
-     *
-     * @param attemptId identificador da participação do candidato
-     * @param request justificativa opcional do pedido (pode ser nulo)
-     */
     @Transactional
-    public void register(String attemptId, ReviewRequest request) {
-        CandidateAttemptEntity attempt = candidateAttemptRepository.findById(attemptId)
+    public String register(String attemptToken, ReviewRequest request) {
+        CandidateAttemptTokenResolver.ResolvedAttemptToken resolved = tokenResolver.resolve(attemptToken);
+        CandidateAttemptEntity attempt = candidateAttemptRepository.findById(resolved.attemptId())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Participação não encontrada."));
+        assertTokenEmpresa(resolved, attempt);
+
+        HumanReviewRequestEntity existing = humanReviewRequestRepository
+                .findFirstByAttemptIdAndStatusInOrderByRequestedAtDesc(attempt.getId(), OPEN_STATUSES)
+                .orElse(null);
+        if (existing != null) {
+            return existing.getId();
+        }
 
         Instant requestedAt = Instant.now();
-        String reason = normalizeReason(request == null ? null : request.reason());
+        HumanReviewRequestEntity entity = new HumanReviewRequestEntity();
+        entity.setId(UUID.randomUUID().toString());
+        entity.setEmpresaId(attempt.getEmpresaId());
+        entity.setAttemptId(attempt.getId());
+        entity.setReason(normalizeReason(request == null ? null : request.reason()));
+        entity.setStatus(ComplianceRequestStatus.PENDING);
+        entity.setRequestedAt(requestedAt);
+        entity.setDueAt(requestedAt.plus(deadlineDays, ChronoUnit.DAYS));
+        entity.setCreatedAt(requestedAt);
+        entity.setUpdatedAt(requestedAt);
+        humanReviewRequestRepository.save(entity);
+
+        attempt.setHumanReviewRequired(true);
+        attempt.setHumanReviewCompletedAt(null);
+        attempt.setHumanReviewedBy(null);
+        attempt.setHumanReviewResolution(null);
+        candidateAttemptRepository.save(attempt);
 
         auditEventService.appendCandidateAttemptEvent(
                 attempt.getEmpresaId(),
-                attemptId,
+                attempt.getId(),
                 AuditEventType.REVIEW_REQUESTED,
                 "Revisão humana solicitada pelo candidato.",
-                buildMetadata(attemptId, reason, requestedAt)
+                buildMetadata(entity)
         );
+        return entity.getId();
     }
 
-    /** Limpa a justificativa informada (remove espaços e trata texto vazio). Uso interno. */
+    private void assertTokenEmpresa(
+            CandidateAttemptTokenResolver.ResolvedAttemptToken resolved,
+            CandidateAttemptEntity attempt
+    ) {
+        if (resolved.empresaId() != null && !resolved.empresaId().equals(attempt.getEmpresaId())) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Token não pertence a esta participação.");
+        }
+    }
+
     private String normalizeReason(String reason) {
         if (reason == null) {
             return null;
@@ -91,20 +115,22 @@ public class CandidateReviewRequestService {
         return trimmed.isEmpty() ? null : trimmed;
     }
 
-    /**
-     * Monta o detalhamento (em JSON) do pedido de revisão que será guardado
-     * na trilha de auditoria. Uso interno.
-     */
-    private String buildMetadata(String attemptId, String reason, Instant requestedAt) {
+    private String buildMetadata(HumanReviewRequestEntity entity) {
         Map<String, Object> payload = new LinkedHashMap<>();
-        payload.put("attemptId", attemptId);
+        payload.put("reviewRequestId", entity.getId());
+        payload.put("attemptId", entity.getAttemptId());
         payload.put("source", "candidate");
-        payload.put("reason", reason);
-        payload.put("requestedAt", requestedAt.toString());
+        payload.put("status", entity.getStatus().name());
+        payload.put("requestedAt", entity.getRequestedAt().toString());
+        payload.put("dueAt", entity.getDueAt().toString());
         try {
             return objectMapper.writeValueAsString(payload);
         } catch (JsonProcessingException exception) {
-            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Falha ao registrar o pedido de revisão.", exception);
+            throw new ResponseStatusException(
+                    HttpStatus.INTERNAL_SERVER_ERROR,
+                    "Falha ao registrar o pedido de revisão.",
+                    exception
+            );
         }
     }
 }

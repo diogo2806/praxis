@@ -1,35 +1,22 @@
 package br.com.iforce.praxis.shared.privacy.service;
 
 import br.com.iforce.praxis.audit.model.AuditEventType;
-
 import br.com.iforce.praxis.audit.persistence.repository.AuditEventRepository;
-
 import br.com.iforce.praxis.audit.service.AuditEventService;
-
 import br.com.iforce.praxis.gupy.persistence.entity.CandidateAttemptEntity;
-
 import br.com.iforce.praxis.gupy.persistence.repository.CandidateAttemptRepository;
-
 import org.junit.jupiter.api.Test;
-
 import org.springframework.beans.factory.annotation.Autowired;
-
 import org.springframework.boot.test.context.SpringBootTest;
-
+import org.springframework.test.context.jdbc.Sql;
 import org.springframework.test.context.jdbc.SqlMergeMode;
 
-import org.springframework.test.context.jdbc.Sql;
-
-
 import static org.assertj.core.api.Assertions.assertThat;
-
 
 @SpringBootTest
 @SqlMergeMode(SqlMergeMode.MergeMode.MERGE)
 @Sql(scripts = {"/seed-simulation-fixture.sql", "/empresa-isolation-fixtures.sql"})
 @Sql(statements = {
-        // audit_events e append-only (trigger de V13). Desabilita o trigger USER apenas para
-        // limpar os dados de teste destes aggregate_ids e reabilita em seguida.
         "ALTER TABLE audit_events DISABLE TRIGGER USER",
         "DELETE FROM audit_events WHERE aggregate_id IN ('retention-empresa1-old', 'retention-empresa1-recent', 'retention-empresa1-other', 'retention-empresa2-old')",
         "ALTER TABLE audit_events ENABLE TRIGGER USER",
@@ -45,10 +32,8 @@ class PrivacyRetentionServiceTest {
 
     @Autowired
     private CandidateAttemptRepository candidateAttemptRepository;
-
     @Autowired
     private AuditEventRepository auditEventRepository;
-
     @Autowired
     private PrivacyRetentionService privacyRetentionService;
 
@@ -57,7 +42,7 @@ class PrivacyRetentionServiceTest {
             "INSERT INTO candidate_attempts (id, empresa_id, company_id, result_id, simulation_id, simulation_version_id, simulation_version_number, idempotency_key, candidate_name, candidate_email, result_webhook_url, status, score, decision, human_review_required, reliability_level, company_result_string, created_at, started_at, finished_at, anonymized_at) VALUES ('retention-empresa1-old', 'empresa-1', 'empresa-123', 'result-retention-old', 'sim-atendimento-caos', 1, 1, 'idem-retention-old', 'Ana Dados', 'ana.dados@example.com', 'https://cliente.gupy.io/result-webhook', 'COMPLETED', 82, 'RECOMMEND_INTERVIEW', FALSE, 'NORMAL', 'Resultado preservado', CURRENT_TIMESTAMP - INTERVAL '220' DAY, CURRENT_TIMESTAMP - INTERVAL '220' DAY, CURRENT_TIMESTAMP - INTERVAL '200' DAY, NULL)",
             "INSERT INTO candidate_attempts (id, empresa_id, company_id, result_id, simulation_id, simulation_version_id, simulation_version_number, idempotency_key, candidate_name, candidate_email, result_webhook_url, status, score, decision, human_review_required, reliability_level, company_result_string, created_at, started_at, finished_at, anonymized_at) VALUES ('retention-empresa1-recent', 'empresa-1', 'empresa-123', 'result-retention-recent', 'sim-atendimento-caos', 1, 1, 'idem-retention-recent', 'Bruno Recente', 'bruno@example.com', 'https://cliente.gupy.io/result-webhook', 'COMPLETED', 76, 'RECOMMEND_INTERVIEW', FALSE, 'NORMAL', 'Resultado recente', CURRENT_TIMESTAMP - INTERVAL '20' DAY, CURRENT_TIMESTAMP - INTERVAL '20' DAY, CURRENT_TIMESTAMP - INTERVAL '10' DAY, NULL)"
     })
-    void anonymizesExpiredClosedAttemptsAndRegistersAuditEvent() {
+    void anonymizesExpiredAttemptsAndRemovesIndividualData() {
         int count = privacyRetentionService.anonymizeExpiredAttemptsForEmpresa("empresa-1");
 
         assertThat(count).isEqualTo(1);
@@ -66,8 +51,13 @@ class PrivacyRetentionServiceTest {
         assertThat(oldAttempt.getCandidateName()).isEqualTo("Candidato anonimizado");
         assertThat(oldAttempt.getCandidateEmail()).isEqualTo("anonimizado+retention-empresa1-old@privacy.local");
         assertThat(oldAttempt.getIdempotencyKey()).isEqualTo("anonymized:retention-empresa1-old");
+        assertThat(oldAttempt.getCompanyId()).isEqualTo("anonymized");
         assertThat(oldAttempt.getResultWebhookUrl()).isNull();
-        assertThat(oldAttempt.getCompanyResultString()).isEqualTo("Resultado preservado");
+        assertThat(oldAttempt.getScore()).isNull();
+        assertThat(oldAttempt.getCompanyResultString()).isEqualTo("Dados individuais removidos pela política de retenção.");
+        assertThat(oldAttempt.getAnswers()).isEmpty();
+        assertThat(oldAttempt.getResultItems()).isEmpty();
+        assertThat(oldAttempt.getNodeServes()).isEmpty();
         assertThat(oldAttempt.getAnonymizedAt()).isNotNull();
 
         CandidateAttemptEntity recentAttempt = candidateAttemptRepository.findById("retention-empresa1-recent").orElseThrow();

@@ -2,33 +2,20 @@ package br.com.iforce.praxis.auth.config;
 
 import br.com.iforce.praxis.auth.filter.JwtAuthenticationFilter;
 import br.com.iforce.praxis.auth.filter.PartnerSpecialistAuthorizationFilter;
-
 import jakarta.servlet.http.HttpServletRequest;
-
 import org.springframework.beans.factory.annotation.Value;
-
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
-
 import org.springframework.context.annotation.Bean;
-
 import org.springframework.context.annotation.Configuration;
-
 import org.springframework.http.HttpHeaders;
-
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
-
 import org.springframework.security.config.http.SessionCreationPolicy;
-
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-
 import org.springframework.security.crypto.password.PasswordEncoder;
-
 import org.springframework.security.provisioning.InMemoryUserDetailsManager;
-
 import org.springframework.security.web.SecurityFilterChain;
-
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
-
+import org.springframework.security.web.header.writers.ReferrerPolicyHeaderWriter;
 
 @Configuration
 public class SecurityConfig {
@@ -56,10 +43,7 @@ public class SecurityConfig {
 
         if (!securityEnabled) {
             http.authorizeHttpRequests(auth -> auth.anyRequest().permitAll());
-            http.headers(headers -> headers
-                    .frameOptions(frame -> frame.deny())
-                    .contentTypeOptions(contentType -> {})
-            );
+            applySecurityHeaders(http);
             return http.build();
         }
 
@@ -78,20 +62,15 @@ public class SecurityConfig {
                                 "/recrutei/test",
                                 "/recrutei/test/**",
                                 "/api/v1/auth/invite/**",
-                                // Recuperação de senha: público, sem JWT. Não revela a
-                                // existência de contas e é limitado por IP no controller.
                                 "/api/v1/auth/password/**",
-                                // Webhook do Mercado Pago (Parte B): público, validado por
-                                // assinatura no próprio handler, sem JWT de usuário.
                                 "/api/webhooks/mercado-pago/**"
                         ).permitAll()
-                        // Painel administrativo da plataforma: exige operador ADMIN e não
-                        // depende do empresa do usuário logado (empresa alvo vem na rota).
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
                         .requestMatchers("/api/v1/account/**").hasAnyRole("EMPRESA", "ADMIN", "PARTNER_SPECIALIST")
                         .requestMatchers("/api/v1/company-profile/**").hasRole("EMPRESA")
                         .requestMatchers("/api/v1/dashboard/**").hasRole("EMPRESA")
                         .requestMatchers("/api/v1/integrations/**").hasRole("EMPRESA")
+                        .requestMatchers("/api/v1/privacy/**").hasRole("EMPRESA")
                         .requestMatchers("/api/v1/simulations/**").hasAnyRole("EMPRESA", "PARTNER_SPECIALIST")
                         .requestMatchers("/api/v1/assessment-journeys/**").hasRole("EMPRESA")
                         .requestMatchers("/api/v1/assessment-journey-attempts/**").hasRole("EMPRESA")
@@ -110,20 +89,26 @@ public class SecurityConfig {
                 )
                 .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class)
                 .addFilterAfter(specialistAuthorizationFilter, JwtAuthenticationFilter.class);
-        http.headers(headers -> headers
-                .frameOptions(frame -> frame.deny())
-                .contentTypeOptions(contentType -> {})
-        );
-
+        applySecurityHeaders(http);
         return http.build();
     }
 
-    /**
-     * Mantém CSRF habilitado para fluxos que possam vir a usar credenciais de
-     * navegador, dispensando somente os contratos stateless atuais. Tokens Bearer
-     * enviados explicitamente no cabeçalho não são credenciais anexadas
-     * automaticamente pelo navegador e, portanto, não são suscetíveis a CSRF.
-     */
+    private void applySecurityHeaders(HttpSecurity http) throws Exception {
+        http.headers(headers -> headers
+                .frameOptions(frame -> frame.deny())
+                .contentTypeOptions(contentType -> { })
+                .httpStrictTransportSecurity(hsts -> hsts
+                        .includeSubDomains(true)
+                        .maxAgeInSeconds(31_536_000))
+                .referrerPolicy(referrer -> referrer
+                        .policy(ReferrerPolicyHeaderWriter.ReferrerPolicy.NO_REFERRER))
+                .permissionsPolicy(policy -> policy
+                        .policy("camera=(), microphone=(), geolocation=(), payment=()"))
+                .contentSecurityPolicy(csp -> csp
+                        .policyDirectives("default-src 'none'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'"))
+        );
+    }
+
     private boolean isCsrfExemptRequest(HttpServletRequest request) {
         if (!securityEnabled) {
             return true;
@@ -168,7 +153,9 @@ public class SecurityConfig {
     }
 
     @Bean
-    public FilterRegistrationBean<JwtAuthenticationFilter> jwtAuthenticationFilterRegistration(JwtAuthenticationFilter filter) {
+    public FilterRegistrationBean<JwtAuthenticationFilter> jwtAuthenticationFilterRegistration(
+            JwtAuthenticationFilter filter
+    ) {
         FilterRegistrationBean<JwtAuthenticationFilter> registration = new FilterRegistrationBean<>(filter);
         registration.setEnabled(false);
         return registration;

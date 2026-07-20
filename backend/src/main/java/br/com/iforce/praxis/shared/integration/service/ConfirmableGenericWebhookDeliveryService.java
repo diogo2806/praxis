@@ -9,11 +9,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.stereotype.Service;
 
-/**
- * Adapta a entrega CUSTOM_API legada, que registra falhas internamente, para um
- * contrato confirmável pelo outbox. Uma falha persistida volta a ser propagada
- * para que o processador mantenha a entrega em RETRYING/DLQ.
- */
+/** Confirma a entrega do webhook genérico sem liberar resultado pendente de revisão. */
 @Service
 public class ConfirmableGenericWebhookDeliveryService {
 
@@ -32,6 +28,9 @@ public class ConfirmableGenericWebhookDeliveryService {
     }
 
     public void deliverResultReady(String empresaId, CandidateAttemptEntity attempt) {
+        if (attempt.isHumanReviewRequired()) {
+            return;
+        }
         delegate.deliverResultReady(empresaId, attempt);
 
         EmpresaIntegrationEntity integration = integrationRepository

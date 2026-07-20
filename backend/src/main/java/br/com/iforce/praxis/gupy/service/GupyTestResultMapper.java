@@ -20,6 +20,8 @@ public class GupyTestResultMapper {
 
     private static final String PROVIDER_NAME = "Praxis";
     private static final String TYPE_RESULT = "percentage";
+    private static final String REVIEW_PENDING_MESSAGE =
+            "Resultado concluído tecnicamente e aguardando revisão humana antes da liberação.";
 
     private final PraxisProperties praxisProperties;
     private final JwtService jwtService;
@@ -36,6 +38,7 @@ public class GupyTestResultMapper {
                 attempt.status(),
                 attempt.companyResultString(),
                 attempt.finishedAt(),
+                attempt.humanReviewRequired(),
                 attempt.results().stream()
                         .map(item -> new ResultView(item.name(), item.score(), item.tier().getDescricao()))
                         .toList()
@@ -50,6 +53,7 @@ public class GupyTestResultMapper {
                 attempt.getStatus(),
                 attempt.getCompanyResultString(),
                 attempt.getFinishedAt(),
+                attempt.isHumanReviewRequired(),
                 attempt.getResultItems().stream()
                         .map(item -> new ResultView(item.getName(), item.getScore(), item.getTier().getDescricao()))
                         .toList()
@@ -59,18 +63,20 @@ public class GupyTestResultMapper {
 
     private TestResultResponse toResponse(AttemptView attempt, PublishedSimulation simulation) {
         assertExternallyRepresentable(attempt.status());
+        boolean reviewPending = attempt.status() == AttemptStatus.COMPLETED && attempt.humanReviewRequired();
         return new TestResultResponse(
                 simulation.name(),
                 simulation.id(),
                 simulation.description(),
                 PROVIDER_NAME,
-                attempt.companyResultString(),
+                reviewPending ? REVIEW_PENDING_MESSAGE : attempt.companyResultString(),
                 praxisProperties.publicBaseUrl(),
-                toGupyStatus(attempt.status()),
+                reviewPending ? "paused" : toGupyStatus(attempt.status()),
                 recruiterResultPageUrl(attempt.id()),
-                candidateResultPageUrl(attempt.empresaId(), attempt.id()),
-                attempt.status() == AttemptStatus.COMPLETED
-                        ? attempt.results().stream()
+                reviewPending ? null : candidateResultPageUrl(attempt.empresaId(), attempt.id()),
+                reviewPending || attempt.status() != AttemptStatus.COMPLETED
+                        ? List.of()
+                        : attempt.results().stream()
                                 .sorted(Comparator.comparing(ResultView::name))
                                 .map(result -> toItemResponse(
                                         result.name(),
@@ -79,7 +85,6 @@ public class GupyTestResultMapper {
                                         attempt.finishedAt()
                                 ))
                                 .toList()
-                        : List.of()
         );
     }
 
@@ -139,6 +144,7 @@ public class GupyTestResultMapper {
             AttemptStatus status,
             String companyResultString,
             Instant finishedAt,
+            boolean humanReviewRequired,
             List<ResultView> results
     ) {
     }

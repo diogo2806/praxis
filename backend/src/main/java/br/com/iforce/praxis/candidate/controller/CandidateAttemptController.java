@@ -12,6 +12,9 @@ import br.com.iforce.praxis.candidate.service.CandidateReviewRequestService;
 import br.com.iforce.praxis.candidate.service.PublicCandidateFlowSecurity;
 import br.com.iforce.praxis.gupy.service.CandidateAttemptService;
 import br.com.iforce.praxis.integrity.service.CandidateIntegrityService;
+import br.com.iforce.praxis.shared.privacy.service.CandidatePrivacyNoticeService;
+import br.com.iforce.praxis.shared.privacy.service.CandidatePrivacyNoticeService.CandidatePrivacyNoticeAcknowledgementRequest;
+import br.com.iforce.praxis.shared.privacy.service.CandidatePrivacyNoticeService.CandidatePrivacyNoticeResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -36,6 +39,7 @@ public class CandidateAttemptController {
     private final CandidateDataRequestService candidateDataRequestService;
     private final CandidateHealthConsentService candidateHealthConsentService;
     private final PublicCandidateFlowSecurity publicCandidateFlowSecurity;
+    private final CandidatePrivacyNoticeService candidatePrivacyNoticeService;
     private final CandidateIntegrityService candidateIntegrityService;
 
     public CandidateAttemptController(
@@ -44,6 +48,7 @@ public class CandidateAttemptController {
             CandidateDataRequestService candidateDataRequestService,
             CandidateHealthConsentService candidateHealthConsentService,
             PublicCandidateFlowSecurity publicCandidateFlowSecurity,
+            CandidatePrivacyNoticeService candidatePrivacyNoticeService,
             CandidateIntegrityService candidateIntegrityService
     ) {
         this.candidateAttemptService = candidateAttemptService;
@@ -51,19 +56,39 @@ public class CandidateAttemptController {
         this.candidateDataRequestService = candidateDataRequestService;
         this.candidateHealthConsentService = candidateHealthConsentService;
         this.publicCandidateFlowSecurity = publicCandidateFlowSecurity;
+        this.candidatePrivacyNoticeService = candidatePrivacyNoticeService;
         this.candidateIntegrityService = candidateIntegrityService;
+    }
+
+    @GetMapping("/{attemptToken}/privacy-notice")
+    @Operation(summary = "Retorna o aviso de privacidade aplicável à participação")
+    public ResponseEntity<CandidatePrivacyNoticeResponse> getPrivacyNotice(@PathVariable String attemptToken) {
+        publicCandidateFlowSecurity.requireValidAttemptToken(attemptToken);
+        return ResponseEntity.ok(candidatePrivacyNoticeService.getNotice(attemptToken));
+    }
+
+    @PostMapping("/{attemptToken}/privacy-notice/acknowledgement")
+    @Operation(summary = "Registra a ciência versionada do aviso de privacidade")
+    public ResponseEntity<Void> acknowledgePrivacyNotice(
+            @PathVariable String attemptToken,
+            @Valid @RequestBody CandidatePrivacyNoticeAcknowledgementRequest request
+    ) {
+        publicCandidateFlowSecurity.requireValidAttemptToken(attemptToken);
+        candidatePrivacyNoticeService.acknowledge(attemptToken, request);
+        return ResponseEntity.noContent().build();
     }
 
     @GetMapping("/{attemptToken}")
     @Operation(
             summary = "Carrega participacao do candidato",
-            description = "Retorna somente a etapa atual para uma sessão técnica ativa, com identificadores opacos e sem regras de navegação futuras."
+            description = "Retorna somente a etapa atual para uma sessão técnica ativa, com ciência de privacidade registrada e sem regras futuras."
     )
     public ResponseEntity<ParticipacaoResponse> getCandidateAttempt(
             @PathVariable String attemptToken,
             @RequestHeader(value = INTEGRITY_SESSION_HEADER, required = false) String integritySessionId
     ) {
         publicCandidateFlowSecurity.requireValidAttemptToken(attemptToken);
+        candidatePrivacyNoticeService.assertAcknowledged(attemptToken);
         candidateIntegrityService.requireActiveSession(attemptToken, integritySessionId);
         ParticipacaoResponse response = candidateAttemptService.findCandidateAttempt(attemptToken);
         return ResponseEntity.ok(publicCandidateFlowSecurity.sanitize(attemptToken, response));
@@ -72,7 +97,7 @@ public class CandidateAttemptController {
     @PostMapping("/{attemptToken}/answers")
     @Operation(
             summary = "Registra resposta do candidato",
-            description = "Registra a resposta da etapa atual somente quando a sessão técnica está ativa e sem aceitar identificadores internos enviados pelo cliente."
+            description = "Registra a resposta somente com ciência de privacidade e sessão técnica ativas."
     )
     public ResponseEntity<RegistrarRespostaResponse> submitAnswer(
             @PathVariable String attemptToken,
@@ -80,6 +105,7 @@ public class CandidateAttemptController {
             @Valid @RequestBody RegistrarRespostaRequest request
     ) {
         publicCandidateFlowSecurity.requireValidAttemptToken(attemptToken);
+        candidatePrivacyNoticeService.assertAcknowledged(attemptToken);
         candidateIntegrityService.requireActiveSession(attemptToken, integritySessionId);
         RegistrarRespostaResponse response = candidateAttemptService.submitAnswer(
                 attemptToken,

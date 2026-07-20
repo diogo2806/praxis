@@ -16,6 +16,11 @@ public enum AuditEventType implements DescribedEnum {
     ANSWER_SUBMITTED("answerSubmitted"),
     ATTEMPT_COMPLETED("attemptCompleted"),
     ATTEMPT_ANONYMIZED("attemptAnonymized"),
+    PRIVACY_NOTICE_ACKNOWLEDGED("privacyNoticeAcknowledged"),
+    PRIVACY_REQUEST_STATUS_CHANGED("privacyRequestStatusChanged"),
+    PRIVACY_INCIDENT_RECORDED("privacyIncidentRecorded"),
+    PRIVACY_INCIDENT_UPDATED("privacyIncidentUpdated"),
+    HEALTH_COMPLIANCE_APPROVED("healthComplianceApproved"),
     SIMULATION_VERSION_DRAFT_CREATED("simulationVersionDraftCreated"),
     /** Estrutura e critérios da avaliação atualizados. */
     SIMULATION_VERSION_BLUEPRINT_UPDATED("simulationVersionAssessmentUpdated"),

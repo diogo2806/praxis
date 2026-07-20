@@ -10,7 +10,10 @@ import {
   type CandidateAttemptResponse,
 } from "@/lib/api/praxis";
 import {
+  acknowledgeCandidatePrivacyNotice,
+  getCandidatePrivacyNotice,
   requestDataSubjectRight,
+  type CandidatePrivacyNotice,
   type DataSubjectRequestType,
 } from "@/lib/api/data-subject-rights";
 import { useLanguage } from "@/lib/language-context";
@@ -61,15 +64,55 @@ export const Route = createFileRoute("/candidato/$token")({ component: TokenCand
 
 function TokenCandidatePage() {
   const { token } = Route.useParams();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const copy = t.candidateAccess;
   const [ready, setReady] = useState(false);
+  const notice = useQuery({
+    queryKey: ["candidate-privacy-notice", token],
+    queryFn: () => getCandidatePrivacyNotice(token),
+  });
+
+  if (notice.isLoading) {
+    return (
+      <Shell>
+        <Status
+          label={copy.loadingLabel}
+          title={copy.loadingTitle}
+          description="Carregando as informações da empresa responsável e o aviso aplicável."
+        />
+      </Shell>
+    );
+  }
+
+  if (notice.isError || !notice.data) {
+    return (
+      <Shell>
+        <Status
+          label="Privacidade"
+          title="Não foi possível abrir a avaliação."
+          description={
+            notice.error instanceof Error
+              ? notice.error.message
+              : "O aviso de privacidade não está disponível."
+          }
+          tone="warning"
+        />
+      </Shell>
+    );
+  }
 
   if (!ready) {
     return (
       <Shell>
         <div className="space-y-6">
-          <Start copy={copy} onStart={() => setReady(true)} />
+          <Start
+            copy={copy}
+            notice={notice.data}
+            onStart={async () => {
+              await acknowledgeCandidatePrivacyNotice(token, notice.data, language);
+              setReady(true);
+            }}
+          />
           <PrivacyAndRightsPanel token={token} copy={copy} />
         </div>
       </Shell>
@@ -127,8 +170,30 @@ function CandidateAttemptContent({ token, copy }: { token: string; copy: Candida
   return <CandidateExperience token={token} />;
 }
 
-function Start({ copy, onStart }: { copy: CandidateAccessCopy; onStart: () => void }) {
+function Start({
+  copy,
+  notice,
+  onStart,
+}: {
+  copy: CandidateAccessCopy;
+  notice: CandidatePrivacyNotice;
+  onStart: () => Promise<void>;
+}) {
   const [accepted, setAccepted] = useState(false);
+  const [state, setState] = useState<RequestState>("idle");
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  async function start() {
+    setState("sending");
+    setErrorMessage(null);
+    try {
+      await onStart();
+      setState("success");
+    } catch (error) {
+      setState("error");
+      setErrorMessage(error instanceof Error ? error.message : "Não foi possível iniciar a avaliação.");
+    }
+  }
 
   return (
     <section className="rounded-2xl border border-border bg-card p-6 shadow-sm sm:p-8">
@@ -147,6 +212,17 @@ function Start({ copy, onStart }: { copy: CandidateAccessCopy; onStart: () => vo
           ))}
         </ul>
       </div>
+      <div className="mt-5 rounded-xl border border-border bg-background/60 p-4 text-sm leading-6 text-muted-foreground">
+        <p className="font-medium text-foreground">Empresa responsável: {notice.controllerName}</p>
+        <p className="mt-1">Base legal informada: {notice.legalBasis}</p>
+        <p className="mt-1">Retenção informada: {notice.retentionDays} dias.</p>
+        {notice.serviceEmail ? <p className="mt-1">Canal: {notice.serviceEmail}</p> : null}
+        {!notice.configured ? (
+          <p className="mt-2 font-medium text-amber-700">
+            A configuração completa do controlador ainda não foi publicada para esta participação.
+          </p>
+        ) : null}
+      </div>
       <label className="mt-5 flex items-start gap-3 rounded-xl border border-border bg-background/60 p-4 text-sm leading-6 text-foreground">
         <input
           type="checkbox"
@@ -162,13 +238,18 @@ function Start({ copy, onStart }: { copy: CandidateAccessCopy; onStart: () => vo
       >
         {copy.privacyLink}
       </a>
+      {state === "error" ? (
+        <p className="mt-4 rounded-lg border border-danger/30 bg-danger/10 p-3 text-sm" role="alert">
+          {errorMessage}
+        </p>
+      ) : null}
       <button
         type="button"
-        disabled={!accepted}
-        onClick={onStart}
+        disabled={!accepted || state === "sending"}
+        onClick={() => void start()}
         className="mt-6 inline-flex w-full items-center justify-center rounded-xl bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground transition hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-60"
       >
-        {copy.startButton}
+        {state === "sending" ? "Registrando ciência..." : copy.startButton}
       </button>
     </section>
   );
