@@ -23,3 +23,39 @@ body:has(main#topo) .vxsec-l > span,
 body:has(main#topo) .vxto .tl {
   color: oklch(0.45 0.015 240) !important;
 }
+
+/*
+ * O mapa demonstrativo exibe valores simulados por etapa. A primeira coluna
+ * ocupa o espaço restante para que todos os campos de valor comecem na mesma
+ * posição, independentemente do tamanho do nome da competência.
+ */
+body:has(main#topo) .builder .vxcrow {
+  grid-template-columns: minmax(0, 1fr) 54px auto !important;
+  gap: 6px !important;
+}
+
+body:has(main#topo) .builder .vxcrow .cn {
+  min-width: 0;
+}
+
+body:has(main#topo) .builder .vxcrow .cin {
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  padding: 0 6px;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  color: #616a71;
+  text-align: left;
+  white-space: nowrap;
+}
+
+body:has(main#topo) .builder .vxcrow:nth-child(1) .cin::before,
+body:has(main#topo) .builder .vxcrow:nth-child(2) .cin::before {
+  content: "50";
+}
+
+body:has(main#topo) .builder .vxcrow:nth-child(3) .cin::before {
+  content: "0";
+}
