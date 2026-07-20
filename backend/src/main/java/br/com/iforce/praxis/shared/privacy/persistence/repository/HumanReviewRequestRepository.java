@@ -2,6 +2,7 @@ package br.com.iforce.praxis.shared.privacy.persistence.repository;
 
 import br.com.iforce.praxis.shared.privacy.model.ComplianceRequestStatus;
 import br.com.iforce.praxis.shared.privacy.persistence.entity.HumanReviewRequestEntity;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.Collection;
@@ -20,4 +21,9 @@ public interface HumanReviewRequestRepository extends JpaRepository<HumanReviewR
     );
 
     List<HumanReviewRequestEntity> findByAttemptId(String attemptId);
+
+    List<HumanReviewRequestEntity> findByStatusAndResultReleasedAtIsNullOrderByResolvedAtAsc(
+            ComplianceRequestStatus status,
+            Pageable pageable
+    );
 }
