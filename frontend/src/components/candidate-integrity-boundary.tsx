@@ -9,20 +9,81 @@ import {
   type CandidateIntegrityInputMode,
 } from "@/lib/api/candidate-integrity";
 import { PraxisApiError } from "@/lib/api/praxis";
+import { useLanguage } from "@/lib/language-context";
 
 const CLIENT_SESSION_PREFIX = "praxis:integrity-session:";
 const INTEGRITY_SESSION_HEADER = "X-Praxis-Integrity-Session";
 
 type BoundaryState = "starting" | "active" | "blocked" | "error";
+type ErrorReason = "start" | "connection";
 
 type CandidateIntegrityBoundaryProps = {
   token: string;
   children: ReactNode;
 };
 
+const integrityCopy = {
+  "pt-BR": {
+    preparingLabel: "Preparando",
+    preparingTitle: "Validando a sessão da avaliação.",
+    preparingDescription: "Preparando uma sessão segura para a avaliação.",
+    blockedLabel: "Sessão já aberta",
+    blockedTitle: "A avaliação está aberta em outra sessão.",
+    blockedDescription:
+      "Feche a outra janela ou aguarde alguns instantes para que a sessão anterior expire.",
+    errorLabel: "Conexão interrompida",
+    errorTitle: "Não foi possível manter a sessão da avaliação.",
+    startErrorDescription:
+      "Não foi possível iniciar a sessão segura. Verifique a conexão e tente novamente.",
+    connectionErrorDescription:
+      "A conexão com a sessão foi interrompida. Verifique a internet e tente retomar.",
+    retry: "Tentar retomar",
+    notice:
+      "A verificação é técnica, não altera sua pontuação e não toma decisão automática sobre sua candidatura.",
+  },
+  en: {
+    preparingLabel: "Preparing",
+    preparingTitle: "Validating the assessment session.",
+    preparingDescription: "Preparing a secure session for the assessment.",
+    blockedLabel: "Session already open",
+    blockedTitle: "The assessment is open in another session.",
+    blockedDescription:
+      "Close the other window or wait a moment for the previous session to expire.",
+    errorLabel: "Connection interrupted",
+    errorTitle: "The assessment session could not be maintained.",
+    startErrorDescription:
+      "The secure session could not be started. Check your connection and try again.",
+    connectionErrorDescription:
+      "The session connection was interrupted. Check your internet connection and try to resume.",
+    retry: "Try to resume",
+    notice:
+      "This is a technical check. It does not change your score or make an automated decision about your application.",
+  },
+  "es-MX": {
+    preparingLabel: "Preparando",
+    preparingTitle: "Validando la sesión de la evaluación.",
+    preparingDescription: "Preparando una sesión segura para la evaluación.",
+    blockedLabel: "Sesión ya abierta",
+    blockedTitle: "La evaluación está abierta en otra sesión.",
+    blockedDescription:
+      "Cierra la otra ventana o espera unos instantes para que la sesión anterior expire.",
+    errorLabel: "Conexión interrumpida",
+    errorTitle: "No fue posible mantener la sesión de la evaluación.",
+    startErrorDescription:
+      "No fue posible iniciar la sesión segura. Revisa la conexión e inténtalo de nuevo.",
+    connectionErrorDescription:
+      "La conexión con la sesión se interrumpió. Revisa tu conexión a internet e intenta retomarla.",
+    retry: "Intentar retomar",
+    notice:
+      "La verificación es técnica, no cambia tu puntuación ni toma una decisión automática sobre tu candidatura.",
+  },
+} as const;
+
 export function CandidateIntegrityBoundary({ token, children }: CandidateIntegrityBoundaryProps) {
+  const { language } = useLanguage();
+  const copy = integrityCopy[language];
   const [state, setState] = useState<BoundaryState>("starting");
-  const [message, setMessage] = useState("Preparando uma sessão segura para a avaliação.");
+  const [errorReason, setErrorReason] = useState<ErrorReason>("start");
   const [retryNonce, setRetryNonce] = useState(0);
   const sessionIdRef = useRef<string | null>(null);
   const inputModeRef = useRef<CandidateIntegrityInputMode>("UNKNOWN");
@@ -70,7 +131,7 @@ export function CandidateIntegrityBoundary({ token, children }: CandidateIntegri
     let lastPresentedStage = "";
 
     setState("starting");
-    setMessage("Preparando uma sessão segura para a avaliação.");
+    setErrorReason("start");
     sessionIdRef.current = null;
     sequenceRef.current = 0;
     closedRef.current = false;
@@ -167,7 +228,6 @@ export function CandidateIntegrityBoundary({ token, children }: CandidateIntegri
         if (disposed) return;
         sessionIdRef.current = session.sessionId;
         setState("active");
-        setMessage("");
 
         const heartbeat = async () => {
           if (closedRef.current) return;
@@ -177,13 +237,13 @@ export function CandidateIntegrityBoundary({ token, children }: CandidateIntegri
           } catch (error) {
             heartbeatFailures += 1;
             if (error instanceof PraxisApiError && error.status === 409) {
-              setState("blocked");
-              setMessage(error.message);
+              setErrorReason("connection");
+              setState("error");
               return;
             }
             if (heartbeatFailures >= 3) {
+              setErrorReason("connection");
               setState("error");
-              setMessage("A conexão com a sessão da avaliação foi interrompida. Verifique a internet e tente retomar.");
             }
           }
         };
@@ -210,12 +270,8 @@ export function CandidateIntegrityBoundary({ token, children }: CandidateIntegri
       .catch((error) => {
         if (disposed) return;
         const blocked = error instanceof PraxisApiError && error.status === 409;
+        setErrorReason("start");
         setState(blocked ? "blocked" : "error");
-        setMessage(
-          error instanceof Error
-            ? error.message
-            : "Não foi possível iniciar a sessão segura da avaliação.",
-        );
       });
 
     return () => {
@@ -238,40 +294,54 @@ export function CandidateIntegrityBoundary({ token, children }: CandidateIntegri
     return children;
   }
 
-  const blocked = state === "blocked";
+  const isStarting = state === "starting";
+  const isBlocked = state === "blocked";
+  const label = isStarting
+    ? copy.preparingLabel
+    : isBlocked
+      ? copy.blockedLabel
+      : copy.errorLabel;
+  const title = isStarting
+    ? copy.preparingTitle
+    : isBlocked
+      ? copy.blockedTitle
+      : copy.errorTitle;
+  const description = isStarting
+    ? copy.preparingDescription
+    : isBlocked
+      ? copy.blockedDescription
+      : errorReason === "connection"
+        ? copy.connectionErrorDescription
+        : copy.startErrorDescription;
+
   return (
     <main className="flex min-h-screen items-center justify-center bg-background px-4 py-10 text-foreground">
       <section className="w-full max-w-lg rounded-2xl border border-border bg-card p-8 text-center shadow-sm">
-        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-primary">
-          {state === "starting" ? "Preparando" : blocked ? "Sessão já aberta" : "Conexão interrompida"}
+        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-primary">{label}</p>
+        <h1 className="mt-3 text-2xl font-semibold tracking-tight">{title}</h1>
+        <p
+          className="mt-3 text-sm leading-6 text-muted-foreground"
+          role={isStarting ? "status" : "alert"}
+        >
+          {description}
         </p>
-        <h1 className="mt-3 text-2xl font-semibold tracking-tight">
-          {state === "starting"
-            ? "Validando a sessão da avaliação."
-            : blocked
-              ? "A avaliação está aberta em outra sessão."
-              : "Não foi possível manter a sessão da avaliação."}
-        </h1>
-        <p className="mt-3 text-sm leading-6 text-muted-foreground">{message}</p>
-        {state !== "starting" ? (
+        {!isStarting ? (
           <button
             type="button"
             onClick={() => setRetryNonce((value) => value + 1)}
             className="mt-6 inline-flex min-h-11 items-center justify-center rounded-xl bg-primary px-5 py-3 text-sm font-semibold text-primary-foreground transition hover:bg-primary/90"
           >
-            Tentar retomar
+            {copy.retry}
           </button>
         ) : null}
-        <p className="mt-5 text-xs leading-5 text-muted-foreground">
-          A verificação é técnica, não altera sua pontuação e não toma decisão automática sobre sua candidatura.
-        </p>
+        <p className="mt-5 text-xs leading-5 text-muted-foreground">{copy.notice}</p>
       </section>
     </main>
   );
 }
 
 function getOrCreateClientSessionId(token: string): string {
-  const storageKey = `${CLIENT_SESSION_PREFIX}${token}`;
+  const storageKey = storageKeyForToken(token);
   try {
     const stored = window.sessionStorage.getItem(storageKey);
     if (stored) return stored;
@@ -281,6 +351,15 @@ function getOrCreateClientSessionId(token: string): string {
   } catch {
     return `web:${createRandomId()}`;
   }
+}
+
+function storageKeyForToken(token: string): string {
+  let hash = 2_166_136_261;
+  for (let index = 0; index < token.length; index += 1) {
+    hash ^= token.charCodeAt(index);
+    hash = Math.imul(hash, 16_777_619);
+  }
+  return `${CLIENT_SESSION_PREFIX}${(hash >>> 0).toString(36)}`;
 }
 
 function createRandomId(): string {
