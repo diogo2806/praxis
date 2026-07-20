@@ -11,6 +11,9 @@ import br.com.iforce.praxis.candidate.service.CandidateHealthConsentService;
 import br.com.iforce.praxis.candidate.service.CandidateReviewRequestService;
 import br.com.iforce.praxis.candidate.service.PublicCandidateFlowSecurity;
 import br.com.iforce.praxis.gupy.service.CandidateAttemptService;
+import br.com.iforce.praxis.shared.privacy.service.CandidatePrivacyNoticeService;
+import br.com.iforce.praxis.shared.privacy.service.CandidatePrivacyNoticeService.CandidatePrivacyNoticeAcknowledgementRequest;
+import br.com.iforce.praxis.shared.privacy.service.CandidatePrivacyNoticeService.CandidatePrivacyNoticeResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -32,19 +35,40 @@ public class CandidateAttemptController {
     private final CandidateDataRequestService candidateDataRequestService;
     private final CandidateHealthConsentService candidateHealthConsentService;
     private final PublicCandidateFlowSecurity publicCandidateFlowSecurity;
+    private final CandidatePrivacyNoticeService candidatePrivacyNoticeService;
 
     public CandidateAttemptController(
             CandidateAttemptService candidateAttemptService,
             CandidateReviewRequestService candidateReviewRequestService,
             CandidateDataRequestService candidateDataRequestService,
             CandidateHealthConsentService candidateHealthConsentService,
-            PublicCandidateFlowSecurity publicCandidateFlowSecurity
+            PublicCandidateFlowSecurity publicCandidateFlowSecurity,
+            CandidatePrivacyNoticeService candidatePrivacyNoticeService
     ) {
         this.candidateAttemptService = candidateAttemptService;
         this.candidateReviewRequestService = candidateReviewRequestService;
         this.candidateDataRequestService = candidateDataRequestService;
         this.candidateHealthConsentService = candidateHealthConsentService;
         this.publicCandidateFlowSecurity = publicCandidateFlowSecurity;
+        this.candidatePrivacyNoticeService = candidatePrivacyNoticeService;
+    }
+
+    @GetMapping("/{attemptToken}/privacy-notice")
+    @Operation(summary = "Retorna o aviso de privacidade aplicável à participação")
+    public ResponseEntity<CandidatePrivacyNoticeResponse> getPrivacyNotice(@PathVariable String attemptToken) {
+        publicCandidateFlowSecurity.requireValidAttemptToken(attemptToken);
+        return ResponseEntity.ok(candidatePrivacyNoticeService.getNotice(attemptToken));
+    }
+
+    @PostMapping("/{attemptToken}/privacy-notice/acknowledgement")
+    @Operation(summary = "Registra a ciência versionada do aviso de privacidade")
+    public ResponseEntity<Void> acknowledgePrivacyNotice(
+            @PathVariable String attemptToken,
+            @Valid @RequestBody CandidatePrivacyNoticeAcknowledgementRequest request
+    ) {
+        publicCandidateFlowSecurity.requireValidAttemptToken(attemptToken);
+        candidatePrivacyNoticeService.acknowledge(attemptToken, request);
+        return ResponseEntity.noContent().build();
     }
 
     @GetMapping("/{attemptToken}")
@@ -54,6 +78,7 @@ public class CandidateAttemptController {
     )
     public ResponseEntity<ParticipacaoResponse> getCandidateAttempt(@PathVariable String attemptToken) {
         publicCandidateFlowSecurity.requireValidAttemptToken(attemptToken);
+        candidatePrivacyNoticeService.assertAcknowledged(attemptToken);
         ParticipacaoResponse response = candidateAttemptService.findCandidateAttempt(attemptToken);
         return ResponseEntity.ok(publicCandidateFlowSecurity.sanitize(attemptToken, response));
     }
@@ -68,6 +93,7 @@ public class CandidateAttemptController {
             @Valid @RequestBody RegistrarRespostaRequest request
     ) {
         publicCandidateFlowSecurity.requireValidAttemptToken(attemptToken);
+        candidatePrivacyNoticeService.assertAcknowledged(attemptToken);
         RegistrarRespostaResponse response = candidateAttemptService.submitAnswer(
                 attemptToken,
                 publicCandidateFlowSecurity.sanitizeRequest(request)
