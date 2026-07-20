@@ -67,7 +67,7 @@ A listagem externa da Gupy e da Recrutei é interceptada quando o token pertence
 
 ## Persistência
 
-A migration `V1009__create_partner_distribution_module.sql` cria:
+A migration `V1009_1__create_partner_distribution_module.sql` cria:
 
 - `partner_clients`;
 - `partner_catalog_access`;
