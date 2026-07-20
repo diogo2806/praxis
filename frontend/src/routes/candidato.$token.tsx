@@ -64,10 +64,29 @@ function TokenCandidatePage() {
   const { t } = useLanguage();
   const copy = t.candidateAccess;
   const [ready, setReady] = useState(false);
+
+  if (!ready) {
+    return (
+      <Shell>
+        <div className="space-y-6">
+          <Start copy={copy} onStart={() => setReady(true)} />
+          <PrivacyAndRightsPanel token={token} copy={copy} />
+        </div>
+      </Shell>
+    );
+  }
+
+  return (
+    <CandidateIntegrityBoundary token={token}>
+      <CandidateAttemptContent token={token} copy={copy} />
+    </CandidateIntegrityBoundary>
+  );
+}
+
+function CandidateAttemptContent({ token, copy }: { token: string; copy: CandidateAccessCopy }) {
   const attempt = useQuery({
     queryKey: ["candidate-attempt", token],
     queryFn: () => getCandidateAttempt(token),
-    enabled: ready,
   });
   const terminal = useMemo(
     () => (!attempt.data || attempt.data.etapaAtual ? null : statusCopy(attempt.data, copy)),
@@ -80,17 +99,6 @@ function TokenCandidatePage() {
     const timeout = window.setTimeout(() => window.location.assign(redirectUrl), 1200);
     return () => window.clearTimeout(timeout);
   }, [redirectUrl]);
-
-  if (!ready) {
-    return (
-      <Shell>
-        <div className="space-y-6">
-          <Start copy={copy} onStart={() => setReady(true)} />
-          <PrivacyAndRightsPanel token={token} copy={copy} />
-        </div>
-      </Shell>
-    );
-  }
 
   if (attempt.isLoading) {
     return (
@@ -116,11 +124,7 @@ function TokenCandidatePage() {
     );
   }
 
-  return (
-    <CandidateIntegrityBoundary token={token}>
-      <CandidateExperience token={token} />
-    </CandidateIntegrityBoundary>
-  );
+  return <CandidateExperience token={token} />;
 }
 
 function Start({ copy, onStart }: { copy: CandidateAccessCopy; onStart: () => void }) {
