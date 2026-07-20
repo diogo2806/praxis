@@ -1,9 +1,11 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import {
+  clearCandidateIntegritySession,
   closeCandidateIntegritySession,
   closeCandidateIntegritySessionKeepalive,
   recordCandidateIntegrityEvent,
   sendCandidateIntegrityHeartbeat,
+  setCandidateIntegritySession,
   startCandidateIntegritySession,
   type CandidateIntegrityEventType,
   type CandidateIntegrityInputMode,
@@ -12,7 +14,6 @@ import { PraxisApiError } from "@/lib/api/praxis";
 import { useLanguage } from "@/lib/language-context";
 
 const CLIENT_SESSION_PREFIX = "praxis:integrity-session:";
-const INTEGRITY_SESSION_HEADER = "X-Praxis-Integrity-Session";
 
 type BoundaryState = "starting" | "active" | "blocked" | "error";
 type ErrorReason = "start" | "connection";
@@ -91,39 +92,6 @@ export function CandidateIntegrityBoundary({ token, children }: CandidateIntegri
   const closedRef = useRef(false);
 
   useEffect(() => {
-    const previousFetch = window.fetch;
-    const attemptPath = `/candidate/attempts/${encodeURIComponent(token)}`;
-
-    const fetchWithIntegritySession: typeof window.fetch = async (input, init) => {
-      const requestUrl =
-        typeof input === "string"
-          ? input
-          : input instanceof URL
-            ? input.toString()
-            : input.url;
-      const pathname = new URL(requestUrl, window.location.origin).pathname;
-      const protectedRequest =
-        pathname.endsWith(attemptPath) || pathname.endsWith(`${attemptPath}/answers`);
-      const sessionId = sessionIdRef.current;
-      if (!sessionId || !protectedRequest) {
-        return previousFetch.call(window, input, init);
-      }
-
-      const headers = new Headers(input instanceof Request ? input.headers : undefined);
-      new Headers(init?.headers).forEach((value, name) => headers.set(name, value));
-      headers.set(INTEGRITY_SESSION_HEADER, sessionId);
-      return previousFetch.call(window, input, { ...init, headers });
-    };
-
-    window.fetch = fetchWithIntegritySession;
-    return () => {
-      if (window.fetch === fetchWithIntegritySession) {
-        window.fetch = previousFetch;
-      }
-    };
-  }, [token]);
-
-  useEffect(() => {
     let disposed = false;
     let heartbeatId: number | undefined;
     let mutationObserver: MutationObserver | undefined;
@@ -174,6 +142,7 @@ export function CandidateIntegrityBoundary({ token, children }: CandidateIntegri
       const sessionId = sessionIdRef.current;
       if (!sessionId || closedRef.current) return;
       closedRef.current = true;
+      clearCandidateIntegritySession(token, sessionId);
       if (heartbeatId !== undefined) window.clearInterval(heartbeatId);
       void closeCandidateIntegritySession(token, sessionId).catch(() => {
         // O TTL do backend encerra a sessão caso a chamada final não seja entregue.
@@ -209,6 +178,7 @@ export function CandidateIntegrityBoundary({ token, children }: CandidateIntegri
       const sessionId = sessionIdRef.current;
       if (!sessionId || closedRef.current) return;
       closedRef.current = true;
+      clearCandidateIntegritySession(token, sessionId);
       closeCandidateIntegritySessionKeepalive(token, sessionId);
     };
 
@@ -225,8 +195,12 @@ export function CandidateIntegrityBoundary({ token, children }: CandidateIntegri
 
     void startCandidateIntegritySession(token, clientSessionId, inputModeRef.current)
       .then((session) => {
-        if (disposed) return;
+        if (disposed) {
+          void closeCandidateIntegritySession(token, session.sessionId).catch(() => undefined);
+          return;
+        }
         sessionIdRef.current = session.sessionId;
+        setCandidateIntegritySession(token, session.sessionId);
         setState("active");
 
         const heartbeat = async () => {
@@ -237,11 +211,13 @@ export function CandidateIntegrityBoundary({ token, children }: CandidateIntegri
           } catch (error) {
             heartbeatFailures += 1;
             if (error instanceof PraxisApiError && error.status === 409) {
+              clearCandidateIntegritySession(token, session.sessionId);
               setErrorReason("connection");
               setState("error");
               return;
             }
             if (heartbeatFailures >= 3) {
+              clearCandidateIntegritySession(token, session.sessionId);
               setErrorReason("connection");
               setState("error");
             }
@@ -287,6 +263,13 @@ export function CandidateIntegrityBoundary({ token, children }: CandidateIntegri
       window.removeEventListener("play", handleStimulusStarted, true);
       window.removeEventListener("click", handleCandidateClick, true);
       window.removeEventListener("pagehide", handlePageHide);
+
+      const sessionId = sessionIdRef.current;
+      if (sessionId && !closedRef.current) {
+        closedRef.current = true;
+        clearCandidateIntegritySession(token, sessionId);
+        void closeCandidateIntegritySession(token, sessionId).catch(() => undefined);
+      }
     };
   }, [retryNonce, token]);
 
