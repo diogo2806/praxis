@@ -79,6 +79,21 @@ POST /candidate/attempts/{attemptToken}/integrity/close
 
 Todos exigem o mesmo token público assinado usado no fluxo do candidato.
 
+Após a abertura, o identificador opaco retornado em `sessionId` deve acompanhar as operações protegidas no cabeçalho:
+
+```text
+X-Praxis-Integrity-Session: {sessionId}
+```
+
+O cabeçalho é obrigatório em produção para:
+
+```text
+GET  /candidate/attempts/{attemptToken}
+POST /candidate/attempts/{attemptToken}/answers
+```
+
+Assim, ocultar ou bloquear a tela no React não é a fronteira de segurança: o backend também recusa o carregamento da etapa e o envio de resposta sem uma sessão técnica ativa pertencente à mesma tentativa.
+
 ## Estados da sessão
 
 | Estado | Significado |
@@ -100,6 +115,8 @@ Antes de iniciar, a pessoa é informada de que:
 - é possível solicitar revisão humana e exercer direitos sobre os dados.
 
 Quando outra sessão está ativa, a interface apresenta somente orientação operacional para fechar a outra janela ou aguardar a expiração. Não são usados termos acusatórios.
+
+As mensagens da barreira técnica estão disponíveis em português, inglês e espanhol, acompanhando o idioma selecionado pela pessoa participante.
 
 ## Manual da tela
 
