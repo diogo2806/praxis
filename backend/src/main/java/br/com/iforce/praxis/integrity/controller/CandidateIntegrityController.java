@@ -49,7 +49,7 @@ public class CandidateIntegrityController {
         CandidateIntegritySessionResponse response = candidateIntegrityService.startSession(
                 attemptToken,
                 request,
-                clientAddress(httpRequest),
+                httpRequest.getRemoteAddr(),
                 httpRequest.getHeader("User-Agent")
         );
         return ResponseEntity.status(response.resumed() ? HttpStatus.OK : HttpStatus.CREATED).body(response);
@@ -89,14 +89,5 @@ public class CandidateIntegrityController {
         publicCandidateFlowSecurity.requireValidAttemptToken(attemptToken);
         candidateIntegrityService.closeSession(attemptToken, request);
         return ResponseEntity.noContent().build();
-    }
-
-    private String clientAddress(HttpServletRequest request) {
-        String forwarded = request.getHeader("X-Forwarded-For");
-        if (forwarded != null && !forwarded.isBlank()) {
-            int separator = forwarded.indexOf(',');
-            return separator >= 0 ? forwarded.substring(0, separator).trim() : forwarded.trim();
-        }
-        return request.getRemoteAddr();
     }
 }
