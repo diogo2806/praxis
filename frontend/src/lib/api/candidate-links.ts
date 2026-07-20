@@ -60,9 +60,9 @@ type CandidateLinkPayload = Omit<
   CandidateLinkResponse,
   "linkExpiresAt" | "remainingDays" | "linkStatus"
 > & {
-  linkExpiresAt?: string | null;
-  remainingDays?: number | null;
-  linkStatus?: string | null;
+  linkExpiresAt: unknown;
+  remainingDays: unknown;
+  linkStatus: unknown;
 };
 
 type CandidateLinkPagePayload = Omit<CandidateLinkPageResponse, "items"> & {
@@ -70,7 +70,6 @@ type CandidateLinkPagePayload = Omit<CandidateLinkPageResponse, "items"> & {
 };
 
 const CANDIDATE_LINK_PAGE_SIZE = 100;
-const LEGACY_LINK_TTL_MILLISECONDS = 7 * 24 * 60 * 60 * 1000;
 
 export async function searchCandidateLinks(
   page: number,
@@ -92,7 +91,7 @@ export async function searchCandidateLinks(
 
   return {
     ...response,
-    items: response.items.map(normalizeCandidateLink),
+    items: response.items.map(validateCandidateLink),
   };
 }
 
@@ -141,67 +140,42 @@ export function extendCandidateLink(attemptId: string, additionalDays: number) {
   );
 }
 
-function normalizeCandidateLink(link: CandidateLinkPayload): CandidateLinkResponse {
-  const linkExpiresAt = normalizeLinkExpiresAt(link.linkExpiresAt, link.createdAt);
-  const remainingDays = normalizeRemainingDays(link.remainingDays, linkExpiresAt);
+function validateCandidateLink(link: CandidateLinkPayload): CandidateLinkResponse {
+  const linkExpiresAt = requireValidExpiration(link.linkExpiresAt, link.attemptId);
+  const remainingDays = requireValidRemainingDays(link.remainingDays, link.attemptId);
+  const linkStatus = requireValidLinkStatus(link.linkStatus, link.attemptId);
 
   return {
     ...link,
     linkExpiresAt,
     remainingDays,
-    linkStatus: normalizeLinkStatus(link.linkStatus, remainingDays),
+    linkStatus,
   };
 }
 
-function normalizeLinkExpiresAt(value: string | null | undefined, createdAt: string): string {
-  if (value && Number.isFinite(Date.parse(value))) {
+function requireValidExpiration(value: unknown, attemptId: string): string {
+  if (typeof value === "string" && value.trim() && Number.isFinite(Date.parse(value))) {
     return value;
   }
-
-  const createdAtMilliseconds = Date.parse(createdAt);
-  if (Number.isFinite(createdAtMilliseconds)) {
-    return new Date(createdAtMilliseconds + LEGACY_LINK_TTL_MILLISECONDS).toISOString();
-  }
-
-  return new Date(0).toISOString();
+  throw candidateLinkContractError(attemptId, "linkExpiresAt");
 }
 
-function normalizeRemainingDays(value: number | null | undefined, linkExpiresAt: string): number {
-  if (typeof value === "number" && Number.isFinite(value) && value >= 0) {
-    return Math.floor(value);
+function requireValidRemainingDays(value: unknown, attemptId: string): number {
+  if (typeof value === "number" && Number.isSafeInteger(value) && value >= 0) {
+    return value;
   }
-
-  const expiresAtMilliseconds = Date.parse(linkExpiresAt);
-  if (!Number.isFinite(expiresAtMilliseconds)) {
-    return 0;
-  }
-
-  const remainingMilliseconds = expiresAtMilliseconds - Date.now();
-  if (remainingMilliseconds <= 0) {
-    return 0;
-  }
-
-  return Math.max(1, Math.ceil(remainingMilliseconds / (24 * 60 * 60 * 1000)));
+  throw candidateLinkContractError(attemptId, "remainingDays");
 }
 
-function normalizeLinkStatus(
-  value: string | null | undefined,
-  remainingDays: number,
-): CandidateLinkStatus {
-  const normalizedValue = value?.replace(/[\s_-]/g, "").toLowerCase();
+function requireValidLinkStatus(value: unknown, attemptId: string): CandidateLinkStatus {
+  if (value === "active" || value === "expiringSoon" || value === "expired") {
+    return value;
+  }
+  throw candidateLinkContractError(attemptId, "linkStatus");
+}
 
-  if (normalizedValue === "active") {
-    return "active";
-  }
-  if (normalizedValue === "expiringsoon") {
-    return "expiringSoon";
-  }
-  if (normalizedValue === "expired") {
-    return "expired";
-  }
-
-  if (remainingDays === 0) {
-    return "expired";
-  }
-  return remainingDays <= 3 ? "expiringSoon" : "active";
+function candidateLinkContractError(attemptId: string, field: string): Error {
+  return new Error(
+    `Resposta incompatível da API para o link ${attemptId}: o campo obrigatório ${field} está ausente ou inválido.`,
+  );
 }
