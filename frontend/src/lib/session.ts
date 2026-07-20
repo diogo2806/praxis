@@ -123,3 +123,8 @@ function parseRoles(value: string | null) {
     .map((role) => role.trim())
     .filter(Boolean);
 }
+
+if (typeof window !== "undefined") {
+  migrateLegacySession();
+  applyBrowserAccessPolicy(getSession().roles);
+}
