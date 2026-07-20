@@ -5,6 +5,7 @@ import { Archive, Copy, ExternalLink, FilePlus2, PlayCircle, Search, Target } fr
 import { AppShell } from "@/components/app-shell";
 import { EmptyState, SkeletonRows, StateBanner, StatusBadge } from "@/components/praxis-ui";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { isRestrictedPartnerSpecialist } from "@/lib/access-control";
 import {
   listSimulations,
   type SimulationSummaryResponse,
@@ -12,6 +13,7 @@ import {
 } from "@/lib/api/praxis";
 import { archiveSimulation } from "@/lib/api/archive-simulation";
 import { duplicateSimulation } from "@/lib/api/simulation-duplicates";
+import { useSession } from "@/lib/session";
 
 export const Route = createFileRoute("/avaliacoes")({
   head: () => ({
@@ -41,6 +43,8 @@ const filterLabels: Record<(typeof filters)[number], string> = {
 };
 
 function AvaliacoesPage() {
+  const session = useSession();
+  const specialistAccess = isRestrictedPartnerSpecialist(session.roles);
   const [filter, setFilter] = useState<(typeof filters)[number]>("todas");
   const [query, setQuery] = useState("");
   const [duplicatedName, setDuplicatedName] = useState<string | null>(null);
@@ -82,6 +86,7 @@ function AvaliacoesPage() {
   }, [filter, query, simulations]);
 
   function requestDuplicate(simulation: SimulationSummaryResponse) {
+    if (specialistAccess) return;
     const suggestedName = `${simulation.name} - cópia`;
     const name = window.prompt(
       "Informe o nome da nova avaliação. A origem não será alterada.",
@@ -99,7 +104,9 @@ function AvaliacoesPage() {
           <div>
             <h1 className="text-3xl font-semibold text-foreground">Avaliações</h1>
             <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
-              Aqui fica o conteúdo dos testes. A aplicação aos participantes acontece em Jornadas.
+              {specialistAccess
+                ? "Crie, edite e revise avaliações. Publicação, duplicação, arquivamento e comparação ficam sob responsabilidade da empresa."
+                : "Aqui fica o conteúdo dos testes. A aplicação aos participantes acontece em Jornadas."}
             </p>
           </div>
           <Link
@@ -111,13 +118,13 @@ function AvaliacoesPage() {
           </Link>
         </header>
 
-        {archiveMutation.isError && (
+        {!specialistAccess && archiveMutation.isError && (
           <StateBanner tone="danger" title="Não foi possível arquivar a avaliação">
             {archiveMutation.error instanceof Error ? archiveMutation.error.message : "Tente novamente."}
           </StateBanner>
         )}
 
-        {duplicateMutation.isError && (
+        {!specialistAccess && duplicateMutation.isError && (
           <StateBanner tone="danger" title="Não foi possível duplicar a avaliação">
             {duplicateMutation.error instanceof Error
               ? duplicateMutation.error.message
@@ -125,7 +132,7 @@ function AvaliacoesPage() {
           </StateBanner>
         )}
 
-        {duplicatedName && (
+        {!specialistAccess && duplicatedName && (
           <StateBanner tone="ok" title="Avaliação reutilizada com segurança">
             “{duplicatedName}” foi criada como um novo rascunho independente. A avaliação de origem
             permanece inalterada.
@@ -157,7 +164,11 @@ function AvaliacoesPage() {
         ) : simulations.length === 0 ? (
           <EmptyState
             title="Nenhuma avaliação cadastrada"
-            description="Crie o primeiro teste e publique-o antes de adicioná-lo a uma jornada."
+            description={
+              specialistAccess
+                ? "Crie a primeira avaliação e envie para revisão e publicação pela empresa."
+                : "Crie o primeiro teste e publique-o antes de adicioná-lo a uma jornada."
+            }
             actions={
               <Link
                 to="/nova/avaliacao"
@@ -263,38 +274,42 @@ function AvaliacoesPage() {
                             </td>
                             <td className="px-4 py-3 text-right">
                               <div className="inline-flex gap-1">
-                                <Tooltip>
-                                  <TooltipTrigger asChild>
-                                    <button
-                                      type="button"
-                                      aria-label={`Duplicar ${simulation.name}`}
-                                      onClick={() => requestDuplicate(simulation)}
-                                      disabled={duplicateMutation.isPending}
-                                      className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-border bg-background text-primary hover:bg-primary/10 disabled:cursor-not-allowed disabled:opacity-50"
-                                    >
-                                      <Copy className="h-4 w-4" />
-                                    </button>
-                                  </TooltipTrigger>
-                                  <TooltipContent>Duplicar como novo rascunho reutilizável</TooltipContent>
-                                </Tooltip>
-                                <Tooltip>
-                                  <TooltipTrigger asChild>
-                                    <button
-                                      type="button"
-                                      aria-label={`Arquivar ${simulation.name}`}
-                                      onClick={() => {
-                                        if (window.confirm(`Arquivar "${simulation.name}"? O histórico será preservado.`)) {
-                                          archiveMutation.mutate(simulation.id);
-                                        }
-                                      }}
-                                      disabled={archiveMutation.isPending || simulation.status === "archived"}
-                                      className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-border bg-background text-warning hover:bg-warning/10 disabled:cursor-not-allowed disabled:opacity-50"
-                                    >
-                                      <Archive className="h-4 w-4" />
-                                    </button>
-                                  </TooltipTrigger>
-                                  <TooltipContent>Arquivar sem apagar o histórico</TooltipContent>
-                                </Tooltip>
+                                {!specialistAccess && (
+                                  <>
+                                    <Tooltip>
+                                      <TooltipTrigger asChild>
+                                        <button
+                                          type="button"
+                                          aria-label={`Duplicar ${simulation.name}`}
+                                          onClick={() => requestDuplicate(simulation)}
+                                          disabled={duplicateMutation.isPending}
+                                          className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-border bg-background text-primary hover:bg-primary/10 disabled:cursor-not-allowed disabled:opacity-50"
+                                        >
+                                          <Copy className="h-4 w-4" />
+                                        </button>
+                                      </TooltipTrigger>
+                                      <TooltipContent>Duplicar como novo rascunho reutilizável</TooltipContent>
+                                    </Tooltip>
+                                    <Tooltip>
+                                      <TooltipTrigger asChild>
+                                        <button
+                                          type="button"
+                                          aria-label={`Arquivar ${simulation.name}`}
+                                          onClick={() => {
+                                            if (window.confirm(`Arquivar "${simulation.name}"? O histórico será preservado.`)) {
+                                              archiveMutation.mutate(simulation.id);
+                                            }
+                                          }}
+                                          disabled={archiveMutation.isPending || simulation.status === "archived"}
+                                          className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-border bg-background text-warning hover:bg-warning/10 disabled:cursor-not-allowed disabled:opacity-50"
+                                        >
+                                          <Archive className="h-4 w-4" />
+                                        </button>
+                                      </TooltipTrigger>
+                                      <TooltipContent>Arquivar sem apagar o histórico</TooltipContent>
+                                    </Tooltip>
+                                  </>
+                                )}
                                 <Tooltip>
                                   <TooltipTrigger asChild>
                                     <Link
@@ -308,19 +323,21 @@ function AvaliacoesPage() {
                                   </TooltipTrigger>
                                   <TooltipContent>Abrir avaliação</TooltipContent>
                                 </Tooltip>
-                                <Tooltip>
-                                  <TooltipTrigger asChild>
-                                    <Link
-                                      to="/talent-match"
-                                      search={simulationSearch(simulation)}
-                                      aria-label={`Comparar participações de ${simulation.name}`}
-                                      className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-border bg-background text-primary hover:bg-primary/10"
-                                    >
-                                      <Target className="h-4 w-4" />
-                                    </Link>
-                                  </TooltipTrigger>
-                                  <TooltipContent>Comparar participações</TooltipContent>
-                                </Tooltip>
+                                {!specialistAccess && (
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <Link
+                                        to="/talent-match"
+                                        search={simulationSearch(simulation)}
+                                        aria-label={`Comparar participações de ${simulation.name}`}
+                                        className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-border bg-background text-primary hover:bg-primary/10"
+                                      >
+                                        <Target className="h-4 w-4" />
+                                      </Link>
+                                    </TooltipTrigger>
+                                    <TooltipContent>Comparar participações</TooltipContent>
+                                  </Tooltip>
+                                )}
                               </div>
                             </td>
                           </tr>

@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { Edit2, Plus, Trash2 } from "lucide-react";
 
@@ -14,15 +14,17 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { isRestrictedPartnerSpecialist } from "@/lib/access-control";
 import { getEmpresaConfig, updateEmpresaConfig, type EmpresaConfigOption } from "@/lib/api/praxis";
+import { useSession } from "@/lib/session";
 
 export const Route = createFileRoute("/competencias")({
   head: () => ({
     meta: [
-      { title: "Gerenciar Competências - Práxis" },
+      { title: "Competências - Práxis" },
       {
         name: "description",
-        content: "Crie e edite as competências utilizadas nas suas avaliações.",
+        content: "Consulte e administre as competências utilizadas nas avaliações.",
       },
     ],
   }),
@@ -35,6 +37,8 @@ const DEFAULT_PAGE_SIZE = 10;
 const PAGE_SIZE_OPTIONS = [10, 25, 50];
 
 function CompetenciasManagement() {
+  const session = useSession();
+  const readOnly = isRestrictedPartnerSpecialist(session.roles);
   const queryClient = useQueryClient();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [newCompetencia, setNewCompetencia] = useState("");
@@ -74,22 +78,23 @@ function CompetenciasManagement() {
   const pageEndIndex = Math.min(pageStartIndex + pageSize, visibleCompetencias.length);
   const paginatedCompetencias = visibleCompetencias.slice(pageStartIndex, pageEndIndex);
   const pageRangeStart = visibleCompetencias.length === 0 ? 0 : pageStartIndex + 1;
+  const tableColumnCount = readOnly ? 2 : 3;
 
-  const handleOpenCreateDialog = () => {
+  function handleOpenCreateDialog() {
+    if (readOnly) return;
     setEditingOption(null);
     setNewCompetencia("");
     setIsDialogOpen(true);
-  };
+  }
 
-  const handleOpenEditDialog = (option: EmpresaConfigOption) => {
-    setEditingOption({
-      ...option,
-      originalValue: option.value,
-    });
+  function handleOpenEditDialog(option: EmpresaConfigOption) {
+    if (readOnly) return;
+    setEditingOption({ ...option, originalValue: option.value });
     setIsDialogOpen(true);
-  };
+  }
 
-  const handleAddNew = () => {
+  function handleAddNew() {
+    if (readOnly) return;
     const label = newCompetencia.trim();
     if (!label) return;
 
@@ -102,44 +107,42 @@ function CompetenciasManagement() {
         selectedByDefault: false,
       },
     ]);
-  };
+  }
 
-  const handleSaveEdit = () => {
-    if (!editingOption) return;
+  function handleSaveEdit() {
+    if (readOnly || !editingOption) return;
     const label = editingOption.label.trim();
     if (!label) return;
 
     saveCatalogMutation.mutate(
       competencias.map((competencia) =>
         competencia.value === editingOption.originalValue
-          ? {
-              ...competencia,
-              label,
-            }
+          ? { ...competencia, label }
           : competencia,
       ),
     );
-  };
+  }
 
-  const handleRemove = (value: string) => {
-    saveCatalogMutation.mutate(competencias.filter((competencia) => competencia.value !== value));
-  };
-
-  const requestDelete = (option: EmpresaConfigOption) => {
+  function requestDelete(option: EmpresaConfigOption) {
+    if (readOnly) return;
     setPendingDeleteOption({ ...option, originalValue: option.value });
-  };
+  }
 
-  const confirmDelete = () => {
-    if (!pendingDeleteOption) return;
-    handleRemove(pendingDeleteOption.value);
+  function confirmDelete() {
+    if (readOnly || !pendingDeleteOption) return;
+    saveCatalogMutation.mutate(
+      competencias.filter((competencia) => competencia.value !== pendingDeleteOption.value),
+    );
     setPendingDeleteOption(null);
-  };
+  }
+
+  const pageTitle = readOnly ? "Competências" : "Gerenciar Competências";
 
   if (empresaConfigQuery.isLoading) {
     return (
       <AppShell>
         <div className="mb-6">
-          <h1 className="text-3xl font-semibold">Gerenciar Competências</h1>
+          <h1 className="text-3xl font-semibold">{pageTitle}</h1>
         </div>
         <section className="rounded-md border border-border bg-card p-4">
           <SkeletonRows rows={5} />
@@ -152,7 +155,7 @@ function CompetenciasManagement() {
     return (
       <AppShell>
         <div className="mb-6">
-          <h1 className="text-3xl font-semibold">Gerenciar Competências</h1>
+          <h1 className="text-3xl font-semibold">{pageTitle}</h1>
         </div>
         <StateBanner tone="danger" title="Erro ao carregar competências">
           {empresaConfigQuery.error instanceof Error
@@ -167,21 +170,26 @@ function CompetenciasManagement() {
     <AppShell>
       <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-semibold">Gerenciar Competências</h1>
+          <h1 className="text-3xl font-semibold">{pageTitle}</h1>
           <p className="mt-2 text-sm text-muted-foreground">
-            Cadastre e edite as competências que aparecem nas suas avaliações.
+            {readOnly
+              ? "Consulte as competências disponíveis para utilizar durante a criação e revisão das avaliações."
+              : "Cadastre e edite as competências que aparecem nas suas avaliações."}
           </p>
         </div>
-        <button
-          onClick={handleOpenCreateDialog}
-          className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
-        >
-          <Plus className="h-4 w-4" />
-          Nova competência
-        </button>
+        {!readOnly && (
+          <button
+            type="button"
+            onClick={handleOpenCreateDialog}
+            className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
+          >
+            <Plus className="h-4 w-4" />
+            Nova competência
+          </button>
+        )}
       </div>
 
-      {saveCatalogMutation.isError && (
+      {!readOnly && saveCatalogMutation.isError && (
         <StateBanner tone="danger" title="Erro ao salvar competências">
           {saveCatalogMutation.error instanceof Error
             ? saveCatalogMutation.error.message
@@ -192,15 +200,22 @@ function CompetenciasManagement() {
       {competencias.length === 0 ? (
         <EmptyState
           title="Nenhuma competência cadastrada"
-          description="Crie sua primeira competência para começar a usar nas avaliações."
+          description={
+            readOnly
+              ? "A empresa ainda não cadastrou competências para consulta."
+              : "Crie sua primeira competência para começar a usar nas avaliações."
+          }
           actions={
-            <button
-              onClick={handleOpenCreateDialog}
-              className="inline-flex items-center justify-between rounded-md border border-primary bg-primary px-4 py-3 text-sm font-medium text-primary-foreground hover:bg-primary/90"
-            >
-              Criar primeira competência
-              <Plus className="h-4 w-4" />
-            </button>
+            readOnly ? undefined : (
+              <button
+                type="button"
+                onClick={handleOpenCreateDialog}
+                className="inline-flex items-center justify-between rounded-md border border-primary bg-primary px-4 py-3 text-sm font-medium text-primary-foreground hover:bg-primary/90"
+              >
+                Criar primeira competência
+                <Plus className="h-4 w-4" />
+              </button>
+            )
           }
         />
       ) : (
@@ -211,10 +226,7 @@ function CompetenciasManagement() {
 
           <div className="rounded-md border border-border bg-card p-4">
             <div className="mb-3">
-              <Label
-                htmlFor="filter-competencias"
-                className="mb-1.5 block text-xs text-muted-foreground"
-              >
+              <Label htmlFor="filter-competencias" className="mb-1.5 block text-xs text-muted-foreground">
                 Buscar por nome
               </Label>
               <Input
@@ -240,33 +252,27 @@ function CompetenciasManagement() {
                   <tr>
                     <th className="px-4 py-3 text-left font-medium">Competência</th>
                     <th className="px-4 py-3 text-left font-medium">Status</th>
-                    <th className="px-4 py-3 text-right font-medium">Ações</th>
+                    {!readOnly && <th className="px-4 py-3 text-right font-medium">Ações</th>}
                   </tr>
                 </thead>
                 <tbody>
                   {visibleCompetencias.length === 0 ? (
                     <tr>
-                      <td colSpan={3} className="px-4 py-5 text-center text-muted-foreground">
+                      <td colSpan={tableColumnCount} className="px-4 py-5 text-center text-muted-foreground">
                         Nenhuma competência encontrada com o filtro atual.
                       </td>
                     </tr>
                   ) : (
                     paginatedCompetencias.map((competencia) => {
                       const showIdentifier =
-                        competencia.value.trim().toLowerCase() !==
-                        competencia.label.trim().toLowerCase();
+                        competencia.value.trim().toLowerCase() !== competencia.label.trim().toLowerCase();
 
                       return (
-                        <tr
-                          key={competencia.value}
-                          className="border-b border-border last:border-0 transition"
-                        >
+                        <tr key={competencia.value} className="border-b border-border last:border-0 transition">
                           <td className="px-4 py-3">
                             <div className="font-medium text-foreground">{competencia.label}</div>
                             {showIdentifier && (
-                              <div className="mt-0.5 text-xs text-muted-foreground">
-                                ID: {competencia.value}
-                              </div>
+                              <div className="mt-0.5 text-xs text-muted-foreground">ID: {competencia.value}</div>
                             )}
                           </td>
                           <td className="px-4 py-3">
@@ -274,26 +280,30 @@ function CompetenciasManagement() {
                               Ativa
                             </span>
                           </td>
-                          <td className="px-4 py-3 text-right">
-                            <div className="flex justify-end gap-2">
-                              <button
-                                onClick={() => handleOpenEditDialog(competencia)}
-                                disabled={saveCatalogMutation.isPending}
-                                className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-border bg-background text-foreground hover:bg-accent disabled:cursor-not-allowed disabled:opacity-50"
-                                title="Editar"
-                              >
-                                <Edit2 className="h-3.5 w-3.5" />
-                              </button>
-                              <button
-                                onClick={() => requestDelete(competencia)}
-                                disabled={saveCatalogMutation.isPending}
-                                className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-border bg-background text-muted-foreground hover:bg-danger/10 hover:text-danger disabled:cursor-not-allowed disabled:opacity-50"
-                                title="Remover"
-                              >
-                                <Trash2 className="h-3.5 w-3.5" />
-                              </button>
-                            </div>
-                          </td>
+                          {!readOnly && (
+                            <td className="px-4 py-3 text-right">
+                              <div className="flex justify-end gap-2">
+                                <button
+                                  type="button"
+                                  onClick={() => handleOpenEditDialog(competencia)}
+                                  disabled={saveCatalogMutation.isPending}
+                                  className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-border bg-background text-foreground hover:bg-accent disabled:cursor-not-allowed disabled:opacity-50"
+                                  title="Editar"
+                                >
+                                  <Edit2 className="h-3.5 w-3.5" />
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => requestDelete(competencia)}
+                                  disabled={saveCatalogMutation.isPending}
+                                  className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-border bg-background text-muted-foreground hover:bg-danger/10 hover:text-danger disabled:cursor-not-allowed disabled:opacity-50"
+                                  title="Remover"
+                                >
+                                  <Trash2 className="h-3.5 w-3.5" />
+                                </button>
+                              </div>
+                            </td>
+                          )}
                         </tr>
                       );
                     })
@@ -326,9 +336,7 @@ function CompetenciasManagement() {
                     className="h-9 rounded-md border border-border bg-background px-2 text-sm text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring"
                   >
                     {PAGE_SIZE_OPTIONS.map((option) => (
-                      <option key={option} value={option}>
-                        {option}
-                      </option>
+                      <option key={option} value={option}>{option}</option>
                     ))}
                   </select>
                 </label>
@@ -359,120 +367,110 @@ function CompetenciasManagement() {
         </div>
       )}
 
-      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{editingOption ? "Editar Competência" : "Nova Competência"}</DialogTitle>
-            <DialogDescription>
-              {editingOption
-                ? "Edite o nome da competência."
-                : "Preencha o nome para criar uma nova competência."}
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="space-y-4">
-            {editingOption ? (
-              <div>
-                <Label htmlFor="edit-label">Nome da Competência</Label>
-                <Input
-                  id="edit-label"
-                  value={editingOption.label}
-                  onChange={(event) =>
-                    setEditingOption({
-                      ...editingOption,
-                      label: event.target.value,
-                    })
-                  }
-                  disabled={saveCatalogMutation.isPending}
-                />
-              </div>
-            ) : (
-              <div>
-                <Label htmlFor="new-competencia">Nome da Competência</Label>
-                <Input
-                  id="new-competencia"
-                  placeholder="Ex: Pensamento Crítico"
-                  value={newCompetencia}
-                  onChange={(event) => setNewCompetencia(event.target.value)}
-                  onKeyDown={(event) => {
-                    if (event.key === "Enter") {
-                      handleAddNew();
-                    }
-                  }}
-                  disabled={saveCatalogMutation.isPending}
-                />
-              </div>
-            )}
-
-            <div className="flex gap-3 pt-4">
-              <button
-                onClick={() => {
-                  setIsDialogOpen(false);
-                  setEditingOption(null);
-                }}
-                className="flex-1 rounded-md border border-border bg-background px-4 py-2 text-sm font-medium text-foreground hover:bg-accent disabled:cursor-not-allowed disabled:opacity-50"
-                disabled={saveCatalogMutation.isPending}
-              >
-                Cancelar
-              </button>
-              <button
-                onClick={editingOption ? handleSaveEdit : handleAddNew}
-                disabled={
-                  saveCatalogMutation.isPending ||
-                  (editingOption ? !editingOption.label.trim() : !newCompetencia.trim())
-                }
-                className="flex-1 inline-flex items-center justify-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                {saveCatalogMutation.isPending && (
-                  <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
-                )}
-                {editingOption ? "Salvar" : "Adicionar"}
-              </button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      <Dialog
-        open={Boolean(pendingDeleteOption)}
-        onOpenChange={(open) => !open && setPendingDeleteOption(null)}
-      >
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Remover competência</DialogTitle>
-            <DialogDescription>
-              Confirme para remover esta competência do catálogo. Essa alteração afeta novos planos
-              de avaliação criados a partir de agora.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4">
-            <p className="text-sm text-muted-foreground">
-              Essa competência:
-              <span className="ml-1 font-medium">{pendingDeleteOption?.label}</span> será removida.
-            </p>
-            <div className="flex gap-3 pt-2">
-              <button
-                onClick={() => setPendingDeleteOption(null)}
-                className="flex-1 rounded-md border border-border bg-background px-4 py-2 text-sm font-medium text-foreground hover:bg-accent disabled:cursor-not-allowed disabled:opacity-50"
-                disabled={saveCatalogMutation.isPending}
-              >
-                Cancelar
-              </button>
-              <button
-                onClick={confirmDelete}
-                disabled={saveCatalogMutation.isPending}
-                className="flex-1 rounded-md bg-danger px-4 py-2 text-sm font-medium text-danger-foreground hover:bg-danger/90 disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                {saveCatalogMutation.isPending ? (
-                  <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+      {!readOnly && (
+        <>
+          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>{editingOption ? "Editar Competência" : "Nova Competência"}</DialogTitle>
+                <DialogDescription>
+                  {editingOption ? "Edite o nome da competência." : "Preencha o nome para criar uma nova competência."}
+                </DialogDescription>
+              </DialogHeader>
+              <div className="space-y-4">
+                {editingOption ? (
+                  <div>
+                    <Label htmlFor="edit-label">Nome da Competência</Label>
+                    <Input
+                      id="edit-label"
+                      value={editingOption.label}
+                      onChange={(event) => setEditingOption({ ...editingOption, label: event.target.value })}
+                      disabled={saveCatalogMutation.isPending}
+                    />
+                  </div>
                 ) : (
-                  "Confirmar remoção"
+                  <div>
+                    <Label htmlFor="new-competencia">Nome da Competência</Label>
+                    <Input
+                      id="new-competencia"
+                      placeholder="Ex: Pensamento Crítico"
+                      value={newCompetencia}
+                      onChange={(event) => setNewCompetencia(event.target.value)}
+                      onKeyDown={(event) => {
+                        if (event.key === "Enter") handleAddNew();
+                      }}
+                      disabled={saveCatalogMutation.isPending}
+                    />
+                  </div>
                 )}
-              </button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
+                <div className="flex gap-3 pt-4">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsDialogOpen(false);
+                      setEditingOption(null);
+                    }}
+                    className="flex-1 rounded-md border border-border bg-background px-4 py-2 text-sm font-medium text-foreground hover:bg-accent disabled:cursor-not-allowed disabled:opacity-50"
+                    disabled={saveCatalogMutation.isPending}
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    type="button"
+                    onClick={editingOption ? handleSaveEdit : handleAddNew}
+                    disabled={saveCatalogMutation.isPending || (editingOption ? !editingOption.label.trim() : !newCompetencia.trim())}
+                    className="flex-1 inline-flex items-center justify-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    {saveCatalogMutation.isPending && (
+                      <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                    )}
+                    {editingOption ? "Salvar" : "Adicionar"}
+                  </button>
+                </div>
+              </div>
+            </DialogContent>
+          </Dialog>
+
+          <Dialog open={Boolean(pendingDeleteOption)} onOpenChange={(open) => !open && setPendingDeleteOption(null)}>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Remover competência</DialogTitle>
+                <DialogDescription>
+                  Confirme para remover esta competência do catálogo. Essa alteração afeta novos planos
+                  de avaliação criados a partir de agora.
+                </DialogDescription>
+              </DialogHeader>
+              <div className="space-y-4">
+                <p className="text-sm text-muted-foreground">
+                  Essa competência:<span className="ml-1 font-medium">{pendingDeleteOption?.label}</span> será removida.
+                </p>
+                <div className="flex gap-3 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setPendingDeleteOption(null)}
+                    className="flex-1 rounded-md border border-border bg-background px-4 py-2 text-sm font-medium text-foreground hover:bg-accent disabled:cursor-not-allowed disabled:opacity-50"
+                    disabled={saveCatalogMutation.isPending}
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    type="button"
+                    onClick={confirmDelete}
+                    disabled={saveCatalogMutation.isPending}
+                    className="flex-1 rounded-md bg-danger px-4 py-2 text-sm font-medium text-danger-foreground hover:bg-danger/90 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    {saveCatalogMutation.isPending ? (
+                      <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                    ) : (
+                      "Confirmar remoção"
+                    )}
+                  </button>
+                </div>
+              </div>
+            </DialogContent>
+          </Dialog>
+        </>
+      )}
     </AppShell>
   );
 }

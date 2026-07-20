@@ -1,4 +1,8 @@
 import { useEffect, useState } from "react";
+import {
+  applyBrowserAccessPolicy,
+  resolveDefaultAuthenticatedRoute,
+} from "@/lib/access-control";
 
 export type PraxisSession = {
   token: string | null;
@@ -39,7 +43,9 @@ export function useSession() {
 
   useEffect(() => {
     migrateLegacySession();
-    setSession(getSession());
+    const authenticatedSession = getSession();
+    setSession(authenticatedSession);
+    applyBrowserAccessPolicy(authenticatedSession.roles);
   }, []);
 
   return session;
@@ -61,6 +67,7 @@ export function saveAuthenticatedSession(response: AuthenticatedSessionResponse)
   sessionStorage.setItem("praxis.workspaceName", response.empresaId);
   sessionStorage.setItem("praxis.userName", response.name);
   sessionStorage.setItem("praxis.userRole", response.roles.join(", "));
+  applyBrowserAccessPolicy(response.roles);
 }
 
 export function clearAuthenticatedSession() {
@@ -72,10 +79,11 @@ export function clearAuthenticatedSession() {
   sessionStorage.removeItem("praxis.userName");
   sessionStorage.removeItem("praxis.userRole");
   clearLegacyLocalStorage();
+  applyBrowserAccessPolicy([]);
 }
 
-export function defaultAuthenticatedRoute(): "/avaliacoes" {
-  return "/avaliacoes";
+export function defaultAuthenticatedRoute(): "/admin" | "/avaliacoes" {
+  return resolveDefaultAuthenticatedRoute(getSession().roles);
 }
 
 function migrateLegacySession() {
@@ -114,4 +122,9 @@ function parseRoles(value: string | null) {
     .split(",")
     .map((role) => role.trim())
     .filter(Boolean);
+}
+
+if (typeof window !== "undefined") {
+  migrateLegacySession();
+  applyBrowserAccessPolicy(getSession().roles);
 }
