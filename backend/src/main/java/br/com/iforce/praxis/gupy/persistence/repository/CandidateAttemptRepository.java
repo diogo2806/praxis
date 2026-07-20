@@ -38,7 +38,7 @@ public interface CandidateAttemptRepository extends JpaRepository<CandidateAttem
     List<CandidateAttemptEntity> findAllByIdInWithResultItems(@Param("ids") List<String> ids);
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
-    @EntityGraph(attributePaths = {"answers", "resultItems"})
+    @EntityGraph(attributePaths = {"answers", "resultItems", "nodeServes"})
     @Query("SELECT c FROM CandidateAttemptEntity c WHERE c.empresaId = :empresaId AND c.id = :id")
     Optional<CandidateAttemptEntity> findByEmpresaIdAndIdForUpdate(
             @Param("empresaId") String empresaId,
@@ -92,9 +92,6 @@ public interface CandidateAttemptRepository extends JpaRepository<CandidateAttem
             Pageable pageable
     );
 
-    /**
-     * Agrega o uso de vários clientes em uma única consulta para a listagem administrativa.
-     */
     @Query("""
             SELECT c.empresaId, COUNT(c)
             FROM CandidateAttemptEntity c
@@ -110,9 +107,6 @@ public interface CandidateAttemptRepository extends JpaRepository<CandidateAttem
             @Param("to") Instant to
     );
 
-    /**
-     * Calcula, em lote, o volume atual e anterior usado pelo indicador de saúde dos clientes.
-     */
     @Query("""
             SELECT c.empresaId,
                    SUM(CASE WHEN c.finishedAt >= :currentStart AND c.finishedAt <= :currentEnd THEN 1 ELSE 0 END),
@@ -132,9 +126,6 @@ public interface CandidateAttemptRepository extends JpaRepository<CandidateAttem
             @Param("currentEnd") Instant currentEnd
     );
 
-    /**
-     * Busca, em lote, a última conclusão registrada para cada cliente.
-     */
     @Query("""
             SELECT c.empresaId, MAX(c.finishedAt)
             FROM CandidateAttemptEntity c
@@ -178,15 +169,18 @@ public interface CandidateAttemptRepository extends JpaRepository<CandidateAttem
     );
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @EntityGraph(attributePaths = {"answers", "resultItems", "nodeServes"})
     @Query("""
             SELECT c
             FROM CandidateAttemptEntity c
             WHERE c.empresaId = :empresaId
               AND c.status IN :statuses
-              AND c.finishedAt IS NOT NULL
-              AND c.finishedAt < :finishedBefore
+              AND (
+                    (c.finishedAt IS NOT NULL AND c.finishedAt < :finishedBefore)
+                    OR (c.finishedAt IS NULL AND c.createdAt < :finishedBefore)
+                  )
               AND c.anonymizedAt IS NULL
-            ORDER BY c.finishedAt ASC
+            ORDER BY COALESCE(c.finishedAt, c.createdAt) ASC
             """)
     List<CandidateAttemptEntity> findRetentionCandidatesForEmpresa(
             @Param("empresaId") String empresaId,
