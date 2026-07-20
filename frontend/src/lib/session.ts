@@ -23,13 +23,13 @@ export function getSession(): PraxisSession {
     return anonymousSession;
   }
 
-  const roles = parseRoles(localStorage.getItem("praxis.userRole"));
+  const roles = parseRoles(sessionStorage.getItem("praxis.userRole"));
   return {
-    token: localStorage.getItem("praxis.token"),
-    empresaId: localStorage.getItem("praxis.empresaId"),
-    workspaceName: localStorage.getItem("praxis.workspaceName") ?? "Workspace",
-    userName: localStorage.getItem("praxis.userName") ?? "Usuário",
-    userRole: localStorage.getItem("praxis.userRole") ?? "Operador",
+    token: sessionStorage.getItem("praxis.token"),
+    empresaId: sessionStorage.getItem("praxis.empresaId"),
+    workspaceName: sessionStorage.getItem("praxis.workspaceName") ?? "Workspace",
+    userName: sessionStorage.getItem("praxis.userName") ?? "Usuário",
+    userRole: sessionStorage.getItem("praxis.userRole") ?? "Operador",
     roles,
   };
 }
@@ -38,6 +38,7 @@ export function useSession() {
   const [session, setSession] = useState<PraxisSession>(anonymousSession);
 
   useEffect(() => {
+    migrateLegacySession();
     setSession(getSession());
   }, []);
 
@@ -54,25 +55,55 @@ export type AuthenticatedSessionResponse = {
 export function saveAuthenticatedSession(response: AuthenticatedSessionResponse) {
   if (typeof window === "undefined") return;
 
-  localStorage.setItem("praxis.token", response.token);
-  localStorage.setItem("praxis.empresaId", response.empresaId);
-  localStorage.setItem("praxis.workspaceName", response.empresaId);
-  localStorage.setItem("praxis.userName", response.name);
-  localStorage.setItem("praxis.userRole", response.roles.join(", "));
+  clearLegacyLocalStorage();
+  sessionStorage.setItem("praxis.token", response.token);
+  sessionStorage.setItem("praxis.empresaId", response.empresaId);
+  sessionStorage.setItem("praxis.workspaceName", response.empresaId);
+  sessionStorage.setItem("praxis.userName", response.name);
+  sessionStorage.setItem("praxis.userRole", response.roles.join(", "));
 }
 
 export function clearAuthenticatedSession() {
   if (typeof window === "undefined") return;
 
+  sessionStorage.removeItem("praxis.token");
+  sessionStorage.removeItem("praxis.empresaId");
+  sessionStorage.removeItem("praxis.workspaceName");
+  sessionStorage.removeItem("praxis.userName");
+  sessionStorage.removeItem("praxis.userRole");
+  clearLegacyLocalStorage();
+}
+
+export function defaultAuthenticatedRoute(): "/avaliacoes" {
+  return "/avaliacoes";
+}
+
+function migrateLegacySession() {
+  if (typeof window === "undefined") return;
+  if (!sessionStorage.getItem("praxis.token")) {
+    const legacyToken = localStorage.getItem("praxis.token");
+    if (legacyToken) {
+      sessionStorage.setItem("praxis.token", legacyToken);
+      copyLegacy("praxis.empresaId");
+      copyLegacy("praxis.workspaceName");
+      copyLegacy("praxis.userName");
+      copyLegacy("praxis.userRole");
+    }
+  }
+  clearLegacyLocalStorage();
+}
+
+function copyLegacy(key: string) {
+  const value = localStorage.getItem(key);
+  if (value) sessionStorage.setItem(key, value);
+}
+
+function clearLegacyLocalStorage() {
   localStorage.removeItem("praxis.token");
   localStorage.removeItem("praxis.empresaId");
   localStorage.removeItem("praxis.workspaceName");
   localStorage.removeItem("praxis.userName");
   localStorage.removeItem("praxis.userRole");
-}
-
-export function defaultAuthenticatedRoute(): "/avaliacoes" {
-  return "/avaliacoes";
 }
 
 function parseRoles(value: string | null) {
