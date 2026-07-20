@@ -88,7 +88,6 @@ export function CandidateIntegrityBoundary({ token, children }: CandidateIntegri
   const [retryNonce, setRetryNonce] = useState(0);
   const sessionIdRef = useRef<string | null>(null);
   const inputModeRef = useRef<CandidateIntegrityInputMode>("UNKNOWN");
-  const sequenceRef = useRef(0);
   const closedRef = useRef(false);
 
   useEffect(() => {
@@ -101,7 +100,6 @@ export function CandidateIntegrityBoundary({ token, children }: CandidateIntegri
     setState("starting");
     setErrorReason("start");
     sessionIdRef.current = null;
-    sequenceRef.current = 0;
     closedRef.current = false;
 
     const clientSessionId = getOrCreateClientSessionId(token);
@@ -113,7 +111,6 @@ export function CandidateIntegrityBoundary({ token, children }: CandidateIntegri
     ) => {
       const sessionId = sessionIdRef.current;
       if (!sessionId || closedRef.current) return;
-      sequenceRef.current += 1;
       void recordCandidateIntegrityEvent(token, {
         sessionId,
         eventType,
@@ -125,7 +122,7 @@ export function CandidateIntegrityBoundary({ token, children }: CandidateIntegri
             : eventType === "TAB_HIDDEN"
               ? "HIDDEN"
               : null,
-        sequenceNumber: sequenceRef.current,
+        sequenceNumber: null,
         detail: detail ?? null,
       }).catch(() => {
         // Telemetria complementar não interfere no envio da resposta do candidato.
