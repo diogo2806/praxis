@@ -94,19 +94,19 @@ public class SecurityConfig {
     }
 
     private void applySecurityHeaders(HttpSecurity http) throws Exception {
-        http.headers(headers -> headers
-                .frameOptions(frame -> frame.deny())
-                .contentTypeOptions(contentType -> { })
-                .httpStrictTransportSecurity(hsts -> hsts
-                        .includeSubDomains(true)
-                        .maxAgeInSeconds(31_536_000))
-                .referrerPolicy(referrer -> referrer
-                        .policy(ReferrerPolicyHeaderWriter.ReferrerPolicy.NO_REFERRER))
-                .permissionsPolicy(policy -> policy
-                        .policy("camera=(), microphone=(), geolocation=(), payment=()"))
-                .contentSecurityPolicy(csp -> csp
-                        .policyDirectives("default-src 'none'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'"))
-        );
+        http.headers(headers -> {
+            headers.frameOptions(frame -> frame.deny());
+            headers.contentTypeOptions(contentType -> { });
+            headers.httpStrictTransportSecurity(hsts -> hsts
+                    .includeSubDomains(true)
+                    .maxAgeInSeconds(31_536_000));
+            headers.referrerPolicy(referrer -> referrer
+                    .policy(ReferrerPolicyHeaderWriter.ReferrerPolicy.NO_REFERRER));
+            headers.permissionsPolicy(policy -> policy
+                    .policy("camera=(), microphone=(), geolocation=(), payment=()"));
+            headers.contentSecurityPolicy(csp -> csp
+                    .policyDirectives("default-src 'none'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'"));
+        });
     }
 
     private boolean isCsrfExemptRequest(HttpServletRequest request) {
