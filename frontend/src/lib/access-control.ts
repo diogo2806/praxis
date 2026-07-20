@@ -27,7 +27,6 @@ const PUBLIC_PATH_PREFIXES = [
   "/reset-password",
   "/convite",
   "/candidato",
-  "/docs",
 ];
 
 let activeRoles: string[] = [];
@@ -184,6 +183,13 @@ function filterRenderedLinks(): void {
       anchor.setAttribute("tabindex", "-1");
       anchor.dataset.praxisAccessHidden = "true";
     }
+  });
+
+  document.querySelectorAll<HTMLElement>("nav .space-y-5 > div").forEach((group) => {
+    const visibleLinks = Array.from(group.querySelectorAll<HTMLAnchorElement>("a[href]")).some(
+      (anchor) => !anchor.hidden,
+    );
+    group.hidden = restricted && !visibleLinks;
   });
 }
 
