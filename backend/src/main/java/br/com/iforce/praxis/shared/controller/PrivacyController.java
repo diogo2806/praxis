@@ -91,7 +91,7 @@ public class PrivacyController {
                 ),
                 reviewChannel,
                 "Solicitações possuem prazo, situação, responsável e registro de resposta.",
-                configuration.readyForRealProcesses()
+                false
         ));
     }
 
