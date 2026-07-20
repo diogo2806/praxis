@@ -27,6 +27,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -139,8 +140,8 @@ class CandidateIntegrityServiceTest {
         assertThat(stale.getStatus()).isEqualTo(IntegritySessionStatus.EXPIRED);
         assertThat(stale.getClosedAt()).isEqualTo(NOW);
         assertThat(response.resumed()).isFalse();
-        verify(sessionRepository).save(stale);
-        verify(sessionRepository).saveAndFlush(any(CandidateIntegritySessionEntity.class));
+        verify(sessionRepository).saveAndFlush(stale);
+        verify(sessionRepository, times(2)).saveAndFlush(any(CandidateIntegritySessionEntity.class));
     }
 
     private CandidateIntegrityService service() {
