@@ -1,77 +1,90 @@
-# Plano de Resposta a Incidentes de Segurança e Privacidade (Praxis)
+# Plano de Resposta a Incidentes de Segurança e Privacidade — Praxis
 
-> **Status: MINUTA para validação jurídica e de segurança.** Runbook de resposta
-> a incidentes com dados pessoais (LGPD, arts. 46 a 48). **Não é aconselhamento
-> jurídico.** Endereça o risco médio #11.
+> **Status operacional:** controles técnicos implementados. Os responsáveis,
+> contatos, modelos de comunicação e cláusulas contratuais devem ser validados
+> pelo Jurídico e pelo Encarregado antes da operação com dados reais.
 
 ## 1. Objetivo
 
-Detectar, conter, avaliar, comunicar e aprender com incidentes que envolvam dados
-pessoais tratados pela plataforma, cumprindo o dever de segurança (art. 46) e de
-comunicação (art. 48) da LGPD.
+Detectar, conter, avaliar, comunicar e aprender com incidentes envolvendo dados
+pessoais tratados pelo Praxis, mantendo evidências suficientes para prestação de
+contas.
 
 ## 2. Papéis
 
 | Papel | Responsabilidade |
 | --- | --- |
-| Encarregado (DPO) | Ponto focal; decide sobre comunicação a ANPD e titulares (no papel de controlador). |
-| Líder de resposta | Coordena a contenção técnica e o registro. |
-| Engenharia/DevOps | Contenção, evidência técnica (logs, trilha de auditoria), correção. |
-| Jurídico | Avalia obrigações legais e contratuais. |
-| Operador (iForce) × Controlador | O operador comunica a controladora sem demora; a controladora decide a comunicação externa (ver DPA). |
+| Encarregado/DPO do controlador | Avaliar comunicação à ANPD e aos titulares. |
+| Líder de resposta | Coordenar contenção, linha do tempo e decisões. |
+| Engenharia/DevOps | Preservar evidências, corrigir a causa e restaurar a operação. |
+| Jurídico | Avaliar obrigações legais, regulatórias e contratuais. |
+| iForce/Praxis como operadora | Comunicar a controladora sem demora indevida e cooperar com a investigação. |
 
-## 3. Classificação de severidade
+## 3. Classificação
 
-| Nível | Exemplo | Alvo de resposta inicial |
+| Nível | Exemplo | Resposta inicial interna |
 | --- | --- | --- |
-| Crítico | Vazamento de dados pessoais, acesso indevido multi-tenant, exposição de segredo | Imediato |
-| Alto | Falha de controle de acesso sem exfiltração confirmada | Horas |
-| Médio | Vulnerabilidade explorável sem impacto confirmado | 1–2 dias |
-| Baixo | Evento suspeito sem risco a dado pessoal | Fluxo normal |
+| Crítico | Vazamento, acesso cruzado entre empresas ou segredo exposto | Imediata |
+| Alto | Falha de autorização com risco real | Em horas |
+| Médio | Vulnerabilidade explorável sem impacto confirmado | Até 1 dia útil |
+| Baixo | Evento suspeito sem risco confirmado | Fluxo normal |
 
-## 4. Fluxo de resposta
+## 4. Registro obrigatório no produto
 
-1. **Detecção e registro.** Abrir incidente com horário, autor do reporte e
-   sintomas. Fontes: alertas, notificações internas/DLQ, trilha de auditoria,
-   relato de cliente/titular.
-2. **Contenção.** Revogar credenciais/tokens afetados, isolar componente,
-   bloquear acesso. Segredos comprometidos são rotacionados
-   (`PRAXIS_JWT_SECRET`, `MP_*`, tokens de integração).
-3. **Erradicação e correção.** Corrigir a causa raiz; validar com testes.
-4. **Avaliação de risco.** Determinar dados e titulares afetados, probabilidade
-   de dano e se há risco relevante (art. 48).
-5. **Comunicação.**
-   - Operador → Controladora: sem demora indevida, com os elementos do art. 48.
-   - Controladora → ANPD e titulares: quando houver risco/dano relevante, em
-     prazo razoável.
-6. **Recuperação.** Restaurar operação e monitorar recorrência.
-7. **Pós-incidente.** Post-mortem sem culpados, lições e ações preventivas.
+A empresa registra e acompanha o incidente pelas rotas autenticadas:
 
-## 5. Conteúdo mínimo da comunicação (art. 48, §1º)
+- `GET /api/v1/privacy/incidents`;
+- `POST /api/v1/privacy/incidents`;
+- `PATCH /api/v1/privacy/incidents/{incidentId}`.
 
-- Descrição da natureza dos dados afetados.
-- Titulares envolvidos (número/categoria).
-- Medidas técnicas e de segurança adotadas.
-- Riscos relacionados ao incidente.
-- Medidas tomadas para reverter/mitigar.
+O registro contém severidade, descoberta, confirmação, dados afetados, estimativa
+de titulares, avaliação de risco, responsável e horários das comunicações. O
+prazo de retenção técnico do registro é de pelo menos cinco anos.
 
-## 6. Evidências e retenção
+## 5. Fluxo
 
-- Preservar logs e a trilha append-only (`audit_events`) relevantes.
-- Registrar linha do tempo e decisões para prestação de contas.
+1. **Detectar e registrar.** Abrir o incidente imediatamente, sem aguardar a
+   conclusão da investigação.
+2. **Conter.** Revogar credenciais, bloquear acessos, isolar componentes e
+   preservar logs.
+3. **Erradicar.** Corrigir a causa raiz e validar a correção.
+4. **Avaliar risco ou dano relevante.** Considerar natureza e volume dos dados,
+   possibilidade de reidentificação, consequências aos titulares e medidas de
+   proteção existentes.
+5. **Comunicar a controladora.** A operadora comunica sem demora indevida, pelo
+   canal e SLA definidos no DPA.
+6. **Comunicar ANPD e titulares.** Quando aplicável, a controladora realiza a
+   comunicação no prazo regulatório vigente. A referência operacional adotada é
+   de até três dias úteis contados do conhecimento do incidente relevante,
+   salvo regra superveniente ou determinação específica.
+7. **Recuperar e monitorar.** Restaurar a operação de forma controlada.
+8. **Encerrar.** Registrar causa, impacto, comunicações, medidas e ações
+   preventivas.
 
-## 7. Prevenção (controles já existentes)
+## 6. Conteúdo mínimo da comunicação
 
-- Segredos por variável de ambiente; tokens de integração em hash; token MP
-  cifrado; webhook MP com validação de assinatura.
-- Isolamento multi-tenant e fail-fast que impede subir produção sem segurança
-  (`SecurityStartupGuard`).
-- Anonimização por retenção e trilha de auditoria.
+- natureza e categorias dos dados;
+- quantidade ou categorias de titulares;
+- medidas de segurança utilizadas;
+- riscos relacionados ao incidente;
+- medidas de contenção e mitigação;
+- data de conhecimento e linha do tempo;
+- contato do encarregado ou canal responsável.
 
-## 8. Pendências para o Jurídico/Segurança
+## 7. Evidências
 
-1. Definir SLAs internos e canais de acionamento (on-call).
-2. Modelo de comunicação a titulares e à ANPD.
-3. Exercício de simulação (tabletop) periódico.
+- preservar logs, trilhas e configurações relevantes;
+- registrar quem tomou cada decisão e em qual momento;
+- evitar incluir segredos ou dados pessoais desnecessários no relato;
+- manter os registros de incidentes por pelo menos cinco anos;
+- realizar exercício de simulação ao menos anual.
 
-> Última revisão da minuta: preencher na validação.
+## 8. Pendências externas obrigatórias
+
+1. Definir nomes, telefone, e-mail e escala dos responsáveis.
+2. Definir no DPA o prazo da operadora para notificar a controladora.
+3. Validar modelos de comunicação com Jurídico e DPO.
+4. Confirmar periodicamente o prazo regulatório aplicável.
+5. Executar e registrar o exercício anual.
+
+Última revisão técnica: 20/07/2026.
