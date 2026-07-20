@@ -1,8 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { ArrowLeft, Network } from "lucide-react";
 
-export const Route = createFileRoute("/suboperadores")({ component: SubprocessorsPage });
-
 const subprocessors = [
   { name: "Provedor de infraestrutura configurado pela iForce", purpose: "Hospedagem da aplicação, banco, rede e backup", location: "Conforme contrato e região configurada" },
   { name: "Mercado Pago", purpose: "Checkout, assinaturas, pagamentos e prevenção a fraude", location: "Brasil e infraestrutura informada pelo fornecedor" },
