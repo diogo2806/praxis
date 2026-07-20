@@ -195,10 +195,7 @@ export function CandidateIntegrityBoundary({ token, children }: CandidateIntegri
 
     void startCandidateIntegritySession(token, clientSessionId, inputModeRef.current)
       .then((session) => {
-        if (disposed) {
-          void closeCandidateIntegritySession(token, session.sessionId).catch(() => undefined);
-          return;
-        }
+        if (disposed) return;
         sessionIdRef.current = session.sessionId;
         setCandidateIntegritySession(token, session.sessionId);
         setState("active");
@@ -265,10 +262,8 @@ export function CandidateIntegrityBoundary({ token, children }: CandidateIntegri
       window.removeEventListener("pagehide", handlePageHide);
 
       const sessionId = sessionIdRef.current;
-      if (sessionId && !closedRef.current) {
-        closedRef.current = true;
+      if (sessionId) {
         clearCandidateIntegritySession(token, sessionId);
-        void closeCandidateIntegritySession(token, sessionId).catch(() => undefined);
       }
     };
   }, [retryNonce, token]);
