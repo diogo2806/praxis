@@ -54,7 +54,7 @@ public class CandidatePrivacyNoticeService {
             @Value("${praxis.privacy.dpo-contact:}") String fallbackDpoContact,
             @Value("${praxis.privacy.legal-basis:Base legal definida e documentada pelo controlador}") String fallbackLegalBasis,
             @Value("${praxis.privacy.notice-version:2026-07-20}") String fallbackNoticeVersion,
-            @Value("${praxis.privacy.enforce-readiness:false}") boolean enforceReadiness
+            @Value("${praxis.privacy.enforce-readiness:true}") boolean enforceReadiness
     ) {
         this.tokenResolver = tokenResolver;
         this.candidateAttemptRepository = candidateAttemptRepository;
@@ -127,6 +127,9 @@ public class CandidatePrivacyNoticeService {
         ResolvedContext context = resolve(attemptToken);
         CandidatePrivacyNoticeResponse notice = noticeFor(context.empresa());
         assertReadiness(notice);
+        if (!notice.configured() && !enforceReadiness) {
+            return;
+        }
         boolean accepted = acceptanceRepository
                 .findByAttemptIdAndNoticeVersion(context.attempt().getId(), notice.noticeVersion())
                 .filter(value -> notice.noticeHash().equals(value.getNoticeHash()))
