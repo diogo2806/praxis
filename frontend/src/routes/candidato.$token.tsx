@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from "re
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { ChevronDown, Scale, ShieldCheck } from "lucide-react";
+import { CandidateIntegrityBoundary } from "@/components/candidate-integrity-boundary";
 import { LanguageSelector } from "@/components/language-selector";
 import {
   getCandidateAttempt,
@@ -70,22 +71,6 @@ function TokenCandidatePage() {
     queryKey: ["candidate-privacy-notice", token],
     queryFn: () => getCandidatePrivacyNotice(token),
   });
-  const attempt = useQuery({
-    queryKey: ["candidate-attempt", token],
-    queryFn: () => getCandidateAttempt(token),
-    enabled: ready,
-  });
-  const terminal = useMemo(
-    () => (!attempt.data || attempt.data.etapaAtual ? null : statusCopy(attempt.data, copy)),
-    [attempt.data, copy],
-  );
-  const redirectUrl = attempt.data?.finalizado ? attempt.data.redirectUrl ?? null : null;
-
-  useEffect(() => {
-    if (!redirectUrl) return;
-    const timeout = window.setTimeout(() => window.location.assign(redirectUrl), 1200);
-    return () => window.clearTimeout(timeout);
-  }, [redirectUrl]);
 
   if (notice.isLoading) {
     return (
@@ -105,7 +90,11 @@ function TokenCandidatePage() {
         <Status
           label="Privacidade"
           title="Não foi possível abrir a avaliação."
-          description={notice.error instanceof Error ? notice.error.message : "O aviso de privacidade não está disponível."}
+          description={
+            notice.error instanceof Error
+              ? notice.error.message
+              : "O aviso de privacidade não está disponível."
+          }
           tone="warning"
         />
       </Shell>
@@ -129,6 +118,30 @@ function TokenCandidatePage() {
       </Shell>
     );
   }
+
+  return (
+    <CandidateIntegrityBoundary token={token}>
+      <CandidateAttemptContent token={token} copy={copy} />
+    </CandidateIntegrityBoundary>
+  );
+}
+
+function CandidateAttemptContent({ token, copy }: { token: string; copy: CandidateAccessCopy }) {
+  const attempt = useQuery({
+    queryKey: ["candidate-attempt", token],
+    queryFn: () => getCandidateAttempt(token),
+  });
+  const terminal = useMemo(
+    () => (!attempt.data || attempt.data.etapaAtual ? null : statusCopy(attempt.data, copy)),
+    [attempt.data, copy],
+  );
+  const redirectUrl = attempt.data?.finalizado ? attempt.data.redirectUrl ?? null : null;
+
+  useEffect(() => {
+    if (!redirectUrl) return;
+    const timeout = window.setTimeout(() => window.location.assign(redirectUrl), 1200);
+    return () => window.clearTimeout(timeout);
+  }, [redirectUrl]);
 
   if (attempt.isLoading) {
     return (
