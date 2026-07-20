@@ -1,27 +1,18 @@
 package br.com.iforce.praxis.auth.service;
 
 import br.com.iforce.praxis.auth.persistence.entity.EmpresaEntity;
-
 import br.com.iforce.praxis.auth.persistence.repository.EmpresaRepository;
-
 import org.junit.jupiter.api.Test;
-
 import org.junit.jupiter.api.extension.ExtendWith;
-
 import org.mockito.Mock;
-
 import org.mockito.junit.jupiter.MockitoExtension;
 
-
+import java.time.Instant;
 import java.util.Optional;
 
-
 import static org.assertj.core.api.Assertions.assertThat;
-
 import static org.mockito.Mockito.verifyNoInteractions;
-
 import static org.mockito.Mockito.when;
-
 
 @ExtendWith(MockitoExtension.class)
 class HealthVerticalServiceTest {
@@ -30,12 +21,23 @@ class HealthVerticalServiceTest {
     private EmpresaRepository empresaRepository;
 
     @Test
-    void trueWhenEmpresaHasHealthVerticalEnabled() {
+    void trueOnlyWhenFlagAndFormalApprovalExist() {
+        EmpresaEntity empresa = new EmpresaEntity();
+        empresa.setHealthVertical(true);
+        empresa.setHealthComplianceApprovedAt(Instant.now());
+        empresa.setHealthComplianceApprovedBy("user-1");
+        when(empresaRepository.findById("empresa-1")).thenReturn(Optional.of(empresa));
+
+        assertThat(new HealthVerticalService(empresaRepository).isHealthVertical("empresa-1")).isTrue();
+    }
+
+    @Test
+    void falseWhenFlagExistsWithoutFormalApproval() {
         EmpresaEntity empresa = new EmpresaEntity();
         empresa.setHealthVertical(true);
         when(empresaRepository.findById("empresa-1")).thenReturn(Optional.of(empresa));
 
-        assertThat(new HealthVerticalService(empresaRepository).isHealthVertical("empresa-1")).isTrue();
+        assertThat(new HealthVerticalService(empresaRepository).isHealthVertical("empresa-1")).isFalse();
     }
 
     @Test
