@@ -1,8 +1,14 @@
 # Requisitos técnicos implementados — praxis
 
-Status: atualizado em 2026-07-17 após correção da regra `BUS12` e revalidação de `UI13`, `DATA14`, `ASYNC11`, `BUS13`, `INT18`, `DATA13` e `INT17`.
+Status: atualizado em 2026-07-19 após correção de `UI14` e revalidação de `UI13`, `DATA14`, `ASYNC11`, `BUS13`, `INT18`, `DATA13` e `INT17`.
 
 Este arquivo registra comportamentos comprovadamente entregues no código e preserva a rastreabilidade de conclusões históricas posteriormente reclassificadas. Entregas parciais ou invalidadas apontam obrigatoriamente para o backlog canônico.
+
+## 2026-07-19
+
+| Origem | Situação registrada | Entrega comprovada | Pendência remanescente |
+|---|---|---|---|
+| `UI14` | Concluído | O cliente mantém `linkExpiresAt`, `remainingDays` e `linkStatus` como campos obrigatórios, valida os valores recebidos da API e interrompe a consulta com erro contratual explícito quando algum deles está ausente ou inválido. A interface não fabrica expiração de sete dias, não recalcula dias restantes com o relógio do navegador e não deriva o estado do link localmente. | Nenhuma para o consumo da validade persistida dos links de candidato. |
 
 ## 2026-07-16
 
@@ -46,6 +52,7 @@ Este arquivo registra comportamentos comprovadamente entregues no código e pres
 | `backend/src/test/java/br/com/iforce/praxis/simulation/service/ComparableSimulationValidationServiceTest.java` | caminhos com máximos 100 e 50 | Comprova que a versão permanece publicável, com zero bloqueadores de bases máximas diferentes. |
 | `backend/src/main/java/br/com/iforce/praxis/candidate/service/CandidateAttemptMonitoringQueryService.java` | consulta do centro operacional | Aplica paginação e filtros por estado, avaliação e candidato, incluindo `NOT_STARTED`, `IN_PROGRESS`, `COMPLETED`, `ABANDONED` e `EXPIRED`. |
 | `backend/src/main/java/br/com/iforce/praxis/candidate/service/CandidateLinkQueryService.java` | `search()` | Retorna página de links com filtros por estado, avaliação, versão e candidato, tamanho máximo de 100 e isolamento por empresa. |
+| `frontend/src/lib/api/candidate-links.ts` | `CandidateLinkPayload` e `validateCandidateLink()` | Mantém os campos de validade obrigatórios no contrato consumido, aceita somente data válida, inteiro não negativo e estado previsto e propaga erro explícito quando o payload é incompatível, sem reconstrução local. |
 | `backend/src/main/java/br/com/iforce/praxis/candidate/service/LegacyCandidateLinkQueryService.java` | `listAll()` | Preserva o retorno em lista do endpoint legado, percorrendo todas as páginas da consulta oficial. |
 | `backend/src/main/java/br/com/iforce/praxis/candidate/dto/CreateCandidateLinkRequest.java` | `applicationCycleId` | Exige ciclo explícito em chamadas públicas; a compatibilidade de ciclo legado fica restrita ao construtor usado por fluxos internos. |
 | `backend/src/main/resources/db/migration/V1005__disable_duplicate_gupy_callback_confirmation.sql` | remoção do trigger e saneamento do outbox | Remove a geração automática de callback servidor-servidor e envia eventos legados executáveis para DLQ. |
