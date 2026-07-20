@@ -57,10 +57,14 @@ public class CandidateAttemptController {
     @GetMapping("/{attemptToken}")
     @Operation(
             summary = "Carrega participacao do candidato",
-            description = "Retorna somente a etapa atual, com identificadores opacos e sem regras de navegação futuras."
+            description = "Retorna somente a etapa atual para uma sessão técnica ativa, com identificadores opacos e sem regras de navegação futuras."
     )
-    public ResponseEntity<ParticipacaoResponse> getCandidateAttempt(@PathVariable String attemptToken) {
+    public ResponseEntity<ParticipacaoResponse> getCandidateAttempt(
+            @PathVariable String attemptToken,
+            @RequestHeader(value = INTEGRITY_SESSION_HEADER, required = false) String integritySessionId
+    ) {
         publicCandidateFlowSecurity.requireValidAttemptToken(attemptToken);
+        candidateIntegrityService.requireActiveSession(attemptToken, integritySessionId);
         ParticipacaoResponse response = candidateAttemptService.findCandidateAttempt(attemptToken);
         return ResponseEntity.ok(publicCandidateFlowSecurity.sanitize(attemptToken, response));
     }
