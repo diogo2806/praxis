@@ -1,5 +1,9 @@
 export * from "./praxis-legacy";
 export {
+  getCandidateAttempt,
+  submitCandidateAnswer,
+} from "./candidate-attempt-public";
+export {
   createSimulationNode,
   createSimulationOption,
   getGupyPreflight,

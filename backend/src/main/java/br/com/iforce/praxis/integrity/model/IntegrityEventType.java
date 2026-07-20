@@ -1,0 +1,17 @@
+package br.com.iforce.praxis.integrity.model;
+
+public enum IntegrityEventType {
+    SESSION_STARTED,
+    SESSION_RESUMED,
+    SESSION_EXPIRED,
+    HEARTBEAT,
+    TAB_HIDDEN,
+    TAB_VISIBLE,
+    INPUT_MODE_CHANGED,
+    NODE_PRESENTED,
+    ASSET_LOADED,
+    STIMULUS_STARTED,
+    RESPONSE_SELECTED,
+    RESPONSE_CONFIRMED,
+    SESSION_CLOSED
+}
