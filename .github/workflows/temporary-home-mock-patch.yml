@@ -1,0 +1,86 @@
+name: Temporary home mock patch
+
+on:
+  push:
+    branches:
+      - fix/home-valores-competencias-alinhados-20260719
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/home-valores-competencias-alinhados-20260719
+      - name: Preencher e alinhar valores simulados
+        shell: python
+        run: |
+          from pathlib import Path
+
+          path = Path("frontend/src/routes/index.tsx")
+          text = path.read_text(encoding="utf-8")
+
+          replacements = [
+              (
+                  ".vxcrow{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:10px;font-size:11px}",
+                  ".vxcrow{display:grid;grid-template-columns:1fr 54px auto;align-items:center;gap:10px;font-size:11px}",
+                  1,
+              ),
+              (
+                  ".vxcrow .cn{color:#616A71;font-weight:600}",
+                  ".vxcrow .cn{min-width:0;color:#616A71;font-weight:600}",
+                  1,
+              ),
+              (
+                  ".vxcrow .cin{justify-self:start;width:54px;height:18px;border:1px solid #D9DFE3;border-radius:5px;background:#fff}",
+                  ".vxcrow .cin{display:flex;align-items:center;justify-content:flex-start;justify-self:start;width:54px;height:18px;padding:0 6px;border:1px solid #D9DFE3;border-radius:5px;background:#fff;font-family:var(--font-mono);font-size:10.5px;color:#616A71;text-align:left;white-space:nowrap}",
+                  1,
+              ),
+              (
+                  '<span class="cn">Comunicação</span><span class="cin"></span><span class="cacc">50</span>',
+                  '<span class="cn">Comunicação</span><span class="cin">50</span><span class="cacc">50</span>',
+                  1,
+              ),
+              (
+                  '<span class="cn">Resolução de Conflitos</span><span class="cin"></span><span class="cacc">50</span>',
+                  '<span class="cn">Resolução de Conflitos</span><span class="cin">50</span><span class="cacc">50</span>',
+                  1,
+              ),
+              (
+                  '<span class="cn">Comunicação</span><span class="cin"></span><span class="cacc">100</span>',
+                  '<span class="cn">Comunicação</span><span class="cin">50</span><span class="cacc">100</span>',
+                  1,
+              ),
+              (
+                  '<span class="cn">Resolução de Conflitos</span><span class="cin"></span><span class="cacc">100</span>',
+                  '<span class="cn">Resolução de Conflitos</span><span class="cin">50</span><span class="cacc">100</span>',
+                  1,
+              ),
+              (
+                  '<span class="cn">Aderência à Política</span><span class="cin"></span><span class="cacc z">0</span>',
+                  '<span class="cn">Aderência à Política</span><span class="cin">0</span><span class="cacc z">0</span>',
+                  2,
+              ),
+          ]
+
+          for old, new, expected_count in replacements:
+              actual_count = text.count(old)
+              if actual_count != expected_count:
+                  raise RuntimeError(
+                      f"Trecho esperado não encontrado na quantidade correta: {old!r}. "
+                      f"Esperado={expected_count}, encontrado={actual_count}"
+                  )
+              text = text.replace(old, new)
+
+          path.write_text(text, encoding="utf-8")
+      - name: Commitar alteração
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add frontend/src/routes/index.tsx
+          git commit -m "fix(home): preencher e alinhar valores das competências"
+          git push origin HEAD:fix/home-valores-competencias-alinhados-20260719
