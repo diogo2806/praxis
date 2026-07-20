@@ -11,6 +11,7 @@ import {
 import { PraxisApiError } from "@/lib/api/praxis";
 
 const CLIENT_SESSION_PREFIX = "praxis:integrity-session:";
+const INTEGRITY_SESSION_HEADER = "X-Praxis-Integrity-Session";
 
 type BoundaryState = "starting" | "active" | "blocked" | "error";
 
@@ -29,6 +30,36 @@ export function CandidateIntegrityBoundary({ token, children }: CandidateIntegri
   const closedRef = useRef(false);
 
   useEffect(() => {
+    const previousFetch = window.fetch;
+    const answerPath = `/candidate/attempts/${encodeURIComponent(token)}/answers`;
+
+    const fetchWithIntegritySession: typeof window.fetch = async (input, init) => {
+      const requestUrl =
+        typeof input === "string"
+          ? input
+          : input instanceof URL
+            ? input.toString()
+            : input.url;
+      const sessionId = sessionIdRef.current;
+      if (!sessionId || !requestUrl.includes(answerPath)) {
+        return previousFetch.call(window, input, init);
+      }
+
+      const headers = new Headers(input instanceof Request ? input.headers : undefined);
+      new Headers(init?.headers).forEach((value, name) => headers.set(name, value));
+      headers.set(INTEGRITY_SESSION_HEADER, sessionId);
+      return previousFetch.call(window, input, { ...init, headers });
+    };
+
+    window.fetch = fetchWithIntegritySession;
+    return () => {
+      if (window.fetch === fetchWithIntegritySession) {
+        window.fetch = previousFetch;
+      }
+    };
+  }, [token]);
+
+  useEffect(() => {
     let disposed = false;
     let heartbeatId: number | undefined;
     let mutationObserver: MutationObserver | undefined;
@@ -37,6 +68,8 @@ export function CandidateIntegrityBoundary({ token, children }: CandidateIntegri
 
     setState("starting");
     setMessage("Preparando uma sessão segura para a avaliação.");
+    sessionIdRef.current = null;
+    sequenceRef.current = 0;
     closedRef.current = false;
 
     const clientSessionId = getOrCreateClientSessionId(token);
@@ -103,9 +136,9 @@ export function CandidateIntegrityBoundary({ token, children }: CandidateIntegri
       const target = event.target;
       if (!(target instanceof Element)) return;
       if (target.closest(".sc-confirm button")) {
-        record("RESPONSE_CONFIRMED", undefined, "POINTER");
+        record("RESPONSE_CONFIRMED");
       } else if (target.closest(".opt")) {
-        record("RESPONSE_SELECTED", undefined, "POINTER");
+        record("RESPONSE_SELECTED");
       }
     };
     const handlePageHide = () => {
