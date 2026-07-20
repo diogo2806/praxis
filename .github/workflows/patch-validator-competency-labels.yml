@@ -1,0 +1,64 @@
+name: Patch validator competency labels
+
+on:
+  push:
+    branches:
+      - fix/validador-competencias-por-extenso-20260720
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout branch
+        uses: actions/checkout@v4
+        with:
+          ref: fix/validador-competencias-por-extenso-20260720
+          fetch-depth: 0
+
+      - name: Exibir competências por extenso
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          path = Path('frontend/src/components/flow-canvas.tsx')
+          content = path.read_text(encoding='utf-8')
+
+          replacements = {
+              'type CompW = { name: string; weight: number; short: string };': 'type CompW = { name: string; weight: number };',
+              'const OPT_SCORE_ROW = 26;': 'const OPT_SCORE_ROW = 34;',
+              'const END_NOTE_ROW = 15;': 'const END_NOTE_ROW = 24;',
+              '''const shortName = (s: string) => {\n  const t = s.trim();\n  return t.length <= 4 ? t : t.slice(0, 3);\n};\n''': '',
+              '.map((c) => ({ name: c.name, weight: c.weight ?? 0, short: shortName(c.name) })),': '.map((c) => ({ name: c.name, weight: c.weight ?? 0 })),',
+              'return { name: c.name, short: c.short, acc: raw, pct: max > 0 ? Math.round((raw / max) * 100) : null };': 'return { name: c.name, acc: raw, pct: max > 0 ? Math.round((raw / max) * 100) : null };',
+              '{c.short}': '{c.name}',
+              '.vx-score-row{height:${OPT_SCORE_ROW}px;display:flex;align-items:center;gap:8px}.vx-sr-name{flex:none;width:34px;font-size:10px;font-weight:700;text-transform:uppercase;color:var(--soft);letter-spacing:.02em}': '.vx-score-row{height:${OPT_SCORE_ROW}px;display:grid;grid-template-columns:minmax(0,1fr) 60px 72px;align-items:center;gap:8px}.vx-sr-name{min-width:0;font-size:10.5px;font-weight:650;color:var(--soft);line-height:1.15;white-space:normal;overflow-wrap:anywhere}',
+              '.vx-sr-acc{flex:1;min-width:0;text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:10.5px;color:var(--soft)}': '.vx-sr-acc{min-width:0;text-align:right;white-space:nowrap;font-size:10.5px;color:var(--soft)}',
+              '.vx-end-comp{display:flex;align-items:baseline;gap:8px;font-size:11px}.vx-ec-name{flex:none;width:34px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.02em;color:var(--soft)}.vx-ec-acc{flex:1;min-width:0;font-size:10.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}': '.vx-end-comp{display:grid;grid-template-columns:minmax(0,1fr) 58px 44px;align-items:center;gap:8px;min-height:${END_NOTE_ROW}px;font-size:11px}.vx-ec-name{min-width:0;font-size:10.5px;font-weight:650;color:var(--soft);line-height:1.15;white-space:normal;overflow-wrap:anywhere}.vx-ec-acc{min-width:0;font-size:10.5px;color:var(--muted);white-space:nowrap}',
+              '.vx-insp-end-comps em{font-style:normal;font-weight:700;color:var(--gold)}': '.vx-insp-end-comps span b{min-width:0;overflow-wrap:anywhere}.vx-insp-end-comps em{font-style:normal;font-weight:700;color:var(--gold);flex:none}.vx-insp-acc span{align-items:center}.vx-insp-acc span b{flex:none}',
+          }
+
+          for old, new in replacements.items():
+              if old not in content:
+                  raise SystemExit(f'Trecho esperado não encontrado: {old[:120]}')
+              content = content.replace(old, new)
+
+          if 'shortName' in content or 'c.short' in content:
+              raise SystemExit('Ainda existem abreviações de competências no componente.')
+
+          path.write_text(content, encoding='utf-8')
+          PY
+
+      - name: Remover workflow temporário e publicar alteração
+        shell: bash
+        run: |
+          rm .github/workflows/patch-validator-competency-labels.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add frontend/src/components/flow-canvas.tsx .github/workflows/patch-validator-competency-labels.yml
+          git commit -m "fix(validador): exibir competências por extenso"
+          git push origin HEAD:fix/validador-competencias-por-extenso-20260720
