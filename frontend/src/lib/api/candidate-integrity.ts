@@ -30,8 +30,23 @@ export interface CandidateIntegrityEventRequest {
   detail?: "IMAGE" | "AUDIO" | "OTHER" | null;
 }
 
+const activeSessions = new Map<string, string>();
+
 function integrityPath(token: string, action: string): string {
   return `/candidate/attempts/${encodeURIComponent(token)}/integrity/${action}`;
+}
+
+export function setCandidateIntegritySession(token: string, sessionId: string): void {
+  activeSessions.set(token, sessionId);
+}
+
+export function clearCandidateIntegritySession(token: string, sessionId?: string): void {
+  if (sessionId && activeSessions.get(token) !== sessionId) return;
+  activeSessions.delete(token);
+}
+
+export function getCandidateIntegritySession(token: string): string | null {
+  return activeSessions.get(token) ?? null;
 }
 
 export function startCandidateIntegritySession(
