@@ -102,7 +102,7 @@ public class SecurityConfig {
                         .maxAgeInSeconds(31_536_000))
                 .referrerPolicy(referrer -> referrer
                         .policy(ReferrerPolicyHeaderWriter.ReferrerPolicy.NO_REFERRER))
-                .permissionsPolicyHeader(policy -> policy
+                .permissionsPolicy(policy -> policy
                         .policy("camera=(), microphone=(), geolocation=(), payment=()"))
                 .contentSecurityPolicy(csp -> csp
                         .policyDirectives("default-src 'none'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'"))
