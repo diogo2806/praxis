@@ -1,8 +1,14 @@
 # Requisitos técnicos implementados — praxis
 
-Status: atualizado em 2026-07-19 após correção de `UI14` e revalidação de `UI13`, `DATA14`, `ASYNC11`, `BUS13`, `INT18`, `DATA13` e `INT17`.
+Status: atualizado em 2026-07-20 após correção de `MIG10` e `UI14` e revalidação de `UI13`, `DATA14`, `ASYNC11`, `BUS13`, `INT18`, `DATA13` e `INT17`.
 
 Este arquivo registra comportamentos comprovadamente entregues no código e preserva a rastreabilidade de conclusões históricas posteriormente reclassificadas. Entregas parciais ou invalidadas apontam obrigatoriamente para o backlog canônico.
+
+## 2026-07-20
+
+| Origem | Situação registrada | Entrega comprovada | Pendência remanescente |
+|---|---|---|---|
+| `MIG10` | Concluído | As migrations preservam `V1009` para a emissão do token e `V1010` para sua expiração, usam `V1009.1` para o módulo de parceiros e `V1012` para os planos anuais. O teste de compatibilidade valida versões únicas, a ordem `1009 < 1009.1 < 1010 < 1011 < 1012` e os caminhos canônicos. A decisão completa está em `docs/implementados/mig10-versoes-flyway.md`. | Nenhuma para validação e ordenação do conjunto Flyway. |
 
 ## 2026-07-19
 
@@ -48,6 +54,11 @@ Este arquivo registra comportamentos comprovadamente entregues no código e pres
 
 | Caminho completo | Método/campo/contrato | Comportamento comprovado |
 |---|---|---|
+| `backend/src/main/resources/db/migration/V1009__persist_candidate_token_window.sql` | versão `V1009`; `candidate_token_issued_at` | Preserva a versão e o conteúdo originais da migration de emissão do token. |
+| `backend/src/main/resources/db/migration/V1009_1__create_partner_distribution_module.sql` | versão `V1009.1` | Elimina a colisão posterior em `V1009` e mantém as tabelas de parceiros antes da auditoria universal. |
+| `backend/src/main/resources/db/migration/V1010__add_candidate_token_expiration.sql` | versão `V1010`; `candidate_token_expires_at` | Preserva a versão histórica e calcula a expiração somente após a criação de `candidate_token_issued_at`. |
+| `backend/src/main/resources/db/migration/V1012__replace_professional_plans_with_annual_pools.sql` | versão `V1012` | Move a alteração de catálogo posterior para uma versão exclusiva. |
+| `backend/src/test/java/br/com/iforce/praxis/config/FlywayMigrationCompatibilityTest.java` | ordem histórica e unicidade | Valida a sequência `1009 < 1009.1 < 1010 < 1011 < 1012`, a presença dos recursos canônicos e a ausência de versões SQL duplicadas. |
 | `backend/src/main/java/br/com/iforce/praxis/simulation/service/ComparableSimulationValidationService.java` | herança de `SimulationValidationService` sem sobrescrever `validate()` | Mantém a validação estrutural padrão e não cria bloqueadores quando máximos por competência variam entre caminhos ou incluem zero. |
 | `backend/src/test/java/br/com/iforce/praxis/simulation/service/ComparableSimulationValidationServiceTest.java` | caminhos com máximos 100 e 50 | Comprova que a versão permanece publicável, com zero bloqueadores de bases máximas diferentes. |
 | `backend/src/main/java/br/com/iforce/praxis/candidate/service/CandidateAttemptMonitoringQueryService.java` | consulta do centro operacional | Aplica paginação e filtros por estado, avaliação e candidato, incluindo `NOT_STARTED`, `IN_PROGRESS`, `COMPLETED`, `ABANDONED` e `EXPIRED`. |
