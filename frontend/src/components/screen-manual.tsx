@@ -21,6 +21,7 @@ import {
 } from "@/components/ui/sheet";
 import { resolveCompetencyOwnershipManual } from "@/lib/screen-manual-competency-ownership";
 import { useLanguage } from "@/lib/language-context";
+import { resolvePartnerSpecialistManual } from "@/lib/screen-manual-specialist";
 import { resolvePublicationManual } from "@/lib/screen-manual-publication";
 import { resolveScenarioOwnershipManual } from "@/lib/screen-manual-scenario-ownership";
 import { resolveScreenManualOverride } from "@/lib/screen-manual-overrides";
@@ -85,6 +86,7 @@ export function ScreenManual({ pathname, iconOnly = false, className }: ScreenMa
   const { language } = useLanguage();
   const copy = manualCopy[language];
   const manual =
+    resolvePartnerSpecialistManual(pathname) ??
     resolveScenarioOwnershipManual(pathname) ??
     resolvePublicationManual(pathname) ??
     resolveCompetencyOwnershipManual(pathname) ??

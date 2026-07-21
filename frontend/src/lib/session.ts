@@ -84,13 +84,16 @@ export function clearAuthenticatedSession() {
   applyBrowserAccessPolicy([]);
 }
 
-export function defaultAuthenticatedRoute(): "/admin" | "/avaliacoes" | "/dashboard" {
+export function defaultAuthenticatedRoute():
+  | "/admin"
+  | "/avaliacoes/especialista"
+  | "/dashboard" {
   const roles = getSession().roles;
   if (hasRole(roles, ADMIN_ROLE)) {
     return "/admin";
   }
   if (isRestrictedPartnerSpecialist(roles)) {
-    return "/avaliacoes";
+    return "/avaliacoes/especialista";
   }
   return "/dashboard";
 }
