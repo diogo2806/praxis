@@ -1,38 +1,24 @@
 package br.com.iforce.praxis.journey.persistence.entity;
 
 import br.com.iforce.praxis.journey.model.AssessmentJourneyAttemptStatus;
-
 import br.com.iforce.praxis.shared.jpa.EmpresaAwareEntity;
-
 import jakarta.persistence.CascadeType;
-
 import jakarta.persistence.Column;
-
 import jakarta.persistence.Entity;
-
 import jakarta.persistence.EnumType;
-
 import jakarta.persistence.Enumerated;
-
 import jakarta.persistence.Id;
-
 import jakarta.persistence.OneToMany;
-
+import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
-
 import lombok.Getter;
-
 import lombok.NoArgsConstructor;
-
 import lombok.Setter;
 
-
+import java.time.Duration;
 import java.time.Instant;
-
 import java.util.LinkedHashSet;
-
 import java.util.Set;
-
 
 /**
  * Tentativa de um candidato em uma Jornada de Avaliação.
@@ -48,6 +34,8 @@ import java.util.Set;
 @Entity
 @Table(name = "assessment_journey_attempts")
 public class AssessmentJourneyAttemptEntity implements EmpresaAwareEntity {
+
+    private static final Duration DEFAULT_INVITATION_VALIDITY = Duration.ofDays(7);
 
     @Id
     @Column(name = "id", nullable = false, length = 80)
@@ -81,6 +69,25 @@ public class AssessmentJourneyAttemptEntity implements EmpresaAwareEntity {
     @Column(name = "completed_at")
     private Instant completedAt;
 
+    @Column(name = "expires_at", nullable = false)
+    private Instant expiresAt;
+
+    @Column(name = "invitation_sent_at")
+    private Instant invitationSentAt;
+
+    @Column(name = "canceled_at")
+    private Instant canceledAt;
+
     @OneToMany(mappedBy = "journeyAttempt", cascade = CascadeType.ALL, orphanRemoval = true)
     private Set<AssessmentJourneyAttemptStepEntity> steps = new LinkedHashSet<>();
+
+    @PrePersist
+    void initializeInvitationLifecycle() {
+        if (createdAt == null) {
+            throw new IllegalStateException("A data de criação da tentativa da jornada é obrigatória.");
+        }
+        if (expiresAt == null) {
+            expiresAt = createdAt.plus(DEFAULT_INVITATION_VALIDITY);
+        }
+    }
 }

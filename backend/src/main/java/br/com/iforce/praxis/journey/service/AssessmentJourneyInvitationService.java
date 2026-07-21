@@ -27,15 +27,29 @@ public class AssessmentJourneyInvitationService {
      * @param attempt tentativa da jornada já persistida
      */
     public void sendInvitation(AssessmentJourneyAttemptResponse attempt) {
-        invitationEmailSender.sendInvitation(
+        sendInvitation(
                 attempt.candidateEmail(),
                 attempt.candidateName(),
                 attempt.journeyName(),
-                journeyAttemptUrl(attempt.id())
+                attempt.id()
         );
     }
 
-    private String journeyAttemptUrl(String attemptId) {
+    public void sendInvitation(
+            String candidateEmail,
+            String candidateName,
+            String journeyName,
+            String attemptId
+    ) {
+        invitationEmailSender.sendInvitation(
+                candidateEmail,
+                candidateName,
+                journeyName,
+                journeyAttemptUrl(attemptId)
+        );
+    }
+
+    public String journeyAttemptUrl(String attemptId) {
         String baseUrl = praxisProperties.candidatePageBaseUrl();
         if (baseUrl == null || baseUrl.isBlank()) {
             baseUrl = praxisProperties.publicBaseUrl();

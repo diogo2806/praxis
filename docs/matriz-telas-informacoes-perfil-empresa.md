@@ -1,7 +1,7 @@
 # Matriz de telas e informações do perfil EMPRESA
 
 Data da revisão: 21/07/2026  
-Base analisada: `main` após o merge do PR #419
+Base analisada: `main` com as correções do PR #421
 
 ## 1. Escopo
 
@@ -23,8 +23,8 @@ Neste documento, **tabela** significa tabela ou lista visual da interface, não 
 
 | Status da correção | Significado |
 |---|---|
-| `CONCLUÍDA` | A correção já foi implementada e a responsabilidade da informação está centralizada. |
-| `EM ANDAMENTO` | Parte da correção já foi implementada, mas ainda existem pendências. |
+| `CONCLUÍDA` | A correção foi implementada e a responsabilidade da informação está centralizada. |
+| `EM ANDAMENTO` | Parte da correção foi implementada, mas ainda existem pendências. |
 | `PENDENTE` | A correção ainda não foi implementada. |
 | `BLOQUEADA` | A conclusão depende de integração, homologação externa, regra de negócio ou decisão ainda não disponível. |
 | `NÃO SE APLICA` | A tela já funciona apenas como resumo, referência ou detalhe e não exige correção de centralização. |
@@ -35,7 +35,7 @@ Neste documento, **tabela** significa tabela ou lista visual da interface, não 
 |---|---|
 | `OK` | Responsabilidade clara e sem duplicidade operacional relevante. |
 | `RESUMO` | Repete somente um resumo intencional, sem permitir manutenção do dado. |
-| `CONTEXTUAL` | Deve existir somente como etapa ou detalhe aberto a partir da tela proprietária. |
+| `CONTEXTUAL` | Existe somente como etapa ou detalhe aberto a partir da tela proprietária. |
 | `PARCIAL` | Responsabilidade razoável, mas ainda há campos, ações ou navegação a corrigir. |
 | `DUPLICADO` | Mantém ou altera a mesma informação que outra tela. |
 | `SEM AÇÃO` | Exibe dados, mas não oferece ação útil para o usuário. |
@@ -46,81 +46,81 @@ Neste documento, **tabela** significa tabela ou lista visual da interface, não 
 
 | Status da correção | Classificação | Tela e rota | Tabelas, listas, cards e painéis | Modais e diálogos | Campos ou informações repetidos | Ação para manter a informação em um único lugar | Evidência ou próximo passo |
 |---|---|---|---|---|---|---|---|
-| `NÃO SE APLICA` | `RESUMO` | **Dashboard** `/dashboard` | Cards de avaliações, jornadas, participações, resultados, próxima ação e tabela de resultados recentes. | Nenhum. | Totais operacionais, participante, processo, situação, resultado e data. | Manter somente indicadores e atalhos. Cada card deve abrir a tela proprietária. | A tela não mantém dados operacionais; somente resume. |
-| `PENDENTE` | `PARCIAL` | **Avaliações** `/avaliacoes` | Tabela mestre de avaliações, versões, situação, uso e conclusões. | Duplicação usa `window.prompt`; arquivamento usa `window.confirm`. | Nome, descrição, competências, versão, status, aplicações e conclusões. | Tornar Avaliações proprietária do cadastro, versão e status. Substituir `prompt` e `confirm` por componentes padronizados. | Criar `Dialog` para duplicação e `AlertDialog` para arquivamento. |
-| `PENDENTE` | `DUPLICADO` | **Nova avaliação** `/nova/avaliacao` | Formulário em cards, seletor e busca de competências. | Nenhum. | Cargo, situação crítica e competências também aparecem em Objetivo e demais etapas. | Manter o plano inicial aqui, mas remover a criação de competência global. | Permitir somente selecionar competências do catálogo. |
-| `PENDENTE` | `DUPLICADO` | **Objetivo do modelo base** `/nova/objetivo` | Card da versão, lista de competências e resumo do modelo. | Nenhum. | Nome, descrição, status, primeira etapa, versão e competências. | Retirar edição de competências e transformar a tela em resumo somente leitura ou redirecionamento. | Alterar rota para consumir o plano sem manter outro editor. |
-| `PENDENTE` | `CONTEXTUAL` | **Personagem** `/nova/personagem` | Formulário de personagem e banners de salvamento. | Nenhum. | Mensagem inicial também pode ser alterada em Diálogo, Mapa e Validador. | Tornar Personagem proprietária do contexto e da mensagem inicial. | Bloquear edição concorrente da primeira mensagem nos demais editores. |
-| `PENDENTE` | `DUPLICADO` | **Editor de diálogo** `/nova/dialogo` | Lista de etapas e alternativas; editor de mensagem, tempo, mídia, destino, criticidade e pontuação. | Nenhum modal padronizado identificado. | Mesmas etapas, alternativas e conexões são alteradas em Mapa e Validador. | Definir Diálogo como editor textual principal. | Remover CRUD estrutural concorrente do Validador e reduzir edição completa no Mapa. |
-| `PENDENTE` | `DUPLICADO` | **Construtor visual** `/nova/mapa` | Canvas de nós e conexões; painel de propriedades; resumo de validação. | Nenhum. | Etapas, mensagens, alternativas, conexões, competências e bloqueios. | Manter posição e conexão visual; conteúdo e pontuação devem ser editados em Diálogo. | Separar claramente propriedades gráficas de conteúdo. |
-| `PENDENTE` | `CRÍTICO` | **Validador/Revisão** `/nova/validador` | Canvas, diagnósticos, bloqueios, avisos, qualidade e controles de edição. | Edições internas sem separação clara entre diagnóstico e autoria. | Cria, edita e exclui etapas e alternativas mantidas também em Diálogo e Mapa. | Manter somente diagnóstico, prontidão e links para correção. | Remover CRUD de nós e alternativas do Validador. |
-| `PENDENTE` | `CONTEXTUAL` | **Piloto e indicadores** `/nova/piloto` | Cards de tentativas, conclusão, abandono, expiração e calibração. | Nenhum. | Métricas também aparecem em Avaliações, Compliance, Dashboard e Participações. | Manter somente calibração e indicadores analíticos da versão. | Abrir pelo contexto da avaliação e retirar seletor global independente. |
-| `PENDENTE` | `CONTEXTUAL` | **Governança e publicação** `/nova/governanca` | Linha de estados, termos, aceite e auditoria. | Confirmação própria em sobreposição. | Status aparece em Avaliações; auditoria aparece em Compliance. | Manter publicação, termos e auditoria somente em Governança. | Trocar sobreposição por `AlertDialog` e retirar auditoria concorrente de Compliance. |
-| `PENDENTE` | `DUPLICADO` | **Ativação Gupy por avaliação** `/nova/gupy` | Preflight e lista de entregas de resultado. | Nenhum. | Configuração, entregas, retry e DLQ aparecem em Integrações e Monitoramento. | Manter apenas preflight contextual da versão. | Remover lista operacional de entregas e criar link filtrado para Monitoramento. |
-| `NÃO SE APLICA` | `CONTEXTUAL` | **Começar rápido** `/nova/rapido` | Cards de modelos prontos. | Nenhum. | Cria o mesmo rascunho do fluxo de Nova avaliação. | Manter como atalho, sem criar editor paralelo. | Fluxo já encaminha para a revisão da avaliação criada. |
-| `EM ANDAMENTO` | `PARCIAL` | **Jornadas** `/jornadas` | Lista de jornadas, formulário e tabela de etapas. | Criação e edição inline; sem confirmação padronizada para todas as ações. | Avaliações, versões e status aparecem também em Avaliações e Dashboard. | Manter somente composição e ordenação das avaliações. | PR #417 retirou participantes e convites da tela; ainda falta padronizar confirmações. |
-| `EM ANDAMENTO` | `CRÍTICO` | **Participações** `/participacoes` | Filtros e tabela de participante, avaliação, status, progresso, link, atividade e ações. | Ações de extensão e reenvio são inline. | Identidade, convite e status aparecem em Resultados, Talent Match e formulários de convite. | Tornar Participações proprietária de convite, validade, andamento e ações. | PR #417 centralizou a interface; falta endpoint único para participação individual e jornada. |
-| `CONCLUÍDA` | `CONTEXTUAL` | **Nova participação individual** `/enviar-link` | Fluxo de criação, seleção de avaliação e compartilhamento do link. | Nenhum. | Nome, e-mail e link aparecem depois em Participações. | Manter somente como formulário contextual iniciado em Participações. | A rota está acessível pela Central de Participações e não mantém outra tabela mestre. |
-| `EM ANDAMENTO` | `CRÍTICO` | **Convite por jornada** `/participacoes/jornada` | Formulário e card do link gerado. | Nenhum. | Identidade, jornada e link deveriam aparecer imediatamente em Participações. | Inserir o convite no mesmo read model de Participações. | Rota criada no PR #417; faltam validade, reenvio, cancelamento e unificação no backend. |
-| `NÃO SE APLICA` | `OK` | **Resultados** `/results` | Filtros e tabela de resultados concluídos. | Nenhum. | Participante e avaliação aparecem em Participações; score aparece em Dashboard e Talent Match. | Manter lista de resultados concluídos e abrir o detalhe para análise. | Não mantém convite, validade ou progresso. |
-| `NÃO SE APLICA` | `OK` | **Detalhe do resultado** `/results/$attemptId` | Cabeçalho, competências, respostas e decisão humana. | Nenhum. | Identidade e status aparecem em Participações; competências aparecem no catálogo. | Manter evidências e decisão humana somente no detalhe. | Responsabilidade já está centralizada. |
-| `PENDENTE` | `CONTEXTUAL` | **Talent Match** `/talent-match` | Seleção de avaliação, lista de participantes, radar, benchmark e legenda. | Nenhum. | Resultados, candidatos, avaliação e competências. | Abrir com contexto obrigatório a partir de Resultados ou Avaliações. | Retirar seletor global e impedir que funcione como segunda lista mestre de candidatos. |
-| `PENDENTE` | `PARCIAL` | **Central operacional** `/monitoramento` | Métricas, integrações com atenção, alertas e entregas em DLQ. | Nenhum. | Status saudável aparece em Integrações; entregas aparecem em telas Gupy. | Manter somente falhas, exceções, retry e DLQ. | Retirar integrações saudáveis e criar filtros por provedor, versão e tentativa. |
-| `PENDENTE` | `CRÍTICO` | **Compliance** `/compliance` | Tabela global e diálogo de validação, auditoria e privacidade. | `Dialog` de detalhe. | Repete Avaliações, Piloto, Participações, Validador e Governança. | Remover lista global e abrir conformidade apenas no contexto de uma versão. | Validação deve abrir Validador; auditoria e publicação devem abrir Governança. |
-| `PENDENTE` | `SEM AÇÃO` | **Perfil da empresa** `/configuracoes/perfil` | Cards e campos somente leitura. | Nenhum. | Nome, status e contatos aparecem em Dashboard, Billing e integrações. | Permitir edição autorizada ou solicitação de alteração. | Se permanecer somente leitura, retirar do menu principal. |
-| `EM ANDAMENTO` | `OK` | **Competências** `/competencias` | Total, busca e tabela paginada. | Modal de criar/editar e confirmação de remoção. | Competências aparecem em criação, resultados e comparação. | Manter como única proprietária do catálogo global. | Estrutura principal está correta; falta atualizar manuais e impedir criação global em Nova avaliação. |
-| `EM ANDAMENTO` | `PARCIAL` | **Minha equipe** `/team` | Tabela de usuários e ações. | Modal de convite e confirmação de bloqueio. | Nome e e-mail aparecem em Minha conta e no menu; especialistas aparecem em Parceiros. | Tornar Equipe proprietária dos vínculos e permissões internas. | PR #417 removeu navegação quebrada; faltam perfil, permissões e coluna de acesso. |
-| `PENDENTE` | `CONDICIONAL` | **Parceiros e especialistas** `/parceiros` | Tabelas de especialistas e clientes, catálogo e formulários. | Formulários e confirmações não totalmente padronizados. | Usuários aparecem em Equipe; provedor e token aparecem em Integrações. | Restringir por feature flag e permissão de empresa parceira. | Separar token de cliente parceiro de token técnico de integração. |
-| `NÃO SE APLICA` | `OK` | **Integrações** `/integrations` | Cards por provedor e ações de configuração. | Modal de configuração, desconexão e token. | Status e erro também aparecem em Monitoramento. | Manter configuração e estado saudável somente em Integrações. | Responsabilidade principal já está centralizada. |
-| `NÃO SE APLICA` | `OK` | **Detalhe da integração** `/integrations/$provider` | Status, metadados, erro, token, webhook e API pública. | Diálogos de desconexão e revogação de token. | Falhas aparecem resumidas em Monitoramento e telas Gupy. | Manter diagnóstico e configuração do provedor no detalhe. | Responsabilidade principal já está centralizada. |
-| `BLOQUEADA` | `CONTEXTUAL` | **Centro de homologação Gupy** `/integrations/gupy-homologacao` | Prontidão, métricas, endpoints e checklist de homologação. | Nenhum. | Avaliações, tentativas, webhooks e DLQ aparecem em outras telas. | Manter somente evidências de homologação e links para telas proprietárias. | Conclusão depende de token, vaga real e aprovação externa da Gupy. |
-| `NÃO SE APLICA` | `OK` | **Plano e cobrança** `/billing` | Situação, créditos, assinatura, uso e históricos. | Confirmação de cancelamento e checkout externo. | Situação financeira pode gerar bloqueio em convites. | Manter todos os dados financeiros em Billing. | Responsabilidade já está centralizada. |
-| `NÃO SE APLICA` | `OK` | **Minha conta** `/configuracoes/conta` | Card do usuário e formulário de senha. | Nenhum. | Nome e e-mail aparecem no menu e em Equipe. | Manter somente credenciais pessoais; vínculo e permissão ficam em Equipe. | Responsabilidade já está centralizada. |
-| `PENDENTE` | `PARCIAL` | **Comece aqui** `/comecar` | Cards de etapas, progresso e links rápidos. | Nenhum. | Resume Dashboard e todas as telas do fluxo. | Manter como onboarding e abrir a tela proprietária de cada etapa. | Corrigir “Convide e acompanhe” para abrir Participações e ocultar após conclusão. |
-| `EM ANDAMENTO` | `PARCIAL` | **Central de manuais** `/manual` e manual lateral | Lista de manuais e `Sheet` contextual. | `Sheet` lateral. | Alguns textos ainda descrevem campos ou responsabilidades antigas. | Manter manual específico por rota e alinhado à tela proprietária. | PR #417 criou manuais específicos; ainda faltam rotas de autoria, perfil, parceiros e permissões. |
+| `NÃO SE APLICA` | `RESUMO` | **Dashboard** `/dashboard` | Cards de avaliações, jornadas, participações, resultados, próxima ação e resultados recentes. | Nenhum. | Totais operacionais, participante, processo, situação, resultado e data. | Manter somente indicadores e atalhos. | A tela não mantém dados operacionais; somente resume. |
+| `PENDENTE` | `PARCIAL` | **Avaliações** `/avaliacoes` | Tabela mestre de avaliações, versões, situação, uso e conclusões. | Usa `window.prompt` e `window.confirm`. | Nome, descrição, competências, versão, status, aplicações e conclusões. | Tornar Avaliações proprietária do cadastro, versão e status. | Criar `Dialog` para duplicação e `AlertDialog` para arquivamento. |
+| `PENDENTE` | `DUPLICADO` | **Nova avaliação** `/nova/avaliacao` | Formulário, seletor e busca de competências. | Nenhum. | Cargo, situação crítica e competências. | Manter aqui o plano inicial, mas remover criação de competência global. | Permitir somente selecionar competências do catálogo. |
+| `PENDENTE` | `DUPLICADO` | **Objetivo do modelo base** `/nova/objetivo` | Card da versão, competências e resumo. | Nenhum. | Nome, descrição, status, primeira etapa, versão e competências. | Transformar em resumo somente leitura ou remover a rota. | Retirar a edição de competências. |
+| `PENDENTE` | `CONTEXTUAL` | **Personagem** `/nova/personagem` | Formulário e banners de salvamento. | Nenhum. | Mensagem inicial ainda pode ser alterada em Diálogo e Mapa. | Personagem deve ser proprietária do contexto e mensagem inicial. | Bloquear edição concorrente nos demais editores. |
+| `PENDENTE` | `DUPLICADO` | **Editor de diálogo** `/nova/dialogo` | Etapas, alternativas, mensagem, tempo, mídia, destino, criticidade e pontuação. | Nenhum modal padronizado identificado. | Conteúdo e parte das conexões também são alterados no Mapa. | Manter Diálogo como editor textual principal. | Reduzir a edição de conteúdo concorrente no Mapa. |
+| `PENDENTE` | `DUPLICADO` | **Construtor visual** `/nova/mapa` | Canvas, nós, conexões, propriedades e validação resumida. | Nenhum. | Conteúdo e pontuação ainda se sobrepõem ao Diálogo. | Manter posição e conexão visual. | Separar propriedades gráficas da edição de conteúdo. |
+| `CONCLUÍDA` | `OK` | **Validador/Revisão** `/nova/validador` | Cards de prontidão, bloqueios, avisos, qualidade e lista de diagnósticos. | Nenhum CRUD ou confirmação de autoria. | Exibe somente diagnóstico calculado pelo backend. | Manter apenas diagnóstico e links para Diálogo, Mapa, Governança e Compliance contextual. | PR #421 removeu criação, edição e exclusão de nós e alternativas e adicionou manual específico. |
+| `PENDENTE` | `CONTEXTUAL` | **Piloto e indicadores** `/nova/piloto` | Tentativas, conclusão, abandono, expiração e calibração. | Nenhum. | Métricas também aparecem em Avaliações, Dashboard e Participações. | Manter somente calibração e indicadores analíticos. | Abrir pelo contexto da avaliação e retirar seletor global. |
+| `PENDENTE` | `CONTEXTUAL` | **Governança e publicação** `/nova/governanca` | Estados, termos, aceite e auditoria. | Confirmação própria em sobreposição. | Status aparece em Avaliações. | Concentrar publicação, termos e auditoria em Governança. | Trocar sobreposição por `AlertDialog`. |
+| `PENDENTE` | `DUPLICADO` | **Ativação Gupy** `/nova/gupy` | Preflight e lista de entregas. | Nenhum. | Configuração, entregas, retry e DLQ. | Manter somente preflight da versão. | Remover entregas e criar link filtrado para Monitoramento. |
+| `NÃO SE APLICA` | `CONTEXTUAL` | **Começar rápido** `/nova/rapido` | Cards de modelos prontos. | Nenhum. | Cria o mesmo tipo de rascunho de Nova avaliação. | Manter apenas como atalho. | Já encaminha para a revisão da avaliação criada. |
+| `EM ANDAMENTO` | `PARCIAL` | **Jornadas** `/jornadas` | Lista de jornadas, formulário e tabela de etapas. | Edição inline e confirmações não padronizadas. | Avaliações, versões e status. | Manter somente composição e ordenação. | PR #417 retirou participantes e convites; faltam confirmações. |
+| `CONCLUÍDA` | `OK` | **Participações** `/participacoes` | Uma tabela de participações individuais e por jornada com tipo, processo, situação, progresso, validade e ações. | `AlertDialog` para cancelamento de jornada. | Identidade e resultado aparecem como referências em outras telas. | Concentrar convite, validade, reenvio, reativação, cancelamento e andamento. | PR #421 criou endpoint/read model unificado e excluiu tentativas internas da jornada da lista mestre. |
+| `CONCLUÍDA` | `CONTEXTUAL` | **Nova participação individual** `/enviar-link` | Criação, seleção de avaliação e compartilhamento. | Nenhum. | Nome, e-mail e link aparecem depois em Participações. | Manter somente como formulário iniciado em Participações. | Não mantém outra tabela mestre. |
+| `CONCLUÍDA` | `CONTEXTUAL` | **Convite por jornada** `/participacoes/jornada` | Formulário e card do link gerado. | Nenhum. | Nome, e-mail, jornada, sequência e link aparecem na Central de Participações. | Manter somente como formulário de criação; toda gestão ocorre em Participações. | PR #421 implementou validade, reenvio, extensão, reativação, cancelamento e exibição imediata no read model único. |
+| `NÃO SE APLICA` | `OK` | **Resultados** `/results` | Filtros e tabela de resultados concluídos. | Nenhum. | Participante, avaliação e score. | Manter somente resultados concluídos. | Não mantém convite, validade ou progresso. |
+| `NÃO SE APLICA` | `OK` | **Detalhe do resultado** `/results/$attemptId` | Cabeçalho, competências, respostas e decisão humana. | Nenhum. | Identidade, status e competências. | Concentrar evidências e decisão humana. | Responsabilidade já centralizada. |
+| `PENDENTE` | `CONTEXTUAL` | **Talent Match** `/talent-match` | Seleção de avaliação, candidatos, radar e benchmark. | Nenhum. | Resultados, candidatos, avaliação e competências. | Abrir com contexto obrigatório. | Retirar seletor global e impedir segunda lista de candidatos. |
+| `PENDENTE` | `PARCIAL` | **Central operacional** `/monitoramento` | Métricas, integrações com atenção, alertas e DLQ. | Nenhum. | Status saudável e entregas aparecem em outras telas. | Manter somente erros, exceções, retry e DLQ. | Retirar integrações saudáveis e criar filtros. |
+| `CONCLUÍDA` | `CONTEXTUAL` | **Compliance** `/compliance` | Cards de contexto, prontidão e atalhos para telas proprietárias. | Nenhum diálogo ou tabela global. | Exibe somente resumo de validação da versão selecionada. | Abrir somente com avaliação e versão; direcionar cada responsabilidade. | PR #421 removeu a lista global e o item de menu; Validador, Governança, Privacidade e Avaliações permanecem proprietários dos dados. |
+| `PENDENTE` | `SEM AÇÃO` | **Perfil da empresa** `/configuracoes/perfil` | Cards e campos somente leitura. | Nenhum. | Nome, status e contatos. | Permitir edição ou solicitação de alteração. | Caso continue somente leitura, retirar do menu. |
+| `EM ANDAMENTO` | `OK` | **Competências** `/competencias` | Total, busca e tabela paginada. | Criar/editar e confirmação de remoção. | Competências usadas em criação, resultados e comparação. | Manter como única proprietária do catálogo. | Falta impedir criação global em Nova avaliação e atualizar outros manuais. |
+| `EM ANDAMENTO` | `PARCIAL` | **Minha equipe** `/team` | Tabela de usuários e ações. | Convite e confirmação de bloqueio. | Nome e e-mail em Minha conta, menu e Parceiros. | Concentrar vínculos e permissões internas. | Faltam perfil, permissões e coluna de acesso. |
+| `PENDENTE` | `CONDICIONAL` | **Parceiros e especialistas** `/parceiros` | Especialistas, clientes, catálogo e formulários. | Confirmações não totalmente padronizadas. | Usuários, provedores e tokens. | Restringir por feature flag e permissão. | Separar token de parceiro do token técnico de integração. |
+| `NÃO SE APLICA` | `OK` | **Integrações** `/integrations` | Cards por provedor e configuração. | Configuração, desconexão e token. | Status e erro aparecem em Monitoramento. | Manter configuração e estado saudável em Integrações. | Responsabilidade principal centralizada. |
+| `NÃO SE APLICA` | `OK` | **Detalhe da integração** `/integrations/$provider` | Status, metadados, erro, token, webhook e API. | Desconexão e revogação de token. | Falhas resumidas em Monitoramento e Gupy. | Manter diagnóstico e configuração no detalhe. | Responsabilidade principal centralizada. |
+| `BLOQUEADA` | `CONTEXTUAL` | **Homologação Gupy** `/integrations/gupy-homologacao` | Prontidão, métricas, endpoints e checklist. | Nenhum. | Avaliações, tentativas, webhooks e DLQ. | Manter somente evidências de homologação. | Depende de token, vaga real e aprovação externa da Gupy. |
+| `NÃO SE APLICA` | `OK` | **Plano e cobrança** `/billing` | Créditos, assinatura, uso e históricos. | Cancelamento e checkout externo. | Situação financeira pode bloquear convites. | Manter dados financeiros em Billing. | Responsabilidade centralizada. |
+| `NÃO SE APLICA` | `OK` | **Minha conta** `/configuracoes/conta` | Usuário e alteração de senha. | Nenhum. | Nome e e-mail aparecem no menu e em Equipe. | Manter somente credenciais pessoais. | Vínculo e permissão ficam em Equipe. |
+| `PENDENTE` | `PARCIAL` | **Comece aqui** `/comecar` | Etapas, progresso e links rápidos. | Nenhum. | Resume Dashboard e demais telas. | Manter somente como onboarding. | Corrigir convite para abrir Participações e ocultar após conclusão. |
+| `EM ANDAMENTO` | `PARCIAL` | **Central de manuais** `/manual` | Lista de manuais e painel lateral. | `Sheet` lateral. | Alguns textos ainda descrevem responsabilidades antigas. | Manter manual específico por rota. | PR #421 concluiu Validador, Participações, convite por jornada e Compliance; ainda faltam outras rotas pendentes da matriz. |
 
 ## 4. Campos e informações que aparecem em mais de uma tela
 
 A repetição pode permanecer quando for apenas **resumo**, **referência somente leitura** ou **cabeçalho contextual**. O problema ocorre quando duas telas permitem criar, alterar, decidir ou operar sobre o mesmo dado.
 
-| Status da correção | Informação | Onde aparece atualmente | Tela proprietária proposta | Regra para as outras telas | Ação necessária | Evidência ou próximo passo |
-|---|---|---|---|---|---|---|
-| `PENDENTE` | Nome, descrição, versão e status da avaliação | Dashboard, Avaliações, etapas `/nova/*`, Jornadas, Compliance, Piloto, Resultados e Talent Match | **Avaliações e versão contextual** | Mostrar somente referência e link. | Retirar lista global de Compliance e seletores globais desnecessários. | Nenhuma correção estrutural concluída. |
-| `PENDENTE` | Competências do catálogo | Competências, Nova avaliação, Objetivo, Diálogo, Mapa, Validador, Resultados e Talent Match | **Competências** | Criação e edição global somente no catálogo. | Remover criação global em Nova avaliação e edição do conjunto em Objetivo. | Catálogo existe, mas os outros editores ainda alteram o dado. |
-| `PENDENTE` | Competências e pesos da versão | Nova avaliação, Objetivo, Diálogo, Mapa, Validador, Piloto e Talent Match | **Nova avaliação** | Demais telas consomem snapshot. | Definir um único editor de conjunto, peso, meta e tier. | Pendente de reorganização do fluxo de autoria. |
-| `PENDENTE` | Personagem e mensagem inicial | Personagem, Diálogo, Mapa e Validador | **Personagem** | Mostrar referência ou link. | Bloquear edição concorrente da primeira mensagem. | Pendente. |
-| `PENDENTE` | Etapas, alternativas e conexões | Diálogo, Mapa e Validador | **Diálogo para conteúdo; Mapa para posição e conexão** | Validador somente diagnostica. | Remover CRUD estrutural do Validador. | P0 pendente. |
-| `PENDENTE` | Bloqueios, avisos e qualidade | Diálogo, Mapa, Validador, Compliance e Governança | **Validador** | Mostrar contagem e link. | Centralizar lista, severidade e ação corretiva. | Pendente. |
-| `PENDENTE` | Publicação, aceite e auditoria | Avaliações, Governança e Compliance | **Governança** | Avaliações mostra status e Compliance somente linka. | Retirar auditoria concorrente de Compliance. | Pendente. |
-| `EM ANDAMENTO` | Nome e e-mail do participante | Convites, Participações, Resultados, detalhe e Talent Match | **Participações** | Resultados e comparação usam snapshot. | Usar o mesmo identificador de participação em todas as telas. | Interface centralizada no PR #417; backend ainda separado. |
-| `EM ANDAMENTO` | Status e progresso da participação | Dashboard, Participações, Resultados, Piloto e jornadas | **Participações** | Dashboard e Piloto mostram agregados; Resultados mostra concluídos. | Unificar tentativa individual e jornada. | Endpoint/read model unificado pendente. |
-| `EM ANDAMENTO` | Link, validade, reenvio e reativação | Convite individual, convite por jornada e Participações | **Participações** | Formulários apenas criam. | Implementar ciclo completo também para jornadas. | Rota de convite por jornada criada no PR #417. |
-| `CONCLUÍDA` | Score, evidências e decisão humana | Dashboard, Resultados, detalhe, Talent Match e integrações | **Detalhe do resultado** | Listas mostram somente resumo. | Manter decisão e evidências no detalhe. | Responsabilidade já centralizada. |
-| `PENDENTE` | Configuração e token de integração | Integrações, detalhe, Parceiros e telas Gupy | **Detalhe da integração** | Outras telas verificam prontidão. | Distinguir token de parceiro de token de integração. | Pendente. |
-| `PENDENTE` | Falhas, retry e DLQ | Monitoramento, Ativação Gupy e Homologação | **Monitoramento** | Outras telas mostram contagem e link filtrado. | Remover lista de entregas de `/nova/gupy`. | Pendente. |
-| `PENDENTE` | Status saudável da integração | Integrações, Monitoramento e Homologação | **Integrações** | Monitoramento não mostra itens saudáveis. | Retirar “Integrações conectadas” de Monitoramento. | Pendente. |
-| `PENDENTE` | Dados cadastrais da empresa | Perfil, Dashboard, Billing e integrações | **Configurações da empresa** | Outras telas mostram identificação curta. | Permitir edição ou solicitação de alteração. | Pendente. |
-| `EM ANDAMENTO` | Usuário, e-mail, status e acesso | Equipe, Minha conta, menu e Parceiros | **Equipe para vínculo; Minha conta para credencial** | Menu somente resume; Parceiros adiciona função especializada. | Criar perfis e permissões e incluir coluna Perfil. | Limpeza inicial feita no PR #417; autorização granular pendente. |
-| `CONCLUÍDA` | Plano, créditos e situação financeira | Billing e bloqueios de criação ou convite | **Billing** | Outras telas mostram somente o motivo do bloqueio. | Manter saldo e histórico fora das demais telas. | Responsabilidade já centralizada. |
-| `PENDENTE` | Progresso de onboarding | Comece aqui e Dashboard | **Comece aqui durante a configuração inicial** | Dashboard mostra somente próxima ação. | Corrigir destino do convite e ocultar guia após conclusão. | Pendente. |
+| Status da correção | Informação | Tela proprietária | Situação após o PR #421 | Próximo passo |
+|---|---|---|---|---|
+| `EM ANDAMENTO` | Nome, descrição, versão e status da avaliação | **Avaliações** | Compliance deixou de manter lista concorrente, mas outras telas ainda possuem seletores globais. | Retirar seletores desnecessários. |
+| `PENDENTE` | Competências do catálogo | **Competências** | Catálogo existe, mas Nova avaliação e Objetivo ainda mantêm ações concorrentes. | Remover criação e edição fora do catálogo. |
+| `PENDENTE` | Competências e pesos da versão | **Nova avaliação** | Ainda há mais de um ponto de edição. | Definir um único editor. |
+| `PENDENTE` | Personagem e mensagem inicial | **Personagem** | Validador deixou de editar, mas Diálogo e Mapa ainda podem concorrer. | Bloquear edição concorrente. |
+| `EM ANDAMENTO` | Etapas, alternativas e conexões | **Diálogo para conteúdo; Mapa para posição e conexão** | Validador não possui mais CRUD. | Retirar edição completa de conteúdo do Mapa. |
+| `CONCLUÍDA` | Bloqueios, avisos e qualidade | **Validador** | Lista, severidade, qualidade e ação corretiva estão centralizadas. | Manter apenas contagens e links nas telas secundárias. |
+| `CONCLUÍDA` | Publicação, aceite e auditoria | **Governança** | Compliance não mantém outra auditoria ou ação de publicação. | Manter somente status e atalhos fora de Governança. |
+| `CONCLUÍDA` | Nome e e-mail do participante | **Participações** | Um read model identifica participações individuais e por jornada. | Outras telas usam referência somente leitura. |
+| `CONCLUÍDA` | Status e progresso da participação | **Participações** | Tentativas individuais e jornadas aparecem na mesma tabela; tentativas internas da jornada são ocultadas da lista mestre. | Manter agregados no Dashboard e Piloto. |
+| `CONCLUÍDA` | Link, validade, reenvio, reativação e cancelamento | **Participações** | O mesmo contrato oferece ações conforme o tipo e o estado da participação. | Formulários de convite continuam somente criando registros. |
+| `CONCLUÍDA` | Score, evidências e decisão humana | **Detalhe do resultado** | Responsabilidade já centralizada. | Manter somente resumo nas listas. |
+| `PENDENTE` | Configuração e token de integração | **Detalhe da integração** | Parceiros e telas Gupy ainda precisam separar responsabilidades. | Distinguir tokens. |
+| `PENDENTE` | Falhas, retry e DLQ | **Monitoramento** | Ativação e Homologação Gupy ainda repetem informações. | Remover listas concorrentes. |
+| `PENDENTE` | Status saudável da integração | **Integrações** | Monitoramento ainda mostra itens saudáveis. | Retirar itens saudáveis da central operacional. |
+| `PENDENTE` | Dados cadastrais da empresa | **Configurações da empresa** | Perfil permanece somente leitura. | Permitir edição ou solicitação. |
+| `EM ANDAMENTO` | Usuário, e-mail, status e acesso | **Equipe e Minha conta** | Responsabilidades básicas separadas. | Criar perfis e permissões. |
+| `CONCLUÍDA` | Plano, créditos e situação financeira | **Billing** | Responsabilidade já centralizada. | Manter saldo e histórico fora das demais telas. |
+| `PENDENTE` | Progresso de onboarding | **Comece aqui** | Destino do convite e ocultação ainda pendentes. | Corrigir fluxo de conclusão. |
 
 ## 5. Modelo de propriedade recomendado
 
 | Domínio | Tela proprietária | Telas que podem mostrar resumo ou referência |
 |---|---|---|
 | Cadastro, versões e ciclo da avaliação | Avaliações | Dashboard, Jornadas, Resultados e Integrações |
-| Catálogo global de competências | Competências | Nova avaliação e relatórios, somente seleção ou snapshot |
+| Catálogo global de competências | Competências | Nova avaliação e relatórios |
 | Plano inicial da versão | Nova avaliação | Objetivo somente leitura ou removido |
-| Contexto e personagem inicial | Personagem | Diálogo, Mapa e Validador com link |
-| Conteúdo de etapas e alternativas | Diálogo | Mapa visual e Validador diagnóstico |
+| Contexto e personagem inicial | Personagem | Diálogo e Mapa com link |
+| Conteúdo de etapas e alternativas | Diálogo | Mapa visual; Validador somente diagnóstico |
 | Posição e conexão visual | Mapa | Diálogo mostra destino textual |
-| Validação estrutural | Validador | Diálogo, Mapa e Governança mostram contagem e atalho |
-| Publicação, termos e auditoria | Governança | Avaliações mostra status |
+| Validação estrutural | Validador | Diálogo, Mapa, Governança e Compliance mostram contagem ou atalho |
+| Publicação, termos e auditoria | Governança | Avaliações e Compliance mostram status ou atalho |
 | Composição de processos | Jornadas | Dashboard e convites mostram referência |
 | Convites, validade e progresso | Participações | Dashboard, Resultados e formulários de criação |
 | Evidências e decisão humana | Detalhe do resultado | Resultados e Talent Match mostram resumo |
 | Configuração de integrações | Integrações e detalhe | Monitoramento mostra somente erro |
-| Falhas e retentativas | Monitoramento | Gupy e Dashboard mostram contagem e atalho |
+| Falhas e retentativas | Monitoramento | Gupy e Dashboard mostram contagem ou atalho |
 | Dados empresariais | Configurações da empresa | Dashboard e Billing mostram identificação curta |
 | Usuários e permissões | Minha equipe | Minha conta mantém somente senha própria |
 | Financeiro | Billing | Outras telas mostram bloqueio com link |
@@ -129,11 +129,11 @@ A repetição pode permanecer quando for apenas **resumo**, **referência soment
 
 ### P0 — fontes de verdade e risco operacional
 
-| Status da correção | Ação | Critério de conclusão |
+| Status da correção | Ação | Evidência ou pendência |
 |---|---|---|
-| `EM ANDAMENTO` | Unificar Participações no backend. | Convite individual e de jornada aparecem imediatamente na mesma tabela e usam as mesmas ações. |
-| `PENDENTE` | Definir um único fluxo de autoria do cenário. | Diálogo edita conteúdo, Mapa edita posição e conexão, Validador somente diagnostica. |
-| `PENDENTE` | Retirar Compliance como lista concorrente. | Compliance é aberto somente no contexto da avaliação e direciona para as telas proprietárias. |
+| `CONCLUÍDA` | Unificar Participações no backend e frontend. | PR #421 criou contrato, tabela e ações únicas para individual e jornada. |
+| `EM ANDAMENTO` | Definir um único fluxo de autoria do cenário. | PR #421 concluiu o Validador diagnóstico; ainda falta separar completamente Diálogo e Mapa. |
+| `CONCLUÍDA` | Retirar Compliance como lista concorrente. | PR #421 removeu tabela, diálogo concorrente e item de menu. |
 
 ### P1 — clareza operacional
 
@@ -141,9 +141,9 @@ A repetição pode permanecer quando for apenas **resumo**, **referência soment
 |---|---|---|
 | `PENDENTE` | Remover edição de competências de Objetivo e criação global em Nova avaliação. | Competência global só é criada e editada em Competências. |
 | `PENDENTE` | Corrigir o destino de convite em Comece aqui. | A etapa abre Participações ou convite por jornada. |
-| `EM ANDAMENTO` | Reconhecer convite por jornada como contexto de Participações. | AppShell, manual, retorno e seleção da linha funcionam como um único fluxo. |
+| `CONCLUÍDA` | Reconhecer convite por jornada como contexto de Participações. | AppShell, manual, read model e ações funcionam como um único fluxo no PR #421. |
 | `PENDENTE` | Retirar integrações saudáveis de Monitoramento. | Monitoramento apresenta somente exceções e retentativas. |
-| `PENDENTE` | Remover entregas operacionais de Ativação Gupy. | Entregas ficam somente em Monitoramento com filtro contextual. |
+| `PENDENTE` | Remover entregas operacionais de Ativação Gupy. | Entregas ficam somente em Monitoramento. |
 | `PENDENTE` | Tornar Perfil da empresa acionável. | Usuário autorizado edita ou solicita alteração. |
 | `PENDENTE` | Padronizar confirmações e modais. | Avaliações, Jornadas e Governança usam `Dialog` ou `AlertDialog`. |
 
@@ -151,11 +151,11 @@ A repetição pode permanecer quando for apenas **resumo**, **referência soment
 
 | Status da correção | Ação | Critério de conclusão |
 |---|---|---|
-| `PENDENTE` | Criar subperfis de EMPRESA. | Backend e frontend distinguem administrador, recrutador, avaliador, conteúdo, integração, financeiro e leitura. |
+| `PENDENTE` | Criar subperfis de EMPRESA. | Backend e frontend distinguem os perfis autorizados. |
 | `PENDENTE` | Incluir perfil e permissões em Equipe. | Modal e tabela mostram e alteram o perfil autorizado. |
 | `PENDENTE` | Restringir Parceiros. | Rota aparece somente para empresa parceira e permissão específica. |
-| `EM ANDAMENTO` | Atualizar manuais de tela. | Todas as rotas possuem manual específico e alinhado à tela proprietária. |
-| `PENDENTE` | Ocultar Comece aqui após onboarding. | Guia deixa o menu operacional e permanece disponível em Ajuda. |
+| `EM ANDAMENTO` | Atualizar manuais de tela. | PR #421 concluiu os quatro manuais afetados; outras rotas da matriz continuam pendentes. |
+| `PENDENTE` | Ocultar Comece aqui após onboarding. | Guia deixa o menu operacional e permanece em Ajuda. |
 
 ## 7. Critério para atualizar o status
 
