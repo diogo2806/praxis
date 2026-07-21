@@ -60,12 +60,45 @@ const reviewCopy = {
   },
 } as const;
 
+const legalAcceptanceCopy = {
+  "pt-BR": {
+    loadingDescription: "Carregando os Termos de Uso e o aviso de privacidade aplicáveis.",
+    errorLabel: "Documentos legais",
+    unavailable: "Os documentos legais aplicáveis não estão disponíveis.",
+    termsAcceptance: "Li e aceito os Termos de Uso",
+    privacyAcknowledgement: "Li e estou ciente da Política de Privacidade",
+    termsLink: "Consultar Termos de Uso",
+    registering: "Registrando aceite...",
+  },
+  en: {
+    loadingDescription: "Loading the applicable Terms of Use and privacy notice.",
+    errorLabel: "Legal documents",
+    unavailable: "The applicable legal documents are unavailable.",
+    termsAcceptance: "I have read and accept the Terms of Use",
+    privacyAcknowledgement: "I have read and acknowledge the Privacy Policy",
+    termsLink: "Read the Terms of Use",
+    registering: "Registering acceptance...",
+  },
+  "es-MX": {
+    loadingDescription: "Cargando los Términos de Uso y el aviso de privacidad aplicables.",
+    errorLabel: "Documentos legales",
+    unavailable: "Los documentos legales aplicables no están disponibles.",
+    termsAcceptance: "Leí y acepto los Términos de Uso",
+    privacyAcknowledgement: "Leí y conozco la Política de Privacidad",
+    termsLink: "Consultar los Términos de Uso",
+    registering: "Registrando aceptación...",
+  },
+} as const;
+
+type LegalAcceptanceCopy = (typeof legalAcceptanceCopy)[keyof typeof legalAcceptanceCopy];
+
 export const Route = createFileRoute("/candidato/$token")({ component: TokenCandidatePage });
 
 function TokenCandidatePage() {
   const { token } = Route.useParams();
   const { t, language } = useLanguage();
   const copy = t.candidateAccess;
+  const legalCopy = legalAcceptanceCopy[language];
   const [ready, setReady] = useState(false);
   const notice = useQuery({
     queryKey: ["candidate-privacy-notice", token],
@@ -78,7 +111,7 @@ function TokenCandidatePage() {
         <Status
           label={copy.loadingLabel}
           title={copy.loadingTitle}
-          description="Carregando as informações da empresa responsável e o aviso aplicável."
+          description={legalCopy.loadingDescription}
         />
       </Shell>
     );
@@ -88,12 +121,12 @@ function TokenCandidatePage() {
     return (
       <Shell>
         <Status
-          label="Privacidade"
+          label={legalCopy.errorLabel}
           title="Não foi possível abrir a avaliação."
           description={
             notice.error instanceof Error
               ? notice.error.message
-              : "O aviso de privacidade não está disponível."
+              : legalCopy.unavailable
           }
           tone="warning"
         />
@@ -107,6 +140,7 @@ function TokenCandidatePage() {
         <div className="space-y-6">
           <Start
             copy={copy}
+            legalCopy={legalCopy}
             notice={notice.data}
             onStart={async () => {
               await acknowledgeCandidatePrivacyNotice(token, notice.data, language);
@@ -172,14 +206,17 @@ function CandidateAttemptContent({ token, copy }: { token: string; copy: Candida
 
 function Start({
   copy,
+  legalCopy,
   notice,
   onStart,
 }: {
   copy: CandidateAccessCopy;
+  legalCopy: LegalAcceptanceCopy;
   notice: CandidatePrivacyNotice;
   onStart: () => Promise<void>;
 }) {
-  const [accepted, setAccepted] = useState(false);
+  const [termsAccepted, setTermsAccepted] = useState(false);
+  const [privacyAcknowledged, setPrivacyAcknowledged] = useState(false);
   const [state, setState] = useState<RequestState>("idle");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
@@ -223,21 +260,49 @@ function Start({
           </p>
         ) : null}
       </div>
-      <label className="mt-5 flex items-start gap-3 rounded-xl border border-border bg-background/60 p-4 text-sm leading-6 text-foreground">
-        <input
-          type="checkbox"
-          className="mt-1"
-          checked={accepted}
-          onChange={(event) => setAccepted(event.target.checked)}
-        />
-        <span>{copy.consent}</span>
-      </label>
-      <a
-        href="/privacidade"
-        className="mt-3 inline-flex text-sm font-medium text-primary underline-offset-4 hover:underline"
-      >
-        {copy.privacyLink}
-      </a>
+
+      <div className="mt-5 space-y-3">
+        <label className="flex items-start gap-3 rounded-xl border border-border bg-background/60 p-4 text-sm leading-6 text-foreground">
+          <input
+            type="checkbox"
+            className="mt-1"
+            checked={termsAccepted}
+            onChange={(event) => setTermsAccepted(event.target.checked)}
+          />
+          <span>
+            {legalCopy.termsAcceptance} (versão {notice.termsVersion}).
+          </span>
+        </label>
+        <a
+          href="/termos"
+          target="_blank"
+          rel="noreferrer"
+          className="inline-flex text-sm font-medium text-primary underline-offset-4 hover:underline"
+        >
+          {legalCopy.termsLink}
+        </a>
+
+        <label className="flex items-start gap-3 rounded-xl border border-border bg-background/60 p-4 text-sm leading-6 text-foreground">
+          <input
+            type="checkbox"
+            className="mt-1"
+            checked={privacyAcknowledged}
+            onChange={(event) => setPrivacyAcknowledged(event.target.checked)}
+          />
+          <span>
+            {legalCopy.privacyAcknowledgement} (versão {notice.noticeVersion}).
+          </span>
+        </label>
+        <a
+          href="/privacidade"
+          target="_blank"
+          rel="noreferrer"
+          className="inline-flex text-sm font-medium text-primary underline-offset-4 hover:underline"
+        >
+          {copy.privacyLink}
+        </a>
+      </div>
+
       {state === "error" ? (
         <p className="mt-4 rounded-lg border border-danger/30 bg-danger/10 p-3 text-sm" role="alert">
           {errorMessage}
@@ -245,11 +310,11 @@ function Start({
       ) : null}
       <button
         type="button"
-        disabled={!accepted || state === "sending"}
+        disabled={!termsAccepted || !privacyAcknowledged || state === "sending"}
         onClick={() => void start()}
         className="mt-6 inline-flex w-full items-center justify-center rounded-xl bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground transition hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-60"
       >
-        {state === "sending" ? "Registrando ciência..." : copy.startButton}
+        {state === "sending" ? legalCopy.registering : copy.startButton}
       </button>
     </section>
   );
