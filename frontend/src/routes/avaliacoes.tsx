@@ -1,17 +1,37 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useMemo, useState } from "react";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { Archive, Copy, ExternalLink, FilePlus2, PlayCircle, Search, Target } from "lucide-react";
+import { useMemo, useState, type FormEvent } from "react";
+
 import { AppShell } from "@/components/app-shell";
 import { EmptyState, SkeletonRows, StateBanner, StatusBadge } from "@/components/praxis-ui";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { isRestrictedPartnerSpecialist } from "@/lib/access-control";
+import { archiveSimulation } from "@/lib/api/archive-simulation";
 import {
   listSimulations,
   type SimulationSummaryResponse,
   type SimulationVersionStatus,
 } from "@/lib/api/praxis";
-import { archiveSimulation } from "@/lib/api/archive-simulation";
 import { duplicateSimulation } from "@/lib/api/simulation-duplicates";
 import { useSession } from "@/lib/session";
 
@@ -48,23 +68,32 @@ function AvaliacoesPage() {
   const [filter, setFilter] = useState<(typeof filters)[number]>("todas");
   const [query, setQuery] = useState("");
   const [duplicatedName, setDuplicatedName] = useState<string | null>(null);
+  const [duplicateTarget, setDuplicateTarget] = useState<SimulationSummaryResponse | null>(null);
+  const [duplicateName, setDuplicateName] = useState("");
+  const [archiveTarget, setArchiveTarget] = useState<SimulationSummaryResponse | null>(null);
   const queryClient = useQueryClient();
+
   const simulationsQuery = useQuery({
     queryKey: ["simulations"],
     queryFn: listSimulations,
     retry: false,
   });
+
   const archiveMutation = useMutation({
     mutationFn: archiveSimulation,
     onSuccess: async () => {
+      setArchiveTarget(null);
       await queryClient.invalidateQueries({ queryKey: ["simulations"] });
     },
   });
+
   const duplicateMutation = useMutation({
     mutationFn: ({ simulation, name }: { simulation: SimulationSummaryResponse; name: string }) =>
       duplicateSimulation(simulation.id, simulation.versionNumber, name),
     onSuccess: async (_created, variables) => {
       setDuplicatedName(variables.name);
+      setDuplicateTarget(null);
+      setDuplicateName("");
       await queryClient.invalidateQueries({ queryKey: ["simulations"] });
     },
   });
@@ -87,14 +116,24 @@ function AvaliacoesPage() {
 
   function requestDuplicate(simulation: SimulationSummaryResponse) {
     if (specialistAccess) return;
-    const suggestedName = `${simulation.name} - cópia`;
-    const name = window.prompt(
-      "Informe o nome da nova avaliação. A origem não será alterada.",
-      suggestedName,
-    )?.trim();
-    if (!name) return;
+    duplicateMutation.reset();
     setDuplicatedName(null);
-    duplicateMutation.mutate({ simulation, name });
+    setDuplicateName(`${simulation.name} - cópia`);
+    setDuplicateTarget(simulation);
+  }
+
+  function confirmDuplicate(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!duplicateTarget) return;
+    const name = duplicateName.trim();
+    if (!name) return;
+    duplicateMutation.mutate({ simulation: duplicateTarget, name });
+  }
+
+  function requestArchive(simulation: SimulationSummaryResponse) {
+    if (specialistAccess || simulation.status === "archived") return;
+    archiveMutation.reset();
+    setArchiveTarget(simulation);
   }
 
   return (
@@ -118,13 +157,13 @@ function AvaliacoesPage() {
           </Link>
         </header>
 
-        {!specialistAccess && archiveMutation.isError && (
+        {!specialistAccess && archiveMutation.isError && !archiveTarget && (
           <StateBanner tone="danger" title="Não foi possível arquivar a avaliação">
             {archiveMutation.error instanceof Error ? archiveMutation.error.message : "Tente novamente."}
           </StateBanner>
         )}
 
-        {!specialistAccess && duplicateMutation.isError && (
+        {!specialistAccess && duplicateMutation.isError && !duplicateTarget && (
           <StateBanner tone="danger" title="Não foi possível duplicar a avaliação">
             {duplicateMutation.error instanceof Error
               ? duplicateMutation.error.message
@@ -245,21 +284,27 @@ function AvaliacoesPage() {
                       </thead>
                       <tbody>
                         {filtered.map((simulation) => (
-                          <tr key={simulation.id} className="border-b border-border last:border-0 hover:bg-accent/35">
+                          <tr
+                            key={simulation.id}
+                            className="border-b border-border last:border-0 hover:bg-accent/35"
+                          >
                             <td className="px-4 py-3">
                               <div className="font-medium text-foreground">{simulation.name}</div>
                               <p className="mt-1 max-w-2xl text-xs text-muted-foreground">
                                 {simulation.description || "Sem descrição."}
                               </p>
                               <div className="mt-1 text-[11px] text-muted-foreground">
-                                {simulation.competencies.length} {simulation.competencies.length === 1 ? "competência" : "competências"} · atualizada {formatDateTime(simulation.updatedAt)}
+                                {simulation.competencies.length}{" "}
+                                {simulation.competencies.length === 1 ? "competência" : "competências"} ·
+                                atualizada {formatDateTime(simulation.updatedAt)}
                               </div>
                             </td>
                             <td className="px-4 py-3">
                               <StatusBadge status={simulation.status} variant="status" />
                               {hasLiveVersionBehind(simulation) && (
                                 <span className="mt-1 inline-flex items-center gap-1 rounded-md border border-success/40 bg-success/10 px-1.5 py-0.5 text-[10px] font-medium text-success">
-                                  <PlayCircle className="h-3 w-3" />v{simulation.livePublishedVersionNumber} publicada
+                                  <PlayCircle className="h-3 w-3" />v
+                                  {simulation.livePublishedVersionNumber} publicada
                                 </span>
                               )}
                               <div className="mt-1 text-xs text-muted-foreground">
@@ -288,25 +333,27 @@ function AvaliacoesPage() {
                                           <Copy className="h-4 w-4" />
                                         </button>
                                       </TooltipTrigger>
-                                      <TooltipContent>Duplicar como novo rascunho reutilizável</TooltipContent>
+                                      <TooltipContent>
+                                        Duplicar como novo rascunho reutilizável
+                                      </TooltipContent>
                                     </Tooltip>
                                     <Tooltip>
                                       <TooltipTrigger asChild>
                                         <button
                                           type="button"
                                           aria-label={`Arquivar ${simulation.name}`}
-                                          onClick={() => {
-                                            if (window.confirm(`Arquivar "${simulation.name}"? O histórico será preservado.`)) {
-                                              archiveMutation.mutate(simulation.id);
-                                            }
-                                          }}
-                                          disabled={archiveMutation.isPending || simulation.status === "archived"}
+                                          onClick={() => requestArchive(simulation)}
+                                          disabled={
+                                            archiveMutation.isPending || simulation.status === "archived"
+                                          }
                                           className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-border bg-background text-warning hover:bg-warning/10 disabled:cursor-not-allowed disabled:opacity-50"
                                         >
                                           <Archive className="h-4 w-4" />
                                         </button>
                                       </TooltipTrigger>
-                                      <TooltipContent>Arquivar sem apagar o histórico</TooltipContent>
+                                      <TooltipContent>
+                                        Arquivar sem apagar o histórico
+                                      </TooltipContent>
                                     </Tooltip>
                                   </>
                                 )}
@@ -350,6 +397,122 @@ function AvaliacoesPage() {
             )}
           </>
         )}
+
+        <Dialog
+          open={duplicateTarget != null}
+          onOpenChange={(open) => {
+            if (!open && !duplicateMutation.isPending) {
+              setDuplicateTarget(null);
+              setDuplicateName("");
+              duplicateMutation.reset();
+            }
+          }}
+        >
+          <DialogContent>
+            <form onSubmit={confirmDuplicate} className="space-y-5">
+              <DialogHeader>
+                <DialogTitle>Duplicar avaliação</DialogTitle>
+                <DialogDescription>
+                  Será criado um novo rascunho independente. A avaliação de origem e seu histórico
+                  não serão alterados.
+                </DialogDescription>
+              </DialogHeader>
+
+              <label htmlFor="duplicate-simulation-name" className="block">
+                <span className="mb-1.5 block text-sm font-medium text-foreground">
+                  Nome da nova avaliação
+                </span>
+                <input
+                  id="duplicate-simulation-name"
+                  value={duplicateName}
+                  onChange={(event) => setDuplicateName(event.target.value)}
+                  autoFocus
+                  required
+                  maxLength={180}
+                  className="input w-full"
+                  aria-describedby="duplicate-simulation-source"
+                />
+              </label>
+              <p id="duplicate-simulation-source" className="text-xs text-muted-foreground">
+                Origem: {duplicateTarget?.name ?? "-"} · versão{" "}
+                {duplicateTarget?.versionNumber ?? "-"}
+              </p>
+
+              {duplicateMutation.isError && (
+                <p role="alert" className="text-sm text-danger">
+                  {duplicateMutation.error instanceof Error
+                    ? duplicateMutation.error.message
+                    : "Não foi possível criar o novo rascunho."}
+                </p>
+              )}
+
+              <DialogFooter>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    setDuplicateTarget(null);
+                    setDuplicateName("");
+                    duplicateMutation.reset();
+                  }}
+                  disabled={duplicateMutation.isPending}
+                >
+                  Cancelar
+                </Button>
+                <Button
+                  type="submit"
+                  disabled={duplicateMutation.isPending || !duplicateName.trim()}
+                >
+                  {duplicateMutation.isPending ? "Duplicando..." : "Criar rascunho"}
+                </Button>
+              </DialogFooter>
+            </form>
+          </DialogContent>
+        </Dialog>
+
+        <AlertDialog
+          open={archiveTarget != null}
+          onOpenChange={(open) => {
+            if (!open && !archiveMutation.isPending) {
+              setArchiveTarget(null);
+              archiveMutation.reset();
+            }
+          }}
+        >
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Arquivar avaliação?</AlertDialogTitle>
+              <AlertDialogDescription>
+                “{archiveTarget?.name ?? "Esta avaliação"}” ficará fora de uso, mas versões,
+                aplicações, resultados e auditoria serão preservados.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+
+            {archiveMutation.isError && (
+              <p role="alert" className="text-sm text-danger">
+                {archiveMutation.error instanceof Error
+                  ? archiveMutation.error.message
+                  : "Não foi possível arquivar a avaliação."}
+              </p>
+            )}
+
+            <AlertDialogFooter>
+              <AlertDialogCancel disabled={archiveMutation.isPending}>Voltar</AlertDialogCancel>
+              <AlertDialogAction
+                disabled={archiveMutation.isPending || !archiveTarget}
+                onClick={(event) => {
+                  event.preventDefault();
+                  if (archiveTarget) {
+                    archiveMutation.mutate(archiveTarget.id);
+                  }
+                }}
+                className="bg-warning text-warning-foreground hover:bg-warning/90"
+              >
+                {archiveMutation.isPending ? "Arquivando..." : "Confirmar arquivamento"}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </AppShell>
   );
