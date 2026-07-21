@@ -191,6 +191,41 @@ export const SCREEN_MANUAL_OVERRIDES: ScreenManualDefinition[] = [
     ],
     matches: (pathname) => pathname === "/compliance",
   },
+  {
+    id: "perfil-empresa",
+    title: "Perfil da empresa",
+    purpose: "Consultar e manter os dados cadastrais usados para identificar a empresa nas comunicações e integrações do Práxis.",
+    flow: [
+      "Revise os dados exibidos no cadastro empresarial.",
+      "Selecione Editar dados para liberar o formulário.",
+      "Atualize os campos necessários e selecione Salvar alterações.",
+      "Confirme a mensagem de sucesso e revise os dados atualizados.",
+    ],
+    fields: [
+      { name: "Nome fantasia", description: "Nome principal usado para identificar a empresa na interface." },
+      { name: "Razão social", description: "Denominação jurídica cadastrada para a organização." },
+      { name: "CNPJ", description: "Identificador fiscal da empresa." },
+      { name: "E-mail corporativo", description: "Canal institucional usado em comunicações operacionais." },
+      { name: "Telefone", description: "Contato corporativo da organização." },
+      { name: "Site", description: "Endereço institucional iniciado por http:// ou https://." },
+    ],
+    permissions: ["Usuário autenticado com perfil EMPRESA da própria organização."],
+    states: ["Carregando", "Consulta", "Editando", "Salvando", "Salvo", "Erro de validação"],
+    blocks: [
+      "Nome fantasia não informado.",
+      "E-mail corporativo inválido.",
+      "Site sem protocolo http:// ou https://.",
+      "Sessão expirada ou usuário sem perfil EMPRESA.",
+      "Empresa não encontrada no contexto autenticado.",
+    ],
+    examples: ["Atualizar o e-mail corporativo e o site institucional após uma mudança de domínio."],
+    shortcuts: [
+      "Use Cancelar para descartar alterações ainda não salvas.",
+      "Todas as mudanças ficam registradas na auditoria.",
+      "Consulte o processo completo na Central de manuais.",
+    ],
+    matches: (pathname) => pathname === "/configuracoes/perfil",
+  },
 ];
 
 export function resolveScreenManualOverride(pathname: string) {
