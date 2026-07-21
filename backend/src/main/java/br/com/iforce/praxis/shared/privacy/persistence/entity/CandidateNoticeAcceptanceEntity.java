@@ -42,6 +42,15 @@ public class CandidateNoticeAcceptanceEntity {
     @Column(name = "acknowledged_at", nullable = false)
     private Instant acknowledgedAt;
 
+    @Column(name = "terms_version", length = 80)
+    private String termsVersion;
+
+    @Column(name = "terms_hash", length = 64)
+    private String termsHash;
+
+    @Column(name = "terms_accepted_at")
+    private Instant termsAcceptedAt;
+
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
 }
