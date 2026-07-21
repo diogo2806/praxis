@@ -1,7 +1,7 @@
 # Matriz de telas e informações do perfil EMPRESA
 
 Data da revisão: 21/07/2026  
-Base analisada: `main` com as correções dos PRs #421, #422, #425, #426, #427, #428, #429, #430, #431, #432, #433 e #434
+Base analisada: `main` com as correções dos PRs #421, #422, #425, #426, #427, #428, #429, #430, #431, #432, #433, #434, #435, #436 e #438
 
 ## 1. Escopo
 
@@ -42,9 +42,9 @@ A repetição é permitida quando representa apenas resumo, referência somente 
 | 8 | `CONCLUÍDA` | `OK` | **Validador/Revisão** `/nova/validador` | Diagnóstico de bloqueios, avisos e qualidade. | PR #421 removeu CRUD de etapas e alternativas. |
 | 9 | `CONCLUÍDA` | `CONTEXTUAL` | **Piloto e indicadores** `/nova/piloto` | Calibração e indicadores analíticos da avaliação e versão abertas. | PR #434 removeu o seletor global e passou a exigir contexto do fluxo de autoria. |
 | 10 | `CONCLUÍDA` | `CONTEXTUAL` | **Governança e publicação** `/nova/governanca` | Publicação, aceite, termos e auditoria. | PR #434 substituiu a confirmação própria por `AlertDialog` acessível. |
-| 11 | `PENDENTE` | `DUPLICADO` | **Ativação Gupy** `/nova/gupy` | Deve manter somente o preflight da versão. | Remover entregas e direcionar para Monitoramento. |
+| 11 | `CONCLUÍDA` | `CONTEXTUAL` | **Ativação Gupy** `/nova/gupy` | Preflight técnico da avaliação e versão publicadas. | PR #438 removeu entregas operacionais e direcionou falhas, retentativas e DLQ para Monitoramento. |
 | 12 | `NÃO SE APLICA` | `CONTEXTUAL` | **Começar rápido** `/nova/rapido` | Atalho para criar rascunho por modelo. | Já encaminha para a avaliação criada. |
-| 13 | `EM ANDAMENTO` | `PARCIAL` | **Jornadas** `/jornadas` | Composição e ordenação de avaliações. | PR #417 retirou participantes; faltam confirmações padronizadas. |
+| 13 | `CONCLUÍDA` | `OK` | **Jornadas** `/jornadas` | Composição, ordenação e situação das jornadas. | PR #438 adicionou `AlertDialog` para publicação, arquivamento e remoção de avaliações. |
 | 14 | `CONCLUÍDA` | `OK` | **Participações** `/participacoes` | Lista e gestão unificadas de participações individuais e por jornada. | PR #421 criou read model, tabela e ações únicas; PR #430 restaurou o endpoint no controller principal. |
 | 15 | `CONCLUÍDA` | `CONTEXTUAL` | **Nova participação individual** `/enviar-link` | Formulário de criação de convite individual. | A gestão posterior ocorre em Participações. |
 | 16 | `CONCLUÍDA` | `CONTEXTUAL` | **Convite por jornada** `/participacoes/jornada` | Formulário de criação de convite por jornada. | PR #421 adicionou validade, reenvio, extensão, reativação e cancelamento. |
@@ -63,7 +63,7 @@ A repetição é permitida quando representa apenas resumo, referência somente 
 | 29 | `NÃO SE APLICA` | `OK` | **Plano e cobrança** `/billing` | Créditos, assinatura, uso e histórico financeiro. | Responsabilidade centralizada. |
 | 30 | `NÃO SE APLICA` | `OK` | **Minha conta** `/configuracoes/conta` | Credenciais pessoais do usuário autenticado. | Vínculo e permissões ficam em Minha equipe. |
 | 31 | `PENDENTE` | `PARCIAL` | **Comece aqui** `/comecar` | Onboarding inicial da empresa. | Corrigir destino do convite e ocultar após conclusão. |
-| 32 | `EM ANDAMENTO` | `PARCIAL` | **Central de manuais** `/manual` | Processo completo e manual contextual por rota. | PR #434 adicionou Piloto e Governança; ainda faltam telas pendentes. |
+| 32 | `EM ANDAMENTO` | `PARCIAL` | **Central de manuais** `/manual` | Processo completo e manual contextual por rota. | PR #438 adicionou Ativação Gupy e atualizou Jornadas; ainda faltam telas pendentes. |
 
 ## 4. Propriedade das informações
 
@@ -79,7 +79,7 @@ A repetição é permitida quando representa apenas resumo, referência somente 
 | `CONCLUÍDA` | Publicação, aceite e auditoria | **Governança** | PR #434 padronizou a confirmação; Compliance mostra apenas referência contextual. |
 | `CONCLUÍDA` | Convite, validade e progresso | **Participações** | Individuais e jornadas usam o mesmo read model. |
 | `CONCLUÍDA` | Score, evidências e decisão humana | **Detalhe do resultado** | Listas exibem somente resumo. |
-| `PENDENTE` | Falhas, retry e DLQ | **Monitoramento** | Gupy ainda repete informações operacionais. |
+| `EM ANDAMENTO` | Falhas, retry e DLQ | **Monitoramento** | PR #438 removeu a duplicidade na Ativação Gupy; falta retirar integrações saudáveis e criar filtros. |
 | `CONCLUÍDA` | Dados cadastrais da empresa | **Perfil da empresa** | Outras telas exibem somente identificação curta. |
 | `EM ANDAMENTO` | Usuário, vínculo, perfil e acesso | **Minha equipe** | Minha conta mantém apenas credenciais próprias. |
 | `CONCLUÍDA` | Plano, créditos e situação financeira | **Billing** | Outras telas mostram somente bloqueio e atalho. |
@@ -101,9 +101,9 @@ A repetição é permitida quando representa apenas resumo, referência somente 
 | `CONCLUÍDA` | Centralizar catálogo e seleção de competências. | PR #426. |
 | `PENDENTE` | Corrigir o destino de convite em Comece aqui. | Abrir Participações ou convite por jornada. |
 | `PENDENTE` | Retirar integrações saudáveis de Monitoramento. | Manter somente exceções e retentativas. |
-| `PENDENTE` | Remover entregas operacionais de Ativação Gupy. | Entregas ficam somente em Monitoramento. |
+| `CONCLUÍDA` | Remover entregas operacionais de Ativação Gupy. | PR #438 manteve apenas o preflight e criou atalho para Monitoramento. |
 | `CONCLUÍDA` | Tornar Perfil da empresa acionável. | PR #422. |
-| `EM ANDAMENTO` | Padronizar confirmações e modais. | Avaliações e Governança concluídas; falta Jornadas. |
+| `CONCLUÍDA` | Padronizar confirmações e modais. | PR #438 concluiu Jornadas após Avaliações e Governança. |
 
 ### P2 — permissões e acabamento
 
@@ -112,7 +112,7 @@ A repetição é permitida quando representa apenas resumo, referência somente 
 | `PENDENTE` | Criar subperfis de EMPRESA. | Backend e frontend devem distinguir os perfis autorizados. |
 | `PENDENTE` | Incluir perfil e permissões em Equipe. | Modal e tabela devem mostrar e alterar o acesso. |
 | `PENDENTE` | Restringir Parceiros. | Rota somente para empresa parceira e permissão específica. |
-| `EM ANDAMENTO` | Atualizar manuais de tela. | PR #434 adicionou Piloto e Governança; outras rotas continuam pendentes. |
+| `EM ANDAMENTO` | Atualizar manuais de tela. | PR #438 adicionou Ativação Gupy e atualizou Jornadas; outras rotas continuam pendentes. |
 | `PENDENTE` | Ocultar Comece aqui após onboarding. | Guia deve permanecer apenas em Ajuda. |
 
 ## 6. Critério para atualizar o status
