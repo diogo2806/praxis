@@ -68,11 +68,19 @@ class FlywayMigrationCompatibilityTest {
         MigrationVersion expiresAtVersion = MigrationVersion.fromVersion("1010");
         MigrationVersion auditingVersion = MigrationVersion.fromVersion("1011");
         MigrationVersion annualPlansVersion = MigrationVersion.fromVersion("1012");
+        MigrationVersion integrityTelemetryVersion = MigrationVersion.fromVersion("1013");
+        MigrationVersion complianceVersion = MigrationVersion.fromVersion("1014");
+        MigrationVersion journeyLifecycleVersion = MigrationVersion.fromVersion("1015");
+        MigrationVersion auditRefreshVersion = MigrationVersion.fromVersion("1016");
 
         assertThat(issuedAtVersion).isLessThan(partnerVersion);
         assertThat(partnerVersion).isLessThan(expiresAtVersion);
         assertThat(expiresAtVersion).isLessThan(auditingVersion);
         assertThat(auditingVersion).isLessThan(annualPlansVersion);
+        assertThat(annualPlansVersion).isLessThan(integrityTelemetryVersion);
+        assertThat(integrityTelemetryVersion).isLessThan(complianceVersion);
+        assertThat(complianceVersion).isLessThan(journeyLifecycleVersion);
+        assertThat(journeyLifecycleVersion).isLessThan(auditRefreshVersion);
 
         assertThat(readResource("/db/migration/V1009__persist_candidate_token_window.sql"))
                 .contains("ADD COLUMN candidate_token_issued_at");
