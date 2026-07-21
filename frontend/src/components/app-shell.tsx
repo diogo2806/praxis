@@ -1,7 +1,7 @@
 "use client";
 
-import { Link, useRouterState } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
+import { Link, useRouterState } from "@tanstack/react-router";
 import { useEffect, useState, type ReactNode } from "react";
 import {
   Accessibility,
@@ -19,13 +19,13 @@ import {
   ListChecks,
   Menu,
   RotateCcw,
-  ShieldCheck,
   Sparkles,
   Type,
   UserRound,
   Users,
   Workflow,
 } from "lucide-react";
+
 import { DeliveryAlertBanner } from "@/components/delivery-alert-banner";
 import { LanguageSelector } from "@/components/language-selector";
 import {
@@ -101,7 +101,6 @@ const shellCopy = {
     assessments: "Avaliações",
     journeys: "Jornadas",
     operationCenter: "Central operacional",
-    compliance: "Compliance",
     profile: "Empresa",
     team: "Equipe",
     integrations: "Integrações",
@@ -144,7 +143,6 @@ const shellCopy = {
     assessments: "Assessments",
     journeys: "Journeys",
     operationCenter: "Operations center",
-    compliance: "Compliance",
     profile: "Company",
     team: "Team",
     integrations: "Integrations",
@@ -187,7 +185,6 @@ const shellCopy = {
     assessments: "Evaluaciones",
     journeys: "Jornadas",
     operationCenter: "Central operativa",
-    compliance: "Compliance",
     profile: "Empresa",
     team: "Equipo",
     integrations: "Integraciones",
@@ -201,8 +198,8 @@ const pageGoalCopy = {
   "pt-BR": {
     dashboard: "Veja primeiro o que precisa da sua atenção hoje.",
     assessments: "Crie e publique o conteúdo que será usado nas jornadas.",
-    journeys: "Monte o processo, publique e gere convites por jornada.",
-    participations: "Acompanhe convites, andamento, expirações e conclusões em um único lugar.",
+    journeys: "Monte o processo e organize a ordem das avaliações.",
+    participations: "Acompanhe convites individuais e por jornada, andamento, validade e conclusões.",
     results: "Analise somente resultados concluídos, evidências e comparações.",
     operation: "Trate integrações, alertas, retentativas e falhas técnicas.",
     settings: "Ajuste empresa, equipe, catálogo, integrações e plano.",
@@ -211,8 +208,8 @@ const pageGoalCopy = {
   en: {
     dashboard: "See what needs your attention today first.",
     assessments: "Create and publish the content used in journeys.",
-    journeys: "Build the process, publish it and invite through the journey.",
-    participations: "Track invitations, progress, expirations and completions in one place.",
+    journeys: "Build the process and organize the assessment order.",
+    participations: "Track individual and journey invitations, progress, validity and completions.",
     results: "Review completed results, evidence and comparisons only.",
     operation: "Handle integrations, alerts, retries and technical failures.",
     settings: "Adjust company, team, catalog, integrations and plan.",
@@ -221,8 +218,8 @@ const pageGoalCopy = {
   "es-MX": {
     dashboard: "Vea primero lo que necesita su atención hoy.",
     assessments: "Cree y publique el contenido usado en las jornadas.",
-    journeys: "Monte el proceso, publíquelo e invite mediante la jornada.",
-    participations: "Acompañe invitaciones, avance, vencimientos y conclusiones en un solo lugar.",
+    journeys: "Monte el proceso y organice el orden de las evaluaciones.",
+    participations: "Acompañe invitaciones individuales y por jornada, avance, vigencia y conclusiones.",
     results: "Analice solo resultados concluidos, evidencias y comparaciones.",
     operation: "Trate integraciones, alertas, reintentos y fallas técnicas.",
     settings: "Ajuste empresa, equipo, catálogo, integraciones y plan.",
@@ -231,7 +228,9 @@ const pageGoalCopy = {
 } as const;
 
 function useCognitivePreferences() {
-  const [preferences, setPreferences] = useState<CognitivePreferences>(DEFAULT_COGNITIVE_PREFERENCES);
+  const [preferences, setPreferences] = useState<CognitivePreferences>(
+    DEFAULT_COGNITIVE_PREFERENCES,
+  );
   const [hydrated, setHydrated] = useState(false);
 
   useEffect(() => {
@@ -290,10 +289,17 @@ function NavigationItem({
         aria-current={active ? "page" : undefined}
         className={cn(
           "mb-1 flex min-h-11 items-center gap-3 rounded-md px-3 py-2 text-sm transition",
-          active ? "bg-accent font-medium text-accent-foreground" : "text-foreground/85 hover:bg-accent",
+          active
+            ? "bg-accent font-medium text-accent-foreground"
+            : "text-foreground/85 hover:bg-accent",
         )}
       >
-        <item.icon className={cn("h-4 w-4 shrink-0", active ? "text-accent-foreground" : "text-muted-foreground")} />
+        <item.icon
+          className={cn(
+            "h-4 w-4 shrink-0",
+            active ? "text-accent-foreground" : "text-muted-foreground",
+          )}
+        />
         <span className="min-w-0 flex-1">{item.label}</span>
         {(item.badge ?? 0) > 0 && (
           <span className="rounded-full bg-danger px-1.5 py-0.5 text-[10px] font-semibold text-danger-foreground">
@@ -338,7 +344,6 @@ function SidebarContent({
           icon: BarChart3,
           badge: unreadNotifications,
         },
-        { to: "/compliance", label: copy.compliance, icon: ShieldCheck },
       ],
     },
     {
@@ -394,7 +399,10 @@ function SidebarContent({
           />
         ))}
 
-        <details className="group mt-5 border-t border-border/70 pt-4" open={!simpleNavigation || secondaryActive}>
+        <details
+          className="group mt-5 border-t border-border/70 pt-4"
+          open={!simpleNavigation || secondaryActive}
+        >
           <summary className="flex cursor-pointer list-none items-center justify-between rounded-md px-3 py-2 text-sm font-medium hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
             <span>{copy.moreOptions}</span>
             <ChevronDown className="h-4 w-4 transition-transform group-open:rotate-180" />
@@ -485,13 +493,18 @@ function AccessibilityPanel({
           <span className="hidden sm:inline">{copy.accessibility}</span>
         </button>
       </SheetTrigger>
-      <SheetContent side="right" className="w-[24rem] max-w-[92vw] overflow-y-auto bg-background p-0 text-foreground">
+      <SheetContent
+        side="right"
+        className="w-[24rem] max-w-[92vw] overflow-y-auto bg-background p-0 text-foreground"
+      >
         <SheetHeader className="border-b border-border p-5 text-left">
           <SheetTitle className="flex items-center gap-2 text-xl">
             <Accessibility className="h-5 w-5" />
             {copy.accessibility}
           </SheetTitle>
-          <SheetDescription className="text-sm leading-6">{copy.accessibilityDescription}</SheetDescription>
+          <SheetDescription className="text-sm leading-6">
+            {copy.accessibilityDescription}
+          </SheetDescription>
         </SheetHeader>
         <div className="space-y-3 p-5">
           {options.map((option) => {
@@ -510,7 +523,9 @@ function AccessibilityPanel({
                 <option.icon className="mt-0.5 h-5 w-5 shrink-0 text-primary" />
                 <span className="min-w-0 flex-1">
                   <span className="block font-semibold">{option.title}</span>
-                  <span className="mt-1 block text-sm leading-5 text-muted-foreground">{option.description}</span>
+                  <span className="mt-1 block text-sm leading-5 text-muted-foreground">
+                    {option.description}
+                  </span>
                   <span className="mt-2 block text-xs font-medium text-primary">
                     {enabled ? copy.enabled : copy.disabled}
                   </span>
@@ -554,7 +569,13 @@ function pageGoalKey(pathname: string): keyof (typeof pageGoalCopy)["pt-BR"] {
   if (pathname === "/dashboard") return "dashboard";
   if (pathname.startsWith("/avaliacoes") || pathname.startsWith("/nova")) return "assessments";
   if (pathname === "/jornadas" || pathname.startsWith("/jornada/")) return "journeys";
-  if (pathname === "/participacoes" || pathname === "/enviar-link") return "participations";
+  if (
+    pathname === "/participacoes" ||
+    pathname.startsWith("/participacoes/") ||
+    pathname === "/enviar-link"
+  ) {
+    return "participations";
+  }
   if (pathname.startsWith("/results") || pathname === "/talent-match") return "results";
   if (pathname === "/monitoramento" || pathname === "/notifications") return "operation";
   if (
@@ -578,7 +599,11 @@ function pageContext(pathname: string, language: Language) {
   if (pathname === "/jornadas" || pathname.startsWith("/jornada/")) {
     return { section: copy.workspace, label: copy.journeys };
   }
-  if (pathname === "/participacoes" || pathname === "/enviar-link") {
+  if (
+    pathname === "/participacoes" ||
+    pathname.startsWith("/participacoes/") ||
+    pathname === "/enviar-link"
+  ) {
     return { section: copy.workspace, label: copy.participations };
   }
   if (pathname.startsWith("/results") || pathname === "/talent-match") {
@@ -587,15 +612,25 @@ function pageContext(pathname: string, language: Language) {
   if (pathname === "/monitoramento" || pathname === "/notifications") {
     return { section: copy.operation, label: copy.operationCenter };
   }
-  if (pathname === "/compliance") return { section: copy.operation, label: copy.compliance };
-  if (pathname === "/comecar" || pathname === "/manual") return { section: copy.helpGroup, label: copy.help };
+  if (pathname === "/compliance") {
+    return { section: copy.workspace, label: copy.assessments };
+  }
+  if (pathname === "/comecar" || pathname === "/manual") {
+    return { section: copy.helpGroup, label: copy.help };
+  }
   return { section: copy.settings, label: copy.settings };
 }
 
 function routeDataKey(pathname: string) {
   if (pathname.startsWith("/avaliacoes")) return "avaliacoes";
   if (pathname === "/jornadas" || pathname.startsWith("/jornada/")) return "jornadas";
-  if (pathname === "/participacoes" || pathname === "/enviar-link") return "participacoes";
+  if (
+    pathname === "/participacoes" ||
+    pathname.startsWith("/participacoes/") ||
+    pathname === "/enviar-link"
+  ) {
+    return "participacoes";
+  }
   if (pathname.startsWith("/results")) return "results";
   if (pathname === "/dashboard") return "dashboard";
   return "other";
@@ -603,8 +638,12 @@ function routeDataKey(pathname: string) {
 
 function isActivePath(pathname: string, itemPath: string) {
   if (itemPath === "/dashboard") return pathname === itemPath;
-  if (itemPath === "/participacoes") return pathname === itemPath || pathname === "/enviar-link";
-  if (itemPath === "/monitoramento") return pathname === itemPath || pathname === "/notifications";
+  if (itemPath === "/participacoes") {
+    return pathname === itemPath || pathname.startsWith("/participacoes/") || pathname === "/enviar-link";
+  }
+  if (itemPath === "/monitoramento") {
+    return pathname === itemPath || pathname === "/notifications";
+  }
   return pathname === itemPath || pathname.startsWith(`${itemPath}/`);
 }
 
@@ -655,7 +694,10 @@ export function AppShell({ children }: { children: ReactNode }) {
                   <Menu className="h-5 w-5" />
                 </button>
               </SheetTrigger>
-              <SheetContent side="left" className="flex w-[18rem] max-w-[88vw] flex-col overflow-hidden bg-background p-0 text-foreground sm:max-w-sm">
+              <SheetContent
+                side="left"
+                className="flex w-[18rem] max-w-[88vw] flex-col overflow-hidden bg-background p-0 text-foreground sm:max-w-sm"
+              >
                 <SheetHeader className="sr-only">
                   <SheetTitle>{copy.menu}</SheetTitle>
                   <SheetDescription>{copy.menuDescription}</SheetDescription>
