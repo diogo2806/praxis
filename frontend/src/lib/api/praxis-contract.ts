@@ -92,14 +92,68 @@ export type DashboardResponse = Omit<LegacyDashboardResponse, "recommendedAction
   >;
 };
 
-export function getSimulationVersion(
+const competencyLevelsSnapshot = Symbol("competencyLevelsSnapshot");
+
+type TaggedCompetencyLevels = Record<string, number> & {
+  [competencyLevelsSnapshot]?: Record<string, number>;
+};
+
+const optionCompetencyLevelsCache = new Map<string, Record<string, number>>();
+const optionUpdateQueues = new Map<string, Promise<void>>();
+let competencyUpdateRevision = 0;
+
+function optionCacheKey(
+  simulationId: string,
+  versionNumber: number,
+  nodeId: string,
+  optionId: string,
+) {
+  return `${simulationId}:${versionNumber}:${nodeId}:${optionId}`;
+}
+
+function tagCompetencyLevels(levels: Record<string, number>, snapshot: Record<string, number>) {
+  const taggedLevels = { ...levels } as TaggedCompetencyLevels;
+  Object.defineProperty(taggedLevels, competencyLevelsSnapshot, {
+    value: { ...snapshot },
+    enumerable: true,
+  });
+  return taggedLevels;
+}
+
+export async function getSimulationVersion(
   simulationId: string,
   versionNumber: number,
 ): Promise<SimulationVersionDetailResponse> {
-  return getSimulationVersionLegacy(
+  const requestRevision = competencyUpdateRevision;
+  const response = (await getSimulationVersionLegacy(
     simulationId,
     versionNumber,
-  ) as unknown as Promise<SimulationVersionDetailResponse>;
+  )) as unknown as SimulationVersionDetailResponse;
+
+  return {
+    ...response,
+    nodes: response.nodes.map((node) => ({
+      ...node,
+      options: node.options.map((option) => {
+        const key = optionCacheKey(simulationId, versionNumber, node.id, option.id);
+        const serverLevels = { ...option.competencyLevels };
+        const hasNewerLocalChanges =
+          requestRevision !== competencyUpdateRevision || optionUpdateQueues.has(key);
+        const effectiveLevels = hasNewerLocalChanges
+          ? optionCompetencyLevelsCache.get(key) ?? serverLevels
+          : serverLevels;
+
+        if (!hasNewerLocalChanges) {
+          optionCompetencyLevelsCache.set(key, serverLevels);
+        }
+
+        return {
+          ...option,
+          competencyLevels: tagCompetencyLevels(effectiveLevels, effectiveLevels),
+        };
+      }),
+    })),
+  };
 }
 
 export function createSimulationNode(
@@ -135,7 +189,51 @@ export function updateSimulationOption(
   optionId: string,
   body: UpdateOptionRequest,
 ) {
-  return updateSimulationOptionLegacy(simulationId, versionNumber, nodeId, optionId, body);
+  if (!body.competencyLevels) {
+    return updateSimulationOptionLegacy(simulationId, versionNumber, nodeId, optionId, body);
+  }
+
+  const key = optionCacheKey(simulationId, versionNumber, nodeId, optionId);
+  const taggedLevels = body.competencyLevels as TaggedCompetencyLevels;
+  const snapshot = taggedLevels[competencyLevelsSnapshot];
+  const submittedLevels = Object.fromEntries(Object.entries(taggedLevels));
+
+  const changedLevels = snapshot
+    ? Object.fromEntries(
+        Object.entries(submittedLevels).filter(([name, value]) => snapshot[name] !== value),
+      )
+    : submittedLevels;
+
+  if (Object.keys(changedLevels).length === 0) return Promise.resolve();
+
+  const currentLevels = optionCompetencyLevelsCache.get(key) ?? snapshot ?? submittedLevels;
+  const mergedLevels = snapshot
+    ? { ...currentLevels, ...changedLevels }
+    : { ...submittedLevels };
+
+  optionCompetencyLevelsCache.set(key, mergedLevels);
+  competencyUpdateRevision += 1;
+
+  const previousUpdate = optionUpdateQueues.get(key) ?? Promise.resolve();
+  const update = previousUpdate
+    .catch(() => undefined)
+    .then(async () => {
+      await updateSimulationOptionLegacy(simulationId, versionNumber, nodeId, optionId, {
+        ...body,
+        competencyLevels: mergedLevels,
+      });
+    });
+  const settledUpdate = update.then(
+    () => undefined,
+    () => undefined,
+  );
+
+  optionUpdateQueues.set(key, settledUpdate);
+  void settledUpdate.then(() => {
+    if (optionUpdateQueues.get(key) === settledUpdate) optionUpdateQueues.delete(key);
+  });
+
+  return update;
 }
 
 export function getGupyPreflight(
