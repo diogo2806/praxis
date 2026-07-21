@@ -6,6 +6,8 @@ import br.com.iforce.praxis.auth.persistence.repository.UserRepository;
 import org.springframework.stereotype.Service;
 
 import java.net.URI;
+import java.util.LinkedHashSet;
+import java.util.Set;
 
 /**
  * Persiste explicitamente o índice determinístico de localização do token de convite.
@@ -13,6 +15,13 @@ import java.net.URI;
  */
 @Service
 public class InviteTokenLookupIndexWriter {
+
+    private static final Set<String> LEGACY_COMPANY_ROLE = Set.of("EMPRESA");
+    private static final Set<String> COMPANY_ADMIN_ROLES = Set.of(
+            "EMPRESA",
+            "TEAM_MANAGER",
+            "PARTNER_MANAGER"
+    );
 
     private final UserRepository userRepository;
 
@@ -33,6 +42,11 @@ public class InviteTokenLookupIndexWriter {
             throw new IllegalStateException("O índice só pode ser gravado para convite pendente.");
         }
 
+        Set<String> mutableRoles = new LinkedHashSet<>(user.getRoles());
+        if (mutableRoles.equals(LEGACY_COMPANY_ROLE)) {
+            mutableRoles = new LinkedHashSet<>(COMPANY_ADMIN_ROLES);
+        }
+        user.setRoles(mutableRoles);
         user.setInviteTokenLookupHash(TokenLookupHasher.sha256(token));
         userRepository.save(user);
     }
