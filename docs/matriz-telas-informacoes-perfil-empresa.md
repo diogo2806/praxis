@@ -1,7 +1,7 @@
 # Matriz de telas e informações do perfil EMPRESA
 
 Data da revisão: 21/07/2026  
-Base analisada: `main` com as correções dos PRs #421, #422 e #425
+Base analisada: `main` com as correções dos PRs #421, #422, #425 e #426
 
 ## 1. Escopo
 
@@ -48,8 +48,8 @@ Neste documento, **tabela** significa tabela ou lista visual da interface, não 
 |---|---|---|---|---|---|---|---|
 | `NÃO SE APLICA` | `RESUMO` | **Dashboard** `/dashboard` | Cards de avaliações, jornadas, participações, resultados, próxima ação e resultados recentes. | Nenhum. | Totais operacionais, participante, processo, situação, resultado e data. | Manter somente indicadores e atalhos. | A tela não mantém dados operacionais; somente resume. |
 | `CONCLUÍDA` | `OK` | **Avaliações** `/avaliacoes` | Tabela mestre de avaliações, versões, situação, uso e conclusões. | `Dialog` para duplicação e `AlertDialog` para arquivamento. | Nome, descrição, competências, versão, status, aplicações e conclusões. | Manter Avaliações como proprietária do cadastro, versão, status e ações administrativas. | PR #425 removeu `window.prompt` e `window.confirm`, adicionou validação, estados de erro/carregamento e manual específico. |
-| `PENDENTE` | `DUPLICADO` | **Nova avaliação** `/nova/avaliacao` | Formulário, seletor e busca de competências. | Nenhum. | Cargo, situação crítica e competências. | Manter aqui o plano inicial, mas remover criação de competência global. | Permitir somente selecionar competências do catálogo. |
-| `PENDENTE` | `DUPLICADO` | **Objetivo do modelo base** `/nova/objetivo` | Card da versão, competências e resumo. | Nenhum. | Nome, descrição, status, primeira etapa, versão e competências. | Transformar em resumo somente leitura ou remover a rota. | Retirar a edição de competências. |
+| `CONCLUÍDA` | `OK` | **Nova avaliação** `/nova/avaliacao` | Formulário do plano inicial, busca e seleção de competências ativas do catálogo. | Nenhum. | Cargo, situação crítica e seleção de competências da versão. | Manter aqui o plano inicial e a seleção da versão; criação, edição e inativação global ficam somente em Competências. | PR #426 removeu a mutação do catálogo, adicionou atalho para Competências, tratamento de referências antigas e manual específico. |
+| `CONCLUÍDA` | `CONTEXTUAL` | **Objetivo do modelo base** `/nova/objetivo` | Resumo da avaliação, versão, primeira etapa, situação crítica, competências, pesos, importância e metas. | Nenhum. | Exibe referências somente leitura ao plano definido em Nova avaliação. | Manter como conferência contextual antes de Personagem, sem salvar ou redistribuir competências. | PR #426 removeu inclusão, remoção, atualização e redistribuição de pesos e adicionou links para as telas proprietárias. |
 | `PENDENTE` | `CONTEXTUAL` | **Personagem** `/nova/personagem` | Formulário e banners de salvamento. | Nenhum. | Mensagem inicial ainda pode ser alterada em Diálogo e Mapa. | Personagem deve ser proprietária do contexto e mensagem inicial. | Bloquear edição concorrente nos demais editores. |
 | `PENDENTE` | `DUPLICADO` | **Editor de diálogo** `/nova/dialogo` | Etapas, alternativas, mensagem, tempo, mídia, destino, criticidade e pontuação. | Nenhum modal padronizado identificado. | Conteúdo e parte das conexões também são alterados no Mapa. | Manter Diálogo como editor textual principal. | Reduzir a edição de conteúdo concorrente no Mapa. |
 | `PENDENTE` | `DUPLICADO` | **Construtor visual** `/nova/mapa` | Canvas, nós, conexões, propriedades e validação resumida. | Nenhum. | Conteúdo e pontuação ainda se sobrepõem ao Diálogo. | Manter posição e conexão visual. | Separar propriedades gráficas da edição de conteúdo. |
@@ -68,7 +68,7 @@ Neste documento, **tabela** significa tabela ou lista visual da interface, não 
 | `PENDENTE` | `PARCIAL` | **Central operacional** `/monitoramento` | Métricas, integrações com atenção, alertas e DLQ. | Nenhum. | Status saudável e entregas aparecem em outras telas. | Manter somente erros, exceções, retry e DLQ. | Retirar integrações saudáveis e criar filtros. |
 | `CONCLUÍDA` | `CONTEXTUAL` | **Compliance** `/compliance` | Cards de contexto, prontidão e atalhos para telas proprietárias. | Nenhum diálogo ou tabela global. | Exibe somente resumo de validação da versão selecionada. | Abrir somente com avaliação e versão; direcionar cada responsabilidade. | PR #421 removeu a lista global e o item de menu; Validador, Governança, Privacidade e Avaliações permanecem proprietários dos dados. |
 | `CONCLUÍDA` | `OK` | **Perfil da empresa** `/configuracoes/perfil` | Cards de consulta e formulário de edição de nome, razão social, CNPJ, e-mail, telefone e site. | Nenhum modal; ações Salvar e Cancelar ficam no próprio formulário. | Dados cadastrais podem aparecer como referência curta no Dashboard, Billing e integrações. | Manter criação e alteração dos dados cadastrais nesta tela; demais telas mostram somente referência. | PR #422 adicionou atualização protegida por perfil EMPRESA, validação, auditoria, testes e manual específico. |
-| `EM ANDAMENTO` | `OK` | **Competências** `/competencias` | Total, busca e tabela paginada. | Criar/editar e confirmação de remoção. | Competências usadas em criação, resultados e comparação. | Manter como única proprietária do catálogo. | Falta impedir criação global em Nova avaliação e atualizar outros manuais. |
+| `CONCLUÍDA` | `OK` | **Competências** `/competencias` | Total, busca, tabela paginada, criação, edição e inativação. | Criar/editar e confirmação de remoção. | Competências são selecionadas em avaliações e exibidas nos resultados. | Manter como única proprietária do catálogo global. | PR #426 retirou criação e edição concorrentes de Nova avaliação e Objetivo. |
 | `EM ANDAMENTO` | `PARCIAL` | **Minha equipe** `/team` | Tabela de usuários e ações. | Convite e confirmação de bloqueio. | Nome e e-mail em Minha conta, menu e Parceiros. | Concentrar vínculos e permissões internas. | Faltam perfil, permissões e coluna de acesso. |
 | `PENDENTE` | `CONDICIONAL` | **Parceiros e especialistas** `/parceiros` | Especialistas, clientes, catálogo e formulários. | Confirmações não totalmente padronizadas. | Usuários, provedores e tokens. | Restringir por feature flag e permissão. | Separar token de parceiro do token técnico de integração. |
 | `NÃO SE APLICA` | `OK` | **Integrações** `/integrations` | Cards por provedor e configuração. | Configuração, desconexão e token. | Status e erro aparecem em Monitoramento. | Manter configuração e estado saudável em Integrações. | Responsabilidade principal centralizada. |
@@ -77,17 +77,17 @@ Neste documento, **tabela** significa tabela ou lista visual da interface, não 
 | `NÃO SE APLICA` | `OK` | **Plano e cobrança** `/billing` | Créditos, assinatura, uso e históricos. | Cancelamento e checkout externo. | Situação financeira pode bloquear convites. | Manter dados financeiros em Billing. | Responsabilidade centralizada. |
 | `NÃO SE APLICA` | `OK` | **Minha conta** `/configuracoes/conta` | Usuário e alteração de senha. | Nenhum. | Nome e e-mail aparecem no menu e em Equipe. | Manter somente credenciais pessoais. | Vínculo e permissão ficam em Equipe. |
 | `PENDENTE` | `PARCIAL` | **Comece aqui** `/comecar` | Etapas, progresso e links rápidos. | Nenhum. | Resume Dashboard e demais telas. | Manter somente como onboarding. | Corrigir convite para abrir Participações e ocultar após conclusão. |
-| `EM ANDAMENTO` | `PARCIAL` | **Central de manuais** `/manual` | Lista de manuais e painel lateral. | `Sheet` lateral. | Alguns textos ainda descrevem responsabilidades antigas. | Manter manual específico por rota. | PR #425 adicionou o manual de Avaliações; outras rotas pendentes da matriz ainda precisam de revisão. |
+| `EM ANDAMENTO` | `PARCIAL` | **Central de manuais** `/manual` | Lista de manuais e painel lateral. | `Sheet` lateral. | Alguns textos ainda descrevem responsabilidades antigas. | Manter manual específico por rota. | PR #426 adicionou manuais específicos de Nova avaliação e Objetivo; outras rotas pendentes ainda precisam de revisão. |
 
 ## 4. Campos e informações que aparecem em mais de uma tela
 
 A repetição pode permanecer quando for apenas **resumo**, **referência somente leitura** ou **cabeçalho contextual**. O problema ocorre quando duas telas permitem criar, alterar, decidir ou operar sobre o mesmo dado.
 
-| Status da correção | Informação | Tela proprietária | Situação após os PRs #421, #422 e #425 | Próximo passo |
+| Status da correção | Informação | Tela proprietária | Situação após os PRs #421, #422, #425 e #426 | Próximo passo |
 |---|---|---|---|---|
 | `EM ANDAMENTO` | Nome, descrição, versão e status da avaliação | **Avaliações** | Avaliações centraliza ações administrativas com diálogos padronizados; telas contextuais ainda possuem seletores globais. | Retirar seletores desnecessários das telas contextuais. |
-| `PENDENTE` | Competências do catálogo | **Competências** | Catálogo existe, mas Nova avaliação e Objetivo ainda mantêm ações concorrentes. | Remover criação e edição fora do catálogo. |
-| `PENDENTE` | Competências e pesos da versão | **Nova avaliação** | Ainda há mais de um ponto de edição. | Definir um único editor. |
+| `CONCLUÍDA` | Competências do catálogo | **Competências** | Nova avaliação apenas seleciona opções ativas e Objetivo apenas exibe o resumo. | Manter criação, edição e inativação exclusivamente em Competências. |
+| `CONCLUÍDA` | Competências e pesos da versão | **Nova avaliação** | Nova avaliação mantém a seleção; Objetivo não salva nem redistribui pesos. | Telas seguintes exibem somente referência ou pontuação. |
 | `PENDENTE` | Personagem e mensagem inicial | **Personagem** | Validador deixou de editar, mas Diálogo e Mapa ainda podem concorrer. | Bloquear edição concorrente. |
 | `EM ANDAMENTO` | Etapas, alternativas e conexões | **Diálogo para conteúdo; Mapa para posição e conexão** | Validador não possui mais CRUD. | Retirar edição completa de conteúdo do Mapa. |
 | `CONCLUÍDA` | Bloqueios, avisos e qualidade | **Validador** | Lista, severidade, qualidade e ação corretiva estão centralizadas. | Manter apenas contagens e links nas telas secundárias. |
@@ -110,7 +110,7 @@ A repetição pode permanecer quando for apenas **resumo**, **referência soment
 |---|---|---|
 | Cadastro, versões e ciclo da avaliação | Avaliações | Dashboard, Jornadas, Resultados e Integrações |
 | Catálogo global de competências | Competências | Nova avaliação e relatórios |
-| Plano inicial da versão | Nova avaliação | Objetivo somente leitura ou removido |
+| Plano inicial e seleção da versão | Nova avaliação | Objetivo somente leitura |
 | Contexto e personagem inicial | Personagem | Diálogo e Mapa com link |
 | Conteúdo de etapas e alternativas | Diálogo | Mapa visual; Validador somente diagnóstico |
 | Posição e conexão visual | Mapa | Diálogo mostra destino textual |
@@ -139,7 +139,7 @@ A repetição pode permanecer quando for apenas **resumo**, **referência soment
 
 | Status da correção | Ação | Critério de conclusão |
 |---|---|---|
-| `PENDENTE` | Remover edição de competências de Objetivo e criação global em Nova avaliação. | Competência global só é criada e editada em Competências. |
+| `CONCLUÍDA` | Remover edição de competências de Objetivo e criação global em Nova avaliação. | PR #426 mantém o catálogo global somente em Competências, a seleção da versão em Nova avaliação e Objetivo somente leitura. |
 | `PENDENTE` | Corrigir o destino de convite em Comece aqui. | A etapa abre Participações ou convite por jornada. |
 | `CONCLUÍDA` | Reconhecer convite por jornada como contexto de Participações. | AppShell, manual, read model e ações funcionam como um único fluxo no PR #421. |
 | `PENDENTE` | Retirar integrações saudáveis de Monitoramento. | Monitoramento apresenta somente exceções e retentativas. |
@@ -154,7 +154,7 @@ A repetição pode permanecer quando for apenas **resumo**, **referência soment
 | `PENDENTE` | Criar subperfis de EMPRESA. | Backend e frontend distinguem os perfis autorizados. |
 | `PENDENTE` | Incluir perfil e permissões em Equipe. | Modal e tabela mostram e alteram o perfil autorizado. |
 | `PENDENTE` | Restringir Parceiros. | Rota aparece somente para empresa parceira e permissão específica. |
-| `EM ANDAMENTO` | Atualizar manuais de tela. | PR #425 adicionou o manual de Avaliações; outras rotas da matriz continuam pendentes. |
+| `EM ANDAMENTO` | Atualizar manuais de tela. | PR #426 adicionou os manuais de Nova avaliação e Objetivo; outras rotas da matriz continuam pendentes. |
 | `PENDENTE` | Ocultar Comece aqui após onboarding. | Guia deixa o menu operacional e permanece em Ajuda. |
 
 ## 7. Critério para atualizar o status
