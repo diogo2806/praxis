@@ -338,8 +338,10 @@ function storageKeyForToken(token: string): string {
 }
 
 function createRandomId(): string {
-  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+  if (typeof crypto.randomUUID === "function") {
     return crypto.randomUUID();
   }
-  return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}-${Math.random().toString(36).slice(2)}`;
+
+  const randomValues = crypto.getRandomValues(new Uint32Array(4));
+  return Array.from(randomValues, (value) => value.toString(36).padStart(7, "0")).join("-");
 }

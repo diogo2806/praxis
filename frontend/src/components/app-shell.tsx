@@ -172,7 +172,7 @@ function PageGoal({ pathname, language, specialist }: {
   );
 }
 
-export function AppShell(s children }: { children: ReactNode }) {
+export function AppShell({ children }: { children: ReactNode }) {
   const pathname = useRouterState({ select: (state) => state.location.pathname });
   const session = useSession();
   const specialist = isRestrictedPartnerSpecialist(session.roles);
