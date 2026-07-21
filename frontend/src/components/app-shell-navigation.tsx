@@ -1,8 +1,10 @@
+import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import type { ReactNode } from "react";
 import {
   BarChart3,
   BookOpenCheck,
+  BriefcaseBusiness,
   Building2,
   ChevronDown,
   ClipboardList,
@@ -19,8 +21,11 @@ import {
 } from "lucide-react";
 
 import { SheetClose } from "@/components/ui/sheet";
+import { getDashboard } from "@/lib/api/dashboard-strict";
 import { isRestrictedPartnerSpecialist } from "@/lib/access-control";
+import { canManagePartners } from "@/lib/feature-flags";
 import { useLanguage } from "@/lib/language-context";
+import { isOnboardingComplete } from "@/lib/onboarding";
 import { useSession } from "@/lib/session";
 import { cn } from "@/lib/utils";
 
@@ -57,6 +62,7 @@ const navigationCopy = {
     company: "Empresa",
     competencies: "Catálogo de competências",
     team: "Equipe",
+    partners: "Parceiros e especialistas",
     integrations: "Integrações",
     plan: "Plano",
     account: "Minha conta",
@@ -86,6 +92,7 @@ const navigationCopy = {
     company: "Company",
     competencies: "Competency catalog",
     team: "Team",
+    partners: "Partners and specialists",
     integrations: "Integrations",
     plan: "Plan",
     account: "My account",
@@ -115,6 +122,7 @@ const navigationCopy = {
     company: "Empresa",
     competencies: "Catálogo de competencias",
     team: "Equipo",
+    partners: "Socios y especialistas",
     integrations: "Integraciones",
     plan: "Plan",
     account: "Mi cuenta",
@@ -185,6 +193,7 @@ function Group({ group, pathname, closeOnSelect }: {
   pathname: string;
   closeOnSelect: boolean;
 }) {
+  if (group.items.length === 0) return null;
   return (
     <div>
       <div className="px-3 pb-2 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
@@ -212,6 +221,16 @@ export function AppSidebar({
   const { language } = useLanguage();
   const copy = navigationCopy[language];
   const specialist = isRestrictedPartnerSpecialist(session.roles);
+  const onboardingQuery = useQuery({
+    queryKey: ["dashboard", "onboarding"],
+    queryFn: getDashboard,
+    enabled: Boolean(session.token) && !specialist,
+    retry: false,
+    staleTime: 60_000,
+  });
+  const showOnboarding =
+    onboardingQuery.isLoading || onboardingQuery.isError || !isOnboardingComplete(onboardingQuery.data);
+  const showPartners = canManagePartners(session.roles);
 
   const companyPrimary: NavigationItem[] = [
     { to: "/dashboard", label: "Dashboard", icon: Home },
@@ -220,29 +239,30 @@ export function AppSidebar({
     { to: "/participacoes", label: copy.participations, icon: Users },
     { to: "/results", label: copy.results, icon: ClipboardList },
   ];
+  const settingsItems: NavigationItem[] = [
+    { to: "/configuracoes/perfil", label: copy.company, icon: Building2 },
+    { to: "/competencias", label: copy.competencies, icon: BookOpenCheck },
+    { to: "/team", label: copy.team, icon: Users },
+    ...(showPartners
+      ? [{ to: "/parceiros", label: copy.partners, icon: BriefcaseBusiness }]
+      : []),
+    { to: "/integrations", label: copy.integrations, icon: KeyRound },
+    { to: "/billing", label: copy.plan, icon: CreditCard },
+    { to: "/configuracoes/conta", label: copy.account, icon: UserRound },
+  ];
+  const helpItems: NavigationItem[] = [
+    ...(showOnboarding
+      ? [{ to: "/comecar", label: copy.gettingStarted, icon: Sparkles }]
+      : []),
+    { to: "/manual", label: copy.manuals, icon: HelpCircle },
+  ];
   const companyGroups: NavigationGroup[] = [
     {
       label: copy.operation,
       items: [{ to: "/monitoramento", label: copy.operations, icon: BarChart3, badge: unreadNotifications }],
     },
-    {
-      label: copy.settings,
-      items: [
-        { to: "/configuracoes/perfil", label: copy.company, icon: Building2 },
-        { to: "/competencias", label: copy.competencies, icon: BookOpenCheck },
-        { to: "/team", label: copy.team, icon: Users },
-        { to: "/integrations", label: copy.integrations, icon: KeyRound },
-        { to: "/billing", label: copy.plan, icon: CreditCard },
-        { to: "/configuracoes/conta", label: copy.account, icon: UserRound },
-      ],
-    },
-    {
-      label: copy.help,
-      items: [
-        { to: "/comecar", label: copy.gettingStarted, icon: Sparkles },
-        { to: "/manual", label: copy.manuals, icon: HelpCircle },
-      ],
-    },
+    { label: copy.settings, items: settingsItems },
+    { label: copy.help, items: helpItems },
   ];
 
   const specialistPrimary: NavigationItem[] = [
