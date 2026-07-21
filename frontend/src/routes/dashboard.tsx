@@ -6,13 +6,23 @@ import {
   CalendarClock,
   CheckCircle2,
   ClipboardCheck,
+  Gauge,
+  PlayCircle,
   RefreshCw,
   Route as RouteIcon,
+  Send,
+  TrendingUp,
   Users,
   type LucideIcon,
 } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
 import { StateBanner } from "@/components/praxis-ui";
+import {
+  getDashboardAnalytics,
+  type DashboardActivityPoint,
+  type DashboardAnalyticsResponse,
+  type DashboardParticipationSummary,
+} from "@/lib/api/dashboard-analytics";
 import { DashboardCompatibilityError, getDashboard } from "@/lib/api/dashboard-strict";
 import { type DashboardActionSeverity, type DashboardResponse } from "@/lib/api/praxis";
 import { canonicalAppRoute } from "@/lib/canonical-app-route";
@@ -21,10 +31,10 @@ import { cn } from "@/lib/utils";
 export const Route = createFileRoute("/dashboard")({
   head: () => ({
     meta: [
-      { title: "Painel - Práxis" },
+      { title: "Dashboard - Práxis" },
       {
         name: "description",
-        content: "Resumo das pendências e dos números essenciais do processo de avaliação.",
+        content: "Indicadores, tendências e pontos de atenção do processo de avaliação.",
       },
     ],
   }),
@@ -37,64 +47,63 @@ function DashboardPage() {
     queryFn: getDashboard,
     retry: false,
   });
+  const analyticsQuery = useQuery({
+    queryKey: ["dashboard", "analytics"],
+    queryFn: getDashboardAnalytics,
+    retry: false,
+  });
+
+  const reload = () => {
+    void Promise.all([dashboardQuery.refetch(), analyticsQuery.refetch()]);
+  };
 
   return (
     <AppShell>
       {dashboardQuery.isLoading ? (
         <LoadingState />
       ) : dashboardQuery.isError ? (
-        <ErrorState error={dashboardQuery.error} onReload={() => dashboardQuery.refetch()} />
+        <ErrorState error={dashboardQuery.error} onReload={reload} />
       ) : dashboardQuery.data ? (
-        <DashboardContent dashboard={dashboardQuery.data} onReload={() => dashboardQuery.refetch()} />
+        <DashboardContent
+          dashboard={dashboardQuery.data}
+          analytics={analyticsQuery.data ?? null}
+          analyticsLoading={analyticsQuery.isLoading}
+          analyticsError={analyticsQuery.isError}
+          onReload={reload}
+        />
       ) : null}
     </AppShell>
   );
 }
 
-function DashboardContent({ dashboard, onReload }: { dashboard: DashboardResponse; onReload: () => void }) {
+function DashboardContent({
+  dashboard,
+  analytics,
+  analyticsLoading,
+  analyticsError,
+  onReload,
+}: {
+  dashboard: DashboardResponse;
+  analytics: DashboardAnalyticsResponse | null;
+  analyticsLoading: boolean;
+  analyticsError: boolean;
+  onReload: () => void;
+}) {
   return (
     <main className="mx-auto max-w-7xl space-y-6">
       <DashboardHeader dashboard={dashboard} onReload={onReload} />
       <PriorityAction actions={dashboard.recommendedActions} />
+      <DashboardMetrics dashboard={dashboard} analytics={analytics} />
 
-      <section aria-labelledby="dashboard-summary-title">
-        <div className="mb-3 flex items-center justify-between gap-3">
-          <h2 id="dashboard-summary-title" className="text-lg font-semibold">Resumo do processo</h2>
-          <span className="text-xs text-muted-foreground">Cada número abre a tela responsável por essa etapa</span>
-        </div>
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
-          <DashboardMetricCard
-            title="Avaliações ativas"
-            value={dashboard.activeSimulations}
-            hint="Conteúdo publicado e disponível"
-            icon={ClipboardCheck}
-            to="/avaliacoes"
-          />
-          <DashboardMetricCard
-            title="Jornadas"
-            value={dashboard.assessmentJourneys.total}
-            hint={`${dashboard.assessmentJourneys.published} publicadas · ${dashboard.assessmentJourneys.draft} rascunhos`}
-            icon={RouteIcon}
-            to="/jornadas"
-          />
-          <DashboardMetricCard
-            title="Participações em andamento"
-            value={dashboard.candidatesInProgress}
-            hint="Convites e processos ainda abertos"
-            icon={Users}
-            to="/participacoes"
-          />
-          <DashboardMetricCard
-            title="Resultados em 30 dias"
-            value={dashboard.completedAttemptsLast30Days}
-            hint="Participações concluídas para análise"
-            icon={BarChart3}
-            to="/results"
-          />
-        </div>
-      </section>
+      {analyticsLoading ? (
+        <AnalyticsLoadingState />
+      ) : analyticsError || !analytics ? (
+        <AnalyticsUnavailable />
+      ) : (
+        <AnalyticsGrid analytics={analytics} />
+      )}
 
-      <LatestResultsTable dashboard={dashboard} />
+      <OperationStructure dashboard={dashboard} />
     </main>
   );
 }
@@ -103,10 +112,10 @@ function DashboardHeader({ dashboard, onReload }: { dashboard: DashboardResponse
   return (
     <header className="flex flex-wrap items-end justify-between gap-4">
       <div>
-        <h1 className="text-3xl font-semibold text-foreground">Painel da {dashboard.empresaName}</h1>
+        <h1 className="text-3xl font-semibold text-foreground">Dashboard da {dashboard.empresaName}</h1>
         <p className="mt-1 flex items-center gap-2 text-sm text-muted-foreground">
           <CalendarClock className="h-4 w-4" />
-          Veja primeiro o que precisa de ação. Cada etapa tem uma única tela responsável.
+          Indicadores da operação e movimentação dos últimos 30 dias.
         </p>
       </div>
       <button
@@ -122,16 +131,17 @@ function DashboardHeader({ dashboard, onReload }: { dashboard: DashboardResponse
 }
 
 function PriorityAction({ actions }: { actions: DashboardResponse["recommendedActions"] }) {
-  const firstAction = actions[0];
+  const pendingActions = actions.filter((action) => action.severity !== "success");
+  const firstAction = pendingActions[0];
 
   if (!firstAction) {
     return (
       <section className="flex items-start gap-3 rounded-md border border-success/35 bg-success/10 p-4">
         <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-success" />
         <div>
-          <h2 className="font-semibold text-foreground">Nenhuma pendência prioritária</h2>
+          <h2 className="font-semibold text-foreground">Sem bloqueios prioritários</h2>
           <p className="mt-1 text-sm text-muted-foreground">
-            Continue acompanhando Participações e abra Resultados quando uma avaliação for concluída.
+            A operação não possui uma pendência crítica identificada neste momento.
           </p>
         </div>
       </section>
@@ -144,14 +154,14 @@ function PriorityAction({ actions }: { actions: DashboardResponse["recommendedAc
         <div className="flex min-w-0 gap-3">
           <ActionIcon severity={firstAction.severity} />
           <div>
-            <div className="text-xs font-semibold uppercase tracking-wide text-primary">Próxima ação</div>
+            <div className="text-xs font-semibold uppercase tracking-wide text-primary">Atenção necessária</div>
             <h2 id="priority-action-title" className="mt-1 text-lg font-semibold text-foreground">
               {firstAction.title}
             </h2>
             <p className="mt-1 max-w-3xl text-sm text-muted-foreground">{firstAction.description}</p>
-            {actions.length > 1 && (
+            {pendingActions.length > 1 && (
               <p className="mt-2 text-xs text-muted-foreground">
-                Há mais {actions.length - 1} {actions.length === 2 ? "pendência" : "pendências"} nas telas responsáveis.
+                Há mais {pendingActions.length - 1} {pendingActions.length === 2 ? "pendência" : "pendências"} aguardando ação.
               </p>
             )}
           </div>
@@ -167,6 +177,55 @@ function PriorityAction({ actions }: { actions: DashboardResponse["recommendedAc
   );
 }
 
+function DashboardMetrics({
+  dashboard,
+  analytics,
+}: {
+  dashboard: DashboardResponse;
+  analytics: DashboardAnalyticsResponse | null;
+}) {
+  const summary = analytics?.participations;
+
+  return (
+    <section aria-labelledby="dashboard-indicators-title">
+      <div className="mb-3 flex items-center justify-between gap-3">
+        <h2 id="dashboard-indicators-title" className="text-lg font-semibold">Indicadores principais</h2>
+        <span className="text-xs text-muted-foreground">Execuções de avaliações da empresa</span>
+      </div>
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <DashboardMetricCard
+          title="Participações criadas"
+          value={summary?.total ?? "—"}
+          hint="Total histórico de execuções"
+          icon={Users}
+          to="/participacoes"
+        />
+        <DashboardMetricCard
+          title="Em andamento"
+          value={summary?.inProgress ?? dashboard.candidatesInProgress}
+          hint="Execuções iniciadas e ainda abertas"
+          icon={PlayCircle}
+          to="/participacoes"
+        />
+        <DashboardMetricCard
+          title="Concluídas em 30 dias"
+          value={dashboard.completedAttemptsLast30Days}
+          hint="Resultados gerados no período"
+          icon={ClipboardCheck}
+          to="/results"
+        />
+        <DashboardMetricCard
+          title="Taxa de conclusão"
+          value={summary ? formatPercent(summary.completionRatePercent) : "—"}
+          hint="Entre participações encerradas"
+          icon={TrendingUp}
+          to="/results"
+        />
+      </div>
+    </section>
+  );
+}
+
 function DashboardMetricCard({
   title,
   value,
@@ -175,10 +234,10 @@ function DashboardMetricCard({
   to,
 }: {
   title: string;
-  value: number;
+  value: number | string;
   hint: string;
   icon: LucideIcon;
-  to: "/avaliacoes" | "/jornadas" | "/participacoes" | "/results";
+  to: "/participacoes" | "/results";
 }) {
   return (
     <Link to={to} className="block rounded-md border border-border bg-card p-4 transition hover:border-primary/40 hover:bg-accent">
@@ -187,96 +246,277 @@ function DashboardMetricCard({
         <Icon className="h-4 w-4 text-muted-foreground" />
       </div>
       <div className="mt-2 text-3xl font-semibold tabular-nums text-foreground">
-        {value.toLocaleString("pt-BR")}
+        {typeof value === "number" ? value.toLocaleString("pt-BR") : value}
       </div>
       <div className="mt-1 text-xs text-muted-foreground">{hint}</div>
     </Link>
   );
 }
 
-function LatestResultsTable({ dashboard }: { dashboard: DashboardResponse }) {
-  const latestResults = dashboard.latestResults.slice(0, 5);
+function AnalyticsGrid({ analytics }: { analytics: DashboardAnalyticsResponse }) {
   return (
-    <section className="rounded-md border border-border bg-card" aria-labelledby="latest-results-title">
-      <div className="flex items-center justify-between gap-3 border-b border-border p-4">
-        <div>
-          <h2 id="latest-results-title" className="text-lg font-semibold">Resultados recentes</h2>
-          <p className="mt-0.5 text-xs text-muted-foreground">Somente os cinco registros mais recentes.</p>
+    <section className="grid gap-4 xl:grid-cols-2" aria-label="Análises do dashboard">
+      <ActivityChart activity={analytics.activity} />
+      <StatusBreakdown summary={analytics.participations} />
+      <ParticipationFunnel summary={analytics.participations} />
+      <PeriodQuality summary={analytics.participations} />
+    </section>
+  );
+}
+
+function ActivityChart({ activity }: { activity: DashboardActivityPoint[] }) {
+  const maximum = Math.max(1, ...activity.flatMap((point) => [point.created, point.completed]));
+
+  return (
+    <figure className="rounded-md border border-border bg-card p-4" aria-labelledby="activity-chart-title">
+      <figcaption>
+        <h2 id="activity-chart-title" className="text-lg font-semibold text-foreground">Movimentação nos últimos 30 dias</h2>
+        <p className="mt-1 text-xs text-muted-foreground">Participações criadas e concluídas por dia.</p>
+      </figcaption>
+      <div className="mt-4 flex flex-wrap gap-4 text-xs text-muted-foreground" aria-hidden="true">
+        <span className="inline-flex items-center gap-2"><span className="h-2.5 w-2.5 rounded-sm bg-primary/40" />Criadas</span>
+        <span className="inline-flex items-center gap-2"><span className="h-2.5 w-2.5 rounded-sm bg-success" />Concluídas</span>
+      </div>
+      <div className="mt-4 overflow-x-auto pb-2">
+        <div className="flex h-56 min-w-[760px] items-end gap-1 border-b border-border px-1">
+          {activity.map((point, index) => (
+            <div key={point.date} className="flex h-full min-w-5 flex-1 flex-col justify-end gap-1">
+              <div
+                className="flex h-44 items-end justify-center gap-0.5"
+                aria-label={`${formatChartDate(point.date)}: ${point.created} criadas e ${point.completed} concluídas`}
+                title={`${formatChartDate(point.date)}: ${point.created} criadas, ${point.completed} concluídas`}
+              >
+                <div
+                  className="w-2 rounded-t-sm bg-primary/40"
+                  style={{ height: chartBarHeight(point.created, maximum) }}
+                />
+                <div
+                  className="w-2 rounded-t-sm bg-success"
+                  style={{ height: chartBarHeight(point.completed, maximum) }}
+                />
+              </div>
+              <span className="h-5 text-center text-[10px] text-muted-foreground">
+                {index % 5 === 0 || index === activity.length - 1 ? formatChartDay(point.date) : ""}
+              </span>
+            </div>
+          ))}
         </div>
-        <Link to="/results" className="text-sm font-medium text-primary hover:underline">Ver todos</Link>
+      </div>
+    </figure>
+  );
+}
+
+function StatusBreakdown({ summary }: { summary: DashboardParticipationSummary }) {
+  const items = [
+    { label: "Não iniciadas", value: summary.notStarted, className: "bg-muted-foreground/45" },
+    { label: "Em andamento", value: summary.inProgress, className: "bg-primary" },
+    { label: "Concluídas", value: summary.completed, className: "bg-success" },
+    { label: "Abandonadas ou expiradas", value: summary.abandoned + summary.expired, className: "bg-danger" },
+  ];
+
+  return (
+    <figure className="rounded-md border border-border bg-card p-4" aria-labelledby="status-chart-title">
+      <figcaption>
+        <h2 id="status-chart-title" className="text-lg font-semibold text-foreground">Situação das participações</h2>
+        <p className="mt-1 text-xs text-muted-foreground">Distribuição histórica das execuções de avaliações.</p>
+      </figcaption>
+      <div className="mt-5 space-y-5">
+        {items.map((item) => {
+          const percentage = summary.total > 0 ? (item.value / summary.total) * 100 : 0;
+          return (
+            <div key={item.label}>
+              <div className="mb-1.5 flex items-center justify-between gap-3 text-sm">
+                <span className="text-foreground">{item.label}</span>
+                <span className="tabular-nums text-muted-foreground">
+                  {item.value.toLocaleString("pt-BR")} · {formatPercent(percentage)}
+                </span>
+              </div>
+              <div className="h-2.5 overflow-hidden rounded-full bg-muted">
+                <div
+                  className={cn("h-full rounded-full", item.className)}
+                  style={{ width: `${Math.min(100, Math.max(0, percentage))}%` }}
+                />
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </figure>
+  );
+}
+
+function ParticipationFunnel({ summary }: { summary: DashboardParticipationSummary }) {
+  const stages = [
+    { label: "Criadas", value: summary.total },
+    { label: "Iniciadas", value: summary.started },
+    { label: "Concluídas", value: summary.completed },
+  ];
+
+  return (
+    <figure className="rounded-md border border-border bg-card p-4" aria-labelledby="funnel-title">
+      <figcaption>
+        <h2 id="funnel-title" className="text-lg font-semibold text-foreground">Funil de participação</h2>
+        <p className="mt-1 text-xs text-muted-foreground">Conversão entre criação, início e conclusão.</p>
+      </figcaption>
+      <div className="mt-5 space-y-4">
+        {stages.map((stage, index) => {
+          const percentage = summary.total > 0 ? (stage.value / summary.total) * 100 : 0;
+          return (
+            <div key={stage.label} className="flex items-center gap-3">
+              <div className="w-24 shrink-0 text-sm text-foreground">{stage.label}</div>
+              <div className="h-10 flex-1 overflow-hidden rounded-md bg-muted">
+                <div
+                  className={cn(
+                    "flex h-full min-w-12 items-center justify-end rounded-md px-3 text-xs font-semibold",
+                    index === 0
+                      ? "bg-primary/25 text-foreground"
+                      : index === 1
+                        ? "bg-primary/55 text-primary-foreground"
+                        : "bg-primary text-primary-foreground",
+                  )}
+                  style={{ width: `${Math.max(percentage, stage.value > 0 ? 8 : 0)}%` }}
+                >
+                  {stage.value.toLocaleString("pt-BR")}
+                </div>
+              </div>
+              <div className="w-14 text-right text-xs tabular-nums text-muted-foreground">
+                {formatPercent(percentage)}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </figure>
+  );
+}
+
+function PeriodQuality({ summary }: { summary: DashboardParticipationSummary }) {
+  return (
+    <section className="rounded-md border border-border bg-card p-4" aria-labelledby="period-quality-title">
+      <h2 id="period-quality-title" className="text-lg font-semibold text-foreground">Qualidade do período</h2>
+      <p className="mt-1 text-xs text-muted-foreground">Leitura rápida das participações encerradas.</p>
+      <div className="mt-5 grid gap-3 sm:grid-cols-2">
+        <div className="rounded-md bg-muted/45 p-4">
+          <div className="flex items-center gap-2 text-xs uppercase text-muted-foreground">
+            <Gauge className="h-4 w-4" /> Resultado médio
+          </div>
+          <div className="mt-2 text-3xl font-semibold tabular-nums text-foreground">
+            {summary.averageScoreLast30Days == null ? "—" : `${summary.averageScoreLast30Days.toFixed(1)}%`}
+          </div>
+          <p className="mt-1 text-xs text-muted-foreground">Somente conclusões dos últimos 30 dias.</p>
+        </div>
+        <div className="rounded-md bg-muted/45 p-4">
+          <div className="flex items-center gap-2 text-xs uppercase text-muted-foreground">
+            <AlertTriangle className="h-4 w-4" /> Abandono
+          </div>
+          <div className="mt-2 text-3xl font-semibold tabular-nums text-foreground">
+            {formatPercent(summary.dropOffRatePercent)}
+          </div>
+          <p className="mt-1 text-xs text-muted-foreground">Abandonadas ou expiradas entre as encerradas.</p>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function OperationStructure({ dashboard }: { dashboard: DashboardResponse }) {
+  return (
+    <section className="grid gap-4 xl:grid-cols-2" aria-label="Estrutura e atalhos da operação">
+      <div className="rounded-md border border-border bg-card p-4">
+        <h2 className="text-lg font-semibold text-foreground">Estrutura disponível</h2>
+        <p className="mt-1 text-xs text-muted-foreground">Conteúdo pronto para utilização nos processos.</p>
+        <div className="mt-4 grid gap-3 sm:grid-cols-3">
+          <StructureItem icon={ClipboardCheck} label="Avaliações ativas" value={dashboard.activeSimulations} />
+          <StructureItem icon={RouteIcon} label="Jornadas publicadas" value={dashboard.assessmentJourneys.published} />
+          <StructureItem icon={AlertTriangle} label="Jornadas em rascunho" value={dashboard.assessmentJourneys.draft} />
+        </div>
       </div>
 
-      {latestResults.length === 0 ? (
-        <div className="p-4 text-sm text-muted-foreground">Nenhum resultado disponível ainda.</div>
-      ) : (
-        <div className="overflow-x-auto" data-no-pagination>
-          <table className="w-full text-sm">
-            <thead className="border-b border-border bg-muted/45 text-xs uppercase text-muted-foreground">
-              <tr>
-                <th className="px-4 py-3 text-left font-medium">Participante</th>
-                <th className="px-4 py-3 text-left font-medium">Processo</th>
-                <th className="px-4 py-3 text-left font-medium">Situação</th>
-                <th className="px-4 py-3 text-left font-medium">Data</th>
-                <th className="px-4 py-3 text-right font-medium">Ação</th>
-              </tr>
-            </thead>
-            <tbody>
-              {latestResults.map((result) => (
-                <tr key={result.attemptId} className="border-b border-border last:border-0">
-                  <td className="px-4 py-3 font-medium">{result.candidateName}</td>
-                  <td className="px-4 py-3 text-muted-foreground">{result.simulationOrJourneyName}</td>
-                  <td className="px-4 py-3">
-                    <div>{attemptStatusLabel(result.status)}</div>
-                    {result.result != null && (
-                      <div className="mt-0.5 text-xs tabular-nums text-muted-foreground">{result.result}%</div>
-                    )}
-                  </td>
-                  <td className="px-4 py-3 text-muted-foreground">{formatDate(result.date)}</td>
-                  <td className="px-4 py-3 text-right">
-                    {result.status === "completed" ? (
-                      <Link
-                        to="/results/$attemptId"
-                        params={{ attemptId: result.attemptId }}
-                        className="font-medium text-primary hover:underline"
-                      >
-                        {result.actionLabel}
-                      </Link>
-                    ) : (
-                      <Link to="/participacoes" className="font-medium text-primary hover:underline">
-                        Acompanhar
-                      </Link>
-                    )}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+      <div className="rounded-md border border-border bg-card p-4">
+        <h2 className="text-lg font-semibold text-foreground">Atalhos operacionais</h2>
+        <p className="mt-1 text-xs text-muted-foreground">Acesse diretamente as principais etapas do processo.</p>
+        <div className="mt-4 grid gap-3 sm:grid-cols-2">
+          <QuickAction to="/avaliacoes" icon={ClipboardCheck} label="Gerenciar avaliações" />
+          <QuickAction to="/jornadas" icon={RouteIcon} label="Gerenciar jornadas" />
+          <QuickAction to="/participacoes" icon={Send} label="Criar participação" />
+          <QuickAction to="/results" icon={BarChart3} label="Analisar resultados" />
         </div>
-      )}
+      </div>
     </section>
+  );
+}
+
+function StructureItem({ icon: Icon, label, value }: { icon: LucideIcon; label: string; value: number }) {
+  return (
+    <div className="rounded-md bg-muted/45 p-4">
+      <Icon className="h-4 w-4 text-muted-foreground" />
+      <div className="mt-3 text-2xl font-semibold tabular-nums text-foreground">{value.toLocaleString("pt-BR")}</div>
+      <div className="mt-1 text-xs text-muted-foreground">{label}</div>
+    </div>
+  );
+}
+
+function QuickAction({
+  to,
+  icon: Icon,
+  label,
+}: {
+  to: "/avaliacoes" | "/jornadas" | "/participacoes" | "/results";
+  icon: LucideIcon;
+  label: string;
+}) {
+  return (
+    <Link
+      to={to}
+      className="flex min-h-12 items-center gap-3 rounded-md border border-border px-3 py-2 text-sm font-medium text-foreground hover:border-primary/40 hover:bg-accent"
+    >
+      <Icon className="h-4 w-4 text-primary" />
+      {label}
+    </Link>
+  );
+}
+
+function AnalyticsLoadingState() {
+  return (
+    <section className="grid gap-4 xl:grid-cols-2" aria-label="Carregando indicadores analíticos">
+      {Array.from({ length: 4 }).map((_, index) => (
+        <div key={index} className="h-72 animate-pulse rounded-md border border-border bg-muted" />
+      ))}
+    </section>
+  );
+}
+
+function AnalyticsUnavailable() {
+  return (
+    <StateBanner tone="warn" title="Indicadores analíticos temporariamente indisponíveis.">
+      Os números principais continuam disponíveis. Atualize a página para tentar carregar os gráficos novamente.
+    </StateBanner>
   );
 }
 
 function LoadingState() {
   return (
-    <section className="rounded-md border border-border bg-card p-6">
-      <div className="text-sm font-medium">Carregando seu painel...</div>
-      <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        {Array.from({ length: 4 }).map((_, index) => (
-          <div key={index} className="h-28 animate-pulse rounded-md bg-muted" />
-        ))}
+    <section className="space-y-4">
+      <div className="rounded-md border border-border bg-card p-6">
+        <div className="text-sm font-medium">Carregando dashboard...</div>
+        <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          {Array.from({ length: 4 }).map((_, index) => (
+            <div key={index} className="h-28 animate-pulse rounded-md bg-muted" />
+          ))}
+        </div>
       </div>
+      <AnalyticsLoadingState />
     </section>
   );
 }
 
 function ErrorState({ error, onReload }: { error: unknown; onReload: () => void }) {
   const incompatible = error instanceof DashboardCompatibilityError;
-  const message = error instanceof Error ? error.message : "O painel não pôde ser carregado nesta tentativa.";
+  const message = error instanceof Error ? error.message : "O dashboard não pôde ser carregado nesta tentativa.";
   return (
     <StateBanner
       tone={incompatible ? "warn" : "danger"}
-      title={incompatible ? "Painel indisponível nesta versão do sistema." : "Não foi possível carregar o painel."}
+      title={incompatible ? "Dashboard indisponível nesta versão do sistema." : "Não foi possível carregar o dashboard."}
       action={
         <button
           type="button"
@@ -313,18 +553,27 @@ function canonicalProcessRoute(route: string) {
   return canonical;
 }
 
-function attemptStatusLabel(status: string) {
-  return {
-    notStarted: "Não iniciado",
-    inProgress: "Em andamento",
-    completed: "Concluído",
-    expired: "Expirado",
-    abandoned: "Abandonado",
-  }[status] ?? status;
+function chartBarHeight(value: number, maximum: number) {
+  if (value <= 0) return "0%";
+  return `${Math.max(5, (value / maximum) * 100)}%`;
 }
 
-function formatDate(value: string) {
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "—";
-  return new Intl.DateTimeFormat("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric" }).format(date);
+function formatPercent(value: number) {
+  return `${value.toLocaleString("pt-BR", { minimumFractionDigits: 1, maximumFractionDigits: 1 })}%`;
+}
+
+function formatChartDate(value: string) {
+  return new Intl.DateTimeFormat("pt-BR", {
+    day: "2-digit",
+    month: "long",
+    timeZone: "UTC",
+  }).format(new Date(`${value}T00:00:00Z`));
+}
+
+function formatChartDay(value: string) {
+  return new Intl.DateTimeFormat("pt-BR", {
+    day: "2-digit",
+    month: "2-digit",
+    timeZone: "UTC",
+  }).format(new Date(`${value}T00:00:00Z`));
 }
