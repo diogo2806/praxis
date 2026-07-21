@@ -1,4 +1,10 @@
-import { useEffect, useState, type FormEvent } from "react";
+import {
+  useEffect,
+  useState,
+  type Dispatch,
+  type FormEvent,
+  type SetStateAction,
+} from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { Building2, Pencil, Save, X } from "lucide-react";
@@ -209,11 +215,19 @@ function CompanyProfilePage() {
                 </div>
 
                 <div className="flex flex-wrap justify-end gap-2 border-t border-border pt-5">
-                  <Button type="button" variant="outline" onClick={cancelEditing} disabled={updateMutation.isPending}>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={cancelEditing}
+                    disabled={updateMutation.isPending}
+                  >
                     <X />
                     Cancelar
                   </Button>
-                  <Button type="submit" disabled={updateMutation.isPending || !form.tradeName.trim()}>
+                  <Button
+                    type="submit"
+                    disabled={updateMutation.isPending || !form.tradeName.trim()}
+                  >
                     <Save />
                     {updateMutation.isPending ? "Salvando..." : "Salvar alterações"}
                   </Button>
@@ -240,7 +254,7 @@ function ProfileField({
   label: string;
   name: keyof ProfileForm;
   value: string;
-  onChange: React.Dispatch<React.SetStateAction<ProfileForm>>;
+  onChange: Dispatch<SetStateAction<ProfileForm>>;
   type?: "text" | "email" | "tel" | "url";
   placeholder?: string;
   required?: boolean;
