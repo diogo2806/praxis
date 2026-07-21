@@ -7,6 +7,7 @@ import br.com.iforce.praxis.partner.dto.CreatePartnerClientRequest;
 import br.com.iforce.praxis.partner.dto.CreatePartnerSpecialistRequest;
 import br.com.iforce.praxis.partner.dto.PartnerModuleResponse;
 import br.com.iforce.praxis.partner.dto.UpdatePartnerCatalogRequest;
+import br.com.iforce.praxis.partner.service.PartnerModuleAccessService;
 import br.com.iforce.praxis.partner.service.PartnerService;
 import br.com.iforce.praxis.team.dto.InviteTeamUserResponse;
 import io.swagger.v3.oas.annotations.Operation;
@@ -30,6 +31,7 @@ import java.util.List;
 public class PartnerController {
 
     private final PartnerService partnerService;
+    private final PartnerModuleAccessService accessService;
     private final CurrentEmpresaService currentEmpresaService;
     private final CurrentUserService currentUserService;
     private final PasswordResetEmailSender notifier;
@@ -37,12 +39,14 @@ public class PartnerController {
 
     public PartnerController(
             PartnerService partnerService,
+            PartnerModuleAccessService accessService,
             CurrentEmpresaService currentEmpresaService,
             CurrentUserService currentUserService,
             PasswordResetEmailSender notifier,
             @Value("${praxis.admin.invite-ttl-hours:168}") int inviteTtlHours
     ) {
         this.partnerService = partnerService;
+        this.accessService = accessService;
         this.currentEmpresaService = currentEmpresaService;
         this.currentUserService = currentUserService;
         this.notifier = notifier;
@@ -52,6 +56,7 @@ public class PartnerController {
     @GetMapping("/specialists")
     @Operation(summary = "Lista especialistas do parceiro")
     public ResponseEntity<List<PartnerModuleResponse.Specialist>> listSpecialists() {
+        requireModuleAccess();
         return ResponseEntity.ok(partnerService.listSpecialists(currentEmpresaService.requiredEmpresaId()));
     }
 
@@ -60,6 +65,7 @@ public class PartnerController {
     public ResponseEntity<InviteTeamUserResponse> inviteSpecialist(
             @Valid @RequestBody CreatePartnerSpecialistRequest request
     ) {
+        requireModuleAccess();
         InviteTeamUserResponse response = partnerService.inviteSpecialist(
                 currentUserService.requiredUserId(),
                 currentEmpresaService.requiredEmpresaId(),
@@ -77,6 +83,7 @@ public class PartnerController {
     @PostMapping("/specialists/{userId}")
     @Operation(summary = "Define um usuário existente como especialista")
     public ResponseEntity<PartnerModuleResponse.Specialist> promoteSpecialist(@PathVariable Long userId) {
+        requireModuleAccess();
         return ResponseEntity.ok(partnerService.promoteSpecialist(
                 currentUserService.requiredUserId(),
                 currentEmpresaService.requiredEmpresaId(),
@@ -87,6 +94,7 @@ public class PartnerController {
     @PostMapping("/specialists/{userId}/remove")
     @Operation(summary = "Remove a função de especialista")
     public ResponseEntity<Void> removeSpecialist(@PathVariable Long userId) {
+        requireModuleAccess();
         partnerService.removeSpecialist(
                 currentUserService.requiredUserId(),
                 currentEmpresaService.requiredEmpresaId(),
@@ -98,6 +106,7 @@ public class PartnerController {
     @GetMapping("/clients")
     @Operation(summary = "Lista clientes atendidos pelo parceiro")
     public ResponseEntity<List<PartnerModuleResponse.Client>> listClients() {
+        requireModuleAccess();
         return ResponseEntity.ok(partnerService.listClients(currentEmpresaService.requiredEmpresaId()));
     }
 
@@ -106,6 +115,7 @@ public class PartnerController {
     public ResponseEntity<PartnerModuleResponse.Client> createClient(
             @Valid @RequestBody CreatePartnerClientRequest request
     ) {
+        requireModuleAccess();
         return ResponseEntity.ok(partnerService.createClient(
                 currentUserService.requiredUserId(),
                 currentEmpresaService.requiredEmpresaId(),
@@ -116,6 +126,7 @@ public class PartnerController {
     @PostMapping("/clients/{clientId}/activate")
     @Operation(summary = "Ativa cliente do parceiro")
     public ResponseEntity<PartnerModuleResponse.Client> activateClient(@PathVariable String clientId) {
+        requireModuleAccess();
         return ResponseEntity.ok(partnerService.setClientActive(
                 currentUserService.requiredUserId(),
                 currentEmpresaService.requiredEmpresaId(),
@@ -127,6 +138,7 @@ public class PartnerController {
     @PostMapping("/clients/{clientId}/deactivate")
     @Operation(summary = "Desativa cliente e revoga seu token")
     public ResponseEntity<PartnerModuleResponse.Client> deactivateClient(@PathVariable String clientId) {
+        requireModuleAccess();
         return ResponseEntity.ok(partnerService.setClientActive(
                 currentUserService.requiredUserId(),
                 currentEmpresaService.requiredEmpresaId(),
@@ -138,6 +150,7 @@ public class PartnerController {
     @PostMapping("/clients/{clientId}/token")
     @Operation(summary = "Gera ou rotaciona o token do cliente")
     public ResponseEntity<PartnerModuleResponse.Token> rotateClientToken(@PathVariable String clientId) {
+        requireModuleAccess();
         return ResponseEntity.ok(partnerService.rotateClientToken(
                 currentUserService.requiredUserId(),
                 currentEmpresaService.requiredEmpresaId(),
@@ -148,6 +161,7 @@ public class PartnerController {
     @GetMapping("/clients/{clientId}/catalog")
     @Operation(summary = "Lista o catálogo e as liberações do cliente")
     public ResponseEntity<List<PartnerModuleResponse.CatalogItem>> listCatalog(@PathVariable String clientId) {
+        requireModuleAccess();
         return ResponseEntity.ok(partnerService.listCatalog(
                 currentEmpresaService.requiredEmpresaId(),
                 clientId
@@ -160,11 +174,19 @@ public class PartnerController {
             @PathVariable String clientId,
             @Valid @RequestBody UpdatePartnerCatalogRequest request
     ) {
+        requireModuleAccess();
         return ResponseEntity.ok(partnerService.updateCatalog(
                 currentUserService.requiredUserId(),
                 currentEmpresaService.requiredEmpresaId(),
                 clientId,
                 request
         ));
+    }
+
+    private void requireModuleAccess() {
+        accessService.requireAccess(
+                currentUserService.requiredUserId(),
+                currentEmpresaService.requiredEmpresaId()
+        );
     }
 }
