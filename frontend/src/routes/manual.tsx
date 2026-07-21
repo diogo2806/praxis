@@ -19,10 +19,13 @@ export const Route = createFileRoute("/manual")({
   component: ManualPage,
 });
 
+const REPLACED_BASE_MANUALS = new Set(["jornadas", "operacao"]);
+
 function ManualPage() {
-  const manuals = [...SCREEN_MANUAL_OVERRIDES, ...SCREEN_MANUALS].filter(
-    (manual, index, items) => items.findIndex((item) => item.id === manual.id) === index,
-  );
+  const manuals = [
+    ...SCREEN_MANUAL_OVERRIDES,
+    ...SCREEN_MANUALS.filter((manual) => !REPLACED_BASE_MANUALS.has(manual.id)),
+  ];
 
   return (
     <AppShell>
