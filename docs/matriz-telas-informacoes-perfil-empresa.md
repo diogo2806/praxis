@@ -1,7 +1,7 @@
 # Matriz de telas e informações do perfil EMPRESA
 
 Data da revisão: 21/07/2026  
-Base analisada: `main` com as correções dos PRs #421, #422, #425, #426, #427, #428, #429, #430, #431, #432, #433, #434, #435, #436, #438, #441 e #442
+Base analisada: `main` com as correções dos PRs #421, #422, #425, #426, #427, #428, #429, #430, #431, #432, #433, #434, #435, #436, #438, #441, #442, #443 e #446
 
 ## 1. Escopo
 
@@ -55,15 +55,15 @@ A repetição é permitida quando representa apenas resumo, referência somente 
 | 21 | `CONCLUÍDA` | `CONTEXTUAL` | **Compliance** `/compliance` | Resumo contextual e atalhos para telas proprietárias. | PR #421 removeu lista e diálogo concorrentes. |
 | 22 | `CONCLUÍDA` | `OK` | **Perfil da empresa** `/configuracoes/perfil` | Consulta e edição dos dados cadastrais. | PR #422 implementou edição e auditoria; PR #427 corrigiu o import da API. |
 | 23 | `CONCLUÍDA` | `OK` | **Competências** `/competencias` | Única proprietária do catálogo global. | PR #426 removeu criação e edição concorrentes. |
-| 24 | `EM ANDAMENTO` | `PARCIAL` | **Minha equipe** `/team` | Vínculos e acesso dos usuários da empresa. | Faltam perfil, permissões e coluna de acesso. |
-| 25 | `PENDENTE` | `CONDICIONAL` | **Parceiros e especialistas** `/parceiros` | Operação de parceria quando habilitada. | Restringir por feature flag e permissão específica. |
+| 24 | `CONCLUÍDA` | `OK` | **Minha equipe** `/team` | Vínculos, perfis, permissões e situação de acesso dos usuários da empresa. | PR #446 criou subperfis efetivos, coluna de acesso, alteração auditada e restrições no menu e nas APIs. |
+| 25 | `CONCLUÍDA` | `CONDICIONAL` | **Parceiros e especialistas** `/parceiros` | Operação de parceria somente quando contratada e autorizada. | PR #446 condicionou frontend e backend à flag `PRAXIS_PARTNER_ENABLED` e à permissão `PARTNER_MANAGER`. |
 | 26 | `NÃO SE APLICA` | `OK` | **Integrações** `/integrations` | Configuração e estado saudável das integrações. | Responsabilidade centralizada. |
 | 27 | `NÃO SE APLICA` | `OK` | **Detalhe da integração** `/integrations/$provider` | Diagnóstico, credenciais e configuração do provedor. | Responsabilidade centralizada. |
 | 28 | `BLOQUEADA` | `CONTEXTUAL` | **Homologação Gupy** `/integrations/gupy-homologacao` | Evidências e checklist de homologação. | Depende de token, vaga real e aprovação externa da Gupy. |
 | 29 | `NÃO SE APLICA` | `OK` | **Plano e cobrança** `/billing` | Créditos, assinatura, uso e histórico financeiro. | Responsabilidade centralizada. |
 | 30 | `NÃO SE APLICA` | `OK` | **Minha conta** `/configuracoes/conta` | Credenciais pessoais do usuário autenticado. | Vínculo e permissões ficam em Minha equipe. |
-| 31 | `PENDENTE` | `PARCIAL` | **Comece aqui** `/comecar` | Onboarding inicial da empresa. | Corrigir destino do convite e ocultar após conclusão. |
-| 32 | `EM ANDAMENTO` | `PARCIAL` | **Central de manuais** `/manual` | Processo completo e manual contextual por rota. | PR #442 adicionou Talent Match e Central operacional; ainda faltam telas pendentes. |
+| 31 | `CONCLUÍDA` | `CONTEXTUAL` | **Comece aqui** `/comecar` | Guia temporário do primeiro ciclo da empresa. | PR #446 corrigiu o convite para jornada, calculou o progresso real e removeu o item da navegação após a conclusão. |
+| 32 | `CONCLUÍDA` | `OK` | **Central de manuais** `/manual` | Processo completo, busca, filtros e manual contextual por rota. | PR #443 tornou a central escalável; PR #446 adicionou os últimos manuais específicos pendentes. |
 
 ## 4. Propriedade das informações
 
@@ -82,7 +82,7 @@ A repetição é permitida quando representa apenas resumo, referência somente 
 | `CONCLUÍDA` | Comparação de resultados por avaliação e versão | **Talent Match** | PR #442 exige contexto e consulta somente participantes concluídos desse recorte. |
 | `CONCLUÍDA` | Falhas, retry e DLQ | **Monitoramento** | PR #442 centralizou somente exceções acionáveis e filtros da fila operacional. |
 | `CONCLUÍDA` | Dados cadastrais da empresa | **Perfil da empresa** | Outras telas exibem somente identificação curta. |
-| `EM ANDAMENTO` | Usuário, vínculo, perfil e acesso | **Minha equipe** | Minha conta mantém apenas credenciais próprias. |
+| `CONCLUÍDA` | Usuário, vínculo, perfil e acesso | **Minha equipe** | PR #446 aplica perfis reais no backend, filtra a navegação e centraliza as alterações de acesso. |
 | `CONCLUÍDA` | Plano, créditos e situação financeira | **Billing** | Outras telas mostram somente bloqueio e atalho. |
 
 ## 5. Plano de ação
@@ -100,7 +100,7 @@ A repetição é permitida quando representa apenas resumo, referência somente 
 | Status | Ação | Evidência ou pendência |
 |---|---|---|
 | `CONCLUÍDA` | Centralizar catálogo e seleção de competências. | PR #426. |
-| `PENDENTE` | Corrigir o destino de convite em Comece aqui. | Abrir Participações ou convite por jornada. |
+| `CONCLUÍDA` | Corrigir o destino de convite em Comece aqui. | PR #446 abre diretamente o convite por jornada. |
 | `CONCLUÍDA` | Retirar integrações saudáveis de Monitoramento. | PR #442 manteve somente integrações com atenção, retentativas, DLQ e alertas. |
 | `CONCLUÍDA` | Remover entregas operacionais de Ativação Gupy. | PR #438 manteve apenas o preflight e criou atalho para Monitoramento. |
 | `CONCLUÍDA` | Tornar Perfil da empresa acionável. | PR #422. |
@@ -110,11 +110,11 @@ A repetição é permitida quando representa apenas resumo, referência somente 
 
 | Status | Ação | Evidência ou pendência |
 |---|---|---|
-| `PENDENTE` | Criar subperfis de EMPRESA. | Backend e frontend devem distinguir os perfis autorizados. |
-| `PENDENTE` | Incluir perfil e permissões em Equipe. | Modal e tabela devem mostrar e alterar o acesso. |
-| `PENDENTE` | Restringir Parceiros. | Rota somente para empresa parceira e permissão específica. |
-| `EM ANDAMENTO` | Atualizar manuais de tela. | PR #442 adicionou Talent Match e Central operacional; outras rotas continuam pendentes. |
-| `PENDENTE` | Ocultar Comece aqui após onboarding. | Guia deve permanecer apenas em Ajuda. |
+| `CONCLUÍDA` | Criar subperfis de EMPRESA. | PR #446 criou Administrador, Autor, Analista e Operador com restrições efetivas no menu e nas APIs. |
+| `CONCLUÍDA` | Incluir perfil e permissões em Equipe. | PR #446 adicionou seleção, alteração, permissões, situação e último acesso. |
+| `CONCLUÍDA` | Restringir Parceiros. | PR #446 exige feature flag e permissão administrativa específica no frontend e backend. |
+| `CONCLUÍDA` | Atualizar manuais de tela. | PRs #443 e #446 concluíram a central escalável e os manuais específicos restantes. |
+| `CONCLUÍDA` | Ocultar Comece aqui após onboarding. | PR #446 mantém o processo na Central de manuais e retira o item da navegação após o primeiro ciclo. |
 
 ## 6. Critério para atualizar o status
 
