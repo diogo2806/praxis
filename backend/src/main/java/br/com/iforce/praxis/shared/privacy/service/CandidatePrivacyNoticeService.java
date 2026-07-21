@@ -28,7 +28,7 @@ import java.util.Map;
 public class CandidatePrivacyNoticeService {
 
     private static final String DEFAULT_TERMS_HASH =
-            "4c961d9ca2344e5fc96cfaa582fd48fa03b6b9f01c9715ba631635d051431e9a";
+            "dd1a4872abd133eddde7e14d635429025d4786b06cb39c07c8c6c0378de86037";
 
     private final CandidateAttemptTokenResolver tokenResolver;
     private final CandidateAttemptRepository candidateAttemptRepository;
@@ -62,7 +62,7 @@ public class CandidatePrivacyNoticeService {
             @Value("${praxis.privacy.legal-basis:Base legal definida e documentada pelo controlador}") String fallbackLegalBasis,
             @Value("${praxis.privacy.notice-version:2026-07-20}") String fallbackNoticeVersion,
             @Value("${praxis.privacy.enforce-readiness:true}") boolean enforceReadiness,
-            @Value("${praxis.legal.terms-version:1.0}") String termsVersion,
+            @Value("${praxis.legal.terms-version:1.1}") String termsVersion,
             @Value("${praxis.legal.terms-hash:}") String termsHash
     ) {
         this.tokenResolver = tokenResolver;
@@ -79,7 +79,7 @@ public class CandidatePrivacyNoticeService {
         this.fallbackLegalBasis = fallbackLegalBasis;
         this.fallbackNoticeVersion = fallbackNoticeVersion;
         this.enforceReadiness = enforceReadiness;
-        this.termsVersion = isBlank(termsVersion) ? "1.0" : termsVersion.trim();
+        this.termsVersion = isBlank(termsVersion) ? "1.1" : termsVersion.trim();
         this.termsHash = isBlank(termsHash) ? DEFAULT_TERMS_HASH : termsHash.trim().toLowerCase();
     }
 
@@ -98,25 +98,26 @@ public class CandidatePrivacyNoticeService {
         assertCurrentDocuments(notice, request);
 
         Instant now = Instant.now();
-        acceptanceRepository.findByAttemptIdAndNoticeVersionAndTermsVersion(
+        CandidateNoticeAcceptanceEntity entity = acceptanceRepository
+                .findByAttemptIdAndNoticeVersionAndTermsVersion(
                         context.attempt().getId(),
                         notice.noticeVersion(),
                         notice.termsVersion()
                 )
-                .orElseGet(() -> {
-                    CandidateNoticeAcceptanceEntity entity = new CandidateNoticeAcceptanceEntity();
-                    entity.setEmpresaId(context.attempt().getEmpresaId());
-                    entity.setAttemptId(context.attempt().getId());
-                    entity.setNoticeVersion(notice.noticeVersion());
-                    entity.setNoticeLanguage(request.language().trim());
-                    entity.setNoticeHash(notice.noticeHash());
-                    entity.setAcknowledgedAt(now);
-                    entity.setTermsVersion(notice.termsVersion());
-                    entity.setTermsHash(notice.termsHash());
-                    entity.setTermsAcceptedAt(now);
-                    entity.setCreatedAt(now);
-                    return acceptanceRepository.save(entity);
-                });
+                .orElseGet(CandidateNoticeAcceptanceEntity::new);
+        entity.setEmpresaId(context.attempt().getEmpresaId());
+        entity.setAttemptId(context.attempt().getId());
+        entity.setNoticeVersion(notice.noticeVersion());
+        entity.setNoticeLanguage(request.language().trim());
+        entity.setNoticeHash(notice.noticeHash());
+        entity.setAcknowledgedAt(now);
+        entity.setTermsVersion(notice.termsVersion());
+        entity.setTermsHash(notice.termsHash());
+        entity.setTermsAcceptedAt(now);
+        if (entity.getCreatedAt() == null) {
+            entity.setCreatedAt(now);
+        }
+        acceptanceRepository.save(entity);
 
         context.attempt().setPrivacyNoticeAcknowledgedAt(now);
         context.attempt().setPrivacyNoticeVersion(notice.noticeVersion());
@@ -138,9 +139,6 @@ public class CandidatePrivacyNoticeService {
         ResolvedContext context = resolve(attemptToken);
         CandidatePrivacyNoticeResponse notice = noticeFor(context.empresa());
         assertReadiness(notice);
-        if (!notice.configured() && !enforceReadiness) {
-            return;
-        }
         boolean accepted = acceptanceRepository
                 .findByAttemptIdAndNoticeVersionAndTermsVersion(
                         context.attempt().getId(),
