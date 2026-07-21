@@ -1,17 +1,19 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import {
-  AlertTriangle,
   Bell,
   CheckCircle2,
+  Clock3,
   ExternalLink,
   Loader2,
   RefreshCw,
   RotateCw,
   XCircle,
 } from "lucide-react";
+import { useState } from "react";
+
 import { AppShell } from "@/components/app-shell";
-import { EmptyState, StateBanner } from "@/components/praxis-ui";
+import { StateBanner } from "@/components/praxis-ui";
 import { Button } from "@/components/ui/button";
 import {
   listIntegrations,
@@ -41,8 +43,12 @@ export const Route = createFileRoute("/monitoramento")({
   component: MonitoringPage,
 });
 
+type QueueFilter = "all" | "integrations" | "retrying" | "dlq" | "notifications";
+
 function MonitoringPage() {
   const queryClient = useQueryClient();
+  const [activeFilter, setActiveFilter] = useState<QueueFilter>("all");
+
   const integrationsQuery = useQuery({
     queryKey: ["integrations", "monitoring"],
     queryFn: listIntegrations,
@@ -86,17 +92,19 @@ function MonitoringPage() {
   const integrations = integrationsQuery.data ?? [];
   const deliveries = deliveriesQuery.data ?? [];
   const notifications = notificationsQuery.data ?? [];
-  const failedDeliveries = deliveries.filter((delivery) => delivery.status === "dlq");
-  const retryingDeliveries = deliveries.filter(
-    (delivery) => delivery.status === "retrying" || delivery.status === "pending",
-  );
-  const unreadNotifications = notifications.filter((notification) => !notification.readAt);
-  const connectedIntegrations = integrations.filter(
-    (integration) => integration.status === "CONECTADA",
-  );
   const integrationAlerts = integrations.filter(
     (integration) => integration.status === "ERRO" || integration.status === "PENDENTE",
   );
+  const retryingDeliveries = deliveries.filter(
+    (delivery) => delivery.status === "retrying" || delivery.status === "pending",
+  );
+  const failedDeliveries = deliveries.filter((delivery) => delivery.status === "dlq");
+  const unreadNotifications = notifications.filter((notification) => !notification.readAt);
+  const actionableCount =
+    integrationAlerts.length +
+    retryingDeliveries.length +
+    failedDeliveries.length +
+    unreadNotifications.length;
   const loading =
     integrationsQuery.isLoading || deliveriesQuery.isLoading || notificationsQuery.isLoading;
   const error = integrationsQuery.error ?? deliveriesQuery.error ?? notificationsQuery.error;
@@ -121,15 +129,15 @@ function MonitoringPage() {
             </div>
             <h1 className="mt-1 font-display text-3xl">Central operacional</h1>
             <p className="mt-2 text-sm leading-6 text-muted-foreground">
-              Esta tela mostra somente exceções que exigem atenção. Configuração, credenciais e
-              integrações saudáveis permanecem na área de Integrações.
+              Somente exceções acionáveis aparecem aqui. Configuração, credenciais, entregas enviadas
+              e integrações saudáveis permanecem fora desta fila.
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
             <Button asChild variant="outline" className="gap-2 bg-card">
-              <Link to="/participacoes">
+              <Link to="/integrations">
                 <ExternalLink className="h-4 w-4" />
-                Ver participações
+                Configurar integrações
               </Link>
             </Button>
             <Button
@@ -145,29 +153,50 @@ function MonitoringPage() {
           </div>
         </header>
 
-        <section className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-5" aria-label="Resumo operacional">
-          <Metric label="Integrações conectadas" value={connectedIntegrations.length} />
-          <Metric
+        <section
+          className="grid grid-cols-2 gap-3 md:grid-cols-4"
+          aria-label="Filtros da fila operacional"
+        >
+          <QueueMetric
             label="Integrações com atenção"
             value={integrationAlerts.length}
-            warning={integrationAlerts.length > 0}
+            active={activeFilter === "integrations"}
+            onClick={() => setActiveFilter(activeFilter === "integrations" ? "all" : "integrations")}
           />
-          <Metric
-            label="Entregas em retentativa"
+          <QueueMetric
+            label="Em retentativa"
             value={retryingDeliveries.length}
-            warning={retryingDeliveries.length > 0}
+            active={activeFilter === "retrying"}
+            onClick={() => setActiveFilter(activeFilter === "retrying" ? "all" : "retrying")}
           />
-          <Metric
-            label="Entregas em DLQ"
+          <QueueMetric
+            label="Em DLQ"
             value={failedDeliveries.length}
-            warning={failedDeliveries.length > 0}
+            active={activeFilter === "dlq"}
+            onClick={() => setActiveFilter(activeFilter === "dlq" ? "all" : "dlq")}
           />
-          <Metric
+          <QueueMetric
             label="Alertas não lidos"
             value={unreadNotifications.length}
-            warning={unreadNotifications.length > 0}
+            active={activeFilter === "notifications"}
+            onClick={() =>
+              setActiveFilter(activeFilter === "notifications" ? "all" : "notifications")
+            }
           />
         </section>
+
+        {activeFilter !== "all" && (
+          <div className="flex items-center justify-between gap-3 rounded-lg border border-border bg-card px-4 py-3 text-sm">
+            <span>Filtro ativo: {filterLabel(activeFilter)}</span>
+            <button
+              type="button"
+              onClick={() => setActiveFilter("all")}
+              className="font-medium text-primary hover:underline"
+            >
+              Mostrar toda a fila
+            </button>
+          </div>
+        )}
 
         {loading ? (
           <section className="rounded-xl border border-border bg-card p-10 text-center text-sm text-muted-foreground">
@@ -189,17 +218,20 @@ function MonitoringPage() {
           >
             {error instanceof Error ? error.message : "Tente novamente."}
           </StateBanner>
+        ) : actionableCount === 0 ? (
+          <StateBanner tone="ok" title="Nenhuma intervenção pendente">
+            A fila operacional está vazia. Integrações saudáveis e entregas concluídas podem ser
+            consultadas nas respectivas telas proprietárias.
+          </StateBanner>
         ) : (
-          <>
-            <IntegrationAttentionPanel integrations={integrationAlerts} />
-            <div className="grid gap-6 xl:grid-cols-[1fr_1.2fr]">
-              <NotificationsPanel
-                notifications={unreadNotifications}
-                markingReadId={markReadMutation.variables ?? null}
-                markingRead={markReadMutation.isPending}
-                error={markReadMutation.error}
-                onMarkRead={(notificationId) => markReadMutation.mutate(notificationId)}
-              />
+          <div className="space-y-6">
+            {(activeFilter === "all" || activeFilter === "integrations") && (
+              <IntegrationAttentionPanel integrations={integrationAlerts} />
+            )}
+            {(activeFilter === "all" || activeFilter === "retrying") && (
+              <RetryingDeliveriesPanel deliveries={retryingDeliveries} />
+            )}
+            {(activeFilter === "all" || activeFilter === "dlq") && (
               <FailedDeliveriesPanel
                 deliveries={failedDeliveries}
                 reprocessingId={reprocessMutation.variables ?? null}
@@ -207,35 +239,48 @@ function MonitoringPage() {
                 error={reprocessMutation.error}
                 onReprocess={(deliveryId) => reprocessMutation.mutate(deliveryId)}
               />
-            </div>
-          </>
+            )}
+            {(activeFilter === "all" || activeFilter === "notifications") && (
+              <NotificationsPanel
+                notifications={unreadNotifications}
+                markingReadId={markReadMutation.variables ?? null}
+                markingRead={markReadMutation.isPending}
+                error={markReadMutation.error}
+                onMarkRead={(notificationId) => markReadMutation.mutate(notificationId)}
+              />
+            )}
+          </div>
         )}
       </main>
     </AppShell>
   );
 }
 
-function Metric({
+function QueueMetric({
   label,
   value,
-  warning = false,
+  active,
+  onClick,
 }: {
   label: string;
   value: number;
-  warning?: boolean;
+  active: boolean;
+  onClick: () => void;
 }) {
   return (
-    <article
+    <button
+      type="button"
+      aria-pressed={active}
+      onClick={onClick}
       className={cn(
-        "rounded-xl border bg-card p-4",
-        warning ? "border-warning/40" : "border-border",
+        "rounded-xl border bg-card p-4 text-left transition hover:bg-accent",
+        value > 0 ? "border-warning/40" : "border-border",
+        active && "border-primary bg-primary/10 ring-2 ring-primary/20",
       )}
     >
       <div className="text-xs text-muted-foreground">{label}</div>
-      <div className="mt-2 text-3xl font-semibold tabular-nums">
-        {value.toLocaleString("pt-BR")}
-      </div>
-    </article>
+      <div className="mt-2 text-3xl font-semibold tabular-nums">{value.toLocaleString("pt-BR")}</div>
+    </button>
   );
 }
 
@@ -252,21 +297,11 @@ function IntegrationAttentionPanel({ integrations }: { integrations: Integration
           </p>
         </div>
         <Button asChild variant="outline" size="sm" className="bg-background">
-          <Link to="/integrations">Configurar integrações</Link>
+          <Link to="/integrations">Abrir configurações</Link>
         </Button>
       </div>
       {integrations.length === 0 ? (
-        <div className="p-6">
-          <div className="flex items-start gap-3 rounded-lg border border-success/30 bg-success/10 p-4">
-            <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-success" />
-            <div>
-              <div className="font-medium">Nenhuma integração exige intervenção</div>
-              <p className="mt-1 text-sm text-muted-foreground">
-                Consulte a configuração completa na área de Integrações.
-              </p>
-            </div>
-          </div>
-        </div>
+        <QueueEmpty message="Nenhuma integração exige intervenção." />
       ) : (
         <div className="grid gap-3 p-4 lg:grid-cols-3">
           {integrations.map((integration) => (
@@ -326,13 +361,145 @@ function IntegrationStatus({ status }: { status: IntegrationCenterStatus }) {
         "rounded-full border px-2 py-1 text-[10px] font-semibold uppercase tracking-wide",
         status === "PENDENTE" && "border-warning/40 bg-warning/10 text-warning-foreground",
         status === "ERRO" && "border-danger/30 bg-danger/10 text-danger",
-        status === "CONECTADA" && "border-success/30 bg-success/10 text-success",
-        (status === "DESATIVADA" || status === "NAO_CONFIGURADA") &&
-          "border-border bg-muted/40 text-muted-foreground",
       )}
     >
       {labels[status]}
     </span>
+  );
+}
+
+function RetryingDeliveriesPanel({ deliveries }: { deliveries: ResultDeliveryResponse[] }) {
+  return (
+    <section className="rounded-xl border border-border bg-card p-5">
+      <div className="mb-4 flex items-center gap-2">
+        <Clock3 className="h-4 w-4 text-warning" />
+        <div>
+          <h2 className="text-lg font-semibold">Entregas em retentativa</h2>
+          <p className="mt-1 text-xs text-muted-foreground">
+            A fila automática ainda está tentando entregar estes resultados. Não reprocesse manualmente
+            enquanto houver próxima tentativa agendada.
+          </p>
+        </div>
+      </div>
+      {deliveries.length === 0 ? (
+        <QueueEmpty message="Nenhuma entrega aguarda retentativa automática." />
+      ) : (
+        <div className="space-y-3">
+          {deliveries.map((delivery) => (
+            <article key={delivery.id} className="rounded-md border border-warning/30 bg-warning/5 p-4">
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div className="min-w-0 flex-1">
+                  <div className="font-medium">Envio #{delivery.id}</div>
+                  <Link
+                    to="/results/$attemptId"
+                    params={{ attemptId: delivery.attemptId }}
+                    className="mt-1 inline-block text-sm font-medium text-primary hover:underline"
+                  >
+                    Resultado relacionado
+                  </Link>
+                  {delivery.lastError && (
+                    <p className="mt-3 rounded-md border border-border bg-card p-3 text-xs text-muted-foreground">
+                      {delivery.lastError}
+                    </p>
+                  )}
+                </div>
+                <div className="rounded-md border border-warning/30 bg-background px-3 py-2 text-right text-xs">
+                  <div className="font-medium">
+                    {delivery.status === "pending" ? "Aguardando envio" : "Retentativa automática"}
+                  </div>
+                  <div className="mt-1 text-muted-foreground">
+                    Próxima: {formatDateTime(delivery.nextAttemptAt)}
+                  </div>
+                  <div className="mt-1 text-muted-foreground">
+                    {delivery.attemptCount} tentativa{delivery.attemptCount === 1 ? "" : "s"}
+                  </div>
+                </div>
+              </div>
+            </article>
+          ))}
+        </div>
+      )}
+    </section>
+  );
+}
+
+function FailedDeliveriesPanel({
+  deliveries,
+  reprocessingId,
+  reprocessing,
+  error,
+  onReprocess,
+}: {
+  deliveries: ResultDeliveryResponse[];
+  reprocessingId: number | null;
+  reprocessing: boolean;
+  error: unknown;
+  onReprocess: (deliveryId: number) => void;
+}) {
+  return (
+    <section className="rounded-xl border border-border bg-card p-5">
+      <div className="mb-4 flex items-center gap-2">
+        <XCircle className="h-4 w-4 text-danger" />
+        <div>
+          <h2 className="text-lg font-semibold">Entregas em DLQ</h2>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Falhas que esgotaram a política automática e exigem diagnóstico antes do reprocessamento.
+          </p>
+        </div>
+      </div>
+      {error && (
+        <StateBanner tone="danger" title="Nova tentativa não concluída">
+          {error instanceof Error ? error.message : "Tente novamente."}
+        </StateBanner>
+      )}
+      {deliveries.length === 0 ? (
+        <QueueEmpty message="Nenhuma entrega está em DLQ." />
+      ) : (
+        <div className="space-y-3">
+          {deliveries.map((delivery) => {
+            const current = reprocessing && reprocessingId === delivery.id;
+            return (
+              <article key={delivery.id} className="rounded-md border border-danger/30 bg-danger/5 p-4">
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div className="min-w-0 flex-1">
+                    <div className="font-medium">Envio #{delivery.id}</div>
+                    <Link
+                      to="/results/$attemptId"
+                      params={{ attemptId: delivery.attemptId }}
+                      className="mt-1 inline-block text-sm font-medium text-primary hover:underline"
+                    >
+                      Resultado relacionado
+                    </Link>
+                    <p className="mt-3 rounded-md border border-border bg-card p-3 text-xs text-muted-foreground">
+                      {delivery.lastError ||
+                        "Sem detalhe registrado. Revise a configuração da integração."}
+                    </p>
+                    <div className="mt-2 text-xs text-muted-foreground">
+                      {delivery.attemptCount} tentativa{delivery.attemptCount === 1 ? "" : "s"}
+                      {delivery.lastAttemptAt &&
+                        ` · Última em ${formatDateTime(delivery.lastAttemptAt)}`}
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    disabled={reprocessing}
+                    onClick={() => onReprocess(delivery.id)}
+                    className="inline-flex items-center gap-2 rounded-md border border-border bg-card px-3 py-2 text-xs hover:bg-accent disabled:opacity-60"
+                  >
+                    {current ? (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    ) : (
+                      <RotateCw className="h-3.5 w-3.5" />
+                    )}
+                    {current ? "Reprocessando..." : "Tentar novamente"}
+                  </button>
+                </div>
+              </article>
+            );
+          })}
+        </div>
+      )}
+    </section>
   );
 }
 
@@ -366,7 +533,7 @@ function NotificationsPanel({
         </StateBanner>
       )}
       {notifications.length === 0 ? (
-        <EmptyState title="Nenhum alerta pendente" description="Novas ocorrências aparecerão aqui." />
+        <QueueEmpty message="Nenhum alerta pendente." />
       ) : (
         <div className="space-y-3">
           {notifications.map((notification) => {
@@ -417,93 +584,32 @@ function NotificationsPanel({
   );
 }
 
-function FailedDeliveriesPanel({
-  deliveries,
-  reprocessingId,
-  reprocessing,
-  error,
-  onReprocess,
-}: {
-  deliveries: ResultDeliveryResponse[];
-  reprocessingId: number | null;
-  reprocessing: boolean;
-  error: unknown;
-  onReprocess: (deliveryId: number) => void;
-}) {
+function QueueEmpty({ message }: { message: string }) {
   return (
-    <section className="rounded-xl border border-border bg-card p-5">
-      <div className="mb-4 flex items-center gap-2">
-        <XCircle className="h-4 w-4 text-danger" />
-        <div>
-          <h2 className="text-lg font-semibold">Entregas em DLQ</h2>
-          <p className="mt-1 text-xs text-muted-foreground">
-            Retentativas automáticas não aparecem aqui; somente falhas que exigem intervenção.
-          </p>
-        </div>
+    <div className="p-6">
+      <div className="flex items-start gap-3 rounded-lg border border-success/30 bg-success/10 p-4">
+        <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-success" />
+        <div className="font-medium">{message}</div>
       </div>
-      {error && (
-        <StateBanner tone="danger" title="Nova tentativa não concluída">
-          {error instanceof Error ? error.message : "Tente novamente."}
-        </StateBanner>
-      )}
-      {deliveries.length === 0 ? (
-        <div className="rounded-md border border-border bg-background p-8 text-center">
-          <CheckCircle2 className="mx-auto h-8 w-8 text-success" />
-          <p className="mt-3 text-sm font-medium">Nenhuma entrega exige intervenção.</p>
-        </div>
-      ) : (
-        <div className="space-y-3">
-          {deliveries.map((delivery) => {
-            const current = reprocessing && reprocessingId === delivery.id;
-            return (
-              <article key={delivery.id} className="rounded-md border border-border bg-background p-4">
-                <div className="flex flex-wrap items-start justify-between gap-3">
-                  <div className="min-w-0 flex-1">
-                    <div className="font-medium">Envio #{delivery.id}</div>
-                    <Link
-                      to="/results/$attemptId"
-                      params={{ attemptId: delivery.attemptId }}
-                      className="mt-1 inline-block text-sm font-medium text-primary hover:underline"
-                    >
-                      Resultado relacionado
-                    </Link>
-                    <p className="mt-3 rounded-md border border-border bg-card p-3 text-xs text-muted-foreground">
-                      {delivery.lastError ||
-                        "Sem detalhe registrado. Revise a configuração da integração."}
-                    </p>
-                    <div className="mt-2 text-xs text-muted-foreground">
-                      {delivery.attemptCount} tentativa{delivery.attemptCount === 1 ? "" : "s"}
-                      {delivery.lastAttemptAt &&
-                        ` · Última em ${formatDateTime(delivery.lastAttemptAt)}`}
-                    </div>
-                  </div>
-                  <button
-                    type="button"
-                    disabled={reprocessing}
-                    onClick={() => onReprocess(delivery.id)}
-                    className="inline-flex items-center gap-2 rounded-md border border-border bg-card px-3 py-2 text-xs hover:bg-accent disabled:opacity-60"
-                  >
-                    {current ? (
-                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                    ) : (
-                      <RotateCw className="h-3.5 w-3.5" />
-                    )}
-                    {current ? "Reprocessando..." : "Tentar novamente"}
-                  </button>
-                </div>
-              </article>
-            );
-          })}
-        </div>
-      )}
-    </section>
+    </div>
   );
 }
 
+function filterLabel(filter: QueueFilter) {
+  const labels: Record<QueueFilter, string> = {
+    all: "Toda a fila",
+    integrations: "Integrações com atenção",
+    retrying: "Entregas em retentativa",
+    dlq: "Entregas em DLQ",
+    notifications: "Alertas não lidos",
+  };
+  return labels[filter];
+}
+
 function formatDateTime(value: string | null) {
-  if (!value) return "Sem atividade";
+  if (!value) return "Sem data";
   const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "Sem atividade";
+  if (Number.isNaN(date.getTime())) return "Sem data";
   return new Intl.DateTimeFormat("pt-BR", {
     day: "2-digit",
     month: "2-digit",
