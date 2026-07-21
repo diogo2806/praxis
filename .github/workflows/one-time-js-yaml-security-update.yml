@@ -1,0 +1,89 @@
+name: One-time js-yaml security update
+
+on:
+  push:
+    branches:
+      - security/js-yaml-cve-2026-59869-20260721
+    paths:
+      - .github/workflows/one-time-js-yaml-security-update.yml
+
+permissions:
+  contents: write
+
+jobs:
+  update-lockfiles:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout branch
+        uses: actions/checkout@v4
+        with:
+          ref: security/js-yaml-cve-2026-59869-20260721
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Enforce patched js-yaml version
+        working-directory: frontend
+        run: |
+          node <<'NODE'
+          const fs = require('node:fs');
+          const path = 'package.json';
+          const pkg = JSON.parse(fs.readFileSync(path, 'utf8'));
+
+          pkg.overrides = {
+            ...(pkg.overrides ?? {}),
+            'js-yaml': '4.3.0',
+          };
+
+          pkg.pnpm = {
+            ...(pkg.pnpm ?? {}),
+            overrides: {
+              ...(pkg.pnpm?.overrides ?? {}),
+              'js-yaml': '4.3.0',
+            },
+          };
+
+          fs.writeFileSync(path, `${JSON.stringify(pkg, null, 2)}\n`);
+          NODE
+
+      - name: Regenerate pnpm lockfile
+        working-directory: frontend
+        run: |
+          corepack enable
+          corepack prepare pnpm@10 --activate
+          pnpm install --lockfile-only --ignore-scripts --no-frozen-lockfile
+
+      - name: Regenerate npm lockfile
+        working-directory: frontend
+        run: npm install --package-lock-only --ignore-scripts
+
+      - name: Verify patched lockfiles
+        working-directory: frontend
+        run: |
+          if grep -qE 'js-yaml(@|: )["'"']?4\.2\.0' pnpm-lock.yaml; then
+            echo 'pnpm-lock.yaml ainda contém js-yaml 4.2.0'
+            exit 1
+          fi
+
+          node <<'NODE'
+          const fs = require('node:fs');
+          const lock = JSON.parse(fs.readFileSync('package-lock.json', 'utf8'));
+          const vulnerable = Object.entries(lock.packages ?? {})
+            .filter(([name, metadata]) => name.endsWith('/js-yaml') && metadata?.version === '4.2.0');
+
+          if (vulnerable.length > 0) {
+            console.error('package-lock.json ainda contém js-yaml 4.2.0', vulnerable);
+            process.exit(1);
+          }
+          NODE
+
+      - name: Commit generated dependency files
+        run: |
+          rm .github/workflows/one-time-js-yaml-security-update.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add frontend/package.json frontend/pnpm-lock.yaml frontend/package-lock.json .github/workflows/one-time-js-yaml-security-update.yml
+          git commit -m "fix(frontend): atualizar js-yaml para 4.3.0"
+          git push origin HEAD:security/js-yaml-cve-2026-59869-20260721
