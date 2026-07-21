@@ -24,13 +24,16 @@ export const Route = createFileRoute("/manual")({
 });
 
 const REPLACED_BASE_MANUALS = new Set(["jornadas", "operacao"]);
+const REPLACED_OVERRIDE_MANUALS = new Set(["jornadas-composicao"]);
 
 function ManualPage() {
   const manuals = [
     ...SCENARIO_OWNERSHIP_MANUALS,
     ...PUBLICATION_MANUALS,
     ...COMPETENCY_OWNERSHIP_MANUALS,
-    ...SCREEN_MANUAL_OVERRIDES,
+    ...SCREEN_MANUAL_OVERRIDES.filter(
+      (manual) => !REPLACED_OVERRIDE_MANUALS.has(manual.id),
+    ),
     ...SCREEN_MANUALS.filter((manual) => !REPLACED_BASE_MANUALS.has(manual.id)),
   ];
 

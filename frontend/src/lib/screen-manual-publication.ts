@@ -17,7 +17,8 @@ export const PUBLICATION_MANUALS: ScreenManualDefinition[] = [
     fields: [
       {
         name: "Avaliação e versão",
-        description: "Contexto obrigatório recebido do fluxo de autoria; não pode ser escolhido em uma lista global nesta tela.",
+        description:
+          "Contexto obrigatório recebido do fluxo de autoria; não pode ser escolhido em uma lista global nesta tela.",
       },
       {
         name: "Criadas",
@@ -37,7 +38,8 @@ export const PUBLICATION_MANUALS: ScreenManualDefinition[] = [
       },
       {
         name: "Calibração",
-        description: "Análise agregada das tentativas concluídas para apoiar revisão de critérios e pesos.",
+        description:
+          "Análise agregada das tentativas concluídas para apoiar revisão de critérios e pesos.",
       },
     ],
     permissions: [
@@ -93,11 +95,13 @@ export const PUBLICATION_MANUALS: ScreenManualDefinition[] = [
       },
       {
         name: "Termo de uso em saúde",
-        description: "Aceite adicional apresentado quando o backend identifica operação na vertical de saúde.",
+        description:
+          "Aceite adicional apresentado quando o backend identifica operação na vertical de saúde.",
       },
       {
         name: "Publicar",
-        description: "Inicia a confirmação que protege a versão contra alterações depois de colocada no ar.",
+        description:
+          "Inicia a confirmação que protege a versão contra alterações depois de colocada no ar.",
       },
       {
         name: "Registro de auditoria",
@@ -136,6 +140,139 @@ export const PUBLICATION_MANUALS: ScreenManualDefinition[] = [
       "Pressione Escape ou use Cancelar para fechar a confirmação quando a publicação ainda não começou.",
     ],
     matches: (pathname) => pathname === "/nova/governanca",
+  },
+  {
+    id: "ativacao-gupy-preflight",
+    title: "Ativação Gupy",
+    purpose:
+      "Executar somente o preflight técnico de uma avaliação publicada antes de vinculá-la ao catálogo da Gupy, sem duplicar o acompanhamento de entregas operacionais.",
+    flow: [
+      "Publique a avaliação em Governança.",
+      "Abra Ativação Gupy com a avaliação e a versão publicadas.",
+      "Revise token, URL pública, publicação e estrutura exposta ao ATS.",
+      "Corrija bloqueios na configuração da integração ou no fluxo de autoria.",
+      "Quando houver falhas de entrega, retentativas ou DLQ, abra a Central operacional.",
+    ],
+    fields: [
+      {
+        name: "Avaliação e versão",
+        description: "Versão publicada que será verificada antes da ativação na Gupy.",
+      },
+      {
+        name: "Lista de verificação",
+        description: "Resultado do preflight técnico retornado pelo backend para cada requisito.",
+      },
+      {
+        name: "Situação do requisito",
+        description: "Indica requisito aprovado ou bloqueio que impede a ativação.",
+      },
+      {
+        name: "Configurar integração",
+        description: "Abre credenciais, endpoints e parâmetros permanentes do provedor Gupy.",
+      },
+      {
+        name: "Central operacional",
+        description: "Destino exclusivo para falhas de entrega, retentativas e itens em DLQ.",
+      },
+    ],
+    permissions: [
+      "Perfil EMPRESA com acesso à avaliação publicada e à integração Gupy.",
+      "A avaliação e a versão devem pertencer à empresa autenticada.",
+      "A configuração da integração pode exigir permissão administrativa.",
+    ],
+    states: [
+      "Sem versão publicada selecionada",
+      "Executando conferência",
+      "Pronta para ativação",
+      "Ativação bloqueada",
+      "Erro ao executar o preflight",
+    ],
+    blocks: [
+      "Avaliação ou versão não informada.",
+      "Versão ainda não publicada.",
+      "Token ou configuração Gupy ausente ou inválida.",
+      "URL pública indisponível.",
+      "Estrutura da avaliação incompatível com o contrato da integração.",
+      "Falha temporária ao executar o preflight.",
+    ],
+    examples: [
+      "Validar a versão 3 de uma avaliação antes de associá-la a uma vaga real na Gupy.",
+      "Abrir a Central operacional após identificar uma entrega em retentativa, sem procurar esse dado no preflight.",
+    ],
+    shortcuts: [
+      "Use Configurar integração para corrigir token ou parâmetros permanentes.",
+      "Use Voltar para publicação para retornar à Governança da mesma versão.",
+      "Use Abrir Central operacional somente para falhas, retentativas e DLQ.",
+    ],
+    matches: (pathname) => pathname === "/nova/gupy",
+  },
+  {
+    id: "jornadas-confirmacoes",
+    title: "Composição de jornadas",
+    purpose:
+      "Montar, ordenar, publicar e arquivar sequências de avaliações, exigindo confirmação acessível antes de ações que alteram estado ou composição.",
+    flow: [
+      "Crie ou selecione uma jornada.",
+      "Informe nome e descrição e adicione avaliações publicadas às sequências.",
+      "Ordene as etapas e defina quais avaliações são obrigatórias.",
+      "Revise a confirmação antes de remover uma avaliação, publicar ou arquivar.",
+      "Depois da publicação, use Participações para criar convites e acompanhar candidatos.",
+    ],
+    fields: [
+      {
+        name: "Nome e descrição",
+        description: "Identificação interna e finalidade operacional da jornada.",
+      },
+      {
+        name: "Avaliação",
+        description: "Avaliação publicada adicionada à composição da jornada.",
+      },
+      {
+        name: "Sequência",
+        description: "Agrupamento e ordem em que as avaliações serão executadas.",
+      },
+      {
+        name: "Obrigatória",
+        description: "Indica se a etapa precisa ser concluída para avançar no processo.",
+      },
+      {
+        name: "Confirmação",
+        description:
+          "Diálogo acessível que descreve o impacto de publicar, arquivar ou remover uma avaliação.",
+      },
+    ],
+    permissions: [
+      "Perfil EMPRESA com acesso à criação e gestão de jornadas.",
+      "Somente avaliações publicadas e pertencentes à empresa podem ser adicionadas.",
+    ],
+    states: [
+      "Sem jornada selecionada",
+      "Rascunho",
+      "Confirmação aberta",
+      "Publicando",
+      "Publicada",
+      "Arquivando",
+      "Arquivada",
+      "Erro de operação",
+    ],
+    blocks: [
+      "Nome da jornada não informado.",
+      "Jornada sem avaliações para publicação.",
+      "Avaliação ainda não publicada ou já presente na sequência.",
+      "Jornada arquivada para edição estrutural.",
+      "Ação já em processamento.",
+      "Falha do servidor ao publicar, arquivar ou remover uma etapa.",
+    ],
+    examples: [
+      "Publicar uma jornada de trainee após revisar a ordem das avaliações no diálogo de confirmação.",
+      "Remover uma avaliação da composição sem excluir a avaliação original nem o histórico existente.",
+    ],
+    shortcuts: [
+      "Use Subir e Descer para ordenar as avaliações antes de publicar.",
+      "Use Cancelar ou Escape para fechar a confirmação antes do início da operação.",
+      "Use Participações como única tela para convites, validade, reenvios e acompanhamento.",
+    ],
+    matches: (pathname) => pathname === "/jornadas",
   },
 ];
 

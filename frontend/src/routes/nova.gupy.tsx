@@ -1,15 +1,15 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { CheckCircle2, RefreshCw, Send, XCircle } from "lucide-react";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { CheckCircle2, XCircle } from "lucide-react";
+
 import { AppShell } from "@/components/app-shell";
 import { EmptyState, StateBanner, StatusBadge } from "@/components/praxis-ui";
+import { Button } from "@/components/ui/button";
 import { WizardStepper } from "@/components/wizard-stepper";
 import {
   getGupyPreflight,
-  listResultDeliveries,
   listSimulations,
   type GupyPreflightCheckResponse,
-  type ResultDeliveryResponse,
   type SimulationSummaryResponse,
 } from "@/lib/api/praxis";
 import { maturityForStatus } from "@/lib/simulation-meta";
@@ -18,7 +18,7 @@ export const Route = createFileRoute("/nova/gupy")({
   validateSearch: (search: Record<string, unknown>) => ({
     simulationId: typeof search.simulationId === "string" ? search.simulationId : undefined,
     versionNumber:
-      typeof search.versionNumber === "number"
+      typeof search.versionNumber === "number" && Number.isFinite(search.versionNumber)
         ? search.versionNumber
         : typeof search.versionNumber === "string" && Number.isFinite(Number(search.versionNumber))
           ? Number(search.versionNumber)
@@ -49,15 +49,6 @@ function GupyActivation() {
     queryFn: () => getGupyPreflight(search.simulationId!, search.versionNumber!),
     enabled: hasParams,
   });
-  const deliveriesQuery = useQuery({
-    queryKey: ["result-deliveries", search.simulationId, search.versionNumber],
-    queryFn: () =>
-      listResultDeliveries({
-        simulationId: search.simulationId,
-        versionNumber: search.versionNumber,
-      }),
-    enabled: hasParams,
-  });
   const hasBlocker = preflightQuery.data?.checks.some((item) => item.status === "blocker") ?? false;
 
   return (
@@ -74,13 +65,11 @@ function GupyActivation() {
             token real da integração, a URL pública e a estrutura que será exposta à Gupy.
           </p>
         </div>
-        <Link
-          to="/integrations/$provider"
-          params={{ provider: "gupy" }}
-          className="rounded-md border border-border bg-card px-4 py-2 text-sm font-medium hover:bg-accent"
-        >
-          Configurar integração
-        </Link>
+        <Button asChild variant="outline" className="bg-card">
+          <Link to="/integrations/$provider" params={{ provider: "gupy" }}>
+            Configurar integração
+          </Link>
+        </Button>
       </header>
 
       {!hasParams ? (
@@ -136,32 +125,30 @@ function GupyActivation() {
           </section>
 
           <section className="rounded-xl border border-border bg-card p-5">
-            <div className="mb-4 flex items-center gap-2 text-sm font-semibold">
-              <Send className="h-4 w-4" />
-              Entregas de resultado desta versão
-            </div>
-            <DeliveryList
-              deliveries={deliveriesQuery.data ?? []}
-              loading={deliveriesQuery.isLoading}
-              error={deliveriesQuery.isError}
-            />
+            <h2 className="text-sm font-semibold">Falhas e entregas operacionais</h2>
+            <p className="mt-2 max-w-3xl text-sm leading-6 text-muted-foreground">
+              Esta tela valida somente a prontidão técnica da versão. Entregas com falha,
+              retentativas e itens em DLQ são tratados exclusivamente na Central operacional.
+            </p>
+            <Button asChild variant="outline" className="mt-4 bg-card">
+              <Link to="/monitoramento">Abrir Central operacional</Link>
+            </Button>
           </section>
 
           <div className="flex flex-wrap justify-between gap-3">
-            <Link
-              to="/nova/governanca"
-              search={{ simulationId: search.simulationId, versionNumber: search.versionNumber }}
-              className="rounded-md border border-border bg-card px-4 py-2 text-sm hover:bg-accent"
-            >
-              Voltar para publicação
-            </Link>
-            <Link
-              to="/integrations/$provider"
-              params={{ provider: "gupy" }}
-              className="rounded-md bg-primary px-5 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
-            >
-              Abrir configuração Gupy
-            </Link>
+            <Button asChild variant="outline" className="bg-card">
+              <Link
+                to="/nova/governanca"
+                search={{ simulationId: search.simulationId, versionNumber: search.versionNumber }}
+              >
+                Voltar para publicação
+              </Link>
+            </Button>
+            <Button asChild>
+              <Link to="/integrations/$provider" params={{ provider: "gupy" }}>
+                Abrir configuração Gupy
+              </Link>
+            </Button>
           </div>
         </div>
       )}
@@ -172,6 +159,7 @@ function GupyActivation() {
 function PreflightCheck({ item }: { item: GupyPreflightCheckResponse }) {
   const ok = item.status === "ok";
   const Icon = ok ? CheckCircle2 : XCircle;
+
   return (
     <div
       className={`flex items-start gap-3 rounded-md border p-3 ${
@@ -187,53 +175,6 @@ function PreflightCheck({ item }: { item: GupyPreflightCheckResponse }) {
   );
 }
 
-function DeliveryList({
-  deliveries,
-  loading,
-  error,
-}: {
-  deliveries: ResultDeliveryResponse[];
-  loading: boolean;
-  error: boolean;
-}) {
-  if (loading) {
-    return <div className="text-sm text-muted-foreground">Carregando entregas...</div>;
-  }
-  if (error) {
-    return <div className="text-sm text-danger">Não foi possível carregar as entregas.</div>;
-  }
-  if (deliveries.length === 0) {
-    return (
-      <div className="rounded-md border border-border bg-background p-3 text-sm text-muted-foreground">
-        Nenhuma entrega registrada para esta versão.
-      </div>
-    );
-  }
-  return (
-    <div className="space-y-3">
-      {deliveries.slice(0, 10).map((delivery) => (
-        <div key={delivery.id} className="rounded-md border border-border bg-background p-3">
-          <div className="flex items-center justify-between gap-2">
-            <div className="min-w-0">
-              <div className="truncate text-sm font-medium">{delivery.resultId}</div>
-              <div className="truncate text-xs text-muted-foreground">{delivery.attemptId}</div>
-            </div>
-            <span className="rounded-md border border-border bg-card px-2 py-1 text-[11px]">
-              {delivery.status}
-            </span>
-          </div>
-          {delivery.status === "retrying" && (
-            <div className="mt-2 inline-flex items-center gap-2 text-xs text-muted-foreground">
-              <RefreshCw className="h-3.5 w-3.5" />
-              próxima tentativa {formatDateTime(delivery.nextAttemptAt)}
-            </div>
-          )}
-        </div>
-      ))}
-    </div>
-  );
-}
-
 function SimulationLinks({
   simulations,
   loading,
@@ -244,16 +185,15 @@ function SimulationLinks({
   if (loading) {
     return <div className="text-sm text-muted-foreground">Carregando avaliações...</div>;
   }
+
   if (simulations.length === 0) {
     return (
-      <Link
-        to="/avaliacoes"
-        className="rounded-md border border-border bg-card px-4 py-3 text-sm hover:bg-accent"
-      >
-        Revisar e publicar uma avaliação
-      </Link>
+      <Button asChild variant="outline" className="bg-card">
+        <Link to="/avaliacoes">Revisar e publicar uma avaliação</Link>
+      </Button>
     );
   }
+
   return (
     <div className="flex flex-wrap gap-3">
       {simulations.map((simulation) => (
@@ -265,7 +205,10 @@ function SimulationLinks({
         >
           <span className="block font-medium">{simulation.name}</span>
           <span className="mt-1 block">
-            <StatusBadge status={simulation.status} maturity={maturityForStatus(simulation.status)} />
+            <StatusBadge
+              status={simulation.status}
+              maturity={maturityForStatus(simulation.status)}
+            />
           </span>
         </Link>
       ))}
@@ -278,14 +221,4 @@ function formatCheckCode(value: string) {
     .replace(/([A-Z])/g, " $1")
     .trim()
     .replace(/^./, (letter) => letter.toUpperCase());
-}
-
-function formatDateTime(value: string | null) {
-  if (!value) return "sem data";
-  return new Intl.DateTimeFormat("pt-BR", {
-    day: "2-digit",
-    month: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-  }).format(new Date(value));
 }
