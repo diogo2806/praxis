@@ -13,7 +13,6 @@ const PARTNER_SPECIALIST_ALLOWED_PATHS = new Set([
   "/nova/objetivo",
   "/nova/dialogo",
   "/nova/mapa",
-  "/nova/piloto",
   "/nova/rapido",
   "/nova/avaliacoes",
   "/nova/blueprint",
@@ -28,6 +27,27 @@ const PUBLIC_PATH_PREFIXES = [
   "/convite",
   "/candidato",
 ];
+
+const CREATE_DRAFT_PATHS = new Set([
+  "/nova/avaliacao",
+  "/nova/personagem",
+  "/nova/dialogo",
+  "/nova/validador",
+]);
+
+const CREATE_DRAFT_LABELS = new Set([
+  "criar rascunho",
+  "criar rascunho para editar",
+]);
+
+const PUBLISH_LABELS = new Set([
+  "ir para publicação",
+  "ir para publicação →",
+]);
+
+const MANAGE_COMPETENCY_LABELS = new Set([
+  "adicionar e salvar",
+]);
 
 let activeRoles: string[] = [];
 let observer: MutationObserver | null = null;
@@ -60,6 +80,21 @@ export function canAccessFrontendPath(pathname: string, roles: string[]): boolea
   return [...PARTNER_SPECIALIST_ALLOWED_PATHS].some((allowedPath) => matchesPath(pathname, allowedPath));
 }
 
+export function isPartnerSpecialistForbiddenAction(pathname: string, label: string): boolean {
+  const normalizedPath = normalizePath(pathname);
+  const normalizedLabel = normalizeLabel(label);
+
+  if (CREATE_DRAFT_PATHS.has(normalizedPath) && CREATE_DRAFT_LABELS.has(normalizedLabel)) {
+    return true;
+  }
+
+  if (normalizedPath === "/nova/validador" && PUBLISH_LABELS.has(normalizedLabel)) {
+    return true;
+  }
+
+  return normalizedPath === "/nova/avaliacao" && MANAGE_COMPETENCY_LABELS.has(normalizedLabel);
+}
+
 export function applyBrowserAccessPolicy(roles: string[]): void {
   if (typeof window === "undefined" || typeof document === "undefined") {
     return;
@@ -72,6 +107,7 @@ export function applyBrowserAccessPolicy(roles: string[]): void {
 
   enforceCurrentRoute();
   filterRenderedLinks();
+  filterRenderedActions();
   installDocumentClickGuard();
   installDomObserver();
 }
@@ -90,6 +126,16 @@ function installDocumentClickGuard(): void {
 
       const target = event.target;
       if (!(target instanceof Element)) {
+        return;
+      }
+
+      const button = target.closest<HTMLButtonElement>("button");
+      if (
+        button
+        && isPartnerSpecialistForbiddenAction(window.location.pathname, button.textContent ?? "")
+      ) {
+        event.preventDefault();
+        event.stopImmediatePropagation();
         return;
       }
 
@@ -117,9 +163,15 @@ function installDomObserver(): void {
 
   observer = new MutationObserver(() => {
     filterRenderedLinks();
+    filterRenderedActions();
     scheduleRouteCheck();
   });
-  observer.observe(document.documentElement, { childList: true, subtree: true });
+  observer.observe(document.documentElement, {
+    attributes: true,
+    attributeFilter: ["href", "hidden"],
+    childList: true,
+    subtree: true,
+  });
   window.addEventListener("popstate", enforceCurrentRoute);
 }
 
@@ -132,6 +184,7 @@ function scheduleRouteCheck(): void {
   window.requestAnimationFrame(() => {
     routeCheckScheduled = false;
     enforceCurrentRoute();
+    filterRenderedActions();
   });
 }
 
@@ -193,6 +246,112 @@ function filterRenderedLinks(): void {
   });
 }
 
+function filterRenderedActions(): void {
+  const restricted = isRestrictedPartnerSpecialist(activeRoles);
+  const pathname = normalizePath(window.location.pathname);
+
+  document.querySelectorAll<HTMLElement>('[data-praxis-specialist-action-hidden="true"]').forEach(
+    (element) => {
+      if (restricted) {
+        return;
+      }
+      restoreRestrictedAction(element);
+    },
+  );
+
+  document.querySelectorAll<HTMLElement>('[data-praxis-specialist-note="true"]').forEach((note) => {
+    if (!restricted) {
+      note.remove();
+    }
+  });
+
+  if (!restricted) {
+    return;
+  }
+
+  document.querySelectorAll<HTMLButtonElement>("button").forEach((button) => {
+    const label = button.textContent ?? "";
+    if (!isPartnerSpecialistForbiddenAction(pathname, label)) {
+      return;
+    }
+
+    const normalizedLabel = normalizeLabel(label);
+    const container = resolveRestrictedActionContainer(button, pathname, normalizedLabel);
+    hideRestrictedAction(container);
+    addRestrictedActionNote(container, pathname, normalizedLabel);
+  });
+}
+
+function resolveRestrictedActionContainer(
+  button: HTMLButtonElement,
+  pathname: string,
+  normalizedLabel: string,
+): HTMLElement {
+  if (
+    pathname === "/nova/avaliacao"
+    && MANAGE_COMPETENCY_LABELS.has(normalizedLabel)
+  ) {
+    return button.closest<HTMLElement>(".grid") ?? button;
+  }
+  return button;
+}
+
+function hideRestrictedAction(element: HTMLElement): void {
+  if (element.dataset.praxisSpecialistActionHidden === "true") {
+    return;
+  }
+
+  element.dataset.praxisOriginalHidden = String(element.hidden);
+  element.hidden = true;
+  element.setAttribute("aria-hidden", "true");
+  element.dataset.praxisSpecialistActionHidden = "true";
+}
+
+function restoreRestrictedAction(element: HTMLElement): void {
+  element.hidden = element.dataset.praxisOriginalHidden === "true";
+  element.removeAttribute("aria-hidden");
+  element.removeAttribute("data-praxis-original-hidden");
+  element.removeAttribute("data-praxis-specialist-action-hidden");
+}
+
+function addRestrictedActionNote(
+  hiddenElement: HTMLElement,
+  pathname: string,
+  normalizedLabel: string,
+): void {
+  const noteKey = restrictedActionNoteKey(pathname, normalizedLabel);
+  if (document.querySelector(`[data-praxis-specialist-note-key="${noteKey}"]`)) {
+    return;
+  }
+
+  const note = document.createElement("p");
+  note.dataset.praxisSpecialistNote = "true";
+  note.dataset.praxisSpecialistNoteKey = noteKey;
+  note.className = "text-xs text-muted-foreground";
+  note.textContent = restrictedActionNote(pathname, normalizedLabel);
+  hiddenElement.insertAdjacentElement("afterend", note);
+}
+
+function restrictedActionNoteKey(pathname: string, normalizedLabel: string): string {
+  if (pathname === "/nova/avaliacao" && MANAGE_COMPETENCY_LABELS.has(normalizedLabel)) {
+    return "competency-catalog";
+  }
+  if (pathname === "/nova/validador" && PUBLISH_LABELS.has(normalizedLabel)) {
+    return "publication";
+  }
+  return "draft-clone";
+}
+
+function restrictedActionNote(pathname: string, normalizedLabel: string): string {
+  if (pathname === "/nova/avaliacao" && MANAGE_COMPETENCY_LABELS.has(normalizedLabel)) {
+    return "Você pode selecionar competências existentes. O cadastro no catálogo é responsabilidade da empresa.";
+  }
+  if (pathname === "/nova/validador" && PUBLISH_LABELS.has(normalizedLabel)) {
+    return "A revisão foi concluída. A publicação deve ser realizada por um usuário da empresa.";
+  }
+  return "Versões publicadas são somente leitura para especialistas. Solicite à empresa a criação de um novo rascunho.";
+}
+
 function resolveSameOriginPath(anchor: HTMLAnchorElement): string | null {
   const href = anchor.getAttribute("href");
   if (!href || href.startsWith("#") || href.startsWith("mailto:") || href.startsWith("tel:")) {
@@ -205,6 +364,17 @@ function resolveSameOriginPath(anchor: HTMLAnchorElement): string | null {
   } catch {
     return null;
   }
+}
+
+function normalizePath(pathname: string): string {
+  if (pathname.length > 1 && pathname.endsWith("/")) {
+    return pathname.slice(0, -1);
+  }
+  return pathname;
+}
+
+function normalizeLabel(label: string): string {
+  return label.replace(/\s+/g, " ").trim().toLocaleLowerCase("pt-BR");
 }
 
 function matchesPath(pathname: string, rootPath: string): boolean {
