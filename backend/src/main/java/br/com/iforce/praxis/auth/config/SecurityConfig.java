@@ -22,6 +22,15 @@ import org.springframework.security.web.header.writers.ReferrerPolicyHeaderWrite
 public class SecurityConfig {
 
     private static final String BEARER_PREFIX = "Bearer ";
+    private static final String[] ACCOUNT_ROLES = {
+            "ADMIN",
+            "PARTNER_SPECIALIST",
+            "TEAM_MANAGER",
+            "PARTNER_MANAGER",
+            "ASSESSMENT_EDITOR",
+            "RESULTS_ANALYST",
+            "OPERATIONS_MANAGER"
+    };
     private static final String[] COMPANY_ROLES = {
             "TEAM_MANAGER",
             "PARTNER_MANAGER",
@@ -83,8 +92,7 @@ public class SecurityConfig {
                                 "/api/webhooks/mercado-pago/**"
                         ).permitAll()
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
-                        .requestMatchers("/api/v1/account/**")
-                        .hasAnyRole("ADMIN", "PARTNER_SPECIALIST", COMPANY_ROLES)
+                        .requestMatchers("/api/v1/account/**").hasAnyRole(ACCOUNT_ROLES)
                         .requestMatchers("/api/v1/dashboard/**").hasAnyRole(COMPANY_ROLES)
                         .requestMatchers(HttpMethod.GET, "/api/v1/team", "/api/v1/team/**")
                         .hasAnyRole(COMPANY_ROLES)
@@ -99,9 +107,14 @@ public class SecurityConfig {
                         .requestMatchers("/api/v1/privacy/**")
                         .hasAnyRole(COMPANY_MANAGER_ROLES)
                         .requestMatchers(HttpMethod.GET, "/api/v1/simulations/**")
-                        .hasAnyRole("TEAM_MANAGER", "ASSESSMENT_EDITOR", "RESULTS_ANALYST", "OPERATIONS_MANAGER", "PARTNER_SPECIALIST")
-                        .requestMatchers("/api/v1/simulations/**")
-                        .hasAnyRole(AUTHOR_ROLES)
+                        .hasAnyRole(
+                                "TEAM_MANAGER",
+                                "ASSESSMENT_EDITOR",
+                                "RESULTS_ANALYST",
+                                "OPERATIONS_MANAGER",
+                                "PARTNER_SPECIALIST"
+                        )
+                        .requestMatchers("/api/v1/simulations/**").hasAnyRole(AUTHOR_ROLES)
                         .requestMatchers(HttpMethod.GET, "/api/v1/assessment-journeys/**")
                         .hasAnyRole(COMPANY_ROLES)
                         .requestMatchers("/api/v1/assessment-journeys/**")
@@ -115,14 +128,10 @@ public class SecurityConfig {
                         .hasAnyRole(COMPANY_MANAGER_ROLES)
                         .requestMatchers("/api/v1/gupy/result-deliveries/**")
                         .hasAnyRole(OPERATIONS_ROLES)
-                        .requestMatchers("/api/v1/results/**")
-                        .hasAnyRole(ANALYSIS_ROLES)
-                        .requestMatchers("/api/v1/notifications/**")
-                        .hasAnyRole(OPERATIONS_ROLES)
-                        .requestMatchers("/api/v1/audit/**")
-                        .hasAnyRole(COMPANY_MANAGER_ROLES)
-                        .requestMatchers("/api/v1/terms/**")
-                        .hasAnyRole(COMPANY_MANAGER_ROLES)
+                        .requestMatchers("/api/v1/results/**").hasAnyRole(ANALYSIS_ROLES)
+                        .requestMatchers("/api/v1/notifications/**").hasAnyRole(OPERATIONS_ROLES)
+                        .requestMatchers("/api/v1/audit/**").hasAnyRole(COMPANY_MANAGER_ROLES)
+                        .requestMatchers("/api/v1/terms/**").hasAnyRole(COMPANY_MANAGER_ROLES)
                         .requestMatchers(HttpMethod.GET, "/api/v1/candidate-links", "/api/v1/candidate-links/**")
                         .hasAnyRole(ANALYSIS_OR_OPERATIONS_ROLES)
                         .requestMatchers(HttpMethod.POST, "/api/v1/candidate-links/*/disposition")
