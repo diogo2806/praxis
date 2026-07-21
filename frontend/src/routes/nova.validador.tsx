@@ -7,6 +7,7 @@ import {
   ListChecks,
   RefreshCw,
   ShieldCheck,
+  Target,
   XCircle,
 } from "lucide-react";
 
@@ -15,12 +16,17 @@ import { EmptyState, StateBanner, StatusBadge } from "@/components/praxis-ui";
 import { Button } from "@/components/ui/button";
 import {
   getSimulationValidation,
+  getSimulationVersion,
   listSimulations,
   type SimulationSummaryResponse,
-  type ValidationIssueResponse,
 } from "@/lib/api/praxis";
 import { maturityForStatus } from "@/lib/simulation-meta";
 import { cn } from "@/lib/utils";
+import {
+  buildValidationDiagnostics,
+  type ValidationDiagnostic,
+  type ValidationEditor,
+} from "@/lib/validation-diagnostics";
 
 export const Route = createFileRoute("/nova/validador")({
   validateSearch: (search: Record<string, unknown>) => ({
@@ -37,7 +43,7 @@ export const Route = createFileRoute("/nova/validador")({
       { title: "Revisão - Práxis" },
       {
         name: "description",
-        content: "Diagnóstico estrutural com bloqueios, avisos e atalhos para os editores responsáveis.",
+        content: "Diagnóstico estrutural com localização exata, orientação e atalhos de correção.",
       },
     ],
   }),
@@ -53,6 +59,12 @@ function ValidatorPage() {
     queryFn: listSimulations,
     retry: false,
   });
+  const versionQuery = useQuery({
+    queryKey: ["simulation-version", search.simulationId, search.versionNumber],
+    queryFn: () => getSimulationVersion(search.simulationId!, search.versionNumber!),
+    enabled: hasContext,
+    retry: false,
+  });
   const validationQuery = useQuery({
     queryKey: ["simulation-validation", search.simulationId, search.versionNumber],
     queryFn: () => getSimulationValidation(search.simulationId!, search.versionNumber!),
@@ -66,8 +78,11 @@ function ValidatorPage() {
     search.versionNumber,
   );
   const validation = validationQuery.data;
-  const blockers = validation?.issues.filter((issue) => issue.severity === "blocker") ?? [];
-  const warnings = validation?.issues.filter((issue) => issue.severity === "warning") ?? [];
+  const diagnostics = buildValidationDiagnostics(versionQuery.data, validation?.issues ?? []);
+  const blockers = diagnostics.filter((diagnostic) => diagnostic.issue.severity === "blocker");
+  const warnings = diagnostics.filter((diagnostic) => diagnostic.issue.severity === "warning");
+  const loading = validationQuery.isLoading || versionQuery.isLoading;
+  const pageError = validationQuery.error ?? versionQuery.error;
 
   return (
     <AppShell>
@@ -79,8 +94,8 @@ function ValidatorPage() {
             </div>
             <h1 className="mt-1 font-display text-3xl">Revisão e prontidão</h1>
             <p className="mt-2 text-sm leading-6 text-muted-foreground">
-              Esta tela somente diagnostica. Conteúdo, alternativas e pontuação são corrigidos no
-              Editor de diálogo; posição e conexões são corrigidas no Mapa.
+              Cada diagnóstico informa a etapa, a resposta ou campo afetado, o que precisa ser
+              alterado e abre diretamente o local correto para a correção.
             </p>
           </div>
 
@@ -112,11 +127,16 @@ function ValidatorPage() {
               </Button>
               <Button
                 variant="outline"
-                onClick={() => void validationQuery.refetch()}
-                disabled={validationQuery.isFetching}
+                onClick={() => {
+                  void Promise.all([validationQuery.refetch(), versionQuery.refetch()]);
+                }}
+                disabled={validationQuery.isFetching || versionQuery.isFetching}
               >
                 <RefreshCw
-                  className={cn("mr-2 h-4 w-4", validationQuery.isFetching && "animate-spin")}
+                  className={cn(
+                    "mr-2 h-4 w-4",
+                    (validationQuery.isFetching || versionQuery.isFetching) && "animate-spin",
+                  )}
                 />
                 Validar novamente
               </Button>
@@ -130,13 +150,11 @@ function ValidatorPage() {
             loading={simulationsQuery.isLoading}
             error={simulationsQuery.error}
           />
-        ) : validationQuery.isError ? (
+        ) : pageError ? (
           <StateBanner tone="danger" title="Não foi possível validar esta versão">
-            {validationQuery.error instanceof Error
-              ? validationQuery.error.message
-              : "Tente novamente."}
+            {pageError instanceof Error ? pageError.message : "Tente novamente."}
           </StateBanner>
-        ) : validationQuery.isLoading || !validation ? (
+        ) : loading || !validation ? (
           <section className="rounded-xl border border-border bg-card px-5 py-12 text-center text-sm text-muted-foreground">
             Executando diagnóstico estrutural...
           </section>
@@ -172,7 +190,7 @@ function ValidatorPage() {
               </div>
             </section>
 
-            {validation.issues.length === 0 ? (
+            {diagnostics.length === 0 ? (
               <StateBanner tone="ok" title="Nenhum bloqueio ou aviso encontrado">
                 Esta versão está estruturalmente pronta. Confirme termos e publicação em Governança.
               </StateBanner>
@@ -180,8 +198,8 @@ function ValidatorPage() {
               <section className="space-y-4">
                 <DiagnosticGroup
                   title="Bloqueios de publicação"
-                  description="Precisam ser resolvidos antes de publicar."
-                  issues={blockers}
+                  description="Resolva estes itens antes de publicar. Os campos afetados estão destacados abaixo."
+                  diagnostics={blockers}
                   tone="danger"
                   simulationId={validation.simulationId}
                   versionNumber={validation.versionNumber}
@@ -189,7 +207,7 @@ function ValidatorPage() {
                 <DiagnosticGroup
                   title="Avisos"
                   description="Não impedem necessariamente a publicação, mas exigem revisão."
-                  issues={warnings}
+                  diagnostics={warnings}
                   tone="warning"
                   simulationId={validation.simulationId}
                   versionNumber={validation.versionNumber}
@@ -203,8 +221,8 @@ function ValidatorPage() {
                 <div className="min-w-0 flex-1">
                   <h2 className="font-semibold">Próximas responsabilidades</h2>
                   <p className="mt-1 text-sm leading-6 text-muted-foreground">
-                    O Validador não publica e não mantém auditoria ou privacidade. Essas responsabilidades
-                    permanecem nas telas proprietárias.
+                    O Validador diagnostica a estrutura. Termos, auditoria, privacidade e publicação
+                    permanecem nas telas responsáveis por essas etapas.
                   </p>
                   <div className="mt-4 flex flex-wrap gap-2">
                     <Button asChild>
@@ -243,19 +261,19 @@ function ValidatorPage() {
 function DiagnosticGroup({
   title,
   description,
-  issues,
+  diagnostics,
   tone,
   simulationId,
   versionNumber,
 }: {
   title: string;
   description: string;
-  issues: ValidationIssueResponse[];
+  diagnostics: ValidationDiagnostic[];
   tone: "danger" | "warning";
   simulationId: string;
   versionNumber: number;
 }) {
-  if (issues.length === 0) return null;
+  if (diagnostics.length === 0) return null;
 
   return (
     <section className="rounded-xl border border-border bg-card p-5">
@@ -272,41 +290,150 @@ function DiagnosticGroup({
       </div>
 
       <div className="mt-4 space-y-3">
-        {issues.map((issue, index) => (
-          <article
-            key={`${issue.severity}-${issue.nodeId ?? "global"}-${index}`}
-            className="rounded-lg border border-border bg-background p-4"
-          >
-            <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
-              <div>
-                <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                  {issue.nodeId ? `Etapa ${issue.nodeId}` : "Regra global"}
-                </div>
-                <p className="mt-1 text-sm leading-6">{issue.message}</p>
-              </div>
-              <div className="flex shrink-0 flex-wrap gap-2">
-                <Button asChild size="sm">
-                  <Link
-                    to="/nova/dialogo"
-                    search={{ simulationId, versionNumber }}
-                  >
-                    Corrigir no Diálogo
-                  </Link>
-                </Button>
-                <Button asChild size="sm" variant="outline">
-                  <Link
-                    to="/nova/mapa"
-                    search={{ simulationId, versionNumber }}
-                  >
-                    Abrir no Mapa
-                  </Link>
-                </Button>
-              </div>
-            </div>
-          </article>
+        {diagnostics.map((diagnostic, index) => (
+          <DiagnosticCard
+            key={`${diagnostic.issue.severity}-${diagnostic.nodeId ?? "global"}-${diagnostic.optionId ?? index}-${index}`}
+            diagnostic={diagnostic}
+            tone={tone}
+            simulationId={simulationId}
+            versionNumber={versionNumber}
+          />
         ))}
       </div>
     </section>
+  );
+}
+
+function DiagnosticCard({
+  diagnostic,
+  tone,
+  simulationId,
+  versionNumber,
+}: {
+  diagnostic: ValidationDiagnostic;
+  tone: "danger" | "warning";
+  simulationId: string;
+  versionNumber: number;
+}) {
+  const location = [diagnostic.nodeLabel, diagnostic.optionLabel, diagnostic.fieldLabel]
+    .filter(Boolean)
+    .join(" · ");
+  const primaryEditor = diagnostic.editor;
+
+  return (
+    <article
+      className={cn(
+        "rounded-lg border-2 p-4 shadow-sm",
+        tone === "danger"
+          ? "border-danger/50 bg-danger/5"
+          : "border-warning/50 bg-warning/5",
+      )}
+    >
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <span
+              className={cn(
+                "inline-flex rounded-md px-2 py-1 text-[11px] font-semibold uppercase tracking-wide",
+                tone === "danger"
+                  ? "bg-danger text-danger-foreground"
+                  : "bg-warning text-warning-foreground",
+              )}
+            >
+              {tone === "danger" ? "Bloqueio" : "Aviso"}
+            </span>
+            <span className="inline-flex items-center gap-1 rounded-md border border-border bg-background px-2 py-1 text-xs font-semibold">
+              <Target className="h-3.5 w-3.5 text-primary" />
+              {location}
+            </span>
+          </div>
+
+          {diagnostic.optionText && (
+            <div className="mt-3 rounded-md border border-border bg-background p-3">
+              <div className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                Resposta afetada
+              </div>
+              <p className="mt-1 text-sm font-medium">{diagnostic.optionText}</p>
+            </div>
+          )}
+
+          <div className="mt-3 grid gap-3 md:grid-cols-2">
+            <div>
+              <div className="text-xs font-semibold text-foreground">Problema identificado</div>
+              <p className="mt-1 text-sm leading-6 text-muted-foreground">
+                {diagnostic.issue.message}
+              </p>
+            </div>
+            <div className="rounded-md border border-primary/25 bg-primary/5 p-3">
+              <div className="text-xs font-semibold text-foreground">Como resolver</div>
+              <p className="mt-1 text-sm leading-6 text-muted-foreground">
+                {diagnostic.resolution}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div className="flex shrink-0 flex-wrap gap-2 lg:w-48 lg:flex-col">
+          <EditorLink
+            editor={primaryEditor}
+            simulationId={simulationId}
+            versionNumber={versionNumber}
+            nodeId={diagnostic.nodeId}
+            primary
+          />
+          {primaryEditor !== "dialogo" && (
+            <EditorLink
+              editor="dialogo"
+              simulationId={simulationId}
+              versionNumber={versionNumber}
+              nodeId={diagnostic.nodeId}
+            />
+          )}
+          {primaryEditor !== "mapa" && diagnostic.nodeId && (
+            <EditorLink
+              editor="mapa"
+              simulationId={simulationId}
+              versionNumber={versionNumber}
+              nodeId={diagnostic.nodeId}
+            />
+          )}
+        </div>
+      </div>
+    </article>
+  );
+}
+
+function EditorLink({
+  editor,
+  simulationId,
+  versionNumber,
+  nodeId,
+  primary = false,
+}: {
+  editor: ValidationEditor;
+  simulationId: string;
+  versionNumber: number;
+  nodeId: string | null;
+  primary?: boolean;
+}) {
+  const route = editor === "avaliacao" ? "/nova/avaliacao" : editor === "mapa" ? "/nova/mapa" : "/nova/dialogo";
+  const label = editor === "avaliacao" ? "Corrigir na Avaliação" : editor === "mapa" ? "Corrigir no Mapa" : "Corrigir no Diálogo";
+  const Icon = editor === "mapa" ? GitBranch : ListChecks;
+
+  return (
+    <Button asChild size="sm" variant={primary ? "default" : "outline"} className="justify-start">
+      <Link
+        to={route}
+        search={{
+          simulationId,
+          versionNumber,
+          nodeId: nodeId ?? undefined,
+        }}
+      >
+        <Icon className="mr-2 h-4 w-4" />
+        {label}
+      </Link>
+    </Button>
   );
 }
 
@@ -375,28 +502,24 @@ function SimulationSelector({
     <section className="rounded-xl border border-border bg-card p-5">
       <div className="flex items-center gap-2">
         <CheckCircle2 className="h-5 w-5 text-primary" />
-        <h2 className="font-semibold">Escolha uma avaliação para validar</h2>
+        <div>
+          <h2 className="font-semibold">Escolha a avaliação para validar</h2>
+          <p className="mt-1 text-sm text-muted-foreground">
+            O diagnóstico será executado sobre a versão indicada em cada item.
+          </p>
+        </div>
       </div>
       <div className="mt-4 grid gap-3 md:grid-cols-2">
         {simulations.map((simulation) => (
           <Link
             key={`${simulation.id}-${simulation.versionNumber}`}
             to="/nova/validador"
-            search={{
-              simulationId: simulation.id,
-              versionNumber: simulation.versionNumber,
-            }}
-            className="rounded-lg border border-border bg-background p-4 transition hover:border-primary/40 hover:bg-accent"
+            search={{ simulationId: simulation.id, versionNumber: simulation.versionNumber }}
+            className="rounded-lg border border-border bg-background p-4 transition hover:border-primary hover:bg-primary/5"
           >
-            <div className="font-medium">{simulation.name}</div>
+            <div className="font-semibold">{simulation.name}</div>
             <div className="mt-1 text-xs text-muted-foreground">
-              Versão {simulation.versionNumber}
-            </div>
-            <div className="mt-3">
-              <StatusBadge
-                status={simulation.status}
-                maturity={maturityForStatus(simulation.status)}
-              />
+              Versão {simulation.versionNumber} · {simulation.status}
             </div>
           </Link>
         ))}
@@ -407,8 +530,8 @@ function SimulationSelector({
 
 function findSimulation(
   simulations: SimulationSummaryResponse[],
-  simulationId?: string,
-  versionNumber?: number,
+  simulationId: string | undefined,
+  versionNumber: number | undefined,
 ) {
   return simulations.find(
     (simulation) =>
