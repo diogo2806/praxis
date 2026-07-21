@@ -5,7 +5,6 @@ import { useEffect, useMemo, useState } from "react";
 import { AppShell } from "@/components/app-shell";
 import { ScreenManualContent } from "@/components/screen-manual";
 import { Input } from "@/components/ui/input";
-import { ACCESS_ONBOARDING_MANUALS } from "@/lib/screen-manual-access-onboarding";
 import { ANALYSIS_OPERATION_MANUALS } from "@/lib/screen-manual-analysis-operations";
 import { COMPETENCY_OWNERSHIP_MANUALS } from "@/lib/screen-manual-competency-ownership";
 import { PUBLICATION_MANUALS } from "@/lib/screen-manual-publication";
@@ -27,19 +26,13 @@ export const Route = createFileRoute("/manual")({
   component: ManualPage,
 });
 
-const REPLACED_BASE_MANUALS = new Set([
-  "jornadas",
-  "operacao",
-  "primeiros-passos",
-  "parceiros",
-]);
+const REPLACED_BASE_MANUALS = new Set(["jornadas", "operacao"]);
 const REPLACED_OVERRIDE_MANUALS = new Set(["jornadas-composicao", "central-operational"]);
 const PAGE_SIZE = 20;
 
 const MANUALS = [
   ...SCENARIO_OWNERSHIP_MANUALS,
   ...ANALYSIS_OPERATION_MANUALS,
-  ...ACCESS_ONBOARDING_MANUALS,
   ...PUBLICATION_MANUALS,
   ...COMPETENCY_OWNERSHIP_MANUALS,
   ...SCREEN_MANUAL_OVERRIDES.filter(
@@ -58,7 +51,7 @@ const MANUAL_CATEGORIES: ManualCategoryDefinition[] = [
   {
     id: "visao-geral",
     label: "Visão geral",
-    manualIds: new Set(["manual", "dashboard", "onboarding-inicial"]),
+    manualIds: new Set(["manual", "dashboard", "primeiros-passos"]),
   },
   {
     id: "criacao-conteudo",
@@ -117,9 +110,8 @@ const MANUAL_CATEGORIES: ManualCategoryDefinition[] = [
     label: "Administração e acesso",
     manualIds: new Set([
       "perfil-empresa",
-      "equipe-acessos",
-      "parceiros-condicional",
       "administracao-empresa",
+      "parceiros",
       "administracao-plataforma",
       "acesso",
     ]),
@@ -265,24 +257,50 @@ function ManualPage() {
           <aside className="rounded-xl border border-border bg-card p-4 lg:sticky lg:top-20">
             <div className="space-y-4">
               <div>
-                <label htmlFor="manual-search" className="text-sm font-semibold text-foreground">Buscar manual</label>
+                <label htmlFor="manual-search" className="text-sm font-semibold text-foreground">
+                  Buscar manual
+                </label>
                 <div className="relative mt-2">
                   <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                  <Input id="manual-search" value={searchTerm} onChange={(event) => handleSearchChange(event.target.value)} placeholder="Tela, campo, estado ou bloqueio" className="pl-9" />
+                  <Input
+                    id="manual-search"
+                    value={searchTerm}
+                    onChange={(event) => handleSearchChange(event.target.value)}
+                    placeholder="Tela, campo, estado ou bloqueio"
+                    className="pl-9"
+                  />
                 </div>
               </div>
+
               <div>
-                <label htmlFor="manual-category" className="text-sm font-semibold text-foreground">Área do sistema</label>
-                <select id="manual-category" value={categoryId} onChange={(event) => handleCategoryChange(event.target.value)} className="mt-2 min-h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring">
+                <label htmlFor="manual-category" className="text-sm font-semibold text-foreground">
+                  Área do sistema
+                </label>
+                <select
+                  id="manual-category"
+                  value={categoryId}
+                  onChange={(event) => handleCategoryChange(event.target.value)}
+                  className="mt-2 min-h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                >
                   <option value="all">Todas as áreas ({manualEntries.length})</option>
-                  {categoryOptions.map((category) => <option key={category.id} value={category.id}>{category.label} ({category.count})</option>)}
+                  {categoryOptions.map((category) => (
+                    <option key={category.id} value={category.id}>
+                      {category.label} ({category.count})
+                    </option>
+                  ))}
                 </select>
               </div>
             </div>
 
             <div className="mt-5 flex items-center justify-between border-t border-border pt-4 text-xs text-muted-foreground">
-              <span aria-live="polite">{filteredEntries.length} {filteredEntries.length === 1 ? "manual" : "manuais"}</span>
-              {filteredEntries.length > PAGE_SIZE && <span>Página {safeCurrentPage} de {totalPages}</span>}
+              <span aria-live="polite">
+                {filteredEntries.length} {filteredEntries.length === 1 ? "manual" : "manuais"}
+              </span>
+              {filteredEntries.length > PAGE_SIZE && (
+                <span>
+                  Página {safeCurrentPage} de {totalPages}
+                </span>
+              )}
             </div>
 
             <nav aria-label="Manuais encontrados" className="mt-3">
@@ -291,36 +309,77 @@ function ManualPage() {
                   {visibleEntries.map((entry) => {
                     const isSelected = entry.manual.id === selectedEntry?.manual.id;
                     return (
-                      <button key={entry.manual.id} type="button" onClick={() => handleSelectManual(entry.manual.id)} aria-current={isSelected ? "page" : undefined} className={`w-full rounded-lg border px-3 py-3 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${isSelected ? "border-primary bg-primary/10" : "border-border bg-background hover:bg-accent"}`}>
-                        <span className="block text-sm font-semibold text-foreground">{entry.manual.title}</span>
-                        <span className="mt-1 block line-clamp-2 text-xs leading-5 text-muted-foreground">{entry.manual.purpose}</span>
+                      <button
+                        key={entry.manual.id}
+                        type="button"
+                        onClick={() => handleSelectManual(entry.manual.id)}
+                        aria-current={isSelected ? "page" : undefined}
+                        className={`w-full rounded-lg border px-3 py-3 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
+                          isSelected
+                            ? "border-primary bg-primary/10"
+                            : "border-border bg-background hover:bg-accent"
+                        }`}
+                      >
+                        <span className="block text-sm font-semibold text-foreground">
+                          {entry.manual.title}
+                        </span>
+                        <span className="mt-1 block line-clamp-2 text-xs leading-5 text-muted-foreground">
+                          {entry.manual.purpose}
+                        </span>
                       </button>
                     );
                   })}
                 </div>
               ) : (
-                <div className="rounded-lg border border-dashed border-border bg-background p-4 text-sm leading-6 text-muted-foreground">Nenhum manual corresponde aos filtros informados.</div>
+                <div className="rounded-lg border border-dashed border-border bg-background p-4 text-sm leading-6 text-muted-foreground">
+                  Nenhum manual corresponde aos filtros informados.
+                </div>
               )}
             </nav>
 
             {filteredEntries.length > PAGE_SIZE && (
               <div className="mt-4 flex items-center justify-between border-t border-border pt-4">
-                <button type="button" onClick={() => setCurrentPage((page) => Math.max(1, page - 1))} disabled={safeCurrentPage === 1} className="inline-flex min-h-9 items-center gap-1 rounded-md border border-border bg-background px-2.5 text-xs font-medium text-foreground hover:bg-accent disabled:cursor-not-allowed disabled:opacity-50"><ChevronLeft className="h-4 w-4" />Anterior</button>
-                <button type="button" onClick={() => setCurrentPage((page) => Math.min(totalPages, page + 1))} disabled={safeCurrentPage === totalPages} className="inline-flex min-h-9 items-center gap-1 rounded-md border border-border bg-background px-2.5 text-xs font-medium text-foreground hover:bg-accent disabled:cursor-not-allowed disabled:opacity-50">Próxima<ChevronRight className="h-4 w-4" /></button>
+                <button
+                  type="button"
+                  onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}
+                  disabled={safeCurrentPage === 1}
+                  className="inline-flex min-h-9 items-center gap-1 rounded-md border border-border bg-background px-2.5 text-xs font-medium text-foreground hover:bg-accent disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                  Anterior
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setCurrentPage((page) => Math.min(totalPages, page + 1))}
+                  disabled={safeCurrentPage === totalPages}
+                  className="inline-flex min-h-9 items-center gap-1 rounded-md border border-border bg-background px-2.5 text-xs font-medium text-foreground hover:bg-accent disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  Próxima
+                  <ChevronRight className="h-4 w-4" />
+                </button>
               </div>
             )}
           </aside>
 
           {selectedEntry ? (
-            <article id={selectedEntry.manual.id} className="scroll-mt-24 rounded-xl border border-border bg-card shadow-sm">
+            <article
+              id={selectedEntry.manual.id}
+              className="scroll-mt-24 rounded-xl border border-border bg-card shadow-sm"
+            >
               <header className="border-b border-border px-5 py-4 sm:px-6">
-                <p className="text-xs font-semibold uppercase tracking-wide text-primary">{selectedEntry.category.label}</p>
-                <h2 className="mt-1 text-xl font-semibold text-foreground sm:text-2xl">{selectedEntry.manual.title}</h2>
+                <p className="text-xs font-semibold uppercase tracking-wide text-primary">
+                  {selectedEntry.category.label}
+                </p>
+                <h2 className="mt-1 text-xl font-semibold text-foreground sm:text-2xl">
+                  {selectedEntry.manual.title}
+                </h2>
               </header>
               <ScreenManualContent manual={selectedEntry.manual} />
             </article>
           ) : (
-            <section className="rounded-xl border border-dashed border-border bg-card p-8 text-sm text-muted-foreground">Nenhum manual foi cadastrado.</section>
+            <section className="rounded-xl border border-dashed border-border bg-card p-8 text-sm text-muted-foreground">
+              Nenhum manual foi cadastrado.
+            </section>
           )}
         </div>
       </main>
