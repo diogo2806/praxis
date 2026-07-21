@@ -3,6 +3,7 @@ import { BookOpenText } from "lucide-react";
 
 import { AppShell } from "@/components/app-shell";
 import { ScreenManualContent } from "@/components/screen-manual";
+import { ANALYSIS_OPERATION_MANUALS } from "@/lib/screen-manual-analysis-operations";
 import { COMPETENCY_OWNERSHIP_MANUALS } from "@/lib/screen-manual-competency-ownership";
 import { PUBLICATION_MANUALS } from "@/lib/screen-manual-publication";
 import { SCENARIO_OWNERSHIP_MANUALS } from "@/lib/screen-manual-scenario-ownership";
@@ -24,11 +25,12 @@ export const Route = createFileRoute("/manual")({
 });
 
 const REPLACED_BASE_MANUALS = new Set(["jornadas", "operacao"]);
-const REPLACED_OVERRIDE_MANUALS = new Set(["jornadas-composicao"]);
+const REPLACED_OVERRIDE_MANUALS = new Set(["jornadas-composicao", "central-operational"]);
 
 function ManualPage() {
   const manuals = [
     ...SCENARIO_OWNERSHIP_MANUALS,
+    ...ANALYSIS_OPERATION_MANUALS,
     ...PUBLICATION_MANUALS,
     ...COMPETENCY_OWNERSHIP_MANUALS,
     ...SCREEN_MANUAL_OVERRIDES.filter(

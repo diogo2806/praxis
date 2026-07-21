@@ -1,7 +1,15 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation, useQuery } from "@tanstack/react-query";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import {
+  BarChart3,
+  Check,
+  CircleAlert,
+  EyeOff,
+  FileText,
+  Target,
+  UsersRound,
+} from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
-import { BarChart3, Check, CircleAlert, EyeOff, FileText, Target, UsersRound } from "lucide-react";
 import {
   PolarAngleAxis,
   PolarGrid,
@@ -11,23 +19,22 @@ import {
   ResponsiveContainer,
   Tooltip as RechartsTooltip,
 } from "recharts";
+
 import { AppShell } from "@/components/app-shell";
-import { StateBanner, StatusBadge } from "@/components/praxis-ui";
+import { EmptyState, StateBanner, StatusBadge } from "@/components/praxis-ui";
+import { Button } from "@/components/ui/button";
 import {
   getEvidenceReport,
   getSimulationVersion,
   getTalentMatch,
   listCandidateLinks,
-  listSimulations,
   registerCandidateDisposition,
   type CandidateLinkResponse,
   type CandidateRadarDto,
   type CompetencyBenchmarkDto,
   type HumanDecision,
-  type SimulationSummaryResponse,
   type TalentMatchResponse,
 } from "@/lib/api/praxis";
-import { maturityForStatus } from "@/lib/simulation-meta";
 import { useLanguage } from "@/lib/language-context";
 import { cn } from "@/lib/utils";
 
@@ -35,9 +42,11 @@ export const Route = createFileRoute("/talent-match")({
   validateSearch: (search: Record<string, unknown>) => ({
     simulationId: typeof search.simulationId === "string" ? search.simulationId : undefined,
     versionNumber:
-      typeof search.versionNumber === "string" && Number.isFinite(Number(search.versionNumber))
-        ? Number(search.versionNumber)
-        : undefined,
+      typeof search.versionNumber === "number" && Number.isFinite(search.versionNumber)
+        ? search.versionNumber
+        : typeof search.versionNumber === "string" && Number.isFinite(Number(search.versionNumber))
+          ? Number(search.versionNumber)
+          : undefined,
   }),
   head: () => ({
     meta: [
@@ -45,7 +54,7 @@ export const Route = createFileRoute("/talent-match")({
       {
         name: "description",
         content:
-          "Comparação visual de participações concluídas com a referência configurada para a avaliação.",
+          "Compare participações concluídas dentro do contexto de uma avaliação e versão específicas.",
       },
     ],
   }),
@@ -53,17 +62,75 @@ export const Route = createFileRoute("/talent-match")({
 });
 
 const MAX_SELECTED = 5;
-const DEFAULT_CANDIDATE_PAGE_SIZE = 10;
-const CANDIDATE_PAGE_SIZE_OPTIONS = [10, 25, 50];
+const PAGE_SIZE = 10;
+const BLIND_MODE_STORAGE_KEY = "praxis.talent-match.blindMode";
 const palette = ["#0f766e", "#b45309", "#2563eb", "#be123c", "#6d28d9"];
 
-const BLIND_MODE_STORAGE_KEY = "praxis.talent-match.blindMode";
+const contextualCopy = {
+  "pt-BR": {
+    contextMissingTitle: "Abra uma avaliação para comparar resultados",
+    contextMissingBody:
+      "Talent Match não mantém uma segunda lista global. Abra a comparação pela avaliação desejada ou pelos resultados filtrados.",
+    openAssessments: "Abrir avaliações",
+    openResults: "Abrir resultados",
+    backToAssessment: "Voltar para avaliações",
+    assessmentContext: "Contexto da comparação",
+    completedOnly: "Somente participações concluídas desta avaliação e versão são carregadas.",
+    loadCandidatesError: "Não foi possível carregar as participações desta versão",
+    searchPlaceholder: "Buscar participante neste contexto",
+    noSearchResults: "Nenhuma participação corresponde à busca.",
+    previous: "Anterior",
+    next: "Próxima",
+    page: "Página",
+    of: "de",
+    viewResult: "Abrir resultado",
+  },
+  en: {
+    contextMissingTitle: "Open an assessment to compare results",
+    contextMissingBody:
+      "Talent Match does not keep a second global list. Open the comparison from the selected assessment or filtered results.",
+    openAssessments: "Open assessments",
+    openResults: "Open results",
+    backToAssessment: "Back to assessments",
+    assessmentContext: "Comparison context",
+    completedOnly: "Only completed participations from this assessment and version are loaded.",
+    loadCandidatesError: "Could not load participations for this version",
+    searchPlaceholder: "Search participants in this context",
+    noSearchResults: "No participation matches the search.",
+    previous: "Previous",
+    next: "Next",
+    page: "Page",
+    of: "of",
+    viewResult: "Open result",
+  },
+  "es-MX": {
+    contextMissingTitle: "Abra una evaluación para comparar resultados",
+    contextMissingBody:
+      "Talent Match no mantiene una segunda lista global. Abra la comparación desde la evaluación elegida o desde resultados filtrados.",
+    openAssessments: "Abrir evaluaciones",
+    openResults: "Abrir resultados",
+    backToAssessment: "Volver a evaluaciones",
+    assessmentContext: "Contexto de comparación",
+    completedOnly: "Solo se cargan participaciones concluidas de esta evaluación y versión.",
+    loadCandidatesError: "No se pudieron cargar las participaciones de esta versión",
+    searchPlaceholder: "Buscar participante en este contexto",
+    noSearchResults: "Ninguna participación coincide con la búsqueda.",
+    previous: "Anterior",
+    next: "Siguiente",
+    page: "Página",
+    of: "de",
+    viewResult: "Abrir resultado",
+  },
+} as const;
 
 function TalentMatchPage() {
-  const { t } = useLanguage();
+  const { language, t } = useLanguage();
+  const copy = contextualCopy[language];
   const search = Route.useSearch();
   const hasContext = Boolean(search.simulationId && search.versionNumber);
   const [selectedAttemptIds, setSelectedAttemptIds] = useState<string[]>([]);
+  const [candidateSearch, setCandidateSearch] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
   const [blindMode, setBlindMode] = useState<boolean>(() => {
     if (typeof window === "undefined") return false;
     return window.localStorage.getItem(BLIND_MODE_STORAGE_KEY) === "true";
@@ -75,21 +142,37 @@ function TalentMatchPage() {
     }
   }, [blindMode]);
 
-  const simulationsQuery = useQuery({
-    queryKey: ["simulations"],
-    queryFn: listSimulations,
-    enabled: !hasContext,
-  });
+  useEffect(() => {
+    setSelectedAttemptIds([]);
+    setCandidateSearch("");
+    setCurrentPage(1);
+  }, [search.simulationId, search.versionNumber, blindMode]);
+
   const versionQuery = useQuery({
     queryKey: ["simulation-version", search.simulationId, search.versionNumber],
     queryFn: () => getSimulationVersion(search.simulationId!, search.versionNumber!),
     enabled: hasContext,
+    retry: false,
   });
+
   const candidateLinksQuery = useQuery({
-    queryKey: ["candidate-links", { blind: blindMode }],
-    queryFn: () => listCandidateLinks(blindMode),
+    queryKey: [
+      "candidate-links",
+      "talent-match-context",
+      search.simulationId,
+      search.versionNumber,
+      blindMode,
+    ],
+    queryFn: () =>
+      listCandidateLinks(blindMode, {
+        simulationId: search.simulationId,
+        versionNumber: search.versionNumber,
+        status: "completed",
+      }),
     enabled: hasContext,
+    retry: false,
   });
+
   const talentMatchQuery = useQuery({
     queryKey: [
       "talent-match",
@@ -101,174 +184,262 @@ function TalentMatchPage() {
     queryFn: () =>
       getTalentMatch(search.simulationId!, search.versionNumber!, selectedAttemptIds, blindMode),
     enabled: hasContext && selectedAttemptIds.length > 0,
+    retry: false,
   });
 
-  const candidates = useMemo(() => {
-    return (candidateLinksQuery.data ?? [])
-      .filter((candidate) => candidate.simulationId === search.simulationId)
-      .sort((a, b) => Number(new Date(b.createdAt)) - Number(new Date(a.createdAt)));
-  }, [candidateLinksQuery.data, search.simulationId]);
+  const completedCandidates = candidateLinksQuery.data ?? [];
+  const filteredCandidates = useMemo(() => {
+    const normalized = candidateSearch.trim().toLocaleLowerCase(language);
+    if (!normalized) return completedCandidates;
+    return completedCandidates.filter((candidate) =>
+      `${candidate.candidateName} ${candidate.candidateEmail ?? ""}`
+        .toLocaleLowerCase(language)
+        .includes(normalized),
+    );
+  }, [candidateSearch, completedCandidates, language]);
 
-  const completedCandidates = candidates.filter((candidate) => candidate.status === "completed");
+  const totalPages = Math.max(1, Math.ceil(filteredCandidates.length / PAGE_SIZE));
+  const safePage = Math.min(currentPage, totalPages);
+  const visibleCandidates = filteredCandidates.slice(
+    (safePage - 1) * PAGE_SIZE,
+    safePage * PAGE_SIZE,
+  );
   const selectedVersion = versionQuery.data;
   const isVersionPublished = selectedVersion?.status === "published";
-
-  useEffect(() => {
-    setSelectedAttemptIds([]);
-  }, [search.simulationId, search.versionNumber]);
-
   const benchmark =
     talentMatchQuery.data?.benchmark ??
-    versionQuery.data?.blueprint.competencies.map((competency) => ({
+    selectedVersion?.blueprint.competencies.map((competency) => ({
       competencyName: competency.name,
       targetScore: competency.targetScore ?? 70,
     })) ??
     [];
-
   const selectedCandidateRows = talentMatchQuery.data?.candidates ?? [];
   const selectedLimitReached = selectedAttemptIds.length >= MAX_SELECTED;
 
+  useEffect(() => {
+    if (currentPage !== safePage) setCurrentPage(safePage);
+  }, [currentPage, safePage]);
+
   return (
     <AppShell>
-      <div className="mb-5 flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <div className="text-xs uppercase text-primary">{t.common.talentMatch}</div>
-          <h1 className="mt-1 text-3xl font-semibold">{t.talentMatchPage.pageTitle}</h1>
-          <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
-            {t.talentMatchPage.pageIntro}
-          </p>
-        </div>
-        <Link
-          to="/dashboard"
-          className="rounded-md border border-border bg-card px-4 py-2 text-sm hover:bg-accent"
-        >
-          {t.talentMatchPage.backToDashboard}
-        </Link>
-      </div>
-
-      {!hasContext ? (
-        <SimulationSelectionTable
-          loading={simulationsQuery.isLoading}
-          simulations={simulationsQuery.data ?? []}
-        />
-      ) : (
-        <div className="space-y-5">
-          <StateBanner tone="info" title={t.talentMatchPage.evidenceBannerTitle}>
-            {t.talentMatchPage.evidenceBannerBody}
-          </StateBanner>
-          {!isVersionPublished && (
-            <StateBanner tone="warn" title={t.talentMatchPage.versionUnavailableTitle}>
-              {t.talentMatchPage.versionUnavailableBody}
-            </StateBanner>
-          )}
-          {isVersionPublished && completedCandidates.length === 0 && (
-            <StateBanner tone="info" title={t.talentMatchPage.noCompletedTitle}>
-              {t.talentMatchPage.noCompletedBody}
-            </StateBanner>
-          )}
-          {selectedLimitReached && (
-            <StateBanner tone="warn" title={t.talentMatchPage.visualLimitTitle}>
-              {t.talentMatchPage.visualLimitBody}
-            </StateBanner>
-          )}
-          {talentMatchQuery.isError && (
-            <StateBanner tone="danger" title={t.talentMatchPage.loadComparisonErrorTitle}>
-              {talentMatchQuery.error instanceof Error
-                ? talentMatchQuery.error.message
-                : t.talentMatchPage.loadComparisonErrorFallback}
-            </StateBanner>
-          )}
-
-          <div className="grid gap-5 xl:grid-cols-[minmax(300px,380px)_minmax(0,1fr)]">
-            <section className="rounded-md border border-border bg-card p-5">
-              <div className="mb-4 flex items-center justify-between gap-3">
-                <div>
-                  <div className="flex items-center gap-2 text-sm font-semibold">
-                    <UsersRound className="h-4 w-4" />
-                    {t.talentMatchPage.participantsHeading}
-                  </div>
-                  <div className="mt-1 text-xs text-muted-foreground">
-                    {t.talentMatchPage.selectedCount
-                      .replace("{count}", String(selectedAttemptIds.length))
-                      .replace("{max}", String(MAX_SELECTED))}
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setSelectedAttemptIds([])}
-                  className="rounded-md border border-border bg-background px-3 py-1.5 text-xs hover:bg-accent"
-                >
-                  {t.talentMatchPage.clear}
-                </button>
-              </div>
-              <label className="mb-3 flex cursor-pointer items-start gap-2.5 rounded-md border border-border bg-background p-3">
-                <input
-                  type="checkbox"
-                  checked={blindMode}
-                  onChange={(event) => setBlindMode(event.target.checked)}
-                  className="mt-0.5 h-4 w-4 shrink-0"
-                />
-                <span className="min-w-0">
-                  <span className="flex items-center gap-1.5 text-xs font-medium">
-                    <EyeOff className="h-3.5 w-3.5" />
-                    {t.talentMatchPage.blindMode}
-                  </span>
-                  <span className="mt-0.5 block text-[11px] text-muted-foreground">
-                    {t.talentMatchPage.blindModeDescription}
-                  </span>
-                </span>
-              </label>
-              <CandidateSelector
-                key={`${search.simulationId}-${search.versionNumber}-${blindMode}`}
-                candidates={completedCandidates}
-                loading={candidateLinksQuery.isLoading}
-                selectedAttemptIds={selectedAttemptIds}
-                onToggle={(attemptId) => {
-                  setSelectedAttemptIds((current) => {
-                    if (current.includes(attemptId)) {
-                      return current.filter((id) => id !== attemptId);
-                    }
-                    if (current.length >= MAX_SELECTED) {
-                      return current;
-                    }
-                    return [...current, attemptId];
-                  });
-                }}
-              />
-            </section>
-
-            <section className="rounded-md border border-border bg-card p-5">
-              <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
-                <div>
-                  <div className="flex items-center gap-2 text-sm font-semibold">
-                    <Target className="h-4 w-4" />
-                    {t.talentMatchPage.radarVsBenchmark}
-                  </div>
-                  <div className="mt-1 text-xs text-muted-foreground">
-                    {t.talentMatchPage.simulationVersionLabel
-                      .replace("{id}", String(search.simulationId))
-                      .replace("{version}", String(search.versionNumber))}
-                  </div>
-                </div>
-                <BenchmarkSummary benchmark={benchmark} />
-              </div>
-              <RadarComparisonChart
-                benchmark={benchmark}
-                data={talentMatchQuery.data}
-                loading={versionQuery.isLoading || talentMatchQuery.isFetching}
-              />
-            </section>
+      <main className="mx-auto max-w-7xl space-y-5">
+        <header className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+          <div>
+            <div className="text-xs uppercase text-primary">{t.common.talentMatch}</div>
+            <h1 className="mt-1 text-3xl font-semibold">{t.talentMatchPage.pageTitle}</h1>
+            <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
+              {t.talentMatchPage.pageIntro}
+            </p>
           </div>
+          <Button asChild variant="outline" className="bg-card">
+            <Link to="/avaliacoes">{copy.backToAssessment}</Link>
+          </Button>
+        </header>
 
-          {isVersionPublished && completedCandidates.length > 0 ? (
-            <CandidateLegend candidates={selectedCandidateRows} />
-          ) : (
-            <StateBanner tone="info" title={t.talentMatchPage.pendingComparisonTitle}>
-              {t.talentMatchPage.pendingComparisonBody}
+        {!hasContext ? (
+          <EmptyState
+            title={copy.contextMissingTitle}
+            description={copy.contextMissingBody}
+            actions={
+              <div className="flex flex-wrap justify-center gap-3">
+                <Button asChild>
+                  <Link to="/avaliacoes">{copy.openAssessments}</Link>
+                </Button>
+                <Button asChild variant="outline">
+                  <Link to="/results">{copy.openResults}</Link>
+                </Button>
+              </div>
+            }
+          />
+        ) : (
+          <div className="space-y-5">
+            <section className="rounded-xl border border-border bg-card p-5">
+              <div className="flex flex-wrap items-start justify-between gap-4">
+                <div>
+                  <div className="text-xs font-semibold uppercase tracking-wide text-primary">
+                    {copy.assessmentContext}
+                  </div>
+                  <h2 className="mt-1 text-xl font-semibold">
+                    {selectedVersion?.name ?? search.simulationId}
+                  </h2>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    Versão {search.versionNumber} · {copy.completedOnly}
+                  </p>
+                </div>
+                {selectedVersion && <StatusBadge status={selectedVersion.status} variant="status" />}
+              </div>
+            </section>
+
+            <StateBanner tone="info" title={t.talentMatchPage.evidenceBannerTitle}>
+              {t.talentMatchPage.evidenceBannerBody}
             </StateBanner>
-          )}
-        </div>
-      )}
+
+            {versionQuery.isError && (
+              <StateBanner tone="danger" title={t.talentMatchPage.versionUnavailableTitle}>
+                {versionQuery.error instanceof Error
+                  ? versionQuery.error.message
+                  : t.talentMatchPage.versionUnavailableBody}
+              </StateBanner>
+            )}
+
+            {!versionQuery.isLoading && selectedVersion && !isVersionPublished && (
+              <StateBanner tone="warn" title={t.talentMatchPage.versionUnavailableTitle}>
+                {t.talentMatchPage.versionUnavailableBody}
+              </StateBanner>
+            )}
+
+            {candidateLinksQuery.isError && (
+              <StateBanner tone="danger" title={copy.loadCandidatesError}>
+                {candidateLinksQuery.error instanceof Error
+                  ? candidateLinksQuery.error.message
+                  : t.talentMatchPage.loadComparisonErrorFallback}
+              </StateBanner>
+            )}
+
+            {selectedLimitReached && (
+              <StateBanner tone="warn" title={t.talentMatchPage.visualLimitTitle}>
+                {t.talentMatchPage.visualLimitBody}
+              </StateBanner>
+            )}
+
+            {talentMatchQuery.isError && (
+              <StateBanner tone="danger" title={t.talentMatchPage.loadComparisonErrorTitle}>
+                {talentMatchQuery.error instanceof Error
+                  ? talentMatchQuery.error.message
+                  : t.talentMatchPage.loadComparisonErrorFallback}
+              </StateBanner>
+            )}
+
+            <div className="grid gap-5 xl:grid-cols-[minmax(320px,400px)_minmax(0,1fr)]">
+              <section className="rounded-xl border border-border bg-card p-5">
+                <div className="mb-4 flex items-center justify-between gap-3">
+                  <div>
+                    <div className="flex items-center gap-2 text-sm font-semibold">
+                      <UsersRound className="h-4 w-4" />
+                      {t.talentMatchPage.participantsHeading}
+                    </div>
+                    <div className="mt-1 text-xs text-muted-foreground">
+                      {t.talentMatchPage.selectedCount
+                        .replace("{count}", String(selectedAttemptIds.length))
+                        .replace("{max}", String(MAX_SELECTED))}
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setSelectedAttemptIds([])}
+                    disabled={selectedAttemptIds.length === 0}
+                    className="rounded-md border border-border bg-background px-3 py-1.5 text-xs hover:bg-accent disabled:opacity-50"
+                  >
+                    {t.talentMatchPage.clear}
+                  </button>
+                </div>
+
+                <label className="mb-3 flex cursor-pointer items-start gap-2.5 rounded-md border border-border bg-background p-3">
+                  <input
+                    type="checkbox"
+                    checked={blindMode}
+                    onChange={(event) => setBlindMode(event.target.checked)}
+                    className="mt-0.5 h-4 w-4 shrink-0"
+                  />
+                  <span className="min-w-0">
+                    <span className="flex items-center gap-1.5 text-xs font-medium">
+                      <EyeOff className="h-3.5 w-3.5" />
+                      {t.talentMatchPage.blindMode}
+                    </span>
+                    <span className="mt-0.5 block text-[11px] text-muted-foreground">
+                      {t.talentMatchPage.blindModeDescription}
+                    </span>
+                  </span>
+                </label>
+
+                <input
+                  type="search"
+                  value={candidateSearch}
+                  onChange={(event) => {
+                    setCandidateSearch(event.target.value);
+                    setCurrentPage(1);
+                  }}
+                  placeholder={copy.searchPlaceholder}
+                  className="input mb-3 w-full"
+                />
+
+                <CandidateSelector
+                  candidates={visibleCandidates}
+                  loading={candidateLinksQuery.isLoading}
+                  noResults={filteredCandidates.length === 0}
+                  noResultsLabel={candidateSearch.trim() ? copy.noSearchResults : t.talentMatchPage.noCompletedForAssessment}
+                  selectedAttemptIds={selectedAttemptIds}
+                  onToggle={(attemptId) => {
+                    setSelectedAttemptIds((current) => {
+                      if (current.includes(attemptId)) {
+                        return current.filter((id) => id !== attemptId);
+                      }
+                      if (current.length >= MAX_SELECTED) return current;
+                      return [...current, attemptId];
+                    });
+                  }}
+                />
+
+                {filteredCandidates.length > PAGE_SIZE && (
+                  <div className="mt-3 flex items-center justify-between gap-2 border-t border-border pt-3 text-xs">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      disabled={safePage === 1}
+                      onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}
+                    >
+                      {copy.previous}
+                    </Button>
+                    <span className="text-muted-foreground">
+                      {copy.page} {safePage} {copy.of} {totalPages}
+                    </span>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      disabled={safePage === totalPages}
+                      onClick={() => setCurrentPage((page) => Math.min(totalPages, page + 1))}
+                    >
+                      {copy.next}
+                    </Button>
+                  </div>
+                )}
+              </section>
+
+              <section className="rounded-xl border border-border bg-card p-5">
+                <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
+                  <div>
+                    <div className="flex items-center gap-2 text-sm font-semibold">
+                      <Target className="h-4 w-4" />
+                      {t.talentMatchPage.radarVsBenchmark}
+                    </div>
+                    <div className="mt-1 text-xs text-muted-foreground">
+                      {t.talentMatchPage.simulationVersionLabel
+                        .replace("{id}", String(search.simulationId))
+                        .replace("{version}", String(search.versionNumber))}
+                    </div>
+                  </div>
+                  <BenchmarkSummary benchmark={benchmark} />
+                </div>
+                <RadarComparisonChart
+                  benchmark={benchmark}
+                  data={talentMatchQuery.data}
+                  loading={versionQuery.isLoading || talentMatchQuery.isFetching}
+                />
+              </section>
+            </div>
+
+            {selectedCandidateRows.length > 0 ? (
+              <CandidateLegend candidates={selectedCandidateRows} viewResultLabel={copy.viewResult} />
+            ) : (
+              <StateBanner tone="info" title={t.talentMatchPage.pendingComparisonTitle}>
+                {t.talentMatchPage.pendingComparisonBody}
+              </StateBanner>
+            )}
+          </div>
+        )}
+      </main>
     </AppShell>
   );
 }
@@ -276,64 +447,19 @@ function TalentMatchPage() {
 function CandidateSelector({
   candidates,
   loading,
+  noResults,
+  noResultsLabel,
   selectedAttemptIds,
   onToggle,
 }: {
   candidates: CandidateLinkResponse[];
   loading: boolean;
+  noResults: boolean;
+  noResultsLabel: string;
   selectedAttemptIds: string[];
   onToggle: (attemptId: string) => void;
 }) {
-  const { language, t } = useLanguage();
-  const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(DEFAULT_CANDIDATE_PAGE_SIZE);
-  const paginationCopy =
-    language === "en"
-      ? {
-          navigation: "Participant pagination",
-          rowsPerPage: "Participants per page",
-          previous: "Previous",
-          previousAria: "Go to the previous participant page",
-          next: "Next",
-          nextAria: "Go to the next participant page",
-          page: "Page",
-          of: "of",
-        }
-      : language === "es-MX"
-        ? {
-            navigation: "Paginación de participantes",
-            rowsPerPage: "Participantes por página",
-            previous: "Anterior",
-            previousAria: "Ir a la página anterior de participantes",
-            next: "Siguiente",
-            nextAria: "Ir a la página siguiente de participantes",
-            page: "Página",
-            of: "de",
-          }
-        : {
-            navigation: "Paginação de participantes",
-            rowsPerPage: "Participantes por página",
-            previous: "Anterior",
-            previousAria: "Ir para a página anterior de participantes",
-            next: "Próxima",
-            nextAria: "Ir para a próxima página de participantes",
-            page: "Página",
-            of: "de",
-          };
-
-  const totalPages = Math.max(1, Math.ceil(candidates.length / pageSize));
-  const safeCurrentPage = Math.min(currentPage, totalPages);
-  const pageStartIndex = (safeCurrentPage - 1) * pageSize;
-  const pageEndIndex = Math.min(pageStartIndex + pageSize, candidates.length);
-  const pageRangeStart = candidates.length === 0 ? 0 : pageStartIndex + 1;
-  const paginatedCandidates = candidates.slice(pageStartIndex, pageEndIndex);
-
-  useEffect(() => {
-    if (currentPage !== safeCurrentPage) {
-      setCurrentPage(safeCurrentPage);
-    }
-  }, [currentPage, safeCurrentPage]);
-
+  const { t } = useLanguage();
   if (loading) {
     return (
       <div className="rounded-md border border-border bg-background p-4 text-sm">
@@ -341,108 +467,51 @@ function CandidateSelector({
       </div>
     );
   }
-
-  if (candidates.length === 0) {
+  if (noResults) {
     return (
       <div className="rounded-md border border-border bg-background p-4 text-sm text-muted-foreground">
-        {t.talentMatchPage.noCompletedForAssessment}
+        <CircleAlert className="mb-2 h-5 w-5" />
+        {noResultsLabel}
       </div>
     );
   }
 
   const limitReached = selectedAttemptIds.length >= MAX_SELECTED;
-
   return (
-    <div className="space-y-3">
-      <div className="space-y-2">
-        {paginatedCandidates.map((candidate) => {
-          const selected = selectedAttemptIds.includes(candidate.attemptId);
-          const disabled = limitReached && !selected;
-          return (
-            <button
-              key={candidate.attemptId}
-              type="button"
-              disabled={disabled}
-              onClick={() => onToggle(candidate.attemptId)}
+    <div className="space-y-2">
+      {candidates.map((candidate) => {
+        const selected = selectedAttemptIds.includes(candidate.attemptId);
+        const disabled = limitReached && !selected;
+        return (
+          <button
+            key={candidate.attemptId}
+            type="button"
+            disabled={disabled}
+            onClick={() => onToggle(candidate.attemptId)}
+            className={cn(
+              "flex w-full items-center gap-3 rounded-md border border-border bg-background p-3 text-left text-sm hover:bg-accent disabled:cursor-not-allowed disabled:opacity-50",
+              selected && "border-primary/50 bg-primary/10",
+            )}
+          >
+            <span
               className={cn(
-                "flex w-full items-center gap-3 rounded-md border border-border bg-background p-3 text-left text-sm hover:bg-accent disabled:cursor-not-allowed disabled:opacity-50",
-                selected && "border-primary/50 bg-primary/10",
+                "flex h-5 w-5 shrink-0 items-center justify-center rounded border border-border",
+                selected && "border-primary bg-primary text-primary-foreground",
               )}
             >
-              <span
-                className={cn(
-                  "flex h-5 w-5 shrink-0 items-center justify-center rounded border border-border",
-                  selected && "border-primary bg-primary text-primary-foreground",
-                )}
-              >
-                {selected && <Check className="h-3.5 w-3.5" />}
-              </span>
-              <span className="min-w-0 flex-1">
-                <span className="block truncate font-medium">{candidate.candidateName}</span>
-                {candidate.candidateEmail && (
-                  <span className="mt-0.5 block truncate text-xs text-muted-foreground">
-                    {candidate.candidateEmail}
-                  </span>
-                )}
-              </span>
-            </button>
-          );
-        })}
-      </div>
-
-      {candidates.length > DEFAULT_CANDIDATE_PAGE_SIZE && (
-        <div
-          className="flex flex-wrap items-center justify-between gap-3 border-t border-border pt-3 text-xs text-muted-foreground"
-          role="navigation"
-          aria-label={paginationCopy.navigation}
-        >
-          <span className="tabular-nums" aria-live="polite">
-            {pageRangeStart}–{pageEndIndex} {paginationCopy.of} {candidates.length}
-          </span>
-          <div className="flex flex-wrap items-center gap-2">
-            <label htmlFor="talent-match-candidate-page-size" className="flex items-center gap-2">
-              <span className="sr-only">{paginationCopy.rowsPerPage}</span>
-              <select
-                id="talent-match-candidate-page-size"
-                aria-label={paginationCopy.rowsPerPage}
-                value={pageSize}
-                onChange={(event) => {
-                  setPageSize(Number(event.target.value));
-                  setCurrentPage(1);
-                }}
-                className="h-8 rounded-md border border-border bg-background px-2 text-xs text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring"
-              >
-                {CANDIDATE_PAGE_SIZE_OPTIONS.map((option) => (
-                  <option key={option} value={option}>
-                    {option}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <button
-              type="button"
-              onClick={() => setCurrentPage(Math.max(1, safeCurrentPage - 1))}
-              disabled={safeCurrentPage <= 1}
-              aria-label={paginationCopy.previousAria}
-              className="inline-flex h-8 items-center justify-center rounded-md border border-border bg-background px-2.5 font-medium text-foreground hover:bg-accent disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              {paginationCopy.previous}
-            </button>
-            <span className="min-w-20 text-center tabular-nums text-foreground" aria-live="polite">
-              {paginationCopy.page} {safeCurrentPage} {paginationCopy.of} {totalPages}
+              {selected && <Check className="h-3.5 w-3.5" />}
             </span>
-            <button
-              type="button"
-              onClick={() => setCurrentPage(Math.min(totalPages, safeCurrentPage + 1))}
-              disabled={safeCurrentPage >= totalPages}
-              aria-label={paginationCopy.nextAria}
-              className="inline-flex h-8 items-center justify-center rounded-md border border-border bg-background px-2.5 font-medium text-foreground hover:bg-accent disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              {paginationCopy.next}
-            </button>
-          </div>
-        </div>
-      )}
+            <span className="min-w-0 flex-1">
+              <span className="block truncate font-medium">{candidate.candidateName}</span>
+              {candidate.candidateEmail && (
+                <span className="mt-0.5 block truncate text-xs text-muted-foreground">
+                  {candidate.candidateEmail}
+                </span>
+              )}
+            </span>
+          </button>
+        );
+      })}
     </div>
   );
 }
@@ -529,7 +598,6 @@ function RadarTooltip({
   candidates: CandidateRadarDto[];
 }) {
   const { t } = useLanguage();
-
   if (!active || !payload?.length) return null;
 
   const candidateNames = new Map(
@@ -575,6 +643,51 @@ function BenchmarkSummary({ benchmark }: { benchmark: CompetencyBenchmarkDto[] }
       <BarChart3 className="h-3.5 w-3.5 text-muted-foreground" />
       <span className="text-muted-foreground">{t.talentMatchPage.averageReference}</span>
       <span className="font-semibold tabular-nums">{average}</span>
+    </div>
+  );
+}
+
+function CandidateLegend({
+  candidates,
+  viewResultLabel,
+}: {
+  candidates: CandidateRadarDto[];
+  viewResultLabel: string;
+}) {
+  const { t } = useLanguage();
+  return (
+    <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-5">
+      {candidates.map((candidate, index) => (
+        <div key={candidate.attemptId} className="rounded-md border border-border bg-card p-4">
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <div className="flex items-center gap-2">
+                <span
+                  className="h-2.5 w-2.5 shrink-0 rounded-full"
+                  style={{ backgroundColor: palette[index % palette.length] }}
+                />
+                <div className="truncate text-sm font-medium">{candidate.candidateName}</div>
+              </div>
+              <div className="mt-1 truncate text-[11px] text-muted-foreground">
+                {candidate.attemptId}
+              </div>
+            </div>
+            <div className="text-right">
+              <div className="text-xl font-semibold tabular-nums">{candidate.generalScore}</div>
+              <div className="text-[10px] uppercase text-muted-foreground">
+                {t.talentMatchPage.scoreSupportLabel}
+              </div>
+            </div>
+          </div>
+          <Button asChild variant="outline" size="sm" className="mt-3 w-full">
+            <Link to="/results/$attemptId" params={{ attemptId: candidate.attemptId }}>
+              {viewResultLabel}
+            </Link>
+          </Button>
+          <EvidenceReportButton attemptId={candidate.attemptId} />
+          <CandidateDecisionControl attemptId={candidate.attemptId} />
+        </div>
+      ))}
     </div>
   );
 }
@@ -685,206 +798,5 @@ function CandidateDecisionControl({ attemptId }: { attemptId: string }) {
         </p>
       )}
     </div>
-  );
-}
-
-function CandidateLegend({ candidates }: { candidates: CandidateRadarDto[] }) {
-  const { t } = useLanguage();
-
-  if (candidates.length === 0) {
-    return (
-      <StateBanner tone="info" title={t.talentMatchPage.benchmarkVisibleTitle}>
-        {t.talentMatchPage.benchmarkVisibleBody}
-      </StateBanner>
-    );
-  }
-
-  return (
-    <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-5">
-      {candidates.map((candidate, index) => (
-        <div key={candidate.attemptId} className="rounded-md border border-border bg-card p-4">
-          <div className="flex items-start justify-between gap-3">
-            <div className="min-w-0">
-              <div className="flex items-center gap-2">
-                <span
-                  className="h-2.5 w-2.5 shrink-0 rounded-full"
-                  style={{ backgroundColor: palette[index % palette.length] }}
-                />
-                <div className="truncate text-sm font-medium">{candidate.candidateName}</div>
-              </div>
-              <div className="mt-1 truncate text-[11px] text-muted-foreground">
-                {candidate.attemptId}
-              </div>
-            </div>
-            <div className="text-right">
-              <div className="text-xl font-semibold tabular-nums">{candidate.generalScore}</div>
-              <div className="text-[10px] uppercase text-muted-foreground">
-                {t.talentMatchPage.scoreSupportLabel}
-              </div>
-            </div>
-          </div>
-          <EvidenceReportButton attemptId={candidate.attemptId} />
-          <CandidateDecisionControl attemptId={candidate.attemptId} />
-        </div>
-      ))}
-    </div>
-  );
-}
-
-function SimulationSelectionTable({
-  simulations,
-  loading,
-}: {
-  simulations: SimulationSummaryResponse[];
-  loading: boolean;
-}) {
-  const { t } = useLanguage();
-
-  if (loading) {
-    return (
-      <section className="rounded-md border border-border bg-card p-5">
-        <div className="text-sm text-muted-foreground">{t.talentMatchPage.loadingAssessments}</div>
-      </section>
-    );
-  }
-
-  if (simulations.length === 0) {
-    return (
-      <section className="rounded-md border border-border bg-card p-8 text-center">
-        <CircleAlert className="mx-auto h-6 w-6 text-muted-foreground" />
-        <h2 className="mt-3 text-lg font-semibold">{t.talentMatchPage.noAssessmentsTitle}</h2>
-        <p className="mx-auto mt-1 max-w-md text-sm text-muted-foreground">
-          {t.talentMatchPage.noAssessmentsBody}
-        </p>
-        <Link
-          to="/nova/avaliacao"
-          className="mt-5 inline-flex rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
-        >
-          {t.talentMatchPage.createAssessment}
-        </Link>
-      </section>
-    );
-  }
-
-  const sorted = [...simulations].sort((a, b) => {
-    const rank = (simulation: SimulationSummaryResponse) => {
-      const hasReference = simulation.competencies.length > 0;
-      const comparable =
-        simulation.status === "published" && simulation.attemptsCompleted > 0 && hasReference;
-
-      if (comparable) return 0;
-      if (simulation.status === "published") return 1;
-      return 2;
-    };
-
-    const rankDelta = rank(a) - rank(b);
-    if (rankDelta !== 0) return rankDelta;
-    return Number(new Date(b.updatedAt)) - Number(new Date(a.updatedAt));
-  });
-
-  return (
-    <section className="rounded-md border border-border bg-card">
-      <div className="border-b border-border p-5">
-        <h2 className="text-xl font-semibold">{t.talentMatchPage.selectAssessmentTitle}</h2>
-        <p className="mt-1 text-sm text-muted-foreground">
-          {t.talentMatchPage.selectAssessmentBody}
-        </p>
-      </div>
-      <div className="overflow-x-auto">
-        <table className="w-full min-w-[860px] text-left text-sm">
-          <thead className="border-b border-border bg-muted/45 text-xs uppercase text-muted-foreground">
-            <tr>
-              <th className="px-4 py-3 font-medium">{t.talentMatchPage.tableHeaderAssessment}</th>
-              <th className="px-4 py-3 font-medium">{t.talentMatchPage.tableHeaderStatus}</th>
-              <th className="px-4 py-3 font-medium">{t.talentMatchPage.tableHeaderVersion}</th>
-              <th className="px-4 py-3 text-right font-medium">
-                {t.talentMatchPage.tableHeaderCompletedParticipations}
-              </th>
-              <th className="px-4 py-3 font-medium">{t.talentMatchPage.tableHeaderReference}</th>
-              <th className="px-4 py-3 text-right font-medium">
-                {t.talentMatchPage.tableHeaderAction}
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {sorted.map((simulation) => {
-              const hasReference = simulation.competencies.length > 0;
-              const canCompare =
-                simulation.status === "published" &&
-                simulation.attemptsCompleted > 0 &&
-                hasReference;
-
-              return (
-                <tr
-                  key={simulation.id}
-                  className="border-b border-border last:border-0 hover:bg-accent/35"
-                >
-                  <td className="px-4 py-3">
-                    <div className="font-medium text-foreground">{simulation.name}</div>
-                    {simulation.description && (
-                      <div className="mt-1 max-w-md truncate text-xs text-muted-foreground">
-                        {simulation.description}
-                      </div>
-                    )}
-                  </td>
-                  <td className="px-4 py-3">
-                    <StatusBadge
-                      status={simulation.status}
-                      maturity={maturityForStatus(simulation.status)}
-                      variant="status"
-                    />
-                  </td>
-                  <td className="px-4 py-3 font-mono text-xs text-muted-foreground">
-                    {t.talentMatchPage.versionShort.replace(
-                      "{version}",
-                      String(simulation.versionNumber),
-                    )}
-                  </td>
-                  <td className="px-4 py-3 text-right font-medium tabular-nums">
-                    {simulation.attemptsCompleted.toLocaleString("pt-BR")}
-                  </td>
-                  <td className="px-4 py-3">
-                    {hasReference ? (
-                      <span className="text-xs text-muted-foreground">
-                        {(simulation.competencies.length === 1
-                          ? t.talentMatchPage.competencyCountSingular
-                          : t.talentMatchPage.competencyCountPlural
-                        ).replace("{count}", String(simulation.competencies.length))}
-                      </span>
-                    ) : (
-                      <span className="text-xs text-warning">
-                        {t.talentMatchPage.configureReference}
-                      </span>
-                    )}
-                  </td>
-                  <td className="px-4 py-3 text-right">
-                    {canCompare ? (
-                      <Link
-                        to="/talent-match"
-                        search={{
-                          simulationId: simulation.id,
-                          versionNumber: simulation.versionNumber,
-                        }}
-                        className="inline-flex rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary/90"
-                      >
-                        {t.talentMatchPage.compareParticipations}
-                      </Link>
-                    ) : (
-                      <span className="text-xs text-muted-foreground">
-                        {simulation.status !== "published"
-                          ? t.talentMatchPage.publishAssessment
-                          : !hasReference
-                            ? t.talentMatchPage.configureReference
-                            : t.talentMatchPage.insufficientData}
-                      </span>
-                    )}
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
-    </section>
   );
 }

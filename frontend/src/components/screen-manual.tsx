@@ -19,6 +19,7 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
+import { resolveAnalysisOperationManual } from "@/lib/screen-manual-analysis-operations";
 import { resolveCompetencyOwnershipManual } from "@/lib/screen-manual-competency-ownership";
 import { useLanguage } from "@/lib/language-context";
 import { resolvePartnerSpecialistManual } from "@/lib/screen-manual-specialist";
@@ -88,6 +89,7 @@ export function ScreenManual({ pathname, iconOnly = false, className }: ScreenMa
   const manual =
     resolvePartnerSpecialistManual(pathname) ??
     resolveScenarioOwnershipManual(pathname) ??
+    resolveAnalysisOperationManual(pathname) ??
     resolvePublicationManual(pathname) ??
     resolveCompetencyOwnershipManual(pathname) ??
     resolveScreenManualOverride(pathname) ??
