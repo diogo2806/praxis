@@ -28,6 +28,8 @@ export type CandidatePrivacyNotice = {
   retentionDays: number;
   noticeVersion: string;
   noticeHash: string;
+  termsVersion: string;
+  termsHash: string;
   configured: boolean;
 };
 
@@ -35,7 +37,7 @@ export function getCandidatePrivacyNotice(attemptToken: string): Promise<Candida
   return apiRequest<CandidatePrivacyNotice>(
     `/candidate/attempts/${encodeURIComponent(attemptToken)}/privacy-notice`,
     { method: "GET" },
-    { authenticated: false, fallbackMessage: "Não foi possível carregar o aviso de privacidade." },
+    { authenticated: false, fallbackMessage: "Não foi possível carregar os documentos legais." },
   );
 }
 
@@ -51,12 +53,16 @@ export function acknowledgeCandidatePrivacyNotice(
       body: JSON.stringify({
         noticeVersion: notice.noticeVersion,
         noticeHash: notice.noticeHash,
+        termsVersion: notice.termsVersion,
+        termsHash: notice.termsHash,
+        privacyNoticeAcknowledged: true,
+        termsAccepted: true,
         language,
       }),
     },
     {
       authenticated: false,
-      fallbackMessage: "Não foi possível registrar a ciência do aviso de privacidade.",
+      fallbackMessage: "Não foi possível registrar o aceite dos documentos legais.",
     },
   );
 }
