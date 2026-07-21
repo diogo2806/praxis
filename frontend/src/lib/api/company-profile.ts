@@ -1,4 +1,4 @@
-import { apiRequest } from "@/lib/api/request";
+import { apiRequest } from "@/lib/api/http";
 
 export interface CompanyProfileResponse {
   tradeName: string | null;
