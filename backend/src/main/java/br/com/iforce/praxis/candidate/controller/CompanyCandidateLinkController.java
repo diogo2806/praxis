@@ -7,13 +7,16 @@ import br.com.iforce.praxis.candidate.dto.CreateCandidateLinkRequest;
 import br.com.iforce.praxis.candidate.dto.CreateCandidateLinkResponse;
 import br.com.iforce.praxis.candidate.dto.EvidenceReport;
 import br.com.iforce.praxis.candidate.dto.ExtendCandidateLinkRequest;
+import br.com.iforce.praxis.candidate.dto.ParticipationMonitoringPageResponse;
 import br.com.iforce.praxis.candidate.dto.RegisterDispositionRequest;
 import br.com.iforce.praxis.candidate.service.CandidateAttemptMonitoringQueryService;
 import br.com.iforce.praxis.candidate.service.CandidateDispositionService;
 import br.com.iforce.praxis.candidate.service.CompanyCandidateLinkService;
 import br.com.iforce.praxis.candidate.service.EvidenceReportService;
 import br.com.iforce.praxis.candidate.service.LegacyCandidateLinkQueryService;
+import br.com.iforce.praxis.candidate.service.ParticipationMonitoringQueryService;
 import br.com.iforce.praxis.gupy.service.CandidateAttemptService;
+import br.com.iforce.praxis.journey.service.AssessmentJourneyAttemptLifecycleService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -26,8 +29,10 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
+import java.util.Locale;
 
 @RestController
 @RequestMapping("/api/v1/candidate-links")
@@ -40,6 +45,8 @@ public class CompanyCandidateLinkController {
     private final LegacyCandidateLinkQueryService legacyCandidateLinkQueryService;
     private final CandidateDispositionService candidateDispositionService;
     private final EvidenceReportService evidenceReportService;
+    private final ParticipationMonitoringQueryService participationQueryService;
+    private final AssessmentJourneyAttemptLifecycleService journeyLifecycleService;
 
     public CompanyCandidateLinkController(
             CandidateAttemptService candidateAttemptService,
@@ -47,7 +54,9 @@ public class CompanyCandidateLinkController {
             CompanyCandidateLinkService companyCandidateLinkService,
             LegacyCandidateLinkQueryService legacyCandidateLinkQueryService,
             CandidateDispositionService candidateDispositionService,
-            EvidenceReportService evidenceReportService
+            EvidenceReportService evidenceReportService,
+            ParticipationMonitoringQueryService participationQueryService,
+            AssessmentJourneyAttemptLifecycleService journeyLifecycleService
     ) {
         this.candidateAttemptService = candidateAttemptService;
         this.monitoringQueryService = monitoringQueryService;
@@ -55,6 +64,8 @@ public class CompanyCandidateLinkController {
         this.legacyCandidateLinkQueryService = legacyCandidateLinkQueryService;
         this.candidateDispositionService = candidateDispositionService;
         this.evidenceReportService = evidenceReportService;
+        this.participationQueryService = participationQueryService;
+        this.journeyLifecycleService = journeyLifecycleService;
     }
 
     @GetMapping
@@ -82,6 +93,19 @@ public class CompanyCandidateLinkController {
     ) {
         return ResponseEntity.ok(
                 monitoringQueryService.search(page, size, status, simulationId, candidate)
+        );
+    }
+
+    @GetMapping("/participations")
+    @Operation(summary = "Pesquisa participações individuais e por jornada")
+    public ResponseEntity<ParticipationMonitoringPageResponse> searchParticipations(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "25") int size,
+            @RequestParam(required = false) String simulationId,
+            @RequestParam(required = false) String candidate
+    ) {
+        return ResponseEntity.ok(
+                participationQueryService.search(page, size, simulationId, candidate)
         );
     }
 
@@ -118,6 +142,55 @@ public class CompanyCandidateLinkController {
         );
     }
 
+    @PostMapping("/participations/{type}/{participationId}/resend")
+    @Operation(summary = "Reenvia o convite de uma participação existente")
+    public ResponseEntity<Void> resendParticipation(
+            @PathVariable String type,
+            @PathVariable String participationId
+    ) {
+        if (isJourney(type)) {
+            journeyLifecycleService.resendInvitation(participationId);
+        } else if (isIndividual(type)) {
+            companyCandidateLinkService.resendExisting(participationId);
+        } else {
+            throw invalidParticipationType();
+        }
+        return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/participations/{type}/{participationId}/extend")
+    @Operation(summary = "Amplia ou reativa a validade de uma participação")
+    public ResponseEntity<Void> extendParticipation(
+            @PathVariable String type,
+            @PathVariable String participationId,
+            @Valid @RequestBody ExtendCandidateLinkRequest request
+    ) {
+        if (isJourney(type)) {
+            journeyLifecycleService.extendValidity(participationId, request.additionalDays());
+        } else if (isIndividual(type)) {
+            companyCandidateLinkService.extendValidity(participationId, request.additionalDays());
+        } else {
+            throw invalidParticipationType();
+        }
+        return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/participations/{type}/{participationId}/cancel")
+    @Operation(summary = "Cancela uma participação por jornada")
+    public ResponseEntity<Void> cancelParticipation(
+            @PathVariable String type,
+            @PathVariable String participationId
+    ) {
+        if (!isJourney(type)) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Somente participações por jornada podem ser canceladas por este endpoint."
+            );
+        }
+        journeyLifecycleService.cancel(participationId);
+        return ResponseEntity.noContent().build();
+    }
+
     @PostMapping("/{attemptId}/disposition")
     @Operation(summary = "Registra a decisão humana sobre o candidato")
     public ResponseEntity<Void> registerDisposition(
@@ -132,5 +205,24 @@ public class CompanyCandidateLinkController {
     @Operation(summary = "Relatório de transparência do scoring")
     public ResponseEntity<EvidenceReport> evidenceReport(@PathVariable String attemptId) {
         return ResponseEntity.ok(evidenceReportService.build(attemptId));
+    }
+
+    private boolean isJourney(String type) {
+        return "journey".equals(normalize(type));
+    }
+
+    private boolean isIndividual(String type) {
+        return "individual".equals(normalize(type));
+    }
+
+    private String normalize(String type) {
+        return type == null ? "" : type.trim().toLowerCase(Locale.ROOT);
+    }
+
+    private ResponseStatusException invalidParticipationType() {
+        return new ResponseStatusException(
+                HttpStatus.BAD_REQUEST,
+                "Tipo de participação inválido. Use individual ou journey."
+        );
     }
 }
