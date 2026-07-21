@@ -218,4 +218,13 @@ public class SecurityConfig {
         registration.setEnabled(false);
         return registration;
     }
+
+    @Bean
+    public FilterRegistrationBean<PartnerSpecialistAuthorizationFilter> partnerSpecialistFilterRegistration(
+            PartnerSpecialistAuthorizationFilter filter
+    ) {
+        FilterRegistrationBean<PartnerSpecialistAuthorizationFilter> registration = new FilterRegistrationBean<>(filter);
+        registration.setEnabled(false);
+        return registration;
+    }
 }
