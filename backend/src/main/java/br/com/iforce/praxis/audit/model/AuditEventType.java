@@ -21,6 +21,7 @@ public enum AuditEventType implements DescribedEnum {
     PRIVACY_INCIDENT_RECORDED("privacyIncidentRecorded"),
     PRIVACY_INCIDENT_UPDATED("privacyIncidentUpdated"),
     HEALTH_COMPLIANCE_APPROVED("healthComplianceApproved"),
+    COMPANY_PROFILE_UPDATED("companyProfileUpdated"),
     SIMULATION_VERSION_DRAFT_CREATED("simulationVersionDraftCreated"),
     /** Estrutura e critérios da avaliação atualizados. */
     SIMULATION_VERSION_BLUEPRINT_UPDATED("simulationVersionAssessmentUpdated"),
