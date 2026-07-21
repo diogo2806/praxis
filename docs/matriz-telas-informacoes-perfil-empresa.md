@@ -1,7 +1,7 @@
 # Matriz de telas e informações do perfil EMPRESA
 
 Data da revisão: 21/07/2026  
-Base analisada: `main` com as correções dos PRs #421 e #422
+Base analisada: `main` com as correções dos PRs #421, #422 e #425
 
 ## 1. Escopo
 
@@ -47,7 +47,7 @@ Neste documento, **tabela** significa tabela ou lista visual da interface, não 
 | Status da correção | Classificação | Tela e rota | Tabelas, listas, cards e painéis | Modais e diálogos | Campos ou informações repetidos | Ação para manter a informação em um único lugar | Evidência ou próximo passo |
 |---|---|---|---|---|---|---|---|
 | `NÃO SE APLICA` | `RESUMO` | **Dashboard** `/dashboard` | Cards de avaliações, jornadas, participações, resultados, próxima ação e resultados recentes. | Nenhum. | Totais operacionais, participante, processo, situação, resultado e data. | Manter somente indicadores e atalhos. | A tela não mantém dados operacionais; somente resume. |
-| `PENDENTE` | `PARCIAL` | **Avaliações** `/avaliacoes` | Tabela mestre de avaliações, versões, situação, uso e conclusões. | Usa `window.prompt` e `window.confirm`. | Nome, descrição, competências, versão, status, aplicações e conclusões. | Tornar Avaliações proprietária do cadastro, versão e status. | Criar `Dialog` para duplicação e `AlertDialog` para arquivamento. |
+| `CONCLUÍDA` | `OK` | **Avaliações** `/avaliacoes` | Tabela mestre de avaliações, versões, situação, uso e conclusões. | `Dialog` para duplicação e `AlertDialog` para arquivamento. | Nome, descrição, competências, versão, status, aplicações e conclusões. | Manter Avaliações como proprietária do cadastro, versão, status e ações administrativas. | PR #425 removeu `window.prompt` e `window.confirm`, adicionou validação, estados de erro/carregamento e manual específico. |
 | `PENDENTE` | `DUPLICADO` | **Nova avaliação** `/nova/avaliacao` | Formulário, seletor e busca de competências. | Nenhum. | Cargo, situação crítica e competências. | Manter aqui o plano inicial, mas remover criação de competência global. | Permitir somente selecionar competências do catálogo. |
 | `PENDENTE` | `DUPLICADO` | **Objetivo do modelo base** `/nova/objetivo` | Card da versão, competências e resumo. | Nenhum. | Nome, descrição, status, primeira etapa, versão e competências. | Transformar em resumo somente leitura ou remover a rota. | Retirar a edição de competências. |
 | `PENDENTE` | `CONTEXTUAL` | **Personagem** `/nova/personagem` | Formulário e banners de salvamento. | Nenhum. | Mensagem inicial ainda pode ser alterada em Diálogo e Mapa. | Personagem deve ser proprietária do contexto e mensagem inicial. | Bloquear edição concorrente nos demais editores. |
@@ -77,15 +77,15 @@ Neste documento, **tabela** significa tabela ou lista visual da interface, não 
 | `NÃO SE APLICA` | `OK` | **Plano e cobrança** `/billing` | Créditos, assinatura, uso e históricos. | Cancelamento e checkout externo. | Situação financeira pode bloquear convites. | Manter dados financeiros em Billing. | Responsabilidade centralizada. |
 | `NÃO SE APLICA` | `OK` | **Minha conta** `/configuracoes/conta` | Usuário e alteração de senha. | Nenhum. | Nome e e-mail aparecem no menu e em Equipe. | Manter somente credenciais pessoais. | Vínculo e permissão ficam em Equipe. |
 | `PENDENTE` | `PARCIAL` | **Comece aqui** `/comecar` | Etapas, progresso e links rápidos. | Nenhum. | Resume Dashboard e demais telas. | Manter somente como onboarding. | Corrigir convite para abrir Participações e ocultar após conclusão. |
-| `EM ANDAMENTO` | `PARCIAL` | **Central de manuais** `/manual` | Lista de manuais e painel lateral. | `Sheet` lateral. | Alguns textos ainda descrevem responsabilidades antigas. | Manter manual específico por rota. | PR #422 adicionou o manual de Perfil da empresa; outras rotas pendentes da matriz ainda precisam de revisão. |
+| `EM ANDAMENTO` | `PARCIAL` | **Central de manuais** `/manual` | Lista de manuais e painel lateral. | `Sheet` lateral. | Alguns textos ainda descrevem responsabilidades antigas. | Manter manual específico por rota. | PR #425 adicionou o manual de Avaliações; outras rotas pendentes da matriz ainda precisam de revisão. |
 
 ## 4. Campos e informações que aparecem em mais de uma tela
 
 A repetição pode permanecer quando for apenas **resumo**, **referência somente leitura** ou **cabeçalho contextual**. O problema ocorre quando duas telas permitem criar, alterar, decidir ou operar sobre o mesmo dado.
 
-| Status da correção | Informação | Tela proprietária | Situação após os PRs #421 e #422 | Próximo passo |
+| Status da correção | Informação | Tela proprietária | Situação após os PRs #421, #422 e #425 | Próximo passo |
 |---|---|---|---|---|
-| `EM ANDAMENTO` | Nome, descrição, versão e status da avaliação | **Avaliações** | Compliance deixou de manter lista concorrente, mas outras telas ainda possuem seletores globais. | Retirar seletores desnecessários. |
+| `EM ANDAMENTO` | Nome, descrição, versão e status da avaliação | **Avaliações** | Avaliações centraliza ações administrativas com diálogos padronizados; telas contextuais ainda possuem seletores globais. | Retirar seletores desnecessários das telas contextuais. |
 | `PENDENTE` | Competências do catálogo | **Competências** | Catálogo existe, mas Nova avaliação e Objetivo ainda mantêm ações concorrentes. | Remover criação e edição fora do catálogo. |
 | `PENDENTE` | Competências e pesos da versão | **Nova avaliação** | Ainda há mais de um ponto de edição. | Definir um único editor. |
 | `PENDENTE` | Personagem e mensagem inicial | **Personagem** | Validador deixou de editar, mas Diálogo e Mapa ainda podem concorrer. | Bloquear edição concorrente. |
@@ -145,7 +145,7 @@ A repetição pode permanecer quando for apenas **resumo**, **referência soment
 | `PENDENTE` | Retirar integrações saudáveis de Monitoramento. | Monitoramento apresenta somente exceções e retentativas. |
 | `PENDENTE` | Remover entregas operacionais de Ativação Gupy. | Entregas ficam somente em Monitoramento. |
 | `CONCLUÍDA` | Tornar Perfil da empresa acionável. | PR #422 adicionou edição, validação, auditoria, testes e manual específico. |
-| `PENDENTE` | Padronizar confirmações e modais. | Avaliações, Jornadas e Governança usam `Dialog` ou `AlertDialog`. |
+| `EM ANDAMENTO` | Padronizar confirmações e modais. | PR #425 concluiu Avaliações; Jornadas e Governança ainda precisam usar `Dialog` ou `AlertDialog`. |
 
 ### P2 — permissões e acabamento
 
@@ -154,7 +154,7 @@ A repetição pode permanecer quando for apenas **resumo**, **referência soment
 | `PENDENTE` | Criar subperfis de EMPRESA. | Backend e frontend distinguem os perfis autorizados. |
 | `PENDENTE` | Incluir perfil e permissões em Equipe. | Modal e tabela mostram e alteram o perfil autorizado. |
 | `PENDENTE` | Restringir Parceiros. | Rota aparece somente para empresa parceira e permissão específica. |
-| `EM ANDAMENTO` | Atualizar manuais de tela. | PR #422 adicionou o manual de Perfil da empresa; outras rotas da matriz continuam pendentes. |
+| `EM ANDAMENTO` | Atualizar manuais de tela. | PR #425 adicionou o manual de Avaliações; outras rotas da matriz continuam pendentes. |
 | `PENDENTE` | Ocultar Comece aqui após onboarding. | Guia deixa o menu operacional e permanece em Ajuda. |
 
 ## 7. Critério para atualizar o status
