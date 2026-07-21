@@ -5,7 +5,7 @@ import {
   hasRole,
   isRestrictedPartnerSpecialist,
 } from "@/lib/access-control";
-import { getRuntimeConfig } from "@/lib/runtime-config";
+import { getRuntimeConfig, refreshRuntimeConfigFromBackend } from "@/lib/runtime-config";
 
 export type PraxisSession = {
   token: string | null;
@@ -75,10 +75,22 @@ export function useSession() {
   const [session, setSession] = useState<PraxisSession>(anonymousSession);
 
   useEffect(() => {
+    let active = true;
+
+    const synchronizeSession = () => {
+      if (!active) return;
+      const currentSession = getSession();
+      setSession(currentSession);
+      applyBrowserAccessPolicy(currentSession.roles);
+    };
+
     migrateLegacySession();
-    const authenticatedSession = getSession();
-    setSession(authenticatedSession);
-    applyBrowserAccessPolicy(authenticatedSession.roles);
+    synchronizeSession();
+    void refreshRuntimeConfigFromBackend().then(synchronizeSession);
+
+    return () => {
+      active = false;
+    };
   }, []);
 
   return session;
