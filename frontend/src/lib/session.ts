@@ -1,7 +1,9 @@
 import { useEffect, useState } from "react";
 import {
+  ADMIN_ROLE,
   applyBrowserAccessPolicy,
-  resolveDefaultAuthenticatedRoute,
+  hasRole,
+  isRestrictedPartnerSpecialist,
 } from "@/lib/access-control";
 
 export type PraxisSession = {
@@ -82,8 +84,15 @@ export function clearAuthenticatedSession() {
   applyBrowserAccessPolicy([]);
 }
 
-export function defaultAuthenticatedRoute(): "/admin" | "/avaliacoes" {
-  return resolveDefaultAuthenticatedRoute(getSession().roles);
+export function defaultAuthenticatedRoute(): "/admin" | "/avaliacoes" | "/dashboard" {
+  const roles = getSession().roles;
+  if (hasRole(roles, ADMIN_ROLE)) {
+    return "/admin";
+  }
+  if (isRestrictedPartnerSpecialist(roles)) {
+    return "/avaliacoes";
+  }
+  return "/dashboard";
 }
 
 function migrateLegacySession() {

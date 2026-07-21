@@ -1,7 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { BookOpenText } from "lucide-react";
+
 import { AppShell } from "@/components/app-shell";
 import { ScreenManualContent } from "@/components/screen-manual";
+import { SCREEN_MANUAL_OVERRIDES } from "@/lib/screen-manual-overrides";
 import { SCREEN_MANUALS } from "@/lib/screen-manuals";
 
 export const Route = createFileRoute("/manual")({
@@ -17,10 +19,17 @@ export const Route = createFileRoute("/manual")({
   component: ManualPage,
 });
 
+const REPLACED_BASE_MANUALS = new Set(["jornadas", "operacao"]);
+
 function ManualPage() {
+  const manuals = [
+    ...SCREEN_MANUAL_OVERRIDES,
+    ...SCREEN_MANUALS.filter((manual) => !REPLACED_BASE_MANUALS.has(manual.id)),
+  ];
+
   return (
     <AppShell>
-      <div className="mx-auto max-w-5xl">
+      <main className="mx-auto max-w-5xl">
         <header className="mb-8">
           <div className="flex items-center gap-3">
             <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-primary/10 text-primary">
@@ -37,13 +46,10 @@ function ManualPage() {
           </div>
         </header>
 
-        <nav
-          aria-label="Processos documentados"
-          className="mb-8 rounded-xl border border-border bg-card p-4"
-        >
+        <nav aria-label="Processos documentados" className="mb-8 rounded-xl border border-border bg-card p-4">
           <div className="mb-3 text-sm font-semibold text-foreground">Processos documentados</div>
           <div className="flex flex-wrap gap-2">
-            {SCREEN_MANUALS.map((manual) => (
+            {manuals.map((manual) => (
               <a
                 key={manual.id}
                 href={`#${manual.id}`}
@@ -56,12 +62,8 @@ function ManualPage() {
         </nav>
 
         <div className="space-y-8">
-          {SCREEN_MANUALS.map((manual) => (
-            <article
-              key={manual.id}
-              id={manual.id}
-              className="scroll-mt-24 rounded-xl border border-border bg-card shadow-sm"
-            >
+          {manuals.map((manual) => (
+            <article key={manual.id} id={manual.id} className="scroll-mt-24 rounded-xl border border-border bg-card shadow-sm">
               <header className="border-b border-border px-5 py-4 sm:px-6">
                 <h2 className="text-xl font-semibold text-foreground">{manual.title}</h2>
               </header>
@@ -69,7 +71,7 @@ function ManualPage() {
             </article>
           ))}
         </div>
-      </div>
+      </main>
     </AppShell>
   );
 }
