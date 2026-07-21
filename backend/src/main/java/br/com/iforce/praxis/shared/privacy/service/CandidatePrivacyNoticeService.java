@@ -44,6 +44,7 @@ public class CandidatePrivacyNoticeService {
     private final String fallbackLegalBasis;
     private final String fallbackNoticeVersion;
     private final boolean enforceReadiness;
+    private final boolean enforceTermsAcceptance;
     private final String termsVersion;
     private final String termsHash;
 
@@ -62,6 +63,7 @@ public class CandidatePrivacyNoticeService {
             @Value("${praxis.privacy.legal-basis:Base legal definida e documentada pelo controlador}") String fallbackLegalBasis,
             @Value("${praxis.privacy.notice-version:2026-07-20}") String fallbackNoticeVersion,
             @Value("${praxis.privacy.enforce-readiness:true}") boolean enforceReadiness,
+            @Value("${praxis.privacy.enforce-terms-acceptance:true}") boolean enforceTermsAcceptance,
             @Value("${praxis.legal.terms-version:1.1}") String termsVersion,
             @Value("${praxis.legal.terms-hash:}") String termsHash
     ) {
@@ -79,6 +81,7 @@ public class CandidatePrivacyNoticeService {
         this.fallbackLegalBasis = fallbackLegalBasis;
         this.fallbackNoticeVersion = fallbackNoticeVersion;
         this.enforceReadiness = enforceReadiness;
+        this.enforceTermsAcceptance = enforceTermsAcceptance;
         this.termsVersion = isBlank(termsVersion) ? "1.1" : termsVersion.trim();
         this.termsHash = isBlank(termsHash) ? DEFAULT_TERMS_HASH : termsHash.trim().toLowerCase();
     }
@@ -136,6 +139,9 @@ public class CandidatePrivacyNoticeService {
 
     @Transactional(readOnly = true)
     public void assertAcknowledged(String attemptToken) {
+        if (!enforceTermsAcceptance) {
+            return;
+        }
         ResolvedContext context = resolve(attemptToken);
         CandidatePrivacyNoticeResponse notice = noticeFor(context.empresa());
         assertReadiness(notice);

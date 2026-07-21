@@ -102,7 +102,7 @@ public class PartnerService {
                 new InviteTeamUserRequest(request.name(), request.email())
         );
         UserEntity user = requireUser(empresaId, invited.user().id());
-        user.setRoles(Set.of(PARTNER_SPECIALIST_ROLE));
+        user.setRoles(new HashSet<>(Set.of(PARTNER_SPECIALIST_ROLE)));
 
         TeamUserResponse response = new TeamUserResponse(
                 user.getId(),
@@ -124,7 +124,7 @@ public class PartnerService {
     ) {
         requirePartnerManager(actorUserId, empresaId);
         UserEntity user = requireUser(empresaId, userId);
-        user.setRoles(Set.of(PARTNER_SPECIALIST_ROLE));
+        user.setRoles(new HashSet<>(Set.of(PARTNER_SPECIALIST_ROLE)));
         return toSpecialist(user);
     }
 
@@ -132,7 +132,7 @@ public class PartnerService {
     public void removeSpecialist(String actorUserId, String empresaId, Long userId) {
         requirePartnerManager(actorUserId, empresaId);
         UserEntity user = requireUser(empresaId, userId);
-        user.setRoles(Set.of(EMPRESA_ROLE));
+        user.setRoles(new HashSet<>(Set.of(EMPRESA_ROLE)));
     }
 
     @Transactional(readOnly = true)

@@ -66,6 +66,7 @@ class CandidatePrivacyNoticeServiceTest {
                 "Execução do processo seletivo",
                 "2026-07-20",
                 true,
+                true,
                 "1.1",
                 TERMS_HASH
         );

@@ -27,6 +27,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 
+import java.util.LinkedHashSet;
 import java.util.Set;
 
 
@@ -87,7 +88,7 @@ public class AdminBootstrap implements ApplicationRunner {
         admin.setEmail(email);
         admin.setName(name);
         admin.setPasswordHash(passwordEncoder.encode(password));
-        admin.setRoles(Set.of(ADMIN_ROLE));
+        admin.setRoles(new LinkedHashSet<>(Set.of(ADMIN_ROLE)));
         admin.setStatus(UserStatus.ATIVO);
         admin.setCreatedAt(Instant.now());
         userRepository.save(admin);
