@@ -1,7 +1,7 @@
 # Matriz de telas e informações do perfil EMPRESA
 
 Data da revisão: 21/07/2026  
-Base analisada: `main` com as correções do PR #421
+Base analisada: `main` com as correções dos PRs #421 e #422
 
 ## 1. Escopo
 
@@ -67,7 +67,7 @@ Neste documento, **tabela** significa tabela ou lista visual da interface, não 
 | `PENDENTE` | `CONTEXTUAL` | **Talent Match** `/talent-match` | Seleção de avaliação, candidatos, radar e benchmark. | Nenhum. | Resultados, candidatos, avaliação e competências. | Abrir com contexto obrigatório. | Retirar seletor global e impedir segunda lista de candidatos. |
 | `PENDENTE` | `PARCIAL` | **Central operacional** `/monitoramento` | Métricas, integrações com atenção, alertas e DLQ. | Nenhum. | Status saudável e entregas aparecem em outras telas. | Manter somente erros, exceções, retry e DLQ. | Retirar integrações saudáveis e criar filtros. |
 | `CONCLUÍDA` | `CONTEXTUAL` | **Compliance** `/compliance` | Cards de contexto, prontidão e atalhos para telas proprietárias. | Nenhum diálogo ou tabela global. | Exibe somente resumo de validação da versão selecionada. | Abrir somente com avaliação e versão; direcionar cada responsabilidade. | PR #421 removeu a lista global e o item de menu; Validador, Governança, Privacidade e Avaliações permanecem proprietários dos dados. |
-| `PENDENTE` | `SEM AÇÃO` | **Perfil da empresa** `/configuracoes/perfil` | Cards e campos somente leitura. | Nenhum. | Nome, status e contatos. | Permitir edição ou solicitação de alteração. | Caso continue somente leitura, retirar do menu. |
+| `CONCLUÍDA` | `OK` | **Perfil da empresa** `/configuracoes/perfil` | Cards de consulta e formulário de edição de nome, razão social, CNPJ, e-mail, telefone e site. | Nenhum modal; ações Salvar e Cancelar ficam no próprio formulário. | Dados cadastrais podem aparecer como referência curta no Dashboard, Billing e integrações. | Manter criação e alteração dos dados cadastrais nesta tela; demais telas mostram somente referência. | PR #422 adicionou atualização protegida por perfil EMPRESA, validação, auditoria, testes e manual específico. |
 | `EM ANDAMENTO` | `OK` | **Competências** `/competencias` | Total, busca e tabela paginada. | Criar/editar e confirmação de remoção. | Competências usadas em criação, resultados e comparação. | Manter como única proprietária do catálogo. | Falta impedir criação global em Nova avaliação e atualizar outros manuais. |
 | `EM ANDAMENTO` | `PARCIAL` | **Minha equipe** `/team` | Tabela de usuários e ações. | Convite e confirmação de bloqueio. | Nome e e-mail em Minha conta, menu e Parceiros. | Concentrar vínculos e permissões internas. | Faltam perfil, permissões e coluna de acesso. |
 | `PENDENTE` | `CONDICIONAL` | **Parceiros e especialistas** `/parceiros` | Especialistas, clientes, catálogo e formulários. | Confirmações não totalmente padronizadas. | Usuários, provedores e tokens. | Restringir por feature flag e permissão. | Separar token de parceiro do token técnico de integração. |
@@ -77,13 +77,13 @@ Neste documento, **tabela** significa tabela ou lista visual da interface, não 
 | `NÃO SE APLICA` | `OK` | **Plano e cobrança** `/billing` | Créditos, assinatura, uso e históricos. | Cancelamento e checkout externo. | Situação financeira pode bloquear convites. | Manter dados financeiros em Billing. | Responsabilidade centralizada. |
 | `NÃO SE APLICA` | `OK` | **Minha conta** `/configuracoes/conta` | Usuário e alteração de senha. | Nenhum. | Nome e e-mail aparecem no menu e em Equipe. | Manter somente credenciais pessoais. | Vínculo e permissão ficam em Equipe. |
 | `PENDENTE` | `PARCIAL` | **Comece aqui** `/comecar` | Etapas, progresso e links rápidos. | Nenhum. | Resume Dashboard e demais telas. | Manter somente como onboarding. | Corrigir convite para abrir Participações e ocultar após conclusão. |
-| `EM ANDAMENTO` | `PARCIAL` | **Central de manuais** `/manual` | Lista de manuais e painel lateral. | `Sheet` lateral. | Alguns textos ainda descrevem responsabilidades antigas. | Manter manual específico por rota. | PR #421 concluiu Validador, Participações, convite por jornada e Compliance; ainda faltam outras rotas pendentes da matriz. |
+| `EM ANDAMENTO` | `PARCIAL` | **Central de manuais** `/manual` | Lista de manuais e painel lateral. | `Sheet` lateral. | Alguns textos ainda descrevem responsabilidades antigas. | Manter manual específico por rota. | PR #422 adicionou o manual de Perfil da empresa; outras rotas pendentes da matriz ainda precisam de revisão. |
 
 ## 4. Campos e informações que aparecem em mais de uma tela
 
 A repetição pode permanecer quando for apenas **resumo**, **referência somente leitura** ou **cabeçalho contextual**. O problema ocorre quando duas telas permitem criar, alterar, decidir ou operar sobre o mesmo dado.
 
-| Status da correção | Informação | Tela proprietária | Situação após o PR #421 | Próximo passo |
+| Status da correção | Informação | Tela proprietária | Situação após os PRs #421 e #422 | Próximo passo |
 |---|---|---|---|---|
 | `EM ANDAMENTO` | Nome, descrição, versão e status da avaliação | **Avaliações** | Compliance deixou de manter lista concorrente, mas outras telas ainda possuem seletores globais. | Retirar seletores desnecessários. |
 | `PENDENTE` | Competências do catálogo | **Competências** | Catálogo existe, mas Nova avaliação e Objetivo ainda mantêm ações concorrentes. | Remover criação e edição fora do catálogo. |
@@ -99,7 +99,7 @@ A repetição pode permanecer quando for apenas **resumo**, **referência soment
 | `PENDENTE` | Configuração e token de integração | **Detalhe da integração** | Parceiros e telas Gupy ainda precisam separar responsabilidades. | Distinguir tokens. |
 | `PENDENTE` | Falhas, retry e DLQ | **Monitoramento** | Ativação e Homologação Gupy ainda repetem informações. | Remover listas concorrentes. |
 | `PENDENTE` | Status saudável da integração | **Integrações** | Monitoramento ainda mostra itens saudáveis. | Retirar itens saudáveis da central operacional. |
-| `PENDENTE` | Dados cadastrais da empresa | **Configurações da empresa** | Perfil permanece somente leitura. | Permitir edição ou solicitação. |
+| `CONCLUÍDA` | Dados cadastrais da empresa | **Perfil da empresa** | A própria empresa consulta e altera os campos em uma API isolada por empresa, com validação e auditoria. | Dashboard, Billing e integrações devem continuar somente exibindo referências. |
 | `EM ANDAMENTO` | Usuário, e-mail, status e acesso | **Equipe e Minha conta** | Responsabilidades básicas separadas. | Criar perfis e permissões. |
 | `CONCLUÍDA` | Plano, créditos e situação financeira | **Billing** | Responsabilidade já centralizada. | Manter saldo e histórico fora das demais telas. |
 | `PENDENTE` | Progresso de onboarding | **Comece aqui** | Destino do convite e ocultação ainda pendentes. | Corrigir fluxo de conclusão. |
@@ -121,7 +121,7 @@ A repetição pode permanecer quando for apenas **resumo**, **referência soment
 | Evidências e decisão humana | Detalhe do resultado | Resultados e Talent Match mostram resumo |
 | Configuração de integrações | Integrações e detalhe | Monitoramento mostra somente erro |
 | Falhas e retentativas | Monitoramento | Gupy e Dashboard mostram contagem ou atalho |
-| Dados empresariais | Configurações da empresa | Dashboard e Billing mostram identificação curta |
+| Dados empresariais | Perfil da empresa | Dashboard e Billing mostram identificação curta |
 | Usuários e permissões | Minha equipe | Minha conta mantém somente senha própria |
 | Financeiro | Billing | Outras telas mostram bloqueio com link |
 
@@ -144,7 +144,7 @@ A repetição pode permanecer quando for apenas **resumo**, **referência soment
 | `CONCLUÍDA` | Reconhecer convite por jornada como contexto de Participações. | AppShell, manual, read model e ações funcionam como um único fluxo no PR #421. |
 | `PENDENTE` | Retirar integrações saudáveis de Monitoramento. | Monitoramento apresenta somente exceções e retentativas. |
 | `PENDENTE` | Remover entregas operacionais de Ativação Gupy. | Entregas ficam somente em Monitoramento. |
-| `PENDENTE` | Tornar Perfil da empresa acionável. | Usuário autorizado edita ou solicita alteração. |
+| `CONCLUÍDA` | Tornar Perfil da empresa acionável. | PR #422 adicionou edição, validação, auditoria, testes e manual específico. |
 | `PENDENTE` | Padronizar confirmações e modais. | Avaliações, Jornadas e Governança usam `Dialog` ou `AlertDialog`. |
 
 ### P2 — permissões e acabamento
@@ -154,7 +154,7 @@ A repetição pode permanecer quando for apenas **resumo**, **referência soment
 | `PENDENTE` | Criar subperfis de EMPRESA. | Backend e frontend distinguem os perfis autorizados. |
 | `PENDENTE` | Incluir perfil e permissões em Equipe. | Modal e tabela mostram e alteram o perfil autorizado. |
 | `PENDENTE` | Restringir Parceiros. | Rota aparece somente para empresa parceira e permissão específica. |
-| `EM ANDAMENTO` | Atualizar manuais de tela. | PR #421 concluiu os quatro manuais afetados; outras rotas da matriz continuam pendentes. |
+| `EM ANDAMENTO` | Atualizar manuais de tela. | PR #422 adicionou o manual de Perfil da empresa; outras rotas da matriz continuam pendentes. |
 | `PENDENTE` | Ocultar Comece aqui após onboarding. | Guia deixa o menu operacional e permanece em Ajuda. |
 
 ## 7. Critério para atualizar o status
