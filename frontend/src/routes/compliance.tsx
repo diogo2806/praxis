@@ -79,7 +79,7 @@ function CompliancePage() {
         </header>
 
         {!hasContext ? (
-          <StateBanner tone="warning" title="Abra a conformidade a partir de uma avaliação">
+          <StateBanner tone="warn" title="Abra a conformidade a partir de uma avaliação">
             Selecione uma avaliação e uma versão em Avaliações ou no Validador. A conformidade não
             possui mais uma listagem global concorrente.
             <div className="mt-4">
@@ -145,36 +145,36 @@ function CompliancePage() {
                 title="Validação estrutural"
                 description="Bloqueios, avisos, qualidade e prontidão são mantidos pelo Validador."
                 action="Abrir Validador"
-                to="/nova/validador"
-                search={{
-                  simulationId: validation.simulationId,
-                  versionNumber: validation.versionNumber,
-                }}
+                href={contextHref(
+                  "/nova/validador",
+                  validation.simulationId,
+                  validation.versionNumber,
+                )}
               />
               <ResponsibilityCard
                 icon={FileCheck2}
                 title="Publicação e auditoria"
                 description="Termos, aceite, publicação e trilha de alterações pertencem à Governança."
                 action="Abrir Governança"
-                to="/nova/governanca"
-                search={{
-                  simulationId: validation.simulationId,
-                  versionNumber: validation.versionNumber,
-                }}
+                href={contextHref(
+                  "/nova/governanca",
+                  validation.simulationId,
+                  validation.versionNumber,
+                )}
               />
               <ResponsibilityCard
                 icon={LockKeyhole}
                 title="Privacidade corporativa"
                 description="Solicitações de titulares, retenção e controles LGPD ficam na área de Privacidade."
                 action="Abrir Privacidade"
-                to="/privacidade"
+                href="/privacidade"
               />
               <ResponsibilityCard
                 icon={ShieldCheck}
                 title="Cadastro e ciclo da avaliação"
                 description="Nome, descrição, versão e situação continuam centralizados em Avaliações."
                 action="Abrir Avaliações"
-                to="/avaliacoes"
+                href="/avaliacoes"
               />
             </section>
 
@@ -183,7 +183,7 @@ function CompliancePage() {
                 A publicação ainda depende dos termos e confirmações apresentados em Governança.
               </StateBanner>
             ) : (
-              <StateBanner tone="warning" title="Existem bloqueios estruturais">
+              <StateBanner tone="warn" title="Existem bloqueios estruturais">
                 Corrija os {validation.blockerCount} bloqueio(s) no fluxo indicado pelo Validador antes
                 de tentar publicar.
               </StateBanner>
@@ -200,15 +200,13 @@ function ResponsibilityCard({
   title,
   description,
   action,
-  to,
-  search,
+  href,
 }: {
   icon: typeof ShieldCheck;
   title: string;
   description: string;
   action: string;
-  to: string;
-  search?: { simulationId: string; versionNumber: number };
+  href: string;
 }) {
   return (
     <article className="rounded-xl border border-border bg-card p-5">
@@ -223,9 +221,7 @@ function ResponsibilityCard({
       </div>
       <div className="mt-4">
         <Button asChild variant="outline">
-          <Link to={to} search={search}>
-            {action}
-          </Link>
+          <a href={href}>{action}</a>
         </Button>
       </div>
     </article>
@@ -256,6 +252,14 @@ function MetricCard({
       </div>
     </article>
   );
+}
+
+function contextHref(path: string, simulationId: string, versionNumber: number) {
+  const params = new URLSearchParams({
+    simulationId,
+    versionNumber: String(versionNumber),
+  });
+  return `${path}?${params.toString()}`;
 }
 
 function findSimulation(
