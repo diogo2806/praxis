@@ -7,8 +7,9 @@ import java.util.Optional;
 
 public interface CandidateNoticeAcceptanceRepository extends JpaRepository<CandidateNoticeAcceptanceEntity, Long> {
 
-    Optional<CandidateNoticeAcceptanceEntity> findByAttemptIdAndNoticeVersion(
+    Optional<CandidateNoticeAcceptanceEntity> findByAttemptIdAndNoticeVersionAndTermsVersion(
             String attemptId,
-            String noticeVersion
+            String noticeVersion,
+            String termsVersion
     );
 }
