@@ -1,7 +1,7 @@
 # Matriz de telas e informações do perfil EMPRESA
 
 Data da revisão: 21/07/2026  
-Base analisada: `main` com as correções dos PRs #421, #422, #425, #426, #427, #428, #429, #430, #431, #432, #433, #434, #435, #436 e #438
+Base analisada: `main` com as correções dos PRs #421, #422, #425, #426, #427, #428, #429, #430, #431, #432, #433, #434, #435, #436, #438, #441 e #442
 
 ## 1. Escopo
 
@@ -50,8 +50,8 @@ A repetição é permitida quando representa apenas resumo, referência somente 
 | 16 | `CONCLUÍDA` | `CONTEXTUAL` | **Convite por jornada** `/participacoes/jornada` | Formulário de criação de convite por jornada. | PR #421 adicionou validade, reenvio, extensão, reativação e cancelamento. |
 | 17 | `NÃO SE APLICA` | `OK` | **Resultados** `/results` | Lista de resultados concluídos. | Não mantém convite, validade ou progresso. |
 | 18 | `NÃO SE APLICA` | `OK` | **Detalhe do resultado** `/results/$attemptId` | Evidências, competências, percurso e decisão humana. | Responsabilidade centralizada. |
-| 19 | `PENDENTE` | `CONTEXTUAL` | **Talent Match** `/talent-match` | Comparação analítica de resultados. | Exigir contexto e retirar segunda lista global de candidatos. |
-| 20 | `PENDENTE` | `PARCIAL` | **Central operacional** `/monitoramento` | Deve apresentar somente falhas, exceções, retry e DLQ. | Retirar integrações saudáveis e criar filtros. |
+| 19 | `CONCLUÍDA` | `CONTEXTUAL` | **Talent Match** `/talent-match` | Comparação analítica da avaliação e versão abertas. | PR #442 removeu a seleção global e passou a consultar somente participações concluídas do contexto informado. |
+| 20 | `CONCLUÍDA` | `OK` | **Central operacional** `/monitoramento` | Fila de integrações com atenção, retentativas, DLQ e alertas não lidos. | PR #442 retirou integrações saudáveis, adicionou filtros e separou retentativa automática de reprocessamento manual. |
 | 21 | `CONCLUÍDA` | `CONTEXTUAL` | **Compliance** `/compliance` | Resumo contextual e atalhos para telas proprietárias. | PR #421 removeu lista e diálogo concorrentes. |
 | 22 | `CONCLUÍDA` | `OK` | **Perfil da empresa** `/configuracoes/perfil` | Consulta e edição dos dados cadastrais. | PR #422 implementou edição e auditoria; PR #427 corrigiu o import da API. |
 | 23 | `CONCLUÍDA` | `OK` | **Competências** `/competencias` | Única proprietária do catálogo global. | PR #426 removeu criação e edição concorrentes. |
@@ -63,7 +63,7 @@ A repetição é permitida quando representa apenas resumo, referência somente 
 | 29 | `NÃO SE APLICA` | `OK` | **Plano e cobrança** `/billing` | Créditos, assinatura, uso e histórico financeiro. | Responsabilidade centralizada. |
 | 30 | `NÃO SE APLICA` | `OK` | **Minha conta** `/configuracoes/conta` | Credenciais pessoais do usuário autenticado. | Vínculo e permissões ficam em Minha equipe. |
 | 31 | `PENDENTE` | `PARCIAL` | **Comece aqui** `/comecar` | Onboarding inicial da empresa. | Corrigir destino do convite e ocultar após conclusão. |
-| 32 | `EM ANDAMENTO` | `PARCIAL` | **Central de manuais** `/manual` | Processo completo e manual contextual por rota. | PR #438 adicionou Ativação Gupy e atualizou Jornadas; ainda faltam telas pendentes. |
+| 32 | `EM ANDAMENTO` | `PARCIAL` | **Central de manuais** `/manual` | Processo completo e manual contextual por rota. | PR #442 adicionou Talent Match e Central operacional; ainda faltam telas pendentes. |
 
 ## 4. Propriedade das informações
 
@@ -79,7 +79,8 @@ A repetição é permitida quando representa apenas resumo, referência somente 
 | `CONCLUÍDA` | Publicação, aceite e auditoria | **Governança** | PR #434 padronizou a confirmação; Compliance mostra apenas referência contextual. |
 | `CONCLUÍDA` | Convite, validade e progresso | **Participações** | Individuais e jornadas usam o mesmo read model. |
 | `CONCLUÍDA` | Score, evidências e decisão humana | **Detalhe do resultado** | Listas exibem somente resumo. |
-| `EM ANDAMENTO` | Falhas, retry e DLQ | **Monitoramento** | PR #438 removeu a duplicidade na Ativação Gupy; falta retirar integrações saudáveis e criar filtros. |
+| `CONCLUÍDA` | Comparação de resultados por avaliação e versão | **Talent Match** | PR #442 exige contexto e consulta somente participantes concluídos desse recorte. |
+| `CONCLUÍDA` | Falhas, retry e DLQ | **Monitoramento** | PR #442 centralizou somente exceções acionáveis e filtros da fila operacional. |
 | `CONCLUÍDA` | Dados cadastrais da empresa | **Perfil da empresa** | Outras telas exibem somente identificação curta. |
 | `EM ANDAMENTO` | Usuário, vínculo, perfil e acesso | **Minha equipe** | Minha conta mantém apenas credenciais próprias. |
 | `CONCLUÍDA` | Plano, créditos e situação financeira | **Billing** | Outras telas mostram somente bloqueio e atalho. |
@@ -100,7 +101,7 @@ A repetição é permitida quando representa apenas resumo, referência somente 
 |---|---|---|
 | `CONCLUÍDA` | Centralizar catálogo e seleção de competências. | PR #426. |
 | `PENDENTE` | Corrigir o destino de convite em Comece aqui. | Abrir Participações ou convite por jornada. |
-| `PENDENTE` | Retirar integrações saudáveis de Monitoramento. | Manter somente exceções e retentativas. |
+| `CONCLUÍDA` | Retirar integrações saudáveis de Monitoramento. | PR #442 manteve somente integrações com atenção, retentativas, DLQ e alertas. |
 | `CONCLUÍDA` | Remover entregas operacionais de Ativação Gupy. | PR #438 manteve apenas o preflight e criou atalho para Monitoramento. |
 | `CONCLUÍDA` | Tornar Perfil da empresa acionável. | PR #422. |
 | `CONCLUÍDA` | Padronizar confirmações e modais. | PR #438 concluiu Jornadas após Avaliações e Governança. |
@@ -112,7 +113,7 @@ A repetição é permitida quando representa apenas resumo, referência somente 
 | `PENDENTE` | Criar subperfis de EMPRESA. | Backend e frontend devem distinguir os perfis autorizados. |
 | `PENDENTE` | Incluir perfil e permissões em Equipe. | Modal e tabela devem mostrar e alterar o acesso. |
 | `PENDENTE` | Restringir Parceiros. | Rota somente para empresa parceira e permissão específica. |
-| `EM ANDAMENTO` | Atualizar manuais de tela. | PR #438 adicionou Ativação Gupy e atualizou Jornadas; outras rotas continuam pendentes. |
+| `EM ANDAMENTO` | Atualizar manuais de tela. | PR #442 adicionou Talent Match e Central operacional; outras rotas continuam pendentes. |
 | `PENDENTE` | Ocultar Comece aqui após onboarding. | Guia deve permanecer apenas em Ajuda. |
 
 ## 6. Critério para atualizar o status
