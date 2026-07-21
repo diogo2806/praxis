@@ -47,7 +47,7 @@ function TermsPage() {
           </section>
           <section>
             <h2 className="text-lg font-semibold text-foreground">Privacidade</h2>
-            <p>O tratamento de dados segue o aviso de privacidade aplicável à participação e o contrato de tratamento de dados firmado com a empresa cliente. Pedidos de titulares e revisão humana podem ser registrados pelo link da participação.</p>
+            <p>O tratamento de dados segue a Política de Privacidade, as informações específicas apresentadas antes da participação e o contrato de tratamento de dados firmado com a empresa cliente. Pedidos de titulares e revisão humana podem ser registrados pelo link da participação.</p>
           </section>
           <section>
             <h2 className="text-lg font-semibold text-foreground">Disponibilidade e responsabilidade</h2>
