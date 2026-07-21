@@ -3,6 +3,7 @@ import { BookOpenText } from "lucide-react";
 
 import { AppShell } from "@/components/app-shell";
 import { ScreenManualContent } from "@/components/screen-manual";
+import { ACCESS_ONBOARDING_MANUALS } from "@/lib/screen-manual-access-onboarding";
 import { ANALYSIS_OPERATION_MANUALS } from "@/lib/screen-manual-analysis-operations";
 import { COMPETENCY_OWNERSHIP_MANUALS } from "@/lib/screen-manual-competency-ownership";
 import { PUBLICATION_MANUALS } from "@/lib/screen-manual-publication";
@@ -24,13 +25,19 @@ export const Route = createFileRoute("/manual")({
   component: ManualPage,
 });
 
-const REPLACED_BASE_MANUALS = new Set(["jornadas", "operacao"]);
+const REPLACED_BASE_MANUALS = new Set([
+  "jornadas",
+  "operacao",
+  "primeiros-passos",
+  "parceiros",
+]);
 const REPLACED_OVERRIDE_MANUALS = new Set(["jornadas-composicao", "central-operational"]);
 
 function ManualPage() {
   const manuals = [
     ...SCENARIO_OWNERSHIP_MANUALS,
     ...ANALYSIS_OPERATION_MANUALS,
+    ...ACCESS_ONBOARDING_MANUALS,
     ...PUBLICATION_MANUALS,
     ...COMPETENCY_OWNERSHIP_MANUALS,
     ...SCREEN_MANUAL_OVERRIDES.filter(
@@ -59,18 +66,11 @@ function ManualPage() {
           </div>
         </header>
 
-        <nav
-          aria-label="Processos documentados"
-          className="mb-8 rounded-xl border border-border bg-card p-4"
-        >
+        <nav aria-label="Processos documentados" className="mb-8 rounded-xl border border-border bg-card p-4">
           <div className="mb-3 text-sm font-semibold text-foreground">Processos documentados</div>
           <div className="flex flex-wrap gap-2">
             {manuals.map((manual) => (
-              <a
-                key={manual.id}
-                href={`#${manual.id}`}
-                className="rounded-full border border-border bg-background px-3 py-1.5 text-xs font-medium text-foreground transition-colors hover:bg-accent"
-              >
+              <a key={manual.id} href={`#${manual.id}`} className="rounded-full border border-border bg-background px-3 py-1.5 text-xs font-medium text-foreground transition-colors hover:bg-accent">
                 {manual.title}
               </a>
             ))}
@@ -79,11 +79,7 @@ function ManualPage() {
 
         <div className="space-y-8">
           {manuals.map((manual) => (
-            <article
-              key={manual.id}
-              id={manual.id}
-              className="scroll-mt-24 rounded-xl border border-border bg-card shadow-sm"
-            >
+            <article key={manual.id} id={manual.id} className="scroll-mt-24 rounded-xl border border-border bg-card shadow-sm">
               <header className="border-b border-border px-5 py-4 sm:px-6">
                 <h2 className="text-xl font-semibold text-foreground">{manual.title}</h2>
               </header>
