@@ -21,7 +21,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 class FlywayMigrationCompatibilityTest {
 
     private static final Pattern VERSIONED_MIGRATION = Pattern.compile(
-            "^V([0-9]+(?:_[0-9]+)*)__.+\\.sql$"
+            "^V([0-9]+(?:_[0-9]+)*)__.+\\.(?:sql|java)$"
     );
 
     @Test
@@ -71,7 +71,8 @@ class FlywayMigrationCompatibilityTest {
         MigrationVersion integrityTelemetryVersion = MigrationVersion.fromVersion("1013");
         MigrationVersion complianceVersion = MigrationVersion.fromVersion("1014");
         MigrationVersion journeyLifecycleVersion = MigrationVersion.fromVersion("1015");
-        MigrationVersion auditRefreshVersion = MigrationVersion.fromVersion("1016");
+        MigrationVersion termsAcceptanceVersion = MigrationVersion.fromVersion("1016");
+        MigrationVersion auditRefreshVersion = MigrationVersion.fromVersion("1017");
 
         assertThat(issuedAtVersion).isLessThan(partnerVersion);
         assertThat(partnerVersion).isLessThan(expiresAtVersion);
@@ -80,7 +81,10 @@ class FlywayMigrationCompatibilityTest {
         assertThat(annualPlansVersion).isLessThan(integrityTelemetryVersion);
         assertThat(integrityTelemetryVersion).isLessThan(complianceVersion);
         assertThat(complianceVersion).isLessThan(journeyLifecycleVersion);
-        assertThat(journeyLifecycleVersion).isLessThan(auditRefreshVersion);
+        assertThat(journeyLifecycleVersion).isLessThan(termsAcceptanceVersion);
+        // A reaplicação da auditoria universal precisa ser a última migration, para
+        // cobrir também as tabelas alteradas pelo aceite de termos (versão 1016).
+        assertThat(termsAcceptanceVersion).isLessThan(auditRefreshVersion);
 
         assertThat(readResource("/db/migration/V1009__persist_candidate_token_window.sql"))
                 .contains("ADD COLUMN candidate_token_issued_at");
@@ -94,24 +98,31 @@ class FlywayMigrationCompatibilityTest {
 
     @Test
     void versionedMigrationsUseUniqueVersions() throws IOException {
-        Path migrationRoot = Path.of("src/main/resources/db/migration");
+        // As migrations SQL e as migrations Java compartilham o mesmo espaço de versões
+        // no Flyway, então a checagem de duplicidade precisa cobrir as duas origens.
+        List<Path> migrationRoots = List.of(
+                Path.of("src/main/resources/db/migration"),
+                Path.of("src/main/java/db/migration")
+        );
         Map<String, List<Path>> migrationsByVersion = new TreeMap<>();
 
-        try (Stream<Path> migrations = Files.walk(migrationRoot)) {
-            List<Path> migrationFiles = migrations
-                    .filter(Files::isRegularFile)
-                    .toList();
+        for (Path migrationRoot : migrationRoots) {
+            try (Stream<Path> migrations = Files.walk(migrationRoot)) {
+                List<Path> migrationFiles = migrations
+                        .filter(Files::isRegularFile)
+                        .toList();
 
-            for (Path migrationFile : migrationFiles) {
-                Matcher matcher = VERSIONED_MIGRATION.matcher(migrationFile.getFileName().toString());
-                if (!matcher.matches()) {
-                    continue;
+                for (Path migrationFile : migrationFiles) {
+                    Matcher matcher = VERSIONED_MIGRATION.matcher(migrationFile.getFileName().toString());
+                    if (!matcher.matches()) {
+                        continue;
+                    }
+
+                    String version = matcher.group(1).replace('_', '.');
+                    migrationsByVersion
+                            .computeIfAbsent(version, ignored -> new ArrayList<>())
+                            .add(migrationFile);
                 }
-
-                String version = matcher.group(1).replace('_', '.');
-                migrationsByVersion
-                        .computeIfAbsent(version, ignored -> new ArrayList<>())
-                        .add(migrationFile);
             }
         }
 
@@ -120,7 +131,7 @@ class FlywayMigrationCompatibilityTest {
                 .toList();
 
         assertThat(duplicates)
-                .as("Versões Flyway duplicadas em %s", migrationRoot)
+                .as("Versões Flyway duplicadas em %s", migrationRoots)
                 .isEmpty();
     }
 

@@ -62,7 +62,7 @@ class AssessmentJourneyAttemptLifecycleServiceTest {
                 auditMetadata
         );
         when(currentEmpresaService.requiredEmpresaId()).thenReturn(EMPRESA_ID);
-        when(auditMetadata.of(any())).thenReturn("{}");
+        when(auditMetadata.of(any(Object[].class))).thenReturn("{}");
     }
 
     @Test
