@@ -1,0 +1,43 @@
+name: Validate frontend build (temporary)
+
+on:
+  push:
+    branches:
+      - fix/eslint-react-hooks-compat-20260721
+
+permissions:
+  contents: write
+
+jobs:
+  validate-frontend:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout branch
+        uses: actions/checkout@v4
+        with:
+          ref: fix/eslint-react-hooks-compat-20260721
+
+      - name: Configure Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        working-directory: frontend
+        run: npm ci --prefer-offline --no-audit --fund=false --progress=false
+
+      - name: Build frontend
+        working-directory: frontend
+        run: npm run build
+
+      - name: Remove temporary validation workflow
+        shell: bash
+        run: |
+          rm -f .github/workflows/validate-frontend-build-temporary.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add .github/workflows/validate-frontend-build-temporary.yml
+          git commit -m "chore(ci): remover validação temporária do frontend"
+          git push origin HEAD:fix/eslint-react-hooks-compat-20260721
