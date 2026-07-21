@@ -1,7 +1,7 @@
 # Matriz de telas e informações do perfil EMPRESA
 
 Data da revisão: 21/07/2026  
-Base analisada: `main` com as correções dos PRs #421, #422, #425, #426, #427, #428 e #429
+Base analisada: `main` com as correções dos PRs #421, #422, #425, #426, #427, #428, #429, #430 e #431
 
 ## 1. Escopo
 
@@ -36,8 +36,8 @@ A repetição é permitida quando representa apenas resumo, referência somente 
 | 2 | `CONCLUÍDA` | `OK` | **Avaliações** `/avaliacoes` | Cadastro, versões, status e ações administrativas. | PR #425 padronizou duplicação e arquivamento. |
 | 3 | `CONCLUÍDA` | `OK` | **Nova avaliação** `/nova/avaliacao` | Plano inicial e seleção de competências ativas. | PR #426 removeu criação global de competências. |
 | 4 | `CONCLUÍDA` | `CONTEXTUAL` | **Objetivo do modelo base** `/nova/objetivo` | Resumo somente leitura da versão. | PR #426 removeu edição e redistribuição de pesos. |
-| 5 | `PENDENTE` | `CONTEXTUAL` | **Personagem** `/nova/personagem` | Deve ser proprietária do contexto e da mensagem inicial. | Bloquear edição concorrente da mensagem inicial nos demais editores. |
-| 6 | `CONCLUÍDA` | `OK` | **Editor de diálogo** `/nova/dialogo` | Única tela de autoria de etapas, falas, alternativas, tempo, mídia, criticidade e pontuação. | PR #429 retirou a autoria concorrente do Mapa e adicionou manual específico. |
+| 5 | `CONCLUÍDA` | `OK` | **Personagem** `/nova/personagem` | Única proprietária do nome, estado emocional, contexto e mensagem inicial. | PR #431 protegeu o nó inicial nos editores seguintes e adicionou manual específico. |
+| 6 | `CONCLUÍDA` | `OK` | **Editor de diálogo** `/nova/dialogo` | Autoria das etapas posteriores, alternativas, tempo, mídia, criticidade e pontuação. | PR #429 retirou a autoria concorrente do Mapa; PR #431 tornou a mensagem inicial somente leitura com atalho para Personagem. |
 | 7 | `CONCLUÍDA` | `OK` | **Mapa do fluxo** `/nova/mapa` | Posição visual das etapas e destino das alternativas. | PR #429 removeu criação e edição de conteúdo, persistiu coordenadas e manteve apenas conexões. |
 | 8 | `CONCLUÍDA` | `OK` | **Validador/Revisão** `/nova/validador` | Diagnóstico de bloqueios, avisos e qualidade. | PR #421 removeu CRUD de etapas e alternativas. |
 | 9 | `PENDENTE` | `CONTEXTUAL` | **Piloto e indicadores** `/nova/piloto` | Calibração e indicadores analíticos da versão. | Exigir contexto e retirar seletor global. |
@@ -45,7 +45,7 @@ A repetição é permitida quando representa apenas resumo, referência somente 
 | 11 | `PENDENTE` | `DUPLICADO` | **Ativação Gupy** `/nova/gupy` | Deve manter somente o preflight da versão. | Remover entregas e direcionar para Monitoramento. |
 | 12 | `NÃO SE APLICA` | `CONTEXTUAL` | **Começar rápido** `/nova/rapido` | Atalho para criar rascunho por modelo. | Já encaminha para a avaliação criada. |
 | 13 | `EM ANDAMENTO` | `PARCIAL` | **Jornadas** `/jornadas` | Composição e ordenação de avaliações. | PR #417 retirou participantes; faltam confirmações padronizadas. |
-| 14 | `CONCLUÍDA` | `OK` | **Participações** `/participacoes` | Lista e gestão unificadas de participações individuais e por jornada. | PR #421 criou read model, tabela e ações únicas. |
+| 14 | `CONCLUÍDA` | `OK` | **Participações** `/participacoes` | Lista e gestão unificadas de participações individuais e por jornada. | PR #421 criou read model, tabela e ações únicas; PR #430 restaurou o endpoint no controller principal. |
 | 15 | `CONCLUÍDA` | `CONTEXTUAL` | **Nova participação individual** `/enviar-link` | Formulário de criação de convite individual. | A gestão posterior ocorre em Participações. |
 | 16 | `CONCLUÍDA` | `CONTEXTUAL` | **Convite por jornada** `/participacoes/jornada` | Formulário de criação de convite por jornada. | PR #421 adicionou validade, reenvio, extensão, reativação e cancelamento. |
 | 17 | `NÃO SE APLICA` | `OK` | **Resultados** `/results` | Lista de resultados concluídos. | Não mantém convite, validade ou progresso. |
@@ -63,7 +63,7 @@ A repetição é permitida quando representa apenas resumo, referência somente 
 | 29 | `NÃO SE APLICA` | `OK` | **Plano e cobrança** `/billing` | Créditos, assinatura, uso e histórico financeiro. | Responsabilidade centralizada. |
 | 30 | `NÃO SE APLICA` | `OK` | **Minha conta** `/configuracoes/conta` | Credenciais pessoais do usuário autenticado. | Vínculo e permissões ficam em Minha equipe. |
 | 31 | `PENDENTE` | `PARCIAL` | **Comece aqui** `/comecar` | Onboarding inicial da empresa. | Corrigir destino do convite e ocultar após conclusão. |
-| 32 | `EM ANDAMENTO` | `PARCIAL` | **Central de manuais** `/manual` | Processo completo e manual contextual por rota. | PR #429 adicionou manuais de Diálogo e Mapa; ainda faltam telas pendentes. |
+| 32 | `EM ANDAMENTO` | `PARCIAL` | **Central de manuais** `/manual` | Processo completo e manual contextual por rota. | PR #431 adicionou Personagem e atualizou Diálogo e Mapa; ainda faltam telas pendentes. |
 
 ## 4. Propriedade das informações
 
@@ -72,8 +72,8 @@ A repetição é permitida quando representa apenas resumo, referência somente 
 | `CONCLUÍDA` | Cadastro, versões e status da avaliação | **Avaliações** | Ações administrativas centralizadas. |
 | `CONCLUÍDA` | Catálogo global de competências | **Competências** | Nova avaliação apenas seleciona; Objetivo apenas exibe. |
 | `CONCLUÍDA` | Plano inicial e competências da versão | **Nova avaliação** | Objetivo funciona somente como resumo. |
-| `PENDENTE` | Contexto e mensagem inicial | **Personagem** | Ainda deve ser isolado dos editores seguintes. |
-| `CONCLUÍDA` | Etapas, falas, alternativas, mídia, criticidade e pontuação | **Editor de diálogo** | PR #429 removeu essas operações do Mapa. |
+| `CONCLUÍDA` | Contexto, personagem e mensagem inicial | **Personagem** | PR #431 bloqueou a alteração do nó inicial no Editor de diálogo e manteve referência com atalho. |
+| `CONCLUÍDA` | Etapas posteriores, alternativas, mídia, criticidade e pontuação | **Editor de diálogo** | PRs #429 e #431 separaram o conteúdo inicial das demais etapas. |
 | `CONCLUÍDA` | Posição das etapas e destino das alternativas | **Mapa do fluxo** | PR #429 limita a tela a coordenadas e conexões. |
 | `CONCLUÍDA` | Bloqueios, avisos e qualidade | **Validador** | Telas secundárias mostram somente resumo ou link. |
 | `CONCLUÍDA` | Publicação, aceite e auditoria | **Governança** | Compliance mostra apenas referência contextual. |
@@ -90,8 +90,8 @@ A repetição é permitida quando representa apenas resumo, referência somente 
 
 | Status | Ação | Evidência ou pendência |
 |---|---|---|
-| `CONCLUÍDA` | Unificar Participações no backend e frontend. | PR #421. |
-| `EM ANDAMENTO` | Definir um único fluxo de autoria do cenário. | PR #429 concluiu a separação entre Diálogo e Mapa; resta centralizar contexto e mensagem inicial em Personagem. |
+| `CONCLUÍDA` | Unificar Participações no backend e frontend. | PRs #421 e #430. |
+| `CONCLUÍDA` | Definir um único fluxo de autoria do cenário. | PR #429 separou Diálogo e Mapa; PR #431 centralizou contexto e mensagem inicial em Personagem. |
 | `CONCLUÍDA` | Retirar Compliance como lista concorrente. | PR #421. |
 
 ### P1 — clareza operacional
@@ -112,7 +112,7 @@ A repetição é permitida quando representa apenas resumo, referência somente 
 | `PENDENTE` | Criar subperfis de EMPRESA. | Backend e frontend devem distinguir os perfis autorizados. |
 | `PENDENTE` | Incluir perfil e permissões em Equipe. | Modal e tabela devem mostrar e alterar o acesso. |
 | `PENDENTE` | Restringir Parceiros. | Rota somente para empresa parceira e permissão específica. |
-| `EM ANDAMENTO` | Atualizar manuais de tela. | PR #429 adicionou Diálogo e Mapa; outras rotas continuam pendentes. |
+| `EM ANDAMENTO` | Atualizar manuais de tela. | PR #431 adicionou Personagem e atualizou Diálogo e Mapa; outras rotas continuam pendentes. |
 | `PENDENTE` | Ocultar Comece aqui após onboarding. | Guia deve permanecer apenas em Ajuda. |
 
 ## 6. Critério para atualizar o status
