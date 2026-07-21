@@ -41,10 +41,10 @@ export function buildValidationDiagnostics(
       nodeId: issue.nodeId,
       nodeLabel: node ? `Etapa ${node.turnIndex}` : issue.nodeId ? `Etapa ${issue.nodeId}` : "Regra global",
       optionId: option?.id ?? null,
-      optionLabel: optionIndex >= 0 ? `Resposta ${optionIndex + 1}` : null,
+      optionLabel: optionIndex >= 0 && option ? formatOptionLabel(optionIndex, option.text) : null,
       optionText: option?.text ?? null,
       fieldLabel: metadata.fieldLabel,
-      resolution: metadata.resolution,
+      resolution: buildResolution(metadata.resolution, optionIndex, option?.text),
       editor: metadata.editor,
     };
   });
@@ -80,6 +80,25 @@ function findMatchingOptions(
   }
 
   return [];
+}
+
+function formatOptionLabel(optionIndex: number, optionText: string): string {
+  const preview = optionPreview(optionText);
+  return preview ? `Resposta ${optionIndex + 1}: “${preview}”` : `Resposta ${optionIndex + 1}`;
+}
+
+function buildResolution(
+  resolution: string,
+  optionIndex: number,
+  optionText: string | undefined,
+): string {
+  if (optionIndex < 0 || !optionText) return resolution;
+  return `${resolution} A pendência está na Resposta ${optionIndex + 1}: “${optionPreview(optionText)}”.`;
+}
+
+function optionPreview(optionText: string): string {
+  const normalized = optionText.trim().replace(/\s+/g, " ");
+  return normalized.length > 100 ? `${normalized.slice(0, 97).trimEnd()}...` : normalized;
 }
 
 function describeIssue(message: string): {
