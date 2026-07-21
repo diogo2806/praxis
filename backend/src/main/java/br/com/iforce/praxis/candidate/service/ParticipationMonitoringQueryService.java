@@ -17,7 +17,6 @@ import br.com.iforce.praxis.gupy.service.SimulationCatalogService;
 import br.com.iforce.praxis.journey.model.AssessmentJourneyAttemptStatus;
 import br.com.iforce.praxis.journey.model.AssessmentJourneyStepStatus;
 import br.com.iforce.praxis.journey.persistence.entity.AssessmentJourneyAttemptEntity;
-import br.com.iforce.praxis.journey.persistence.entity.AssessmentJourneyAttemptStepEntity;
 import br.com.iforce.praxis.journey.persistence.repository.AssessmentJourneyAttemptRepository;
 import br.com.iforce.praxis.journey.persistence.repository.AssessmentJourneyAttemptStepRepository;
 import br.com.iforce.praxis.journey.service.AssessmentJourneyInvitationService;
@@ -42,6 +41,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 
 @Service
@@ -230,7 +230,7 @@ public class ParticipationMonitoringQueryService {
                         && !lastSignalAt.isBefore(now.minus(ACTIVE_WINDOW)),
                 candidateAttemptService.candidatePageUrlFor(entity.getEmpresaId(), entity.getId()),
                 expiresAt,
-                linkStatus(expiresAt, closed ? entity.getStatus() == AttemptStatus.ABANDONED : false, now),
+                linkStatus(expiresAt, entity.getStatus() == AttemptStatus.ABANDONED, now),
                 remainingDays(expiresAt, now),
                 !closed && !expired,
                 !closed,
@@ -263,11 +263,7 @@ public class ParticipationMonitoringQueryService {
         boolean completed = entity.getStatus() == AssessmentJourneyAttemptStatus.COMPLETED;
         boolean expired = entity.getStatus() == AssessmentJourneyAttemptStatus.EXPIRED
                 || (entity.getExpiresAt() != null && !entity.getExpiresAt().isAfter(now));
-        String status = canceled
-                ? "abandoned"
-                : expired && !completed
-                    ? "expired"
-                    : entity.getStatus().getDescricao();
+        String status = journeyStatus(entity.getStatus(), canceled, completed, expired);
         String journeyName = journeyNames.computeIfAbsent(
                 entity.getJourneyId(),
                 journeyId -> journeyService.findJourneyForEmpresa(entity.getEmpresaId(), journeyId)
@@ -304,6 +300,27 @@ public class ParticipationMonitoringQueryService {
                 null,
                 entity.getCreatedAt()
         );
+    }
+
+    private String journeyStatus(
+            AssessmentJourneyAttemptStatus status,
+            boolean canceled,
+            boolean completed,
+            boolean expired
+    ) {
+        if (canceled) {
+            return "abandoned";
+        }
+        if (expired && !completed) {
+            return "expired";
+        }
+        return switch (status) {
+            case CREATED -> "notStarted";
+            case IN_PROGRESS -> "inProgress";
+            case COMPLETED -> "completed";
+            case EXPIRED -> "expired";
+            case ABANDONED -> "abandoned";
+        };
     }
 
     private PublishedSimulation findSimulation(CandidateAttemptEntity entity) {
@@ -401,8 +418,8 @@ public class ParticipationMonitoringQueryService {
     private Instant journeyLastSignalAt(AssessmentJourneyAttemptEntity entity) {
         Instant base = entity.getStartedAt() == null ? entity.getCreatedAt() : entity.getStartedAt();
         return entity.getSteps().stream()
-                .flatMap(step -> List.of(step.getStartedAt(), step.getCompletedAt()).stream())
-                .filter(value -> value != null)
+                .map(step -> step.getCompletedAt() != null ? step.getCompletedAt() : step.getStartedAt())
+                .filter(Objects::nonNull)
                 .max(Comparator.naturalOrder())
                 .orElse(base);
     }
