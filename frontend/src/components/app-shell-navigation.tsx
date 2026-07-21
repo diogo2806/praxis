@@ -23,6 +23,7 @@ import {
 import { SheetClose } from "@/components/ui/sheet";
 import { getDashboard } from "@/lib/api/dashboard-strict";
 import { isRestrictedPartnerSpecialist } from "@/lib/access-control";
+import { canAccessCompanyArea, companyProfileLabel } from "@/lib/company-access";
 import { canManagePartners } from "@/lib/feature-flags";
 import { useLanguage } from "@/lib/language-context";
 import { isOnboardingComplete } from "@/lib/onboarding";
@@ -152,7 +153,11 @@ function isActive(pathname: string, itemPath: string): boolean {
     return pathname.startsWith("/nova") || pathname.startsWith("/simulations/new");
   }
   if (itemPath === "/participacoes") {
-    return pathname === itemPath || pathname.startsWith("/participacoes/") || pathname === "/enviar-link";
+    return (
+      pathname === itemPath ||
+      pathname.startsWith("/participacoes/") ||
+      pathname === "/enviar-link"
+    );
   }
   if (itemPath === "/monitoramento") {
     return pathname === itemPath || pathname === "/notifications";
@@ -160,7 +165,11 @@ function isActive(pathname: string, itemPath: string): boolean {
   return pathname === itemPath || pathname.startsWith(`${itemPath}/`);
 }
 
-function Item({ item, pathname, closeOnSelect }: {
+function Item({
+  item,
+  pathname,
+  closeOnSelect,
+}: {
   item: NavigationItem;
   pathname: string;
   closeOnSelect: boolean;
@@ -173,10 +182,17 @@ function Item({ item, pathname, closeOnSelect }: {
         aria-current={active ? "page" : undefined}
         className={cn(
           "mb-1 flex min-h-11 items-center gap-3 rounded-md px-3 py-2 text-sm transition",
-          active ? "bg-accent font-medium text-accent-foreground" : "text-foreground/85 hover:bg-accent",
+          active
+            ? "bg-accent font-medium text-accent-foreground"
+            : "text-foreground/85 hover:bg-accent",
         )}
       >
-        <item.icon className={cn("h-4 w-4 shrink-0", active ? "text-accent-foreground" : "text-muted-foreground")} />
+        <item.icon
+          className={cn(
+            "h-4 w-4 shrink-0",
+            active ? "text-accent-foreground" : "text-muted-foreground",
+          )}
+        />
         <span className="min-w-0 flex-1">{item.label}</span>
         {(item.badge ?? 0) > 0 && (
           <span className="rounded-full bg-danger px-1.5 py-0.5 text-[10px] font-semibold text-danger-foreground">
@@ -188,7 +204,11 @@ function Item({ item, pathname, closeOnSelect }: {
   );
 }
 
-function Group({ group, pathname, closeOnSelect }: {
+function Group({
+  group,
+  pathname,
+  closeOnSelect,
+}: {
   group: NavigationGroup;
   pathname: string;
   closeOnSelect: boolean;
@@ -221,45 +241,75 @@ export function AppSidebar({
   const { language } = useLanguage();
   const copy = navigationCopy[language];
   const specialist = isRestrictedPartnerSpecialist(session.roles);
+  const canAccess = (area: Parameters<typeof canAccessCompanyArea>[1]) =>
+    canAccessCompanyArea(session.roles, area);
   const onboardingQuery = useQuery({
     queryKey: ["dashboard", "onboarding"],
     queryFn: getDashboard,
-    enabled: Boolean(session.token) && !specialist,
+    enabled: Boolean(session.token) && !specialist && canAccess("onboarding"),
     retry: false,
     staleTime: 60_000,
   });
   const showOnboarding =
-    onboardingQuery.isLoading || onboardingQuery.isError || !isOnboardingComplete(onboardingQuery.data);
-  const showPartners = canManagePartners(session.roles);
+    canAccess("onboarding") &&
+    (onboardingQuery.isLoading ||
+      onboardingQuery.isError ||
+      !isOnboardingComplete(onboardingQuery.data));
+  const showPartners = canAccess("partners") && canManagePartners(session.roles);
 
   const companyPrimary: NavigationItem[] = [
-    { to: "/dashboard", label: "Dashboard", icon: Home },
-    { to: "/avaliacoes", label: copy.assessments, icon: ListChecks },
-    { to: "/jornadas", label: copy.journeys, icon: Workflow },
-    { to: "/participacoes", label: copy.participations, icon: Users },
-    { to: "/results", label: copy.results, icon: ClipboardList },
+    ...(canAccess("dashboard") ? [{ to: "/dashboard", label: "Dashboard", icon: Home }] : []),
+    ...(canAccess("assessments")
+      ? [{ to: "/avaliacoes", label: copy.assessments, icon: ListChecks }]
+      : []),
+    ...(canAccess("journeys")
+      ? [{ to: "/jornadas", label: copy.journeys, icon: Workflow }]
+      : []),
+    ...(canAccess("participations")
+      ? [{ to: "/participacoes", label: copy.participations, icon: Users }]
+      : []),
+    ...(canAccess("results")
+      ? [{ to: "/results", label: copy.results, icon: ClipboardList }]
+      : []),
   ];
   const settingsItems: NavigationItem[] = [
-    { to: "/configuracoes/perfil", label: copy.company, icon: Building2 },
-    { to: "/competencias", label: copy.competencies, icon: BookOpenCheck },
-    { to: "/team", label: copy.team, icon: Users },
+    ...(canAccess("company-profile")
+      ? [{ to: "/configuracoes/perfil", label: copy.company, icon: Building2 }]
+      : []),
+    ...(canAccess("competencies")
+      ? [{ to: "/competencias", label: copy.competencies, icon: BookOpenCheck }]
+      : []),
+    ...(canAccess("team") ? [{ to: "/team", label: copy.team, icon: Users }] : []),
     ...(showPartners
       ? [{ to: "/parceiros", label: copy.partners, icon: BriefcaseBusiness }]
       : []),
-    { to: "/integrations", label: copy.integrations, icon: KeyRound },
-    { to: "/billing", label: copy.plan, icon: CreditCard },
-    { to: "/configuracoes/conta", label: copy.account, icon: UserRound },
+    ...(canAccess("integrations")
+      ? [{ to: "/integrations", label: copy.integrations, icon: KeyRound }]
+      : []),
+    ...(canAccess("billing") ? [{ to: "/billing", label: copy.plan, icon: CreditCard }] : []),
+    ...(canAccess("account")
+      ? [{ to: "/configuracoes/conta", label: copy.account, icon: UserRound }]
+      : []),
   ];
   const helpItems: NavigationItem[] = [
     ...(showOnboarding
       ? [{ to: "/comecar", label: copy.gettingStarted, icon: Sparkles }]
       : []),
-    { to: "/manual", label: copy.manuals, icon: HelpCircle },
+    ...(canAccess("manuals") ? [{ to: "/manual", label: copy.manuals, icon: HelpCircle }] : []),
   ];
   const companyGroups: NavigationGroup[] = [
     {
       label: copy.operation,
-      items: [{ to: "/monitoramento", label: copy.operations, icon: BarChart3, badge: unreadNotifications }],
+      items: canAccess("operations")
+        ? [
+            {
+              to: "/monitoramento",
+              label: copy.operations,
+              icon: BarChart3,
+              badge: unreadNotifications,
+            },
+          ]
+        : [],
     },
     { label: copy.settings, items: settingsItems },
     { label: copy.help, items: helpItems },
@@ -286,7 +336,9 @@ export function AppSidebar({
 
   const primary = specialist ? specialistPrimary : companyPrimary;
   const groups = specialist ? specialistGroups : companyGroups;
-  const secondaryActive = groups.some((group) => group.items.some((item) => isActive(pathname, item.to)));
+  const secondaryActive = groups.some((group) =>
+    group.items.some((item) => isActive(pathname, item.to)),
+  );
   const home = specialist ? "/avaliacoes/especialista" : "/dashboard";
 
   return (
@@ -303,7 +355,9 @@ export function AppSidebar({
         </p>
         {(!simpleNavigation || specialist) && (
           <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
-            {specialist ? copy.specialistDescription : "Avaliações situacionais organizadas pelo processo do cliente."}
+            {specialist
+              ? copy.specialistDescription
+              : "Avaliações situacionais organizadas pelo processo do cliente."}
           </p>
         )}
       </div>
@@ -319,18 +373,31 @@ export function AppSidebar({
         {specialist ? (
           <div className="mt-5 space-y-5 border-t border-border/70 pt-4">
             {groups.map((group) => (
-              <Group key={group.label} group={group} pathname={pathname} closeOnSelect={closeOnSelect} />
+              <Group
+                key={group.label}
+                group={group}
+                pathname={pathname}
+                closeOnSelect={closeOnSelect}
+              />
             ))}
           </div>
         ) : (
-          <details className="group mt-5 border-t border-border/70 pt-4" open={!simpleNavigation || secondaryActive}>
+          <details
+            className="group mt-5 border-t border-border/70 pt-4"
+            open={!simpleNavigation || secondaryActive}
+          >
             <summary className="flex cursor-pointer list-none items-center justify-between rounded-md px-3 py-2 text-sm font-medium hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
               <span>{copy.more}</span>
               <ChevronDown className="h-4 w-4 transition-transform group-open:rotate-180" />
             </summary>
             <div className="mt-2 space-y-5">
               {groups.map((group) => (
-                <Group key={group.label} group={group} pathname={pathname} closeOnSelect={closeOnSelect} />
+                <Group
+                  key={group.label}
+                  group={group}
+                  pathname={pathname}
+                  closeOnSelect={closeOnSelect}
+                />
               ))}
             </div>
           </details>
@@ -345,7 +412,7 @@ export function AppSidebar({
           <div className="min-w-0">
             <div className="truncate font-medium text-foreground">{session.userName}</div>
             <div className="truncate text-muted-foreground">
-              {specialist ? copy.specialistRole : session.userRole}
+              {specialist ? copy.specialistRole : companyProfileLabel(session.roles)}
             </div>
           </div>
         </div>
