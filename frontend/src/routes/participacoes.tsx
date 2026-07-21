@@ -13,6 +13,7 @@ import {
   UserRoundSearch,
 } from "lucide-react";
 import { useMemo, useState } from "react";
+
 import { AppShell } from "@/components/app-shell";
 import { EmptyState, StateBanner } from "@/components/praxis-ui";
 import { Button } from "@/components/ui/button";
@@ -22,12 +23,12 @@ import {
   resendCandidateLink,
   type CandidateLinkResponse,
 } from "@/lib/api/candidate-links";
-import { listSimulations } from "@/lib/api/praxis";
 import {
   searchMonitoringAttempts,
   type MonitoringAttempt,
   type MonitoringAttemptStatus,
 } from "@/lib/api/monitoring";
+import { listSimulations } from "@/lib/api/praxis";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/participacoes")({
@@ -96,9 +97,9 @@ function ParticipacoesPage() {
   });
 
   const resendMutation = useMutation({
-    mutationFn: (attemptId: string) => resendCandidateLink(attemptId),
+    mutationFn: resendCandidateLink,
     onSuccess: async () => {
-      setActionMessage("O link foi reenviado sem criar uma nova tentativa.");
+      setActionMessage("O link foi reenviado sem criar uma nova participação.");
       await invalidateParticipationQueries(queryClient);
     },
   });
@@ -107,9 +108,7 @@ function ParticipacoesPage() {
     mutationFn: ({ attemptId, days }: { attemptId: string; days: number }) =>
       extendCandidateLink(attemptId, days),
     onSuccess: async (_response, variables) => {
-      setActionMessage(
-        `A validade do link foi ampliada em ${variables.days} ${variables.days === 1 ? "dia" : "dias"}.`,
-      );
+      setActionMessage(`A validade foi ampliada em ${variables.days} dia(s).`);
       await invalidateParticipationQueries(queryClient);
     },
   });
@@ -126,13 +125,7 @@ function ParticipacoesPage() {
   const simulations = (simulationsQuery.data ?? []).filter(
     (simulation) => simulation.status === "published" || simulation.livePublishedVersionNumber != null,
   );
-
   const actionError = resendMutation.error ?? extendMutation.error;
-
-  function resetPage(action: () => void) {
-    setPage(0);
-    action();
-  }
 
   async function copyLink(link: CandidateLinkResponse) {
     if (link.linkStatus === "expired") return;
@@ -142,11 +135,7 @@ function ParticipacoesPage() {
   }
 
   async function refreshAll() {
-    await Promise.all([
-      attemptsQuery.refetch(),
-      linksQuery.refetch(),
-      simulationsQuery.refetch(),
-    ]);
+    await Promise.all([attemptsQuery.refetch(), linksQuery.refetch(), simulationsQuery.refetch()]);
   }
 
   return (
@@ -154,54 +143,29 @@ function ParticipacoesPage() {
       <main className="mx-auto max-w-7xl space-y-6">
         <header className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <div className="max-w-3xl">
-            <div className="text-xs font-semibold uppercase tracking-[0.18em] text-primary">
-              Participações
-            </div>
+            <div className="text-xs font-semibold uppercase tracking-[0.18em] text-primary">Participações</div>
             <h1 className="mt-1 font-display text-3xl">Convites e acompanhamento</h1>
             <p className="mt-2 text-sm leading-6 text-muted-foreground">
-              Este é o ponto único para localizar pessoas, acompanhar o progresso, copiar ou reenviar
-              acessos, ampliar a validade e abrir resultados concluídos.
+              Este é o ponto único para criar convites, acompanhar o progresso, atualizar a validade e abrir resultados.
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
             <Button asChild className="gap-2">
-              <Link to="/enviar-link">
-                <Link2 className="h-4 w-4" />
-                Nova participação individual
-              </Link>
+              <Link to="/enviar-link"><Link2 className="h-4 w-4" />Participação individual</Link>
             </Button>
             <Button asChild variant="outline" className="gap-2 bg-card">
-              <Link to="/jornadas">
-                <Send className="h-4 w-4" />
-                Convidar por jornada
-              </Link>
+              <Link to="/participacoes/jornada"><Send className="h-4 w-4" />Convite por jornada</Link>
             </Button>
-            <Button
-              type="button"
-              variant="outline"
-              className="gap-2 bg-card"
-              disabled={attemptsQuery.isFetching || linksQuery.isFetching}
-              onClick={() => void refreshAll()}
-            >
-              <RefreshCw
-                className={cn(
-                  "h-4 w-4",
-                  (attemptsQuery.isFetching || linksQuery.isFetching) && "animate-spin",
-                )}
-              />
+            <Button variant="outline" className="gap-2 bg-card" onClick={() => void refreshAll()} disabled={attemptsQuery.isFetching || linksQuery.isFetching}>
+              <RefreshCw className={cn("h-4 w-4", (attemptsQuery.isFetching || linksQuery.isFetching) && "animate-spin")} />
               Atualizar
             </Button>
           </div>
         </header>
 
-        {actionMessage && (
-          <StateBanner tone="ok" title="Convite atualizado">
-            {actionMessage}
-          </StateBanner>
-        )}
-
+        {actionMessage && <StateBanner tone="ok" title="Participação atualizada">{actionMessage}</StateBanner>}
         {actionError && (
-          <StateBanner tone="danger" title="Não foi possível atualizar o convite">
+          <StateBanner tone="danger" title="Não foi possível atualizar a participação">
             {actionError instanceof Error ? actionError.message : "Tente novamente."}
           </StateBanner>
         )}
@@ -226,20 +190,20 @@ function ParticipacoesPage() {
               </button>
             ))}
           </div>
-
           <div className="mt-4 grid gap-3 md:grid-cols-2">
             <label className="space-y-1 text-xs font-medium text-muted-foreground">
               Avaliação
               <select
                 value={simulationId}
-                onChange={(event) => resetPage(() => setSimulationId(event.target.value))}
+                onChange={(event) => {
+                  setPage(0);
+                  setSimulationId(event.target.value);
+                }}
                 className="input h-11 w-full"
               >
                 <option value="">Todas as avaliações</option>
                 {simulations.map((simulation) => (
-                  <option key={simulation.id} value={simulation.id}>
-                    {simulation.name}
-                  </option>
+                  <option key={simulation.id} value={simulation.id}>{simulation.name}</option>
                 ))}
               </select>
             </label>
@@ -249,10 +213,12 @@ function ParticipacoesPage() {
                 <Search className="pointer-events-none absolute left-3 top-3.5 h-4 w-4 text-muted-foreground" />
                 <input
                   value={candidate}
-                  onChange={(event) => resetPage(() => setCandidate(event.target.value))}
+                  onChange={(event) => {
+                    setPage(0);
+                    setCandidate(event.target.value);
+                  }}
                   className="input h-11 w-full pl-9"
                   placeholder="Buscar participante"
-                  inputMode="search"
                 />
               </div>
             </label>
@@ -260,24 +226,8 @@ function ParticipacoesPage() {
         </section>
 
         {attemptsQuery.isError || linksQuery.isError ? (
-          <StateBanner
-            tone="danger"
-            title="Não foi possível carregar as participações"
-            action={
-              <button
-                type="button"
-                onClick={() => void refreshAll()}
-                className="rounded-md border border-current/20 bg-background/60 px-3 py-1.5 text-xs font-medium"
-              >
-                Tentar novamente
-              </button>
-            }
-          >
-            {attemptsQuery.error instanceof Error
-              ? attemptsQuery.error.message
-              : linksQuery.error instanceof Error
-                ? linksQuery.error.message
-                : "Tente novamente."}
+          <StateBanner tone="danger" title="Não foi possível carregar as participações">
+            Verifique a conexão e tente novamente.
           </StateBanner>
         ) : attemptsQuery.isLoading || linksQuery.isLoading ? (
           <section className="rounded-xl border border-border bg-card px-4 py-12 text-center text-sm text-muted-foreground">
@@ -286,24 +236,16 @@ function ParticipacoesPage() {
         ) : attempts.length === 0 ? (
           <EmptyState
             title="Nenhuma participação encontrada"
-            description={
-              processFilter === "all"
-                ? "Crie um convite por jornada ou uma participação individual."
-                : "Não há registros nesta situação para os filtros atuais."
-            }
+            description="Crie uma participação individual ou envie uma jornada para começar."
             actions={
               <div className="flex flex-wrap justify-center gap-2">
-                <Button asChild>
-                  <Link to="/enviar-link">Criar participação individual</Link>
-                </Button>
-                <Button asChild variant="outline">
-                  <Link to="/jornadas">Abrir jornadas</Link>
-                </Button>
+                <Button asChild><Link to="/enviar-link">Criar individual</Link></Button>
+                <Button asChild variant="outline"><Link to="/participacoes/jornada">Enviar jornada</Link></Button>
               </div>
             }
           />
         ) : (
-          <ParticipationList
+          <ParticipationTable
             attempts={attempts}
             linksByAttempt={linksByAttempt}
             copiedAttemptId={copiedAttemptId}
@@ -326,32 +268,16 @@ function ParticipacoesPage() {
         )}
 
         <div className="flex items-center justify-between gap-3" data-manual-pagination>
-          <Button
-            type="button"
-            variant="outline"
-            disabled={page <= 0 || attemptsQuery.isFetching}
-            onClick={() => setPage((current) => Math.max(0, current - 1))}
-          >
-            Anterior
-          </Button>
-          <span className="text-xs text-muted-foreground">
-            Página {(attemptsPage?.page ?? 0) + 1} de {Math.max(1, attemptsPage?.totalPages ?? 1)}
-          </span>
-          <Button
-            type="button"
-            variant="outline"
-            disabled={!attemptsPage || page + 1 >= attemptsPage.totalPages || attemptsQuery.isFetching}
-            onClick={() => setPage((current) => current + 1)}
-          >
-            Próxima
-          </Button>
+          <Button variant="outline" disabled={page <= 0 || attemptsQuery.isFetching} onClick={() => setPage((current) => Math.max(0, current - 1))}>Anterior</Button>
+          <span className="text-xs text-muted-foreground">Página {(attemptsPage?.page ?? 0) + 1} de {Math.max(1, attemptsPage?.totalPages ?? 1)}</span>
+          <Button variant="outline" disabled={!attemptsPage || page + 1 >= attemptsPage.totalPages || attemptsQuery.isFetching} onClick={() => setPage((current) => current + 1)}>Próxima</Button>
         </div>
       </main>
     </AppShell>
   );
 }
 
-function ParticipationList({
+function ParticipationTable({
   attempts,
   linksByAttempt,
   copiedAttemptId,
@@ -375,97 +301,52 @@ function ParticipationList({
   onExtensionDaysChange: (attemptId: string, days: number) => void;
 }) {
   return (
-    <section className="overflow-hidden rounded-xl border border-border bg-card">
-      <div className="grid gap-3 p-3 md:hidden">
-        {attempts.map((attempt) => (
-          <ParticipationCard
-            key={attempt.attemptId}
-            attempt={attempt}
-            link={linksByAttempt.get(attempt.attemptId)}
-            copied={copiedAttemptId === attempt.attemptId}
-            extensionDays={extensionDays[attempt.attemptId] ?? 7}
-            resending={resendingAttemptId === attempt.attemptId}
-            extending={extendingAttemptId === attempt.attemptId}
-            onCopy={onCopy}
-            onResend={onResend}
-            onExtend={onExtend}
-            onExtensionDaysChange={onExtensionDaysChange}
-          />
-        ))}
-      </div>
-      <div className="hidden overflow-x-auto md:block">
-        <table data-server-pagination className="w-full min-w-[1180px] text-left text-sm">
-          <thead className="border-b border-border bg-muted/40 text-[11px] uppercase text-muted-foreground">
-            <tr>
-              <th className="px-4 py-3 font-medium">Participante</th>
-              <th className="px-4 py-3 font-medium">Avaliação</th>
-              <th className="px-4 py-3 font-medium">Situação</th>
-              <th className="px-4 py-3 font-medium">Progresso</th>
-              <th className="px-4 py-3 font-medium">Link</th>
-              <th className="px-4 py-3 font-medium">Última atividade</th>
-              <th className="px-4 py-3 text-right font-medium">Ações</th>
-            </tr>
-          </thead>
-          <tbody>
-            {attempts.map((attempt) => {
-              const link = linksByAttempt.get(attempt.attemptId);
-              return (
-                <tr key={attempt.attemptId} className="border-b border-border last:border-0 hover:bg-accent/30">
-                  <td className="px-4 py-3">
-                    <div className="font-medium">{attempt.candidateName}</div>
-                    <div className="text-xs text-muted-foreground">{attempt.candidateEmail}</div>
-                  </td>
-                  <td className="px-4 py-3 text-muted-foreground">
-                    {attempt.simulationName} · v{attempt.versionNumber}
-                  </td>
-                  <td className="px-4 py-3">
-                    <ParticipationStatus attempt={attempt} />
-                  </td>
-                  <td className="px-4 py-3">
-                    <Progress attempt={attempt} />
-                  </td>
-                  <td className="px-4 py-3">
-                    <LinkStatus link={link} />
-                  </td>
-                  <td className="px-4 py-3 text-xs text-muted-foreground">
-                    {formatRelative(attempt.lastSignalAt)}
-                  </td>
-                  <td className="px-4 py-3 text-right">
-                    <ParticipationActions
-                      attempt={attempt}
-                      link={link}
-                      copied={copiedAttemptId === attempt.attemptId}
-                      extensionDays={extensionDays[attempt.attemptId] ?? 7}
-                      resending={resendingAttemptId === attempt.attemptId}
-                      extending={extendingAttemptId === attempt.attemptId}
-                      onCopy={onCopy}
-                      onResend={onResend}
-                      onExtend={onExtend}
-                      onExtensionDaysChange={onExtensionDaysChange}
-                    />
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
+    <section className="overflow-x-auto rounded-xl border border-border bg-card">
+      <table data-server-pagination className="w-full min-w-[1120px] text-left text-sm">
+        <thead className="border-b border-border bg-muted/40 text-[11px] uppercase text-muted-foreground">
+          <tr>
+            <th className="px-4 py-3 font-medium">Participante</th>
+            <th className="px-4 py-3 font-medium">Avaliação</th>
+            <th className="px-4 py-3 font-medium">Situação</th>
+            <th className="px-4 py-3 font-medium">Progresso</th>
+            <th className="px-4 py-3 font-medium">Link</th>
+            <th className="px-4 py-3 text-right font-medium">Ações</th>
+          </tr>
+        </thead>
+        <tbody>
+          {attempts.map((attempt) => {
+            const link = linksByAttempt.get(attempt.attemptId);
+            return (
+              <tr key={attempt.attemptId} className="border-b border-border last:border-0 hover:bg-accent/30">
+                <td className="px-4 py-3"><div className="font-medium">{attempt.candidateName}</div><div className="text-xs text-muted-foreground">{attempt.candidateEmail}</div></td>
+                <td className="px-4 py-3 text-muted-foreground">{attempt.simulationName} · v{attempt.versionNumber}</td>
+                <td className="px-4 py-3"><ParticipationStatus attempt={attempt} /></td>
+                <td className="px-4 py-3">{attempt.currentTurn}/{attempt.estimatedTurns} · {attempt.progressPercent}%</td>
+                <td className="px-4 py-3"><LinkStatus link={link} /></td>
+                <td className="px-4 py-3 text-right">
+                  <ParticipationActions
+                    attempt={attempt}
+                    link={link}
+                    copied={copiedAttemptId === attempt.attemptId}
+                    extensionDays={extensionDays[attempt.attemptId] ?? 7}
+                    resending={resendingAttemptId === attempt.attemptId}
+                    extending={extendingAttemptId === attempt.attemptId}
+                    onCopy={onCopy}
+                    onResend={onResend}
+                    onExtend={onExtend}
+                    onExtensionDaysChange={onExtensionDaysChange}
+                  />
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
     </section>
   );
 }
 
-function ParticipationCard({
-  attempt,
-  link,
-  copied,
-  extensionDays,
-  resending,
-  extending,
-  onCopy,
-  onResend,
-  onExtend,
-  onExtensionDaysChange,
-}: {
+function ParticipationActions({ attempt, link, copied, extensionDays, resending, extending, onCopy, onResend, onExtend, onExtensionDaysChange }: {
   attempt: MonitoringAttempt;
   link?: CandidateLinkResponse;
   copied: boolean;
@@ -476,146 +357,34 @@ function ParticipationCard({
   onResend: (attemptId: string) => void;
   onExtend: (attemptId: string) => void;
   onExtensionDaysChange: (attemptId: string, days: number) => void;
-}) {
-  return (
-    <article className="rounded-lg border border-border bg-background p-4">
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <h2 className="truncate font-medium">{attempt.candidateName}</h2>
-          <p className="truncate text-xs text-muted-foreground">{attempt.candidateEmail}</p>
-        </div>
-        <ParticipationStatus attempt={attempt} />
-      </div>
-      <p className="mt-3 text-sm text-muted-foreground">
-        {attempt.simulationName} · v{attempt.versionNumber}
-      </p>
-      <div className="mt-3">
-        <Progress attempt={attempt} />
-      </div>
-      <div className="mt-3">
-        <LinkStatus link={link} />
-      </div>
-      <div className="mt-4">
-        <ParticipationActions
-          attempt={attempt}
-          link={link}
-          copied={copied}
-          extensionDays={extensionDays}
-          resending={resending}
-          extending={extending}
-          onCopy={onCopy}
-          onResend={onResend}
-          onExtend={onExtend}
-          onExtensionDaysChange={onExtensionDaysChange}
-          fullWidth
-        />
-      </div>
-    </article>
-  );
-}
-
-function ParticipationActions({
-  attempt,
-  link,
-  copied,
-  extensionDays,
-  resending,
-  extending,
-  onCopy,
-  onResend,
-  onExtend,
-  onExtensionDaysChange,
-  fullWidth = false,
-}: {
-  attempt: MonitoringAttempt;
-  link?: CandidateLinkResponse;
-  copied: boolean;
-  extensionDays: number;
-  resending: boolean;
-  extending: boolean;
-  onCopy: (link: CandidateLinkResponse) => Promise<void>;
-  onResend: (attemptId: string) => void;
-  onExtend: (attemptId: string) => void;
-  onExtensionDaysChange: (attemptId: string, days: number) => void;
-  fullWidth?: boolean;
 }) {
   if (attempt.status === "completed") {
-    return (
-      <Button asChild variant="outline" size="sm" className={cn(fullWidth && "w-full")}>
-        <Link to="/results/$attemptId" params={{ attemptId: attempt.attemptId }}>
-          Analisar resultado
-        </Link>
-      </Button>
-    );
+    return <Button asChild variant="outline" size="sm"><Link to="/results/$attemptId" params={{ attemptId: attempt.attemptId }}>Analisar resultado</Link></Button>;
   }
-
-  if (!link) {
-    return <span className="text-xs text-muted-foreground">Ações de link indisponíveis.</span>;
-  }
-
+  if (!link) return <span className="text-xs text-muted-foreground">Ações indisponíveis</span>;
   const expired = link.linkStatus === "expired";
-
   return (
-    <div className={cn("flex flex-wrap justify-end gap-2", fullWidth && "justify-start")}>
-      <Button
-        type="button"
-        variant="outline"
-        size="sm"
-        disabled={expired}
-        onClick={() => void onCopy(link)}
-        className={cn("gap-1.5", copied && "text-success", fullWidth && "flex-1")}
-      >
-        {copied ? <CheckCircle2 className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
-        {copied ? "Copiado" : "Copiar"}
+    <div className="flex flex-wrap justify-end gap-2">
+      <Button variant="outline" size="sm" disabled={expired} onClick={() => void onCopy(link)}>
+        {copied ? <CheckCircle2 className="mr-1 h-3.5 w-3.5" /> : <Copy className="mr-1 h-3.5 w-3.5" />}{copied ? "Copiado" : "Copiar"}
       </Button>
-      <Button
-        type="button"
-        variant="outline"
-        size="sm"
-        disabled={expired || resending}
-        onClick={() => onResend(attempt.attemptId)}
-        className={cn(fullWidth && "flex-1")}
-      >
-        {resending ? "Reenviando..." : "Reenviar"}
-      </Button>
-      <div className={cn("flex items-center rounded-md border border-border bg-background", fullWidth && "w-full")}>
-        <select
-          value={extensionDays}
-          onChange={(event) => onExtensionDaysChange(attempt.attemptId, Number(event.target.value))}
-          aria-label="Dias adicionais de validade"
-          className={cn("h-8 border-0 bg-transparent px-2 text-xs outline-none", fullWidth && "flex-1")}
-        >
-          {extensionOptions.map((days) => (
-            <option key={days} value={days}>
-              +{days} {days === 1 ? "dia" : "dias"}
-            </option>
-          ))}
+      <Button variant="outline" size="sm" disabled={expired || resending} onClick={() => onResend(attempt.attemptId)}>{resending ? "Reenviando..." : "Reenviar"}</Button>
+      <div className="flex items-center rounded-md border border-border bg-background">
+        <select value={extensionDays} onChange={(event) => onExtensionDaysChange(attempt.attemptId, Number(event.target.value))} aria-label="Dias adicionais" className="h-8 border-0 bg-transparent px-2 text-xs outline-none">
+          {extensionOptions.map((days) => <option key={days} value={days}>+{days} dia(s)</option>)}
         </select>
-        <button
-          type="button"
-          disabled={extending}
-          onClick={() => onExtend(attempt.attemptId)}
-          className="inline-flex h-8 items-center gap-1 border-l border-border px-2 text-xs font-medium text-primary hover:bg-accent disabled:opacity-50"
-        >
-          <CalendarPlus className="h-3.5 w-3.5" />
-          {extending ? "Atualizando..." : expired ? "Reativar" : "Ampliar"}
+        <button type="button" disabled={extending} onClick={() => onExtend(attempt.attemptId)} className="inline-flex h-8 items-center gap-1 border-l border-border px-2 text-xs font-medium text-primary disabled:opacity-50">
+          <CalendarPlus className="h-3.5 w-3.5" />{extending ? "Atualizando..." : expired ? "Reativar" : "Ampliar"}
         </button>
       </div>
     </div>
   );
 }
 
-function Progress({ attempt }: { attempt: MonitoringAttempt }) {
-  return (
-    <div>
-      <div className="text-xs text-muted-foreground">
-        {attempt.currentTurn}/{attempt.estimatedTurns} · {attempt.progressPercent}%
-      </div>
-      <div className="mt-1 h-1.5 w-28 max-w-full overflow-hidden rounded-full bg-muted">
-        <div className="h-full rounded-full bg-primary" style={{ width: `${attempt.progressPercent}%` }} />
-      </div>
-    </div>
-  );
+function ParticipationStatus({ attempt }: { attempt: MonitoringAttempt }) {
+  const meta = statusMeta(attempt.status, attempt.active);
+  const Icon = meta.icon;
+  return <span className={cn("inline-flex items-center gap-1.5 rounded-full border px-2 py-1 text-[11px] font-medium", meta.className)}><Icon className="h-3.5 w-3.5" />{meta.label}</span>;
 }
 
 function LinkStatus({ link }: { link?: CandidateLinkResponse }) {
@@ -625,64 +394,20 @@ function LinkStatus({ link }: { link?: CandidateLinkResponse }) {
     expiringSoon: { label: `Expira em ${link.remainingDays} dia(s)`, className: "border-warning/40 bg-warning/10 text-warning-foreground" },
     expired: { label: "Expirado", className: "border-danger/30 bg-danger/10 text-danger" },
   }[link.linkStatus];
-  return (
-    <span className={cn("inline-flex rounded-full border px-2 py-1 text-[11px] font-medium", meta.className)}>
-      {meta.label}
-    </span>
-  );
-}
-
-function ParticipationStatus({ attempt }: { attempt: MonitoringAttempt }) {
-  const meta = statusMeta(attempt.status, attempt.active);
-  const Icon = meta.icon;
-  return (
-    <span className={cn("inline-flex items-center gap-1.5 rounded-full border px-2 py-1 text-[11px] font-medium", meta.className)}>
-      <Icon className="h-3.5 w-3.5" />
-      {meta.label}
-    </span>
-  );
+  return <span className={cn("inline-flex rounded-full border px-2 py-1 text-[11px] font-medium", meta.className)}>{meta.label}</span>;
 }
 
 function statusMeta(status: MonitoringAttemptStatus, active: boolean) {
   if (status === "inProgress" && !active) {
-    return {
-      label: "Sem atividade recente",
-      icon: AlertTriangle,
-      className: "border-warning/40 bg-warning/10 text-warning-foreground",
-    };
+    return { label: "Sem atividade recente", icon: AlertTriangle, className: "border-warning/40 bg-warning/10 text-warning-foreground" };
   }
-  return (
-    {
-      notStarted: {
-        label: "Aguardando início",
-        icon: Clock3,
-        className: "border-border bg-muted text-foreground",
-      },
-      inProgress: {
-        label: "Em andamento",
-        icon: UserRoundSearch,
-        className: "border-primary/30 bg-primary/10 text-primary",
-      },
-      completed: {
-        label: "Concluída",
-        icon: CheckCircle2,
-        className: "border-success/30 bg-success/10 text-success",
-      },
-      abandoned: {
-        label: "Abandonada",
-        icon: AlertTriangle,
-        className: "border-danger/30 bg-danger/10 text-danger",
-      },
-      expired: {
-        label: "Expirada",
-        icon: AlertTriangle,
-        className: "border-warning/40 bg-warning/10 text-warning-foreground",
-      },
-    } satisfies Record<
-      MonitoringAttemptStatus,
-      { label: string; icon: typeof Clock3; className: string }
-    >
-  )[status];
+  return ({
+    notStarted: { label: "Aguardando início", icon: Clock3, className: "border-border bg-muted text-foreground" },
+    inProgress: { label: "Em andamento", icon: UserRoundSearch, className: "border-primary/30 bg-primary/10 text-primary" },
+    completed: { label: "Concluída", icon: CheckCircle2, className: "border-success/30 bg-success/10 text-success" },
+    abandoned: { label: "Abandonada", icon: AlertTriangle, className: "border-danger/30 bg-danger/10 text-danger" },
+    expired: { label: "Expirada", icon: AlertTriangle, className: "border-warning/40 bg-warning/10 text-warning-foreground" },
+  } satisfies Record<MonitoringAttemptStatus, { label: string; icon: typeof Clock3; className: string }>)[status];
 }
 
 function matchesProcessFilter(attempt: MonitoringAttempt, filter: ProcessFilter) {
@@ -690,40 +415,18 @@ function matchesProcessFilter(attempt: MonitoringAttempt, filter: ProcessFilter)
   if (filter === "waiting") return attempt.status === "notStarted";
   if (filter === "active") return attempt.status === "inProgress" && attempt.active;
   if (filter === "completed") return attempt.status === "completed";
-  return (
-    attempt.status === "abandoned" ||
-    attempt.status === "expired" ||
-    (attempt.status === "inProgress" && !attempt.active)
-  );
+  return attempt.status === "abandoned" || attempt.status === "expired" || (attempt.status === "inProgress" && !attempt.active);
 }
 
-function formatRelative(value: string) {
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "Sem registro";
-  const seconds = Math.max(0, Math.round((Date.now() - date.getTime()) / 1000));
-  if (seconds < 60) return "Agora";
-  if (seconds < 3600) return `Há ${Math.floor(seconds / 60)} min`;
-  if (seconds < 86_400) return `Há ${Math.floor(seconds / 3600)} h`;
-  return new Intl.DateTimeFormat("pt-BR", {
-    day: "2-digit",
-    month: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-  }).format(date);
-}
-
-function toAbsoluteUrl(value: string) {
-  if (typeof window === "undefined") return value;
-  try {
-    return new URL(value, window.location.origin).toString();
-  } catch {
-    return value;
-  }
+function toAbsoluteUrl(path: string) {
+  if (/^https?:\/\//i.test(path)) return path;
+  if (typeof window === "undefined") return path;
+  return `${window.location.origin}${path.startsWith("/") ? path : `/${path}`}`;
 }
 
 async function invalidateParticipationQueries(queryClient: ReturnType<typeof useQueryClient>) {
   await Promise.all([
-    queryClient.invalidateQueries({ queryKey: ["candidate-links"] }),
     queryClient.invalidateQueries({ queryKey: ["participations"] }),
+    queryClient.invalidateQueries({ queryKey: ["candidate-links"] }),
   ]);
 }
