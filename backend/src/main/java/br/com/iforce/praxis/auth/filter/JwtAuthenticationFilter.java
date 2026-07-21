@@ -15,7 +15,10 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 
 @Component
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
@@ -80,12 +83,26 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             return List.of();
         }
 
-        return roles.stream()
+        Set<String> normalizedRoles = new LinkedHashSet<>();
+        roles.stream()
                 .filter(String.class::isInstance)
                 .map(String.class::cast)
-                .map(role -> role.startsWith("ROLE_") ? role : "ROLE_" + role)
+                .map(role -> role.startsWith("ROLE_") ? role.substring("ROLE_".length()) : role)
+                .forEach(normalizedRoles::add);
+
+        // Tokens emitidos antes da introdução dos subperfis continham somente EMPRESA.
+        // A migração persiste os papéis explícitos, e este complemento evita bloquear a sessão atual.
+        if (normalizedRoles.equals(Set.of("EMPRESA"))) {
+            normalizedRoles.add("TEAM_MANAGER");
+            normalizedRoles.add("PARTNER_MANAGER");
+        }
+
+        List<SimpleGrantedAuthority> authorities = new ArrayList<>();
+        normalizedRoles.stream()
+                .map(role -> "ROLE_" + role)
                 .map(SimpleGrantedAuthority::new)
-                .toList();
+                .forEach(authorities::add);
+        return authorities;
     }
 
     private static boolean matchesPathOrDescendant(String path, String rootPath) {
