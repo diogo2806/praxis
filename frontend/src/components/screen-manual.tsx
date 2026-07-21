@@ -21,6 +21,7 @@ import {
 } from "@/components/ui/sheet";
 import { resolveCompetencyOwnershipManual } from "@/lib/screen-manual-competency-ownership";
 import { useLanguage } from "@/lib/language-context";
+import { resolveScenarioOwnershipManual } from "@/lib/screen-manual-scenario-ownership";
 import { resolveScreenManualOverride } from "@/lib/screen-manual-overrides";
 import {
   resolveScreenManual,
@@ -60,7 +61,7 @@ const manualCopy = {
     button: "Manual",
     description: "Orientaciones operativas de esta pantalla.",
     purpose: "Finalidad de la pantalla",
-    flow: "Flujo operativo",
+    flow: "Flujo operacional",
     fields: "Explicación de los campos",
     permissions: "Permisos necesarios",
     states: "Estados posibles",
@@ -83,6 +84,7 @@ export function ScreenManual({ pathname, iconOnly = false, className }: ScreenMa
   const { language } = useLanguage();
   const copy = manualCopy[language];
   const manual =
+    resolveScenarioOwnershipManual(pathname) ??
     resolveCompetencyOwnershipManual(pathname) ??
     resolveScreenManualOverride(pathname) ??
     resolveScreenManual(pathname);
