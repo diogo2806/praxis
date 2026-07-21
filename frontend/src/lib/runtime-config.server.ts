@@ -20,9 +20,15 @@ const RUNTIME_CONFIG_TIMEOUT_MS = 1_500;
 export async function resolveRuntimeConfigFromEnv(): Promise<ServerRuntimeConfig> {
   const apiBaseUrl =
     process.env.VITE_PRAXIS_BROWSER_API_BASE_URL ?? process.env.PRAXIS_BROWSER_API_BASE_URL;
-  const backendConfig = await fetchBackendRuntimeConfig();
+  const backendBaseUrl = resolveBackendBaseUrl();
+  const backendConfig = await fetchBackendRuntimeConfig(backendBaseUrl);
+  const probedSecurityEnabled =
+    backendConfig?.securityEnabled === undefined
+      ? await probeBackendSecurityEnabled(backendBaseUrl)
+      : null;
   const securityEnabled =
     backendConfig?.securityEnabled ??
+    probedSecurityEnabled ??
     readBoolean(
       process.env.PRAXIS_SECURITY_ENABLED ??
         process.env.VITE_PRAXIS_SECURITY_ENABLED,
@@ -50,24 +56,51 @@ export async function resolveRuntimeConfigFromEnv(): Promise<ServerRuntimeConfig
   return config;
 }
 
-async function fetchBackendRuntimeConfig(): Promise<BackendRuntimeConfig | null> {
-  const backendBaseUrl = (
+function resolveBackendBaseUrl(): string {
+  return (
     process.env.VITE_PRAXIS_API_BASE_URL ??
     process.env.PRAXIS_API_BASE_URL ??
     "http://localhost:8080"
   ).replace(/\/$/, "");
+}
+
+async function fetchBackendRuntimeConfig(
+  backendBaseUrl: string,
+): Promise<BackendRuntimeConfig | null> {
+  const response = await fetchBackend(`${backendBaseUrl}/api/v1/runtime-config`);
+  if (!response?.ok) return null;
+
+  try {
+    const body: unknown = await response.json();
+    return isBackendRuntimeConfig(body) ? body : null;
+  } catch {
+    return null;
+  }
+}
+
+async function probeBackendSecurityEnabled(backendBaseUrl: string): Promise<boolean | null> {
+  const response = await fetchBackend(`${backendBaseUrl}/api/v1/dashboard`);
+  if (!response) return null;
+
+  if (response.status === 401 || response.status === 403) {
+    return true;
+  }
+  if (response.ok) {
+    return false;
+  }
+  return null;
+}
+
+async function fetchBackend(url: string): Promise<Response | null> {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), RUNTIME_CONFIG_TIMEOUT_MS);
 
   try {
-    const response = await fetch(`${backendBaseUrl}/api/v1/runtime-config`, {
+    return await fetch(url, {
       headers: { Accept: "application/json" },
+      redirect: "manual",
       signal: controller.signal,
     });
-    if (!response.ok) return null;
-
-    const body: unknown = await response.json();
-    return isBackendRuntimeConfig(body) ? body : null;
   } catch {
     return null;
   } finally {
