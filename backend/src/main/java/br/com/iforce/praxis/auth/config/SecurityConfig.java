@@ -76,6 +76,7 @@ public class SecurityConfig {
         http.authorizeHttpRequests(auth -> auth
                         .requestMatchers(
                                 "/api/v1/auth/login",
+                                "/api/v1/runtime-config",
                                 "/candidate/**",
                                 "/candidato/**",
                                 "/docs/**",
@@ -214,15 +215,6 @@ public class SecurityConfig {
             JwtAuthenticationFilter filter
     ) {
         FilterRegistrationBean<JwtAuthenticationFilter> registration = new FilterRegistrationBean<>(filter);
-        registration.setEnabled(false);
-        return registration;
-    }
-
-    @Bean
-    public FilterRegistrationBean<PartnerSpecialistAuthorizationFilter> partnerSpecialistFilterRegistration(
-            PartnerSpecialistAuthorizationFilter filter
-    ) {
-        FilterRegistrationBean<PartnerSpecialistAuthorizationFilter> registration = new FilterRegistrationBean<>(filter);
         registration.setEnabled(false);
         return registration;
     }
