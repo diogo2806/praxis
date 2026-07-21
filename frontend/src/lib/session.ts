@@ -15,6 +15,23 @@ export type PraxisSession = {
   roles: string[];
 };
 
+type JwtPayload = {
+  empresa_id?: unknown;
+  roles?: unknown;
+};
+
+const EMPRESA_ROLE = "EMPRESA";
+const KNOWN_ROLES = new Set([
+  "ADMIN",
+  EMPRESA_ROLE,
+  "TEAM_MANAGER",
+  "PARTNER_MANAGER",
+  "ASSESSMENT_EDITOR",
+  "RESULTS_ANALYST",
+  "OPERATIONS_MANAGER",
+  "PARTNER_SPECIALIST",
+]);
+
 const anonymousSession: PraxisSession = {
   token: null,
   empresaId: null,
@@ -29,13 +46,20 @@ export function getSession(): PraxisSession {
     return anonymousSession;
   }
 
-  const roles = parseRoles(sessionStorage.getItem("praxis.userRole"));
+  const token = sessionStorage.getItem("praxis.token");
+  const payload = decodeJwtPayload(token);
+  const storedRoles = parseRoles(sessionStorage.getItem("praxis.userRole"));
+  const tokenRoles = parseJwtRoles(payload?.roles);
+  const roles = resolveAuthenticatedRoles(token, tokenRoles, storedRoles);
+  const empresaId =
+    sessionStorage.getItem("praxis.empresaId") ?? readStringClaim(payload?.empresa_id);
+
   return {
-    token: sessionStorage.getItem("praxis.token"),
-    empresaId: sessionStorage.getItem("praxis.empresaId"),
-    workspaceName: sessionStorage.getItem("praxis.workspaceName") ?? "Workspace",
+    token,
+    empresaId,
+    workspaceName: sessionStorage.getItem("praxis.workspaceName") ?? empresaId ?? "Workspace",
     userName: sessionStorage.getItem("praxis.userName") ?? "Usuário",
-    userRole: sessionStorage.getItem("praxis.userRole") ?? "Operador",
+    userRole: roles.length > 0 ? roles.join(", ") : "Operador",
     roles,
   };
 }
@@ -126,14 +150,83 @@ function clearLegacyLocalStorage() {
   localStorage.removeItem("praxis.userRole");
 }
 
-function parseRoles(value: string | null) {
+function resolveAuthenticatedRoles(
+  token: string | null,
+  tokenRoles: string[],
+  storedRoles: string[],
+): string[] {
+  if (tokenRoles.length > 0) {
+    return tokenRoles;
+  }
+
+  const recognizedStoredRoles = storedRoles.filter((role) => KNOWN_ROLES.has(role));
+  if (recognizedStoredRoles.length > 0) {
+    return recognizedStoredRoles;
+  }
+
+  // Sessões criadas antes dos subperfis podem conter somente o token. O backend
+  // continua sendo a barreira de autorização; este fallback apenas evita ocultar
+  // toda a navegação de uma sessão EMPRESA que já está autenticada.
+  return token ? [EMPRESA_ROLE] : [];
+}
+
+function parseRoles(value: string | null): string[] {
   if (!value) {
     return [];
   }
-  return value
-    .split(",")
-    .map((role) => role.trim())
-    .filter(Boolean);
+  return normalizeRoles(value.split(","));
+}
+
+function parseJwtRoles(value: unknown): string[] {
+  if (Array.isArray(value)) {
+    return normalizeRoles(value.filter((role): role is string => typeof role === "string"));
+  }
+  if (typeof value === "string") {
+    return normalizeRoles(value.split(","));
+  }
+  return [];
+}
+
+function normalizeRoles(roles: string[]): string[] {
+  return [...new Set(roles.map(normalizeRole).filter(Boolean))];
+}
+
+function normalizeRole(role: string): string {
+  return role
+    .trim()
+    .toUpperCase()
+    .replace(/^ROLE_/, "")
+    .replace(/[\s-]+/g, "_");
+}
+
+function decodeJwtPayload(token: string | null): JwtPayload | null {
+  if (!token) {
+    return null;
+  }
+
+  const payloadSegment = token.split(".")[1];
+  if (!payloadSegment) {
+    return null;
+  }
+
+  try {
+    const base64 = payloadSegment.replace(/-/g, "+").replace(/_/g, "/");
+    const padded = base64.padEnd(Math.ceil(base64.length / 4) * 4, "=");
+    const decoded = window.atob(padded);
+    const bytes = Uint8Array.from(decoded, (character) => character.charCodeAt(0));
+    const parsed: unknown = JSON.parse(new TextDecoder().decode(bytes));
+    return isRecord(parsed) ? (parsed as JwtPayload) : null;
+  } catch {
+    return null;
+  }
+}
+
+function readStringClaim(value: unknown): string | null {
+  return typeof value === "string" && value.trim() ? value.trim() : null;
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
 if (typeof window !== "undefined") {
