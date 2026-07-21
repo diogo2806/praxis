@@ -2,6 +2,47 @@ import type { ScreenManualDefinition } from "@/lib/screen-manuals";
 
 export const SCREEN_MANUAL_OVERRIDES: ScreenManualDefinition[] = [
   {
+    id: "avaliacoes-catalogo",
+    title: "Avaliações",
+    purpose: "Centralizar o cadastro, as versões, a situação e as ações administrativas das avaliações usadas nas jornadas.",
+    flow: [
+      "Use a busca e o filtro para localizar uma avaliação.",
+      "Abra a avaliação para revisar conteúdo, validação e publicação da versão selecionada.",
+      "Use Duplicar para informar o nome de um novo rascunho independente.",
+      "Use Arquivar, revise o impacto e confirme sem apagar histórico ou resultados.",
+      "Adicione avaliações publicadas às jornadas e acompanhe aplicações em Participações.",
+    ],
+    fields: [
+      { name: "Avaliação", description: "Nome, descrição, competências e data da última atualização." },
+      { name: "Situação", description: "Indica se a versão atual está em rascunho, publicada ou arquivada." },
+      { name: "Uso", description: "Quantidade de aplicações criadas e concluídas." },
+      { name: "Nome da cópia", description: "Nome obrigatório, com até 180 caracteres, usado no novo rascunho independente." },
+    ],
+    permissions: [
+      "Perfil EMPRESA pode criar, abrir, duplicar, arquivar e comparar avaliações.",
+      "Especialista parceiro restrito pode criar, editar e revisar, sem duplicar, arquivar ou comparar.",
+    ],
+    states: ["Carregando", "Sem avaliações", "Rascunho", "Publicada", "Arquivada", "Duplicando", "Arquivando", "Erro"],
+    blocks: [
+      "Nome da nova avaliação não informado.",
+      "Nome da nova avaliação acima de 180 caracteres.",
+      "Avaliação já arquivada.",
+      "Usuário sem permissão para duplicar ou arquivar.",
+      "Falha ao carregar, duplicar ou arquivar a avaliação.",
+    ],
+    examples: [
+      "Duplicar uma avaliação de atendimento para criar uma variação de suporte técnico sem alterar a original.",
+      "Arquivar uma avaliação substituída preservando aplicações, resultados e auditoria.",
+    ],
+    shortcuts: [
+      "A duplicação cria sempre um novo rascunho e não altera a origem.",
+      "O arquivamento retira a avaliação de uso sem excluir o histórico.",
+      "Use Jornadas para aplicar avaliações e Participações para acompanhar candidatos.",
+      "Consulte o processo completo na Central de manuais.",
+    ],
+    matches: (pathname) => pathname === "/avaliacoes",
+  },
+  {
     id: "jornadas-composicao",
     title: "Composição de jornadas",
     purpose: "Montar, ordenar, publicar e arquivar sequências de avaliações que serão aplicadas em conjunto.",
