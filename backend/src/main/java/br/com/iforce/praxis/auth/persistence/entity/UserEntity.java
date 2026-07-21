@@ -12,7 +12,6 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
-import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
 import lombok.Getter;
@@ -97,11 +96,4 @@ public class UserEntity {
     /** Momento da última redefinição concluída; mantido como histórico. */
     @Column(name = "last_password_reset_at")
     private Instant lastPasswordResetAt;
-
-    @PrePersist
-    void provisionExplicitManagerRoles() {
-        if (roles != null && roles.equals(Set.of("EMPRESA"))) {
-            roles = new LinkedHashSet<>(Set.of("EMPRESA", "TEAM_MANAGER", "PARTNER_MANAGER"));
-        }
-    }
 }
