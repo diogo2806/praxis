@@ -61,14 +61,14 @@ public class CandidateAttemptController {
     }
 
     @GetMapping("/{attemptToken}/privacy-notice")
-    @Operation(summary = "Retorna o aviso de privacidade aplicável à participação")
+    @Operation(summary = "Retorna os documentos legais aplicáveis à participação")
     public ResponseEntity<CandidatePrivacyNoticeResponse> getPrivacyNotice(@PathVariable String attemptToken) {
         publicCandidateFlowSecurity.requireValidAttemptToken(attemptToken);
         return ResponseEntity.ok(candidatePrivacyNoticeService.getNotice(attemptToken));
     }
 
     @PostMapping("/{attemptToken}/privacy-notice/acknowledgement")
-    @Operation(summary = "Registra a ciência versionada do aviso de privacidade")
+    @Operation(summary = "Registra o aceite versionado dos Termos de Uso e a ciência do aviso de privacidade")
     public ResponseEntity<Void> acknowledgePrivacyNotice(
             @PathVariable String attemptToken,
             @Valid @RequestBody CandidatePrivacyNoticeAcknowledgementRequest request
@@ -81,7 +81,7 @@ public class CandidateAttemptController {
     @GetMapping("/{attemptToken}")
     @Operation(
             summary = "Carrega participacao do candidato",
-            description = "Retorna somente a etapa atual para uma sessão técnica ativa, com ciência de privacidade registrada e sem regras futuras."
+            description = "Retorna somente a etapa atual para uma sessão técnica ativa, com aceite dos documentos legais registrado e sem regras futuras."
     )
     public ResponseEntity<ParticipacaoResponse> getCandidateAttempt(
             @PathVariable String attemptToken,
@@ -97,7 +97,7 @@ public class CandidateAttemptController {
     @PostMapping("/{attemptToken}/answers")
     @Operation(
             summary = "Registra resposta do candidato",
-            description = "Registra a resposta somente com ciência de privacidade e sessão técnica ativas."
+            description = "Registra a resposta somente com aceite dos documentos legais e sessão técnica ativos."
     )
     public ResponseEntity<RegistrarRespostaResponse> submitAnswer(
             @PathVariable String attemptToken,

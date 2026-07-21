@@ -14,12 +14,20 @@ function TermsPage() {
           <FileText className="h-6 w-6 text-primary" aria-hidden />
           <h1 className="text-3xl font-semibold">Termos de Uso do Práxis</h1>
         </div>
-        <p className="mt-3 text-sm text-muted-foreground">Versão 1.0 · 20 de julho de 2026</p>
+        <p className="mt-3 text-sm text-muted-foreground">Versão 1.1 · 21 de julho de 2026</p>
 
         <div className="mt-8 space-y-7 text-sm leading-7 text-muted-foreground">
           <section>
             <h2 className="text-lg font-semibold text-foreground">Serviço</h2>
             <p>O Práxis oferece avaliações situacionais determinísticas para apoiar processos de recrutamento. Não é teste psicológico, não realiza diagnóstico e não substitui entrevista ou decisão humana.</p>
+          </section>
+          <section>
+            <h2 className="text-lg font-semibold text-foreground">Uso pela pessoa candidata</h2>
+            <p>O link de participação é pessoal e deve ser utilizado somente pela pessoa convidada. A pessoa candidata deve responder diretamente às situações apresentadas, não compartilhar o acesso, não tentar contornar controles técnicos e não utilizar automações ou terceiros para executar a avaliação. O aceite destes termos não garante contratação, aprovação ou resultado mínimo.</p>
+          </section>
+          <section>
+            <h2 className="text-lg font-semibold text-foreground">Antes de iniciar a avaliação</h2>
+            <p>A avaliação somente é liberada depois que a pessoa candidata marca separadamente que leu e aceitou estes Termos de Uso e que leu e está ciente da Política de Privacidade aplicável. A versão e a integridade dos dois documentos, o idioma e o momento do aceite são registrados para auditoria.</p>
           </section>
           <section>
             <h2 className="text-lg font-semibold text-foreground">Responsabilidades da empresa cliente</h2>
