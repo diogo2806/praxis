@@ -2,8 +2,14 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { GitBranch, ImagePlus, Music, Plus, Save, Trash2, X } from "lucide-react";
+
 import { AppShell } from "@/components/app-shell";
 import { EmptyState, StateBanner, StatusBadge } from "@/components/praxis-ui";
+import {
+  groupIssuesByNode,
+  ValidationBadge,
+  ValidationSummary,
+} from "@/components/simulation/validation-badge";
 import { WizardStepper } from "@/components/wizard-stepper";
 import {
   cloneSimulationVersionToDraft,
@@ -21,14 +27,9 @@ import {
   type SimulationSummaryResponse,
   type SimulationVersionNodeResponse,
 } from "@/lib/api/praxis";
-import {
-  groupIssuesByNode,
-  ValidationBadge,
-  ValidationSummary,
-} from "@/components/simulation/validation-badge";
+import { defaultAnswerTimeLimitSeconds, useEmpresaConfig } from "@/lib/empresa-config";
 import { canEditSimulationVersion, statusMeta } from "@/lib/simulation-meta";
 import { cn } from "@/lib/utils";
-import { defaultAnswerTimeLimitSeconds, useEmpresaConfig } from "@/lib/empresa-config";
 
 export const Route = createFileRoute("/nova/dialogo")({
   validateSearch: (search: Record<string, unknown>) => ({
@@ -44,7 +45,10 @@ export const Route = createFileRoute("/nova/dialogo")({
   head: () => ({
     meta: [
       { title: "Editor de Diálogo - Práxis" },
-      { name: "description", content: "Edição do diálogo usada na revisão da avaliação." },
+      {
+        name: "description",
+        content: "Edição das etapas posteriores, alternativas, mídia e pontuação da avaliação.",
+      },
     ],
   }),
   component: DialogEditor,
@@ -62,11 +66,13 @@ function DialogEditor() {
     error: empresaConfigQueryError,
   } = useEmpresaConfig();
   const answerTimeLimits = config?.answerTimeLimits ?? [];
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+
+  const [selectedId, setSelectedId] = useState<string | null>(search.nodeId ?? null);
   const [draftMessage, setDraftMessage] = useState("");
   const [selectedMessage, setSelectedMessage] = useState("");
   const [draftOption, setDraftOption] = useState("");
   const [feedbackMessage, setFeedbackMessage] = useState<string | null>(null);
+
   const simulationsQuery = useQuery({
     queryKey: ["simulations"],
     queryFn: listSimulations,
@@ -82,33 +88,30 @@ function DialogEditor() {
     queryFn: () => getSimulationValidation(search.simulationId!, search.versionNumber!),
     enabled: hasContext,
   });
-  const issuesByNode = useMemo(
-    () => groupIssuesByNode(validationQuery.data?.issues),
-    [validationQuery.data],
-  );
-  const versionUpdatedAt = versionQuery.dataUpdatedAt;
-  useEffect(() => {
-    if (!hasContext) return;
-    // Revalida ~800ms após cada edição (debounce), reusando a rota do validador.
-    const timer = setTimeout(() => {
-      void validationQuery.refetch();
-    }, 800);
-    return () => clearTimeout(timer);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [versionUpdatedAt, hasContext]);
 
   const nodes = versionQuery.data?.nodes ?? [];
+  const rootNodeId = versionQuery.data?.blueprint.rootNodeId;
+  const selected = nodes.find((node) => node.id === selectedId) ?? nodes[0];
+  const isRootSelected = Boolean(selected && selected.id === rootNodeId);
   const versionStatus = versionQuery.data?.status;
   const isEditable = versionStatus ? canEditSimulationVersion(versionStatus) : true;
-  const selected = nodes.find((node) => node.id === selectedId) ?? nodes[0];
   const competencies = useMemo(
     () => versionQuery.data?.blueprint.competencies ?? [],
     [versionQuery.data?.blueprint.competencies],
+  );
+  const competencyLevels = useMemo(
+    () => Object.fromEntries(competencies.map((competency) => [competency.name, 50])),
+    [competencies],
+  );
+  const issuesByNode = useMemo(
+    () => groupIssuesByNode(validationQuery.data?.issues),
+    [validationQuery.data?.issues],
   );
   const canReview =
     nodes.length > 0 &&
     nodes.every(
       (node) =>
+        node.clientMessage.trim().length > 0 &&
         node.options.length >= 2 &&
         node.options.length <= 4 &&
         node.options.every(
@@ -116,10 +119,6 @@ function DialogEditor() {
             option.text.trim().length > 0 && Object.keys(option.competencyLevels).length > 0,
         ),
     );
-  const competencyLevels = useMemo(
-    () => Object.fromEntries(competencies.map((competency) => [competency.name, 50])),
-    [competencies],
-  );
 
   useEffect(() => {
     setSelectedMessage(selected?.clientMessage ?? "");
@@ -127,23 +126,33 @@ function DialogEditor() {
 
   useEffect(() => {
     if (!search.nodeId || nodes.length === 0) return;
-
-    if (nodes.some((node) => node.id === search.nodeId)) {
-      setSelectedId(search.nodeId);
-    }
+    if (nodes.some((node) => node.id === search.nodeId)) setSelectedId(search.nodeId);
   }, [nodes, search.nodeId]);
 
-  const refetchVersion = async () => {
-    await queryClient.refetchQueries({
-      queryKey: ["simulation-version", search.simulationId, search.versionNumber],
-      type: "active",
-    });
-  };
-  const assertEditable = () => {
+  useEffect(() => {
+    if (!hasContext) return;
+    const timer = window.setTimeout(() => void validationQuery.refetch(), 800);
+    return () => window.clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [versionQuery.dataUpdatedAt, hasContext]);
+
+  async function refetchVersion() {
+    await Promise.all([
+      queryClient.invalidateQueries({
+        queryKey: ["simulation-version", search.simulationId, search.versionNumber],
+      }),
+      queryClient.invalidateQueries({
+        queryKey: ["simulation-validation", search.simulationId, search.versionNumber],
+      }),
+    ]);
+  }
+
+  function assertEditable() {
     if (!isEditable) {
-      throw new Error("Esta versao nao pode ser editada. Crie um rascunho antes de alterar.");
+      throw new Error("Esta versão não pode ser editada. Crie um rascunho antes de alterar.");
     }
-  };
+  }
+
   const cloneDraftMutation = useMutation({
     mutationFn: () => cloneSimulationVersionToDraft(search.simulationId!, search.versionNumber!),
     onSuccess: async (draft) => {
@@ -154,12 +163,11 @@ function DialogEditor() {
       });
     },
   });
+
   const addNodeMutation = useMutation({
     mutationFn: () => {
       assertEditable();
-      if (!config) {
-        throw new Error("A configuração da empresa ainda não foi carregada pelo sistema.");
-      }
+      if (!config) throw new Error("A configuração da empresa ainda não foi carregada.");
       return createSimulationNode(search.simulationId!, search.versionNumber!, {
         clientMessage: draftMessage.trim(),
         timeLimitSeconds: defaultAnswerTimeLimitSeconds(config),
@@ -172,31 +180,70 @@ function DialogEditor() {
       await refetchVersion();
     },
   });
-  const saveNodeMutation = useMutation({
-    mutationFn: (node: SimulationVersionNodeResponse) => {
+
+  const saveNodeMessageMutation = useMutation({
+    mutationFn: ({ nodeId, message }: { nodeId: string; message: string }) => {
       assertEditable();
-      return updateSimulationNode(search.simulationId!, search.versionNumber!, node.id, {
-        clientMessage: node.clientMessage,
-        timeLimitSeconds: node.timeLimitSeconds,
+      if (nodeId === rootNodeId) {
+        throw new Error("A mensagem inicial só pode ser alterada na tela Personagem.");
+      }
+      return updateSimulationNode(search.simulationId!, search.versionNumber!, nodeId, {
+        clientMessage: message.trim(),
+      });
+    },
+    onSuccess: async () => {
+      setFeedbackMessage("Mensagem da etapa salva.");
+      await refetchVersion();
+    },
+  });
+
+  const updateNodeTimeMutation = useMutation({
+    mutationFn: ({ nodeId, timeLimitSeconds }: { nodeId: string; timeLimitSeconds: number | null }) => {
+      assertEditable();
+      return updateSimulationNode(search.simulationId!, search.versionNumber!, nodeId, {
+        timeLimitSeconds,
       });
     },
     onSuccess: refetchVersion,
   });
+
+  const updateNodeMediaMutation = useMutation({
+    mutationFn: ({
+      nodeId,
+      mediaUrl,
+      mediaType,
+    }: {
+      nodeId: string;
+      mediaUrl: string;
+      mediaType: MediaType | null;
+    }) => {
+      assertEditable();
+      return updateSimulationNode(search.simulationId!, search.versionNumber!, nodeId, {
+        mediaUrl,
+        mediaType,
+      });
+    },
+    onSuccess: refetchVersion,
+  });
+
   const deleteNodeMutation = useMutation({
     mutationFn: (nodeId: string) => {
       assertEditable();
+      if (nodeId === rootNodeId) throw new Error("A etapa inicial não pode ser removida.");
       return deleteSimulationNode(search.simulationId!, search.versionNumber!, nodeId);
     },
     onSuccess: async () => {
-      setSelectedId(null);
+      setSelectedId(rootNodeId ?? null);
       setFeedbackMessage("Etapa removida.");
       await refetchVersion();
     },
   });
+
   const addOptionMutation = useMutation({
     mutationFn: () => {
       assertEditable();
-      return createSimulationOption(search.simulationId!, search.versionNumber!, selected!.id, {
+      if (!selected) throw new Error("Selecione uma etapa antes de adicionar alternativas.");
+      return createSimulationOption(search.simulationId!, search.versionNumber!, selected.id, {
         text: draftOption.trim(),
         competencyLevels,
         isCritical: false,
@@ -209,6 +256,7 @@ function DialogEditor() {
       await refetchVersion();
     },
   });
+
   const updateOptionMutation = useMutation({
     mutationFn: ({
       nodeId,
@@ -241,24 +289,7 @@ function DialogEditor() {
     },
     onSuccess: refetchVersion,
   });
-  const updateNodeMediaMutation = useMutation({
-    mutationFn: ({
-      nodeId,
-      mediaUrl,
-      mediaType,
-    }: {
-      nodeId: string;
-      mediaUrl: string;
-      mediaType: MediaType | null;
-    }) => {
-      assertEditable();
-      return updateSimulationNode(search.simulationId!, search.versionNumber!, nodeId, {
-        mediaUrl,
-        mediaType,
-      });
-    },
-    onSuccess: refetchVersion,
-  });
+
   const deleteOptionMutation = useMutation({
     mutationFn: ({ nodeId, optionId }: { nodeId: string; optionId: string }) => {
       assertEditable();
@@ -269,23 +300,26 @@ function DialogEditor() {
 
   const mutationError =
     addNodeMutation.error ??
-    saveNodeMutation.error ??
+    saveNodeMessageMutation.error ??
+    updateNodeTimeMutation.error ??
+    updateNodeMediaMutation.error ??
     deleteNodeMutation.error ??
     addOptionMutation.error ??
     updateOptionMutation.error ??
-    updateNodeMediaMutation.error ??
     deleteOptionMutation.error ??
     cloneDraftMutation.error;
 
   return (
     <AppShell>
       <WizardStepper current="revisao" unlockedThrough={canReview ? "revisao" : "cenario"} />
+
       <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
         <div>
           <div className="text-xs uppercase text-primary">Passo 3</div>
           <h1 className="mt-1 text-3xl font-semibold">Editar diálogo do cenário</h1>
           <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
-            Ajuste as etapas e alternativas que serão avaliadas pelo validador.
+            Crie as etapas posteriores, alternativas, mídia e pontuação. O contexto e a mensagem
+            inicial pertencem à tela Personagem.
           </p>
         </div>
         <div className="flex flex-col items-end gap-2">
@@ -302,7 +336,7 @@ function DialogEditor() {
       {!hasContext ? (
         <EmptyState
           title="Selecione uma versão para editar"
-          description="O editor não possui fluxo da conversa local de exemplo."
+          description="Escolha uma avaliação para abrir o conteúdo do diálogo."
           actions={
             <SimulationLinks
               loading={simulationsQuery.isLoading}
@@ -324,22 +358,23 @@ function DialogEditor() {
         <StateBanner tone="danger" title="Não foi possível carregar o fluxo da conversa">
           {versionQuery.error instanceof Error
             ? versionQuery.error.message
-            : "Não foi possível carregar agora. Verifique sua conexão e tente novamente."}
+            : "Verifique sua conexão e tente novamente."}
         </StateBanner>
       ) : (
         <>
           {feedbackMessage && (
-            <div className="mt-5">
+            <div className="mb-5">
               <StateBanner tone="info" title="Alteração salva">
                 {feedbackMessage}
               </StateBanner>
             </div>
           )}
+
           {versionStatus && !isEditable && (
-            <div className="mt-5">
+            <div className="mb-5">
               <StateBanner
                 tone="warn"
-                title={`Versao ${statusMeta[versionStatus].label.toLowerCase()} nao pode ser editada`}
+                title={`Versão ${statusMeta[versionStatus].label.toLowerCase()} não pode ser editada`}
                 action={
                   versionStatus === "published" ? (
                     <button
@@ -353,20 +388,20 @@ function DialogEditor() {
                   ) : undefined
                 }
               >
-                {versionStatus === "published"
-                  ? "A versão no ar fica protegida. Crie um rascunho para editar sem afetar candidatos em andamento."
-                  : "Atualize a etapa atual da versao antes de alterar o dialogo."}
+                Crie ou abra uma versão em rascunho para alterar o diálogo.
               </StateBanner>
             </div>
           )}
+
           {mutationError && (
-            <div className="mt-5">
+            <div className="mb-5">
               <StateBanner tone="danger" title="Não foi possível salvar a alteração">
                 {mutationError instanceof Error ? mutationError.message : "Tente novamente."}
               </StateBanner>
             </div>
           )}
-          <fieldset disabled={!isEditable} className="mt-5 space-y-5 disabled:opacity-75">
+
+          <fieldset disabled={!isEditable} className="grid gap-5 lg:grid-cols-[300px_minmax(0,1fr)] disabled:opacity-75">
             <aside className="rounded-md border border-border bg-card p-4">
               <div className="mb-3 text-sm font-semibold">Etapas salvas</div>
               <div className="space-y-2">
@@ -381,7 +416,10 @@ function DialogEditor() {
                     )}
                   >
                     <div className="flex items-center justify-between gap-2">
-                      <span className="font-medium">{node.id}</span>
+                      <span className="font-medium">
+                        Etapa {node.turnIndex}
+                        {node.id === rootNodeId ? " · inicial" : ""}
+                      </span>
                       <ValidationBadge issues={issuesByNode.get(node.id) ?? []} />
                     </div>
                     <div className="mt-1 line-clamp-2 text-xs text-muted-foreground">
@@ -390,9 +428,10 @@ function DialogEditor() {
                   </button>
                 ))}
               </div>
+
               <label className="mt-4 block">
                 <span className="mb-1 block text-xs text-muted-foreground">
-                  Nova fala do cliente
+                  Fala de uma nova etapa posterior
                 </span>
                 <textarea
                   className="input min-h-20"
@@ -422,69 +461,92 @@ function DialogEditor() {
                 <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
                   <div>
                     <div className="text-xs uppercase text-muted-foreground">{selected.id}</div>
-                    <h2 className="text-xl font-semibold">Etapa {selected.turnIndex}</h2>
+                    <h2 className="text-xl font-semibold">
+                      Etapa {selected.turnIndex}
+                      {isRootSelected ? " · mensagem inicial" : ""}
+                    </h2>
                   </div>
                   <button
                     type="button"
                     onClick={() => {
-                      if (
-                        window.confirm(
-                          `Remover a etapa ${selected.id}? Esta ação não pode ser desfeita.`,
-                        )
-                      ) {
+                      if (window.confirm(`Remover a etapa ${selected.id}?`)) {
                         setFeedbackMessage(null);
                         deleteNodeMutation.mutate(selected.id);
                       }
                     }}
-                    disabled={
-                      selected.id === versionQuery.data?.blueprint.rootNodeId ||
-                      deleteNodeMutation.isPending
-                    }
+                    disabled={isRootSelected || deleteNodeMutation.isPending}
                     className="inline-flex items-center gap-2 rounded-md border border-danger/25 bg-danger/5 px-3 py-2 text-xs text-danger hover:bg-danger/10 disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     <Trash2 className="h-4 w-4" />
                     {deleteNodeMutation.isPending ? "Removendo..." : "Remover etapa"}
                   </button>
                 </div>
-                <label className="block">
-                  <span className="mb-1.5 block text-xs font-medium text-muted-foreground">
-                    Mensagem do cliente
-                  </span>
-                  <textarea
-                    key={`${selected.id}-message`}
-                    className="input min-h-24"
-                    value={selectedMessage}
-                    onChange={(event) => setSelectedMessage(event.target.value)}
-                  />
-                </label>
-                <div className="mt-3 flex justify-end">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setFeedbackMessage(null);
-                      saveNodeMutation.mutate({ ...selected, clientMessage: selectedMessage });
-                    }}
-                    disabled={
-                      saveNodeMutation.isPending ||
-                      selectedMessage.trim() === selected.clientMessage.trim()
+
+                {isRootSelected ? (
+                  <StateBanner
+                    tone="info"
+                    title="Mensagem inicial administrada em Personagem"
+                    action={
+                      <Link
+                        to="/nova/personagem"
+                        search={{
+                          simulationId: search.simulationId,
+                          versionNumber: search.versionNumber,
+                        }}
+                        className="shrink-0 rounded-md border border-current/20 bg-background/70 px-3 py-2 text-xs font-medium hover:bg-background"
+                      >
+                        Editar personagem
+                      </Link>
                     }
-                    className="inline-flex items-center gap-2 rounded-md border border-border bg-card px-3 py-2 text-xs hover:bg-accent disabled:cursor-not-allowed disabled:opacity-50"
                   >
-                    <Save className="h-4 w-4" />
-                    {saveNodeMutation.isPending ? "Salvando..." : "Salvar etapa"}
-                  </button>
-                </div>
-                <label className="mt-3 block max-w-40">
-                  <span className="mb-1.5 block text-xs font-medium text-muted-foreground">
-                    Tempo
-                  </span>
+                    <div className="whitespace-pre-wrap">{selected.clientMessage}</div>
+                  </StateBanner>
+                ) : (
+                  <>
+                    <label className="block">
+                      <span className="mb-1.5 block text-xs font-medium text-muted-foreground">
+                        Mensagem do cliente
+                      </span>
+                      <textarea
+                        key={`${selected.id}-message`}
+                        className="input min-h-24"
+                        value={selectedMessage}
+                        onChange={(event) => setSelectedMessage(event.target.value)}
+                      />
+                    </label>
+                    <div className="mt-3 flex justify-end">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setFeedbackMessage(null);
+                          saveNodeMessageMutation.mutate({
+                            nodeId: selected.id,
+                            message: selectedMessage,
+                          });
+                        }}
+                        disabled={
+                          !selectedMessage.trim() ||
+                          saveNodeMessageMutation.isPending ||
+                          selectedMessage.trim() === selected.clientMessage.trim()
+                        }
+                        className="inline-flex items-center gap-2 rounded-md border border-border bg-card px-3 py-2 text-xs hover:bg-accent disabled:cursor-not-allowed disabled:opacity-50"
+                      >
+                        <Save className="h-4 w-4" />
+                        {saveNodeMessageMutation.isPending ? "Salvando..." : "Salvar mensagem"}
+                      </button>
+                    </div>
+                  </>
+                )}
+
+                <label className="mt-4 block max-w-48">
+                  <span className="mb-1.5 block text-xs font-medium text-muted-foreground">Tempo</span>
                   <select
                     key={`${selected.id}-time`}
                     className="input"
                     defaultValue={selected.timeLimitSeconds ?? "none"}
                     onChange={(event) =>
-                      saveNodeMutation.mutate({
-                        ...selected,
+                      updateNodeTimeMutation.mutate({
+                        nodeId: selected.id,
                         timeLimitSeconds:
                           event.target.value === "none" ? null : Number(event.target.value),
                       })
@@ -497,7 +559,8 @@ function DialogEditor() {
                     ))}
                   </select>
                 </label>
-                <div className="mt-3">
+
+                <div className="mt-4">
                   <span className="mb-1.5 block text-xs font-medium text-muted-foreground">
                     Mídia da etapa (opcional)
                   </span>
@@ -509,30 +572,30 @@ function DialogEditor() {
                       setFeedbackMessage(null);
                       updateNodeMediaMutation.mutate({
                         nodeId: selected.id,
-                        mediaUrl: next ? next.mediaUrl : "",
-                        mediaType: next ? next.mediaType : null,
+                        mediaUrl: next?.mediaUrl ?? "",
+                        mediaType: next?.mediaType ?? null,
                       });
                     }}
                   />
                 </div>
-                <div className="mt-5 flex items-center justify-between">
+
+                <div className="mt-6 flex items-center justify-between">
                   <div className="text-sm font-semibold">Alternativas</div>
                   <span className="text-xs text-muted-foreground">
                     {selected.options.length} registradas
                   </span>
                 </div>
+
                 {selected.options.length < 2 && (
                   <p className="mt-2 rounded-md border border-warning/30 bg-warning/10 px-3 py-2 text-xs text-warning-foreground">
-                    Esta etapa precisa de pelo menos 2 alternativas antes da revisão.
+                    Esta etapa precisa de pelo menos duas alternativas antes da revisão.
                   </p>
                 )}
+
                 <div className="mt-3 space-y-3">
                   {selected.options.map((option) => (
-                    <div
-                      key={option.id}
-                      className="rounded-md border border-border bg-background p-3"
-                    >
-                      <div className="grid gap-3 md:grid-cols-[20px_1fr_160px_auto]">
+                    <div key={option.id} className="rounded-md border border-border bg-background p-3">
+                      <div className="grid gap-3 md:grid-cols-[20px_1fr_170px_auto]">
                         <GitBranch className="mt-2 h-4 w-4 text-muted-foreground" />
                         <input
                           key={`${selected.id}-${option.id}-text`}
@@ -542,7 +605,7 @@ function DialogEditor() {
                             updateOptionMutation.mutate({
                               nodeId: selected.id,
                               optionId: option.id,
-                              text: event.target.value,
+                              text: event.target.value.trim(),
                             })
                           }
                         />
@@ -562,7 +625,7 @@ function DialogEditor() {
                             .filter((node) => node.turnIndex > selected.turnIndex)
                             .map((node) => (
                               <option key={node.id} value={node.id}>
-                                Vai para {node.id}
+                                Vai para etapa {node.turnIndex}
                               </option>
                             ))}
                           <option value="FIM">Vai para FIM</option>
@@ -570,12 +633,7 @@ function DialogEditor() {
                         <button
                           type="button"
                           onClick={() => {
-                            if (
-                              window.confirm(
-                                `Remover a alternativa ${option.id} da etapa ${selected.id}?`,
-                              )
-                            ) {
-                              setFeedbackMessage(null);
+                            if (window.confirm(`Remover a alternativa ${option.id}?`)) {
                               deleteOptionMutation.mutate({
                                 nodeId: selected.id,
                                 optionId: option.id,
@@ -583,12 +641,13 @@ function DialogEditor() {
                             }
                           }}
                           disabled={deleteOptionMutation.isPending}
-                          className="rounded-md border border-danger/25 bg-danger/5 p-2 text-danger hover:bg-danger/10"
+                          className="rounded-md border border-danger/25 bg-danger/5 p-2 text-danger hover:bg-danger/10 disabled:opacity-50"
                           aria-label="Remover alternativa"
                         >
                           <Trash2 className="h-4 w-4" />
                         </button>
                       </div>
+
                       <div className="mt-3 flex flex-wrap items-center gap-2 text-[11px] text-muted-foreground">
                         {Object.entries(option.competencyLevels).map(([name, value]) => (
                           <label
@@ -598,20 +657,17 @@ function DialogEditor() {
                             {name}
                             <input
                               className="w-12 rounded border border-border bg-card px-1 py-0.5"
-                              type="text"
-                              inputMode="numeric"
-                              pattern="[0-9]*"
+                              type="number"
+                              min={0}
+                              max={100}
+                              step={1}
                               defaultValue={value}
                               onBlur={(event) => {
                                 const nextValue = Number(event.target.value);
-                                if (
-                                  !Number.isInteger(nextValue) ||
-                                  nextValue < 0 ||
-                                  nextValue > 100
-                                ) {
+                                if (!Number.isInteger(nextValue) || nextValue < 0 || nextValue > 100) {
                                   event.target.value = String(value);
                                   setFeedbackMessage(
-                                    `Peso inválido para ${name}. Use um número inteiro de 0 a 100.`,
+                                    `Pontuação inválida para ${name}. Use um inteiro de 0 a 100.`,
                                   );
                                   return;
                                 }
@@ -643,24 +699,25 @@ function DialogEditor() {
                           crítica
                         </label>
                       </div>
+
                       <MediaAttachment
                         mediaUrl={option.mediaUrl}
                         mediaType={option.mediaType}
                         disabled={updateOptionMutation.isPending}
                         label="Anexar imagem ou áudio à alternativa"
-                        onChange={(next) => {
-                          setFeedbackMessage(null);
+                        onChange={(next) =>
                           updateOptionMutation.mutate({
                             nodeId: selected.id,
                             optionId: option.id,
-                            mediaUrl: next ? next.mediaUrl : "",
-                            mediaType: next ? next.mediaType : null,
-                          });
-                        }}
+                            mediaUrl: next?.mediaUrl ?? "",
+                            mediaType: next?.mediaType ?? null,
+                          })
+                        }
                       />
                     </div>
                   ))}
                 </div>
+
                 <div className="mt-4 grid gap-2 md:grid-cols-[1fr_auto]">
                   <input
                     className="input"
@@ -673,10 +730,7 @@ function DialogEditor() {
                   />
                   <button
                     type="button"
-                    onClick={() => {
-                      setFeedbackMessage(null);
-                      addOptionMutation.mutate();
-                    }}
+                    onClick={() => addOptionMutation.mutate()}
                     disabled={
                       !draftOption.trim() ||
                       competencies.length === 0 ||
@@ -693,65 +747,43 @@ function DialogEditor() {
             ) : (
               <EmptyState
                 title="Nenhuma etapa encontrada"
-                description="Crie a primeira etapa para iniciar o fluxo da conversa."
+                description="Configure o personagem para criar a etapa inicial da avaliação."
+                actions={
+                  <Link
+                    to="/nova/personagem"
+                    search={{ simulationId: search.simulationId, versionNumber: search.versionNumber }}
+                    className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground"
+                  >
+                    Configurar personagem
+                  </Link>
+                }
               />
             )}
           </fieldset>
-          <div className="mt-8 flex justify-between">
+
+          <div className="mt-8 flex flex-wrap justify-between gap-3">
             <Link
-              to="/nova/validador"
+              to="/nova/personagem"
               search={{ simulationId: search.simulationId, versionNumber: search.versionNumber }}
               className="rounded-md border border-border bg-card px-4 py-2 text-sm hover:bg-accent"
             >
-              Voltar ao validador
+              Voltar: Personagem
             </Link>
-            {canReview ? (
-              <Link
-                to="/nova/validador"
-                search={{ simulationId: search.simulationId, versionNumber: search.versionNumber }}
-                className="rounded-md bg-primary px-5 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
-              >
-                Concluir edição
-              </Link>
-            ) : (
-              <button
-                type="button"
-                disabled
-                title="Cada etapa precisa ter de 2 a 4 alternativas com critérios de pontuação antes da revisão"
-                className="cursor-not-allowed rounded-md bg-primary px-5 py-2 text-sm font-medium text-primary-foreground opacity-50"
-              >
-                Concluir edição
-              </button>
-            )}
+            <Link
+              to="/nova/validador"
+              search={{ simulationId: search.simulationId, versionNumber: search.versionNumber }}
+              className={cn(
+                "rounded-md bg-primary px-5 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90",
+                !canReview && "pointer-events-none opacity-50",
+              )}
+              aria-disabled={!canReview}
+            >
+              Concluir edição
+            </Link>
           </div>
         </>
       )}
     </AppShell>
-  );
-}
-
-export function MediaPreview({
-  mediaUrl,
-  mediaType,
-  className,
-}: {
-  mediaUrl: string;
-  mediaType: MediaType | null;
-  className?: string;
-}) {
-  if (mediaType === "AUDIO") {
-    return (
-      <audio controls src={mediaUrl} className={cn("w-full", className)}>
-        Seu navegador não suporta áudio.
-      </audio>
-    );
-  }
-  return (
-    <img
-      src={mediaUrl}
-      alt="Mídia anexada"
-      className={cn("max-h-40 w-auto rounded-md border border-border object-contain", className)}
-    />
   );
 }
 
@@ -772,7 +804,7 @@ function MediaAttachment({
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const handleFile = async (file: File | undefined) => {
+  async function handleFile(file: File | undefined) {
     if (!file) return;
     if (!file.type.startsWith("image/") && !file.type.startsWith("audio/")) {
       setError("Apenas imagens ou áudios são suportados.");
@@ -789,7 +821,7 @@ function MediaAttachment({
       setUploading(false);
       if (inputRef.current) inputRef.current.value = "";
     }
-  };
+  }
 
   return (
     <div className="mt-3 rounded-md border border-dashed border-border bg-background/60 p-3">
@@ -798,7 +830,7 @@ function MediaAttachment({
         type="file"
         accept="image/*,audio/*"
         className="hidden"
-        onChange={(event) => handleFile(event.target.files?.[0])}
+        onChange={(event) => void handleFile(event.target.files?.[0])}
       />
       {mediaUrl ? (
         <div className="space-y-2">
@@ -808,7 +840,7 @@ function MediaAttachment({
               type="button"
               onClick={() => inputRef.current?.click()}
               disabled={disabled || uploading}
-              className="inline-flex items-center gap-1.5 rounded-md border border-border bg-card px-2.5 py-1.5 text-xs hover:bg-accent disabled:cursor-not-allowed disabled:opacity-50"
+              className="inline-flex items-center gap-1.5 rounded-md border border-border bg-card px-2.5 py-1.5 text-xs hover:bg-accent disabled:opacity-50"
             >
               <ImagePlus className="h-3.5 w-3.5" />
               {uploading ? "Enviando..." : "Trocar mídia"}
@@ -817,7 +849,7 @@ function MediaAttachment({
               type="button"
               onClick={() => onChange(null)}
               disabled={disabled || uploading}
-              className="inline-flex items-center gap-1.5 rounded-md border border-danger/25 bg-danger/5 px-2.5 py-1.5 text-xs text-danger hover:bg-danger/10 disabled:cursor-not-allowed disabled:opacity-50"
+              className="inline-flex items-center gap-1.5 rounded-md border border-danger/25 bg-danger/5 px-2.5 py-1.5 text-xs text-danger hover:bg-danger/10 disabled:opacity-50"
             >
               <X className="h-3.5 w-3.5" />
               Remover mídia
@@ -829,7 +861,7 @@ function MediaAttachment({
           type="button"
           onClick={() => inputRef.current?.click()}
           disabled={disabled || uploading}
-          className="inline-flex items-center gap-1.5 rounded-md border border-border bg-card px-2.5 py-1.5 text-xs hover:bg-accent disabled:cursor-not-allowed disabled:opacity-50"
+          className="inline-flex items-center gap-1.5 rounded-md border border-border bg-card px-2.5 py-1.5 text-xs hover:bg-accent disabled:opacity-50"
         >
           <Music className="h-3.5 w-3.5" />
           {uploading ? "Enviando..." : label}
@@ -837,6 +869,23 @@ function MediaAttachment({
       )}
       {error && <p className="mt-2 text-xs text-danger">{error}</p>}
     </div>
+  );
+}
+
+function MediaPreview({ mediaUrl, mediaType }: { mediaUrl: string; mediaType: MediaType | null }) {
+  if (mediaType === "AUDIO") {
+    return (
+      <audio controls src={mediaUrl} className="w-full">
+        Seu navegador não suporta áudio.
+      </audio>
+    );
+  }
+  return (
+    <img
+      src={mediaUrl}
+      alt="Mídia anexada"
+      className="max-h-40 w-auto rounded-md border border-border object-contain"
+    />
   );
 }
 
