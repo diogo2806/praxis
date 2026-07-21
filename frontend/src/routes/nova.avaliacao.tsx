@@ -1,6 +1,7 @@
-﻿import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
+
 import { AppShell } from "@/components/app-shell";
 import { StateBanner } from "@/components/praxis-ui";
 import { WizardStepper } from "@/components/wizard-stepper";
@@ -9,11 +10,9 @@ import {
   createSimulationDraft,
   getSimulationVersion,
   updateSimulationBlueprint,
-  updateEmpresaConfig,
-  type EmpresaConfigOption,
 } from "@/lib/api/praxis";
-import { useLanguage } from "@/lib/language-context";
 import { useEmpresaConfig } from "@/lib/empresa-config";
+import { useLanguage } from "@/lib/language-context";
 import { canEditSimulationVersion } from "@/lib/simulation-meta";
 import { getTranslations, type Language } from "@/lib/translations";
 
@@ -29,14 +28,10 @@ export const Route = createFileRoute("/nova/avaliacao")({
   }),
   head: () => {
     const copy = getTranslations(getStoredLanguage()).blueprint;
-
     return {
       meta: [
         { title: copy.metaTitle },
-        {
-          name: "description",
-          content: copy.metaDescription,
-        },
+        { name: "description", content: copy.metaDescription },
       ],
     };
   },
@@ -44,19 +39,13 @@ export const Route = createFileRoute("/nova/avaliacao")({
 });
 
 function getStoredLanguage(): Language {
-  if (typeof window === "undefined") {
-    return "pt-BR";
-  }
-
+  if (typeof window === "undefined") return "pt-BR";
   try {
     const stored = localStorage.getItem("praxis-language");
-    if (stored === "pt-BR" || stored === "en" || stored === "es-MX") {
-      return stored;
-    }
+    if (stored === "pt-BR" || stored === "en" || stored === "es-MX") return stored;
   } catch {
     return "pt-BR";
   }
-
   return "pt-BR";
 }
 
@@ -73,16 +62,24 @@ function Page() {
     isError: empresaConfigError,
     error: empresaConfigQueryError,
   } = useEmpresaConfig();
-  const competencies = config?.competencies ?? [];
+
+  const competencies = useMemo(
+    () => (config?.competencies ?? []).filter((competency) => competency.active !== false),
+    [config?.competencies],
+  );
+  const catalogValues = useMemo(
+    () => new Set(competencies.map((competency) => normalizeLabel(competency.value))),
+    [competencies],
+  );
+
   const [role, setRole] = useState("");
   const [criticalSituation, setCriticalSituation] = useState("");
   const [selectedCompetencies, setSelectedCompetencies] = useState<string[]>([]);
-  const [newCompetency, setNewCompetency] = useState("");
   const [submitAttempted, setSubmitAttempted] = useState(false);
   const [hydratedVersionKey, setHydratedVersionKey] = useState<string | null>(null);
+  const [competencySearch, setCompetencySearch] = useState("");
   const roleMaxLength = 180;
   const criticalSituationMaxLength = 1200;
-  const [competencySearch, setCompetencySearch] = useState("");
 
   const visibleCompetencies = useMemo(() => {
     const normalizedSearch = competencySearch.trim().toLowerCase();
@@ -90,6 +87,14 @@ function Page() {
       .filter((competency) => competency.label.toLowerCase().includes(normalizedSearch))
       .sort((a, b) => a.label.localeCompare(b.label, "pt-BR", { sensitivity: "base" }));
   }, [competencies, competencySearch]);
+
+  const selectedOutsideCatalog = useMemo(
+    () =>
+      selectedCompetencies.filter(
+        (competency) => !catalogValues.has(normalizeLabel(competency)),
+      ),
+    [catalogValues, selectedCompetencies],
+  );
 
   const missingFields = [
     role.trim().length === 0 && copy.missingRole,
@@ -102,13 +107,6 @@ function Page() {
     criticalSituation.trim().length > 0 &&
     selectedCompetencies.length > 0;
 
-  const normalizedCompetencies = competencies.map((competency) =>
-    competency.value.trim().toLowerCase(),
-  );
-  const canAddCompetency =
-    newCompetency.trim().length > 0 &&
-    !normalizedCompetencies.includes(newCompetency.trim().toLowerCase());
-
   const versionQuery = useQuery({
     queryKey: ["simulation-version", search.simulationId, search.versionNumber],
     queryFn: () => getSimulationVersion(search.simulationId!, search.versionNumber!),
@@ -120,14 +118,9 @@ function Page() {
     !hasVersionContext || (versionStatus ? canEditSimulationVersion(versionStatus) : false);
 
   useEffect(() => {
-    if (!versionQuery.data || empresaConfigLoading) {
-      return;
-    }
-
+    if (!versionQuery.data || empresaConfigLoading) return;
     const versionKey = `${versionQuery.data.simulationId}:${versionQuery.data.versionNumber}`;
-    if (hydratedVersionKey === versionKey) {
-      return;
-    }
+    if (hydratedVersionKey === versionKey) return;
 
     const parsedBlueprint = parseBlueprintDescription(versionQuery.data.description);
     setRole(parsedBlueprint.role || versionQuery.data.name);
@@ -159,10 +152,7 @@ function Page() {
     onSuccess: (simulation) => {
       void navigate({
         to: "/nova/personagem",
-        search: {
-          simulationId: simulation.id,
-          versionNumber: simulation.versionNumber,
-        },
+        search: { simulationId: simulation.id, versionNumber: simulation.versionNumber },
       });
     },
   });
@@ -172,7 +162,6 @@ function Page() {
       if (!isEditable) {
         throw new Error("Esta versão não pode ser editada. Crie um rascunho antes de alterar.");
       }
-
       return updateSimulationBlueprint(search.simulationId!, search.versionNumber!, {
         rootNodeId: versionQuery.data?.blueprint.rootNodeId ?? "turno-1",
         competencies: buildCompetencyWeights(
@@ -189,10 +178,7 @@ function Page() {
       await queryClient.invalidateQueries({ queryKey: ["simulations"] });
       void navigate({
         to: "/nova/personagem",
-        search: {
-          simulationId: simulation.id,
-          versionNumber: simulation.versionNumber,
-        },
+        search: { simulationId: simulation.id, versionNumber: simulation.versionNumber },
       });
     },
   });
@@ -203,46 +189,29 @@ function Page() {
       await queryClient.invalidateQueries({ queryKey: ["simulations"] });
       void navigate({
         to: "/nova/avaliacao",
-        search: {
-          simulationId: draft.simulationId,
-          versionNumber: draft.newVersionNumber,
-        },
+        search: { simulationId: draft.simulationId, versionNumber: draft.newVersionNumber },
       });
     },
   });
 
-  const addCompetencyMutation = useMutation({
-    mutationFn: async (value: string) => {
-      if (!isEditable) {
-        throw new Error("Crie um rascunho antes de alterar as competências.");
-      }
-
-      const nextCompetencies = [
-        ...competencies,
-        { value, label: value, locked: false, selectedByDefault: false, active: true },
-      ];
-      return updateEmpresaConfig("COMPETENCY", nextCompetencies);
-    },
-    onSuccess: async (_, value) => {
-      setNewCompetency("");
-      setSelectedCompetencies((current) =>
-        current.includes(value) ? current : [...current, value],
-      );
-      await queryClient.invalidateQueries({ queryKey: ["empresa-config"] });
-    },
-  });
-
   function toggleCompetency(competency: string) {
-    if (!isEditable) {
-      return;
-    }
-
+    if (!isEditable) return;
     setSelectedCompetencies((current) =>
       current.includes(competency)
         ? current.filter((item) => item !== competency)
         : [...current, competency],
     );
   }
+
+  function removeLegacyCompetency(competency: string) {
+    if (!isEditable) return;
+    setSelectedCompetencies((current) => current.filter((item) => item !== competency));
+  }
+
+  const pending =
+    createDraftMutation.isPending ||
+    updateExistingMutation.isPending ||
+    cloneDraftMutation.isPending;
 
   return (
     <AppShell>
@@ -317,250 +286,245 @@ function Page() {
 
       {config && !versionQuery.isLoading && !versionQuery.isError && (
         <div className="space-y-6">
-          <div className="space-y-6">
-            <Header kicker={copy.kicker} title={copy.heading} lede={copy.lede} />
+          <Header kicker={copy.kicker} title={copy.heading} lede={copy.lede} />
 
-            {versionStatus && !isEditable && (
-              <StateBanner
-                tone="warn"
-                title="Esta versão não pode ser editada"
-                action={
-                  versionStatus === "published" ? (
-                    <button
-                      type="button"
-                      onClick={() => cloneDraftMutation.mutate()}
-                      disabled={cloneDraftMutation.isPending}
-                      className="shrink-0 rounded-md border border-current/20 bg-background/70 px-3 py-2 text-xs font-medium hover:bg-background disabled:cursor-not-allowed disabled:opacity-60"
-                    >
-                      {cloneDraftMutation.isPending ? "Criando..." : "Criar rascunho"}
-                    </button>
-                  ) : undefined
-                }
-              >
-                {versionStatus === "published"
-                  ? "A versão no ar permanece protegida. Crie um rascunho para alterar o plano sem afetar candidatos em andamento."
-                  : "Esta versão está arquivada e não pode receber alterações."}
-              </StateBanner>
-            )}
+          {versionStatus && !isEditable && (
+            <StateBanner
+              tone="warn"
+              title="Esta versão não pode ser editada"
+              action={
+                versionStatus === "published" ? (
+                  <button
+                    type="button"
+                    onClick={() => cloneDraftMutation.mutate()}
+                    disabled={cloneDraftMutation.isPending}
+                    className="shrink-0 rounded-md border border-current/20 bg-background/70 px-3 py-2 text-xs font-medium hover:bg-background disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    {cloneDraftMutation.isPending ? "Criando..." : "Criar rascunho"}
+                  </button>
+                ) : undefined
+              }
+            >
+              {versionStatus === "published"
+                ? "A versão no ar permanece protegida. Crie um rascunho para alterar o plano sem afetar candidatos em andamento."
+                : "Esta versão está arquivada e não pode receber alterações."}
+            </StateBanner>
+          )}
 
-            <p className="text-sm text-muted-foreground">
-              Prefere começar de um modelo pronto?{" "}
-              <Link to="/nova/rapido" className="font-medium text-primary hover:underline">
-                Usar um modelo →
-              </Link>{" "}
-              · Quer consultar o que já existe?{" "}
-              <Link to="/avaliacoes" className="font-medium text-primary hover:underline">
-                Ver avaliações cadastradas →
-              </Link>
-            </p>
+          <p className="text-sm text-muted-foreground">
+            Prefere começar de um modelo pronto?{" "}
+            <Link to="/nova/rapido" className="font-medium text-primary hover:underline">
+              Usar um modelo →
+            </Link>{" "}
+            · Quer consultar o que já existe?{" "}
+            <Link to="/avaliacoes" className="font-medium text-primary hover:underline">
+              Ver avaliações cadastradas →
+            </Link>
+          </p>
 
-            <Card title={copy.roleCard} required requiredLabel={copy.required}>
-              <Field label={copy.roleLabel}>
-                <input
-                  className={`input ${submitAttempted && role.trim().length === 0 ? "border-danger" : ""}`}
-                  placeholder={copy.rolePlaceholder}
-                  maxLength={roleMaxLength}
-                  required
-                  aria-required="true"
-                  value={role}
-                  disabled={!isEditable}
-                  onChange={(event) => setRole(event.target.value)}
-                />
-                <FieldMeta
-                  error={
-                    submitAttempted && role.trim().length === 0 ? copy.roleRequiredError : undefined
-                  }
-                  count={role.length}
-                  max={roleMaxLength}
-                />
-              </Field>
-            </Card>
-
-            <Card title={copy.criticalSituationCard} required requiredLabel={copy.required}>
-              <textarea
-                aria-label={copy.criticalSituationAria}
-                className={`input min-h-24 ${submitAttempted && criticalSituation.trim().length === 0 ? "border-danger" : ""}`}
-                maxLength={criticalSituationMaxLength}
+          <Card title={copy.roleCard} required requiredLabel={copy.required}>
+            <Field label={copy.roleLabel}>
+              <input
+                className={`input ${submitAttempted && role.trim().length === 0 ? "border-danger" : ""}`}
+                placeholder={copy.rolePlaceholder}
+                maxLength={roleMaxLength}
                 required
                 aria-required="true"
-                value={criticalSituation}
+                value={role}
                 disabled={!isEditable}
-                onChange={(event) => setCriticalSituation(event.target.value)}
+                onChange={(event) => setRole(event.target.value)}
               />
               <FieldMeta
-                error={
-                  submitAttempted && criticalSituation.trim().length === 0
-                    ? copy.criticalSituationRequiredError
-                    : undefined
-                }
-                count={criticalSituation.length}
-                max={criticalSituationMaxLength}
+                error={submitAttempted && role.trim().length === 0 ? copy.roleRequiredError : undefined}
+                count={role.length}
+                max={roleMaxLength}
               />
-              <Help>{copy.criticalSituationHelp}</Help>
-            </Card>
+            </Field>
+          </Card>
 
-            <Card title={copy.competenciesCard} required requiredLabel={copy.required}>
-              <div className="mb-3">
-                <input
-                  className="input"
-                  placeholder={copy.searchCompetencyPlaceholder}
-                  value={competencySearch}
-                  onChange={(event) => setCompetencySearch(event.target.value)}
-                  disabled={!isEditable || empresaConfigLoading || addCompetencyMutation.isPending}
-                />
-                <div className="mt-1 text-xs text-muted-foreground">
-                  {copy.competenciesAvailable
-                    .replace("{visible}", String(visibleCompetencies.length))
-                    .replace("{total}", String(competencies.length))}
+          <Card title={copy.criticalSituationCard} required requiredLabel={copy.required}>
+            <textarea
+              aria-label={copy.criticalSituationAria}
+              className={`input min-h-24 ${submitAttempted && criticalSituation.trim().length === 0 ? "border-danger" : ""}`}
+              maxLength={criticalSituationMaxLength}
+              required
+              aria-required="true"
+              value={criticalSituation}
+              disabled={!isEditable}
+              onChange={(event) => setCriticalSituation(event.target.value)}
+            />
+            <FieldMeta
+              error={
+                submitAttempted && criticalSituation.trim().length === 0
+                  ? copy.criticalSituationRequiredError
+                  : undefined
+              }
+              count={criticalSituation.length}
+              max={criticalSituationMaxLength}
+            />
+            <Help>{copy.criticalSituationHelp}</Help>
+          </Card>
+
+          <Card title={copy.competenciesCard} required requiredLabel={copy.required}>
+            <div className="mb-4 flex flex-col gap-3 rounded-lg border border-border bg-muted/30 p-4 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <div className="text-sm font-medium text-foreground">Catálogo centralizado</div>
+                <p className="mt-1 text-xs leading-5 text-muted-foreground">
+                  Nesta etapa você apenas seleciona competências ativas. Criação, edição e inativação ficam exclusivamente na tela Competências.
+                </p>
+              </div>
+              <Link
+                to="/competencias"
+                className="shrink-0 rounded-md border border-border bg-card px-3 py-2 text-xs font-medium text-primary hover:bg-accent"
+              >
+                Gerenciar catálogo
+              </Link>
+            </div>
+
+            <div className="mb-3">
+              <input
+                type="search"
+                className="input"
+                placeholder={copy.searchCompetencyPlaceholder}
+                value={competencySearch}
+                onChange={(event) => setCompetencySearch(event.target.value)}
+                disabled={!isEditable || empresaConfigLoading}
+              />
+              <div className="mt-1 text-xs text-muted-foreground">
+                {copy.competenciesAvailable
+                  .replace("{visible}", String(visibleCompetencies.length))
+                  .replace("{total}", String(competencies.length))}
+              </div>
+            </div>
+
+            <div className="flex flex-wrap gap-2">
+              {visibleCompetencies.length === 0 ? (
+                <p className="text-sm text-muted-foreground">{copy.noCompetencyFound}</p>
+              ) : (
+                visibleCompetencies.map((competency) => (
+                  <label
+                    key={competency.value}
+                    title={competencyHint(competency.label, copy.competencyHintTemplate)}
+                    className={`rounded-full border px-3 py-1.5 text-sm ${
+                      isEditable ? "cursor-pointer" : "cursor-not-allowed opacity-70"
+                    } ${
+                      selectedCompetencies.includes(competency.value)
+                        ? "border-primary bg-primary/10 text-foreground"
+                        : "border-border bg-card text-foreground/75 hover:bg-accent"
+                    }`}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={selectedCompetencies.includes(competency.value)}
+                      disabled={!isEditable}
+                      onChange={() => toggleCompetency(competency.value)}
+                      className="sr-only"
+                    />
+                    {competency.label}
+                  </label>
+                ))
+              )}
+            </div>
+
+            {selectedOutsideCatalog.length > 0 && (
+              <div className="mt-4 rounded-lg border border-warning/40 bg-warning/10 p-4">
+                <div className="text-sm font-medium text-foreground">
+                  Competências antigas fora do catálogo ativo
+                </div>
+                <p className="mt-1 text-xs leading-5 text-muted-foreground">
+                  Elas permanecem na versão para preservar o histórico. Remova-as do rascunho ou cadastre uma competência equivalente na Biblioteca de competências.
+                </p>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {selectedOutsideCatalog.map((competency) => (
+                    <span
+                      key={competency}
+                      className="inline-flex items-center gap-2 rounded-full border border-warning/40 bg-background px-3 py-1.5 text-sm"
+                    >
+                      {competency}
+                      {isEditable && (
+                        <button
+                          type="button"
+                          onClick={() => removeLegacyCompetency(competency)}
+                          aria-label={`Remover ${competency}`}
+                          className="rounded-full px-1 text-muted-foreground hover:bg-accent hover:text-foreground"
+                        >
+                          ×
+                        </button>
+                      )}
+                    </span>
+                  ))}
                 </div>
               </div>
+            )}
+          </Card>
 
-              <div className="flex flex-wrap gap-2">
-                {visibleCompetencies.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">{copy.noCompetencyFound}</p>
-                ) : (
-                  visibleCompetencies.map((competency) => (
-                    <label
-                      key={competency.value}
-                      title={competencyHint(competency.label, copy.competencyHintTemplate)}
-                      className={`rounded-full border px-3 py-1.5 text-sm ${
-                        isEditable ? "cursor-pointer" : "cursor-not-allowed opacity-70"
-                      } ${
-                        selectedCompetencies.includes(competency.value)
-                          ? "border-primary bg-primary/10 text-foreground"
-                          : "border-border bg-card text-foreground/75 hover:bg-accent"
-                      }`}
-                    >
-                      <input
-                        type="checkbox"
-                        checked={selectedCompetencies.includes(competency.value)}
-                        disabled={!isEditable}
-                        onChange={() => toggleCompetency(competency.value)}
-                        className="sr-only"
-                      />
-                      {competency.label}
-                    </label>
-                  ))
-                )}
-              </div>
+          <div className="sticky bottom-0 -mx-6 mt-2 flex flex-col gap-3 border-t border-border bg-background/90 px-6 py-4 backdrop-blur sm:flex-row sm:items-center sm:justify-between lg:-mx-10 lg:px-10">
+            <Link
+              to="/"
+              className="rounded-md border border-border bg-card px-4 py-2 text-sm hover:bg-accent"
+            >
+              {copy.cancel}
+            </Link>
 
-              <div className="mt-4 grid gap-2 md:grid-cols-[1fr_auto]">
-                <input
-                  className="input"
-                  placeholder={copy.addCompetencyPlaceholder}
-                  value={newCompetency}
-                  disabled={!isEditable}
-                  onChange={(event) => setNewCompetency(event.target.value)}
-                />
-                <button
-                  type="button"
-                  onClick={() => addCompetencyMutation.mutate(newCompetency.trim())}
-                  disabled={!isEditable || !canAddCompetency || addCompetencyMutation.isPending}
-                  className="rounded-md border border-border bg-card px-4 py-2 text-sm hover:bg-accent disabled:cursor-not-allowed disabled:opacity-50"
+            <div className="flex flex-col items-start gap-2 sm:items-end">
+              {isEditable && !canGoNext && (
+                <p
+                  className={`text-xs ${submitAttempted ? "text-danger" : "text-muted-foreground"}`}
+                  aria-live="polite"
                 >
-                  {addCompetencyMutation.isPending ? copy.saving : copy.addAndSave}
-                </button>
-              </div>
-
-              <Help>{copy.addedCompetencyHelp}</Help>
-              {addCompetencyMutation.isError && (
-                <p className="mt-2 text-xs text-danger">
-                  {addCompetencyMutation.error instanceof Error
-                    ? addCompetencyMutation.error.message
-                    : copy.competencySaveError}
+                  {copy.missingFieldsPrefix} {missingFields.join(", ")}.
                 </p>
               )}
-              <Help>{copy.customCompetencyHelp}</Help>
-            </Card>
 
-            <div className="sticky bottom-0 -mx-6 mt-2 flex flex-col gap-3 border-t border-border bg-background/90 px-6 py-4 backdrop-blur sm:flex-row sm:items-center sm:justify-between lg:-mx-10 lg:px-10">
-              <Link
-                to="/"
-                className="rounded-md border border-border bg-card px-4 py-2 text-sm hover:bg-accent"
-              >
-                {copy.cancel}
-              </Link>
-
-              <div className="flex flex-col items-start gap-2 sm:items-end">
-                {isEditable && !canGoNext && (
-                  <p
-                    className={`text-xs ${submitAttempted ? "text-danger" : "text-muted-foreground"}`}
-                    aria-live="polite"
-                  >
-                    {copy.missingFieldsPrefix} {missingFields.join(", ")}.
-                  </p>
-                )}
-
-                <button
-                  type="button"
-                  disabled={
-                    createDraftMutation.isPending ||
-                    updateExistingMutation.isPending ||
-                    cloneDraftMutation.isPending ||
-                    (!isEditable && versionStatus !== "published")
-                  }
-                  title={
-                    !isEditable
-                      ? versionStatus === "published"
-                        ? "Criar uma nova versão em rascunho"
-                        : "Esta versão não pode ser editada"
-                      : canGoNext
-                        ? copy.createDraftTitle
-                        : copy.disabledNextTitle
-                  }
-                  onClick={() => {
-                    if (!isEditable && versionStatus === "published" && hasVersionContext) {
-                      cloneDraftMutation.mutate();
-                      return;
-                    }
-
-                    if (!canGoNext) {
-                      setSubmitAttempted(true);
-                      return;
-                    }
-
-                    if (hasVersionContext) {
-                      updateExistingMutation.mutate();
-                      return;
-                    }
-
-                    createDraftMutation.mutate();
-                  }}
-                  aria-disabled={isEditable && !canGoNext}
-                  className={`rounded-md bg-primary px-5 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 ${
-                    (isEditable && !canGoNext) ||
-                    createDraftMutation.isPending ||
-                    updateExistingMutation.isPending ||
-                    cloneDraftMutation.isPending ||
-                    (!isEditable && versionStatus !== "published")
-                      ? "cursor-not-allowed opacity-50"
-                      : ""
-                  }`}
-                >
-                  {!isEditable
+              <button
+                type="button"
+                disabled={pending || (!isEditable && versionStatus !== "published")}
+                title={
+                  !isEditable
                     ? versionStatus === "published"
-                      ? cloneDraftMutation.isPending
-                        ? "Criando rascunho..."
-                        : "Criar rascunho"
-                      : "Versão não editável"
-                    : createDraftMutation.isPending
-                      ? copy.creatingDraft
-                      : copy.next}
-                </button>
-              </div>
+                      ? "Criar uma nova versão em rascunho"
+                      : "Esta versão não pode ser editada"
+                    : canGoNext
+                      ? copy.createDraftTitle
+                      : copy.disabledNextTitle
+                }
+                onClick={() => {
+                  if (!isEditable && versionStatus === "published" && hasVersionContext) {
+                    cloneDraftMutation.mutate();
+                    return;
+                  }
+                  if (!canGoNext) {
+                    setSubmitAttempted(true);
+                    return;
+                  }
+                  if (hasVersionContext) {
+                    updateExistingMutation.mutate();
+                    return;
+                  }
+                  createDraftMutation.mutate();
+                }}
+                aria-disabled={isEditable && !canGoNext}
+                className={`rounded-md bg-primary px-5 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 ${
+                  (isEditable && !canGoNext) || pending || (!isEditable && versionStatus !== "published")
+                    ? "cursor-not-allowed opacity-50"
+                    : ""
+                }`}
+              >
+                {!isEditable
+                  ? versionStatus === "published"
+                    ? cloneDraftMutation.isPending
+                      ? "Criando rascunho..."
+                      : "Criar rascunho"
+                    : "Versão não editável"
+                  : createDraftMutation.isPending || updateExistingMutation.isPending
+                    ? copy.creatingDraft
+                    : copy.next}
+              </button>
             </div>
           </div>
         </div>
       )}
     </AppShell>
-  );
-}
-
-function getDefaultOption(options: EmpresaConfigOption[]) {
-  return (
-    options.find((option) => option.selectedByDefault && !option.locked) ??
-    options.find((option) => !option.locked) ??
-    options[0]
   );
 }
 
@@ -573,18 +537,13 @@ function buildBlueprintDescription({
   role: string;
   criticalSituation: string;
   competencies: string[];
-  labels: {
-    role: string;
-    criticalSituation: string;
-    competencies: string;
-  };
+  labels: { role: string; criticalSituation: string; competencies: string };
 }) {
   const lines = [
     `${labels.role}: ${role.trim()}`,
     `${labels.criticalSituation}: ${criticalSituation.trim()}`,
     competencies.length > 0 && `${labels.competencies}: ${competencies.join(", ")}`,
   ].filter((line): line is string => Boolean(line));
-
   const description = lines.join("\n");
   return description.length > 1000 ? `${description.slice(0, 997).trimEnd()}...` : description;
 }
@@ -598,9 +557,7 @@ function buildCompetencyWeights(
     tier?: "major" | "minor" | null;
   }[],
 ) {
-  const uniqueCompetencies = [
-    ...new Set(competencies.map((competency) => competency.trim())),
-  ].filter(Boolean);
+  const uniqueCompetencies = [...new Set(competencies.map((competency) => competency.trim()))].filter(Boolean);
   const normalizedUniqueCompetencies = uniqueCompetencies.map(normalizeLabel).sort();
   const normalizedExistingCompetencies = (existingCompetencies ?? [])
     .map((competency) => normalizeLabel(competency.name))
@@ -636,20 +593,12 @@ function buildCompetencyWeights(
 }
 
 function parseBlueprintDescription(description: string) {
-  const fields = {
-    role: "",
-    criticalSituation: "",
-  };
-
+  const fields = { role: "", criticalSituation: "" };
   for (const line of description.split("\n")) {
     const separatorIndex = line.indexOf(":");
-    if (separatorIndex < 0) {
-      continue;
-    }
-
+    if (separatorIndex < 0) continue;
     const label = normalizeLabel(line.slice(0, separatorIndex));
     const value = line.slice(separatorIndex + 1).trim();
-
     if (["cargo", "role", "puesto"].includes(label)) {
       fields.role = value;
     } else if (
@@ -660,7 +609,6 @@ function parseBlueprintDescription(description: string) {
       fields.criticalSituation = value;
     }
   }
-
   return fields;
 }
 
@@ -701,7 +649,6 @@ function Card({
       : tone === "danger"
         ? "before:bg-danger"
         : "before:bg-transparent";
-
   return (
     <section
       className={`relative overflow-hidden rounded-xl border border-border bg-card p-5 before:absolute before:left-0 before:top-0 before:h-full before:w-1 ${accent}`}
