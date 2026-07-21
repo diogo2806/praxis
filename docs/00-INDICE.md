@@ -7,12 +7,14 @@
 1. [README principal](../README.md) — visão do sistema, arquitetura e execução local.
 2. [Documentação técnica](documentacao-tecnica.md) — componentes, ambiente, segurança e integrações.
 3. [Mapa Frontend-Backend](frontend-backend-map.md) — rotas, APIs consumidas e lacunas conhecidas.
-4. [Cadastro de cenários para RH](cadastro_cenarios_rh.md) — regras de produto e guardrails.
-5. [Fonte canônica Gupy](GUPY-FONTE-CANONICA.md) — fonte externa autorizada e governança contra páginas duplicadas.
-6. [Integração Gupy](INTEGRACAO-GUPY-PROVEDOR.md) — contrato implementado, payloads, estados e segurança.
-7. [Homologação Gupy](HOMOLOGACAO-GUPY.md) — evidências, bloqueios e validação em vaga real.
-8. [Arquitetura Outbox](ARQUITETURA_OUTBOX_PATTERN.md) — retry, DLQ e entrega assíncrona.
-9. [Rotas TanStack Start](../frontend/src/routes/README.md) — convenções do frontend.
+4. [Matriz de telas do perfil EMPRESA](matriz-telas-informacoes-perfil-empresa.md) — tabelas, modais, campos repetidos, proprietários e plano de correção.
+5. [Auditoria do perfil EMPRESA](auditoria-perfil-empresa.md) — diagnóstico inicial de acessos e organização das telas.
+6. [Cadastro de cenários para RH](cadastro_cenarios_rh.md) — regras de produto e guardrails.
+7. [Fonte canônica Gupy](GUPY-FONTE-CANONICA.md) — fonte externa autorizada e governança contra páginas duplicadas.
+8. [Integração Gupy](INTEGRACAO-GUPY-PROVEDOR.md) — contrato implementado, payloads, estados e segurança.
+9. [Homologação Gupy](HOMOLOGACAO-GUPY.md) — evidências, bloqueios e validação em vaga real.
+10. [Arquitetura Outbox](ARQUITETURA_OUTBOX_PATTERN.md) — retry, DLQ e entrega assíncrona.
+11. [Rotas TanStack Start](../frontend/src/routes/README.md) — convenções do frontend.
 
 ## Documentação operacional atual
 
@@ -24,6 +26,8 @@
 | [Implantação do zero](IMPLANTACAO.md) | Instalar, configurar, publicar e validar. | DevOps, Engenharia | Atual |
 | [Cadastro de cenários para RH](cadastro_cenarios_rh.md) | Entender regras de cadastro e produto. | RH, Produto, Compliance | Atual |
 | [Mapa Frontend-Backend](frontend-backend-map.md) | Ver rotas e contratos internos. | Frontend, Backend, QA | Atual |
+| [Matriz de telas do perfil EMPRESA](matriz-telas-informacoes-perfil-empresa.md) | Decidir qual tela deve manter cada informação e priorizar correções de UX. | Produto, UX, Frontend, Backend, QA | Atual |
+| [Auditoria do perfil EMPRESA](auditoria-perfil-empresa.md) | Consultar o diagnóstico inicial de acessos e telas. | Produto, UX, Engenharia | Histórico de referência |
 | [Fonte canônica Gupy](GUPY-FONTE-CANONICA.md) | Consultar a única referência externa autorizada e as regras de manutenção. | Integrações, Documentação | Atual |
 | [Integração Gupy](INTEGRACAO-GUPY-PROVEDOR.md) | Implementar e validar `/test/**`. | Backend, Integrações | **Compatível tecnicamente; homologação pendente** |
 | [Homologação Gupy](HOMOLOGACAO-GUPY.md) | Preparar evidências e validar o fluxo em vaga real. | Integrações, Operação | **Validação externa pendente** |
@@ -46,6 +50,7 @@
 | Jornada | Ler |
 | --- | --- |
 | RH cria avaliação | [Cadastro de cenários](cadastro_cenarios_rh.md) e [Mapa Frontend-Backend](frontend-backend-map.md) |
+| Revisar responsabilidades das telas EMPRESA | [Matriz de telas](matriz-telas-informacoes-perfil-empresa.md) |
 | RH publica versão | [Cadastro de cenários](cadastro_cenarios_rh.md#fluxo-operacional-atual) |
 | Candidato responde | [Mapa Frontend-Backend](frontend-backend-map.md#execucao-do-candidato) |
 | Gupy lista avaliações | [Integração Gupy](INTEGRACAO-GUPY-PROVEDOR.md#get-test) |
@@ -57,6 +62,7 @@
 
 ## Produto e prontidão
 
+- [Matriz de telas do perfil EMPRESA](matriz-telas-informacoes-perfil-empresa.md) — proprietários de dados, duplicidades e prioridades P0/P1/P2.
 - [P0 de prontidão](P0_PRODUCT_READINESS.md) — promessas comerciais seguras.
 - [Resumo de implementação](IMPLEMENTATION_SUMMARY.md) — estado técnico resumido.
 - [Pesquisa de reclamações de concorrentes](research/competitor-complaints-research-2025-2026.md) — contexto de mercado.
@@ -91,4 +97,4 @@ Principais referências:
 - Retry e DLQ pertencem ao documento de Outbox; checklist pertence ao documento de homologação.
 - Execute `python3 scripts/validate_docs.py` antes do merge.
 
-Última revisão: 18/07/2026.
+Última revisão: 21/07/2026.
