@@ -194,7 +194,13 @@ export function updateSimulationNode(
   nodeId: string,
   body: UpdateNodeRequest,
 ) {
-  return updateSimulationNodeLegacy(simulationId, versionNumber, nodeId, body);
+  const normalizedBody =
+    Object.prototype.hasOwnProperty.call(body, "timeLimitSeconds") &&
+    body.timeLimitSeconds === null
+      ? { ...body, timeLimitSeconds: 0 }
+      : body;
+
+  return updateSimulationNodeLegacy(simulationId, versionNumber, nodeId, normalizedBody);
 }
 
 export function createSimulationOption(

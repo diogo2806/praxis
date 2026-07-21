@@ -12,6 +12,7 @@ public record UpdateNodeRequest(
         @Size(max = 1200)
         String clientMessage,
 
+        @Schema(description = "Tempo limite em segundos. Envie 0 para remover o limite.", nullable = true)
         Integer timeLimitSeconds,
 
         @Size(max = 1000)
