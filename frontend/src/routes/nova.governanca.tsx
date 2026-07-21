@@ -1,8 +1,18 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { AppShell } from "@/components/app-shell";
 import { EmptyState, StateBanner, StatusBadge } from "@/components/praxis-ui";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { WizardStepper } from "@/components/wizard-stepper";
 import {
   acceptHealthUseTerm,
@@ -25,7 +35,7 @@ export const Route = createFileRoute("/nova/governanca")({
   validateSearch: (search: Record<string, unknown>) => ({
     simulationId: typeof search.simulationId === "string" ? search.simulationId : undefined,
     versionNumber:
-      typeof search.versionNumber === "number"
+      typeof search.versionNumber === "number" && Number.isFinite(search.versionNumber)
         ? search.versionNumber
         : typeof search.versionNumber === "string" && Number.isFinite(Number(search.versionNumber))
           ? Number(search.versionNumber)
@@ -55,7 +65,7 @@ const transitionCopy: Record<
     title: "Colocar versão no ar?",
     description:
       "Ao entrar no ar, a versão fica protegida contra alterações. Bloqueios críticos continuam sem ajuste manual.",
-    cta: "Publicar",
+    cta: "Publicar versão",
   },
 };
 
@@ -77,7 +87,7 @@ function Page() {
   });
 
   const transitionMutation = useMutation({
-    mutationFn: async () => publishSimulationVersion(search.simulationId!, search.versionNumber!),
+    mutationFn: () => publishSimulationVersion(search.simulationId!, search.versionNumber!),
     onSuccess: async (response) => {
       setCurrentStatus(response.status);
       setPendingAction(null);
@@ -106,8 +116,6 @@ function Page() {
   });
   const termAccepted = acceptanceQuery.data?.accepted ?? false;
 
-  // Termo de uso na vertical de saúde (Minuta C). A publicação só o exige quando o empresa opera
-  // nessa vertical: o backend bloqueia com 409, e então mostramos o aceite para liberar a republicação.
   const healthTermQuery = useQuery({
     queryKey: ["health-use-term"],
     queryFn: getHealthUseTerm,
@@ -173,7 +181,7 @@ function Page() {
       {!hasGovernanceParams ? (
         <EmptyState
           title="Selecione uma versão para governança"
-          description="As transições de estado e o registro de auditoria agora dependem do servidor."
+          description="As transições de estado e o registro de auditoria dependem de uma avaliação e versão reais."
           actions={
             <SimulationLinks
               loading={simulationsQuery.isLoading}
@@ -277,31 +285,35 @@ function Page() {
       </div>
 
       {pendingAction && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-foreground/30 p-4">
-          <div className="w-full max-w-md rounded-md border border-border bg-card p-5 shadow-xl">
-            <div className="text-sm font-semibold">{transitionCopy[pendingAction].title}</div>
-            <p className="mt-2 text-sm text-muted-foreground">
-              {transitionCopy[pendingAction].description}
-            </p>
-            <div className="mt-5 flex justify-end gap-2">
-              <button
-                type="button"
-                onClick={() => setPendingAction(null)}
-                className="rounded-md border border-border bg-card px-4 py-2 text-sm hover:bg-accent"
-              >
-                Cancelar
-              </button>
-              <button
-                type="button"
-                onClick={() => transitionMutation.mutate(pendingAction)}
+        <AlertDialog
+          open
+          onOpenChange={(open) => {
+            if (!open && !transitionMutation.isPending) setPendingAction(null);
+          }}
+        >
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>{transitionCopy[pendingAction].title}</AlertDialogTitle>
+              <AlertDialogDescription>
+                {transitionCopy[pendingAction].description}
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel disabled={transitionMutation.isPending}>Cancelar</AlertDialogCancel>
+              <AlertDialogAction
                 disabled={transitionMutation.isPending}
-                className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground disabled:cursor-not-allowed disabled:opacity-60"
+                onClick={(event) => {
+                  event.preventDefault();
+                  transitionMutation.mutate();
+                }}
               >
-                {transitionMutation.isPending ? "Enviando..." : "Confirmar"}
-              </button>
-            </div>
-          </div>
-        </div>
+                {transitionMutation.isPending
+                  ? "Publicando..."
+                  : transitionCopy[pendingAction].cta}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       )}
     </AppShell>
   );
@@ -523,11 +535,8 @@ function SimulationLinks({
         return (
           <Link
             key={`${simulation.id}-${versionNumber}`}
-            to="/nova/piloto"
-            search={{
-              simulationId: simulation.id,
-              versionNumber,
-            }}
+            to="/nova/governanca"
+            search={{ simulationId: simulation.id, versionNumber }}
             className="rounded-md border border-border bg-card px-4 py-3 text-sm hover:bg-accent"
           >
             <span className="block font-medium">{simulation.name}</span>

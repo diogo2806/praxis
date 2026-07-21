@@ -1,7 +1,7 @@
 # Matriz de telas e informações do perfil EMPRESA
 
 Data da revisão: 21/07/2026  
-Base analisada: `main` com as correções dos PRs #421, #422, #425, #426, #427, #428, #429, #430 e #431
+Base analisada: `main` com as correções dos PRs #421, #422, #425, #426, #427, #428, #429, #430, #431, #432, #433 e #434
 
 ## 1. Escopo
 
@@ -40,8 +40,8 @@ A repetição é permitida quando representa apenas resumo, referência somente 
 | 6 | `CONCLUÍDA` | `OK` | **Editor de diálogo** `/nova/dialogo` | Autoria das etapas posteriores, alternativas, tempo, mídia, criticidade e pontuação. | PR #429 retirou a autoria concorrente do Mapa; PR #431 tornou a mensagem inicial somente leitura com atalho para Personagem. |
 | 7 | `CONCLUÍDA` | `OK` | **Mapa do fluxo** `/nova/mapa` | Posição visual das etapas e destino das alternativas. | PR #429 removeu criação e edição de conteúdo, persistiu coordenadas e manteve apenas conexões. |
 | 8 | `CONCLUÍDA` | `OK` | **Validador/Revisão** `/nova/validador` | Diagnóstico de bloqueios, avisos e qualidade. | PR #421 removeu CRUD de etapas e alternativas. |
-| 9 | `PENDENTE` | `CONTEXTUAL` | **Piloto e indicadores** `/nova/piloto` | Calibração e indicadores analíticos da versão. | Exigir contexto e retirar seletor global. |
-| 10 | `PENDENTE` | `CONTEXTUAL` | **Governança e publicação** `/nova/governanca` | Publicação, aceite, termos e auditoria. | Trocar confirmação própria por `AlertDialog`. |
+| 9 | `CONCLUÍDA` | `CONTEXTUAL` | **Piloto e indicadores** `/nova/piloto` | Calibração e indicadores analíticos da avaliação e versão abertas. | PR #434 removeu o seletor global e passou a exigir contexto do fluxo de autoria. |
+| 10 | `CONCLUÍDA` | `CONTEXTUAL` | **Governança e publicação** `/nova/governanca` | Publicação, aceite, termos e auditoria. | PR #434 substituiu a confirmação própria por `AlertDialog` acessível. |
 | 11 | `PENDENTE` | `DUPLICADO` | **Ativação Gupy** `/nova/gupy` | Deve manter somente o preflight da versão. | Remover entregas e direcionar para Monitoramento. |
 | 12 | `NÃO SE APLICA` | `CONTEXTUAL` | **Começar rápido** `/nova/rapido` | Atalho para criar rascunho por modelo. | Já encaminha para a avaliação criada. |
 | 13 | `EM ANDAMENTO` | `PARCIAL` | **Jornadas** `/jornadas` | Composição e ordenação de avaliações. | PR #417 retirou participantes; faltam confirmações padronizadas. |
@@ -63,7 +63,7 @@ A repetição é permitida quando representa apenas resumo, referência somente 
 | 29 | `NÃO SE APLICA` | `OK` | **Plano e cobrança** `/billing` | Créditos, assinatura, uso e histórico financeiro. | Responsabilidade centralizada. |
 | 30 | `NÃO SE APLICA` | `OK` | **Minha conta** `/configuracoes/conta` | Credenciais pessoais do usuário autenticado. | Vínculo e permissões ficam em Minha equipe. |
 | 31 | `PENDENTE` | `PARCIAL` | **Comece aqui** `/comecar` | Onboarding inicial da empresa. | Corrigir destino do convite e ocultar após conclusão. |
-| 32 | `EM ANDAMENTO` | `PARCIAL` | **Central de manuais** `/manual` | Processo completo e manual contextual por rota. | PR #431 adicionou Personagem e atualizou Diálogo e Mapa; ainda faltam telas pendentes. |
+| 32 | `EM ANDAMENTO` | `PARCIAL` | **Central de manuais** `/manual` | Processo completo e manual contextual por rota. | PR #434 adicionou Piloto e Governança; ainda faltam telas pendentes. |
 
 ## 4. Propriedade das informações
 
@@ -76,7 +76,7 @@ A repetição é permitida quando representa apenas resumo, referência somente 
 | `CONCLUÍDA` | Etapas posteriores, alternativas, mídia, criticidade e pontuação | **Editor de diálogo** | PRs #429 e #431 separaram o conteúdo inicial das demais etapas. |
 | `CONCLUÍDA` | Posição das etapas e destino das alternativas | **Mapa do fluxo** | PR #429 limita a tela a coordenadas e conexões. |
 | `CONCLUÍDA` | Bloqueios, avisos e qualidade | **Validador** | Telas secundárias mostram somente resumo ou link. |
-| `CONCLUÍDA` | Publicação, aceite e auditoria | **Governança** | Compliance mostra apenas referência contextual. |
+| `CONCLUÍDA` | Publicação, aceite e auditoria | **Governança** | PR #434 padronizou a confirmação; Compliance mostra apenas referência contextual. |
 | `CONCLUÍDA` | Convite, validade e progresso | **Participações** | Individuais e jornadas usam o mesmo read model. |
 | `CONCLUÍDA` | Score, evidências e decisão humana | **Detalhe do resultado** | Listas exibem somente resumo. |
 | `PENDENTE` | Falhas, retry e DLQ | **Monitoramento** | Gupy ainda repete informações operacionais. |
@@ -103,7 +103,7 @@ A repetição é permitida quando representa apenas resumo, referência somente 
 | `PENDENTE` | Retirar integrações saudáveis de Monitoramento. | Manter somente exceções e retentativas. |
 | `PENDENTE` | Remover entregas operacionais de Ativação Gupy. | Entregas ficam somente em Monitoramento. |
 | `CONCLUÍDA` | Tornar Perfil da empresa acionável. | PR #422. |
-| `EM ANDAMENTO` | Padronizar confirmações e modais. | Avaliações concluída; faltam Jornadas e Governança. |
+| `EM ANDAMENTO` | Padronizar confirmações e modais. | Avaliações e Governança concluídas; falta Jornadas. |
 
 ### P2 — permissões e acabamento
 
@@ -112,7 +112,7 @@ A repetição é permitida quando representa apenas resumo, referência somente 
 | `PENDENTE` | Criar subperfis de EMPRESA. | Backend e frontend devem distinguir os perfis autorizados. |
 | `PENDENTE` | Incluir perfil e permissões em Equipe. | Modal e tabela devem mostrar e alterar o acesso. |
 | `PENDENTE` | Restringir Parceiros. | Rota somente para empresa parceira e permissão específica. |
-| `EM ANDAMENTO` | Atualizar manuais de tela. | PR #431 adicionou Personagem e atualizou Diálogo e Mapa; outras rotas continuam pendentes. |
+| `EM ANDAMENTO` | Atualizar manuais de tela. | PR #434 adicionou Piloto e Governança; outras rotas continuam pendentes. |
 | `PENDENTE` | Ocultar Comece aqui após onboarding. | Guia deve permanecer apenas em Ajuda. |
 
 ## 6. Critério para atualizar o status

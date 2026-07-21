@@ -1,26 +1,18 @@
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { AppShell } from "@/components/app-shell";
-import {
-  EmptyState,
-  StateBanner,
-} from "@/components/praxis-ui";
-import { WizardStepper } from "@/components/wizard-stepper";
+import { EmptyState, StateBanner } from "@/components/praxis-ui";
 import { CalibrationReport } from "@/components/simulation/calibration-report";
-import {
-  getCalibrationReport,
-  getSimulationMonitoring,
-  listSimulations,
-  type SimulationSummaryResponse,
-} from "@/lib/api/praxis";
+import { WizardStepper } from "@/components/wizard-stepper";
+import { getCalibrationReport, getSimulationMonitoring } from "@/lib/api/praxis";
 
 export const Route = createFileRoute("/nova/piloto")({
   validateSearch: (search: Record<string, unknown>) => ({
     simulationId: typeof search.simulationId === "string" ? search.simulationId : undefined,
     versionNumber:
-      typeof search.versionNumber === "number"
+      typeof search.versionNumber === "number" && Number.isFinite(search.versionNumber)
         ? search.versionNumber
-        : typeof search.versionNumber === "string"
+        : typeof search.versionNumber === "string" && Number.isFinite(Number(search.versionNumber))
           ? Number(search.versionNumber)
           : undefined,
   }),
@@ -36,11 +28,6 @@ export const Route = createFileRoute("/nova/piloto")({
 function Page() {
   const search = Route.useSearch();
   const hasContext = Boolean(search.simulationId && search.versionNumber);
-  const simulationsQuery = useQuery({
-    queryKey: ["simulations"],
-    queryFn: listSimulations,
-    enabled: !hasContext,
-  });
   const monitoringQuery = useQuery({
     queryKey: ["simulation-monitoring", search.simulationId, search.versionNumber],
     queryFn: () => getSimulationMonitoring(search.simulationId!, search.versionNumber!),
@@ -60,18 +47,20 @@ function Page() {
         <div className="text-xs uppercase tracking-[0.2em] text-primary">Passo 4</div>
         <h1 className="mt-1 font-display text-3xl">Piloto e indicadores</h1>
         <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
-          Esta tela mostra os indicadores reais de quem já respondeu, calculados pelo sistema.
+          Esta tela mostra os indicadores reais da avaliação e versão abertas no fluxo de autoria.
         </p>
       </div>
       {!hasContext ? (
         <EmptyState
-          title="Selecione uma versão para acompanhar"
-          description="Escolha uma versão abaixo para ver os indicadores de quem já respondeu."
+          title="Abra o piloto a partir de uma avaliação"
+          description="O piloto é contextual e não mantém uma segunda lista global de avaliações. Abra uma versão em Avaliações, Validador ou Governança para consultar seus indicadores."
           actions={
-            <SimulationLinks
-              loading={simulationsQuery.isLoading}
-              simulations={simulationsQuery.data ?? []}
-            />
+            <Link
+              to="/avaliacoes"
+              className="rounded-md border border-border bg-card px-4 py-2 text-sm hover:bg-accent"
+            >
+              Ir para Avaliações
+            </Link>
           }
         />
       ) : monitoringQuery.isLoading ? (
@@ -86,6 +75,10 @@ function Page() {
         </StateBanner>
       ) : monitoring ? (
         <>
+          <div className="rounded-md border border-border bg-card px-4 py-3 text-sm text-muted-foreground">
+            Avaliação <span className="font-medium text-foreground">{search.simulationId}</span>, versão{" "}
+            <span className="font-medium text-foreground">{search.versionNumber}</span>.
+          </div>
           <div className="mt-5 grid gap-4 md:grid-cols-4">
             <Metric label="Criadas" value={monitoring.attemptsCreated} />
             <Metric label="Em andamento" value={monitoring.attemptsInProgress} />
@@ -145,33 +138,6 @@ function Metric({ label, value }: { label: string; value: number | string }) {
     <div className="rounded-md border border-border bg-card p-4">
       <div className="text-xs uppercase text-muted-foreground">{label}</div>
       <div className="mt-2 text-3xl font-semibold tabular-nums">{value}</div>
-    </div>
-  );
-}
-
-function SimulationLinks({
-  loading,
-  simulations,
-}: {
-  loading: boolean;
-  simulations: SimulationSummaryResponse[];
-}) {
-  if (loading) return <span className="text-sm text-muted-foreground">Carregando...</span>;
-  return (
-    <div className="flex flex-wrap gap-2">
-      {simulations.map((simulation) => {
-        const versionNumber = simulation.livePublishedVersionNumber ?? simulation.versionNumber;
-        return (
-          <Link
-            key={`${simulation.id}-${versionNumber}`}
-            to="/nova/piloto"
-            search={{ simulationId: simulation.id, versionNumber }}
-            className="rounded-md border border-border bg-card px-3 py-2 text-sm hover:bg-accent"
-          >
-            {simulation.name} v{versionNumber}
-          </Link>
-        );
-      })}
     </div>
   );
 }
