@@ -95,13 +95,6 @@ public enum TeamProfile {
         if (roles.contains("RESULTS_ANALYST")) {
             return ANALISTA;
         }
-        if (roles.contains("OPERATIONS_MANAGER")) {
-            return OPERADOR;
-        }
-        // Compatibilidade: usuários existentes possuíam somente EMPRESA e tinham acesso administrativo.
-        if (roles.equals(Set.of("EMPRESA"))) {
-            return ADMINISTRADOR;
-        }
         return OPERADOR;
     }
 }
