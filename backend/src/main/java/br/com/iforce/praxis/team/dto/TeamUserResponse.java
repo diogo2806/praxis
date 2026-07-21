@@ -31,4 +31,26 @@ public record TeamUserResponse(
         Instant lastLoginAt,
         Instant createdAt
 ) {
+
+    public TeamUserResponse(
+            Long id,
+            String name,
+            String email,
+            Set<String> roles,
+            UserStatus status,
+            Instant lastLoginAt,
+            Instant createdAt
+    ) {
+        this(
+                id,
+                name,
+                email,
+                roles,
+                TeamProfile.fromRoles(roles),
+                TeamProfile.fromRoles(roles).permissions(),
+                status,
+                lastLoginAt,
+                createdAt
+        );
+    }
 }
