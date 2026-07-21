@@ -106,4 +106,10 @@ public class SimulationNodeEntity {
 
     @OneToMany(mappedBy = "simulationNode", cascade = CascadeType.ALL, orphanRemoval = true)
     private Set<SimulationOptionEntity> options = new LinkedHashSet<>();
+
+    public void setTimeLimitSeconds(Integer timeLimitSeconds) {
+        this.timeLimitSeconds = timeLimitSeconds != null && timeLimitSeconds == 0
+                ? null
+                : timeLimitSeconds;
+    }
 }
