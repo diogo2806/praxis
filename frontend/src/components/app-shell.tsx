@@ -2,35 +2,15 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { Link, useRouterState } from "@tanstack/react-router";
-import { useEffect, useState, type ReactNode } from "react";
-import {
-  Accessibility,
-  BarChart3,
-  BookOpenCheck,
-  Building2,
-  ChevronDown,
-  ClipboardList,
-  CreditCard,
-  Eye,
-  Focus,
-  HelpCircle,
-  Home,
-  KeyRound,
-  ListChecks,
-  Menu,
-  RotateCcw,
-  Sparkles,
-  Type,
-  UserRound,
-  Users,
-  Workflow,
-} from "lucide-react";
+import { useEffect, type ReactNode } from "react";
+import { Focus, HelpCircle, Menu } from "lucide-react";
 
+import { AccessibilityPanel, useCognitivePreferences } from "@/components/app-shell-accessibility";
+import { AppSidebar } from "@/components/app-shell-navigation";
 import { DeliveryAlertBanner } from "@/components/delivery-alert-banner";
 import { LanguageSelector } from "@/components/language-selector";
 import {
   Sheet,
-  SheetClose,
   SheetContent,
   SheetDescription,
   SheetHeader,
@@ -38,628 +18,176 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { getUnreadNotificationsCount } from "@/lib/api/notifications";
+import { isRestrictedPartnerSpecialist } from "@/lib/access-control";
 import { useLanguage } from "@/lib/language-context";
 import { useSession } from "@/lib/session";
 import { cn } from "@/lib/utils";
 
 type Language = ReturnType<typeof useLanguage>["language"];
-type CognitivePreferences = {
-  simpleNavigation: boolean;
-  largeText: boolean;
-  reducedMotion: boolean;
-  focusMode: boolean;
-};
-
-type NavigationItemData = {
-  to: string;
-  label: string;
-  icon: typeof Home;
-  badge?: number;
-};
-
-const COGNITIVE_PREFERENCES_KEY = "praxis-cognitive-preferences";
-const DEFAULT_COGNITIVE_PREFERENCES: CognitivePreferences = {
-  simpleNavigation: true,
-  largeText: false,
-  reducedMotion: true,
-  focusMode: false,
-};
 
 const shellCopy = {
   "pt-BR": {
-    mainFlow: "Fluxo principal",
-    moreOptions: "Mais opções",
-    operation: "Operação técnica",
-    administration: "Configurações",
-    helpGroup: "Ajuda",
-    participations: "Participações",
-    competencyCatalog: "Catálogo de competências",
-    startHere: "Primeiros passos",
-    manuals: "Central de manuais",
-    accessibility: "Acessibilidade",
-    accessibilityDescription: "Ajuste a interface para reduzir distrações e facilitar a leitura.",
-    simpleNavigation: "Menu simples",
-    simpleNavigationDescription: "Destaca somente o fluxo principal do processo de avaliação.",
-    largeText: "Texto maior",
-    largeTextDescription: "Aumenta textos, campos e áreas de clique.",
-    reducedMotion: "Menos movimento",
-    reducedMotionDescription: "Reduz animações e transições da interface.",
-    focusMode: "Modo foco",
-    focusModeDescription: "Oculta o menu lateral e limita a largura do conteúdo.",
-    reset: "Restaurar ajustes",
-    enabled: "Ativado",
-    disabled: "Desativado",
-    pageGoal: "Objetivo desta tela",
-    exitFocus: "Sair do modo foco",
-    skipToContent: "Ir para o conteúdo principal",
+    skip: "Ir para o conteúdo principal",
     openMenu: "Abrir menu",
     menu: "Menu principal",
-    menuDescription: "Navegação organizada pelo fluxo operacional do cliente.",
-    workspace: "Workspace",
-    settings: "Configurações",
-    results: "Resultados",
-    assessments: "Avaliações",
-    journeys: "Jornadas",
-    operationCenter: "Central operacional",
-    profile: "Empresa",
-    team: "Equipe",
-    integrations: "Integrações",
-    plan: "Plano",
-    account: "Minha conta",
+    menuDescription: "Navegação organizada conforme as permissões do perfil.",
     help: "Ajuda",
+    pageGoal: "Objetivo desta tela",
+    exitFocus: "Sair do modo foco",
+    specialistArea: "Área do especialista",
+    home: "Início",
+    workspace: "Workspace",
+    assessments: "Avaliações",
+    competencies: "Catálogo de competências",
+    account: "Minha conta",
+    settings: "Configurações",
+    journeys: "Jornadas",
+    participations: "Participações",
+    results: "Resultados",
+    operation: "Operação técnica",
+    operations: "Central operacional",
   },
   en: {
-    mainFlow: "Main flow",
-    moreOptions: "More options",
-    operation: "Technical operations",
-    administration: "Settings",
-    helpGroup: "Help",
-    participations: "Participations",
-    competencyCatalog: "Competency catalog",
-    startHere: "Getting started",
-    manuals: "Manual center",
-    accessibility: "Accessibility",
-    accessibilityDescription: "Adjust the interface to reduce distractions and improve readability.",
-    simpleNavigation: "Simple menu",
-    simpleNavigationDescription: "Highlights only the main assessment process.",
-    largeText: "Larger text",
-    largeTextDescription: "Increases text, fields and click targets.",
-    reducedMotion: "Less motion",
-    reducedMotionDescription: "Reduces interface animations and transitions.",
-    focusMode: "Focus mode",
-    focusModeDescription: "Hides the sidebar and limits content width.",
-    reset: "Reset adjustments",
-    enabled: "Enabled",
-    disabled: "Disabled",
-    pageGoal: "Goal of this page",
-    exitFocus: "Exit focus mode",
-    skipToContent: "Skip to main content",
+    skip: "Skip to main content",
     openMenu: "Open menu",
     menu: "Main menu",
-    menuDescription: "Navigation organized by the customer's operational flow.",
-    workspace: "Workspace",
-    settings: "Settings",
-    results: "Results",
-    assessments: "Assessments",
-    journeys: "Journeys",
-    operationCenter: "Operations center",
-    profile: "Company",
-    team: "Team",
-    integrations: "Integrations",
-    plan: "Plan",
-    account: "My account",
+    menuDescription: "Navigation organized according to profile permissions.",
     help: "Help",
+    pageGoal: "Goal of this page",
+    exitFocus: "Exit focus mode",
+    specialistArea: "Specialist area",
+    home: "Home",
+    workspace: "Workspace",
+    assessments: "Assessments",
+    competencies: "Competency catalog",
+    account: "My account",
+    settings: "Settings",
+    journeys: "Journeys",
+    participations: "Participations",
+    results: "Results",
+    operation: "Technical operations",
+    operations: "Operations center",
   },
   "es-MX": {
-    mainFlow: "Flujo principal",
-    moreOptions: "Más opciones",
-    operation: "Operación técnica",
-    administration: "Configuración",
-    helpGroup: "Ayuda",
-    participations: "Participaciones",
-    competencyCatalog: "Catálogo de competencias",
-    startHere: "Primeros pasos",
-    manuals: "Central de manuales",
-    accessibility: "Accesibilidad",
-    accessibilityDescription: "Ajusta la interfaz para reducir distracciones y facilitar la lectura.",
-    simpleNavigation: "Menú simple",
-    simpleNavigationDescription: "Destaca solo el flujo principal del proceso de evaluación.",
-    largeText: "Texto más grande",
-    largeTextDescription: "Aumenta textos, campos y áreas de interacción.",
-    reducedMotion: "Menos movimiento",
-    reducedMotionDescription: "Reduce animaciones y transiciones.",
-    focusMode: "Modo enfoque",
-    focusModeDescription: "Oculta el menú lateral y limita el ancho del contenido.",
-    reset: "Restaurar ajustes",
-    enabled: "Activado",
-    disabled: "Desactivado",
-    pageGoal: "Objetivo de esta pantalla",
-    exitFocus: "Salir del modo enfoque",
-    skipToContent: "Ir al contenido principal",
+    skip: "Ir al contenido principal",
     openMenu: "Abrir menú",
     menu: "Menú principal",
-    menuDescription: "Navegación organizada por el flujo operativo del cliente.",
-    workspace: "Workspace",
-    settings: "Configuración",
-    results: "Resultados",
-    assessments: "Evaluaciones",
-    journeys: "Jornadas",
-    operationCenter: "Central operativa",
-    profile: "Empresa",
-    team: "Equipo",
-    integrations: "Integraciones",
-    plan: "Plan",
-    account: "Mi cuenta",
+    menuDescription: "Navegación organizada según los permisos del perfil.",
     help: "Ayuda",
+    pageGoal: "Objetivo de esta pantalla",
+    exitFocus: "Salir del modo enfoque",
+    specialistArea: "Área del especialista",
+    home: "Inicio",
+    workspace: "Workspace",
+    assessments: "Evaluaciones",
+    competencies: "Catálogo de competencias",
+    account: "Mi cuenta",
+    settings: "Configuración",
+    journeys: "Jornadas",
+    participations: "Participaciones",
+    results: "Resultados",
+    operation: "Operación técnica",
+    operations: "Central operativa",
   },
 } as const;
 
-const pageGoalCopy = {
+const goalCopy = {
   "pt-BR": {
-    dashboard: "Veja primeiro o que precisa da sua atenção hoje.",
-    assessments: "Crie e publique o conteúdo que será usado nas jornadas.",
-    journeys: "Monte o processo e organize a ordem das avaliações.",
-    participations: "Acompanhe convites individuais e por jornada, andamento, validade e conclusões.",
-    results: "Analise somente resultados concluídos, evidências e comparações.",
-    operation: "Trate integrações, alertas, retentativas e falhas técnicas.",
-    settings: "Ajuste empresa, equipe, catálogo, integrações e plano.",
-    default: "Conclua uma tarefa por vez. As opções secundárias permanecem disponíveis no menu.",
+    specialist: "Organize seu trabalho de criação e revisão sem acessar áreas administrativas da empresa.",
+    assessments: "Crie e revise o conteúdo que será encaminhado à empresa para publicação.",
+    default: "Conclua uma tarefa por vez e use o menu para acessar o próximo passo.",
   },
   en: {
-    dashboard: "See what needs your attention today first.",
-    assessments: "Create and publish the content used in journeys.",
-    journeys: "Build the process and organize the assessment order.",
-    participations: "Track individual and journey invitations, progress, validity and completions.",
-    results: "Review completed results, evidence and comparisons only.",
-    operation: "Handle integrations, alerts, retries and technical failures.",
-    settings: "Adjust company, team, catalog, integrations and plan.",
-    default: "Complete one task at a time. Secondary options remain available in the menu.",
+    specialist: "Organize creation and review work without accessing company administration.",
+    assessments: "Create and review content that the company will publish.",
+    default: "Complete one task at a time and use the menu to access the next step.",
   },
   "es-MX": {
-    dashboard: "Vea primero lo que necesita su atención hoy.",
-    assessments: "Cree y publique el contenido usado en las jornadas.",
-    journeys: "Monte el proceso y organice el orden de las evaluaciones.",
-    participations: "Acompañe invitaciones individuales y por jornada, avance, vigencia y conclusiones.",
-    results: "Analice solo resultados concluidos, evidencias y comparaciones.",
-    operation: "Trate integraciones, alertas, reintentos y fallas técnicas.",
-    settings: "Ajuste empresa, equipo, catálogo, integraciones y plan.",
-    default: "Complete una tarea a la vez. Las opciones secundarias siguen disponibles en el menú.",
+    specialist: "Organice el trabajo de creación y revisión sin acceder a la administración de la empresa.",
+    assessments: "Cree y revise el contenido que la empresa publicará.",
+    default: "Complete una tarea a la vez y use el menú para acceder al siguiente paso.",
   },
 } as const;
 
-function useCognitivePreferences() {
-  const [preferences, setPreferences] = useState<CognitivePreferences>(
-    DEFAULT_COGNITIVE_PREFERENCES,
-  );
-  const [hydrated, setHydrated] = useState(false);
-
-  useEffect(() => {
-    try {
-      const stored = window.localStorage.getItem(COGNITIVE_PREFERENCES_KEY);
-      if (stored) {
-        const parsed = JSON.parse(stored) as Partial<CognitivePreferences>;
-        setPreferences({ ...DEFAULT_COGNITIVE_PREFERENCES, ...parsed });
-      }
-    } catch {
-      setPreferences(DEFAULT_COGNITIVE_PREFERENCES);
-    } finally {
-      setHydrated(true);
+function pageContext(pathname: string, language: Language, specialist: boolean) {
+  const copy = shellCopy[language];
+  if (specialist) {
+    if (pathname === "/avaliacoes/especialista") return { section: copy.specialistArea, label: copy.home };
+    if (pathname.startsWith("/avalicoes") || pathname.startsWith("/nova")) {
+      return { section: copy.specialistArea, label: copy.assessments };
     }
-  }, []);
-
-  useEffect(() => {
-    const root = document.documentElement;
-    root.dataset.simpleNavigation = String(preferences.simpleNavigation);
-    root.dataset.largeText = String(preferences.largeText);
-    root.dataset.reducedMotion = String(preferences.reducedMotion);
-    root.dataset.focusMode = String(preferences.focusMode);
-    if (hydrated) {
-      window.localStorage.setItem(COGNITIVE_PREFERENCES_KEY, JSON.stringify(preferences));
-    }
-  }, [hydrated, preferences]);
-
-  function toggle(preference: keyof CognitivePreferences) {
-    setPreferences((current) => ({ ...current, [preference]: !current[preference] }));
+    if (pathname === "/competencias") return { section: copy.specialistArea, label: copy.competencies };
+    if (pathname === "/configuracoes/conta") return { section: copy.specialistArea, label: copy.account };
+    if (pathname === "/manual") return { section: copy.specialistArea, label: copy.help };
   }
-
-  return {
-    preferences,
-    toggle,
-    reset: () => setPreferences(DEFAULT_COGNITIVE_PREFERENCES),
-  };
-}
-
-function ShellLink({ children, closeOnSelect }: { children: ReactNode; closeOnSelect?: boolean }) {
-  return closeOnSelect ? <SheetClose asChild>{children}</SheetClose> : <>{children}</>;
-}
-
-function NavigationItem({
-  item,
-  active,
-  closeOnSelect,
-}: {
-  item: NavigationItemData;
-  active: boolean;
-  closeOnSelect: boolean;
-}) {
-  return (
-    <ShellLink closeOnSelect={closeOnSelect}>
-      <Link
-        to={item.to}
-        aria-current={active ? "page" : undefined}
-        className={cn(
-          "mb-1 flex min-h-11 items-center gap-3 rounded-md px-3 py-2 text-sm transition",
-          active
-            ? "bg-accent font-medium text-accent-foreground"
-            : "text-foreground/85 hover:bg-accent",
-        )}
-      >
-        <item.icon
-          className={cn(
-            "h-4 w-4 shrink-0",
-            active ? "text-accent-foreground" : "text-muted-foreground",
-          )}
-        />
-        <span className="min-w-0 flex-1">{item.label}</span>
-        {(item.badge ?? 0) > 0 && (
-          <span className="rounded-full bg-danger px-1.5 py-0.5 text-[10px] font-semibold text-danger-foreground">
-            {(item.badge ?? 0) > 99 ? "99+" : item.badge}
-          </span>
-        )}
-      </Link>
-    </ShellLink>
-  );
-}
-
-function SidebarContent({
-  closeOnSelect = false,
-  pathname,
-  unreadNotifications,
-  simpleNavigation,
-}: {
-  closeOnSelect?: boolean;
-  pathname: string;
-  unreadNotifications: number;
-  simpleNavigation: boolean;
-}) {
-  const session = useSession();
-  const { language } = useLanguage();
-  const copy = shellCopy[language];
-
-  const primaryItems: NavigationItemData[] = [
-    { to: "/dashboard", label: "Dashboard", icon: Home },
-    { to: "/avaliacoes", label: copy.assessments, icon: ListChecks },
-    { to: "/jornadas", label: copy.journeys, icon: Workflow },
-    { to: "/participacoes", label: copy.participations, icon: Users },
-    { to: "/results", label: copy.results, icon: ClipboardList },
-  ];
-
-  const secondaryGroups: Array<{ label: string; items: NavigationItemData[] }> = [
-    {
-      label: copy.operation,
-      items: [
-        {
-          to: "/monitoramento",
-          label: copy.operationCenter,
-          icon: BarChart3,
-          badge: unreadNotifications,
-        },
-      ],
-    },
-    {
-      label: copy.administration,
-      items: [
-        { to: "/configuracoes/perfil", label: copy.profile, icon: Building2 },
-        { to: "/competencias", label: copy.competencyCatalog, icon: BookOpenCheck },
-        { to: "/team", label: copy.team, icon: Users },
-        { to: "/integrations", label: copy.integrations, icon: KeyRound },
-        { to: "/billing", label: copy.plan, icon: CreditCard },
-        { to: "/configuracoes/conta", label: copy.account, icon: UserRound },
-      ],
-    },
-    {
-      label: copy.helpGroup,
-      items: [
-        { to: "/comecar", label: copy.startHere, icon: Sparkles },
-        { to: "/manual", label: copy.manuals, icon: HelpCircle },
-      ],
-    },
-  ];
-
-  const secondaryActive = secondaryGroups.some((group) =>
-    group.items.some((item) => isActivePath(pathname, item.to)),
-  );
-
-  return (
-    <>
-      <div className="border-b border-border px-5 py-5">
-        <ShellLink closeOnSelect={closeOnSelect}>
-          <Link to="/dashboard" className="inline-flex items-baseline gap-1.5">
-            <span className="font-display text-3xl leading-none text-foreground">Práxis</span>
-            <span className="inline-block h-1.5 w-1.5 rounded-full bg-primary" />
-          </Link>
-        </ShellLink>
-        {!simpleNavigation && (
-          <p className="mt-3 text-xs leading-relaxed text-muted-foreground">
-            Avaliações situacionais organizadas pelo processo do cliente.
-          </p>
-        )}
-      </div>
-
-      <nav className="flex-1 overflow-y-auto px-3 py-4" aria-label={copy.menu}>
-        <div className="px-3 pb-2 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-          {copy.mainFlow}
-        </div>
-        {primaryItems.map((item) => (
-          <NavigationItem
-            key={item.to}
-            item={item}
-            active={isActivePath(pathname, item.to)}
-            closeOnSelect={closeOnSelect}
-          />
-        ))}
-
-        <details
-          className="group mt-5 border-t border-border/70 pt-4"
-          open={!simpleNavigation || secondaryActive}
-        >
-          <summary className="flex cursor-pointer list-none items-center justify-between rounded-md px-3 py-2 text-sm font-medium hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
-            <span>{copy.moreOptions}</span>
-            <ChevronDown className="h-4 w-4 transition-transform group-open:rotate-180" />
-          </summary>
-          <div className="mt-2 space-y-5">
-            {secondaryGroups.map((group) => (
-              <div key={group.label}>
-                <div className="px-3 pb-2 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-                  {group.label}
-                </div>
-                {group.items.map((item) => (
-                  <NavigationItem
-                    key={item.to}
-                    item={item}
-                    active={isActivePath(pathname, item.to)}
-                    closeOnSelect={closeOnSelect}
-                  />
-                ))}
-              </div>
-            ))}
-          </div>
-        </details>
-      </nav>
-
-      <div className="border-t border-border p-4">
-        <div className="flex items-center gap-3 px-1 text-xs">
-          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary font-semibold text-primary-foreground">
-            {session.userName.trim().charAt(0).toUpperCase() || "?"}
-          </div>
-          <div className="min-w-0">
-            <div className="truncate font-medium text-foreground">{session.userName}</div>
-            <div className="truncate text-muted-foreground">{session.userRole}</div>
-          </div>
-        </div>
-      </div>
-    </>
-  );
-}
-
-function AccessibilityPanel({
-  language,
-  preferences,
-  toggle,
-  reset,
-}: {
-  language: Language;
-  preferences: CognitivePreferences;
-  toggle: (preference: keyof CognitivePreferences) => void;
-  reset: () => void;
-}) {
-  const copy = shellCopy[language];
-  const options = [
-    {
-      key: "simpleNavigation" as const,
-      title: copy.simpleNavigation,
-      description: copy.simpleNavigationDescription,
-      icon: Eye,
-    },
-    {
-      key: "largeText" as const,
-      title: copy.largeText,
-      description: copy.largeTextDescription,
-      icon: Type,
-    },
-    {
-      key: "reducedMotion" as const,
-      title: copy.reducedMotion,
-      description: copy.reducedMotionDescription,
-      icon: Accessibility,
-    },
-    {
-      key: "focusMode" as const,
-      title: copy.focusMode,
-      description: copy.focusModeDescription,
-      icon: Focus,
-    },
-  ];
-
-  return (
-    <Sheet>
-      <SheetTrigger asChild>
-        <button
-          type="button"
-          className="inline-flex min-h-10 items-center gap-2 rounded-md border border-border bg-card px-3 py-2 text-sm font-medium hover:bg-accent"
-          aria-label={copy.accessibility}
-        >
-          <Accessibility className="h-4 w-4" />
-          <span className="hidden sm:inline">{copy.accessibility}</span>
-        </button>
-      </SheetTrigger>
-      <SheetContent
-        side="right"
-        className="w-[24rem] max-w-[92vw] overflow-y-auto bg-background p-0 text-foreground"
-      >
-        <SheetHeader className="border-b border-border p-5 text-left">
-          <SheetTitle className="flex items-center gap-2 text-xl">
-            <Accessibility className="h-5 w-5" />
-            {copy.accessibility}
-          </SheetTitle>
-          <SheetDescription className="text-sm leading-6">
-            {copy.accessibilityDescription}
-          </SheetDescription>
-        </SheetHeader>
-        <div className="space-y-3 p-5">
-          {options.map((option) => {
-            const enabled = preferences[option.key];
-            return (
-              <button
-                key={option.key}
-                type="button"
-                aria-pressed={enabled}
-                onClick={() => toggle(option.key)}
-                className={cn(
-                  "flex w-full items-start gap-3 rounded-lg border p-4 text-left transition",
-                  enabled ? "border-primary/50 bg-primary/10" : "border-border bg-card hover:bg-accent",
-                )}
-              >
-                <option.icon className="mt-0.5 h-5 w-5 shrink-0 text-primary" />
-                <span className="min-w-0 flex-1">
-                  <span className="block font-semibold">{option.title}</span>
-                  <span className="mt-1 block text-sm leading-5 text-muted-foreground">
-                    {option.description}
-                  </span>
-                  <span className="mt-2 block text-xs font-medium text-primary">
-                    {enabled ? copy.enabled : copy.disabled}
-                  </span>
-                </span>
-              </button>
-            );
-          })}
-          <button
-            type="button"
-            onClick={reset}
-            className="mt-2 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-md border border-border bg-card px-4 py-2 text-sm font-medium hover:bg-accent"
-          >
-            <RotateCcw className="h-4 w-4" />
-            {copy.reset}
-          </button>
-        </div>
-      </SheetContent>
-    </Sheet>
-  );
-}
-
-function PageGoal({ pathname, language }: { pathname: string; language: Language }) {
-  const copy = shellCopy[language];
-  const goals = pageGoalCopy[language];
-  const key = pageGoalKey(pathname);
-
-  return (
-    <section className="praxis-page-goal mb-6 flex max-w-4xl items-start gap-3 rounded-lg border border-primary/25 bg-primary/5 p-4">
-      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary text-sm font-semibold text-primary-foreground">
-        1
-      </div>
-      <div>
-        <div className="text-sm font-semibold text-foreground">{copy.pageGoal}</div>
-        <p className="mt-1 text-sm leading-6 text-muted-foreground">{goals[key]}</p>
-      </div>
-    </section>
-  );
-}
-
-function pageGoalKey(pathname: string): keyof (typeof pageGoalCopy)["pt-BR"] {
-  if (pathname === "/dashboard") return "dashboard";
-  if (pathname.startsWith("/avaliacoes") || pathname.startsWith("/nova")) return "assessments";
-  if (pathname === "/jornadas" || pathname.startsWith("/jornada/")) return "journeys";
-  if (
-    pathname === "/participacoes" ||
-    pathname.startsWith("/participacoes/") ||
-    pathname === "/enviar-link"
-  ) {
-    return "participations";
-  }
-  if (pathname.startsWith("/results") || pathname === "/talent-match") return "results";
-  if (pathname === "/monitoramento" || pathname === "/notifications") return "operation";
-  if (
-    pathname.startsWith("/configuracoes") ||
-    pathname.startsWith("/integrations") ||
-    pathname === "/team" ||
-    pathname === "/billing" ||
-    pathname === "/competencias"
-  ) {
-    return "settings";
-  }
-  return "default";
-}
-
-function pageContext(pathname: string, language: Language) {
-  const copy = shellCopy[language];
   if (pathname === "/dashboard") return { section: copy.workspace, label: "Dashboard" };
-  if (pathname.startsWith("/avaliacoes") || pathname.startsWith("/nova")) {
+  if (pathname.startsWith("/avalicoes") || pathname.startsWith("/nova")) {
     return { section: copy.workspace, label: copy.assessments };
   }
   if (pathname === "/jornadas" || pathname.startsWith("/jornada/")) {
     return { section: copy.workspace, label: copy.journeys };
   }
-  if (
-    pathname === "/participacoes" ||
-    pathname.startsWith("/participacoes/") ||
-    pathname === "/enviar-link"
-  ) {
+  if (pathname.startsWith("/participacoes") || pathname === "/enviar-link") {
     return { section: copy.workspace, label: copy.participations };
   }
   if (pathname.startsWith("/results") || pathname === "/talent-match") {
     return { section: copy.workspace, label: copy.results };
   }
   if (pathname === "/monitoramento" || pathname === "/notifications") {
-    return { section: copy.operation, label: copy.operationCenter };
-  }
-  if (pathname === "/compliance") {
-    return { section: copy.workspace, label: copy.assessments };
-  }
-  if (pathname === "/comecar" || pathname === "/manual") {
-    return { section: copy.helpGroup, label: copy.help };
+    return { section: copy.operation, label: copy.operations };
   }
   return { section: copy.settings, label: copy.settings };
 }
 
-function routeDataKey(pathname: string) {
+function routeDataKey(pathname: string): string {
+  if (pathname === "/avalicoes/especialista") return "especialista";
   if (pathname.startsWith("/avaliacoes")) return "avaliacoes";
   if (pathname === "/jornadas" || pathname.startsWith("/jornada/")) return "jornadas";
-  if (
-    pathname === "/participacoes" ||
-    pathname.startsWith("/participacoes/") ||
-    pathname === "/enviar-link"
-  ) {
-    return "participacoes";
-  }
+  if (pathname.startsWith("/participacoes") || pathname === "/enviar-link") return "participacoes";
   if (pathname.startsWith("/results")) return "results";
   if (pathname === "/dashboard") return "dashboard";
   return "other";
 }
 
-function isActivePath(pathname: string, itemPath: string) {
-  if (itemPath === "/dashboard") return pathname === itemPath;
-  if (itemPath === "/participacoes") {
-    return pathname === itemPath || pathname.startsWith("/participacoes/") || pathname === "/enviar-link";
-  }
-  if (itemPath === "/monitoramento") {
-    return pathname === itemPath || pathname === "/notifications";
-  }
-  return pathname === itemPath || pathname.startsWith(`${itemPath}/`);
+function PageGoal({ pathname, language, specialist }: {
+  pathname: string;
+  language: Language;
+  specialist: boolean;
+}) {
+  const copy = shellCopy[language];
+  const goals = goalCopy[language];
+  const goal = specialist && pathname === "/avaliacoes/especialista"
+    ? goals.specialist
+    : pathname.startsWith("/avalicoes") || pathname.startsWith("/nova")
+      ? goals.assessments
+      : goals.default;
+  return (
+    <section className="praxis-page-goal mb-6 flex max-w-4xl items-start gap-3 rounded-lg border border-primary/25 bg-primary/5 p-4">
+      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary text-sm font-semibold text-primary-foreground">1</div>
+      <div>
+        <div className="text-sm font-semibold text-foreground">{copy.pageGoal}</div>
+        <p className="mt-1 text-sm leading-6 text-muted-foreground">{goal}</p>
+      </div>
+    </section>
+  );
 }
 
-export function AppShell({ children }: { children: ReactNode }) {
+export function AppShell(s children }: { children: ReactNode }) {
   const pathname = useRouterState({ select: (state) => state.location.pathname });
+  const session = useSession();
+  const specialist = isRestrictedPartnerSpecialist(session.roles);
   const { language } = useLanguage();
   const copy = shellCopy[language];
-  const context = pageContext(pathname, language);
+  const context = pageContext(pathname, language, specialist);
   const { preferences, toggle, reset } = useCognitivePreferences();
-  const unreadNotificationsQuery = useQuery({
+  const unreadQuery = useQuery({
     queryKey: ["notifications", "unread-count"],
     queryFn: getUnreadNotificationsCount,
+    enabled: session.token !== null && !specialist,
     retry: false,
-    refetchInterval: 60_000,
+    refetchInterval: specialist ? false : 60_000,
   });
-  const unreadNotifications = unreadNotificationsQuery.data?.count ?? 0;
+  const unreadNotifications = specialist ? 0 : (unreadQuery.data?.count ?? 0);
 
   useEffect(() => {
     document.documentElement.dataset.praxisRoute = routeDataKey(pathname);
@@ -667,13 +195,11 @@ export function AppShell({ children }: { children: ReactNode }) {
 
   return (
     <div className="flex min-h-screen bg-background text-foreground">
-      <a href="#conteudo-principal" className="praxis-skip-link">
-        {copy.skipToContent}
-      </a>
+      <a href="#conteudo-principal" className="praxis-skip-link">{copy.skip}</a>
 
       {!preferences.focusMode && (
         <aside className="praxis-sidebar hidden w-64 shrink-0 flex-col border-r border-border bg-background text-foreground lg:flex">
-          <SidebarContent
+          <AppSidebar
             pathname={pathname}
             unreadNotifications={unreadNotifications}
             simpleNavigation={preferences.simpleNavigation}
@@ -686,23 +212,16 @@ export function AppShell({ children }: { children: ReactNode }) {
           {!preferences.focusMode && (
             <Sheet>
               <SheetTrigger asChild>
-                <button
-                  type="button"
-                  className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-md border border-border bg-card hover:bg-accent lg:hidden"
-                  aria-label={copy.openMenu}
-                >
+                <button type="button" className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-md border border-border bg-card hover:bg-accent lg:hidden" aria-label={copy.openMenu}>
                   <Menu className="h-5 w-5" />
                 </button>
               </SheetTrigger>
-              <SheetContent
-                side="left"
-                className="flex w-[18rem] max-w-[88vw] flex-col overflow-hidden bg-background p-0 text-foreground sm:max-w-sm"
-              >
+              <SheetContent side="left" className="flex w-[18rem] max-w-[88vw] flex-col overflow-hidden bg-background p-0 text-foreground sm:max-w-sm">
                 <SheetHeader className="sr-only">
                   <SheetTitle>{copy.menu}</SheetTitle>
                   <SheetDescription>{copy.menuDescription}</SheetDescription>
                 </SheetHeader>
-                <SidebarContent
+                <AppSidebar
                   pathname={pathname}
                   unreadNotifications={unreadNotifications}
                   closeOnSelect
@@ -718,27 +237,15 @@ export function AppShell({ children }: { children: ReactNode }) {
 
           <div className="ml-auto flex shrink-0 items-center justify-end gap-2 text-xs">
             {preferences.focusMode && (
-              <button
-                type="button"
-                onClick={() => toggle("focusMode")}
-                className="inline-flex min-h-10 items-center gap-2 rounded-md border border-primary/40 bg-primary/10 px-3 py-2 text-sm font-medium text-primary hover:bg-primary/15"
-              >
+              <button type="button" onClick={() => toggle("focusMode")} className="inline-flex min-h-10 items-center gap-2 rounded-md border border-primary/40 bg-primary/10 px-3 py-2 text-sm font-medium text-primary hover:bg-primary/15">
                 <Focus className="h-4 w-4" />
                 <span className="hidden sm:inline">{copy.exitFocus}</span>
               </button>
             )}
             {!preferences.focusMode && <LanguageSelector />}
-            <AccessibilityPanel
-              language={language}
-              preferences={preferences}
-              toggle={toggle}
-              reset={reset}
-            />
+            <AccessibilityPanel preferences={preferences} toggle={toggle} reset={reset} />
             {!preferences.focusMode && (
-              <Link
-                to="/manual"
-                className="inline-flex min-h-10 items-center gap-1.5 rounded-md border border-border bg-card px-3 py-2 text-muted-foreground hover:bg-accent"
-              >
+              <Link to="/manual" className="inline-flex min-h-10 items-center gap-1.5 rounded-md border border-border bg-card px-3 py-2 text-muted-foreground hover:bg-accent">
                 <HelpCircle className="h-4 w-4" />
                 <span className="hidden sm:inline">{copy.help}</span>
               </Link>
@@ -746,8 +253,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           </div>
         </header>
 
-        {pathname === "/dashboard" && <DeliveryAlertBanner language={language} />}
-
+        {!specialist && pathname === "/dashboard" && <DeliveryAlertBanner language={language} />}
         <div
           id="conteudo-principal"
           tabIndex={-1}
@@ -756,7 +262,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             preferences.focusMode && "mx-auto w-full max-w-6xl",
           )}
         >
-          {preferences.simpleNavigation && <PageGoal pathname={pathname} language={language} />}
+          {preferences.simpleNavigation && <PageGoal pathname={pathname} language={language} specialist={specialist} />}
           {children}
         </div>
       </main>
