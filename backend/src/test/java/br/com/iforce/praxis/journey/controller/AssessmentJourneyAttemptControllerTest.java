@@ -4,6 +4,7 @@ import br.com.iforce.praxis.audit.service.AuditEventService;
 import br.com.iforce.praxis.journey.dto.AssessmentJourneyAttemptResponse;
 import br.com.iforce.praxis.journey.dto.CreateJourneyAttemptRequest;
 import br.com.iforce.praxis.journey.model.AssessmentJourneyAttemptStatus;
+import br.com.iforce.praxis.journey.service.AssessmentJourneyAttemptLifecycleService;
 import br.com.iforce.praxis.journey.service.AssessmentJourneyAttemptService;
 import br.com.iforce.praxis.journey.service.AssessmentJourneyInvitationService;
 import org.junit.jupiter.api.BeforeEach;
@@ -28,6 +29,9 @@ class AssessmentJourneyAttemptControllerTest {
     private AssessmentJourneyAttemptService attemptService;
 
     @Mock
+    private AssessmentJourneyAttemptLifecycleService lifecycleService;
+
+    @Mock
     private AssessmentJourneyInvitationService invitationService;
 
     @Mock
@@ -37,11 +41,16 @@ class AssessmentJourneyAttemptControllerTest {
 
     @BeforeEach
     void setUp() {
-        controller = new AssessmentJourneyAttemptController(attemptService, invitationService, auditEventService);
+        controller = new AssessmentJourneyAttemptController(
+                attemptService,
+                lifecycleService,
+                invitationService,
+                auditEventService
+        );
     }
 
     @Test
-    void createPersistsAttemptAndSendsInvitation() {
+    void createPersistsAttemptSendsInvitationAndRecordsDelivery() {
         CreateJourneyAttemptRequest request = new CreateJourneyAttemptRequest(
                 "tss-137911ed",
                 "Maria Silva",
@@ -68,5 +77,6 @@ class AssessmentJourneyAttemptControllerTest {
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CREATED);
         assertThat(response.getBody()).isSameAs(attempt);
         verify(invitationService).sendInvitation(attempt);
+        verify(lifecycleService).markInvitationSent(attempt.id());
     }
 }
