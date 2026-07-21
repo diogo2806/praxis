@@ -9,6 +9,7 @@ import br.com.iforce.praxis.auth.persistence.repository.UserRepository;
 import br.com.iforce.praxis.team.dto.InviteTeamUserRequest;
 import br.com.iforce.praxis.team.dto.InviteTeamUserResponse;
 import br.com.iforce.praxis.team.dto.TeamUserResponse;
+import br.com.iforce.praxis.team.model.TeamProfile;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -81,7 +82,7 @@ class TeamServiceTest {
     }
 
     @Test
-    void createsInvitationWithTenantRoleExpirationAndAuditing() {
+    void createsInvitationWithSelectedProfileExpirationAndAuditing() {
         when(userRepository.existsByEmpresaIdAndEmail("empresa-1", "ana@example.com"))
                 .thenReturn(false);
         when(passwordEncoder.encode(anyString()))
@@ -95,7 +96,7 @@ class TeamServiceTest {
         InviteTeamUserResponse response = service.inviteUser(
                 "actor-1",
                 "empresa-1",
-                new InviteTeamUserRequest("  Ana Silva  ", "ana@example.com")
+                new InviteTeamUserRequest("  Ana Silva  ", "ana@example.com", TeamProfile.ANALISTA)
         );
 
         ArgumentCaptor<UserEntity> userCaptor = ArgumentCaptor.forClass(UserEntity.class);
@@ -106,7 +107,7 @@ class TeamServiceTest {
         assertThat(saved.getEmpresaId()).isEqualTo("empresa-1");
         assertThat(saved.getName()).isEqualTo("Ana Silva");
         assertThat(saved.getEmail()).isEqualTo("ana@example.com");
-        assertThat(saved.getRoles()).containsExactly("EMPRESA");
+        assertThat(saved.getRoles()).containsExactlyInAnyOrder("EMPRESA", "RESULTS_ANALYST");
         assertThat(saved.getStatus()).isEqualTo(UserStatus.CONVIDADO);
         assertThat(saved.getPasswordHash()).startsWith("encoded:");
         assertThat(saved.getInviteTokenHash()).isEqualTo("encoded:" + token);
@@ -116,6 +117,8 @@ class TeamServiceTest {
                 .isEqualTo(24);
 
         assertThat(response.user().id()).isEqualTo(99L);
+        assertThat(response.user().profile()).isEqualTo(TeamProfile.ANALISTA);
+        assertThat(response.user().permissions()).contains("Consultar resultados e evidências");
         assertThat(response.user().status()).isEqualTo(UserStatus.CONVIDADO);
         assertThat(response.inviteUrl()).startsWith("https://praxis.example/convite/");
 
@@ -199,7 +202,7 @@ class TeamServiceTest {
         user.setName(name);
         user.setEmail(email);
         user.setPasswordHash("hash");
-        user.setRoles(Set.of("EMPRESA"));
+        user.setRoles(Set.of("EMPRESA", "OPERATIONS_MANAGER"));
         user.setStatus(status);
         user.setCreatedAt(Instant.parse("2026-07-13T10:00:00Z").plusSeconds(id));
         return user;

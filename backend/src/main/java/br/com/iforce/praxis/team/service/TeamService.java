@@ -10,6 +10,8 @@ import br.com.iforce.praxis.shared.security.SecureTokens;
 import br.com.iforce.praxis.team.dto.InviteTeamUserRequest;
 import br.com.iforce.praxis.team.dto.InviteTeamUserResponse;
 import br.com.iforce.praxis.team.dto.TeamUserResponse;
+import br.com.iforce.praxis.team.dto.UpdateTeamUserAccessRequest;
+import br.com.iforce.praxis.team.model.TeamProfile;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -19,15 +21,14 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 import java.util.UUID;
 
 /** Gerencia os usuários da equipe da empresa autenticada. */
 @Service
 public class TeamService {
 
-    private static final String EMPRESA_ROLE = "EMPRESA";
     private static final int INVITE_TOKEN_BYTES = 32;
 
     private final UserRepository userRepository;
@@ -62,6 +63,8 @@ public class TeamService {
 
     @Transactional
     public InviteTeamUserResponse inviteUser(String actorUserId, String tenantId, InviteTeamUserRequest request) {
+        requireTeamManager(actorUserId, tenantId);
+        TeamProfile profile = requireAssignableProfile(request.resolvedProfile());
         if (userRepository.existsByEmpresaIdAndEmail(tenantId, request.email())) {
             throw new ResponseStatusException(
                     HttpStatus.CONFLICT,
@@ -73,7 +76,7 @@ public class TeamService {
         user.setEmpresaId(tenantId);
         user.setName(request.name().trim());
         user.setEmail(request.email().trim());
-        user.setRoles(Set.of(EMPRESA_ROLE));
+        user.setRoles(new HashSet<>(profile.roles()));
         user.setCreatedAt(Instant.now());
         user.setPasswordHash(passwordEncoder.encode(UUID.randomUUID().toString()));
 
@@ -89,7 +92,8 @@ public class TeamService {
                 auditMetadata.of(
                         "userId", user.getId(),
                         "email", user.getEmail(),
-                        "role", EMPRESA_ROLE
+                        "profile", profile.name(),
+                        "roles", profile.roles()
                 )
         );
 
@@ -98,6 +102,7 @@ public class TeamService {
 
     @Transactional
     public InviteTeamUserResponse resendInvite(String actorUserId, String tenantId, Long userId) {
+        requireTeamManager(actorUserId, tenantId);
         UserEntity user = requireTenantUser(tenantId, userId);
 
         if (user.getStatus() != UserStatus.CONVIDADO) {
@@ -120,15 +125,48 @@ public class TeamService {
     }
 
     @Transactional
-    public TeamUserResponse blockUser(String actorUserId, String tenantId, Long userId) {
-        try {
-            Long actorId = Long.parseLong(actorUserId);
-            if (actorId.equals(userId)) {
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Não é possível bloquear o próprio usuário.");
-            }
-        } catch (NumberFormatException ignored) {
-            // Usuário técnico usado apenas quando a segurança está desabilitada.
+    public TeamUserResponse updateUserAccess(
+            String actorUserId,
+            String tenantId,
+            Long userId,
+            UpdateTeamUserAccessRequest request
+    ) {
+        requireTeamManager(actorUserId, tenantId);
+        if (isSameUser(actorUserId, userId)) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Altere o próprio perfil somente por outro administrador para evitar perda de acesso."
+            );
         }
+
+        TeamProfile profile = requireAssignableProfile(request.profile());
+        UserEntity user = requireTenantUser(tenantId, userId);
+        TeamProfile previousProfile = TeamProfile.fromRoles(user.getRoles());
+        user.setRoles(new HashSet<>(profile.roles()));
+
+        auditEventService.auditAdminAction(
+                actorUserId,
+                tenantId,
+                AuditEventType.TEAM_USER_ACCESS_UPDATED,
+                "Perfil do usuário atualizado pela empresa: " + user.getEmail(),
+                auditMetadata.of(
+                        "userId", user.getId(),
+                        "email", user.getEmail(),
+                        "previousProfile", previousProfile.name(),
+                        "newProfile", profile.name(),
+                        "roles", profile.roles()
+                )
+        );
+
+        return toResponse(user);
+    }
+
+    @Transactional
+    public TeamUserResponse blockUser(String actorUserId, String tenantId, Long userId) {
+        if (isSameUser(actorUserId, userId)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Não é possível bloquear o próprio usuário.");
+        }
+        requireTeamManager(actorUserId, tenantId);
 
         UserEntity user = requireTenantUser(tenantId, userId);
         user.setStatus(UserStatus.BLOQUEADO);
@@ -146,6 +184,7 @@ public class TeamService {
 
     @Transactional
     public TeamUserResponse unblockUser(String actorUserId, String tenantId, Long userId) {
+        requireTeamManager(actorUserId, tenantId);
         UserEntity user = requireTenantUser(tenantId, userId);
         user.setStatus(UserStatus.ATIVO);
 
@@ -158,6 +197,39 @@ public class TeamService {
         );
 
         return toResponse(user);
+    }
+
+    private TeamProfile requireAssignableProfile(TeamProfile profile) {
+        if (profile == null || !profile.assignableFromTeam()) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Selecione um perfil válido da equipe. Especialistas são gerenciados no módulo de parceiros."
+            );
+        }
+        return profile;
+    }
+
+    private void requireTeamManager(String actorUserId, String tenantId) {
+        try {
+            Long actorId = Long.parseLong(actorUserId);
+            UserEntity actor = requireTenantUser(tenantId, actorId);
+            if (TeamProfile.fromRoles(actor.getRoles()) != TeamProfile.ADMINISTRADOR) {
+                throw new ResponseStatusException(
+                        HttpStatus.FORBIDDEN,
+                        "Somente administradores podem alterar usuários, perfis e acessos da equipe."
+                );
+            }
+        } catch (NumberFormatException ignored) {
+            // Usuário técnico usado apenas quando a segurança está desabilitada.
+        }
+    }
+
+    private boolean isSameUser(String actorUserId, Long userId) {
+        try {
+            return Long.parseLong(actorUserId) == userId;
+        } catch (NumberFormatException ignored) {
+            return false;
+        }
     }
 
     private UserEntity requireTenantUser(String tenantId, Long userId) {
@@ -179,11 +251,14 @@ public class TeamService {
     }
 
     private static TeamUserResponse toResponse(UserEntity user) {
+        TeamProfile profile = TeamProfile.fromRoles(user.getRoles());
         return new TeamUserResponse(
                 user.getId(),
                 user.getName(),
                 user.getEmail(),
                 user.getRoles(),
+                profile,
+                profile.permissions(),
                 user.getStatus(),
                 user.getLastLoginAt(),
                 user.getCreatedAt()

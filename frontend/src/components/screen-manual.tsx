@@ -19,6 +19,7 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
+import { resolveAccessOnboardingManual } from "@/lib/screen-manual-access-onboarding";
 import { resolveAnalysisOperationManual } from "@/lib/screen-manual-analysis-operations";
 import { resolveCompetencyOwnershipManual } from "@/lib/screen-manual-competency-ownership";
 import { useLanguage } from "@/lib/language-context";
@@ -87,9 +88,10 @@ export function ScreenManual({ pathname, iconOnly = false, className }: ScreenMa
   const { language } = useLanguage();
   const copy = manualCopy[language];
   const manual =
+    resolveAccessOnboardingManual(pathname) ??
+    resolveAnalysisOperationManual(pathname) ??
     resolvePartnerSpecialistManual(pathname) ??
     resolveScenarioOwnershipManual(pathname) ??
-    resolveAnalysisOperationManual(pathname) ??
     resolvePublicationManual(pathname) ??
     resolveCompetencyOwnershipManual(pathname) ??
     resolveScreenManualOverride(pathname) ??
@@ -113,10 +115,7 @@ export function ScreenManual({ pathname, iconOnly = false, className }: ScreenMa
         </button>
       </SheetTrigger>
 
-      <SheetContent
-        side="right"
-        className="w-[34rem] max-w-[96vw] overflow-y-auto bg-background p-0 text-foreground"
-      >
+      <SheetContent side="right" className="w-[34rem] max-w-[96vw] overflow-y-auto bg-background p-0 text-foreground">
         <SheetHeader className="border-b border-border p-5 text-left">
           <SheetTitle className="flex items-center gap-2 text-xl">
             <BookOpenText className="h-5 w-5 text-primary" />
@@ -129,10 +128,7 @@ export function ScreenManual({ pathname, iconOnly = false, className }: ScreenMa
 
         <div className="sticky bottom-0 border-t border-border bg-background/95 p-5 backdrop-blur">
           <SheetClose asChild>
-            <a
-              href={`/manual#${manual.id}`}
-              className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-            >
+            <a href={`/manual#${manual.id}`} className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
               {copy.completeProcess}
               <ExternalLink className="h-4 w-4" />
             </a>
@@ -143,13 +139,7 @@ export function ScreenManual({ pathname, iconOnly = false, className }: ScreenMa
   );
 }
 
-export function ScreenManualContent({
-  manual,
-  labels,
-}: {
-  manual: ScreenManualDefinition;
-  labels?: ManualLabels;
-}) {
+export function ScreenManualContent({ manual, labels }: { manual: ScreenManualDefinition; labels?: ManualLabels }) {
   const { language } = useLanguage();
   const copy = labels ?? manualCopy[language];
 
@@ -168,55 +158,28 @@ export function ScreenManualContent({
 }
 
 function ManualSectionTitle({ icon: Icon, title }: { icon: typeof FileText; title: string }) {
-  return (
-    <h3 className="flex items-center gap-2 text-sm font-semibold text-foreground">
-      <Icon className="h-4 w-4 shrink-0 text-primary" />
-      {title}
-    </h3>
-  );
+  return <h3 className="flex items-center gap-2 text-sm font-semibold text-foreground"><Icon className="h-4 w-4 shrink-0 text-primary" />{title}</h3>;
 }
 
-function ManualTextSection({
-  icon,
-  title,
-  values,
-}: {
-  icon: typeof FileText;
-  title: string;
-  values: string[];
-}) {
+function ManualTextSection({ icon, title, values }: { icon: typeof FileText; title: string; values: string[] }) {
   return (
     <section className="space-y-2">
       <ManualSectionTitle icon={icon} title={title} />
       <ul className="space-y-2 pl-6 text-sm leading-6 text-muted-foreground">
-        {values.map((value) => (
-          <li key={value} className="list-disc pl-1">
-            {value}
-          </li>
-        ))}
+        {values.map((value) => <li key={value} className="list-disc pl-1">{value}</li>)}
       </ul>
     </section>
   );
 }
 
-function ManualNumberedSection({
-  icon,
-  title,
-  values,
-}: {
-  icon: typeof FileText;
-  title: string;
-  values: string[];
-}) {
+function ManualNumberedSection({ icon, title, values }: { icon: typeof FileText; title: string; values: string[] }) {
   return (
     <section className="space-y-3">
       <ManualSectionTitle icon={icon} title={title} />
       <ol className="space-y-3">
         {values.map((value, index) => (
           <li key={value} className="flex gap-3 text-sm leading-6 text-muted-foreground">
-            <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-semibold text-primary">
-              {index + 1}
-            </span>
+            <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-semibold text-primary">{index + 1}</span>
             <span>{value}</span>
           </li>
         ))}

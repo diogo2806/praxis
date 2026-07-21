@@ -16,6 +16,7 @@ services:
       - PRAXIS_JPA_DDL_AUTO=validate
       - PRAXIS_JWT_SECRET=${PRAXIS_JWT_SECRET:?PRAXIS_JWT_SECRET must be set}
       - PRAXIS_SECURITY_ENABLED=${PRAXIS_SECURITY_ENABLED:-true}
+      - PRAXIS_PARTNER_ENABLED=${PRAXIS_PARTNER_ENABLED:-false}
       - PRAXIS_PUBLIC_BASE_URL=${PRAXIS_PUBLIC_BASE_URL:-http://localhost}
       - PRAXIS_CANDIDATE_PAGE_BASE_URL=${PRAXIS_CANDIDATE_PAGE_BASE_URL:-http://localhost}
       - SPRING_PROFILES_ACTIVE=prod
@@ -34,6 +35,7 @@ services:
       - "80:80"
     environment:
       - PRAXIS_API_BASE_URL=http://backend:8080
+      - PRAXIS_PARTNER_ENABLED=${PRAXIS_PARTNER_ENABLED:-false}
     depends_on:
       - backend
     restart: unless-stopped

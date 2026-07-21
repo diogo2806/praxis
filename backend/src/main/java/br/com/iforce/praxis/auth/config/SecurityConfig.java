@@ -8,6 +8,7 @@ import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -21,6 +22,31 @@ import org.springframework.security.web.header.writers.ReferrerPolicyHeaderWrite
 public class SecurityConfig {
 
     private static final String BEARER_PREFIX = "Bearer ";
+    private static final String[] ACCOUNT_ROLES = {
+            "ADMIN",
+            "PARTNER_SPECIALIST",
+            "TEAM_MANAGER",
+            "PARTNER_MANAGER",
+            "ASSESSMENT_EDITOR",
+            "RESULTS_ANALYST",
+            "OPERATIONS_MANAGER"
+    };
+    private static final String[] COMPANY_ROLES = {
+            "TEAM_MANAGER",
+            "PARTNER_MANAGER",
+            "ASSESSMENT_EDITOR",
+            "RESULTS_ANALYST",
+            "OPERATIONS_MANAGER"
+    };
+    private static final String[] COMPANY_MANAGER_ROLES = {"TEAM_MANAGER", "PARTNER_MANAGER"};
+    private static final String[] AUTHOR_ROLES = {"TEAM_MANAGER", "ASSESSMENT_EDITOR", "PARTNER_SPECIALIST"};
+    private static final String[] ANALYSIS_ROLES = {"TEAM_MANAGER", "RESULTS_ANALYST"};
+    private static final String[] OPERATIONS_ROLES = {"TEAM_MANAGER", "OPERATIONS_MANAGER"};
+    private static final String[] ANALYSIS_OR_OPERATIONS_ROLES = {
+            "TEAM_MANAGER",
+            "RESULTS_ANALYST",
+            "OPERATIONS_MANAGER"
+    };
 
     private final JwtAuthenticationFilter jwtFilter;
     private final PartnerSpecialistAuthorizationFilter specialistAuthorizationFilter;
@@ -66,25 +92,56 @@ public class SecurityConfig {
                                 "/api/webhooks/mercado-pago/**"
                         ).permitAll()
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
-                        .requestMatchers("/api/v1/account/**").hasAnyRole("EMPRESA", "ADMIN", "PARTNER_SPECIALIST")
-                        .requestMatchers("/api/v1/company-profile/**").hasRole("EMPRESA")
-                        .requestMatchers("/api/v1/dashboard/**").hasRole("EMPRESA")
-                        .requestMatchers("/api/v1/integrations/**").hasRole("EMPRESA")
-                        .requestMatchers("/api/v1/privacy/**").hasRole("EMPRESA")
-                        .requestMatchers("/api/v1/simulations/**").hasAnyRole("EMPRESA", "PARTNER_SPECIALIST")
-                        .requestMatchers("/api/v1/assessment-journeys/**").hasRole("EMPRESA")
-                        .requestMatchers("/api/v1/assessment-journey-attempts/**").hasRole("EMPRESA")
-                        .requestMatchers("/api/v1/media/**").hasAnyRole("EMPRESA", "PARTNER_SPECIALIST")
-                        .requestMatchers("/api/v1/empresa-config/**").hasAnyRole("EMPRESA", "PARTNER_SPECIALIST")
-                        .requestMatchers("/api/v1/gupy/result-deliveries/**").hasRole("EMPRESA")
-                        .requestMatchers("/api/v1/results/**").hasRole("EMPRESA")
-                        .requestMatchers("/api/v1/notifications/**").hasRole("EMPRESA")
-                        .requestMatchers("/api/v1/audit/**").hasRole("EMPRESA")
-                        .requestMatchers("/api/v1/terms/**").hasRole("EMPRESA")
-                        .requestMatchers("/api/v1/candidate-links", "/api/v1/candidate-links/**").hasRole("EMPRESA")
-                        .requestMatchers("/api/v1/billing", "/api/v1/billing/**").hasRole("EMPRESA")
-                        .requestMatchers("/api/v1/team", "/api/v1/team/**").hasRole("EMPRESA")
-                        .requestMatchers("/api/v1/partners", "/api/v1/partners/**").hasRole("EMPRESA")
+                        .requestMatchers("/api/v1/account/**").hasAnyRole(ACCOUNT_ROLES)
+                        .requestMatchers("/api/v1/dashboard/**").hasAnyRole(COMPANY_ROLES)
+                        .requestMatchers(HttpMethod.GET, "/api/v1/team", "/api/v1/team/**")
+                        .hasAnyRole(COMPANY_ROLES)
+                        .requestMatchers("/api/v1/team", "/api/v1/team/**")
+                        .hasAnyRole(COMPANY_MANAGER_ROLES)
+                        .requestMatchers("/api/v1/company-profile/**")
+                        .hasAnyRole(COMPANY_MANAGER_ROLES)
+                        .requestMatchers(HttpMethod.GET, "/api/v1/integrations/**")
+                        .hasAnyRole(OPERATIONS_ROLES)
+                        .requestMatchers("/api/v1/integrations/**")
+                        .hasAnyRole(COMPANY_MANAGER_ROLES)
+                        .requestMatchers("/api/v1/privacy/**")
+                        .hasAnyRole(COMPANY_MANAGER_ROLES)
+                        .requestMatchers(HttpMethod.GET, "/api/v1/simulations/**")
+                        .hasAnyRole(
+                                "TEAM_MANAGER",
+                                "ASSESSMENT_EDITOR",
+                                "RESULTS_ANALYST",
+                                "OPERATIONS_MANAGER",
+                                "PARTNER_SPECIALIST"
+                        )
+                        .requestMatchers("/api/v1/simulations/**").hasAnyRole(AUTHOR_ROLES)
+                        .requestMatchers(HttpMethod.GET, "/api/v1/assessment-journeys/**")
+                        .hasAnyRole(COMPANY_ROLES)
+                        .requestMatchers("/api/v1/assessment-journeys/**")
+                        .hasAnyRole(COMPANY_MANAGER_ROLES)
+                        .requestMatchers("/api/v1/assessment-journey-attempts/**")
+                        .hasAnyRole(OPERATIONS_ROLES)
+                        .requestMatchers("/api/v1/media/**").hasAnyRole(AUTHOR_ROLES)
+                        .requestMatchers(HttpMethod.GET, "/api/v1/empresa-config/**")
+                        .hasAnyRole(AUTHOR_ROLES)
+                        .requestMatchers("/api/v1/empresa-config/**")
+                        .hasAnyRole(COMPANY_MANAGER_ROLES)
+                        .requestMatchers("/api/v1/gupy/result-deliveries/**")
+                        .hasAnyRole(OPERATIONS_ROLES)
+                        .requestMatchers("/api/v1/results/**").hasAnyRole(ANALYSIS_ROLES)
+                        .requestMatchers("/api/v1/notifications/**").hasAnyRole(OPERATIONS_ROLES)
+                        .requestMatchers("/api/v1/audit/**").hasAnyRole(COMPANY_MANAGER_ROLES)
+                        .requestMatchers("/api/v1/terms/**").hasAnyRole(COMPANY_MANAGER_ROLES)
+                        .requestMatchers(HttpMethod.GET, "/api/v1/candidate-links", "/api/v1/candidate-links/**")
+                        .hasAnyRole(ANALYSIS_OR_OPERATIONS_ROLES)
+                        .requestMatchers(HttpMethod.POST, "/api/v1/candidate-links/*/disposition")
+                        .hasAnyRole(ANALYSIS_ROLES)
+                        .requestMatchers("/api/v1/candidate-links", "/api/v1/candidate-links/**")
+                        .hasAnyRole(OPERATIONS_ROLES)
+                        .requestMatchers("/api/v1/billing", "/api/v1/billing/**")
+                        .hasAnyRole(COMPANY_MANAGER_ROLES)
+                        .requestMatchers("/api/v1/partners", "/api/v1/partners/**")
+                        .hasAnyRole(COMPANY_MANAGER_ROLES)
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class)

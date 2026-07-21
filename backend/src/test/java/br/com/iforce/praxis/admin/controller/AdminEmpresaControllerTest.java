@@ -114,7 +114,8 @@ class AdminEmpresaControllerTest {
         assertThat(empresa.getCommercialPlanType().name()).isEqualTo("PROFISSIONAL");
 
         UserEntity responsible = userRepository.findByEmpresaIdOrderByCreatedAtAsc(empresaId).get(0);
-        assertThat(responsible.getRoles()).containsExactly("EMPRESA");
+        assertThat(responsible.getRoles())
+                .containsExactlyInAnyOrder("EMPRESA", "TEAM_MANAGER", "PARTNER_MANAGER");
         assertThat(responsible.getStatus()).isEqualTo(UserStatus.CONVIDADO);
         assertThat(responsible.getInviteTokenLookupHash()).isNotBlank();
     }
