@@ -61,6 +61,7 @@ import java.time.temporal.ChronoUnit;
 
 import java.util.Base64;
 
+import java.util.LinkedHashSet;
 import java.util.List;
 
 import java.util.Set;
@@ -601,7 +602,7 @@ public class AdminEmpresaService {
         user.setEmpresaId(empresaId);
         user.setName(name.trim());
         user.setEmail(email.trim());
-        user.setRoles(Set.of(EMPRESA_ROLE));
+        user.setRoles(new LinkedHashSet<>(Set.of(EMPRESA_ROLE)));
         user.setCreatedAt(now);
         // Senha aleatória inutilizável: o acesso é estabelecido pelo convite.
         user.setPasswordHash(passwordEncoder.encode(UUID.randomUUID().toString()));

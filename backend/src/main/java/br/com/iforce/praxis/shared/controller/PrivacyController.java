@@ -60,8 +60,12 @@ public class PrivacyController {
                 ? configuration.serviceUrl()
                 : configuration.serviceEmail();
         if (reviewChannel == null || reviewChannel.isBlank()) {
-            reviewChannel = "Canal de privacidade não configurado para esta empresa.";
+            reviewChannel = "Canal de privacidade não configurado para esta empresa. "
+                    + "Configure PRAXIS_PRIVACY_SERVICE_EMAIL ou PRAXIS_PRIVACY_SERVICE_URL antes de operar processos reais.";
         }
+        String controllerName = configuration.controllerName() == null || configuration.controllerName().isBlank()
+                ? "Controlador a ser informado pela empresa"
+                : configuration.controllerName();
         int retentionDays = configuration.retentionDays() == null ? 180 : configuration.retentionDays();
         return ResponseEntity.ok(new PrivacyComplianceResponse(
                 List.of(
@@ -83,7 +87,7 @@ public class PrivacyController {
                 retentionDays,
                 "Os dados são tratados pelo período configurado e depois passam pela rotina de descarte seguro.",
                 new PrivacyComplianceResponse.ControllerContactDto(
-                        configuration.controllerName(),
+                        controllerName,
                         configuration.serviceEmail(),
                         configuration.serviceUrl(),
                         configuration.dpoContact(),

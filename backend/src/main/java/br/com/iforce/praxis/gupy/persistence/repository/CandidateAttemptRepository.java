@@ -18,7 +18,7 @@ import java.util.Optional;
 public interface CandidateAttemptRepository extends JpaRepository<CandidateAttemptEntity, String>, JpaSpecificationExecutor<CandidateAttemptEntity> {
 
     @Override
-    @EntityGraph(attributePaths = {"answers", "resultItems"})
+    @EntityGraph(attributePaths = {"answers", "resultItems", "nodeServes"})
     Optional<CandidateAttemptEntity> findById(String id);
 
     @EntityGraph(attributePaths = {"answers", "resultItems"})

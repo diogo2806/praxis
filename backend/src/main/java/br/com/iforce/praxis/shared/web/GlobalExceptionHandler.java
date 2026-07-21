@@ -20,6 +20,8 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
+import org.springframework.web.HttpRequestMethodNotSupportedException;
+
 import org.springframework.web.bind.ServletRequestBindingException;
 
 import org.springframework.web.server.ResponseStatusException;
@@ -116,6 +118,19 @@ public class GlobalExceptionHandler {
             HttpServletRequest request
     ) {
         return buildResponse(HttpStatus.NOT_FOUND, "Recurso não encontrado.", request.getRequestURI(), Map.of());
+    }
+
+    @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
+    public ResponseEntity<ApiErrorResponse> handleMethodNotSupported(
+            HttpRequestMethodNotSupportedException exception,
+            HttpServletRequest request
+    ) {
+        return buildResponse(
+                HttpStatus.METHOD_NOT_ALLOWED,
+                "Método HTTP não suportado para este recurso.",
+                request.getRequestURI(),
+                Map.of()
+        );
     }
 
     @ExceptionHandler(Exception.class)
