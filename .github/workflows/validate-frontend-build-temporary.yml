@@ -4,6 +4,9 @@ on:
   push:
     branches:
       - fix/eslint-react-hooks-compat-20260721
+  pull_request:
+    branches:
+      - main
 
 permissions:
   contents: write
