@@ -22,6 +22,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -64,7 +66,7 @@ class CompanyProfileServiceTest {
 
         when(currentEmpresaService.requiredEmpresaId()).thenReturn(EMPRESA_ID);
         when(empresaRepository.findById(EMPRESA_ID)).thenReturn(Optional.of(empresa));
-        when(empresaRepository.save(any(EmpresaEntity.class)))
+        lenient().when(empresaRepository.save(any(EmpresaEntity.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
     }
 
@@ -87,7 +89,7 @@ class CompanyProfileServiceTest {
         assertThat(empresa.getUpdatedAt()).isAfter(Instant.parse("2026-01-01T00:00:00Z"));
         verify(empresaRepository).save(empresa);
         verify(auditEventService).auditAdminAction(
-                eq(null),
+                isNull(),
                 eq(EMPRESA_ID),
                 eq(AuditEventType.COMPANY_PROFILE_UPDATED),
                 anyString(),
