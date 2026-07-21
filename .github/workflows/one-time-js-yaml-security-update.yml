@@ -6,6 +6,11 @@ on:
       - security/js-yaml-cve-2026-59869-20260721
     paths:
       - .github/workflows/one-time-js-yaml-security-update.yml
+  pull_request:
+    branches:
+      - main
+    paths:
+      - .github/workflows/one-time-js-yaml-security-update.yml
 
 permissions:
   contents: write
@@ -52,7 +57,7 @@ jobs:
         working-directory: frontend
         run: |
           corepack enable
-          corepack prepare pnpm@10 --activate
+          corepack prepare pnpm@10.33.3 --activate
           pnpm install --lockfile-only --ignore-scripts --no-frozen-lockfile
 
       - name: Regenerate npm lockfile
@@ -62,15 +67,17 @@ jobs:
       - name: Verify patched lockfiles
         working-directory: frontend
         run: |
-          if grep -qE 'js-yaml(@|: )["'"']?4\.2\.0' pnpm-lock.yaml; then
-            echo 'pnpm-lock.yaml ainda contém js-yaml 4.2.0'
-            exit 1
-          fi
-
           node <<'NODE'
           const fs = require('node:fs');
-          const lock = JSON.parse(fs.readFileSync('package-lock.json', 'utf8'));
-          const vulnerable = Object.entries(lock.packages ?? {})
+          const pnpmLock = fs.readFileSync('pnpm-lock.yaml', 'utf8');
+
+          if (/js-yaml@4\.2\.0/.test(pnpmLock) || /js-yaml:\s+4\.2\.0/.test(pnpmLock)) {
+            console.error('pnpm-lock.yaml ainda contém js-yaml 4.2.0');
+            process.exit(1);
+          }
+
+          const npmLock = JSON.parse(fs.readFileSync('package-lock.json', 'utf8'));
+          const vulnerable = Object.entries(npmLock.packages ?? {})
             .filter(([name, metadata]) => name.endsWith('/js-yaml') && metadata?.version === '4.2.0');
 
           if (vulnerable.length > 0) {
