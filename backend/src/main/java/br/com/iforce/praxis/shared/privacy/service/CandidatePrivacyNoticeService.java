@@ -1,5 +1,6 @@
 package br.com.iforce.praxis.shared.privacy.service;
 
+import br.com.iforce.praxis.admin.model.EmpresaStatus;
 import br.com.iforce.praxis.audit.model.AuditEventType;
 import br.com.iforce.praxis.audit.service.AuditEventService;
 import br.com.iforce.praxis.auth.persistence.entity.EmpresaEntity;
@@ -97,7 +98,7 @@ public class CandidatePrivacyNoticeService {
         validateAcknowledgementRequest(request);
         ResolvedContext context = resolve(attemptToken);
         CandidatePrivacyNoticeResponse notice = noticeFor(context.empresa());
-        assertReadiness(notice);
+        assertReadiness(context.empresa(), notice);
         assertCurrentDocuments(notice, request);
 
         Instant now = Instant.now();
@@ -144,7 +145,7 @@ public class CandidatePrivacyNoticeService {
         }
         ResolvedContext context = resolve(attemptToken);
         CandidatePrivacyNoticeResponse notice = noticeFor(context.empresa());
-        assertReadiness(notice);
+        assertReadiness(context.empresa(), notice);
         boolean accepted = acceptanceRepository
                 .findByAttemptIdAndNoticeVersionAndTermsVersion(
                         context.attempt().getId(),
@@ -245,8 +246,9 @@ public class CandidatePrivacyNoticeService {
         );
     }
 
-    private void assertReadiness(CandidatePrivacyNoticeResponse notice) {
-        if (enforceReadiness && !notice.configured()) {
+    private void assertReadiness(EmpresaEntity empresa, CandidatePrivacyNoticeResponse notice) {
+        boolean testCompany = EmpresaStatus.EM_TESTE == empresa.getStatus();
+        if (enforceReadiness && !testCompany && !notice.configured()) {
             throw new ResponseStatusException(
                     HttpStatus.SERVICE_UNAVAILABLE,
                     "A empresa responsável ainda não configurou o canal e o aviso de privacidade."
