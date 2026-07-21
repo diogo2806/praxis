@@ -33,7 +33,8 @@ import static org.mockito.Mockito.when;
 class CandidatePrivacyNoticeServiceTest {
 
     private static final String NOTICE_HASH = "a".repeat(64);
-    private static final String TERMS_HASH = "b".repeat(64);
+    private static final String TERMS_HASH =
+            "dd1a4872abd133eddde7e14d635429025d4786b06cb39c07c8c6c0378de86037";
 
     @Mock
     private CandidateAttemptTokenResolver tokenResolver;
@@ -65,7 +66,7 @@ class CandidatePrivacyNoticeServiceTest {
                 "Execução do processo seletivo",
                 "2026-07-20",
                 true,
-                "1.0",
+                "1.1",
                 TERMS_HASH
         );
     }
@@ -79,7 +80,7 @@ class CandidatePrivacyNoticeServiceTest {
         when(candidateAttemptRepository.findById("attempt-1")).thenReturn(Optional.of(attempt));
         when(empresaRepository.findById("empresa-1")).thenReturn(Optional.of(empresa));
         when(acceptanceRepository.findByAttemptIdAndNoticeVersionAndTermsVersion(
-                "attempt-1", "2026-07-20", "1.0"))
+                "attempt-1", "2026-07-20", "1.1"))
                 .thenReturn(Optional.empty());
         when(acceptanceRepository.save(any(CandidateNoticeAcceptanceEntity.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
@@ -89,7 +90,7 @@ class CandidatePrivacyNoticeServiceTest {
                 new CandidatePrivacyNoticeService.CandidatePrivacyNoticeAcknowledgementRequest(
                         "2026-07-20",
                         NOTICE_HASH,
-                        "1.0",
+                        "1.1",
                         TERMS_HASH,
                         true,
                         true,
@@ -103,7 +104,7 @@ class CandidatePrivacyNoticeServiceTest {
         CandidateNoticeAcceptanceEntity acceptance = acceptanceCaptor.getValue();
         assertThat(acceptance.getNoticeVersion()).isEqualTo("2026-07-20");
         assertThat(acceptance.getNoticeHash()).isEqualTo(NOTICE_HASH);
-        assertThat(acceptance.getTermsVersion()).isEqualTo("1.0");
+        assertThat(acceptance.getTermsVersion()).isEqualTo("1.1");
         assertThat(acceptance.getTermsHash()).isEqualTo(TERMS_HASH);
         assertThat(acceptance.getAcknowledgedAt()).isNotNull();
         assertThat(acceptance.getTermsAcceptedAt()).isEqualTo(acceptance.getAcknowledgedAt());
@@ -118,7 +119,7 @@ class CandidatePrivacyNoticeServiceTest {
         );
         assertThat(metadataCaptor.getValue())
                 .contains("\"noticeVersion\":\"2026-07-20\"")
-                .contains("\"termsVersion\":\"1.0\"")
+                .contains("\"termsVersion\":\"1.1\"")
                 .contains("\"termsHash\":\"" + TERMS_HASH + "\"");
     }
 
@@ -129,7 +130,7 @@ class CandidatePrivacyNoticeServiceTest {
                 new CandidatePrivacyNoticeService.CandidatePrivacyNoticeAcknowledgementRequest(
                         "2026-07-20",
                         NOTICE_HASH,
-                        "1.0",
+                        "1.1",
                         TERMS_HASH,
                         true,
                         false,
@@ -158,7 +159,7 @@ class CandidatePrivacyNoticeServiceTest {
         when(candidateAttemptRepository.findById("attempt-1")).thenReturn(Optional.of(attempt));
         when(empresaRepository.findById("empresa-1")).thenReturn(Optional.of(empresa));
         when(acceptanceRepository.findByAttemptIdAndNoticeVersionAndTermsVersion(
-                "attempt-1", "2026-07-20", "1.0"))
+                "attempt-1", "2026-07-20", "1.1"))
                 .thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> service.assertAcknowledged("token-1"))
