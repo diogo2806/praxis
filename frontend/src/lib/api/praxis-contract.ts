@@ -100,6 +100,7 @@ type TaggedCompetencyLevels = Record<string, number> & {
 
 const optionCompetencyLevelsCache = new Map<string, Record<string, number>>();
 const optionUpdateQueues = new Map<string, Promise<void>>();
+const versionNodesCache = new Map<string, SimulationVersionNodeResponse[]>();
 let competencyUpdateRevision = 0;
 
 function optionCacheKey(
@@ -109,6 +110,27 @@ function optionCacheKey(
   optionId: string,
 ) {
   return `${simulationId}:${versionNumber}:${nodeId}:${optionId}`;
+}
+
+function versionCacheKey(simulationId: string, versionNumber: number) {
+  return `${simulationId}:${versionNumber}`;
+}
+
+function stabilizeNodes(
+  simulationId: string,
+  versionNumber: number,
+  nextNodes: SimulationVersionNodeResponse[],
+) {
+  const key = versionCacheKey(simulationId, versionNumber);
+  const cachedNodes = versionNodesCache.get(key);
+
+  if (!cachedNodes) {
+    versionNodesCache.set(key, nextNodes);
+    return nextNodes;
+  }
+
+  cachedNodes.splice(0, cachedNodes.length, ...nextNodes);
+  return cachedNodes;
 }
 
 function tagCompetencyLevels(levels: Record<string, number>, snapshot: Record<string, number>) {
@@ -130,29 +152,31 @@ export async function getSimulationVersion(
     versionNumber,
   )) as unknown as SimulationVersionDetailResponse;
 
+  const mappedNodes = response.nodes.map((node) => ({
+    ...node,
+    options: node.options.map((option) => {
+      const key = optionCacheKey(simulationId, versionNumber, node.id, option.id);
+      const serverLevels = { ...option.competencyLevels };
+      const hasNewerLocalChanges =
+        requestRevision !== competencyUpdateRevision || optionUpdateQueues.has(key);
+      const effectiveLevels = hasNewerLocalChanges
+        ? optionCompetencyLevelsCache.get(key) ?? serverLevels
+        : serverLevels;
+
+      if (!hasNewerLocalChanges) {
+        optionCompetencyLevelsCache.set(key, serverLevels);
+      }
+
+      return {
+        ...option,
+        competencyLevels: tagCompetencyLevels(effectiveLevels, effectiveLevels),
+      };
+    }),
+  }));
+
   return {
     ...response,
-    nodes: response.nodes.map((node) => ({
-      ...node,
-      options: node.options.map((option) => {
-        const key = optionCacheKey(simulationId, versionNumber, node.id, option.id);
-        const serverLevels = { ...option.competencyLevels };
-        const hasNewerLocalChanges =
-          requestRevision !== competencyUpdateRevision || optionUpdateQueues.has(key);
-        const effectiveLevels = hasNewerLocalChanges
-          ? optionCompetencyLevelsCache.get(key) ?? serverLevels
-          : serverLevels;
-
-        if (!hasNewerLocalChanges) {
-          optionCompetencyLevelsCache.set(key, serverLevels);
-        }
-
-        return {
-          ...option,
-          competencyLevels: tagCompetencyLevels(effectiveLevels, effectiveLevels),
-        };
-      }),
-    })),
+    nodes: stabilizeNodes(simulationId, versionNumber, mappedNodes),
   };
 }
 
