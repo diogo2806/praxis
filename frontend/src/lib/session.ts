@@ -5,6 +5,7 @@ import {
   hasRole,
   isRestrictedPartnerSpecialist,
 } from "@/lib/access-control";
+import { getRuntimeConfig } from "@/lib/runtime-config";
 
 export type PraxisSession = {
   token: string | null;
@@ -21,6 +22,7 @@ type JwtPayload = {
 };
 
 const EMPRESA_ROLE = "EMPRESA";
+const SECURITY_DISABLED_TOKEN = "praxis-security-disabled";
 const KNOWN_ROLES = new Set([
   "ADMIN",
   EMPRESA_ROLE,
@@ -44,6 +46,11 @@ const anonymousSession: PraxisSession = {
 export function getSession(): PraxisSession {
   if (typeof window === "undefined") {
     return anonymousSession;
+  }
+
+  const runtimeConfig = getRuntimeConfig();
+  if (!runtimeConfig.securityEnabled) {
+    return securityDisabledSession(runtimeConfig.defaultEmpresaId);
   }
 
   const token = sessionStorage.getItem("praxis.token");
@@ -105,7 +112,7 @@ export function clearAuthenticatedSession() {
   sessionStorage.removeItem("praxis.userName");
   sessionStorage.removeItem("praxis.userRole");
   clearLegacyLocalStorage();
-  applyBrowserAccessPolicy([]);
+  applyBrowserAccessPolicy(getSession().roles);
 }
 
 export function defaultAuthenticatedRoute():
@@ -120,6 +127,19 @@ export function defaultAuthenticatedRoute():
     return "/avaliacoes/especialista";
   }
   return "/dashboard";
+}
+
+function securityDisabledSession(defaultEmpresaId: string): PraxisSession {
+  const empresaId =
+    sessionStorage.getItem("praxis.empresaId")?.trim() || defaultEmpresaId || "empresa-1";
+  return {
+    token: SECURITY_DISABLED_TOKEN,
+    empresaId,
+    workspaceName: sessionStorage.getItem("praxis.workspaceName") ?? empresaId,
+    userName: sessionStorage.getItem("praxis.userName") ?? "Acesso local",
+    userRole: "Acesso livre",
+    roles: [EMPRESA_ROLE],
+  };
 }
 
 function migrateLegacySession() {

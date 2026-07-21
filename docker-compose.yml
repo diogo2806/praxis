@@ -35,6 +35,8 @@ services:
       - "80:80"
     environment:
       - PRAXIS_API_BASE_URL=http://backend:8080
+      - PRAXIS_SECURITY_ENABLED=${PRAXIS_SECURITY_ENABLED:-true}
+      - PRAXIS_DEFAULT_EMPRESA_ID=${PRAXIS_DEFAULT_EMPRESA_ID:-empresa-1}
       - PRAXIS_PARTNER_ENABLED=${PRAXIS_PARTNER_ENABLED:-false}
     depends_on:
       - backend
