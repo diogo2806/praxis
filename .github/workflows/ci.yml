@@ -75,7 +75,7 @@ jobs:
           retention-days: 7
 
   frontend-build:
-    name: Frontend — typecheck, lint, access control & build
+    name: Frontend — build, typecheck, lint & access control
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -93,11 +93,17 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Build and generate route tree
+        shell: bash
+        run: |
+          set -o pipefail
+          npm run build 2>&1 | tee frontend.log
+
       - name: Typecheck
         shell: bash
         run: |
           set -o pipefail
-          npm run typecheck 2>&1 | tee frontend.log
+          npm run typecheck 2>&1 | tee -a frontend.log
 
       - name: Lint
         shell: bash
@@ -110,12 +116,6 @@ jobs:
         run: |
           set -o pipefail
           npm run test:access-control 2>&1 | tee -a frontend.log
-
-      - name: Build
-        shell: bash
-        run: |
-          set -o pipefail
-          npm run build 2>&1 | tee -a frontend.log
 
       - name: Upload frontend diagnostics on failure
         if: failure()
