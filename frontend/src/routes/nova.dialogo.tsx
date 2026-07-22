@@ -202,6 +202,23 @@ function DialogEditor() {
       assertEditable();
       return updateSimulationNode(search.simulationId!, search.versionNumber!, nodeId, {
         timeLimitSeconds,
+        ...(timeLimitSeconds === null ? { timeoutNextNodeId: "" } : {}),
+      });
+    },
+    onSuccess: refetchVersion,
+  });
+
+  const updateNodeTimeoutMutation = useMutation({
+    mutationFn: ({
+      nodeId,
+      timeoutNextNodeId,
+    }: {
+      nodeId: string;
+      timeoutNextNodeId: string | null;
+    }) => {
+      assertEditable();
+      return updateSimulationNode(search.simulationId!, search.versionNumber!, nodeId, {
+        timeoutNextNodeId: timeoutNextNodeId ?? "",
       });
     },
     onSuccess: refetchVersion,
@@ -302,6 +319,7 @@ function DialogEditor() {
     addNodeMutation.error ??
     saveNodeMessageMutation.error ??
     updateNodeTimeMutation.error ??
+    updateNodeTimeoutMutation.error ??
     updateNodeMediaMutation.error ??
     deleteNodeMutation.error ??
     addOptionMutation.error ??
@@ -538,27 +556,67 @@ function DialogEditor() {
                   </>
                 )}
 
-                <label className="mt-4 block max-w-48">
-                  <span className="mb-1.5 block text-xs font-medium text-muted-foreground">Tempo</span>
-                  <select
-                    key={`${selected.id}-time`}
-                    className="input"
-                    defaultValue={selected.timeLimitSeconds ?? "none"}
-                    onChange={(event) =>
-                      updateNodeTimeMutation.mutate({
-                        nodeId: selected.id,
-                        timeLimitSeconds:
-                          event.target.value === "none" ? null : Number(event.target.value),
-                      })
-                    }
-                  >
-                    {answerTimeLimits.map((limit) => (
-                      <option key={limit.value} value={limit.value === "0" ? "none" : limit.value}>
-                        {limit.label}
-                      </option>
-                    ))}
-                  </select>
-                </label>
+                <div className="mt-4 grid gap-4 md:grid-cols-2">
+                  <label className="block">
+                    <span className="mb-1.5 block text-xs font-medium text-muted-foreground">Tempo</span>
+                    <select
+                      key={`${selected.id}-time`}
+                      className="input"
+                      defaultValue={selected.timeLimitSeconds ?? "none"}
+                      onChange={(event) =>
+                        updateNodeTimeMutation.mutate({
+                          nodeId: selected.id,
+                          timeLimitSeconds:
+                            event.target.value === "none" ? null : Number(event.target.value),
+                        })
+                      }
+                    >
+                      {answerTimeLimits.map((limit) => (
+                        <option key={limit.value} value={limit.value === "0" ? "none" : limit.value}>
+                          {limit.label}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+
+                  {(selected.timeLimitSeconds ?? 0) > 0 && (
+                    <label className="block">
+                      <span className="mb-1.5 block text-xs font-medium text-muted-foreground">
+                        Quando o tempo acabar
+                      </span>
+                      <select
+                        key={`${selected.id}-timeout-${selected.timeoutNextNodeId ?? "unset"}`}
+                        className={cn(
+                          "input",
+                          selected.options.some((option) => option.nextNodeId !== null) &&
+                            !selected.timeoutNextNodeId &&
+                            "border-danger/50",
+                        )}
+                        defaultValue={selected.timeoutNextNodeId ?? ""}
+                        aria-required={selected.options.some((option) => option.nextNodeId !== null)}
+                        onChange={(event) =>
+                          updateNodeTimeoutMutation.mutate({
+                            nodeId: selected.id,
+                            timeoutNextNodeId: event.target.value || null,
+                          })
+                        }
+                      >
+                        <option value="">Selecione o destino</option>
+                        {nodes
+                          .filter((node) => node.turnIndex > selected.turnIndex)
+                          .map((node) => (
+                            <option key={node.id} value={node.id}>
+                              Etapa {node.turnIndex}
+                              {node.isFinal ? " · encerramento" : ""}
+                            </option>
+                          ))}
+                      </select>
+                      <span className="mt-1 block text-xs text-muted-foreground">
+                        Obrigatório quando alguma alternativa continua para outra etapa.
+                      </span>
+                    </label>
+                  )}
+                </div>
 
                 <div className="mt-4">
                   <span className="mb-1.5 block text-xs font-medium text-muted-foreground">
