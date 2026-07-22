@@ -24,6 +24,7 @@ export interface TerminalOutcomeCardProps {
   node: SimulationVersionNodeResponse;
   option: SimulationVersionOptionResponse;
   competencies: UpdateBlueprintCompetencyRequest[];
+  reportText: string;
   disabled?: boolean;
   saving?: boolean;
   onSaveReport: (reportText: string) => void;
@@ -35,22 +36,23 @@ export function TerminalOutcomeCard({
   node,
   option,
   competencies,
+  reportText: persistedReportText,
   disabled = false,
   saving = false,
   onSaveReport,
 }: TerminalOutcomeCardProps) {
-  const [reportText, setReportText] = useState(option.auditNote ?? "");
+  const [reportText, setReportText] = useState(persistedReportText);
 
   useEffect(() => {
-    setReportText(option.auditNote ?? "");
-  }, [option.id, option.auditNote]);
+    setReportText(persistedReportText);
+  }, [option.id, persistedReportText]);
 
   const result = useMemo(
     () => calculateTerminalResult(nodes, rootNodeId, node, option, competencies),
     [nodes, rootNodeId, node, option, competencies],
   );
 
-  const persistedReport = option.auditNote?.trim() ?? "";
+  const persistedReport = persistedReportText.trim();
   const normalizedReport = reportText.trim();
   const reportMissing = normalizedReport.length === 0;
   const reportChanged = normalizedReport !== persistedReport;
@@ -134,10 +136,7 @@ function calculateTerminalResult(
   competencies: UpdateBlueprintCompetencyRequest[],
 ) {
   const path = findPath(nodes, rootNodeId, terminalNode.id);
-  const steps: PathStep[] = [
-    ...path,
-    { node: terminalNode, pickedOption: terminalOption },
-  ];
+  const steps: PathStep[] = [...path, { node: terminalNode, pickedOption: terminalOption }];
 
   const raw = new Map<string, number>();
   const maximum = new Map<string, number>();
