@@ -223,6 +223,9 @@ public class AttemptStateMachine {
                 return null;
             }
             if (answer.timedOut() || answer.optionId() == null) {
+                if (currentNode.timeoutNextNodeId() == null) {
+                    return currentNode.reportText();
+                }
                 currentNodeId = currentNode.timeoutNextNodeId();
                 continue;
             }
@@ -231,7 +234,13 @@ public class AttemptStateMachine {
                     .filter(option -> option.id().equals(answer.optionId()))
                     .findFirst()
                     .orElse(null);
-            currentNodeId = pickedOption == null ? null : pickedOption.nextNodeId();
+            if (pickedOption == null) {
+                return null;
+            }
+            if (pickedOption.nextNodeId() == null) {
+                return pickedOption.auditNote();
+            }
+            currentNodeId = pickedOption.nextNodeId();
         }
         return null;
     }
