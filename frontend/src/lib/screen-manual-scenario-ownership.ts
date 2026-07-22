@@ -79,13 +79,13 @@ export const SCENARIO_OWNERSHIP_MANUALS: ScreenManualDefinition[] = [
     id: "editor-dialogo",
     title: "Editor de diálogo",
     purpose:
-      "Criar e manter as etapas posteriores, alternativas, tempo, mídia, criticidade e pontuação por competência, incluindo o resultado e o relatório de cada alternativa que encerra a avaliação.",
+      "Criar e manter as etapas posteriores, alternativas, tempo, mídia, criticidade e pontuação por competência, incluindo o resultado e o relatório dos encerramentos por resposta ou por tempo esgotado.",
     flow: [
       "Abra uma avaliação e versão em rascunho.",
       "Consulte a primeira etapa em modo somente leitura e use o atalho Personagem quando precisar alterar o contexto inicial.",
       "Crie ou selecione uma etapa posterior e informe sua mensagem.",
-      "Cadastre de duas a quatro alternativas, configure pontuação, criticidade, mídia e destino.",
-      "Ao escolher Vai para FIM, confira as somas e percentuais calculados e preencha o texto obrigatório do relatório.",
+      "Cadastre de duas a quatro alternativas, configure pontuação, mídia, destino e marque Resposta crítica quando houver erro grave ou comportamento de risco.",
+      "Ao escolher Vai para FIM em uma alternativa ou em Quando o tempo acabar, confira as somas e percentuais calculados e preencha o texto obrigatório do relatório.",
       "Salve as alterações e use o Mapa apenas para organizar posições e revisar conexões.",
       "Abra o Validador para verificar bloqueios e avisos antes da publicação.",
     ],
@@ -104,6 +104,11 @@ export const SCENARIO_OWNERSHIP_MANUALS: ScreenManualDefinition[] = [
         description: "Prazo permitido para responder à etapa, conforme configuração da empresa.",
       },
       {
+        name: "Quando o tempo acabar",
+        description:
+          "Define a etapa posterior ou o encerramento da avaliação. Quando o destino é Vai para FIM, exibe o resultado do caminho, atribui 0 pontos à etapa sem resposta e exige o relatório do encerramento.",
+      },
+      {
         name: "Mídia da etapa",
         description: "Imagem ou áudio opcional associado à situação apresentada.",
       },
@@ -116,9 +121,9 @@ export const SCENARIO_OWNERSHIP_MANUALS: ScreenManualDefinition[] = [
         description: "Valor inteiro de 0 a 100 atribuído a cada competência para a alternativa.",
       },
       {
-        name: "Crítica",
+        name: "Resposta crítica — exige revisão humana",
         description:
-          "Indica alternativa que representa risco ou decisão incompatível com o cenário.",
+          "Marque quando a resposta representar erro grave ou comportamento de risco. A pontuação continua sendo calculada, mas o resultado exige análise humana e nunca reprova automaticamente.",
       },
       {
         name: "Destino",
@@ -128,7 +133,7 @@ export const SCENARIO_OWNERSHIP_MANUALS: ScreenManualDefinition[] = [
       {
         name: "Resumo do encerramento",
         description:
-          "Quando o destino é Vai para FIM, apresenta em modo somente leitura a soma acumulada, o percentual por competência e o resultado ponderado do caminho.",
+          "Quando uma alternativa ou o tempo esgotado levam para FIM, apresenta em modo somente leitura a soma acumulada, o percentual por competência e o resultado ponderado do caminho.",
       },
       {
         name: "Texto do relatório",
@@ -144,7 +149,8 @@ export const SCENARIO_OWNERSHIP_MANUALS: ScreenManualDefinition[] = [
       "Carregando avaliação",
       "Rascunho editável",
       "Mensagem inicial protegida",
-      "Encerramento com resultado calculado",
+      "Encerramento por resposta com resultado calculado",
+      "Encerramento por tempo esgotado com 0 pontos na etapa sem resposta",
       "Encerramento pendente de relatório",
       "Versão publicada protegida",
       "Alteração salva",
@@ -158,13 +164,15 @@ export const SCENARIO_OWNERSHIP_MANUALS: ScreenManualDefinition[] = [
       "Menos de duas ou mais de quatro alternativas.",
       "Alternativa sem pontuação por competência.",
       "Alternativa com destino Vai para FIM sem texto de relatório.",
+      "Tempo esgotado com destino Vai para FIM sem texto de relatório.",
       "Configuração da empresa indisponível.",
     ],
     examples: [
       "Consultar a mensagem inicial e usar Editar personagem para corrigir o contexto.",
       "Criar uma etapa posterior de atendimento com três respostas e pontuações diferentes para Empatia e Comunicação.",
       "Selecionar Vai para FIM, conferir Comunicação: soma 135 e 71%, e registrar o relatório daquele encerramento.",
-      "Anexar um áudio à etapa e marcar uma alternativa como crítica.",
+      "Anexar um áudio à etapa e marcar como Resposta crítica uma decisão que promete prazo sem confirmação técnica.",
+      "Selecionar Vai para FIM em Quando o tempo acabar e registrar o relatório aplicável à ausência de resposta.",
     ],
     shortcuts: [
       "Use Editar personagem quando a etapa inicial estiver selecionada.",
