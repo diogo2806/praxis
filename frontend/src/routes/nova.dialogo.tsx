@@ -14,6 +14,7 @@ import {
 import { WizardStepper } from "@/components/wizard-stepper";
 import {
   cloneSimulationVersionToDraft,
+  createSimulationBranchNode,
   createSimulationNode,
   createSimulationOption,
   deleteSimulationNode,
@@ -30,8 +31,15 @@ import {
   type SimulationVersionOptionResponse,
 } from "@/lib/api/praxis";
 import { defaultAnswerTimeLimitSeconds, useEmpresaConfig } from "@/lib/empresa-config";
+import {
+  buildNodeDisplayCodes,
+  compareDisplayCodes,
+  displayCodeDepth,
+} from "@/lib/simulation-node-hierarchy";
 import { canEditSimulationVersion, statusMeta } from "@/lib/simulation-meta";
 import { cn } from "@/lib/utils";
+
+const CREATE_BRANCH_VALUE = "__CREATE_BRANCH__";
 
 export const Route = createFileRoute("/nova/dialogo")({
   validateSearch: (search: Record<string, unknown>) => ({
@@ -60,6 +68,7 @@ function DialogEditor() {
   const search = Route.useSearch();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const messageInputRef = useRef<HTMLTextAreaElement>(null);
   const hasContext = Boolean(search.simulationId && search.versionNumber);
   const {
     config,
@@ -92,10 +101,28 @@ function DialogEditor() {
   });
 
   const nodes = versionQuery.data?.nodes ?? [];
-  const dialogueNodes = useMemo(() => nodes.filter((node) => !node.isFinal), [nodes]);
-  const nodeById = useMemo(() => new Map(nodes.map((node) => [node.id, node])), [nodes]);
   const rootNodeId = versionQuery.data?.blueprint.rootNodeId;
+  const displayCodes = useMemo(
+    () => buildNodeDisplayCodes(nodes, rootNodeId),
+    [nodes, rootNodeId],
+  );
+  const dialogueNodes = useMemo(
+    () =>
+      nodes
+        .filter((node) => !node.isFinal)
+        .sort((left, right) =>
+          compareDisplayCodes(
+            displayCodes.get(left.id) ?? String(left.turnIndex),
+            displayCodes.get(right.id) ?? String(right.turnIndex),
+          ),
+        ),
+    [nodes, displayCodes],
+  );
+  const nodeById = useMemo(() => new Map(nodes.map((node) => [node.id, node])), [nodes]);
   const selected = dialogueNodes.find((node) => node.id === selectedId) ?? dialogueNodes[0];
+  const selectedDisplayCode = selected
+    ? displayCodes.get(selected.id) ?? String(selected.turnIndex)
+    : "";
   const isRootSelected = Boolean(selected && selected.id === rootNodeId);
   const versionStatus = versionQuery.data?.status;
   const isEditable = versionStatus ? canEditSimulationVersion(versionStatus) : true;
@@ -111,6 +138,10 @@ function DialogEditor() {
     () => groupIssuesByNode(validationQuery.data?.issues),
     [validationQuery.data?.issues],
   );
+
+  function nodeLabel(node: SimulationVersionNodeResponse) {
+    return displayCodes.get(node.id) ?? String(node.turnIndex);
+  }
 
   function terminalNodeFor(option: SimulationVersionOptionResponse) {
     if (!option.nextNodeId) return null;
@@ -222,9 +253,36 @@ function DialogEditor() {
     },
     onSuccess: async (nodeId) => {
       setDraftMessage("");
-      setSelectedId(nodeId);
-      setFeedbackMessage(`Etapa ${nodeId} adicionada.`);
       await refetchVersion();
+      setSelectedId(nodeId);
+      setFeedbackMessage("Etapa adicionada.");
+    },
+  });
+
+  const createBranchMutation = useMutation({
+    mutationFn: ({ nodeId, optionId }: { nodeId: string; optionId: string }) => {
+      assertEditable();
+      return createSimulationBranchNode(
+        search.simulationId!,
+        search.versionNumber!,
+        nodeId,
+        optionId,
+      );
+    },
+    onSuccess: async (nodeId) => {
+      await refetchVersion();
+      setSelectedId(nodeId);
+      setFeedbackMessage("Nova etapa ramificada criada e vinculada à alternativa.");
+      void navigate({
+        to: "/nova/dialogo",
+        search: {
+          simulationId: search.simulationId,
+          versionNumber: search.versionNumber,
+          nodeId,
+        },
+        replace: true,
+      });
+      window.setTimeout(() => messageInputRef.current?.focus(), 0);
     },
   });
 
@@ -317,7 +375,7 @@ function DialogEditor() {
     },
     onSuccess: async () => {
       setDraftOption("");
-      setFeedbackMessage("Alternativa adicionada. Preencha o relatório caso ela finalize a avaliação.");
+      setFeedbackMessage("Alternativa adicionada. Defina o destino ou preencha o relatório do encerramento.");
       await refetchVersion();
     },
   });
@@ -401,6 +459,7 @@ function DialogEditor() {
 
   const mutationError =
     addNodeMutation.error ??
+    createBranchMutation.error ??
     saveNodeMessageMutation.error ??
     updateNodeTimeMutation.error ??
     updateNodeTimeoutMutation.error ??
@@ -511,33 +570,37 @@ function DialogEditor() {
             <aside className="rounded-md border border-border bg-card p-4">
               <div className="mb-3 text-sm font-semibold">Etapas salvas</div>
               <div className="space-y-2">
-                {dialogueNodes.map((node) => (
-                  <button
-                    key={node.id}
-                    type="button"
-                    onClick={() => setSelectedId(node.id)}
-                    className={cn(
-                      "w-full rounded-md border p-3 text-left text-sm hover:bg-accent",
-                      selected?.id === node.id && "border-primary bg-primary/5",
-                    )}
-                  >
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="font-medium">
-                        Etapa {node.turnIndex}
-                        {node.id === rootNodeId ? " · inicial" : ""}
-                      </span>
-                      <ValidationBadge issues={issuesByNode.get(node.id) ?? []} />
-                    </div>
-                    <div className="mt-1 line-clamp-2 text-xs text-muted-foreground">
-                      {node.clientMessage}
-                    </div>
-                  </button>
-                ))}
+                {dialogueNodes.map((node) => {
+                  const code = nodeLabel(node);
+                  return (
+                    <button
+                      key={node.id}
+                      type="button"
+                      onClick={() => setSelectedId(node.id)}
+                      className={cn(
+                        "w-full rounded-md border p-3 text-left text-sm hover:bg-accent",
+                        selected?.id === node.id && "border-primary bg-primary/5",
+                      )}
+                      style={{ marginLeft: Math.min(displayCodeDepth(code), 3) * 10 }}
+                    >
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="font-medium">
+                          Etapa {code}
+                          {node.id === rootNodeId ? " · inicial" : ""}
+                        </span>
+                        <ValidationBadge issues={issuesByNode.get(node.id) ?? []} />
+                      </div>
+                      <div className="mt-1 line-clamp-2 text-xs text-muted-foreground">
+                        {node.clientMessage || "Mensagem ainda não preenchida"}
+                      </div>
+                    </button>
+                  );
+                })}
               </div>
 
               <label className="mt-4 block">
                 <span className="mb-1 block text-xs text-muted-foreground">
-                  Fala de uma nova etapa posterior
+                  Fala de uma nova etapa independente
                 </span>
                 <textarea
                   className="input min-h-20"
@@ -558,7 +621,7 @@ function DialogEditor() {
                 className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-md border border-border bg-card px-3 py-2 text-sm hover:bg-accent disabled:cursor-not-allowed disabled:opacity-50"
               >
                 <Plus className="h-4 w-4" />
-                {addNodeMutation.isPending ? "Adicionando..." : "Adicionar etapa"}
+                {addNodeMutation.isPending ? "Adicionando..." : "Adicionar etapa independente"}
               </button>
             </aside>
 
@@ -568,14 +631,14 @@ function DialogEditor() {
                   <div>
                     <div className="text-xs uppercase text-muted-foreground">{selected.id}</div>
                     <h2 className="text-xl font-semibold">
-                      Etapa {selected.turnIndex}
+                      Etapa {selectedDisplayCode}
                       {isRootSelected ? " · mensagem inicial" : ""}
                     </h2>
                   </div>
                   <button
                     type="button"
                     onClick={() => {
-                      if (window.confirm(`Remover a etapa ${selected.id}?`)) {
+                      if (window.confirm(`Remover a etapa ${selectedDisplayCode}?`)) {
                         setFeedbackMessage(null);
                         deleteNodeMutation.mutate(selected.id);
                       }
@@ -614,9 +677,11 @@ function DialogEditor() {
                         Mensagem do cliente
                       </span>
                       <textarea
+                        ref={messageInputRef}
                         key={`${selected.id}-message`}
                         className="input min-h-24"
                         value={selectedMessage}
+                        placeholder="Descreva o que acontece nesta nova etapa."
                         onChange={(event) => setSelectedMessage(event.target.value)}
                       />
                     </label>
@@ -692,7 +757,7 @@ function DialogEditor() {
                           .filter((node) => node.turnIndex > selected.turnIndex)
                           .map((node) => (
                             <option key={node.id} value={node.id}>
-                              Vai para etapa {node.turnIndex}
+                              Vai para etapa {nodeLabel(node)}
                             </option>
                           ))}
                         <option value="FIM">Vai para FIM</option>
@@ -764,7 +829,7 @@ function DialogEditor() {
                     const destinationValue = terminal ? "FIM" : option.nextNodeId ?? "FIM";
                     return (
                       <div key={option.id} className="rounded-md border border-border bg-background p-3">
-                        <div className="grid gap-3 md:grid-cols-[20px_1fr_170px_auto]">
+                        <div className="grid gap-3 md:grid-cols-[20px_1fr_220px_auto]">
                           <GitBranch className="mt-2 h-4 w-4 text-muted-foreground" />
                           <input
                             key={`${selected.id}-${option.id}-text`}
@@ -782,22 +847,35 @@ function DialogEditor() {
                             key={`${selected.id}-${option.id}-next-${destinationValue}`}
                             className="input"
                             defaultValue={destinationValue}
-                            onChange={(event) =>
+                            disabled={createBranchMutation.isPending || updateOptionMutation.isPending}
+                            aria-label={`Destino da alternativa ${option.id}`}
+                            onChange={(event) => {
+                              const target = event.target.value;
+                              if (target === CREATE_BRANCH_VALUE) {
+                                setFeedbackMessage(null);
+                                createBranchMutation.mutate({
+                                  nodeId: selected.id,
+                                  optionId: option.id,
+                                });
+                                return;
+                              }
                               updateOptionMutation.mutate({
                                 nodeId: selected.id,
                                 optionId: option.id,
-                                nextNodeId: event.target.value === "FIM" ? null : event.target.value,
-                              })
-                            }
+                                nextNodeId: target === "FIM" ? null : target,
+                              });
+                            }}
                           >
                             {dialogueNodes
                               .filter((node) => node.turnIndex > selected.turnIndex)
                               .map((node) => (
                                 <option key={node.id} value={node.id}>
-                                  Vai para etapa {node.turnIndex}
+                                  Vai para etapa {nodeLabel(node)}
                                 </option>
                               ))}
                             <option value="FIM">Vai para FIM</option>
+                            <option disabled>──────────</option>
+                            <option value={CREATE_BRANCH_VALUE}>+ Criar nova etapa ramificada</option>
                           </select>
                           <button
                             type="button"
@@ -816,6 +894,10 @@ function DialogEditor() {
                             <Trash2 className="h-4 w-4" />
                           </button>
                         </div>
+
+                        <p className="mt-2 text-[11px] text-muted-foreground">
+                          Use “Criar nova etapa ramificada” para gerar e abrir automaticamente a próxima etapa deste caminho.
+                        </p>
 
                         <div className="mt-3 flex flex-wrap items-center gap-2 text-[11px] text-muted-foreground">
                           {Object.entries(option.competencyLevels).map(([name, value]) => (
@@ -982,17 +1064,26 @@ function DialogEditor() {
             >
               Voltar: Personagem
             </Link>
-            <Link
-              to="/nova/validador"
-              search={{ simulationId: search.simulationId, versionNumber: search.versionNumber }}
-              className={cn(
-                "rounded-md bg-primary px-5 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90",
-                !canReview && "pointer-events-none opacity-50",
-              )}
-              aria-disabled={!canReview}
-            >
-              Concluir edição
-            </Link>
+            <div className="flex flex-wrap gap-2">
+              <Link
+                to="/nova/mapa"
+                search={{ simulationId: search.simulationId, versionNumber: search.versionNumber }}
+                className="rounded-md border border-border bg-card px-4 py-2 text-sm hover:bg-accent"
+              >
+                Abrir mapa do fluxo
+              </Link>
+              <Link
+                to="/nova/validador"
+                search={{ simulationId: search.simulationId, versionNumber: search.versionNumber }}
+                className={cn(
+                  "rounded-md bg-primary px-5 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90",
+                  !canReview && "pointer-events-none opacity-50",
+                )}
+                aria-disabled={!canReview}
+              >
+                Concluir edição
+              </Link>
+            </div>
           </div>
         </>
       )}
