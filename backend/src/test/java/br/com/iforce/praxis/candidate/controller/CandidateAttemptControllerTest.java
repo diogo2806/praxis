@@ -195,13 +195,20 @@ class CandidateAttemptControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("concluida"));
 
+        // Enquanto a revisão humana não é concluída, o resultado fica retido: status "paused",
+        // itens não liberados e mensagem de aguardo. A liberação ocorre depois, pela revisão.
         mockMvc.perform(get("/test/result/" + resultId)
                         .header("Authorization", AUTHORIZATION)
                         .param("company_id", "1"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.status").value("done"))
-                .andExpect(jsonPath("$.results[?(@.title=='Empatia')].score").value(org.hamcrest.Matchers.hasItem(95)))
-                .andExpect(jsonPath("$.company_result_string").value(org.hamcrest.Matchers.containsString("sinalizada para análise")));
+                .andExpect(jsonPath("$.status").value("paused"))
+                .andExpect(jsonPath("$.results").isEmpty())
+                .andExpect(jsonPath("$.company_result_string")
+                        .value(org.hamcrest.Matchers.containsString("aguardando revisão humana")));
+
+        CandidateAttemptEntity reviewedAttempt = candidateAttemptRepository.findById(attemptId).orElseThrow();
+        assertThat(reviewedAttempt.isHumanReviewRequired()).isTrue();
+        assertThat(reviewedAttempt.getScore()).isNotNull().isPositive();
     }
 
     @Test
@@ -537,10 +544,14 @@ class CandidateAttemptControllerTest {
     @Test
     void expiredNotStartedAttemptReturnsExpiredWithoutStarting() throws Exception {
         String attemptId = createAttempt("candidate-expired-before-start");
-        CandidateAttemptEntity candidateAttemptEntity = candidateAttemptRepository.findById(attemptId)
-                .orElseThrow();
-        candidateAttemptEntity.setCreatedAt(Instant.now().minus(8, ChronoUnit.DAYS));
-        candidateAttemptRepository.save(candidateAttemptEntity);
+        // created_at é imutável (gatilho de auditoria universal reverte updates), então o
+        // backdate para simular um convite criado há 8 dias é feito via SQL com o gatilho
+        // temporariamente desabilitado.
+        jdbcTemplate.execute("ALTER TABLE candidate_attempts DISABLE TRIGGER USER");
+        jdbcTemplate.update(
+                "UPDATE candidate_attempts SET created_at = CURRENT_TIMESTAMP - INTERVAL '8 days' WHERE id = ?",
+                attemptId);
+        jdbcTemplate.execute("ALTER TABLE candidate_attempts ENABLE TRIGGER USER");
 
         mockMvc.perform(get("/candidate/attempts/" + attemptId))
                 .andExpect(status().isOk())
