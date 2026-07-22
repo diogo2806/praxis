@@ -13,7 +13,7 @@ export function buildNodeDisplayCodes(
   function visit(nodeId: string, code: string) {
     if (codes.has(nodeId)) return;
     const node = byId.get(nodeId);
-    if (!node) return;
+    if (!node || node.isFinal) return;
 
     codes.set(nodeId, code);
     if (!visiting.add(nodeId)) return;
@@ -26,15 +26,20 @@ export function buildNodeDisplayCodes(
 
     for (const option of sortedOptions) {
       const targetId = option.nextNodeId;
-      if (!targetId || seenTargets.has(targetId) || !byId.has(targetId)) continue;
+      const target = targetId ? byId.get(targetId) : null;
+      if (!targetId || !target || target.isFinal || seenTargets.has(targetId)) continue;
       seenTargets.add(targetId);
       targets.push(targetId);
     }
 
+    const timeoutTarget = node.timeoutNextNodeId
+      ? byId.get(node.timeoutNextNodeId)
+      : null;
     if (
       node.timeoutNextNodeId &&
-      !seenTargets.has(node.timeoutNextNodeId) &&
-      byId.has(node.timeoutNextNodeId)
+      timeoutTarget &&
+      !timeoutTarget.isFinal &&
+      !seenTargets.has(node.timeoutNextNodeId)
     ) {
       targets.push(node.timeoutNextNodeId);
     }
@@ -50,6 +55,7 @@ export function buildNodeDisplayCodes(
   const usedCodes = new Set(codes.values());
   let nextTopLevel = 1;
   [...nodes]
+    .filter((node) => !node.isFinal)
     .sort((left, right) => left.turnIndex - right.turnIndex)
     .forEach((node) => {
       if (codes.has(node.id)) return;
