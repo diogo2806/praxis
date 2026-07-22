@@ -102,10 +102,7 @@ function DialogEditor() {
 
   const nodes = versionQuery.data?.nodes ?? [];
   const rootNodeId = versionQuery.data?.blueprint.rootNodeId;
-  const displayCodes = useMemo(
-    () => buildNodeDisplayCodes(nodes, rootNodeId),
-    [nodes, rootNodeId],
-  );
+  const displayCodes = useMemo(() => buildNodeDisplayCodes(nodes, rootNodeId), [nodes, rootNodeId]);
   const dialogueNodes = useMemo(
     () =>
       nodes
@@ -121,7 +118,7 @@ function DialogEditor() {
   const nodeById = useMemo(() => new Map(nodes.map((node) => [node.id, node])), [nodes]);
   const selected = dialogueNodes.find((node) => node.id === selectedId) ?? dialogueNodes[0];
   const selectedDisplayCode = selected
-    ? displayCodes.get(selected.id) ?? String(selected.turnIndex)
+    ? (displayCodes.get(selected.id) ?? String(selected.turnIndex))
     : "";
   const isRootSelected = Boolean(selected && selected.id === rootNodeId);
   const versionStatus = versionQuery.data?.status;
@@ -203,7 +200,7 @@ function DialogEditor() {
     setSelectedId((current) =>
       current && dialogueNodes.some((node) => node.id === current)
         ? current
-        : rootNodeId ?? dialogueNodes[0].id,
+        : (rootNodeId ?? dialogueNodes[0].id),
     );
   }, [dialogueNodes, rootNodeId, search.nodeId]);
 
@@ -237,7 +234,11 @@ function DialogEditor() {
       await queryClient.invalidateQueries({ queryKey: ["simulations"] });
       void navigate({
         to: "/nova/dialogo",
-        search: { simulationId: draft.simulationId, versionNumber: draft.newVersionNumber },
+        search: {
+          simulationId: draft.simulationId,
+          nodeId: undefined,
+          versionNumber: draft.newVersionNumber,
+        },
       });
     },
   });
@@ -303,7 +304,13 @@ function DialogEditor() {
   });
 
   const updateNodeTimeMutation = useMutation({
-    mutationFn: ({ nodeId, timeLimitSeconds }: { nodeId: string; timeLimitSeconds: number | null }) => {
+    mutationFn: ({
+      nodeId,
+      timeLimitSeconds,
+    }: {
+      nodeId: string;
+      timeLimitSeconds: number | null;
+    }) => {
       assertEditable();
       return updateSimulationNode(search.simulationId!, search.versionNumber!, nodeId, {
         timeLimitSeconds,
@@ -375,7 +382,9 @@ function DialogEditor() {
     },
     onSuccess: async () => {
       setDraftOption("");
-      setFeedbackMessage("Alternativa adicionada. Defina o destino ou preencha o relatório do encerramento.");
+      setFeedbackMessage(
+        "Alternativa adicionada. Defina o destino ou preencha o relatório do encerramento.",
+      );
       await refetchVersion();
     },
   });
@@ -435,9 +444,15 @@ function DialogEditor() {
         });
       }
       if (optionId) {
-        return updateSimulationOption(search.simulationId!, search.versionNumber!, nodeId, optionId, {
-          resultingTone: reportText,
-        });
+        return updateSimulationOption(
+          search.simulationId!,
+          search.versionNumber!,
+          nodeId,
+          optionId,
+          {
+            resultingTone: reportText,
+          },
+        );
       }
       return updateSimulationNode(search.simulationId!, search.versionNumber!, nodeId, {
         reportText,
@@ -711,7 +726,9 @@ function DialogEditor() {
 
                 <div className="mt-4 grid gap-4 md:grid-cols-2">
                   <label className="block">
-                    <span className="mb-1.5 block text-xs font-medium text-muted-foreground">Tempo</span>
+                    <span className="mb-1.5 block text-xs font-medium text-muted-foreground">
+                      Tempo
+                    </span>
                     <select
                       key={`${selected.id}-time`}
                       className="input"
@@ -725,7 +742,10 @@ function DialogEditor() {
                       }
                     >
                       {answerTimeLimits.map((limit) => (
-                        <option key={limit.value} value={limit.value === "0" ? "none" : limit.value}>
+                        <option
+                          key={limit.value}
+                          value={limit.value === "0" ? "none" : limit.value}
+                        >
                           {limit.label}
                         </option>
                       ))}
@@ -741,9 +761,10 @@ function DialogEditor() {
                         key={`${selected.id}-timeout-${selected.timeoutNextNodeId ?? "FIM"}`}
                         className="input"
                         defaultValue={
-                          selected.timeoutNextNodeId && nodeById.get(selected.timeoutNextNodeId)?.isFinal
+                          selected.timeoutNextNodeId &&
+                          nodeById.get(selected.timeoutNextNodeId)?.isFinal
                             ? "FIM"
-                            : selected.timeoutNextNodeId ?? "FIM"
+                            : (selected.timeoutNextNodeId ?? "FIM")
                         }
                         onChange={(event) =>
                           updateNodeTimeoutMutation.mutate({
@@ -826,9 +847,12 @@ function DialogEditor() {
                   {selected.options.map((option) => {
                     const finalNode = terminalNodeFor(option);
                     const terminal = isTerminalOption(option);
-                    const destinationValue = terminal ? "FIM" : option.nextNodeId ?? "FIM";
+                    const destinationValue = terminal ? "FIM" : (option.nextNodeId ?? "FIM");
                     return (
-                      <div key={option.id} className="rounded-md border border-border bg-background p-3">
+                      <div
+                        key={option.id}
+                        className="rounded-md border border-border bg-background p-3"
+                      >
                         <div className="grid gap-3 md:grid-cols-[20px_1fr_220px_auto]">
                           <GitBranch className="mt-2 h-4 w-4 text-muted-foreground" />
                           <input
@@ -847,7 +871,9 @@ function DialogEditor() {
                             key={`${selected.id}-${option.id}-next-${destinationValue}`}
                             className="input"
                             defaultValue={destinationValue}
-                            disabled={createBranchMutation.isPending || updateOptionMutation.isPending}
+                            disabled={
+                              createBranchMutation.isPending || updateOptionMutation.isPending
+                            }
                             aria-label={`Destino da alternativa ${option.id}`}
                             onChange={(event) => {
                               const target = event.target.value;
@@ -875,7 +901,9 @@ function DialogEditor() {
                               ))}
                             <option value="FIM">Vai para FIM</option>
                             <option disabled>──────────</option>
-                            <option value={CREATE_BRANCH_VALUE}>+ Criar nova etapa ramificada</option>
+                            <option value={CREATE_BRANCH_VALUE}>
+                              + Criar nova etapa ramificada
+                            </option>
                           </select>
                           <button
                             type="button"
@@ -896,7 +924,8 @@ function DialogEditor() {
                         </div>
 
                         <p className="mt-2 text-[11px] text-muted-foreground">
-                          Use “Criar nova etapa ramificada” para gerar e abrir automaticamente a próxima etapa deste caminho.
+                          Use “Criar nova etapa ramificada” para gerar e abrir automaticamente a
+                          próxima etapa deste caminho.
                         </p>
 
                         <div className="mt-3 flex flex-wrap items-center gap-2 text-[11px] text-muted-foreground">
@@ -915,7 +944,11 @@ function DialogEditor() {
                                 defaultValue={value}
                                 onBlur={(event) => {
                                   const nextValue = Number(event.target.value);
-                                  if (!Number.isInteger(nextValue) || nextValue < 0 || nextValue > 100) {
+                                  if (
+                                    !Number.isInteger(nextValue) ||
+                                    nextValue < 0 ||
+                                    nextValue > 100
+                                  ) {
                                     event.target.value = String(value);
                                     setFeedbackMessage(
                                       `Pontuação inválida para ${name}. Use um inteiro de 0 a 100.`,
@@ -966,9 +999,9 @@ function DialogEditor() {
                               id={`${option.id}-critical-help`}
                               className="mt-0.5 block text-[11px] leading-4 text-muted-foreground"
                             >
-                              Marque quando esta resposta representar erro grave ou comportamento de risco.
-                              A pontuação continua sendo calculada, mas o resultado exige análise da equipe e
-                              não reprova automaticamente.
+                              Marque quando esta resposta representar erro grave ou comportamento de
+                              risco. A pontuação continua sendo calculada, mas o resultado exige
+                              análise da equipe e não reprova automaticamente.
                             </span>
                           </span>
                         </label>
@@ -1046,7 +1079,10 @@ function DialogEditor() {
                 actions={
                   <Link
                     to="/nova/personagem"
-                    search={{ simulationId: search.simulationId, versionNumber: search.versionNumber }}
+                    search={{
+                      simulationId: search.simulationId,
+                      versionNumber: search.versionNumber,
+                    }}
                     className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground"
                   >
                     Configurar personagem
@@ -1067,7 +1103,11 @@ function DialogEditor() {
             <div className="flex flex-wrap gap-2">
               <Link
                 to="/nova/mapa"
-                search={{ simulationId: search.simulationId, versionNumber: search.versionNumber }}
+                search={{
+                  simulationId: search.simulationId,
+                  nodeId: search.nodeId,
+                  versionNumber: search.versionNumber,
+                }}
                 className="rounded-md border border-border bg-card px-4 py-2 text-sm hover:bg-accent"
               >
                 Abrir mapa do fluxo
@@ -1207,7 +1247,11 @@ function SimulationLinks({
         <Link
           key={`${simulation.id}-${simulation.versionNumber}`}
           to="/nova/dialogo"
-          search={{ simulationId: simulation.id, versionNumber: simulation.versionNumber }}
+          search={{
+            simulationId: simulation.id,
+            nodeId: undefined,
+            versionNumber: simulation.versionNumber,
+          }}
           className="rounded-md border border-border bg-card px-3 py-2 text-sm hover:bg-accent"
         >
           {simulation.name} v{simulation.versionNumber}

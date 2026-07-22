@@ -147,12 +147,16 @@ Scripts principais:
 npm run dev
 npm run build
 npm run build:dev
+npm run typecheck
 npm run preview
 npm run lint
 npm run format
+npm run test:access-control
 ```
 
 `npm run format` altera arquivos; revise o diff antes do commit.
+
+O build deve ser executado antes do typecheck porque o plugin do TanStack Router regenera `src/routeTree.gen.ts`, arquivo usado pelos contratos tipados de navegação.
 
 ## Qualidade e validação
 
@@ -161,6 +165,9 @@ npm run format
 cd frontend
 npm ci
 npm run build
+npm run typecheck
+npm run lint
+npm run test:access-control
 
 # Backend
 cd ../backend
@@ -196,4 +203,4 @@ Os testes do backend podem exigir Docker por causa do Testcontainers.
 - [Operação](OPERACAO.md)
 - [Capturas do README](screenshots/README.md)
 
-Última revisão: 18/07/2026.
+Última revisão: 22/07/2026.

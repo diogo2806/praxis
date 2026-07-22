@@ -12,14 +12,23 @@ export function WizardStepper({
 }) {
   const currentSearch = useRouterState({ select: (state) => state.location.search });
   const currentPathname = useRouterState({ select: (state) => state.location.pathname });
+  const simulationSearch = {
+    simulationId:
+      typeof currentSearch.simulationId === "string" ? currentSearch.simulationId : undefined,
+    versionNumber:
+      typeof currentSearch.versionNumber === "number" ? currentSearch.versionNumber : undefined,
+  };
+  const mapSearch = {
+    ...simulationSearch,
+    nodeId: typeof currentSearch.nodeId === "string" ? currentSearch.nodeId : undefined,
+  };
   const { t } = useLanguage();
   const idx = wizardSteps.findIndex((s) => s.slug === current);
   const unlockedIdx = Math.max(
     idx,
     unlockedThrough ? wizardSteps.findIndex((s) => s.slug === unlockedThrough) : idx,
   );
-  const showDialogReviewNavigation =
-    current === "revisao" && currentPathname === "/nova/dialogo";
+  const showDialogReviewNavigation = current === "revisao" && currentPathname === "/nova/dialogo";
 
   return (
     <div className="mb-8 rounded-xl border border-border bg-card p-4">
@@ -79,7 +88,7 @@ export function WizardStepper({
               ) : (
                 <Link
                   to={s.path}
-                  search={currentSearch}
+                  search={simulationSearch}
                   aria-current={active ? "step" : undefined}
                   className={cn(
                     "block rounded-md border px-2 py-2 text-left transition",
@@ -103,14 +112,14 @@ export function WizardStepper({
         >
           <Link
             to="/nova/validador"
-            search={currentSearch}
+            search={simulationSearch}
             className="rounded-md border border-border bg-card px-3 py-2 text-sm font-medium text-foreground transition hover:bg-accent"
           >
             Revisão e prontidão
           </Link>
           <Link
             to="/nova/mapa"
-            search={currentSearch}
+            search={mapSearch}
             className="rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground transition hover:bg-primary/90"
           >
             Mapa do fluxo

@@ -151,6 +151,7 @@ function AvaliacoesPage() {
           <Link
             to="/nova/avaliacao"
             className="inline-flex min-h-10 items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
+            search={{ simulationId: undefined, versionNumber: undefined }}
           >
             <FilePlus2 className="h-4 w-4" />
             Nova avaliação
@@ -159,7 +160,9 @@ function AvaliacoesPage() {
 
         {!specialistAccess && archiveMutation.isError && !archiveTarget && (
           <StateBanner tone="danger" title="Não foi possível arquivar a avaliação">
-            {archiveMutation.error instanceof Error ? archiveMutation.error.message : "Tente novamente."}
+            {archiveMutation.error instanceof Error
+              ? archiveMutation.error.message
+              : "Tente novamente."}
           </StateBanner>
         )}
 
@@ -212,6 +215,7 @@ function AvaliacoesPage() {
               <Link
                 to="/nova/avaliacao"
                 className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-3 text-sm font-medium text-primary-foreground hover:bg-primary/90"
+                search={{ simulationId: undefined, versionNumber: undefined }}
               >
                 <FilePlus2 className="h-4 w-4" />
                 Criar avaliação
@@ -248,7 +252,8 @@ function AvaliacoesPage() {
                 </select>
               </div>
               <div className="text-sm text-muted-foreground" aria-live="polite">
-                {filtered.length.toLocaleString("pt-BR")} de {simulations.length.toLocaleString("pt-BR")}
+                {filtered.length.toLocaleString("pt-BR")} de{" "}
+                {simulations.length.toLocaleString("pt-BR")}
               </div>
             </section>
 
@@ -295,8 +300,10 @@ function AvaliacoesPage() {
                               </p>
                               <div className="mt-1 text-[11px] text-muted-foreground">
                                 {simulation.competencies.length}{" "}
-                                {simulation.competencies.length === 1 ? "competência" : "competências"} ·
-                                atualizada {formatDateTime(simulation.updatedAt)}
+                                {simulation.competencies.length === 1
+                                  ? "competência"
+                                  : "competências"}{" "}
+                                · atualizada {formatDateTime(simulation.updatedAt)}
                               </div>
                             </td>
                             <td className="px-4 py-3">
@@ -312,7 +319,9 @@ function AvaliacoesPage() {
                               </div>
                             </td>
                             <td className="px-4 py-3 text-xs tabular-nums">
-                              <div>{simulation.attemptsCreated.toLocaleString("pt-BR")} aplicações</div>
+                              <div>
+                                {simulation.attemptsCreated.toLocaleString("pt-BR")} aplicações
+                              </div>
                               <div className="mt-1 text-muted-foreground">
                                 {simulation.attemptsCompleted.toLocaleString("pt-BR")} concluídas
                               </div>
@@ -344,7 +353,8 @@ function AvaliacoesPage() {
                                           aria-label={`Arquivar ${simulation.name}`}
                                           onClick={() => requestArchive(simulation)}
                                           disabled={
-                                            archiveMutation.isPending || simulation.status === "archived"
+                                            archiveMutation.isPending ||
+                                            simulation.status === "archived"
                                           }
                                           className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-border bg-background text-warning hover:bg-warning/10 disabled:cursor-not-allowed disabled:opacity-50"
                                         >

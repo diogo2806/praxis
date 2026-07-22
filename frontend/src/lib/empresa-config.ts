@@ -17,8 +17,8 @@ export function useEmpresaConfig() {
   return {
     config: query.data ?? empresaConfigFallback,
     isLoading: query.isLoading,
-    isError: false,
-    error: null,
+    isError: query.isError,
+    error: query.error,
   };
 }
 

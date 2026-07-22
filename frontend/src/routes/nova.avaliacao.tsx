@@ -29,10 +29,7 @@ export const Route = createFileRoute("/nova/avaliacao")({
   head: () => {
     const copy = getTranslations(getStoredLanguage()).blueprint;
     return {
-      meta: [
-        { title: copy.metaTitle },
-        { name: "description", content: copy.metaDescription },
-      ],
+      meta: [{ title: copy.metaTitle }, { name: "description", content: copy.metaDescription }],
     };
   },
   component: Page,
@@ -63,10 +60,7 @@ function Page() {
     error: empresaConfigQueryError,
   } = useEmpresaConfig();
 
-  const competencies = useMemo(
-    () => (config?.competencies ?? []).filter((competency) => competency.active !== false),
-    [config?.competencies],
-  );
+  const competencies = useMemo(() => config?.competencies ?? [], [config?.competencies]);
   const catalogValues = useMemo(
     () => new Set(competencies.map((competency) => normalizeLabel(competency.value))),
     [competencies],
@@ -90,17 +84,16 @@ function Page() {
 
   const selectedOutsideCatalog = useMemo(
     () =>
-      selectedCompetencies.filter(
-        (competency) => !catalogValues.has(normalizeLabel(competency)),
-      ),
+      selectedCompetencies.filter((competency) => !catalogValues.has(normalizeLabel(competency))),
     [catalogValues, selectedCompetencies],
   );
 
-  const missingFields = [
-    role.trim().length === 0 && copy.missingRole,
-    criticalSituation.trim().length === 0 && copy.missingCriticalSituation,
-    selectedCompetencies.length === 0 && copy.missingCompetency,
-  ].filter((field): field is string => Boolean(field));
+  const missingFields: string[] = [];
+  if (role.trim().length === 0) missingFields.push(copy.missingRole);
+  if (criticalSituation.trim().length === 0) {
+    missingFields.push(copy.missingCriticalSituation);
+  }
+  if (selectedCompetencies.length === 0) missingFields.push(copy.missingCompetency);
 
   const canGoNext =
     role.trim().length > 0 &&
@@ -335,7 +328,9 @@ function Page() {
                 onChange={(event) => setRole(event.target.value)}
               />
               <FieldMeta
-                error={submitAttempted && role.trim().length === 0 ? copy.roleRequiredError : undefined}
+                error={
+                  submitAttempted && role.trim().length === 0 ? copy.roleRequiredError : undefined
+                }
                 count={role.length}
                 max={roleMaxLength}
               />
@@ -370,7 +365,8 @@ function Page() {
               <div>
                 <div className="text-sm font-medium text-foreground">Catálogo centralizado</div>
                 <p className="mt-1 text-xs leading-5 text-muted-foreground">
-                  Nesta etapa você apenas seleciona competências ativas. Criação, edição e inativação ficam exclusivamente na tela Competências.
+                  Nesta etapa você apenas seleciona competências ativas. Criação, edição e
+                  inativação ficam exclusivamente na tela Competências.
                 </p>
               </div>
               <Link
@@ -432,7 +428,8 @@ function Page() {
                   Competências antigas fora do catálogo ativo
                 </div>
                 <p className="mt-1 text-xs leading-5 text-muted-foreground">
-                  Elas permanecem na versão para preservar o histórico. Remova-as do rascunho ou cadastre uma competência equivalente na Biblioteca de competências.
+                  Elas permanecem na versão para preservar o histórico. Remova-as do rascunho ou
+                  cadastre uma competência equivalente na Biblioteca de competências.
                 </p>
                 <div className="mt-3 flex flex-wrap gap-2">
                   {selectedOutsideCatalog.map((competency) => (
@@ -505,7 +502,9 @@ function Page() {
                 }}
                 aria-disabled={isEditable && !canGoNext}
                 className={`rounded-md bg-primary px-5 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 ${
-                  (isEditable && !canGoNext) || pending || (!isEditable && versionStatus !== "published")
+                  (isEditable && !canGoNext) ||
+                  pending ||
+                  (!isEditable && versionStatus !== "published")
                     ? "cursor-not-allowed opacity-50"
                     : ""
                 }`}
@@ -557,7 +556,9 @@ function buildCompetencyWeights(
     tier?: "major" | "minor" | null;
   }[],
 ) {
-  const uniqueCompetencies = [...new Set(competencies.map((competency) => competency.trim()))].filter(Boolean);
+  const uniqueCompetencies = [
+    ...new Set(competencies.map((competency) => competency.trim())),
+  ].filter(Boolean);
   const normalizedUniqueCompetencies = uniqueCompetencies.map(normalizeLabel).sort();
   const normalizedExistingCompetencies = (existingCompetencies ?? [])
     .map((competency) => normalizeLabel(competency.name))

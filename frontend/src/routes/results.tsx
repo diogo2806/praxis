@@ -1,6 +1,14 @@
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, Link, Outlet, useNavigate, useRouterState } from "@tanstack/react-router";
-import { BarChart3, ExternalLink, RefreshCw, Search, SlidersHorizontal, Users, X } from "lucide-react";
+import {
+  BarChart3,
+  ExternalLink,
+  RefreshCw,
+  Search,
+  SlidersHorizontal,
+  Users,
+  X,
+} from "lucide-react";
 import { useMemo, useState } from "react";
 import { AppShell } from "@/components/app-shell";
 import { EmptyState, StateBanner } from "@/components/praxis-ui";
@@ -36,7 +44,8 @@ const copyByLanguage = {
     last90Days: "Últimos 90 dias",
     integration: "Todas as origens",
     emptyTitle: "Nenhum resultado concluído encontrado",
-    emptyDescription: "Acompanhe o andamento em Participações. Os resultados aparecerão aqui após a conclusão.",
+    emptyDescription:
+      "Acompanhe o andamento em Participações. Os resultados aparecerão aqui após a conclusão.",
     candidate: "Participante",
     process: "Avaliação",
     score: "Resultado",
@@ -69,7 +78,8 @@ const copyByLanguage = {
     last90Days: "Last 90 days",
     integration: "All sources",
     emptyTitle: "No completed results found",
-    emptyDescription: "Track progress in Participations. Results will appear here after completion.",
+    emptyDescription:
+      "Track progress in Participations. Results will appear here after completion.",
     candidate: "Participant",
     process: "Assessment",
     score: "Result",
@@ -102,7 +112,8 @@ const copyByLanguage = {
     last90Days: "Últimos 90 días",
     integration: "Todos los orígenes",
     emptyTitle: "No se encontraron resultados concluidos",
-    emptyDescription: "Acompañe el avance en Participaciones. Los resultados aparecerán después de la conclusión.",
+    emptyDescription:
+      "Acompañe el avance en Participaciones. Los resultados aparecerán después de la conclusión.",
     candidate: "Participante",
     process: "Evaluación",
     score: "Resultado",
@@ -124,8 +135,12 @@ export const Route = createFileRoute("/results")({
     search: typeof search.search === "string" ? search.search : "",
     simulationId: typeof search.simulationId === "string" ? search.simulationId : "",
     period: isPeriod(search.period) ? search.period : "",
-    integrationProvider: typeof search.integrationProvider === "string" ? search.integrationProvider : "",
-    page: typeof search.page === "number" && Number.isInteger(search.page) && search.page >= 0 ? search.page : 0,
+    integrationProvider:
+      typeof search.integrationProvider === "string" ? search.integrationProvider : "",
+    page:
+      typeof search.page === "number" && Number.isInteger(search.page) && search.page >= 0
+        ? search.page
+        : 0,
   }),
   head: () => ({
     meta: [
@@ -137,7 +152,9 @@ export const Route = createFileRoute("/results")({
 });
 
 function ResultsPage() {
-  const isResultsIndex = useRouterState({ select: (state) => state.location.pathname === "/results" });
+  const isResultsIndex = useRouterState({
+    select: (state) => state.location.pathname === "/results",
+  });
   return isResultsIndex ? <ResultsIndexPage /> : <Outlet />;
 }
 
@@ -158,7 +175,7 @@ function ResultsIndexPage() {
       search: (current) => ({
         ...current,
         ...next,
-        page: resetPage ? 0 : next.page ?? current.page,
+        page: resetPage ? 0 : (next.page ?? current.page),
       }),
     });
   }
@@ -183,7 +200,11 @@ function ResultsIndexPage() {
     queryFn: listSimulations,
     retry: false,
   });
-  const activeFilterCount = [filters.simulationId, filters.period, filters.integrationProvider].filter(Boolean).length;
+  const activeFilterCount = [
+    filters.simulationId,
+    filters.period,
+    filters.integrationProvider,
+  ].filter(Boolean).length;
 
   return (
     <AppShell>
@@ -201,7 +222,13 @@ function ResultsIndexPage() {
               </Link>
             </Button>
             <Button asChild variant="outline" className="gap-2 bg-card">
-              <Link to="/talent-match">
+              <Link
+                to="/talent-match"
+                search={{
+                  simulationId: filters.simulationId || undefined,
+                  versionNumber: undefined,
+                }}
+              >
                 <BarChart3 className="h-4 w-4" />
                 {copy.compare}
               </Link>
@@ -269,7 +296,9 @@ function ResultsIndexPage() {
                 </select>
                 <select
                   value={filters.period}
-                  onChange={(event) => updateFilters({ period: event.target.value as "" | "7" | "30" | "90" })}
+                  onChange={(event) =>
+                    updateFilters({ period: event.target.value as "" | "7" | "30" | "90" })
+                  }
                   className="h-10 rounded-md border border-border bg-background px-3 text-sm"
                   aria-label={copy.period}
                 >
@@ -294,7 +323,9 @@ function ResultsIndexPage() {
               {activeFilterCount > 0 && (
                 <button
                   type="button"
-                  onClick={() => updateFilters({ simulationId: "", period: "", integrationProvider: "" })}
+                  onClick={() =>
+                    updateFilters({ simulationId: "", period: "", integrationProvider: "" })
+                  }
                   className="mt-3 inline-flex min-h-9 items-center gap-2 rounded-md border border-border bg-background px-3 py-1.5 text-xs font-medium hover:bg-accent"
                 >
                   <X className="h-3.5 w-3.5" />
@@ -371,10 +402,16 @@ function ResultsContent({
       <ResultsTable items={data.items} copy={copy} />
       <div className="flex flex-wrap items-center justify-between gap-3 text-sm">
         <div className="text-muted-foreground">
-          {data.totalItems.toLocaleString(copy.locale)} {data.totalItems === 1 ? copy.resultSingular : copy.resultPlural}
+          {data.totalItems.toLocaleString(copy.locale)}{" "}
+          {data.totalItems === 1 ? copy.resultSingular : copy.resultPlural}
         </div>
         <div className="flex items-center gap-2">
-          <Button type="button" variant="outline" disabled={page <= 0} onClick={() => onPageChange(page - 1)}>
+          <Button
+            type="button"
+            variant="outline"
+            disabled={page <= 0}
+            onClick={() => onPageChange(page - 1)}
+          >
             {copy.previous}
           </Button>
           <span className="text-xs text-muted-foreground">
@@ -401,6 +438,8 @@ function ResultsTable({
   items: ResultListItemResponse[];
   copy: (typeof copyByLanguage)[Language];
 }) {
+  const filters = Route.useSearch();
+
   return (
     <section className="overflow-hidden rounded-md border border-border bg-card">
       <div className="overflow-x-auto">
@@ -416,24 +455,34 @@ function ResultsTable({
           </thead>
           <tbody>
             {items.map((item) => (
-              <tr key={item.attemptId} className="border-b border-border last:border-0 hover:bg-accent/35">
+              <tr
+                key={item.attemptId}
+                className="border-b border-border last:border-0 hover:bg-accent/35"
+              >
                 <td className="px-4 py-3">
                   <div className="font-medium">{item.candidateName}</div>
                   <div className="mt-0.5 text-xs text-muted-foreground">{item.candidateEmail}</div>
                 </td>
                 <td className="px-4 py-3 text-muted-foreground">{item.simulationTitle}</td>
                 <td className="px-4 py-3">
-                  <div className="font-semibold tabular-nums">{item.overallScore == null ? "—" : `${item.overallScore}%`}</div>
+                  <div className="font-semibold tabular-nums">
+                    {item.overallScore == null ? "—" : `${item.overallScore}%`}
+                  </div>
                   {item.highlightCompetency && (
-                    <div className="mt-1 text-[11px] text-muted-foreground">{item.highlightCompetency}</div>
+                    <div className="mt-1 text-[11px] text-muted-foreground">
+                      {item.highlightCompetency}
+                    </div>
                   )}
                 </td>
-                <td className="px-4 py-3 text-muted-foreground">{providerLabel(item.integrationProvider)}</td>
+                <td className="px-4 py-3 text-muted-foreground">
+                  {providerLabel(item.integrationProvider)}
+                </td>
                 <td className="px-4 py-3 text-right">
                   <Link
                     to="/results/$attemptId"
                     params={{ attemptId: item.attemptId }}
                     className="font-medium text-primary hover:underline"
+                    search={filters}
                   >
                     {copy.analyze}
                   </Link>

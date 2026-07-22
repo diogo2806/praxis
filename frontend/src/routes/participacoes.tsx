@@ -139,7 +139,8 @@ function ParticipacoesPage() {
     [participationPage?.items, processFilter],
   );
   const simulations = (simulationsQuery.data ?? []).filter(
-    (simulation) => simulation.status === "published" || simulation.livePublishedVersionNumber != null,
+    (simulation) =>
+      simulation.status === "published" || simulation.livePublishedVersionNumber != null,
   );
   const actionError = resendMutation.error ?? extendMutation.error ?? cancelMutation.error;
 
@@ -187,7 +188,9 @@ function ParticipacoesPage() {
               onClick={() => void refreshAll()}
               disabled={participationsQuery.isFetching}
             >
-              <RefreshCw className={cn("h-4 w-4", participationsQuery.isFetching && "animate-spin")} />
+              <RefreshCw
+                className={cn("h-4 w-4", participationsQuery.isFetching && "animate-spin")}
+              />
               Atualizar
             </Button>
           </div>
@@ -204,7 +207,10 @@ function ParticipacoesPage() {
           </StateBanner>
         )}
 
-        <section className="rounded-xl border border-border bg-card p-4" aria-label="Filtros das participações">
+        <section
+          className="rounded-xl border border-border bg-card p-4"
+          aria-label="Filtros das participações"
+        >
           <div className="flex flex-wrap gap-2" role="tablist" aria-label="Situação do processo">
             {processFilters.map((filter) => (
               <button
@@ -292,13 +298,13 @@ function ParticipacoesPage() {
             copiedParticipationId={copiedParticipationId}
             extensionDays={extensionDays}
             resendingParticipationId={
-              resendMutation.isPending ? resendMutation.variables?.participationId ?? null : null
+              resendMutation.isPending ? (resendMutation.variables?.participationId ?? null) : null
             }
             extendingParticipationId={
-              extendMutation.isPending ? extendMutation.variables?.participationId ?? null : null
+              extendMutation.isPending ? (extendMutation.variables?.participationId ?? null) : null
             }
             cancelingParticipationId={
-              cancelMutation.isPending ? cancelMutation.variables?.participationId ?? null : null
+              cancelMutation.isPending ? (cancelMutation.variables?.participationId ?? null) : null
             }
             onCopy={copyLink}
             onResend={(participation) => {
@@ -338,7 +344,8 @@ function ParticipacoesPage() {
             Anterior
           </Button>
           <span className="text-xs text-muted-foreground">
-            Página {(participationPage?.page ?? 0) + 1} de {Math.max(1, participationPage?.totalPages ?? 1)}
+            Página {(participationPage?.page ?? 0) + 1} de{" "}
+            {Math.max(1, participationPage?.totalPages ?? 1)}
           </span>
           <Button
             variant="outline"
@@ -412,7 +419,8 @@ function ParticipationTable({
                 <ParticipationStatusBadge participation={participation} />
               </td>
               <td className="px-4 py-3">
-                {participation.currentTurn}/{participation.estimatedTurns} · {participation.progressPercent}%
+                {participation.currentTurn}/{participation.estimatedTurns} ·{" "}
+                {participation.progressPercent}%
               </td>
               <td className="px-4 py-3">
                 <LinkStatus participation={participation} />
@@ -495,7 +503,11 @@ function ParticipationActions({
   if (participation.resultAttemptId) {
     return (
       <Button asChild variant="outline" size="sm">
-        <Link to="/results/$attemptId" params={{ attemptId: participation.resultAttemptId }}>
+        <Link
+          to="/results/$attemptId"
+          params={{ attemptId: participation.resultAttemptId }}
+          search={{ search: "", simulationId: "", period: "", integrationProvider: "", page: 0 }}
+        >
           Analisar resultado
         </Link>
       </Button>
@@ -513,7 +525,11 @@ function ParticipationActions({
         disabled={linkUnavailable}
         onClick={() => void onCopy(participation)}
       >
-        {copied ? <CheckCircle2 className="mr-1 h-3.5 w-3.5" /> : <Copy className="mr-1 h-3.5 w-3.5" />}
+        {copied ? (
+          <CheckCircle2 className="mr-1 h-3.5 w-3.5" />
+        ) : (
+          <Copy className="mr-1 h-3.5 w-3.5" />
+        )}
         {copied ? "Copiado" : "Copiar"}
       </Button>
 
@@ -572,8 +588,8 @@ function ParticipationActions({
             <AlertDialogHeader>
               <AlertDialogTitle>Cancelar participação por jornada?</AlertDialogTitle>
               <AlertDialogDescription>
-                O link deixará de funcionar e a pessoa não poderá iniciar novas etapas desta jornada.
-                O histórico já registrado será preservado.
+                O link deixará de funcionar e a pessoa não poderá iniciar novas etapas desta
+                jornada. O histórico já registrado será preservado.
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
@@ -589,7 +605,11 @@ function ParticipationActions({
   );
 }
 
-function ParticipationStatusBadge({ participation }: { participation: ParticipationMonitoringItem }) {
+function ParticipationStatusBadge({
+  participation,
+}: {
+  participation: ParticipationMonitoringItem;
+}) {
   const meta = statusMeta(participation.status, participation.active);
   const Icon = meta.icon;
   return (
@@ -626,7 +646,12 @@ function LinkStatus({ participation }: { participation: ParticipationMonitoringI
   }[participation.linkStatus];
 
   return (
-    <span className={cn("inline-flex rounded-full border px-2 py-1 text-[11px] font-medium", meta.className)}>
+    <span
+      className={cn(
+        "inline-flex rounded-full border px-2 py-1 text-[11px] font-medium",
+        meta.className,
+      )}
+    >
       {meta.label}
     </span>
   );

@@ -60,7 +60,9 @@ function QuickStartPage() {
 
       {createMutation.isError && (
         <StateBanner tone="danger" title="Não foi possível criar a partir do modelo">
-          {createMutation.error instanceof Error ? createMutation.error.message : "Tente novamente."}
+          {createMutation.error instanceof Error
+            ? createMutation.error.message
+            : "Tente novamente."}
         </StateBanner>
       )}
 
@@ -90,7 +92,11 @@ function QuickStartPage() {
 
       <div className="mt-8 text-sm text-muted-foreground">
         Prefere montar do zero?{" "}
-        <Link to="/nova/avaliacao" className="font-medium text-primary hover:underline">
+        <Link
+          to="/nova/avaliacao"
+          className="font-medium text-primary hover:underline"
+          search={{ simulationId: undefined, versionNumber: undefined }}
+        >
           Criar do início →
         </Link>
       </div>

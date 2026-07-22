@@ -129,8 +129,8 @@ function MonitoringPage() {
             </div>
             <h1 className="mt-1 font-display text-3xl">Central operacional</h1>
             <p className="mt-2 text-sm leading-6 text-muted-foreground">
-              Somente exceções acionáveis aparecem aqui. Configuração, credenciais, entregas enviadas
-              e integrações saudáveis permanecem fora desta fila.
+              Somente exceções acionáveis aparecem aqui. Configuração, credenciais, entregas
+              enviadas e integrações saudáveis permanecem fora desta fila.
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
@@ -161,7 +161,9 @@ function MonitoringPage() {
             label="Integrações com atenção"
             value={integrationAlerts.length}
             active={activeFilter === "integrations"}
-            onClick={() => setActiveFilter(activeFilter === "integrations" ? "all" : "integrations")}
+            onClick={() =>
+              setActiveFilter(activeFilter === "integrations" ? "all" : "integrations")
+            }
           />
           <QueueMetric
             label="Em retentativa"
@@ -279,14 +281,19 @@ function QueueMetric({
       )}
     >
       <div className="text-xs text-muted-foreground">{label}</div>
-      <div className="mt-2 text-3xl font-semibold tabular-nums">{value.toLocaleString("pt-BR")}</div>
+      <div className="mt-2 text-3xl font-semibold tabular-nums">
+        {value.toLocaleString("pt-BR")}
+      </div>
     </button>
   );
 }
 
 function IntegrationAttentionPanel({ integrations }: { integrations: IntegrationCenterItem[] }) {
   return (
-    <section className="rounded-xl border border-border bg-card" aria-labelledby="integration-attention-title">
+    <section
+      className="rounded-xl border border-border bg-card"
+      aria-labelledby="integration-attention-title"
+    >
       <div className="flex flex-wrap items-start justify-between gap-3 border-b border-border p-4">
         <div>
           <h2 id="integration-attention-title" className="text-lg font-semibold">
@@ -376,8 +383,8 @@ function RetryingDeliveriesPanel({ deliveries }: { deliveries: ResultDeliveryRes
         <div>
           <h2 className="text-lg font-semibold">Entregas em retentativa</h2>
           <p className="mt-1 text-xs text-muted-foreground">
-            A fila automática ainda está tentando entregar estes resultados. Não reprocesse manualmente
-            enquanto houver próxima tentativa agendada.
+            A fila automática ainda está tentando entregar estes resultados. Não reprocesse
+            manualmente enquanto houver próxima tentativa agendada.
           </p>
         </div>
       </div>
@@ -386,7 +393,10 @@ function RetryingDeliveriesPanel({ deliveries }: { deliveries: ResultDeliveryRes
       ) : (
         <div className="space-y-3">
           {deliveries.map((delivery) => (
-            <article key={delivery.id} className="rounded-md border border-warning/30 bg-warning/5 p-4">
+            <article
+              key={delivery.id}
+              className="rounded-md border border-warning/30 bg-warning/5 p-4"
+            >
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div className="min-w-0 flex-1">
                   <div className="font-medium">Envio #{delivery.id}</div>
@@ -394,6 +404,13 @@ function RetryingDeliveriesPanel({ deliveries }: { deliveries: ResultDeliveryRes
                     to="/results/$attemptId"
                     params={{ attemptId: delivery.attemptId }}
                     className="mt-1 inline-block text-sm font-medium text-primary hover:underline"
+                    search={{
+                      search: "",
+                      simulationId: "",
+                      period: "",
+                      integrationProvider: "",
+                      page: 0,
+                    }}
                   >
                     Resultado relacionado
                   </Link>
@@ -443,11 +460,12 @@ function FailedDeliveriesPanel({
         <div>
           <h2 className="text-lg font-semibold">Entregas em DLQ</h2>
           <p className="mt-1 text-xs text-muted-foreground">
-            Falhas que esgotaram a política automática e exigem diagnóstico antes do reprocessamento.
+            Falhas que esgotaram a política automática e exigem diagnóstico antes do
+            reprocessamento.
           </p>
         </div>
       </div>
-      {error && (
+      {error != null && (
         <StateBanner tone="danger" title="Nova tentativa não concluída">
           {error instanceof Error ? error.message : "Tente novamente."}
         </StateBanner>
@@ -459,7 +477,10 @@ function FailedDeliveriesPanel({
           {deliveries.map((delivery) => {
             const current = reprocessing && reprocessingId === delivery.id;
             return (
-              <article key={delivery.id} className="rounded-md border border-danger/30 bg-danger/5 p-4">
+              <article
+                key={delivery.id}
+                className="rounded-md border border-danger/30 bg-danger/5 p-4"
+              >
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div className="min-w-0 flex-1">
                     <div className="font-medium">Envio #{delivery.id}</div>
@@ -467,6 +488,13 @@ function FailedDeliveriesPanel({
                       to="/results/$attemptId"
                       params={{ attemptId: delivery.attemptId }}
                       className="mt-1 inline-block text-sm font-medium text-primary hover:underline"
+                      search={{
+                        search: "",
+                        simulationId: "",
+                        period: "",
+                        integrationProvider: "",
+                        page: 0,
+                      }}
                     >
                       Resultado relacionado
                     </Link>
@@ -527,7 +555,7 @@ function NotificationsPanel({
           </p>
         </div>
       </div>
-      {error && (
+      {error != null && (
         <StateBanner tone="danger" title="Não foi possível atualizar a notificação">
           {error instanceof Error ? error.message : "Tente novamente."}
         </StateBanner>
@@ -555,6 +583,13 @@ function NotificationsPanel({
                           to="/results/$attemptId"
                           params={{ attemptId: notification.candidateAttemptId }}
                           className="font-medium text-primary hover:underline"
+                          search={{
+                            search: "",
+                            simulationId: "",
+                            period: "",
+                            integrationProvider: "",
+                            page: 0,
+                          }}
                         >
                           Ver resultado
                         </Link>

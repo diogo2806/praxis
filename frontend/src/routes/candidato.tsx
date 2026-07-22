@@ -472,7 +472,9 @@ function FocusedCandidateExperience({ token }: { token: string }) {
   const [liveAttempt, setLiveAttempt] = useState<CandidateAttemptResponse | null>(null);
   const [remaining, setRemaining] = useState(30);
   const [selectedOptionId, setSelectedOptionId] = useState<string | null>(null);
-  const [accessibilityPreferences, setAccessibilityPreferences] = useState(loadAccessibilityPreferences);
+  const [accessibilityPreferences, setAccessibilityPreferences] = useState(
+    loadAccessibilityPreferences,
+  );
   const [submittingAnswer, setSubmittingAnswer] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [healthConsentGiven, setHealthConsentGiven] = useState(false);
@@ -485,7 +487,9 @@ function FocusedCandidateExperience({ token }: { token: string }) {
     const style = document.createElement("style");
     style.textContent = candidateStyles;
     document.head.appendChild(style);
-    return () => { document.head.removeChild(style); };
+    return () => {
+      document.head.removeChild(style);
+    };
   }, []);
 
   const attemptQuery = useQuery({
@@ -500,7 +504,10 @@ function FocusedCandidateExperience({ token }: { token: string }) {
   }, [attemptQuery.data]);
 
   useEffect(() => {
-    window.localStorage.setItem(ACCESSIBILITY_STORAGE_KEY, JSON.stringify(accessibilityPreferences));
+    window.localStorage.setItem(
+      ACCESSIBILITY_STORAGE_KEY,
+      JSON.stringify(accessibilityPreferences),
+    );
   }, [accessibilityPreferences]);
 
   const attempt = liveAttempt ?? attemptQuery.data;
@@ -628,11 +635,7 @@ function FocusedCandidateExperience({ token }: { token: string }) {
     needsHealthConsent,
   ]);
 
-  const rootClass = cn(
-    "cand-root",
-    highContrast && "hc",
-    largeText && "large-text",
-  );
+  const rootClass = cn("cand-root", highContrast && "hc", largeText && "large-text");
   const fontStyle = {
     fontFamily: dyslexiaFont
       ? "'OpenDyslexic', 'Atkinson Hyperlegible', Verdana, Arial, sans-serif"
@@ -644,10 +647,12 @@ function FocusedCandidateExperience({ token }: { token: string }) {
       <div className="cand-a11y">
         <button
           type="button"
-          onClick={() => setAccessibilityPreferences((value) => ({
-            ...value,
-            highContrast: !value.highContrast,
-          }))}
+          onClick={() =>
+            setAccessibilityPreferences((value) => ({
+              ...value,
+              highContrast: !value.highContrast,
+            }))
+          }
           aria-pressed={highContrast}
           title="Alterna para alto contraste"
         >
@@ -655,10 +660,12 @@ function FocusedCandidateExperience({ token }: { token: string }) {
         </button>
         <button
           type="button"
-          onClick={() => setAccessibilityPreferences((value) => ({
-            ...value,
-            largeText: !value.largeText,
-          }))}
+          onClick={() =>
+            setAccessibilityPreferences((value) => ({
+              ...value,
+              largeText: !value.largeText,
+            }))
+          }
           aria-pressed={largeText}
           title="Aumenta o tamanho do texto"
         >
@@ -666,10 +673,12 @@ function FocusedCandidateExperience({ token }: { token: string }) {
         </button>
         <button
           type="button"
-          onClick={() => setAccessibilityPreferences((value) => ({
-            ...value,
-            dyslexiaFont: !value.dyslexiaFont,
-          }))}
+          onClick={() =>
+            setAccessibilityPreferences((value) => ({
+              ...value,
+              dyslexiaFont: !value.dyslexiaFont,
+            }))
+          }
           aria-pressed={dyslexiaFont}
           title="Troca para uma fonte mais fácil de ler"
         >
@@ -695,15 +704,14 @@ function FocusedCandidateExperience({ token }: { token: string }) {
           </p>
         </div>
       ) : needsHealthConsent ? (
-        <HealthConsentGate
-          token={token}
-          onConsented={() => setHealthConsentGiven(true)}
-        />
+        <HealthConsentGate token={token} onConsented={() => setHealthConsentGiven(true)} />
       ) : currentNode && !finished ? (
         <>
           <div className="cand-progress">
             <div className="cp-info">
-              <span>Cenário {currentStep}/{totalSteps}</span>
+              <span>
+                Cenário {currentStep}/{totalSteps}
+              </span>
               <span>{remaining}s</span>
             </div>
             <div className="cp-track">
@@ -734,9 +742,7 @@ function FocusedCandidateExperience({ token }: { token: string }) {
             </div>
 
             <div className="sc-body">
-              {currentNode.pessoa && (
-                <div className="sc-tag">{currentNode.pessoa}</div>
-              )}
+              {currentNode.pessoa && <div className="sc-tag">{currentNode.pessoa}</div>}
               <p
                 className="sc-msg"
                 aria-label={currentNode.descricaoAcessivel || currentNode.descricao}
@@ -784,10 +790,10 @@ function FocusedCandidateExperience({ token }: { token: string }) {
                         </audio>
                       </div>
                     )}
-                    {option.midiaUrl && (
+                    {option.mediaUrl && (
                       <div className="sc-media">
                         <CandidateMedia
-                          mediaUrl={option.midiaUrl}
+                          mediaUrl={option.mediaUrl}
                           mediaType={option.tipoMidia ?? null}
                         />
                       </div>
@@ -798,9 +804,7 @@ function FocusedCandidateExperience({ token }: { token: string }) {
 
               {selectedOption && (
                 <div className="sc-confirm" aria-live="polite">
-                  <span className="confirm-hint">
-                    Confirme para enviar sua resposta final.
-                  </span>
+                  <span className="confirm-hint">Confirme para enviar sua resposta final.</span>
                   <button
                     type="button"
                     onClick={() => submitAnswer(currentNode, selectedOption.id, false)}
@@ -811,14 +815,25 @@ function FocusedCandidateExperience({ token }: { token: string }) {
                 </div>
               )}
               {submitError && (
-                <div className="sc-error" aria-live="assertive">{submitError}</div>
+                <div className="sc-error" aria-live="assertive">
+                  {submitError}
+                </div>
               )}
 
               <p className="sc-note">
-                <svg viewBox="0 0 24 24" fill="none" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
                   <path d="M12 2 4 5v6c0 5 3.4 8.3 8 11 4.6-2.7 8-6 8-11V5z" />
                 </svg>
-                <span>Escolha uma alternativa. Você pode trocar antes de confirmar; depois de confirmar, a resposta é final.</span>
+                <span>
+                  Escolha uma alternativa. Você pode trocar antes de confirmar; depois de confirmar,
+                  a resposta é final.
+                </span>
               </p>
             </div>
           </div>
@@ -833,9 +848,9 @@ function FocusedCandidateExperience({ token }: { token: string }) {
               : "O resultado será processado e entregue para a equipe responsável."}
           </p>
           <div className="cs-note">
-            Esta avaliação mede como você age em uma situação de trabalho, por competência.
-            Ela é apoio à decisão: quem decide sobre a sua candidatura é uma pessoa, não um
-            sistema automático. Você pode pedir que uma pessoa revise o resultado.
+            Esta avaliação mede como você age em uma situação de trabalho, por competência. Ela é
+            apoio à decisão: quem decide sobre a sua candidatura é uma pessoa, não um sistema
+            automático. Você pode pedir que uma pessoa revise o resultado.
           </div>
           <HumanReviewRequest attemptId={token} />
         </div>
@@ -860,7 +875,9 @@ function HumanReviewRequest({ attemptId }: { attemptId: string }) {
   if (mutation.isSuccess) {
     return (
       <div className="cand-review" aria-live="polite">
-        <p className="rev-ok">Pedido de revisão registrado. Uma pessoa da equipe responsável vai analisar.</p>
+        <p className="rev-ok">
+          Pedido de revisão registrado. Uma pessoa da equipe responsável vai analisar.
+        </p>
       </div>
     );
   }
@@ -899,13 +916,7 @@ function HumanReviewRequest({ attemptId }: { attemptId: string }) {
   );
 }
 
-function HealthConsentGate({
-  token,
-  onConsented,
-}: {
-  token: string;
-  onConsented: () => void;
-}) {
+function HealthConsentGate({ token, onConsented }: { token: string; onConsented: () => void }) {
   const [agreed, setAgreed] = useState(false);
   const [onBehalfOfMinor, setOnBehalfOfMinor] = useState(false);
   const mutation = useMutation({
@@ -921,17 +932,21 @@ function HealthConsentGate({
         <p>
           Esta atividade é um <strong>exercício educativo de tomada de decisão</strong>. Ela
           apresenta situações do dia a dia para você praticar escolhas.{" "}
-          <strong>Não é uma consulta, não é diagnóstico e não substitui a orientação de um
-          profissional de saúde.</strong>
+          <strong>
+            Não é uma consulta, não é diagnóstico e não substitui a orientação de um profissional de
+            saúde.
+          </strong>
         </p>
         <p>
           Para realizar a atividade, a empresa responsável vai tratar respostas suas que podem
-          revelar informações relacionadas à sua saúde ou aos seus hábitos. Esses dados serão
-          usados <strong>somente</strong> para gerar o resultado educativo desta atividade e para
-          as finalidades descritas na política de privacidade da empresa responsável.
+          revelar informações relacionadas à sua saúde ou aos seus hábitos. Esses dados serão usados{" "}
+          <strong>somente</strong> para gerar o resultado educativo desta atividade e para as
+          finalidades descritas na política de privacidade da empresa responsável.
         </p>
         <ul>
-          <li>A pontuação segue critérios definidos antes da atividade. Não há IA julgando você.</li>
+          <li>
+            A pontuação segue critérios definidos antes da atividade. Não há IA julgando você.
+          </li>
           <li>
             Seus dados não serão usados para decidir, sozinhos e de forma automatizada, sobre
             tratamento, atendimento ou acesso a serviços.
@@ -953,8 +968,8 @@ function HealthConsentGate({
             onChange={(event) => setAgreed(event.target.checked)}
           />
           <span>
-            Li e concordo que a empresa responsável trate os dados sensíveis de saúde informados
-            por mim nesta atividade, para as finalidades educativas descritas acima.
+            Li e concordo que a empresa responsável trate os dados sensíveis de saúde informados por
+            mim nesta atividade, para as finalidades educativas descritas acima.
           </span>
         </label>
         <label className="cc-check">

@@ -1,5 +1,5 @@
-﻿import type { ReactNode } from "react";
-import { AlertTriangle, Archive, CheckCircle2, CircleDot, Clock3, FileText } from "lucide-react";
+import type { ReactNode } from "react";
+import { AlertTriangle, Archive, CheckCircle2, CircleDot, FileText } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { SimulationVersionStatus } from "@/lib/api/praxis";
 import { statusMeta, type Maturity } from "@/lib/simulation-meta";
@@ -14,9 +14,6 @@ const toneClass = {
 
 const maturityMeta: Record<Maturity, { label: string; tone: keyof typeof toneClass }> = {
   Rascunho: { label: "Rascunho", tone: "muted" },
-  "Em revisão": { label: "Em revisão", tone: "warn" },
-  Aprovada: { label: "Aprovada", tone: "info" },
-  Reprovada: { label: "Reprovada", tone: "danger" },
   "Pronta para uso": { label: "Pronta para uso", tone: "ok" },
   Arquivada: { label: "Arquivada", tone: "muted" },
 };
@@ -54,10 +51,10 @@ export function StatusBadge({
             toneClass[maturityInfo.tone],
           )}
         >
-          {maturityInfo.label === "Em revisão" ? (
-            <Clock3 className="h-3 w-3" />
-          ) : maturityInfo.label === "Arquivada" ? (
+          {maturityInfo.label === "Arquivada" ? (
             <Archive className="h-3 w-3" />
+          ) : maturityInfo.label === "Rascunho" ? (
+            <FileText className="h-3 w-3" />
           ) : (
             <CheckCircle2 className="h-3 w-3" />
           )}

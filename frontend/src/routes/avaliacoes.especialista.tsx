@@ -19,7 +19,8 @@ export const Route = createFileRoute("/avaliacoes/especialista")({
       { title: "Área do especialista - Práxis" },
       {
         name: "description",
-        content: "Área de trabalho do especialista parceiro para criar, editar e revisar avaliações.",
+        content:
+          "Área de trabalho do especialista parceiro para criar, editar e revisar avaliações.",
       },
     ],
   }),
@@ -84,6 +85,7 @@ function PartnerSpecialistPage() {
             <Link
               to="/nova/avaliacao"
               className="inline-flex min-h-11 items-center justify-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary/90"
+              search={{ simulationId: undefined, versionNumber: undefined }}
             >
               <FilePlus2 className="h-4 w-4" />
               Criar avaliação

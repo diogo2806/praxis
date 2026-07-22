@@ -5,14 +5,8 @@ import { useMemo, useState } from "react";
 import { AppShell } from "@/components/app-shell";
 import { EmptyState, StateBanner } from "@/components/praxis-ui";
 import { Button } from "@/components/ui/button";
-import {
-  createCandidateLink,
-  type CandidateLinkOperation,
-} from "@/lib/api/candidate-links";
-import {
-  listSimulations,
-  type SimulationSummaryResponse,
-} from "@/lib/api/praxis";
+import { createCandidateLink, type CandidateLinkOperation } from "@/lib/api/candidate-links";
+import { listSimulations, type SimulationSummaryResponse } from "@/lib/api/praxis";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/enviar-link")({
@@ -21,7 +15,8 @@ export const Route = createFileRoute("/enviar-link")({
       { title: "Nova participação individual - Práxis" },
       {
         name: "description",
-        content: "Crie uma participação individual e acompanhe o convite pela central de participações.",
+        content:
+          "Crie uma participação individual e acompanhe o convite pela central de participações.",
       },
     ],
   }),
@@ -38,7 +33,9 @@ type FormErrors = {
 function EnviarLinkPage() {
   const queryClient = useQueryClient();
   const [step, setStep] = useState<Step>("assessment");
-  const [selectedSimulation, setSelectedSimulation] = useState<SimulationSummaryResponse | null>(null);
+  const [selectedSimulation, setSelectedSimulation] = useState<SimulationSummaryResponse | null>(
+    null,
+  );
   const [candidateName, setCandidateName] = useState("");
   const [candidateEmail, setCandidateEmail] = useState("");
   const [formErrors, setFormErrors] = useState<FormErrors>({});
@@ -251,7 +248,11 @@ function AssessmentStep({
   onSelect: (simulation: SimulationSummaryResponse) => void;
 }) {
   if (loading) {
-    return <StateBanner tone="info" title="Carregando avaliações">Aguarde a consulta das versões publicadas.</StateBanner>;
+    return (
+      <StateBanner tone="info" title="Carregando avaliações">
+        Aguarde a consulta das versões publicadas.
+      </StateBanner>
+    );
   }
   if (error) {
     return (
@@ -267,7 +268,12 @@ function AssessmentStep({
         description="Publique uma avaliação antes de criar uma participação individual."
         actions={
           <Button asChild>
-            <Link to="/nova/avaliacao">Criar avaliação</Link>
+            <Link
+              to="/nova/avaliacao"
+              search={{ simulationId: undefined, versionNumber: undefined }}
+            >
+              Criar avaliação
+            </Link>
           </Button>
         }
       />
@@ -328,7 +334,9 @@ function ParticipantStep({
   return (
     <section className="rounded-xl border border-border bg-card p-6">
       <div className="rounded-lg border border-primary/20 bg-primary/5 p-4">
-        <div className="text-xs font-semibold uppercase tracking-wide text-primary">Avaliação selecionada</div>
+        <div className="text-xs font-semibold uppercase tracking-wide text-primary">
+          Avaliação selecionada
+        </div>
         <div className="mt-1 font-medium">{simulation.name}</div>
       </div>
       <div className="mt-6 grid gap-4 md:grid-cols-2">
@@ -341,7 +349,9 @@ function ParticipantStep({
             placeholder="Nome completo"
             aria-invalid={Boolean(errors.candidateName)}
           />
-          {errors.candidateName && <span className="block text-xs text-danger">{errors.candidateName}</span>}
+          {errors.candidateName && (
+            <span className="block text-xs text-danger">{errors.candidateName}</span>
+          )}
         </label>
         <label className="space-y-1.5 text-sm font-medium">
           E-mail
@@ -353,7 +363,9 @@ function ParticipantStep({
             placeholder="pessoa@empresa.com"
             aria-invalid={Boolean(errors.candidateEmail)}
           />
-          {errors.candidateEmail && <span className="block text-xs text-danger">{errors.candidateEmail}</span>}
+          {errors.candidateEmail && (
+            <span className="block text-xs text-danger">{errors.candidateEmail}</span>
+          )}
         </label>
       </div>
       <div className="mt-6 flex flex-wrap gap-3">
@@ -395,7 +407,8 @@ function ShareStep({
   return (
     <div className="space-y-6">
       <StateBanner tone="ok" title="Participação criada">
-        {operationLabel(operation)} O acompanhamento e as próximas ações estão disponíveis em Participações.
+        {operationLabel(operation)} O acompanhamento e as próximas ações estão disponíveis em
+        Participações.
       </StateBanner>
       <section className="rounded-xl border border-border bg-card p-6">
         <h2 className="text-lg font-semibold">Compartilhar acesso</h2>
@@ -403,9 +416,15 @@ function ShareStep({
           {candidateName} · {candidateEmail} · {simulation.name}
         </p>
         <div className="mt-5 flex flex-col gap-3 rounded-lg border border-border bg-background p-4 sm:flex-row sm:items-center">
-          <code className="min-w-0 flex-1 overflow-hidden text-ellipsis whitespace-nowrap text-sm">{link}</code>
+          <code className="min-w-0 flex-1 overflow-hidden text-ellipsis whitespace-nowrap text-sm">
+            {link}
+          </code>
           <Button type="button" variant="outline" onClick={() => void onCopy()} className="gap-2">
-            {copied ? <CheckCircle2 className="h-4 w-4 text-success" /> : <Copy className="h-4 w-4" />}
+            {copied ? (
+              <CheckCircle2 className="h-4 w-4 text-success" />
+            ) : (
+              <Copy className="h-4 w-4" />
+            )}
             {copied ? "Copiado" : "Copiar link"}
           </Button>
         </div>
@@ -455,7 +474,8 @@ function toAbsoluteUrl(value: string) {
 }
 
 function operationLabel(operation: CandidateLinkOperation | null) {
-  if (operation === "REUSED_IDEMPOTENT_REQUEST") return "Uma solicitação idêntica já existia e foi reutilizada.";
+  if (operation === "REUSED_IDEMPOTENT_REQUEST")
+    return "Uma solicitação idêntica já existia e foi reutilizada.";
   if (operation === "RESENT_EXISTING_LINK") return "O acesso existente foi reenviado.";
   if (operation === "EXTENDED_LINK_VALIDITY") return "A validade do acesso existente foi ampliada.";
   return "Uma nova tentativa independente foi criada.";

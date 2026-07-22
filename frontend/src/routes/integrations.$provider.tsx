@@ -90,7 +90,9 @@ function IntegrationDetailPage() {
 
   const [confirmDisconnect, setConfirmDisconnect] = useState(false);
   const [confirmRevokeToken, setConfirmRevokeToken] = useState(false);
-  const [generatedToken, setGeneratedToken] = useState<GenerateIntegrationTokenResponse | null>(null);
+  const [generatedToken, setGeneratedToken] = useState<GenerateIntegrationTokenResponse | null>(
+    null,
+  );
   const [copied, setCopied] = useState(false);
   const [connectionTested, setConnectionTested] = useState(false);
 
@@ -195,7 +197,8 @@ function IntegrationDetailPage() {
     rotateTokenMutation.isPending ||
     revokeTokenMutation.isPending;
 
-  const hasAction = (action: string) => integration?.availableActions.includes(action as never) ?? false;
+  const hasAction = (action: string) =>
+    integration?.availableActions.includes(action as never) ?? false;
   const actionError =
     disconnectMutation.error ??
     reactivateMutation.error ??
@@ -225,14 +228,18 @@ function IntegrationDetailPage() {
 
         {integrationQuery.isError && (
           <StateBanner tone="danger" title="Não foi possível carregar a integração">
-            {integrationQuery.error instanceof Error ? integrationQuery.error.message : "Tente novamente."}
+            {integrationQuery.error instanceof Error
+              ? integrationQuery.error.message
+              : "Tente novamente."}
           </StateBanner>
         )}
 
         {actionError && (
-          <StateBanner tone="danger" title="Não foi possível concluir a ação" className="mb-4">
-            {actionError instanceof Error ? actionError.message : "Tente novamente."}
-          </StateBanner>
+          <div className="mb-4">
+            <StateBanner tone="danger" title="Não foi possível concluir a ação">
+              {actionError instanceof Error ? actionError.message : "Tente novamente."}
+            </StateBanner>
+          </div>
         )}
 
         {integration && (
@@ -256,7 +263,9 @@ function IntegrationDetailPage() {
                       onClick={() => syncMutation.mutate()}
                       disabled={anyPending}
                     >
-                      <RefreshCw className={cn("h-4 w-4", syncMutation.isPending && "animate-spin")} />
+                      <RefreshCw
+                        className={cn("h-4 w-4", syncMutation.isPending && "animate-spin")}
+                      />
                       {syncMutation.isPending ? "Sincronizando" : "Sincronizar agora"}
                     </Button>
                   )}
@@ -269,7 +278,10 @@ function IntegrationDetailPage() {
                       disabled={anyPending}
                     >
                       <RefreshCw
-                        className={cn("h-4 w-4", testConnectionMutation.isPending && "animate-spin")}
+                        className={cn(
+                          "h-4 w-4",
+                          testConnectionMutation.isPending && "animate-spin",
+                        )}
                       />
                       {testConnectionMutation.isPending
                         ? "Atualizando"
@@ -321,7 +333,10 @@ function IntegrationDetailPage() {
             </div>
 
             {integration.status === "PENDENTE" && (
-              <StateBanner tone="info" title="Token configurado — aguardando primeiro evento do ATS">
+              <StateBanner
+                tone="info"
+                title="Token configurado — aguardando primeiro evento do ATS"
+              >
                 Atualizar o status apenas consulta o estado atual. A integração será marcada como
                 conectada somente depois que o Práxis receber uma requisição autenticada do ATS.
               </StateBanner>
@@ -372,7 +387,8 @@ function IntegrationDetailPage() {
           <AlertDialogHeader>
             <AlertDialogTitle>Desconectar integração</AlertDialogTitle>
             <AlertDialogDescription>
-              A integração {integration?.name} será desativada para este cliente. O histórico de sincronizações e auditoria será preservado.
+              A integração {integration?.name} será desativada para este cliente. O histórico de
+              sincronizações e auditoria será preservado.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -396,7 +412,8 @@ function IntegrationDetailPage() {
           <AlertDialogHeader>
             <AlertDialogTitle>Revogar token</AlertDialogTitle>
             <AlertDialogDescription>
-              O token atual será invalidado imediatamente. A integração ficará desativada até que um novo token seja gerado.
+              O token atual será invalidado imediatamente. A integração ficará desativada até que um
+              novo token seja gerado.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -442,9 +459,7 @@ function TokenPanel({
 }) {
   const hasAction = (action: string) => integration.availableActions.includes(action as never);
   const showTokenPanel =
-    hasAction("GENERATE_TOKEN") ||
-    hasAction("VIEW") ||
-    integration.tokenPreview != null;
+    hasAction("GENERATE_TOKEN") || hasAction("VIEW") || integration.tokenPreview != null;
 
   if (!showTokenPanel) return null;
 
@@ -457,7 +472,8 @@ function TokenPanel({
         <h2 className="font-medium">Token de integração</h2>
       </div>
       <p className="mt-1 text-sm text-muted-foreground">
-        Este token é usado pelos sistemas externos para autenticar com o Práxis. Guarde-o com segurança.
+        Este token é usado pelos sistemas externos para autenticar com o Práxis. Guarde-o com
+        segurança.
       </p>
 
       {/* Show generated token (one-time) */}
@@ -497,7 +513,9 @@ function TokenPanel({
       )}
 
       {!hasToken && !generatedToken && (
-        <p className="mt-3 text-sm text-muted-foreground">Nenhum token ativo. Gere um token para conectar sistemas externos.</p>
+        <p className="mt-3 text-sm text-muted-foreground">
+          Nenhum token ativo. Gere um token para conectar sistemas externos.
+        </p>
       )}
 
       {/* Actions */}
@@ -509,13 +527,25 @@ function TokenPanel({
           </Button>
         )}
         {hasToken && (
-          <Button type="button" size="sm" variant="outline" onClick={onRotate} disabled={anyPending}>
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            onClick={onRotate}
+            disabled={anyPending}
+          >
             <RotateCcw className="h-4 w-4" />
             {rotating ? "Rotacionando" : "Rotacionar token"}
           </Button>
         )}
         {hasToken && (
-          <Button type="button" size="sm" variant="outline" onClick={onRevoke} disabled={anyPending}>
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            onClick={onRevoke}
+            disabled={anyPending}
+          >
             <Trash2 className="h-4 w-4" />
             Revogar token
           </Button>

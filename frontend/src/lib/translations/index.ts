@@ -6,7 +6,7 @@ import { documentMetadataTranslations } from "./document-metadata";
 
 export type Language = "pt-BR" | "en" | "es-MX";
 
-const withSharedTranslations = <T extends typeof ptBr>(language: Language, translation: T) => ({
+const withSharedTranslations = <T extends object>(language: Language, translation: T) => ({
   ...translation,
   candidateAccess: candidateAccessTranslations[language],
   documentMetadata: documentMetadataTranslations[language],

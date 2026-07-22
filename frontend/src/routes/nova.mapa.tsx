@@ -120,9 +120,7 @@ function Page() {
     }
     setPositions((current) => createPositions(orderedNodes, current));
     setSelectedId((current) =>
-      current && orderedNodes.some((node) => node.id === current)
-        ? current
-        : orderedNodes[0].id,
+      current && orderedNodes.some((node) => node.id === current) ? current : orderedNodes[0].id,
     );
   }, [orderedNodes]);
 
@@ -175,12 +173,7 @@ function Page() {
 
   const branchMutation = useMutation({
     mutationFn: ({ nodeId, optionId }: { nodeId: string; optionId: string }) =>
-      createSimulationBranchNode(
-        search.simulationId!,
-        search.versionNumber!,
-        nodeId,
-        optionId,
-      ),
+      createSimulationBranchNode(search.simulationId!, search.versionNumber!, nodeId, optionId),
     onSuccess: async (nodeId) => {
       await refreshVersion();
       setSelectedId(nodeId);
@@ -188,8 +181,7 @@ function Page() {
     },
   });
 
-  const mutationError =
-    positionMutation.error ?? connectionMutation.error ?? branchMutation.error;
+  const mutationError = positionMutation.error ?? connectionMutation.error ?? branchMutation.error;
 
   function startDragging(event: ReactPointerEvent<HTMLButtonElement>, nodeId: string) {
     if (!isEditable) return;
@@ -390,11 +382,9 @@ function Page() {
                 node={selectedNode}
                 nodes={orderedNodes}
                 displayCodes={displayCodes}
-                disabled={
-                  !isEditable || connectionMutation.isPending || branchMutation.isPending
-                }
+                disabled={!isEditable || connectionMutation.isPending || branchMutation.isPending}
                 creatingBranchOptionId={
-                  branchMutation.isPending ? branchMutation.variables?.optionId ?? null : null
+                  branchMutation.isPending ? (branchMutation.variables?.optionId ?? null) : null
                 }
                 onChange={(option, targetNodeId) => {
                   if (!selectedNode) return;
@@ -415,7 +405,11 @@ function Page() {
           <div className="mt-8 flex justify-between gap-3">
             <Link
               to="/nova/dialogo"
-              search={{ simulationId: search.simulationId, versionNumber: search.versionNumber }}
+              search={{
+                simulationId: search.simulationId,
+                nodeId: search.nodeId,
+                versionNumber: search.versionNumber,
+              }}
               className="rounded-md border border-border bg-card px-4 py-2 text-sm hover:bg-accent"
             >
               Voltar: Editor de diálogo
@@ -521,7 +515,9 @@ function ConnectionPanel({
                   </select>
                 </label>
                 {creatingBranchOptionId === option.id && (
-                  <p className="mt-2 text-xs text-primary">Criando e posicionando a ramificação...</p>
+                  <p className="mt-2 text-xs text-primary">
+                    Criando e posicionando a ramificação...
+                  </p>
                 )}
               </div>
             </div>
@@ -594,7 +590,10 @@ function FlowEdges({
   );
 }
 
-function createPositions(nodes: SimulationVersionNodeResponse[], current: NodePositions): NodePositions {
+function createPositions(
+  nodes: SimulationVersionNodeResponse[],
+  current: NodePositions,
+): NodePositions {
   return Object.fromEntries(
     nodes.map((node, index) => {
       const serverPosition =
@@ -629,7 +628,11 @@ function SimulationLinks({
         <Link
           key={`${simulation.id}-${simulation.versionNumber}`}
           to="/nova/mapa"
-          search={{ simulationId: simulation.id, versionNumber: simulation.versionNumber }}
+          search={{
+            simulationId: simulation.id,
+            nodeId: undefined,
+            versionNumber: simulation.versionNumber,
+          }}
           className="rounded-md border border-border bg-card px-3 py-2 text-sm hover:bg-accent"
         >
           {simulation.name} v{simulation.versionNumber}
