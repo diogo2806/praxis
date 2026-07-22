@@ -79,17 +79,23 @@ export const SCENARIO_OWNERSHIP_MANUALS: ScreenManualDefinition[] = [
     id: "editor-dialogo",
     title: "Editor de diálogo",
     purpose:
-      "Criar e manter as etapas posteriores, alternativas, tempo, mídia, criticidade e pontuação por competência, incluindo o resultado e o relatório dos encerramentos por resposta ou por tempo esgotado.",
+      "Criar e manter etapas, ramificações, alternativas, tempo, mídia, criticidade e pontuação por competência, incluindo o resultado e o relatório dos encerramentos.",
     flow: [
       "Abra uma avaliação e versão em rascunho.",
       "Consulte a primeira etapa em modo somente leitura e use o atalho Personagem quando precisar alterar o contexto inicial.",
       "Crie ou selecione uma etapa posterior e informe sua mensagem.",
-      "Cadastre de duas a quatro alternativas, configure pontuação, mídia, destino e marque Resposta crítica quando houver erro grave ou comportamento de risco.",
-      "Ao escolher Vai para FIM em uma alternativa ou em Quando o tempo acabar, confira as somas e percentuais calculados e preencha o texto obrigatório do relatório.",
-      "Salve as alterações e use o Mapa apenas para organizar posições e revisar conexões.",
-      "Abra o Validador para verificar bloqueios e avisos antes da publicação.",
+      "Cadastre de duas a quatro alternativas, configure pontuação, mídia e destino.",
+      "No destino de uma alternativa, escolha Criar nova etapa ramificada para criar, vincular e abrir automaticamente a continuação daquele caminho.",
+      "Preencha a mensagem da etapa recém-criada e continue ramificando quando necessário.",
+      "Ao escolher Vai para FIM em uma alternativa ou em Quando o tempo acabar, confira as somas e percentuais calculados e preencha o relatório obrigatório.",
+      "Abra o Mapa para revisar visualmente a hierarquia e as conexões e use o Validador antes da publicação.",
     ],
     fields: [
+      {
+        name: "Código visual da etapa",
+        description:
+          "Numeração hierárquica calculada pelo caminho, como 1, 1.1, 1.2 ou 1.3.1. O identificador técnico interno não é alterado.",
+      },
       {
         name: "Mensagem inicial",
         description:
@@ -128,7 +134,12 @@ export const SCENARIO_OWNERSHIP_MANUALS: ScreenManualDefinition[] = [
       {
         name: "Destino",
         description:
-          "Próxima etapa ou encerramento do fluxo; também pode ser revisado visualmente no Mapa.",
+          "Permite escolher uma etapa existente, finalizar a avaliação ou criar uma nova etapa ramificada já vinculada à alternativa.",
+      },
+      {
+        name: "Criar nova etapa ramificada",
+        description:
+          "Cria uma etapa vazia a partir da alternativa, estabelece a conexão, posiciona o novo card à direita no Mapa e abre o campo de mensagem para edição.",
       },
       {
         name: "Resumo do encerramento",
@@ -149,6 +160,8 @@ export const SCENARIO_OWNERSHIP_MANUALS: ScreenManualDefinition[] = [
       "Carregando avaliação",
       "Rascunho editável",
       "Mensagem inicial protegida",
+      "Criando nova etapa ramificada",
+      "Nova ramificação criada e aberta para edição",
       "Encerramento por resposta com resultado calculado",
       "Encerramento por tempo esgotado com 0 pontos na etapa sem resposta",
       "Encerramento pendente de relatório",
@@ -160,7 +173,8 @@ export const SCENARIO_OWNERSHIP_MANUALS: ScreenManualDefinition[] = [
       "Avaliação ou versão não informada.",
       "Tentativa de alterar ou remover a mensagem inicial fora de Personagem.",
       "Versão publicada ou arquivada.",
-      "Etapa posterior sem mensagem.",
+      "Criação de ramificação a partir de etapa final ou alternativa inexistente.",
+      "Etapa posterior ou ramificada sem mensagem.",
       "Menos de duas ou mais de quatro alternativas.",
       "Alternativa sem pontuação por competência.",
       "Alternativa com destino Vai para FIM sem texto de relatório.",
@@ -168,16 +182,17 @@ export const SCENARIO_OWNERSHIP_MANUALS: ScreenManualDefinition[] = [
       "Configuração da empresa indisponível.",
     ],
     examples: [
-      "Consultar a mensagem inicial e usar Editar personagem para corrigir o contexto.",
-      "Criar uma etapa posterior de atendimento com três respostas e pontuações diferentes para Empatia e Comunicação.",
+      "Na etapa 1, criar duas continuações pelas alternativas; elas aparecem como etapas 1.1 e 1.2.",
+      "Na etapa 1.3, criar uma nova continuação; ela aparece como etapa 1.3.1.",
       "Selecionar Vai para FIM, conferir Comunicação: soma 135 e 71%, e registrar o relatório daquele encerramento.",
       "Anexar um áudio à etapa e marcar como Resposta crítica uma decisão que promete prazo sem confirmação técnica.",
       "Selecionar Vai para FIM em Quando o tempo acabar e registrar o relatório aplicável à ausência de resposta.",
     ],
     shortcuts: [
+      "Escolha + Criar nova etapa ramificada no destino para criar e abrir a continuação sem sair da alternativa.",
       "Use Editar personagem quando a etapa inicial estiver selecionada.",
+      "Use o Mapa do fluxo para conferir a estrutura 1, 1.1, 1.2 e níveis seguintes.",
       "Use o Validador para abrir diretamente a etapa com problema.",
-      "Use Mapa do fluxo para organizar as etapas sem alterar o conteúdo.",
       "Use Tab e Shift+Tab para navegar entre campos e ações.",
     ],
     matches: (pathname) => pathname === "/nova/dialogo",
@@ -186,16 +201,22 @@ export const SCENARIO_OWNERSHIP_MANUALS: ScreenManualDefinition[] = [
     id: "mapa-fluxo",
     title: "Mapa do fluxo",
     purpose:
-      "Organizar visualmente a posição das etapas e definir as conexões entre alternativas e destinos, sem editar o conteúdo ou o contexto inicial do cenário.",
+      "Organizar visualmente a posição das etapas, compreender a hierarquia das ramificações e definir as conexões entre alternativas e destinos.",
     flow: [
-      "Abra uma avaliação e versão com o contexto inicial configurado em Personagem e as demais etapas cadastradas no Editor de diálogo.",
+      "Abra uma avaliação e versão com o contexto inicial configurado em Personagem e as alternativas cadastradas no Editor de diálogo.",
+      "Leia os códigos hierárquicos para identificar o caminho: 1 é a raiz, 1.1 e 1.2 são ramificações e 1.1.1 é um nível seguinte.",
       "Arraste cada etapa para a posição desejada no canvas.",
       "Selecione uma etapa para revisar as alternativas em modo somente leitura.",
-      "Defina o destino de cada alternativa como uma etapa posterior ou finalização.",
-      "Abra Personagem para alterar o contexto inicial ou o Editor de diálogo para alterar as etapas posteriores.",
+      "Defina um destino existente, finalize a avaliação ou escolha Criar nova etapa ramificada.",
+      "Quando criar uma ramificação, abra seu conteúdo no Editor de diálogo e preencha a mensagem e as alternativas.",
       "Acesse o Validador para confirmar que não existem caminhos órfãos ou sem conclusão.",
     ],
     fields: [
+      {
+        name: "Código visual hierárquico",
+        description:
+          "Identifica a posição lógica no caminho, como 1, 1.1, 1.2 e 1.2.1, sem substituir o identificador técnico da etapa.",
+      },
       {
         name: "Posição da etapa",
         description: "Coordenadas visuais persistidas ao finalizar o arraste no canvas.",
@@ -215,7 +236,8 @@ export const SCENARIO_OWNERSHIP_MANUALS: ScreenManualDefinition[] = [
       },
       {
         name: "Destino",
-        description: "Próxima etapa permitida ou encerramento da avaliação.",
+        description:
+          "Próxima etapa, encerramento ou comando para criar uma nova etapa ramificada já conectada.",
       },
       {
         name: "Indicadores de validação",
@@ -224,7 +246,7 @@ export const SCENARIO_OWNERSHIP_MANUALS: ScreenManualDefinition[] = [
     ],
     permissions: [
       "Usuário autenticado da empresa com permissão para editar avaliações.",
-      "A versão deve estar em rascunho para mover etapas ou alterar conexões.",
+      "A versão deve estar em rascunho para mover etapas, alterar conexões ou criar ramificações.",
     ],
     states: [
       "Carregando mapa",
@@ -232,6 +254,8 @@ export const SCENARIO_OWNERSHIP_MANUALS: ScreenManualDefinition[] = [
       "Versão protegida",
       "Posição salva",
       "Conexão salva",
+      "Criando e posicionando ramificação",
+      "Ramificação criada e selecionada",
       "Erro de gravação",
     ],
     blocks: [
@@ -239,15 +263,18 @@ export const SCENARIO_OWNERSHIP_MANUALS: ScreenManualDefinition[] = [
       "Versão publicada ou arquivada.",
       "Nenhuma etapa cadastrada.",
       "Destino inválido ou anterior que poderia criar ciclo.",
+      "Tentativa de criar ramificação em uma etapa final.",
       "Falha ao carregar ou salvar a versão.",
     ],
     examples: [
-      "Mover as etapas para formar uma leitura da esquerda para a direita.",
-      "Direcionar uma alternativa da etapa 1 para a etapa 3 e outra para o encerramento.",
+      "Visualizar a etapa 1 com três saídas identificadas como 1.1, 1.2 e 1.3.",
+      "Criar uma continuação na etapa 1.3 e ver o novo card 1.3.1 posicionado à direita.",
+      "Direcionar uma alternativa para uma etapa existente e outra para o encerramento.",
     ],
     shortcuts: [
+      "Escolha + Criar nova etapa ramificada no campo Destino para gerar a continuação automaticamente.",
+      "Clique em Editar conteúdo desta etapa para preencher a mensagem da ramificação selecionada.",
       "Abra Personagem quando precisar alterar a mensagem inicial.",
-      "Clique em Editar conteúdo no diálogo para alterar as etapas posteriores.",
       "Use o botão Validar fluxo para consultar os bloqueios completos.",
       "Arraste pelo cabeçalho da etapa para reposicioná-la.",
     ],
