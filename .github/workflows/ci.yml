@@ -7,62 +7,10 @@ on:
     branches: [main]
   workflow_dispatch:
 
-concurrency:
-  group: ci-${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
-
 permissions:
   contents: read
 
 jobs:
-  apply-issue-473:
-    name: Apply typed frontend fixes for issue 473
-    if: >-
-      github.event_name == 'pull_request' &&
-      github.head_ref == 'fix/issue-473-validacoes-frontend-ci' &&
-      github.actor != 'github-actions[bot]'
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: fix/issue-473-validacoes-frontend-ci
-          fetch-depth: 0
-
-      - name: Apply fixes
-        shell: bash
-        run: |
-          cat scripts/issue-473-patch/part-* > /tmp/issue-473.patch.gz.b64
-          test "$(git hash-object /tmp/issue-473.patch.gz.b64)" = "ce1c184b2047c3b0070a581d81035a886d568d2b"
-          base64 --decode /tmp/issue-473.patch.gz.b64 | gzip --decompress > /tmp/issue-473.patch
-          git apply --check /tmp/issue-473.patch
-          git apply /tmp/issue-473.patch
-
-      - name: Set up Node 22
-        uses: actions/setup-node@v4
-        with:
-          node-version: "22"
-          cache: npm
-          cache-dependency-path: frontend/package-lock.json
-
-      - name: Install and format changed files
-        working-directory: frontend
-        shell: bash
-        run: |
-          npm ci
-          mapfile -t files < <(git -C .. diff --name-only -- frontend | sed 's#^frontend/##')
-          npx prettier --write "${files[@]}"
-
-      - name: Commit fixes
-        shell: bash
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add frontend
-          git commit -m "fix(frontend): corrige contratos detectados pelo typecheck"
-          git push origin HEAD:fix/issue-473-validacoes-frontend-ci
-
   docs-validation:
     name: Documentation — links and Gupy governance
     runs-on: ubuntu-latest
@@ -174,11 +122,6 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: frontend-diagnostics
-          path: |
-            frontend/frontend.log
-            frontend/src
-            frontend/package.json
-            frontend/tsconfig.json
-            frontend/eslint.config.js
+          path: frontend/frontend.log
           if-no-files-found: warn
           retention-days: 7
