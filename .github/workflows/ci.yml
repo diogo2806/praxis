@@ -122,6 +122,11 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: frontend-diagnostics
-          path: frontend/frontend.log
+          path: |
+            frontend/frontend.log
+            frontend/src
+            frontend/package.json
+            frontend/tsconfig.json
+            frontend/eslint.config.js
           if-no-files-found: warn
           retention-days: 7
