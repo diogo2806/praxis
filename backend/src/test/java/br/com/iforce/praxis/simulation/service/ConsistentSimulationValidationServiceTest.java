@@ -46,14 +46,14 @@ class ConsistentSimulationValidationServiceTest {
     }
 
     @Test
-    void keepsTimeoutBlockerWhenStageHasTimeLimit() {
+    void acceptsMissingTimeoutDestinationAsEndOfAssessment() {
         SimulationVersionEntity version = validVersion(true);
 
         SimulationValidationResponse response = service.validate(version);
 
-        assertThat(response.publishable()).isFalse();
+        assertThat(response.publishable()).isTrue();
         assertThat(response.issues())
-                .anyMatch(issue -> issue.message().contains("destino para tempo esgotado"));
+                .noneMatch(issue -> issue.message().contains("destino para tempo esgotado"));
     }
 
     private SimulationVersionEntity validVersion(boolean timed) {
