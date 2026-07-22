@@ -11,6 +11,52 @@ permissions:
   contents: read
 
 jobs:
+  apply-issue-473:
+    name: Apply typed frontend fixes for issue 473
+    if: >-
+      github.event_name == 'pull_request' &&
+      github.head_ref == 'fix/issue-473-validacoes-frontend-ci' &&
+      github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/issue-473-validacoes-frontend-ci
+          fetch-depth: 0
+
+      - name: Apply fixes
+        shell: bash
+        run: |
+          base64 --decode scripts/issue-473.patch.gz.b64 | gzip --decompress > /tmp/issue-473.patch
+          git apply --check /tmp/issue-473.patch
+          git apply /tmp/issue-473.patch
+
+      - name: Set up Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install and format changed files
+        working-directory: frontend
+        shell: bash
+        run: |
+          npm ci
+          mapfile -t files < <(git -C .. diff --name-only -- frontend | sed 's#^frontend/##')
+          npx prettier --write "${files[@]}"
+
+      - name: Commit fixes
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add frontend
+          git commit -m "fix(frontend): corrige contratos detectados pelo typecheck"
+          git push origin HEAD:fix/issue-473-validacoes-frontend-ci
+
   docs-validation:
     name: Documentation — links and Gupy governance
     runs-on: ubuntu-latest
