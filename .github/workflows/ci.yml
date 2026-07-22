@@ -7,59 +7,10 @@ on:
     branches: [main]
   workflow_dispatch:
 
-concurrency:
-  group: ci-${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
-
 permissions:
   contents: read
 
 jobs:
-  apply-results-fix:
-    name: Apply final results type fix
-    if: >-
-      github.event_name == 'pull_request' &&
-      github.head_ref == 'fix/issue-473-validacoes-frontend-ci' &&
-      github.actor != 'github-actions[bot]'
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: fix/issue-473-validacoes-frontend-ci
-          fetch-depth: 0
-
-      - name: Fix results search scope
-        shell: bash
-        run: |
-          python3 - <<'PY'
-          from pathlib import Path
-
-          path = Path("frontend/src/routes/results.tsx")
-          content = path.read_text(encoding="utf-8")
-          old = '''}) {
-            return (
-              <section className="overflow-hidden rounded-md border border-border bg-card">'''
-          new = '''}) {
-            const filters = Route.useSearch();
-
-            return (
-              <section className="overflow-hidden rounded-md border border-border bg-card">'''
-          if content.count(old) != 1:
-              raise SystemExit("Trecho esperado de ResultsTable não encontrado de forma única")
-          path.write_text(content.replace(old, new), encoding="utf-8")
-          PY
-
-      - name: Commit fix
-        shell: bash
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add frontend/src/routes/results.tsx
-          git commit -m "fix(frontend): preserva filtros ao abrir resultado"
-          git push origin HEAD:fix/issue-473-validacoes-frontend-ci
-
   docs-validation:
     name: Documentation — links and Gupy governance
     runs-on: ubuntu-latest
