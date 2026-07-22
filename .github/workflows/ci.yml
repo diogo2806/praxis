@@ -29,7 +29,9 @@ jobs:
       - name: Apply fixes
         shell: bash
         run: |
-          base64 --decode scripts/issue-473.patch.gz.b64 | gzip --decompress > /tmp/issue-473.patch
+          cat scripts/issue-473-patch/part-* > /tmp/issue-473.patch.gz.b64
+          test "$(git hash-object /tmp/issue-473.patch.gz.b64)" = "ce1c184b2047c3b0070a581d81035a886d568d2b"
+          base64 --decode /tmp/issue-473.patch.gz.b64 | gzip --decompress > /tmp/issue-473.patch
           git apply --check /tmp/issue-473.patch
           git apply /tmp/issue-473.patch
 
