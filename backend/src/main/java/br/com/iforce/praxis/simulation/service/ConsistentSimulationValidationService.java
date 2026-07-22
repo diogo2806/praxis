@@ -11,6 +11,7 @@ import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -29,8 +30,6 @@ import java.util.stream.Collectors;
 public class ConsistentSimulationValidationService extends SimulationValidationService {
 
     private static final String OPTION_WITHOUT_DESTINATION = "Uma resposta está sem destino.";
-    private static final String TIMEOUT_WITHOUT_DESTINATION =
-            "Esta etapa continua o teste, mas não tem destino para tempo esgotado.";
 
     public ConsistentSimulationValidationService(PraxisProperties praxisProperties) {
         super(praxisProperties);
@@ -69,20 +68,31 @@ public class ConsistentSimulationValidationService extends SimulationValidationS
             ValidationIssueResponse issue,
             Map<String, SimulationNodeEntity> nodesById
     ) {
-        if (issue.message().startsWith(OPTION_WITHOUT_DESTINATION)
-                || issue.message().startsWith(TIMEOUT_WITHOUT_DESTINATION)) {
+        if (issue.message().startsWith(OPTION_WITHOUT_DESTINATION)) {
             return false;
         }
 
         SimulationNodeEntity node = nodesById.get(issue.nodeId());
-        if (node == null || hasTimeLimit(node)) {
+        if (node == null) {
             return true;
         }
 
-        String message = issue.message().toLowerCase();
-        return !message.contains("tempo esgotado")
-                && !message.contains("tempo acaba")
-                && !message.contains("timeout");
+        if (node.getTimeoutNextNodeId() == null && isTimeoutIssue(issue.message())) {
+            return false;
+        }
+
+        if (hasTimeLimit(node)) {
+            return true;
+        }
+
+        return !isTimeoutIssue(issue.message());
+    }
+
+    private boolean isTimeoutIssue(String message) {
+        String normalizedMessage = message.toLowerCase(Locale.ROOT);
+        return normalizedMessage.contains("tempo esgotado")
+                || normalizedMessage.contains("tempo acaba")
+                || normalizedMessage.contains("timeout");
     }
 
     private boolean hasTimeLimit(SimulationNodeEntity node) {
