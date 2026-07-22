@@ -56,6 +56,23 @@ class ConsistentSimulationValidationServiceTest {
                 .noneMatch(issue -> issue.message().contains("destino para tempo esgotado"));
     }
 
+    @Test
+    void keepsBlockerWhenTimeoutDestinationDoesNotExist() {
+        SimulationVersionEntity version = validVersion(true);
+        SimulationNodeEntity root = version.getNodes().stream()
+                .filter(node -> "turno-1".equals(node.getNodeId()))
+                .findFirst()
+                .orElseThrow();
+        root.setTimeoutNextNodeId("turno-inexistente");
+
+        SimulationValidationResponse response = service.validate(version);
+
+        assertThat(response.publishable()).isFalse();
+        assertThat(response.issues())
+                .anyMatch(issue -> issue.message().contains("destino de tempo esgotado")
+                        && issue.message().contains("não existe"));
+    }
+
     private SimulationVersionEntity validVersion(boolean timed) {
         SimulationEntity simulation = new SimulationEntity();
         simulation.setId("sim-validacao-consistente");
