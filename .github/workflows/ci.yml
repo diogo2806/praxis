@@ -75,7 +75,7 @@ jobs:
           retention-days: 7
 
   frontend-build:
-    name: Frontend — typecheck & build
+    name: Frontend — typecheck, lint, access control & build
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -92,6 +92,15 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Test access control
+        run: npm run test:access-control
 
       - name: Build
         run: npm run build
