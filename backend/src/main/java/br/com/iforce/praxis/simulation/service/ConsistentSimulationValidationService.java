@@ -25,8 +25,8 @@ import java.util.stream.Collectors;
  * participação e o seletor a apresenta como "Vai para FIM". Esse encerramento
  * direto precisa ter texto de relatório no {@code auditNote} da alternativa.
  * Da mesma forma, uma etapa temporizada sem {@code timeoutNextNodeId} encerra a
- * participação quando o tempo acaba, enquanto uma etapa sem limite não precisa
- * de transição de timeout.</p>
+ * participação quando o tempo acaba e precisa ter o relatório no próprio nó,
+ * enquanto uma etapa sem limite não precisa de transição de timeout.</p>
  */
 @Primary
 @Service
@@ -77,6 +77,17 @@ public class ConsistentSimulationValidationService extends SimulationValidationS
         for (SimulationNodeEntity node : simulationVersionEntity.getNodes()) {
             if (node.isFinal()) {
                 continue;
+            }
+            if (hasTimeLimit(node)
+                    && node.getTimeoutNextNodeId() == null
+                    && (node.getReportText() == null || node.getReportText().isBlank())) {
+                issues.add(new ValidationIssueResponse(
+                        ValidationIssueSeverity.BLOCKER,
+                        node.getNodeId(),
+                        "O tempo esgotado encerra a avaliação, mas está sem texto de relatório. "
+                                + "No Editor de diálogo, selecione \"Vai para FIM\" em \"Quando o tempo acabar\" "
+                                + "e preencha o relatório do encerramento."
+                ));
             }
             for (SimulationOptionEntity option : node.getOptions()) {
                 if (option.getNextNodeId() == null

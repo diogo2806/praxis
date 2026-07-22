@@ -63,12 +63,26 @@ class ConsistentSimulationValidationServiceTest {
     @Test
     void acceptsMissingTimeoutDestinationAsEndOfAssessment() {
         SimulationVersionEntity version = validVersion(true);
+        findRoot(version).setReportText("A participação terminou sem resposta dentro do prazo.");
 
         SimulationValidationResponse response = service.validate(version);
 
         assertThat(response.publishable()).isTrue();
         assertThat(response.issues())
                 .noneMatch(issue -> issue.message().contains("destino para tempo esgotado"));
+    }
+
+    @Test
+    void blocksDirectTimeoutEndWithoutReportText() {
+        SimulationVersionEntity version = validVersion(true);
+
+        SimulationValidationResponse response = service.validate(version);
+
+        assertThat(response.publishable()).isFalse();
+        assertThat(response.issues())
+                .anyMatch(issue -> issue.nodeId().equals("turno-1")
+                        && issue.message().contains("tempo esgotado")
+                        && issue.message().contains("sem texto de relatório"));
     }
 
     @Test
