@@ -40,7 +40,16 @@ class CandidateAttemptSecurityEnabledTest {
         String testUrl = JsonPath.read(createResult.getResponse().getContentAsString(), "$.test_url");
         String token = testUrl.substring(testUrl.lastIndexOf('/') + 1);
 
-        mockMvc.perform(get("/candidate/attempts/" + token))
+        // Com segurança habilitada, carregar a participação exige uma sessão técnica ativa.
+        MvcResult sessionResult = mockMvc.perform(post("/candidate/attempts/" + token + "/integrity/session")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"clientSessionId\":\"navegador-sessao-000001\"}"))
+                .andExpect(status().isCreated())
+                .andReturn();
+        String integritySessionId = JsonPath.read(sessionResult.getResponse().getContentAsString(), "$.sessionId");
+
+        mockMvc.perform(get("/candidate/attempts/" + token)
+                        .header("X-Praxis-Integrity-Session", integritySessionId))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.participacaoId").value(org.hamcrest.Matchers.startsWith("pub_")))
                 .andExpect(jsonPath("$.etapaAtual.descricao").exists())
