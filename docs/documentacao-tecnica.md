@@ -156,16 +156,18 @@ npm run test:access-control
 
 `npm run format` altera arquivos; revise o diff antes do commit.
 
+O build deve ser executado antes do typecheck porque o plugin do TanStack Router regenera `src/routeTree.gen.ts`, arquivo usado pelos contratos tipados de navegação.
+
 ## Qualidade e validação
 
 ```bash
 # Frontend
 cd frontend
 npm ci
+npm run build
 npm run typecheck
 npm run lint
 npm run test:access-control
-npm run build
 
 # Backend
 cd ../backend
