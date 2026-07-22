@@ -126,6 +126,23 @@ function DialogEditor() {
     return terminalNodeFor(option)?.reportText ?? option.auditNote ?? "";
   }
 
+  function terminalNodeForTimeout(node: SimulationVersionNodeResponse) {
+    if (!node.timeoutNextNodeId) return null;
+    const target = nodeById.get(node.timeoutNextNodeId);
+    return target?.isFinal ? target : null;
+  }
+
+  function isTerminalTimeout(node: SimulationVersionNodeResponse) {
+    return (
+      (node.timeLimitSeconds ?? 0) > 0 &&
+      (node.timeoutNextNodeId == null || terminalNodeForTimeout(node) != null)
+    );
+  }
+
+  function timeoutReportFor(node: SimulationVersionNodeResponse) {
+    return terminalNodeForTimeout(node)?.reportText ?? node.reportText ?? "";
+  }
+
   const canReview =
     dialogueNodes.length > 0 &&
     dialogueNodes.every(
@@ -133,6 +150,7 @@ function DialogEditor() {
         node.clientMessage.trim().length > 0 &&
         node.options.length >= 2 &&
         node.options.length <= 4 &&
+        (!isTerminalTimeout(node) || timeoutReportFor(node).trim().length > 0) &&
         node.options.every(
           (option) =>
             option.text.trim().length > 0 &&
@@ -348,7 +366,7 @@ function DialogEditor() {
       reportText,
     }: {
       nodeId: string;
-      optionId: string;
+      optionId: string | null;
       finalNodeId: string | null;
       reportText: string;
     }) => {
@@ -358,8 +376,13 @@ function DialogEditor() {
           reportText,
         });
       }
-      return updateSimulationOption(search.simulationId!, search.versionNumber!, nodeId, optionId, {
-        resultingTone: reportText,
+      if (optionId) {
+        return updateSimulationOption(search.simulationId!, search.versionNumber!, nodeId, optionId, {
+          resultingTone: reportText,
+        });
+      }
+      return updateSimulationNode(search.simulationId!, search.versionNumber!, nodeId, {
+        reportText,
       });
     },
     onSuccess: async () => {
@@ -681,6 +704,27 @@ function DialogEditor() {
                   )}
                 </div>
 
+                {isTerminalTimeout(selected) && (
+                  <TerminalOutcomeCard
+                    nodes={nodes}
+                    rootNodeId={rootNodeId}
+                    node={selected}
+                    outcome="timeout"
+                    competencies={competencies}
+                    reportText={timeoutReportFor(selected)}
+                    disabled={!isEditable}
+                    saving={saveTerminalReportMutation.isPending}
+                    onSaveReport={(reportText) =>
+                      saveTerminalReportMutation.mutate({
+                        nodeId: selected.id,
+                        optionId: null,
+                        finalNodeId: terminalNodeForTimeout(selected)?.id ?? null,
+                        reportText,
+                      })
+                    }
+                  />
+                )}
+
                 <div className="mt-4">
                   <span className="mb-1.5 block text-xs font-medium text-muted-foreground">
                     Mídia da etapa (opcional)
@@ -809,21 +853,43 @@ function DialogEditor() {
                               />
                             </label>
                           ))}
-                          <label className="inline-flex items-center gap-1 rounded border border-danger/30 px-2 py-1 text-danger">
-                            <input
-                              type="checkbox"
-                              defaultChecked={option.isCritical}
-                              onChange={(event) =>
-                                updateOptionMutation.mutate({
-                                  nodeId: selected.id,
-                                  optionId: option.id,
-                                  isCritical: event.target.checked,
-                                })
-                              }
-                            />
-                            crítica
-                          </label>
                         </div>
+
+                        <label
+                          className={cn(
+                            "mt-3 flex max-w-2xl items-start gap-2 rounded-md border px-3 py-2",
+                            option.isCritical
+                              ? "border-danger/30 bg-danger/5"
+                              : "border-border bg-card",
+                          )}
+                        >
+                          <input
+                            type="checkbox"
+                            className="mt-0.5"
+                            defaultChecked={option.isCritical}
+                            aria-describedby={`${option.id}-critical-help`}
+                            onChange={(event) =>
+                              updateOptionMutation.mutate({
+                                nodeId: selected.id,
+                                optionId: option.id,
+                                isCritical: event.target.checked,
+                              })
+                            }
+                          />
+                          <span>
+                            <span className="block text-xs font-semibold text-foreground">
+                              Resposta crítica — exige revisão humana
+                            </span>
+                            <span
+                              id={`${option.id}-critical-help`}
+                              className="mt-0.5 block text-[11px] leading-4 text-muted-foreground"
+                            >
+                              Marque quando esta resposta representar erro grave ou comportamento de risco.
+                              A pontuação continua sendo calculada, mas o resultado exige análise da equipe e
+                              não reprova automaticamente.
+                            </span>
+                          </span>
+                        </label>
 
                         <MediaAttachment
                           mediaUrl={option.mediaUrl}
