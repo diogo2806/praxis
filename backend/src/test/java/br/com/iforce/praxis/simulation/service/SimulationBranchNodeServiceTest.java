@@ -1,5 +1,6 @@
 package br.com.iforce.praxis.simulation.service;
 
+import br.com.iforce.praxis.audit.model.AuditEventType;
 import br.com.iforce.praxis.audit.service.AuditEventService;
 import br.com.iforce.praxis.auth.service.CurrentEmpresaService;
 import br.com.iforce.praxis.simulation.model.SimulationVersionStatus;
@@ -19,6 +20,8 @@ import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -81,12 +84,12 @@ class SimulationBranchNodeServiceTest {
         assertThat(createdNode.getPositionY()).isEqualTo(40.0);
         verify(simulationVersionRepository).save(version);
         verify(auditEventService, times(2)).appendSimulationVersionEvent(
-                any(),
-                any(),
-                any(Integer.class),
-                any(),
-                any(),
-                any()
+                anyString(),
+                anyString(),
+                anyInt(),
+                any(AuditEventType.class),
+                anyString(),
+                anyString()
         );
     }
 
