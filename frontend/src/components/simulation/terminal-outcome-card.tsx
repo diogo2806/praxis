@@ -22,7 +22,8 @@ export interface TerminalOutcomeCardProps {
   nodes: SimulationVersionNodeResponse[];
   rootNodeId: string | undefined;
   node: SimulationVersionNodeResponse;
-  option: SimulationVersionOptionResponse;
+  option?: SimulationVersionOptionResponse;
+  outcome?: "option" | "timeout";
   competencies: UpdateBlueprintCompetencyRequest[];
   reportText: string;
   disabled?: boolean;
@@ -35,6 +36,7 @@ export function TerminalOutcomeCard({
   rootNodeId,
   node,
   option,
+  outcome = "option",
   competencies,
   reportText: persistedReportText,
   disabled = false,
@@ -45,10 +47,10 @@ export function TerminalOutcomeCard({
 
   useEffect(() => {
     setReportText(persistedReportText);
-  }, [option.id, persistedReportText]);
+  }, [option?.id, outcome, persistedReportText]);
 
   const result = useMemo(
-    () => calculateTerminalResult(nodes, rootNodeId, node, option, competencies),
+    () => calculateTerminalResult(nodes, rootNodeId, node, option ?? null, competencies),
     [nodes, rootNodeId, node, option, competencies],
   );
 
@@ -56,6 +58,7 @@ export function TerminalOutcomeCard({
   const normalizedReport = reportText.trim();
   const reportMissing = normalizedReport.length === 0;
   const reportChanged = normalizedReport !== persistedReport;
+  const isTimeoutOutcome = outcome === "timeout";
 
   return (
     <section className="mt-3 rounded-md border border-primary/25 bg-primary/5 p-3">
@@ -63,10 +66,12 @@ export function TerminalOutcomeCard({
         <div>
           <div className="inline-flex items-center gap-1.5 text-xs font-semibold text-primary">
             <Flag className="h-3.5 w-3.5" />
-            Encerramento desta alternativa
+            {isTimeoutOutcome ? "Encerramento por tempo esgotado" : "Encerramento desta alternativa"}
           </div>
           <p className="mt-1 text-xs text-muted-foreground">
-            A pontuação abaixo é calculada pelo caminho até esta resposta e não pode ser editada aqui.
+            {isTimeoutOutcome
+              ? "A pontuação considera o caminho até esta etapa e atribui 0 pontos nesta etapa, pois não houve resposta."
+              : "A pontuação abaixo é calculada pelo caminho até esta resposta e não pode ser editada aqui."}
           </p>
         </div>
         <div className="rounded-md border border-primary/20 bg-background px-3 py-2 text-right">
@@ -106,7 +111,9 @@ export function TerminalOutcomeCard({
           placeholder="Descreva o que este encerramento representa para a equipe responsável."
         />
         <span className="mt-1 block text-xs text-muted-foreground">
-          Este texto será registrado na trilha do resultado quando a pessoa candidata concluir por esta alternativa.
+          {isTimeoutOutcome
+            ? "Este texto será registrado na trilha do resultado quando o tempo acabar e a avaliação for finalizada."
+            : "Este texto será registrado na trilha do resultado quando a pessoa candidata concluir por esta alternativa."}
         </span>
       </label>
 
@@ -132,7 +139,7 @@ function calculateTerminalResult(
   nodes: SimulationVersionNodeResponse[],
   rootNodeId: string | undefined,
   terminalNode: SimulationVersionNodeResponse,
-  terminalOption: SimulationVersionOptionResponse,
+  terminalOption: SimulationVersionOptionResponse | null,
   competencies: UpdateBlueprintCompetencyRequest[],
 ) {
   const path = findPath(nodes, rootNodeId, terminalNode.id);
