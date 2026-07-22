@@ -30,6 +30,8 @@ import java.util.stream.Collectors;
 public class ConsistentSimulationValidationService extends SimulationValidationService {
 
     private static final String OPTION_WITHOUT_DESTINATION = "Uma resposta está sem destino.";
+    private static final String TIMEOUT_WITHOUT_DESTINATION =
+            "Esta etapa continua o teste, mas não tem destino para tempo esgotado.";
 
     public ConsistentSimulationValidationService(PraxisProperties praxisProperties) {
         super(praxisProperties);
@@ -68,7 +70,8 @@ public class ConsistentSimulationValidationService extends SimulationValidationS
             ValidationIssueResponse issue,
             Map<String, SimulationNodeEntity> nodesById
     ) {
-        if (issue.message().startsWith(OPTION_WITHOUT_DESTINATION)) {
+        if (issue.message().startsWith(OPTION_WITHOUT_DESTINATION)
+                || issue.message().startsWith(TIMEOUT_WITHOUT_DESTINATION)) {
             return false;
         }
 
