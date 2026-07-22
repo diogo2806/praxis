@@ -438,6 +438,8 @@ function ResultsTable({
   items: ResultListItemResponse[];
   copy: (typeof copyByLanguage)[Language];
 }) {
+  const filters = Route.useSearch();
+
   return (
     <section className="overflow-hidden rounded-md border border-border bg-card">
       <div className="overflow-x-auto">
