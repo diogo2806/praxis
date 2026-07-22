@@ -262,3 +262,14 @@ main > header a[href="/manual"] {
     animation: none !important;
   }
 }
+
+/*
+ * A numeração já comunica a hierarquia das etapas. Remover o recuo horizontal evita
+ * que cartões profundos ultrapassem a largura da coluna lateral do editor de diálogo.
+ */
+fieldset[class*="lg:grid-cols-[300px_minmax(0,1fr)]"]
+  > aside
+  .space-y-2
+  > button[style*="margin-left"] {
+  margin-left: 0 !important;
+}
