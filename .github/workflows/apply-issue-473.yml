@@ -1,0 +1,50 @@
+name: Apply issue 473 patch
+
+on:
+  push:
+    branches:
+      - fix/issue-473-validacoes-frontend-ci
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/issue-473-validacoes-frontend-ci
+          fetch-depth: 0
+
+      - name: Apply typed frontend fixes
+        shell: bash
+        run: |
+          base64 --decode scripts/issue-473.patch.gz.b64 | gzip --decompress > /tmp/issue-473.patch
+          git apply --check /tmp/issue-473.patch
+          git apply /tmp/issue-473.patch
+
+      - name: Set up Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install and format changed frontend files
+        working-directory: frontend
+        shell: bash
+        run: |
+          npm ci
+          mapfile -t files < <(git -C .. diff --name-only -- frontend | sed 's#^frontend/##')
+          npx prettier --write "${files[@]}"
+
+      - name: Commit fixes
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add frontend
+          git commit -m "fix(frontend): corrige contratos detectados pelo typecheck"
+          git push origin HEAD:fix/issue-473-validacoes-frontend-ci
