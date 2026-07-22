@@ -110,7 +110,11 @@ public class SimulationBranchNodeService {
     private SimulationVersionEntity findDraftVersion(String simulationId, int versionNumber) {
         String empresaId = currentEmpresaService.requiredEmpresaId();
         SimulationVersionEntity version = simulationVersionRepository
-                .findBySimulationEmpresaIdAndSimulationIdAndVersionNumber(empresaId, simulationId, versionNumber)
+                .findForBranchCreationByEmpresaIdAndSimulationIdAndVersionNumber(
+                        empresaId,
+                        simulationId,
+                        versionNumber
+                )
                 .orElseThrow(() -> new ResponseStatusException(
                         HttpStatus.NOT_FOUND,
                         "Não encontramos esta versão do teste."
