@@ -17,7 +17,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @SpringBootTest(properties = {
         "praxis.security.enabled=true",
-        "praxis.jwt-secret=test-jwt-secret-32-characters-minimum-value"
+        "praxis.jwt-secret=test-jwt-secret-32-characters-minimum-value",
+        "springdoc.swagger-ui.enabled=true",
+        "springdoc.api-docs.enabled=true"
 })
 @AutoConfigureMockMvc
 @Sql(scripts = "/seed-simulation-fixture.sql")
@@ -87,5 +89,29 @@ class SecurityConfigTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{}"))
                 .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void openApiRejectsAnonymousAccessWhenExplicitlyEnabled() throws Exception {
+        mockMvc.perform(get("/v3/api-docs"))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void openApiRejectsCompanyUserWhenExplicitlyEnabled() throws Exception {
+        String empresaToken = jwtService.generateToken("empresa-user", "empresa-1", Set.of("TEAM_MANAGER"));
+
+        mockMvc.perform(get("/v3/api-docs")
+                        .header("Authorization", "Bearer " + empresaToken))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void openApiAllowsAdministratorWhenExplicitlyEnabled() throws Exception {
+        String adminToken = jwtService.generateToken("admin-user", "PLATFORM", Set.of("ADMIN"));
+
+        mockMvc.perform(get("/v3/api-docs")
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isOk());
     }
 }

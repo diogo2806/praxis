@@ -79,9 +79,6 @@ public class SecurityConfig {
                                 "/api/v1/runtime-config",
                                 "/candidate/**",
                                 "/candidato/**",
-                                "/docs/**",
-                                "/v3/api-docs/**",
-                                "/swagger-ui/**",
                                 "/actuator/health",
                                 "/actuator/info",
                                 "/test",
@@ -92,6 +89,8 @@ public class SecurityConfig {
                                 "/api/v1/auth/password/**",
                                 "/api/webhooks/mercado-pago/**"
                         ).permitAll()
+                        .requestMatchers("/docs", "/docs/**", "/v3/api-docs/**", "/swagger-ui/**")
+                        .hasRole("ADMIN")
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
                         .requestMatchers("/api/v1/account/**").hasAnyRole(ACCOUNT_ROLES)
                         .requestMatchers("/api/v1/dashboard/**").hasAnyRole(COMPANY_ROLES)
