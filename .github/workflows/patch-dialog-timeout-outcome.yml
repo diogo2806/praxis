@@ -1,0 +1,597 @@
+name: Patch dialog timeout outcome
+
+on:
+  push:
+    branches:
+      - fix/dialog-timeout-outcome-critical-help-20260722
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout branch
+        uses: actions/checkout@v4
+        with:
+          ref: fix/dialog-timeout-outcome-critical-help-20260722
+          fetch-depth: 0
+
+      - name: Corrigir encerramento por tempo e criticidade
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          def replace_once(path: Path, old: str, new: str) -> None:
+              content = path.read_text(encoding="utf-8")
+              count = content.count(old)
+              if count != 1:
+                  raise SystemExit(f"Esperado 1 trecho em {path}, encontrado {count}: {old[:120]!r}")
+              path.write_text(content.replace(old, new, 1), encoding="utf-8")
+
+          component = Path("frontend/src/components/simulation/terminal-outcome-card.tsx")
+          replace_once(
+              component,
+              '''  node: SimulationVersionNodeResponse;
+  option: SimulationVersionOptionResponse;
+  competencies: UpdateBlueprintCompetencyRequest[];
+  reportText: string;
+  disabled?: boolean;
+  saving?: boolean;
+  onSaveReport: (reportText: string) => void;
+''',
+              '''  node: SimulationVersionNodeResponse;
+  option?: SimulationVersionOptionResponse;
+  outcome?: "option" | "timeout";
+  competencies: UpdateBlueprintCompetencyRequest[];
+  reportText: string;
+  disabled?: boolean;
+  saving?: boolean;
+  onSaveReport: (reportText: string) => void;
+''',
+          )
+          replace_once(
+              component,
+              '''  node,
+  option,
+  competencies,
+''',
+              '''  node,
+  option,
+  outcome = "option",
+  competencies,
+''',
+          )
+          replace_once(
+              component,
+              '''  useEffect(() => {
+    setReportText(persistedReportText);
+  }, [option.id, persistedReportText]);
+
+  const result = useMemo(
+    () => calculateTerminalResult(nodes, rootNodeId, node, option, competencies),
+    [nodes, rootNodeId, node, option, competencies],
+  );
+''',
+              '''  useEffect(() => {
+    setReportText(persistedReportText);
+  }, [option?.id, outcome, persistedReportText]);
+
+  const result = useMemo(
+    () => calculateTerminalResult(nodes, rootNodeId, node, option ?? null, competencies),
+    [nodes, rootNodeId, node, option, competencies],
+  );
+''',
+          )
+          replace_once(
+              component,
+              '''  const reportMissing = normalizedReport.length === 0;
+  const reportChanged = normalizedReport !== persistedReport;
+
+  return (
+''',
+              '''  const reportMissing = normalizedReport.length === 0;
+  const reportChanged = normalizedReport !== persistedReport;
+  const isTimeoutOutcome = outcome === "timeout";
+
+  return (
+''',
+          )
+          replace_once(
+              component,
+              '''            Encerramento desta alternativa
+          </div>
+          <p className="mt-1 text-xs text-muted-foreground">
+            A pontuação abaixo é calculada pelo caminho até esta resposta e não pode ser editada aqui.
+          </p>
+''',
+              '''            {isTimeoutOutcome ? "Encerramento por tempo esgotado" : "Encerramento desta alternativa"}
+          </div>
+          <p className="mt-1 text-xs text-muted-foreground">
+            {isTimeoutOutcome
+              ? "A pontuação considera o caminho até esta etapa e atribui 0 pontos nesta etapa, pois não houve resposta."
+              : "A pontuação abaixo é calculada pelo caminho até esta resposta e não pode ser editada aqui."}
+          </p>
+''',
+          )
+          replace_once(
+              component,
+              '''          Este texto será registrado na trilha do resultado quando a pessoa candidata concluir por esta alternativa.
+''',
+              '''          {isTimeoutOutcome
+            ? "Este texto será registrado na trilha do resultado quando o tempo acabar e a avaliação for finalizada."
+            : "Este texto será registrado na trilha do resultado quando a pessoa candidata concluir por esta alternativa."}
+''',
+          )
+          replace_once(
+              component,
+              '''  terminalOption: SimulationVersionOptionResponse,
+''',
+              '''  terminalOption: SimulationVersionOptionResponse | null,
+''',
+          )
+
+          route = Path("frontend/src/routes/nova.dialogo.tsx")
+          replace_once(
+              route,
+              '''  function reportFor(option: SimulationVersionOptionResponse) {
+    return terminalNodeFor(option)?.reportText ?? option.auditNote ?? "";
+  }
+
+  const canReview =
+''',
+              '''  function reportFor(option: SimulationVersionOptionResponse) {
+    return terminalNodeFor(option)?.reportText ?? option.auditNote ?? "";
+  }
+
+  function terminalNodeForTimeout(node: SimulationVersionNodeResponse) {
+    if (!node.timeoutNextNodeId) return null;
+    const target = nodeById.get(node.timeoutNextNodeId);
+    return target?.isFinal ? target : null;
+  }
+
+  function isTerminalTimeout(node: SimulationVersionNodeResponse) {
+    return (
+      (node.timeLimitSeconds ?? 0) > 0 &&
+      (node.timeoutNextNodeId == null || terminalNodeForTimeout(node) != null)
+    );
+  }
+
+  function timeoutReportFor(node: SimulationVersionNodeResponse) {
+    return terminalNodeForTimeout(node)?.reportText ?? node.reportText ?? "";
+  }
+
+  const canReview =
+''',
+          )
+          replace_once(
+              route,
+              '''        node.clientMessage.trim().length > 0 &&
+        node.options.length >= 2 &&
+        node.options.length <= 4 &&
+        node.options.every(
+''',
+              '''        node.clientMessage.trim().length > 0 &&
+        node.options.length >= 2 &&
+        node.options.length <= 4 &&
+        (!isTerminalTimeout(node) || timeoutReportFor(node).trim().length > 0) &&
+        node.options.every(
+''',
+          )
+          replace_once(
+              route,
+              '''      optionId: string;
+      finalNodeId: string | null;
+''',
+              '''      optionId: string | null;
+      finalNodeId: string | null;
+''',
+          )
+          replace_once(
+              route,
+              '''      return updateSimulationOption(search.simulationId!, search.versionNumber!, nodeId, optionId, {
+        resultingTone: reportText,
+      });
+''',
+              '''      if (optionId) {
+        return updateSimulationOption(search.simulationId!, search.versionNumber!, nodeId, optionId, {
+          resultingTone: reportText,
+        });
+      }
+      return updateSimulationNode(search.simulationId!, search.versionNumber!, nodeId, {
+        reportText,
+      });
+''',
+          )
+          replace_once(
+              route,
+              '''                </div>
+
+                <div className="mt-4">
+                  <span className="mb-1.5 block text-xs font-medium text-muted-foreground">
+                    Mídia da etapa (opcional)
+''',
+              '''                </div>
+
+                {isTerminalTimeout(selected) && (
+                  <TerminalOutcomeCard
+                    nodes={nodes}
+                    rootNodeId={rootNodeId}
+                    node={selected}
+                    outcome="timeout"
+                    competencies={competencies}
+                    reportText={timeoutReportFor(selected)}
+                    disabled={!isEditable}
+                    saving={saveTerminalReportMutation.isPending}
+                    onSaveReport={(reportText) =>
+                      saveTerminalReportMutation.mutate({
+                        nodeId: selected.id,
+                        optionId: null,
+                        finalNodeId: terminalNodeForTimeout(selected)?.id ?? null,
+                        reportText,
+                      })
+                    }
+                  />
+                )}
+
+                <div className="mt-4">
+                  <span className="mb-1.5 block text-xs font-medium text-muted-foreground">
+                    Mídia da etapa (opcional)
+''',
+          )
+          replace_once(
+              route,
+              '''                        <div className="mt-3 flex flex-wrap items-center gap-2 text-[11px] text-muted-foreground">
+                          {Object.entries(option.competencyLevels).map(([name, value]) => (
+                            <label
+                              key={name}
+                              className="inline-flex items-center gap-1 rounded border border-border px-2 py-1"
+                            >
+                              {name}
+                              <input
+                                className="w-12 rounded border border-border bg-card px-1 py-0.5"
+                                type="number"
+                                min={0}
+                                max={100}
+                                step={1}
+                                defaultValue={value}
+                                onBlur={(event) => {
+                                  const nextValue = Number(event.target.value);
+                                  if (!Number.isInteger(nextValue) || nextValue < 0 || nextValue > 100) {
+                                    event.target.value = String(value);
+                                    setFeedbackMessage(
+                                      `Pontuação inválida para ${name}. Use um inteiro de 0 a 100.`,
+                                    );
+                                    return;
+                                  }
+                                  setFeedbackMessage(null);
+                                  updateOptionMutation.mutate({
+                                    nodeId: selected.id,
+                                    optionId: option.id,
+                                    competencyLevels: {
+                                      ...option.competencyLevels,
+                                      [name]: nextValue,
+                                    },
+                                  });
+                                }}
+                              />
+                            </label>
+                          ))}
+                          <label className="inline-flex items-center gap-1 rounded border border-danger/30 px-2 py-1 text-danger">
+                            <input
+                              type="checkbox"
+                              defaultChecked={option.isCritical}
+                              onChange={(event) =>
+                                updateOptionMutation.mutate({
+                                  nodeId: selected.id,
+                                  optionId: option.id,
+                                  isCritical: event.target.checked,
+                                })
+                              }
+                            />
+                            crítica
+                          </label>
+                        </div>
+''',
+              '''                        <div className="mt-3 flex flex-wrap items-center gap-2 text-[11px] text-muted-foreground">
+                          {Object.entries(option.competencyLevels).map(([name, value]) => (
+                            <label
+                              key={name}
+                              className="inline-flex items-center gap-1 rounded border border-border px-2 py-1"
+                            >
+                              {name}
+                              <input
+                                className="w-12 rounded border border-border bg-card px-1 py-0.5"
+                                type="number"
+                                min={0}
+                                max={100}
+                                step={1}
+                                defaultValue={value}
+                                onBlur={(event) => {
+                                  const nextValue = Number(event.target.value);
+                                  if (!Number.isInteger(nextValue) || nextValue < 0 || nextValue > 100) {
+                                    event.target.value = String(value);
+                                    setFeedbackMessage(
+                                      `Pontuação inválida para ${name}. Use um inteiro de 0 a 100.`,
+                                    );
+                                    return;
+                                  }
+                                  setFeedbackMessage(null);
+                                  updateOptionMutation.mutate({
+                                    nodeId: selected.id,
+                                    optionId: option.id,
+                                    competencyLevels: {
+                                      ...option.competencyLevels,
+                                      [name]: nextValue,
+                                    },
+                                  });
+                                }}
+                              />
+                            </label>
+                          ))}
+                        </div>
+
+                        <label
+                          className={cn(
+                            "mt-3 flex max-w-2xl items-start gap-2 rounded-md border px-3 py-2",
+                            option.isCritical
+                              ? "border-danger/30 bg-danger/5"
+                              : "border-border bg-card",
+                          )}
+                        >
+                          <input
+                            type="checkbox"
+                            className="mt-0.5"
+                            defaultChecked={option.isCritical}
+                            aria-describedby={`${option.id}-critical-help`}
+                            onChange={(event) =>
+                              updateOptionMutation.mutate({
+                                nodeId: selected.id,
+                                optionId: option.id,
+                                isCritical: event.target.checked,
+                              })
+                            }
+                          />
+                          <span>
+                            <span className="block text-xs font-semibold text-foreground">
+                              Resposta crítica — exige revisão humana
+                            </span>
+                            <span
+                              id={`${option.id}-critical-help`}
+                              className="mt-0.5 block text-[11px] leading-4 text-muted-foreground"
+                            >
+                              Marque quando esta resposta representar erro grave ou comportamento de risco.
+                              A pontuação continua sendo calculada, mas o resultado exige análise da equipe e
+                              não reprova automaticamente.
+                            </span>
+                          </span>
+                        </label>
+''',
+          )
+
+          manual = Path("frontend/src/lib/screen-manual-scenario-ownership.ts")
+          replace_once(
+              manual,
+              '''      "Criar e manter as etapas posteriores, alternativas, tempo, mídia, criticidade e pontuação por competência, incluindo o resultado e o relatório de cada alternativa que encerra a avaliação.",
+''',
+              '''      "Criar e manter as etapas posteriores, alternativas, tempo, mídia, criticidade e pontuação por competência, incluindo o resultado e o relatório dos encerramentos por resposta ou por tempo esgotado.",
+''',
+          )
+          replace_once(
+              manual,
+              '''      "Cadastre de duas a quatro alternativas, configure pontuação, criticidade, mídia e destino.",
+      "Ao escolher Vai para FIM, confira as somas e percentuais calculados e preencha o texto obrigatório do relatório.",
+''',
+              '''      "Cadastre de duas a quatro alternativas, configure pontuação, mídia, destino e marque Resposta crítica quando houver erro grave ou comportamento de risco.",
+      "Ao escolher Vai para FIM em uma alternativa ou em Quando o tempo acabar, confira as somas e percentuais calculados e preencha o texto obrigatório do relatório.",
+''',
+          )
+          replace_once(
+              manual,
+              '''      {
+        name: "Mídia da etapa",
+''',
+              '''      {
+        name: "Quando o tempo acabar",
+        description:
+          "Define a etapa posterior ou o encerramento da avaliação. Quando o destino é Vai para FIM, exibe o resultado do caminho, atribui 0 pontos à etapa sem resposta e exige o relatório do encerramento.",
+      },
+      {
+        name: "Mídia da etapa",
+''',
+          )
+          replace_once(
+              manual,
+              '''        name: "Crítica",
+        description:
+          "Indica alternativa que representa risco ou decisão incompatível com o cenário.",
+''',
+              '''        name: "Resposta crítica — exige revisão humana",
+        description:
+          "Marque quando a resposta representar erro grave ou comportamento de risco. A pontuação continua sendo calculada, mas o resultado exige análise humana e nunca reprova automaticamente.",
+''',
+          )
+          replace_once(
+              manual,
+              '''          "Quando o destino é Vai para FIM, apresenta em modo somente leitura a soma acumulada, o percentual por competência e o resultado ponderado do caminho.",
+''',
+              '''          "Quando uma alternativa ou o tempo esgotado levam para FIM, apresenta em modo somente leitura a soma acumulada, o percentual por competência e o resultado ponderado do caminho.",
+''',
+          )
+          replace_once(
+              manual,
+              '''      "Encerramento com resultado calculado",
+      "Encerramento pendente de relatório",
+''',
+              '''      "Encerramento por resposta com resultado calculado",
+      "Encerramento por tempo esgotado com 0 pontos na etapa sem resposta",
+      "Encerramento pendente de relatório",
+''',
+          )
+          replace_once(
+              manual,
+              '''      "Alternativa com destino Vai para FIM sem texto de relatório.",
+''',
+              '''      "Alternativa com destino Vai para FIM sem texto de relatório.",
+      "Tempo esgotado com destino Vai para FIM sem texto de relatório.",
+''',
+          )
+          replace_once(
+              manual,
+              '''      "Anexar um áudio à etapa e marcar uma alternativa como crítica.",
+''',
+              '''      "Anexar um áudio à etapa e marcar como Resposta crítica uma decisão que promete prazo sem confirmação técnica.",
+      "Selecionar Vai para FIM em Quando o tempo acabar e registrar o relatório aplicável à ausência de resposta.",
+''',
+          )
+
+          validation = Path("backend/src/main/java/br/com/iforce/praxis/simulation/service/ConsistentSimulationValidationService.java")
+          replace_once(
+              validation,
+              ''' * direto precisa ter texto de relatório no {@code auditNote} da alternativa.
+ * Da mesma forma, uma etapa temporizada sem {@code timeoutNextNodeId} encerra a
+ * participação quando o tempo acaba, enquanto uma etapa sem limite não precisa
+ * de transição de timeout.</p>
+''',
+              ''' * direto precisa ter texto de relatório no {@code auditNote} da alternativa.
+ * Da mesma forma, uma etapa temporizada sem {@code timeoutNextNodeId} encerra a
+ * participação quando o tempo acaba e precisa ter o relatório no próprio nó,
+ * enquanto uma etapa sem limite não precisa de transição de timeout.</p>
+''',
+          )
+          replace_once(
+              validation,
+              '''            for (SimulationOptionEntity option : node.getOptions()) {
+''',
+              '''            if (hasTimeLimit(node)
+                    && node.getTimeoutNextNodeId() == null
+                    && (node.getReportText() == null || node.getReportText().isBlank())) {
+                issues.add(new ValidationIssueResponse(
+                        ValidationIssueSeverity.BLOCKER,
+                        node.getNodeId(),
+                        "O tempo esgotado encerra a avaliação, mas está sem texto de relatório. "
+                                + "No Editor de diálogo, selecione \"Vai para FIM\" em \"Quando o tempo acabar\" "
+                                + "e preencha o relatório do encerramento."
+                ));
+            }
+            for (SimulationOptionEntity option : node.getOptions()) {
+''',
+          )
+
+          validation_test = Path("backend/src/test/java/br/com/iforce/praxis/simulation/service/ConsistentSimulationValidationServiceTest.java")
+          replace_once(
+              validation_test,
+              '''    void acceptsMissingTimeoutDestinationAsEndOfAssessment() {
+        SimulationVersionEntity version = validVersion(true);
+
+        SimulationValidationResponse response = service.validate(version);
+
+        assertThat(response.publishable()).isTrue();
+        assertThat(response.issues())
+                .noneMatch(issue -> issue.message().contains("destino para tempo esgotado"));
+    }
+''',
+              '''    void acceptsMissingTimeoutDestinationAsEndOfAssessment() {
+        SimulationVersionEntity version = validVersion(true);
+        findRoot(version).setReportText("A participação terminou sem resposta dentro do prazo.");
+
+        SimulationValidationResponse response = service.validate(version);
+
+        assertThat(response.publishable()).isTrue();
+        assertThat(response.issues())
+                .noneMatch(issue -> issue.message().contains("destino para tempo esgotado"));
+    }
+
+    @Test
+    void blocksDirectTimeoutEndWithoutReportText() {
+        SimulationVersionEntity version = validVersion(true);
+
+        SimulationValidationResponse response = service.validate(version);
+
+        assertThat(response.publishable()).isFalse();
+        assertThat(response.issues())
+                .anyMatch(issue -> issue.nodeId().equals("turno-1")
+                        && issue.message().contains("tempo esgotado")
+                        && issue.message().contains("sem texto de relatório"));
+    }
+''',
+          )
+
+          state_machine = Path("backend/src/main/java/br/com/iforce/praxis/gupy/service/AttemptStateMachine.java")
+          replace_once(
+              state_machine,
+              '''            if (answer.timedOut() || answer.optionId() == null) {
+                currentNodeId = currentNode.timeoutNextNodeId();
+                continue;
+            }
+
+            ScenarioOption pickedOption = currentNode.options().stream()
+                    .filter(option -> option.id().equals(answer.optionId()))
+                    .findFirst()
+                    .orElse(null);
+            currentNodeId = pickedOption == null ? null : pickedOption.nextNodeId();
+''',
+              '''            if (answer.timedOut() || answer.optionId() == null) {
+                if (currentNode.timeoutNextNodeId() == null) {
+                    return currentNode.reportText();
+                }
+                currentNodeId = currentNode.timeoutNextNodeId();
+                continue;
+            }
+
+            ScenarioOption pickedOption = currentNode.options().stream()
+                    .filter(option -> option.id().equals(answer.optionId()))
+                    .findFirst()
+                    .orElse(null);
+            if (pickedOption == null) {
+                return null;
+            }
+            if (pickedOption.nextNodeId() == null) {
+                return pickedOption.auditNote();
+            }
+            currentNodeId = pickedOption.nextNodeId();
+''',
+          )
+          PY
+
+      - name: Remover workflow temporário e publicar alteração
+        shell: bash
+        run: |
+          rm .github/workflows/patch-dialog-timeout-outcome.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add frontend/src/components/simulation/terminal-outcome-card.tsx \
+                  frontend/src/routes/nova.dialogo.tsx \
+                  frontend/src/lib/screen-manual-scenario-ownership.ts \
+                  backend/src/main/java/br/com/iforce/praxis/simulation/service/ConsistentSimulationValidationService.java \
+                  backend/src/test/java/br/com/iforce/praxis/simulation/service/ConsistentSimulationValidationServiceTest.java \
+                  backend/src/main/java/br/com/iforce/praxis/gupy/service/AttemptStateMachine.java \
+                  .github/workflows/patch-dialog-timeout-outcome.yml
+          git commit -m "fix: esclarecer criticidade e encerrar por tempo"
+          git push origin HEAD:fix/dialog-timeout-outcome-critical-help-20260722
+
+      - name: Configurar Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Validar frontend
+        working-directory: frontend
+        run: |
+          npm ci
+          npm run build
+
+      - name: Configurar Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+          cache: maven
+
+      - name: Validar regra de encerramento
+        run: mvn -f backend/pom.xml -Dtest=ConsistentSimulationValidationServiceTest test
