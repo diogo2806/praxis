@@ -21,7 +21,10 @@ import java.util.Set;
 public class SimulationBranchNodeService {
 
     private static final double HORIZONTAL_GAP = 350.0;
-    private static final double VERTICAL_GAP = 210.0;
+    private static final double VERTICAL_GAP = 160.0;
+    private static final double MIN_POSITION = 24.0;
+    private static final double MAX_POSITION_X = 1216.0;
+    private static final double MAX_POSITION_Y = 716.0;
 
     private final SimulationVersionRepository simulationVersionRepository;
     private final CurrentEmpresaService currentEmpresaService;
@@ -69,8 +72,12 @@ public class SimulationBranchNodeService {
         newNode.setSpeaker("Cliente");
         newNode.setMessage("");
         newNode.setFinal(false);
-        newNode.setPositionX(sourceX(sourceNode) + HORIZONTAL_GAP);
-        newNode.setPositionY(sourceY(sourceNode) + branchSlot * VERTICAL_GAP);
+        newNode.setPositionX(clamp(sourceX(sourceNode) + HORIZONTAL_GAP, MIN_POSITION, MAX_POSITION_X));
+        newNode.setPositionY(clamp(
+                sourceY(sourceNode) + branchSlot * VERTICAL_GAP,
+                MIN_POSITION,
+                MAX_POSITION_Y
+        ));
 
         version.getNodes().add(newNode);
         sourceOption.setNextNodeId(nodeId);
@@ -170,6 +177,10 @@ public class SimulationBranchNodeService {
         }
         int row = Math.max(0, sourceNode.getTurnIndex() - 1) / 4;
         return 40.0 + row * 230.0;
+    }
+
+    private double clamp(double value, double minimum, double maximum) {
+        return Math.max(minimum, Math.min(maximum, value));
     }
 
     private String escapeJson(String value) {
