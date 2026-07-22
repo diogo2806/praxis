@@ -12,6 +12,7 @@ import {
 } from "@/components/simulation/validation-badge";
 import { WizardStepper } from "@/components/wizard-stepper";
 import {
+  createSimulationBranchNode,
   getSimulationValidation,
   getSimulationVersion,
   listSimulations,
@@ -22,6 +23,11 @@ import {
   type SimulationVersionNodeResponse,
   type SimulationVersionOptionResponse,
 } from "@/lib/api/praxis";
+import {
+  buildNodeDisplayCodes,
+  compareDisplayCodes,
+  type NodeDisplayCodes,
+} from "@/lib/simulation-node-hierarchy";
 import { canEditSimulationVersion } from "@/lib/simulation-meta";
 import { cn } from "@/lib/utils";
 
@@ -29,6 +35,7 @@ type CanvasPoint = { x: number; y: number };
 type NodePositions = Record<string, CanvasPoint>;
 type DraggingNode = { nodeId: string; offsetX: number; offsetY: number };
 
+const CREATE_BRANCH_VALUE = "__CREATE_BRANCH__";
 const NODE_WIDTH = 260;
 const NODE_HEIGHT = 160;
 const CANVAS_WIDTH = 1500;
@@ -84,7 +91,22 @@ function Page() {
 
   const version = versionQuery.data;
   const nodes = useMemo(() => version?.nodes ?? [], [version?.nodes]);
-  const selectedNode = nodes.find((node) => node.id === selectedId) ?? nodes[0] ?? null;
+  const displayCodes = useMemo(
+    () => buildNodeDisplayCodes(nodes, version?.blueprint.rootNodeId),
+    [nodes, version?.blueprint.rootNodeId],
+  );
+  const orderedNodes = useMemo(
+    () =>
+      [...nodes].sort((left, right) =>
+        compareDisplayCodes(
+          displayCodes.get(left.id) ?? String(left.turnIndex),
+          displayCodes.get(right.id) ?? String(right.turnIndex),
+        ),
+      ),
+    [nodes, displayCodes],
+  );
+  const selectedNode =
+    orderedNodes.find((node) => node.id === selectedId) ?? orderedNodes[0] ?? null;
   const isEditable = version?.status ? canEditSimulationVersion(version.status) : false;
   const issuesByNode = useMemo(
     () => groupIssuesByNode(validationQuery.data?.issues),
@@ -92,15 +114,17 @@ function Page() {
   );
 
   useEffect(() => {
-    if (nodes.length === 0) {
+    if (orderedNodes.length === 0) {
       setPositions({});
       return;
     }
-    setPositions((current) => createPositions(nodes, current));
+    setPositions((current) => createPositions(orderedNodes, current));
     setSelectedId((current) =>
-      current && nodes.some((node) => node.id === current) ? current : nodes[0].id,
+      current && orderedNodes.some((node) => node.id === current)
+        ? current
+        : orderedNodes[0].id,
     );
-  }, [nodes]);
+  }, [orderedNodes]);
 
   const refreshVersion = async () => {
     await Promise.all([
@@ -149,7 +173,23 @@ function Page() {
     },
   });
 
-  const mutationError = positionMutation.error ?? connectionMutation.error;
+  const branchMutation = useMutation({
+    mutationFn: ({ nodeId, optionId }: { nodeId: string; optionId: string }) =>
+      createSimulationBranchNode(
+        search.simulationId!,
+        search.versionNumber!,
+        nodeId,
+        optionId,
+      ),
+    onSuccess: async (nodeId) => {
+      await refreshVersion();
+      setSelectedId(nodeId);
+      setFeedback("Nova etapa ramificada criada, vinculada e posicionada no mapa.");
+    },
+  });
+
+  const mutationError =
+    positionMutation.error ?? connectionMutation.error ?? branchMutation.error;
 
   function startDragging(event: ReactPointerEvent<HTMLButtonElement>, nodeId: string) {
     if (!isEditable) return;
@@ -168,8 +208,16 @@ function Page() {
   function moveDragging(event: ReactPointerEvent<HTMLDivElement>) {
     if (!dragging) return;
     const rect = event.currentTarget.getBoundingClientRect();
-    const x = clamp(event.clientX - rect.left - dragging.offsetX, 24, CANVAS_WIDTH - NODE_WIDTH - 24);
-    const y = clamp(event.clientY - rect.top - dragging.offsetY, 24, CANVAS_HEIGHT - NODE_HEIGHT - 24);
+    const x = clamp(
+      event.clientX - rect.left - dragging.offsetX,
+      24,
+      CANVAS_WIDTH - NODE_WIDTH - 24,
+    );
+    const y = clamp(
+      event.clientY - rect.top - dragging.offsetY,
+      24,
+      CANVAS_HEIGHT - NODE_HEIGHT - 24,
+    );
     setPositions((current) => ({ ...current, [dragging.nodeId]: { x, y } }));
   }
 
@@ -256,8 +304,8 @@ function Page() {
                   {version.name} · v{version.versionNumber}
                 </h2>
                 <p className="mt-1 text-xs text-muted-foreground">
-                  Arraste as etapas para posicioná-las. Selecione uma etapa para ajustar apenas os
-                  destinos de suas alternativas.
+                  A numeração 1, 1.1 e 1.1.1 representa visualmente cada ramificação. Arraste as
+                  etapas ou crie uma nova ramificação diretamente no destino de uma alternativa.
                 </p>
               </div>
               <Link
@@ -287,9 +335,10 @@ function Page() {
                   }}
                 >
                   <FlowEdges version={version} positions={positions} />
-                  {nodes.map((node) => {
+                  {orderedNodes.map((node) => {
                     const position = positions[node.id] ?? { x: 24, y: 24 };
                     const selected = selectedNode?.id === node.id;
+                    const displayCode = displayCodes.get(node.id) ?? String(node.turnIndex);
                     return (
                       <article
                         key={node.id}
@@ -310,11 +359,11 @@ function Page() {
                           onPointerDown={(event) => startDragging(event, node.id)}
                           onClick={() => setSelectedId(node.id)}
                           disabled={!isEditable}
-                          aria-label={`Posicionar etapa ${node.turnIndex}`}
+                          aria-label={`Posicionar etapa ${displayCode}`}
                         >
                           <span className="flex items-center gap-2 text-xs font-semibold">
                             <Move className="h-3.5 w-3.5 text-primary" />
-                            Etapa {node.turnIndex}
+                            Etapa {displayCode}
                           </span>
                           <ValidationBadge issues={issuesByNode.get(node.id) ?? []} />
                         </button>
@@ -323,7 +372,9 @@ function Page() {
                           className="w-full p-3 text-left"
                           onClick={() => setSelectedId(node.id)}
                         >
-                          <div className="line-clamp-3 text-sm font-medium">{node.clientMessage}</div>
+                          <div className="line-clamp-3 text-sm font-medium">
+                            {node.clientMessage || "Mensagem ainda não preenchida"}
+                          </div>
                           <div className="mt-3 flex items-center justify-between text-xs text-muted-foreground">
                             <span>{node.options.length} alternativas</span>
                             <span>{node.id}</span>
@@ -337,12 +388,23 @@ function Page() {
 
               <ConnectionPanel
                 node={selectedNode}
-                nodes={nodes}
-                disabled={!isEditable || connectionMutation.isPending}
+                nodes={orderedNodes}
+                displayCodes={displayCodes}
+                disabled={
+                  !isEditable || connectionMutation.isPending || branchMutation.isPending
+                }
+                creatingBranchOptionId={
+                  branchMutation.isPending ? branchMutation.variables?.optionId ?? null : null
+                }
                 onChange={(option, targetNodeId) => {
                   if (!selectedNode) return;
                   setFeedback(null);
                   connectionMutation.mutate({ node: selectedNode, option, targetNodeId });
+                }}
+                onCreateBranch={(option) => {
+                  if (!selectedNode) return;
+                  setFeedback(null);
+                  branchMutation.mutate({ nodeId: selectedNode.id, optionId: option.id });
                 }}
                 simulationId={search.simulationId!}
                 versionNumber={search.versionNumber!}
@@ -375,15 +437,21 @@ function Page() {
 function ConnectionPanel({
   node,
   nodes,
+  displayCodes,
   disabled,
+  creatingBranchOptionId,
   onChange,
+  onCreateBranch,
   simulationId,
   versionNumber,
 }: {
   node: SimulationVersionNodeResponse | null;
   nodes: SimulationVersionNodeResponse[];
+  displayCodes: NodeDisplayCodes;
   disabled: boolean;
+  creatingBranchOptionId: string | null;
   onChange: (option: SimulationVersionOptionResponse, targetNodeId: string | null) => void;
+  onCreateBranch: (option: SimulationVersionOptionResponse) => void;
   simulationId: string;
   versionNumber: number;
 }) {
@@ -398,17 +466,25 @@ function ConnectionPanel({
     );
   }
 
-  const availableTargets = nodes.filter((candidate) => candidate.turnIndex > node.turnIndex);
+  const nodeDisplayCode = displayCodes.get(node.id) ?? String(node.turnIndex);
+  const availableTargets = nodes
+    .filter((candidate) => candidate.turnIndex > node.turnIndex)
+    .sort((left, right) =>
+      compareDisplayCodes(
+        displayCodes.get(left.id) ?? String(left.turnIndex),
+        displayCodes.get(right.id) ?? String(right.turnIndex),
+      ),
+    );
 
   return (
     <aside className="rounded-md border border-border bg-card p-4">
       <div className="flex items-center gap-2 text-sm font-semibold">
         <MousePointer2 className="h-4 w-4 text-primary" />
-        Conexões da etapa {node.turnIndex}
+        Conexões da etapa {nodeDisplayCode}
       </div>
       <p className="mt-1 text-xs leading-5 text-muted-foreground">
-        Os textos e a pontuação são somente leitura. Defina apenas o destino visual de cada
-        alternativa.
+        Defina um destino existente, finalize a avaliação ou crie uma nova etapa ramificada já
+        vinculada a esta alternativa.
       </p>
 
       <div className="mt-4 space-y-3">
@@ -424,18 +500,29 @@ function ConnectionPanel({
                     className="input"
                     value={option.nextNodeId ?? "FIM"}
                     disabled={disabled}
-                    onChange={(event) =>
-                      onChange(option, event.target.value === "FIM" ? null : event.target.value)
-                    }
+                    aria-label={`Destino da alternativa ${option.id}`}
+                    onChange={(event) => {
+                      const target = event.target.value;
+                      if (target === CREATE_BRANCH_VALUE) {
+                        onCreateBranch(option);
+                        return;
+                      }
+                      onChange(option, target === "FIM" ? null : target);
+                    }}
                   >
                     {availableTargets.map((target) => (
                       <option key={target.id} value={target.id}>
-                        Etapa {target.turnIndex} · {target.id}
+                        Etapa {displayCodes.get(target.id) ?? target.turnIndex} · {target.id}
                       </option>
                     ))}
                     <option value="FIM">Finalizar avaliação</option>
+                    <option disabled>──────────</option>
+                    <option value={CREATE_BRANCH_VALUE}>+ Criar nova etapa ramificada</option>
                   </select>
                 </label>
+                {creatingBranchOptionId === option.id && (
+                  <p className="mt-2 text-xs text-primary">Criando e posicionando a ramificação...</p>
+                )}
               </div>
             </div>
           </div>
