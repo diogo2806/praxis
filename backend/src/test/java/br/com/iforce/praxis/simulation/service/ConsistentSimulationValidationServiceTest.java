@@ -21,10 +21,7 @@ class ConsistentSimulationValidationServiceTest {
     @Test
     void acceptsOptionWithoutNextNodeAsEndOfAssessment() {
         SimulationVersionEntity version = validVersion(false);
-        SimulationNodeEntity root = version.getNodes().stream()
-                .filter(node -> "turno-1".equals(node.getNodeId()))
-                .findFirst()
-                .orElseThrow();
+        SimulationNodeEntity root = findRoot(version);
         root.getOptions().forEach(option -> option.setNextNodeId(null));
 
         SimulationValidationResponse response = service.validate(version);
@@ -32,6 +29,24 @@ class ConsistentSimulationValidationServiceTest {
         assertThat(response.publishable()).isTrue();
         assertThat(response.issues())
                 .noneMatch(issue -> issue.message().contains("resposta está sem destino"));
+    }
+
+    @Test
+    void blocksDirectEndWithoutReportText() {
+        SimulationVersionEntity version = validVersion(false);
+        SimulationNodeEntity root = findRoot(version);
+        SimulationOptionEntity directEnd = root.getOptions().stream()
+                .filter(option -> option.getNextNodeId() == null)
+                .findFirst()
+                .orElseThrow();
+        directEnd.setAuditNote("");
+
+        SimulationValidationResponse response = service.validate(version);
+
+        assertThat(response.publishable()).isFalse();
+        assertThat(response.issues())
+                .anyMatch(issue -> issue.nodeId().equals("turno-1")
+                        && issue.message().contains("sem texto de relatório"));
     }
 
     @Test
@@ -59,10 +74,7 @@ class ConsistentSimulationValidationServiceTest {
     @Test
     void keepsBlockerWhenTimeoutDestinationDoesNotExist() {
         SimulationVersionEntity version = validVersion(true);
-        SimulationNodeEntity root = version.getNodes().stream()
-                .filter(node -> "turno-1".equals(node.getNodeId()))
-                .findFirst()
-                .orElseThrow();
+        SimulationNodeEntity root = findRoot(version);
         root.setTimeoutNextNodeId("turno-inexistente");
 
         SimulationValidationResponse response = service.validate(version);
@@ -71,6 +83,13 @@ class ConsistentSimulationValidationServiceTest {
         assertThat(response.issues())
                 .anyMatch(issue -> issue.message().contains("destino de tempo esgotado")
                         && issue.message().contains("não existe"));
+    }
+
+    private SimulationNodeEntity findRoot(SimulationVersionEntity version) {
+        return version.getNodes().stream()
+                .filter(node -> "turno-1".equals(node.getNodeId()))
+                .findFirst()
+                .orElseThrow();
     }
 
     private SimulationVersionEntity validVersion(boolean timed) {
@@ -122,7 +141,7 @@ class ConsistentSimulationValidationServiceTest {
         option.setOptionId(optionId);
         option.setText("Alternativa " + optionId);
         option.setNextNodeId(nextNodeId);
-        option.setAuditNote("");
+        option.setAuditNote("Relatório do encerramento.");
         return option;
     }
 }

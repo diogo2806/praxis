@@ -5,11 +5,13 @@ import br.com.iforce.praxis.simulation.dto.SimulationValidationResponse;
 import br.com.iforce.praxis.simulation.dto.ValidationIssueResponse;
 import br.com.iforce.praxis.simulation.model.ValidationIssueSeverity;
 import br.com.iforce.praxis.simulation.persistence.entity.SimulationNodeEntity;
+import br.com.iforce.praxis.simulation.persistence.entity.SimulationOptionEntity;
 import br.com.iforce.praxis.simulation.persistence.entity.SimulationVersionEntity;
 
 import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -20,10 +22,11 @@ import java.util.stream.Collectors;
  * Aplica as convenções usadas pelos editores sobre o diagnóstico estrutural.
  *
  * <p>No contrato atual, uma alternativa sem {@code nextNodeId} encerra a
- * participação e o seletor a apresenta como "Vai para FIM". Da mesma forma,
- * uma etapa temporizada sem {@code timeoutNextNodeId} encerra a participação
- * quando o tempo acaba, enquanto uma etapa sem limite não precisa de transição
- * de timeout.</p>
+ * participação e o seletor a apresenta como "Vai para FIM". Esse encerramento
+ * direto precisa ter texto de relatório no {@code auditNote} da alternativa.
+ * Da mesma forma, uma etapa temporizada sem {@code timeoutNextNodeId} encerra a
+ * participação quando o tempo acaba, enquanto uma etapa sem limite não precisa
+ * de transição de timeout.</p>
  */
 @Primary
 @Service
@@ -43,9 +46,10 @@ public class ConsistentSimulationValidationService extends SimulationValidationS
         Map<String, SimulationNodeEntity> nodesById = simulationVersionEntity.getNodes().stream()
                 .collect(Collectors.toMap(SimulationNodeEntity::getNodeId, Function.identity(), (first, ignored) -> first));
 
-        List<ValidationIssueResponse> issues = original.issues().stream()
+        List<ValidationIssueResponse> issues = new ArrayList<>(original.issues().stream()
                 .filter(issue -> isRelevant(issue, nodesById))
-                .toList();
+                .toList());
+        appendDirectEndReportIssues(simulationVersionEntity, issues);
 
         long blockerCount = issues.stream()
                 .filter(issue -> issue.severity() == ValidationIssueSeverity.BLOCKER)
@@ -64,6 +68,28 @@ public class ConsistentSimulationValidationService extends SimulationValidationS
                 qualityScore,
                 issues
         );
+    }
+
+    private void appendDirectEndReportIssues(
+            SimulationVersionEntity simulationVersionEntity,
+            List<ValidationIssueResponse> issues
+    ) {
+        for (SimulationNodeEntity node : simulationVersionEntity.getNodes()) {
+            if (node.isFinal()) {
+                continue;
+            }
+            for (SimulationOptionEntity option : node.getOptions()) {
+                if (option.getNextNodeId() == null
+                        && (option.getAuditNote() == null || option.getAuditNote().isBlank())) {
+                    issues.add(new ValidationIssueResponse(
+                            ValidationIssueSeverity.BLOCKER,
+                            node.getNodeId(),
+                            "Esta alternativa encerra a avaliação, mas está sem texto de relatório. "
+                                    + "No Editor de diálogo, selecione \"Vai para FIM\" e preencha o relatório do encerramento."
+                    ));
+                }
+            }
+        }
     }
 
     private boolean isRelevant(

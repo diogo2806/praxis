@@ -79,12 +79,13 @@ export const SCENARIO_OWNERSHIP_MANUALS: ScreenManualDefinition[] = [
     id: "editor-dialogo",
     title: "Editor de diálogo",
     purpose:
-      "Criar e manter as etapas posteriores, alternativas, tempo, mídia, criticidade e pontuação por competência, sem alterar o contexto inicial definido em Personagem.",
+      "Criar e manter as etapas posteriores, alternativas, tempo, mídia, criticidade e pontuação por competência, incluindo o resultado e o relatório de cada alternativa que encerra a avaliação.",
     flow: [
       "Abra uma avaliação e versão em rascunho.",
       "Consulte a primeira etapa em modo somente leitura e use o atalho Personagem quando precisar alterar o contexto inicial.",
       "Crie ou selecione uma etapa posterior e informe sua mensagem.",
       "Cadastre de duas a quatro alternativas, configure pontuação, criticidade, mídia e destino.",
+      "Ao escolher Vai para FIM, confira as somas e percentuais calculados e preencha o texto obrigatório do relatório.",
       "Salve as alterações e use o Mapa apenas para organizar posições e revisar conexões.",
       "Abra o Validador para verificar bloqueios e avisos antes da publicação.",
     ],
@@ -124,6 +125,16 @@ export const SCENARIO_OWNERSHIP_MANUALS: ScreenManualDefinition[] = [
         description:
           "Próxima etapa ou encerramento do fluxo; também pode ser revisado visualmente no Mapa.",
       },
+      {
+        name: "Resumo do encerramento",
+        description:
+          "Quando o destino é Vai para FIM, apresenta em modo somente leitura a soma acumulada, o percentual por competência e o resultado ponderado do caminho.",
+      },
+      {
+        name: "Texto do relatório",
+        description:
+          "Descrição obrigatória do significado daquele encerramento para a equipe responsável; é registrada na trilha do resultado.",
+      },
     ],
     permissions: [
       "Usuário autenticado da empresa com permissão para criar ou editar avaliações.",
@@ -133,6 +144,8 @@ export const SCENARIO_OWNERSHIP_MANUALS: ScreenManualDefinition[] = [
       "Carregando avaliação",
       "Rascunho editável",
       "Mensagem inicial protegida",
+      "Encerramento com resultado calculado",
+      "Encerramento pendente de relatório",
       "Versão publicada protegida",
       "Alteração salva",
       "Erro de validação ou gravação",
@@ -144,11 +157,13 @@ export const SCENARIO_OWNERSHIP_MANUALS: ScreenManualDefinition[] = [
       "Etapa posterior sem mensagem.",
       "Menos de duas ou mais de quatro alternativas.",
       "Alternativa sem pontuação por competência.",
+      "Alternativa com destino Vai para FIM sem texto de relatório.",
       "Configuração da empresa indisponível.",
     ],
     examples: [
       "Consultar a mensagem inicial e usar Editar personagem para corrigir o contexto.",
       "Criar uma etapa posterior de atendimento com três respostas e pontuações diferentes para Empatia e Comunicação.",
+      "Selecionar Vai para FIM, conferir Comunicação: soma 135 e 71%, e registrar o relatório daquele encerramento.",
       "Anexar um áudio à etapa e marcar uma alternativa como crítica.",
     ],
     shortcuts: [

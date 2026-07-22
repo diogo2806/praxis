@@ -5,6 +5,7 @@ import { GitBranch, ImagePlus, Music, Plus, Save, Trash2, X } from "lucide-react
 
 import { AppShell } from "@/components/app-shell";
 import { EmptyState, StateBanner, StatusBadge } from "@/components/praxis-ui";
+import { TerminalOutcomeCard } from "@/components/simulation/terminal-outcome-card";
 import {
   groupIssuesByNode,
   ValidationBadge,
@@ -26,6 +27,7 @@ import {
   type MediaType,
   type SimulationSummaryResponse,
   type SimulationVersionNodeResponse,
+  type SimulationVersionOptionResponse,
 } from "@/lib/api/praxis";
 import { defaultAnswerTimeLimitSeconds, useEmpresaConfig } from "@/lib/empresa-config";
 import { canEditSimulationVersion, statusMeta } from "@/lib/simulation-meta";
@@ -90,8 +92,10 @@ function DialogEditor() {
   });
 
   const nodes = versionQuery.data?.nodes ?? [];
+  const dialogueNodes = useMemo(() => nodes.filter((node) => !node.isFinal), [nodes]);
+  const nodeById = useMemo(() => new Map(nodes.map((node) => [node.id, node])), [nodes]);
   const rootNodeId = versionQuery.data?.blueprint.rootNodeId;
-  const selected = nodes.find((node) => node.id === selectedId) ?? nodes[0];
+  const selected = dialogueNodes.find((node) => node.id === selectedId) ?? dialogueNodes[0];
   const isRootSelected = Boolean(selected && selected.id === rootNodeId);
   const versionStatus = versionQuery.data?.status;
   const isEditable = versionStatus ? canEditSimulationVersion(versionStatus) : true;
@@ -107,16 +111,33 @@ function DialogEditor() {
     () => groupIssuesByNode(validationQuery.data?.issues),
     [validationQuery.data?.issues],
   );
+
+  function terminalNodeFor(option: SimulationVersionOptionResponse) {
+    if (!option.nextNodeId) return null;
+    const target = nodeById.get(option.nextNodeId);
+    return target?.isFinal ? target : null;
+  }
+
+  function isTerminalOption(option: SimulationVersionOptionResponse) {
+    return option.nextNodeId == null || terminalNodeFor(option) != null;
+  }
+
+  function reportFor(option: SimulationVersionOptionResponse) {
+    return terminalNodeFor(option)?.reportText ?? option.auditNote ?? "";
+  }
+
   const canReview =
-    nodes.length > 0 &&
-    nodes.every(
+    dialogueNodes.length > 0 &&
+    dialogueNodes.every(
       (node) =>
         node.clientMessage.trim().length > 0 &&
         node.options.length >= 2 &&
         node.options.length <= 4 &&
         node.options.every(
           (option) =>
-            option.text.trim().length > 0 && Object.keys(option.competencyLevels).length > 0,
+            option.text.trim().length > 0 &&
+            Object.keys(option.competencyLevels).length > 0 &&
+            (!isTerminalOption(option) || reportFor(option).trim().length > 0),
         ),
     );
 
@@ -125,9 +146,17 @@ function DialogEditor() {
   }, [selected?.id, selected?.clientMessage]);
 
   useEffect(() => {
-    if (!search.nodeId || nodes.length === 0) return;
-    if (nodes.some((node) => node.id === search.nodeId)) setSelectedId(search.nodeId);
-  }, [nodes, search.nodeId]);
+    if (dialogueNodes.length === 0) return;
+    if (search.nodeId && dialogueNodes.some((node) => node.id === search.nodeId)) {
+      setSelectedId(search.nodeId);
+      return;
+    }
+    setSelectedId((current) =>
+      current && dialogueNodes.some((node) => node.id === current)
+        ? current
+        : rootNodeId ?? dialogueNodes[0].id,
+    );
+  }, [dialogueNodes, rootNodeId, search.nodeId]);
 
   useEffect(() => {
     if (!hasContext) return;
@@ -265,11 +294,12 @@ function DialogEditor() {
         competencyLevels,
         isCritical: false,
         nextNodeId: null,
+        resultingTone: "",
       });
     },
     onSuccess: async () => {
       setDraftOption("");
-      setFeedbackMessage("Alternativa adicionada.");
+      setFeedbackMessage("Alternativa adicionada. Preencha o relatório caso ela finalize a avaliação.");
       await refetchVersion();
     },
   });
@@ -282,6 +312,7 @@ function DialogEditor() {
       nextNodeId,
       isCritical,
       competencyLevels: levels,
+      resultingTone,
       mediaUrl,
       mediaType,
     }: {
@@ -291,6 +322,7 @@ function DialogEditor() {
       nextNodeId?: string | null;
       isCritical?: boolean;
       competencyLevels?: Record<string, number>;
+      resultingTone?: string;
       mediaUrl?: string;
       mediaType?: MediaType | null;
     }) => {
@@ -300,11 +332,40 @@ function DialogEditor() {
         nextNodeId: nextNodeId === null ? "" : nextNodeId,
         isCritical,
         competencyLevels: levels,
+        resultingTone,
         mediaUrl,
         mediaType,
       });
     },
     onSuccess: refetchVersion,
+  });
+
+  const saveTerminalReportMutation = useMutation({
+    mutationFn: async ({
+      nodeId,
+      optionId,
+      finalNodeId,
+      reportText,
+    }: {
+      nodeId: string;
+      optionId: string;
+      finalNodeId: string | null;
+      reportText: string;
+    }) => {
+      assertEditable();
+      if (finalNodeId) {
+        return updateSimulationNode(search.simulationId!, search.versionNumber!, finalNodeId, {
+          reportText,
+        });
+      }
+      return updateSimulationOption(search.simulationId!, search.versionNumber!, nodeId, optionId, {
+        resultingTone: reportText,
+      });
+    },
+    onSuccess: async () => {
+      setFeedbackMessage("Texto do relatório salvo.");
+      await refetchVersion();
+    },
   });
 
   const deleteOptionMutation = useMutation({
@@ -324,6 +385,7 @@ function DialogEditor() {
     deleteNodeMutation.error ??
     addOptionMutation.error ??
     updateOptionMutation.error ??
+    saveTerminalReportMutation.error ??
     deleteOptionMutation.error ??
     cloneDraftMutation.error;
 
@@ -419,11 +481,14 @@ function DialogEditor() {
             </div>
           )}
 
-          <fieldset disabled={!isEditable} className="grid gap-5 lg:grid-cols-[300px_minmax(0,1fr)] disabled:opacity-75">
+          <fieldset
+            disabled={!isEditable}
+            className="grid gap-5 lg:grid-cols-[300px_minmax(0,1fr)] disabled:opacity-75"
+          >
             <aside className="rounded-md border border-border bg-card p-4">
               <div className="mb-3 text-sm font-semibold">Etapas salvas</div>
               <div className="space-y-2">
-                {nodes.map((node) => (
+                {dialogueNodes.map((node) => (
                   <button
                     key={node.id}
                     type="button"
@@ -587,7 +652,11 @@ function DialogEditor() {
                       <select
                         key={`${selected.id}-timeout-${selected.timeoutNextNodeId ?? "FIM"}`}
                         className="input"
-                        defaultValue={selected.timeoutNextNodeId ?? "FIM"}
+                        defaultValue={
+                          selected.timeoutNextNodeId && nodeById.get(selected.timeoutNextNodeId)?.isFinal
+                            ? "FIM"
+                            : selected.timeoutNextNodeId ?? "FIM"
+                        }
                         onChange={(event) =>
                           updateNodeTimeoutMutation.mutate({
                             nodeId: selected.id,
@@ -596,12 +665,11 @@ function DialogEditor() {
                           })
                         }
                       >
-                        {nodes
+                        {dialogueNodes
                           .filter((node) => node.turnIndex > selected.turnIndex)
                           .map((node) => (
                             <option key={node.id} value={node.id}>
                               Vai para etapa {node.turnIndex}
-                              {node.isFinal ? " · encerramento" : ""}
                             </option>
                           ))}
                         <option value="FIM">Vai para FIM</option>
@@ -646,129 +714,155 @@ function DialogEditor() {
                 )}
 
                 <div className="mt-3 space-y-3">
-                  {selected.options.map((option) => (
-                    <div key={option.id} className="rounded-md border border-border bg-background p-3">
-                      <div className="grid gap-3 md:grid-cols-[20px_1fr_170px_auto]">
-                        <GitBranch className="mt-2 h-4 w-4 text-muted-foreground" />
-                        <input
-                          key={`${selected.id}-${option.id}-text`}
-                          className="input"
-                          defaultValue={option.text}
-                          onBlur={(event) =>
-                            updateOptionMutation.mutate({
-                              nodeId: selected.id,
-                              optionId: option.id,
-                              text: event.target.value.trim(),
-                            })
-                          }
-                        />
-                        <select
-                          key={`${selected.id}-${option.id}-next`}
-                          className="input"
-                          defaultValue={option.nextNodeId ?? "FIM"}
-                          onChange={(event) =>
-                            updateOptionMutation.mutate({
-                              nodeId: selected.id,
-                              optionId: option.id,
-                              nextNodeId: event.target.value === "FIM" ? null : event.target.value,
-                            })
-                          }
-                        >
-                          {nodes
-                            .filter((node) => node.turnIndex > selected.turnIndex)
-                            .map((node) => (
-                              <option key={node.id} value={node.id}>
-                                Vai para etapa {node.turnIndex}
-                              </option>
-                            ))}
-                          <option value="FIM">Vai para FIM</option>
-                        </select>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            if (window.confirm(`Remover a alternativa ${option.id}?`)) {
-                              deleteOptionMutation.mutate({
+                  {selected.options.map((option) => {
+                    const finalNode = terminalNodeFor(option);
+                    const terminal = isTerminalOption(option);
+                    const destinationValue = terminal ? "FIM" : option.nextNodeId ?? "FIM";
+                    return (
+                      <div key={option.id} className="rounded-md border border-border bg-background p-3">
+                        <div className="grid gap-3 md:grid-cols-[20px_1fr_170px_auto]">
+                          <GitBranch className="mt-2 h-4 w-4 text-muted-foreground" />
+                          <input
+                            key={`${selected.id}-${option.id}-text`}
+                            className="input"
+                            defaultValue={option.text}
+                            onBlur={(event) =>
+                              updateOptionMutation.mutate({
                                 nodeId: selected.id,
                                 optionId: option.id,
-                              });
+                                text: event.target.value.trim(),
+                              })
                             }
-                          }}
-                          disabled={deleteOptionMutation.isPending}
-                          className="rounded-md border border-danger/25 bg-danger/5 p-2 text-danger hover:bg-danger/10 disabled:opacity-50"
-                          aria-label="Remover alternativa"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </button>
-                      </div>
-
-                      <div className="mt-3 flex flex-wrap items-center gap-2 text-[11px] text-muted-foreground">
-                        {Object.entries(option.competencyLevels).map(([name, value]) => (
-                          <label
-                            key={name}
-                            className="inline-flex items-center gap-1 rounded border border-border px-2 py-1"
-                          >
-                            {name}
-                            <input
-                              className="w-12 rounded border border-border bg-card px-1 py-0.5"
-                              type="number"
-                              min={0}
-                              max={100}
-                              step={1}
-                              defaultValue={value}
-                              onBlur={(event) => {
-                                const nextValue = Number(event.target.value);
-                                if (!Number.isInteger(nextValue) || nextValue < 0 || nextValue > 100) {
-                                  event.target.value = String(value);
-                                  setFeedbackMessage(
-                                    `Pontuação inválida para ${name}. Use um inteiro de 0 a 100.`,
-                                  );
-                                  return;
-                                }
-                                setFeedbackMessage(null);
-                                updateOptionMutation.mutate({
-                                  nodeId: selected.id,
-                                  optionId: option.id,
-                                  competencyLevels: {
-                                    ...option.competencyLevels,
-                                    [name]: nextValue,
-                                  },
-                                });
-                              }}
-                            />
-                          </label>
-                        ))}
-                        <label className="inline-flex items-center gap-1 rounded border border-danger/30 px-2 py-1 text-danger">
-                          <input
-                            type="checkbox"
-                            defaultChecked={option.isCritical}
+                          />
+                          <select
+                            key={`${selected.id}-${option.id}-next-${destinationValue}`}
+                            className="input"
+                            defaultValue={destinationValue}
                             onChange={(event) =>
                               updateOptionMutation.mutate({
                                 nodeId: selected.id,
                                 optionId: option.id,
-                                isCritical: event.target.checked,
+                                nextNodeId: event.target.value === "FIM" ? null : event.target.value,
+                              })
+                            }
+                          >
+                            {dialogueNodes
+                              .filter((node) => node.turnIndex > selected.turnIndex)
+                              .map((node) => (
+                                <option key={node.id} value={node.id}>
+                                  Vai para etapa {node.turnIndex}
+                                </option>
+                              ))}
+                            <option value="FIM">Vai para FIM</option>
+                          </select>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (window.confirm(`Remover a alternativa ${option.id}?`)) {
+                                deleteOptionMutation.mutate({
+                                  nodeId: selected.id,
+                                  optionId: option.id,
+                                });
+                              }
+                            }}
+                            disabled={deleteOptionMutation.isPending}
+                            className="rounded-md border border-danger/25 bg-danger/5 p-2 text-danger hover:bg-danger/10 disabled:opacity-50"
+                            aria-label="Remover alternativa"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        </div>
+
+                        <div className="mt-3 flex flex-wrap items-center gap-2 text-[11px] text-muted-foreground">
+                          {Object.entries(option.competencyLevels).map(([name, value]) => (
+                            <label
+                              key={name}
+                              className="inline-flex items-center gap-1 rounded border border-border px-2 py-1"
+                            >
+                              {name}
+                              <input
+                                className="w-12 rounded border border-border bg-card px-1 py-0.5"
+                                type="number"
+                                min={0}
+                                max={100}
+                                step={1}
+                                defaultValue={value}
+                                onBlur={(event) => {
+                                  const nextValue = Number(event.target.value);
+                                  if (!Number.isInteger(nextValue) || nextValue < 0 || nextValue > 100) {
+                                    event.target.value = String(value);
+                                    setFeedbackMessage(
+                                      `Pontuação inválida para ${name}. Use um inteiro de 0 a 100.`,
+                                    );
+                                    return;
+                                  }
+                                  setFeedbackMessage(null);
+                                  updateOptionMutation.mutate({
+                                    nodeId: selected.id,
+                                    optionId: option.id,
+                                    competencyLevels: {
+                                      ...option.competencyLevels,
+                                      [name]: nextValue,
+                                    },
+                                  });
+                                }}
+                              />
+                            </label>
+                          ))}
+                          <label className="inline-flex items-center gap-1 rounded border border-danger/30 px-2 py-1 text-danger">
+                            <input
+                              type="checkbox"
+                              defaultChecked={option.isCritical}
+                              onChange={(event) =>
+                                updateOptionMutation.mutate({
+                                  nodeId: selected.id,
+                                  optionId: option.id,
+                                  isCritical: event.target.checked,
+                                })
+                              }
+                            />
+                            crítica
+                          </label>
+                        </div>
+
+                        <MediaAttachment
+                          mediaUrl={option.mediaUrl}
+                          mediaType={option.mediaType}
+                          disabled={updateOptionMutation.isPending}
+                          label="Anexar imagem ou áudio à alternativa"
+                          onChange={(next) =>
+                            updateOptionMutation.mutate({
+                              nodeId: selected.id,
+                              optionId: option.id,
+                              mediaUrl: next?.mediaUrl ?? "",
+                              mediaType: next?.mediaType ?? null,
+                            })
+                          }
+                        />
+
+                        {terminal && (
+                          <TerminalOutcomeCard
+                            nodes={nodes}
+                            rootNodeId={rootNodeId}
+                            node={selected}
+                            option={option}
+                            competencies={competencies}
+                            reportText={finalNode?.reportText ?? option.auditNote ?? ""}
+                            disabled={!isEditable}
+                            saving={saveTerminalReportMutation.isPending}
+                            onSaveReport={(reportText) =>
+                              saveTerminalReportMutation.mutate({
+                                nodeId: selected.id,
+                                optionId: option.id,
+                                finalNodeId: finalNode?.id ?? null,
+                                reportText,
                               })
                             }
                           />
-                          crítica
-                        </label>
+                        )}
                       </div>
-
-                      <MediaAttachment
-                        mediaUrl={option.mediaUrl}
-                        mediaType={option.mediaType}
-                        disabled={updateOptionMutation.isPending}
-                        label="Anexar imagem ou áudio à alternativa"
-                        onChange={(next) =>
-                          updateOptionMutation.mutate({
-                            nodeId: selected.id,
-                            optionId: option.id,
-                            mediaUrl: next?.mediaUrl ?? "",
-                            mediaType: next?.mediaType ?? null,
-                          })
-                        }
-                      />
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
 
                 <div className="mt-4 grid gap-2 md:grid-cols-[1fr_auto]">
