@@ -94,13 +94,34 @@ jobs:
         run: npm ci
 
       - name: Typecheck
-        run: npm run typecheck
+        shell: bash
+        run: |
+          set -o pipefail
+          npm run typecheck 2>&1 | tee frontend.log
 
       - name: Lint
-        run: npm run lint
+        shell: bash
+        run: |
+          set -o pipefail
+          npm run lint 2>&1 | tee -a frontend.log
 
       - name: Test access control
-        run: npm run test:access-control
+        shell: bash
+        run: |
+          set -o pipefail
+          npm run test:access-control 2>&1 | tee -a frontend.log
 
       - name: Build
-        run: npm run build
+        shell: bash
+        run: |
+          set -o pipefail
+          npm run build 2>&1 | tee -a frontend.log
+
+      - name: Upload frontend diagnostics on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-diagnostics
+          path: frontend/frontend.log
+          if-no-files-found: warn
+          retention-days: 7
