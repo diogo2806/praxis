@@ -11,12 +11,16 @@ export function WizardStepper({
   unlockedThrough?: WizardSlug;
 }) {
   const currentSearch = useRouterState({ select: (state) => state.location.search });
+  const currentPathname = useRouterState({ select: (state) => state.location.pathname });
   const { t } = useLanguage();
   const idx = wizardSteps.findIndex((s) => s.slug === current);
   const unlockedIdx = Math.max(
     idx,
     unlockedThrough ? wizardSteps.findIndex((s) => s.slug === unlockedThrough) : idx,
   );
+  const showDialogReviewNavigation =
+    current === "revisao" && currentPathname === "/nova/dialogo";
+
   return (
     <div className="mb-8 rounded-xl border border-border bg-card p-4">
       <div className="mb-3 text-xs text-muted-foreground">
@@ -91,6 +95,28 @@ export function WizardStepper({
           );
         })}
       </ol>
+
+      {showDialogReviewNavigation && (
+        <nav
+          aria-label="Navegação da revisão"
+          className="mt-4 flex flex-wrap justify-end gap-2 border-t border-border pt-4"
+        >
+          <Link
+            to="/nova/validador"
+            search={currentSearch}
+            className="rounded-md border border-border bg-card px-3 py-2 text-sm font-medium text-foreground transition hover:bg-accent"
+          >
+            Revisão e prontidão
+          </Link>
+          <Link
+            to="/nova/mapa"
+            search={currentSearch}
+            className="rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground transition hover:bg-primary/90"
+          >
+            Mapa do fluxo
+          </Link>
+        </nav>
+      )}
     </div>
   );
 }
