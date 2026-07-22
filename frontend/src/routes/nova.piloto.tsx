@@ -76,8 +76,8 @@ function Page() {
       ) : monitoring ? (
         <>
           <div className="rounded-md border border-border bg-card px-4 py-3 text-sm text-muted-foreground">
-            Avaliação <span className="font-medium text-foreground">{search.simulationId}</span>, versão{" "}
-            <span className="font-medium text-foreground">{search.versionNumber}</span>.
+            Avaliação <span className="font-medium text-foreground">{search.simulationId}</span>,
+            versão <span className="font-medium text-foreground">{search.versionNumber}</span>.
           </div>
           <div className="mt-5 grid gap-4 md:grid-cols-4">
             <Metric label="Criadas" value={monitoring.attemptsCreated} />
@@ -120,6 +120,7 @@ function Page() {
               to="/nova/mapa"
               search={{
                 simulationId: search.simulationId,
+                nodeId: undefined,
                 versionNumber: search.versionNumber,
               }}
               className="rounded-md bg-primary px-5 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"

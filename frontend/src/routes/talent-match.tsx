@@ -1,14 +1,6 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import {
-  BarChart3,
-  Check,
-  CircleAlert,
-  EyeOff,
-  FileText,
-  Target,
-  UsersRound,
-} from "lucide-react";
+import { BarChart3, Check, CircleAlert, EyeOff, FileText, Target, UsersRound } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import {
   PolarAngleAxis,
@@ -246,7 +238,18 @@ function TalentMatchPage() {
                   <Link to="/avaliacoes">{copy.openAssessments}</Link>
                 </Button>
                 <Button asChild variant="outline">
-                  <Link to="/results">{copy.openResults}</Link>
+                  <Link
+                    to="/results"
+                    search={{
+                      search: "",
+                      simulationId: "",
+                      period: "",
+                      integrationProvider: "",
+                      page: 0,
+                    }}
+                  >
+                    {copy.openResults}
+                  </Link>
                 </Button>
               </div>
             }
@@ -266,7 +269,9 @@ function TalentMatchPage() {
                     Versão {search.versionNumber} · {copy.completedOnly}
                   </p>
                 </div>
-                {selectedVersion && <StatusBadge status={selectedVersion.status} variant="status" />}
+                {selectedVersion && (
+                  <StatusBadge status={selectedVersion.status} variant="status" />
+                )}
               </div>
             </section>
 
@@ -367,7 +372,11 @@ function TalentMatchPage() {
                   candidates={visibleCandidates}
                   loading={candidateLinksQuery.isLoading}
                   noResults={filteredCandidates.length === 0}
-                  noResultsLabel={candidateSearch.trim() ? copy.noSearchResults : t.talentMatchPage.noCompletedForAssessment}
+                  noResultsLabel={
+                    candidateSearch.trim()
+                      ? copy.noSearchResults
+                      : t.talentMatchPage.noCompletedForAssessment
+                  }
                   selectedAttemptIds={selectedAttemptIds}
                   onToggle={(attemptId) => {
                     setSelectedAttemptIds((current) => {
@@ -431,7 +440,10 @@ function TalentMatchPage() {
             </div>
 
             {selectedCandidateRows.length > 0 ? (
-              <CandidateLegend candidates={selectedCandidateRows} viewResultLabel={copy.viewResult} />
+              <CandidateLegend
+                candidates={selectedCandidateRows}
+                viewResultLabel={copy.viewResult}
+              />
             ) : (
               <StateBanner tone="info" title={t.talentMatchPage.pendingComparisonTitle}>
                 {t.talentMatchPage.pendingComparisonBody}
@@ -680,7 +692,17 @@ function CandidateLegend({
             </div>
           </div>
           <Button asChild variant="outline" size="sm" className="mt-3 w-full">
-            <Link to="/results/$attemptId" params={{ attemptId: candidate.attemptId }}>
+            <Link
+              to="/results/$attemptId"
+              params={{ attemptId: candidate.attemptId }}
+              search={{
+                search: "",
+                simulationId: "",
+                period: "",
+                integrationProvider: "",
+                page: 0,
+              }}
+            >
               {viewResultLabel}
             </Link>
           </Button>

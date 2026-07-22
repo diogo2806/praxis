@@ -299,7 +299,9 @@ function Page() {
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
-              <AlertDialogCancel disabled={transitionMutation.isPending}>Cancelar</AlertDialogCancel>
+              <AlertDialogCancel disabled={transitionMutation.isPending}>
+                Cancelar
+              </AlertDialogCancel>
               <AlertDialogAction
                 disabled={transitionMutation.isPending}
                 onClick={(event) => {
@@ -307,9 +309,7 @@ function Page() {
                   transitionMutation.mutate();
                 }}
               >
-                {transitionMutation.isPending
-                  ? "Publicando..."
-                  : transitionCopy[pendingAction].cta}
+                {transitionMutation.isPending ? "Publicando..." : transitionCopy[pendingAction].cta}
               </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>
@@ -522,6 +522,7 @@ function SimulationLinks({
       <Link
         to="/nova/avaliacao"
         className="rounded-md border border-border bg-card px-4 py-3 text-sm hover:bg-accent"
+        search={{ simulationId: undefined, versionNumber: undefined }}
       >
         Criar avaliação
       </Link>

@@ -9,7 +9,7 @@ import { WizardStepper } from "@/components/wizard-stepper";
 import {
   getGupyPreflight,
   listSimulations,
-  type GupyPreflightCheckResponse,
+  type GupyPreflightResponse,
   type SimulationSummaryResponse,
 } from "@/lib/api/praxis";
 import { maturityForStatus } from "@/lib/simulation-meta";
@@ -156,7 +156,7 @@ function GupyActivation() {
   );
 }
 
-function PreflightCheck({ item }: { item: GupyPreflightCheckResponse }) {
+function PreflightCheck({ item }: { item: GupyPreflightResponse["checks"][number] }) {
   const ok = item.status === "ok";
   const Icon = ok ? CheckCircle2 : XCircle;
 

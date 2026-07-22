@@ -106,6 +106,7 @@ function ValidatorPage() {
                   to="/nova/dialogo"
                   search={{
                     simulationId: search.simulationId,
+                    nodeId: undefined,
                     versionNumber: search.versionNumber,
                   }}
                 >
@@ -118,6 +119,7 @@ function ValidatorPage() {
                   to="/nova/mapa"
                   search={{
                     simulationId: search.simulationId,
+                    nodeId: undefined,
                     versionNumber: search.versionNumber,
                   }}
                 >
@@ -164,7 +166,8 @@ function ValidatorPage() {
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                   <h2 className="text-lg font-semibold">
-                    {simulation?.name ?? validation.simulationId} · versão {validation.versionNumber}
+                    {simulation?.name ?? validation.simulationId} · versão{" "}
+                    {validation.versionNumber}
                   </h2>
                   <p className="mt-1 text-sm text-muted-foreground">
                     Resultado calculado pelas regras atuais de publicação.
@@ -184,9 +187,17 @@ function ValidatorPage() {
                   value={validation.publishable ? "Publicável" : "Bloqueada"}
                   tone={validation.publishable ? "ok" : "danger"}
                 />
-                <MetricCard label="Bloqueios" value={String(validation.blockerCount)} tone="danger" />
+                <MetricCard
+                  label="Bloqueios"
+                  value={String(validation.blockerCount)}
+                  tone="danger"
+                />
                 <MetricCard label="Avisos" value={String(validation.warningCount)} tone="warning" />
-                <MetricCard label="Qualidade" value={`${validation.qualityScore}%`} tone="neutral" />
+                <MetricCard
+                  label="Qualidade"
+                  value={`${validation.qualityScore}%`}
+                  tone="neutral"
+                />
               </div>
             </section>
 
@@ -324,9 +335,7 @@ function DiagnosticCard({
     <article
       className={cn(
         "rounded-lg border-2 p-4 shadow-sm",
-        tone === "danger"
-          ? "border-danger/50 bg-danger/5"
-          : "border-warning/50 bg-warning/5",
+        tone === "danger" ? "border-danger/50 bg-danger/5" : "border-warning/50 bg-warning/5",
       )}
     >
       <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
@@ -416,8 +425,14 @@ function EditorLink({
   nodeId: string | null;
   primary?: boolean;
 }) {
-  const route = editor === "avaliacao" ? "/nova/avaliacao" : editor === "mapa" ? "/nova/mapa" : "/nova/dialogo";
-  const label = editor === "avaliacao" ? "Corrigir na Avaliação" : editor === "mapa" ? "Corrigir no Mapa" : "Corrigir no Diálogo";
+  const route =
+    editor === "avaliacao" ? "/nova/avaliacao" : editor === "mapa" ? "/nova/mapa" : "/nova/dialogo";
+  const label =
+    editor === "avaliacao"
+      ? "Corrigir na Avaliação"
+      : editor === "mapa"
+        ? "Corrigir no Mapa"
+        : "Corrigir no Diálogo";
   const Icon = editor === "mapa" ? GitBranch : ListChecks;
 
   return (
@@ -491,7 +506,12 @@ function SimulationSelector({
         description="Crie uma avaliação antes de executar o diagnóstico."
         actions={
           <Button asChild>
-            <Link to="/nova/avaliacao">Criar avaliação</Link>
+            <Link
+              to="/nova/avaliacao"
+              search={{ simulationId: undefined, versionNumber: undefined }}
+            >
+              Criar avaliação
+            </Link>
           </Button>
         }
       />

@@ -123,11 +123,7 @@ function TokenCandidatePage() {
         <Status
           label={legalCopy.errorLabel}
           title="Não foi possível abrir a avaliação."
-          description={
-            notice.error instanceof Error
-              ? notice.error.message
-              : legalCopy.unavailable
-          }
+          description={notice.error instanceof Error ? notice.error.message : legalCopy.unavailable}
           tone="warning"
         />
       </Shell>
@@ -169,7 +165,7 @@ function CandidateAttemptContent({ token, copy }: { token: string; copy: Candida
     () => (!attempt.data || attempt.data.etapaAtual ? null : statusCopy(attempt.data, copy)),
     [attempt.data, copy],
   );
-  const redirectUrl = attempt.data?.finalizado ? attempt.data.redirectUrl ?? null : null;
+  const redirectUrl = attempt.data?.finalizado ? (attempt.data.redirectUrl ?? null) : null;
 
   useEffect(() => {
     if (!redirectUrl) return;
@@ -228,7 +224,9 @@ function Start({
       setState("success");
     } catch (error) {
       setState("error");
-      setErrorMessage(error instanceof Error ? error.message : "Não foi possível iniciar a avaliação.");
+      setErrorMessage(
+        error instanceof Error ? error.message : "Não foi possível iniciar a avaliação.",
+      );
     }
   }
 
@@ -304,7 +302,10 @@ function Start({
       </div>
 
       {state === "error" ? (
-        <p className="mt-4 rounded-lg border border-danger/30 bg-danger/10 p-3 text-sm" role="alert">
+        <p
+          className="mt-4 rounded-lg border border-danger/30 bg-danger/10 p-3 text-sm"
+          role="alert"
+        >
           {errorMessage}
         </p>
       ) : null}
@@ -321,8 +322,7 @@ function Start({
 }
 
 function PrivacyAndRightsPanel({ token, copy }: { token: string; copy: CandidateAccessCopy }) {
-  const [requestType, setRequestType] =
-    useState<DataSubjectRequestType>("confirmationAccess");
+  const [requestType, setRequestType] = useState<DataSubjectRequestType>("confirmationAccess");
   const [contact, setContact] = useState("");
   const [details, setDetails] = useState("");
   const [state, setState] = useState<RequestState>("idle");
@@ -378,9 +378,7 @@ function PrivacyAndRightsPanel({ token, copy }: { token: string; copy: Candidate
             {copy.requestTypeLabel}
             <select
               value={requestType}
-              onChange={(event) =>
-                setRequestType(event.target.value as DataSubjectRequestType)
-              }
+              onChange={(event) => setRequestType(event.target.value as DataSubjectRequestType)}
               className="mt-1.5 min-h-11 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground outline-none focus:ring-2 focus:ring-ring"
             >
               {Object.entries(copy.requestTypes).map(([value, label]) => (
@@ -491,7 +489,10 @@ function HumanReviewPanel({ token }: { token: string }) {
           />
         </label>
         {state === "success" ? (
-          <p className="rounded-lg border border-success/30 bg-success/10 p-3 text-sm" role="status">
+          <p
+            className="rounded-lg border border-success/30 bg-success/10 p-3 text-sm"
+            role="status"
+          >
             {copy.success}
           </p>
         ) : null}
@@ -532,7 +533,7 @@ function Status({
   description,
   tone = "muted",
   notice,
-}: Terminal & { notice?: string }) {
+}: Omit<Terminal, "tone"> & { tone?: Terminal["tone"]; notice?: string }) {
   const color =
     tone === "success"
       ? "text-emerald-600"
@@ -546,9 +547,7 @@ function Status({
       <h1 className="mt-3 text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">
         {title}
       </h1>
-      <p className="mx-auto mt-3 max-w-lg text-sm leading-6 text-muted-foreground">
-        {description}
-      </p>
+      <p className="mx-auto mt-3 max-w-lg text-sm leading-6 text-muted-foreground">{description}</p>
       {notice ? (
         <div className="mx-auto mt-6 max-w-lg rounded-xl border border-border bg-background/60 p-4 text-xs leading-5 text-muted-foreground">
           {notice}
