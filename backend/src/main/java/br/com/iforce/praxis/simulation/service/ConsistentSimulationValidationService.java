@@ -20,13 +20,17 @@ import java.util.stream.Collectors;
  *
  * <p>No contrato atual, uma alternativa sem {@code nextNodeId} encerra a
  * participação e o seletor a apresenta como "Vai para FIM". Da mesma forma,
- * uma etapa sem limite de tempo não precisa de transição de timeout.</p>
+ * uma etapa temporizada sem {@code timeoutNextNodeId} encerra a participação
+ * quando o tempo acaba, enquanto uma etapa sem limite não precisa de transição
+ * de timeout.</p>
  */
 @Primary
 @Service
 public class ConsistentSimulationValidationService extends SimulationValidationService {
 
     private static final String OPTION_WITHOUT_DESTINATION = "Uma resposta está sem destino.";
+    private static final String TIMEOUT_WITHOUT_DESTINATION =
+            "Esta etapa continua o teste, mas não tem destino para tempo esgotado.";
 
     public ConsistentSimulationValidationService(PraxisProperties praxisProperties) {
         super(praxisProperties);
@@ -65,7 +69,8 @@ public class ConsistentSimulationValidationService extends SimulationValidationS
             ValidationIssueResponse issue,
             Map<String, SimulationNodeEntity> nodesById
     ) {
-        if (issue.message().startsWith(OPTION_WITHOUT_DESTINATION)) {
+        if (issue.message().startsWith(OPTION_WITHOUT_DESTINATION)
+                || issue.message().startsWith(TIMEOUT_WITHOUT_DESTINATION)) {
             return false;
         }
 

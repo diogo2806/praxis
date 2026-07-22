@@ -585,34 +585,29 @@ function DialogEditor() {
                         Quando o tempo acabar
                       </span>
                       <select
-                        key={`${selected.id}-timeout-${selected.timeoutNextNodeId ?? "unset"}`}
-                        className={cn(
-                          "input",
-                          selected.options.some((option) => option.nextNodeId !== null) &&
-                            !selected.timeoutNextNodeId &&
-                            "border-danger/50",
-                        )}
-                        defaultValue={selected.timeoutNextNodeId ?? ""}
-                        aria-required={selected.options.some((option) => option.nextNodeId !== null)}
+                        key={`${selected.id}-timeout-${selected.timeoutNextNodeId ?? "FIM"}`}
+                        className="input"
+                        defaultValue={selected.timeoutNextNodeId ?? "FIM"}
                         onChange={(event) =>
                           updateNodeTimeoutMutation.mutate({
                             nodeId: selected.id,
-                            timeoutNextNodeId: event.target.value || null,
+                            timeoutNextNodeId:
+                              event.target.value === "FIM" ? null : event.target.value,
                           })
                         }
                       >
-                        <option value="">Selecione o destino</option>
                         {nodes
                           .filter((node) => node.turnIndex > selected.turnIndex)
                           .map((node) => (
                             <option key={node.id} value={node.id}>
-                              Etapa {node.turnIndex}
+                              Vai para etapa {node.turnIndex}
                               {node.isFinal ? " · encerramento" : ""}
                             </option>
                           ))}
+                        <option value="FIM">Vai para FIM</option>
                       </select>
                       <span className="mt-1 block text-xs text-muted-foreground">
-                        Obrigatório quando alguma alternativa continua para outra etapa.
+                        Escolha uma etapa posterior ou finalize a avaliação quando o tempo acabar.
                       </span>
                     </label>
                   )}
