@@ -54,7 +54,7 @@ class SimulationBranchNodeServiceTest {
         SimulationOptionEntity selectedOption = root.getOptions().iterator().next();
 
         when(currentEmpresaService.requiredEmpresaId()).thenReturn("tenant-1");
-        when(simulationVersionRepository.findBySimulationEmpresaIdAndSimulationIdAndVersionNumber(
+        when(simulationVersionRepository.findForBranchCreationByEmpresaIdAndSimulationIdAndVersionNumber(
                 "tenant-1",
                 "sim-ramificada",
                 1
@@ -106,7 +106,7 @@ class SimulationBranchNodeServiceTest {
         root.getOptions().add(siblingOption);
 
         when(currentEmpresaService.requiredEmpresaId()).thenReturn("tenant-1");
-        when(simulationVersionRepository.findBySimulationEmpresaIdAndSimulationIdAndVersionNumber(
+        when(simulationVersionRepository.findForBranchCreationByEmpresaIdAndSimulationIdAndVersionNumber(
                 "tenant-1",
                 "sim-ramificada",
                 1

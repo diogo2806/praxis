@@ -1,21 +1,21 @@
-# Requisitos técnicos pendentes — praxis
+# Requisitos técnicos — praxis
 
-Status: atualizado em 2026-07-22 após auditoria da branch `main`.
+Status: atualizado em 2026-07-22 após implementação da pendência DATA17.
 
-Commit auditado: `12247851c7a4a52e7cf9a278b3aaa491b2737ee2`.
+Base auditada: `9343ff088bc7bef212de05e466625df1d544bc54`.
 
-Este arquivo contém somente pendências técnicas implementáveis e comprovadas no sistema. Não inclui CI/CD, testes, QA, métricas observacionais, publicação ou marketing.
+Este arquivo registra requisitos técnicos implementáveis e comprovados no sistema. Não inclui CI/CD, testes manuais, QA, métricas observacionais, publicação ou marketing.
 
 ## 1. Persistência e concorrência
 
 | ID | Tarefa técnica | Critério de conclusão | Status |
 |---|---|---|---|
-| DATA17 | Serializar a criação de etapas ramificadas por versão para impedir identificadores duplicados em requisições concorrentes. | Duas criações simultâneas na mesma versão geram nós distintos, vinculam cada alternativa ao respectivo destino e não resultam em violação de unicidade, perda de vínculo ou resposta genérica de erro. | ⬜ Pendente |
+| DATA17 | Serializar a criação de etapas ramificadas por versão para impedir identificadores duplicados em requisições concorrentes. | Duas criações simultâneas na mesma versão geram nós distintos, vinculam cada alternativa ao respectivo destino e não resultam em violação de unicidade, perda de vínculo ou resposta genérica de erro. | ✅ Concluído |
 
 ### DATA17 — arquivos e métodos
 
-| Caminho completo | Método/campo/contrato | Como está | O que fazer |
+| Caminho completo | Método/campo/contrato | Como ficou | Evidência de conclusão |
 |---|---|---|---|
-| `backend/src/main/java/br/com/iforce/praxis/simulation/service/SimulationBranchNodeService.java` | `createBranchNode()`, `nextTurnIndex()` e `nextNodeId()` | O serviço carrega a versão sem bloqueio, calcula o próximo `turnIndex` pelo maior valor observado e deriva `nodeId` como `turno-N`. Requisições concorrentes podem ler o mesmo estado e tentar persistir o mesmo identificador; a restrição `uk_simulation_node` rejeita uma gravação depois de o fluxo já ter calculado e vinculado o destino em memória. | Executar a alocação e a persistência sob serialização por versão. A leitura usada pelo fluxo deve bloquear a linha da versão até o término da transação, ou a identificação deve ser alocada por mecanismo atômico equivalente. Manter a criação do nó e a atualização de `sourceOption.nextNodeId` na mesma transação. |
-| `backend/src/main/java/br/com/iforce/praxis/simulation/persistence/repository/SimulationVersionRepository.java` | novo método sugerido: `findForBranchCreationByEmpresaIdAndSimulationIdAndVersionNumber()` | O método usado atualmente possui apenas `@EntityGraph`; não aplica `PESSIMISTIC_WRITE`, versionamento otimista com retry seguro nem outro mecanismo que serialize duas criações na mesma versão. | Criar uma consulta específica para mutação com bloqueio de escrita sobre a versão e carregamento dos nós e alternativas necessários, preservando o isolamento por empresa. |
-| `backend/src/main/java/br/com/iforce/praxis/simulation/persistence/entity/SimulationNodeEntity.java` | restrição `uk_simulation_node` e campo `turnIndex` | Existe unicidade para `(simulation_version_id, node_id)`, mas ela atua apenas como última barreira e não evita a corrida de alocação. `turnIndex` também é derivado por leitura não serializada. | Manter a restrição como proteção de integridade e garantir que `nodeId` e `turnIndex` sejam definidos dentro da seção serializada. Caso a estratégia adotada use conflito de banco, tratar especificamente a colisão com nova alocação segura, sem converter outras violações em sucesso. |
+| `backend/src/main/java/br/com/iforce/praxis/simulation/service/SimulationBranchNodeService.java` | `createBranchNode()`, `nextTurnIndex()` e `nextNodeId()` | A versão é obtida por uma consulta exclusiva para criação de ramificações, com bloqueio pessimista mantido durante toda a transação. A alocação de `turnIndex` e `nodeId`, a inclusão do novo nó e a atualização de `sourceOption.nextNodeId` permanecem na mesma transação. | A segunda requisição concorrente só calcula os identificadores depois do commit da primeira e enxerga o nó recém-criado. |
+| `backend/src/main/java/br/com/iforce/praxis/simulation/persistence/repository/SimulationVersionRepository.java` | `findForBranchCreationByEmpresaIdAndSimulationIdAndVersionNumber()` | Foi adicionada uma consulta com `PESSIMISTIC_WRITE` que bloqueia a linha da versão e preserva o isolamento por empresa, simulação e número da versão. Os nós e alternativas são carregados dentro da mesma transação após a aquisição do bloqueio. | O bloqueio é exercitado por duas transações reais contra PostgreSQL no teste de concorrência. |
+| `backend/src/main/java/br/com/iforce/praxis/simulation/persistence/entity/SimulationNodeEntity.java` | restrição `uk_simulation_node` e campo `turnIndex` | A restrição de unicidade foi mantida como última barreira de integridade. `nodeId` e `turnIndex` agora são calculados somente dentro da seção serializada. | `SimulationBranchNodeConcurrencyTest` confirma a criação simultânea de `turno-2` e `turno-3`, sem colisão e com os dois vínculos persistidos. |
