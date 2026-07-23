@@ -1,119 +1,35 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
-  Outlet,
+  HeadContent,
   Link,
+  Outlet,
+  Scripts,
   createRootRouteWithContext,
   useRouter,
   useRouterState,
-  HeadContent,
-  Scripts,
 } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
 import { useEffect, type ReactNode } from "react";
 
-import appCss from "../styles/app.css?url";
-import flowCanvasWorkspaceCss from "../styles/flow-canvas-workspace.css?url";
-import accessibilityOverridesCss from "../styles/accessibility-overrides.css?url";
-import tablesCss from "../styles/tables.css?url";
-import landingAccessibilityCss from "../styles/landing-accessibility.css?url";
 import { GlobalTablePagination } from "../components/global-table-pagination";
 import { ScreenManual } from "../components/screen-manual";
 import { reportAppError } from "../lib/app-error-reporting";
-import { resolveRuntimeConfigFromEnv } from "../lib/runtime-config.server";
 import { LanguageProvider, useLanguage } from "../lib/language-context";
+import { resolveRuntimeConfigFromEnv } from "../lib/runtime-config.server";
 import { clearAuthenticatedSession } from "../lib/session";
+import accessibilityOverridesCss from "../styles/accessibility-overrides.css?url";
+import appCss from "../styles/app.css?url";
+import flowCanvasWorkspaceCss from "../styles/flow-canvas-workspace.css?url";
+import landingAccessibilityCss from "../styles/landing-accessibility.css?url";
+import tablesCss from "../styles/tables.css?url";
 
 const getRuntimeConfig = createServerFn({ method: "GET" }).handler(() =>
   resolveRuntimeConfigFromEnv(),
 );
 
-const landingPricingBootstrap = String.raw`
-(() => {
-  const version = "2026-07-18-annual-v2";
-  const rows = [
-    ["100", "54,90", "5.490,00"],
-    ["300", "49,90", "14.970,00"],
-    ["1.000", "44,90", "44.900,00"],
-    ["3.000", "39,90", "119.700,00"],
-  ];
-  const expectedQuantities = rows.map((row) => row[0]).join("|");
-
-  const apply = () => {
-    if (window.location.pathname !== "/") return false;
-
-    const section = document.getElementById("contratacao");
-    const table = section && section.querySelector("table.tiers");
-    const tbody = table && table.querySelector("tbody");
-    if (!section || !table || !tbody) return false;
-
-    const quantityHeader = table.querySelector("#thQty");
-    const totalHeader = table.querySelector("#thTotal");
-    const renderedQuantities = Array.from(tbody.querySelectorAll("td.q"))
-      .map((cell) => cell.textContent.trim())
-      .join("|");
-    const alreadyApplied =
-      section.dataset.pricingVersion === version &&
-      quantityHeader && quantityHeader.textContent.trim() === "Avaliações/ano" &&
-      totalHeader && totalHeader.textContent.trim() === "Total/ano" &&
-      renderedQuantities === expectedQuantities;
-    if (alreadyApplied) return true;
-
-    const cycle = section.querySelector(".cycle");
-    if (cycle) cycle.remove();
-
-    const cycleHint = section.querySelector(".cycle-hint");
-    if (cycleHint) {
-      cycleHint.textContent = "A assinatura Profissional é anual. O pacote completo entra no saldo após a confirmação do pagamento e pode ser usado durante os 12 meses.";
-    }
-
-    const description = section.querySelector(".plan.feature .pfor");
-    if (description) {
-      description.textContent = "Para quem avalia com volume recorrente. Quanto maior o pacote anual, menor o preço de cada avaliação.";
-    }
-
-    table.setAttribute("aria-label", "Pacotes anuais por volume");
-    if (quantityHeader) quantityHeader.textContent = "Avaliações/ano";
-    if (totalHeader) totalHeader.textContent = "Total/ano";
-
-    tbody.innerHTML = rows.map((row) =>
-      '<tr><td class="q">' + row[0] + '</td><td class="u">R$ ' + row[1] + '</td><td class="t">R$ ' + row[2] + '</td></tr>'
-    ).join("");
-
-    const note = section.querySelector("#tierNote");
-    if (note) {
-      note.textContent = "Cobrança anual: o pacote completo entra no seu saldo após o pagamento, e o que não for usado permanece disponível durante a vigência de 12 meses.";
-    }
-
-    document.querySelectorAll("#faq .qa").forEach((item) => {
-      const question = item.querySelector(".q");
-      if (!question || question.textContent.trim() !== "Como funciona a contratação?") return;
-      const answer = item.querySelector(".ans p");
-      if (answer) {
-        answer.textContent = "Há compra avulsa para demandas pontuais e assinatura anual Profissional com pacotes de 100, 300, 1.000 ou 3.000 avaliações. O pagamento anual libera o pacote completo no saldo para uso durante os 12 meses. Operações Enterprise, integrações, suporte específico e condições contratuais ficam sob consulta conforme volume e escopo.";
-      }
-    });
-
-    section.dataset.pricingVersion = version;
-    return true;
-  };
-
-  const observer = new MutationObserver(() => {
-    apply();
-  });
-  observer.observe(document.documentElement, { childList: true, subtree: true });
-
-  apply();
-  window.addEventListener("DOMContentLoaded", apply, { once: true });
-  window.addEventListener("load", apply, { once: true });
-  window.setTimeout(apply, 0);
-  window.setTimeout(apply, 250);
-  window.setTimeout(apply, 1000);
-  window.setTimeout(() => observer.disconnect(), 15000);
-})();
-`;
-
 function NotFoundComponent() {
   const { t } = useLanguage();
+
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
       <div className="max-w-md text-center">
@@ -134,10 +50,11 @@ function NotFoundComponent() {
 }
 
 function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
-  console.error(error);
   const router = useRouter();
   const { t } = useLanguage();
+
   useEffect(() => {
+    console.error(error);
     reportAppError(error, { boundary: "tanstack_root_error_component" });
   }, [error]);
 
@@ -150,6 +67,7 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
         <p className="mt-2 text-sm text-muted-foreground">{t.common.somethingWentWrong}</p>
         <div className="mt-6 flex flex-wrap justify-center gap-2">
           <button
+            type="button"
             onClick={() => {
               router.invalidate();
               reset();
@@ -196,31 +114,12 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "twitter:site", content: "@iForce" },
     ],
     links: [
-      {
-        rel: "icon",
-        type: "image/svg+xml",
-        href: "/favicon.svg",
-      },
-      {
-        rel: "stylesheet",
-        href: appCss,
-      },
-      {
-        rel: "stylesheet",
-        href: flowCanvasWorkspaceCss,
-      },
-      {
-        rel: "stylesheet",
-        href: tablesCss,
-      },
-      {
-        rel: "stylesheet",
-        href: landingAccessibilityCss,
-      },
-      {
-        rel: "stylesheet",
-        href: accessibilityOverridesCss,
-      },
+      { rel: "icon", type: "image/svg+xml", href: "/favicon.svg" },
+      { rel: "stylesheet", href: appCss },
+      { rel: "stylesheet", href: flowCanvasWorkspaceCss },
+      { rel: "stylesheet", href: tablesCss },
+      { rel: "stylesheet", href: landingAccessibilityCss },
+      { rel: "stylesheet", href: accessibilityOverridesCss },
     ],
   }),
   shellComponent: RootShell,
@@ -241,10 +140,6 @@ function RootShell({ children }: { children: ReactNode }) {
             dangerouslySetInnerHTML={{
               __html: `window.__PRAXIS_CONFIG__=${JSON.stringify(runtimeConfig)};`,
             }}
-          />
-          <script
-            data-praxis-pricing-version="2026-07-18-annual-v2"
-            dangerouslySetInnerHTML={{ __html: landingPricingBootstrap }}
           />
         </head>
         <body>
@@ -320,8 +215,6 @@ function VLibrasWidget() {
       window.addEventListener("load", startAfterLoad, { once: true });
     }
 
-    document.querySelector<HTMLAnchorElement>("a.brand")?.removeAttribute("aria-label");
-
     return () => {
       disposed = true;
       observer.disconnect();
@@ -334,7 +227,8 @@ function VLibrasWidget() {
   return (
     <div
       dangerouslySetInnerHTML={{
-        __html: `<div vw class="enabled"><div vw-access-button class="active"></div><div vw-plugin-wrapper><div class="vw-plugin-top-wrapper"></div></div></div>`,
+        __html:
+          '<div vw class="enabled"><div vw-access-button class="active"></div><div vw-plugin-wrapper><div class="vw-plugin-top-wrapper"></div></div></div>',
       }}
     />
   );
