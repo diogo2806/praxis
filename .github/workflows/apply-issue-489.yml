@@ -1,0 +1,53 @@
+name: Aplicar correção de internacionalização da issue 489
+
+on:
+  pull_request:
+    branches:
+      - main
+    types:
+      - opened
+      - synchronize
+      - reopened
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  apply-patch:
+    if: ${{ github.head_ref == 'fix/issue-489-candidate-i18n-20260723' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+          fetch-depth: 0
+
+      - name: Verificar se a correção já foi aplicada
+        id: guard
+        shell: bash
+        run: |
+          if [ ! -f scripts/apply_issue_489.py ]; then
+            echo "apply=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "apply=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Aplicar alterações e validar contrato
+        if: steps.guard.outputs.apply == 'true'
+        shell: bash
+        run: |
+          python3 scripts/apply_issue_489.py
+          node frontend/scripts/test-candidate-experience-i18n.mjs
+          git rm scripts/apply_issue_489.py
+          git rm .github/workflows/apply-issue-489.yml
+
+      - name: Registrar correção
+        if: steps.guard.outputs.apply == 'true'
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "fix(i18n): traduzir execução da avaliação do candidato (#489)"
+          git push origin HEAD:${{ github.head_ref }}
