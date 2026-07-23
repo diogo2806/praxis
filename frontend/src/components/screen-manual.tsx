@@ -24,6 +24,7 @@ import { resolveAnalysisOperationManual } from "@/lib/screen-manual-analysis-ope
 import { resolveCompetencyOwnershipManual } from "@/lib/screen-manual-competency-ownership";
 import { useLanguage } from "@/lib/language-context";
 import { resolvePartnerSpecialistManual } from "@/lib/screen-manual-specialist";
+import { resolvePortabilityManual } from "@/lib/screen-manual-portability";
 import { resolvePreviewJourneyManual } from "@/lib/screen-manual-preview";
 import { resolvePublicationManual } from "@/lib/screen-manual-publication";
 import { resolveScenarioOwnershipManual } from "@/lib/screen-manual-scenario-ownership";
@@ -93,11 +94,16 @@ export function ScreenManual({ pathname, iconOnly = false, className }: ScreenMa
     resolveAnalysisOperationManual(pathname) ??
     resolvePartnerSpecialistManual(pathname) ??
     resolvePreviewJourneyManual(pathname) ??
+    resolvePortabilityManual(pathname) ??
     resolveScenarioOwnershipManual(pathname) ??
     resolvePublicationManual(pathname) ??
     resolveCompetencyOwnershipManual(pathname) ??
     resolveScreenManualOverride(pathname) ??
     resolveScreenManual(pathname);
+  const completeProcessHref =
+    manual.id === "portabilidade-avaliacoes"
+      ? "/nova/portabilidade#processo-completo"
+      : `/manual#${manual.id}`;
 
   return (
     <Sheet>
@@ -130,7 +136,7 @@ export function ScreenManual({ pathname, iconOnly = false, className }: ScreenMa
 
         <div className="sticky bottom-0 border-t border-border bg-background/95 p-5 backdrop-blur">
           <SheetClose asChild>
-            <a href={`/manual#${manual.id}`} className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+            <a href={completeProcessHref} className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
               {copy.completeProcess}
               <ExternalLink className="h-4 w-4" />
             </a>
