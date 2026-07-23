@@ -1,40 +1,26 @@
 package br.com.iforce.praxis.auth.controller;
 
 import br.com.iforce.praxis.auth.dto.ForgotPasswordRequest;
-
 import br.com.iforce.praxis.auth.dto.ResetPasswordRequest;
-
 import br.com.iforce.praxis.auth.dto.ResetPasswordTokenResponse;
-
+import br.com.iforce.praxis.auth.service.ClientIpResolver;
 import br.com.iforce.praxis.auth.service.PasswordResetRateLimiter;
-
 import br.com.iforce.praxis.auth.service.PasswordResetService;
 
 import jakarta.servlet.http.HttpServletRequest;
-
 import jakarta.validation.Valid;
 
 import org.springframework.http.HttpStatus;
-
 import org.springframework.http.ResponseEntity;
-
 import org.springframework.web.bind.annotation.GetMapping;
-
 import org.springframework.web.bind.annotation.PathVariable;
-
 import org.springframework.web.bind.annotation.PostMapping;
-
 import org.springframework.web.bind.annotation.RequestBody;
-
 import org.springframework.web.bind.annotation.RequestMapping;
-
 import org.springframework.web.bind.annotation.RestController;
-
 import org.springframework.web.server.ResponseStatusException;
 
-
 import java.util.Map;
-
 
 /**
  * Porta de entrada (API) do fluxo público de recuperação de senha.
@@ -52,13 +38,16 @@ public class PasswordResetController {
 
     private final PasswordResetService passwordResetService;
     private final PasswordResetRateLimiter rateLimiter;
+    private final ClientIpResolver clientIpResolver;
 
     public PasswordResetController(
             PasswordResetService passwordResetService,
-            PasswordResetRateLimiter rateLimiter
+            PasswordResetRateLimiter rateLimiter,
+            ClientIpResolver clientIpResolver
     ) {
         this.passwordResetService = passwordResetService;
         this.rateLimiter = rateLimiter;
+        this.clientIpResolver = clientIpResolver;
     }
 
     /**
@@ -69,7 +58,7 @@ public class PasswordResetController {
             @Valid @RequestBody ForgotPasswordRequest request,
             HttpServletRequest httpRequest
     ) {
-        String ip = clientIp(httpRequest);
+        String ip = clientIpResolver.resolve(httpRequest);
         enforceRateLimit("forgot:ip:" + ip);
         enforceRateLimit("forgot:user:" + request.empresaId() + "|" + request.email());
 
@@ -86,7 +75,7 @@ public class PasswordResetController {
             @PathVariable String token,
             HttpServletRequest httpRequest
     ) {
-        enforceRateLimit("reset-validate:ip:" + clientIp(httpRequest));
+        enforceRateLimit("reset-validate:ip:" + clientIpResolver.resolve(httpRequest));
         return ResponseEntity.ok(passwordResetService.validateToken(token));
     }
 
@@ -98,7 +87,7 @@ public class PasswordResetController {
             @Valid @RequestBody ResetPasswordRequest request,
             HttpServletRequest httpRequest
     ) {
-        String ip = clientIp(httpRequest);
+        String ip = clientIpResolver.resolve(httpRequest);
         enforceRateLimit("reset-confirm:ip:" + ip);
 
         passwordResetService.confirmReset(request, ip);
@@ -112,13 +101,5 @@ public class PasswordResetController {
                     "Muitas tentativas. Aguarde alguns minutos e tente novamente."
             );
         }
-    }
-
-    private String clientIp(HttpServletRequest request) {
-        String forwarded = request.getHeader("X-Forwarded-For");
-        if (forwarded != null && !forwarded.isBlank()) {
-            return forwarded.split(",")[0].trim();
-        }
-        return request.getRemoteAddr();
     }
 }
