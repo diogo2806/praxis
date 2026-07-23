@@ -106,16 +106,20 @@ Fundir as duas políticas poderia enfraquecer segurança. Apenas utilitários de
 
 ### `praxis-legacy.ts`
 
-O arquivo ainda concentra contratos e chamadas de muitas áreas. `praxis-contract.ts` adapta nomes históricos corrompidos para não expô-los aos consumidores novos.
+O arquivo ainda concentra contratos e chamadas de muitas áreas, mas os contratos de etapas e alternativas agora usam diretamente os nomes canônicos do backend: `plainTextDescription` e `timeJustification`.
 
-A remoção segura exige migração por domínio:
+`praxis-contract.ts` não reconstrói mais esses modelos com `Omit` nem mascara incompatibilidades. A fachada mantém somente comportamentos adicionais, como estabilização de nós e atualização concorrente de competências, apontando para a mesma definição tipada.
 
-1. mover tipos e funções para módulos pequenos;
-2. atualizar consumidores;
-3. manter reexports temporários;
-4. remover o adaptador somente quando não houver imports legados.
+Importações diretas do módulo legado fora da implementação interna de `frontend/src/lib/api` são bloqueadas pelo ESLint e pelo teste arquitetural `test:api-contracts`. Novos consumidores devem usar `@/lib/api/praxis`.
 
-Não deve ser reescrito de uma vez porque isso amplia o risco sobre toda a aplicação.
+A dívida restante é de modularização por domínio:
+
+1. mover tipos e funções para módulos menores;
+2. manter `praxis.ts` como fachada pública estável;
+3. atualizar módulos internos gradualmente;
+4. remover o arquivo legado quando ele não concentrar mais responsabilidades.
+
+Essa divisão deve continuar de forma incremental para não ampliar o risco sobre toda a aplicação.
 
 ### Serviços grandes de integração e parceiros
 
