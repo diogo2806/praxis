@@ -66,12 +66,12 @@ jobs:
               1,
           )
           regression_test = '''    @Test
-    void declaresProductionConstructorForSpringInjection() {
-        assertThat(IntegrityReviewService.class.getConstructors()).hasSize(1);
-        assertThat(IntegrityReviewService.class.getConstructors()[0].isAnnotationPresent(Autowired.class)).isTrue();
-    }
+          void declaresProductionConstructorForSpringInjection() {
+              assertThat(IntegrityReviewService.class.getConstructors()).hasSize(1);
+              assertThat(IntegrityReviewService.class.getConstructors()[0].isAnnotationPresent(Autowired.class)).isTrue();
+          }
 
-'''
+          '''
           content = content.replace(test_anchor, regression_test + test_anchor, 1)
           test.write_text(content, encoding="utf-8")
           PY
