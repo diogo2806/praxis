@@ -4,6 +4,7 @@ import br.com.iforce.praxis.gupy.dto.TestResultResponse;
 import com.sun.net.httpserver.HttpServer;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
@@ -25,6 +26,14 @@ class RestClientResultWebhookClientTest {
         if (server != null) {
             server.stop(0);
         }
+    }
+
+    @Test
+    void declaresProductionConstructorForSpringInjection() throws Exception {
+        assertThat(GupyOutboundUrlValidator.class
+                .getConstructor(boolean.class)
+                .isAnnotationPresent(Autowired.class))
+                .isTrue();
     }
 
     @Test
