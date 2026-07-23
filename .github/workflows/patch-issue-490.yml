@@ -1,0 +1,158 @@
+name: Patch issue 490
+
+on:
+  push:
+    branches:
+      - fix/issue-490-descricao-acessivel-midias
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/issue-490-descricao-acessivel-midias
+          fetch-depth: 0
+
+      - name: Aplicar correção de acessibilidade
+        shell: bash
+        run: |
+          python3 <<'PY'
+          from pathlib import Path
+
+          candidate_path = Path("frontend/src/routes/candidato.tsx")
+          source = candidate_path.read_text(encoding="utf-8")
+
+          old_signature = '''function CandidateMedia({
+            mediaUrl,
+            mediaType,
+          }: {
+            mediaUrl: string;
+            mediaType: MediaType | null;
+          }) {'''
+          new_signature = '''function CandidateMedia({
+            mediaUrl,
+            mediaType,
+            accessibleDescription,
+            audioLabel,
+          }: {
+            mediaUrl: string;
+            mediaType: MediaType | null;
+            accessibleDescription: string | null;
+            audioLabel: string;
+          }) {'''
+          assert old_signature in source, "assinatura de CandidateMedia não encontrada"
+          source = source.replace(old_signature, new_signature, 1)
+
+          old_audio = '''      <audio
+                controls
+                src={mediaUrl}'''
+          new_audio = '''      <audio
+                aria-label={audioLabel}
+                controls
+                src={mediaUrl}'''
+          assert old_audio in source, "áudio de CandidateMedia não encontrado"
+          source = source.replace(old_audio, new_audio, 1)
+
+          old_alt = '      alt="Mídia do atendimento"'
+          new_alt = '      alt={accessibleDescription?.trim() || ""}'
+          assert old_alt in source, "alt genérico não encontrado"
+          source = source.replace(old_alt, new_alt, 1)
+
+          old_node_call = '''                  <CandidateMedia
+                            mediaUrl={currentNode.midiaUrl}
+                            mediaType={currentNode.tipoMidia ?? null}
+                          />'''
+          new_node_call = '''                  <CandidateMedia
+                            mediaUrl={currentNode.midiaUrl}
+                            mediaType={currentNode.tipoMidia ?? null}
+                            accessibleDescription={currentNode.descricaoAcessivel}
+                            audioLabel="Áudio do cenário da avaliação"
+                          />'''
+          assert old_node_call in source, "uso de CandidateMedia na etapa não encontrado"
+          source = source.replace(old_node_call, new_node_call, 1)
+
+          old_option_call = '''                        <CandidateMedia
+                                  mediaUrl={option.mediaUrl}
+                                  mediaType={option.tipoMidia ?? null}
+                                />'''
+          new_option_call = '''                        <CandidateMedia
+                                  mediaUrl={option.mediaUrl}
+                                  mediaType={option.tipoMidia ?? null}
+                                  accessibleDescription={option.descricaoAcessivel}
+                                  audioLabel={`Áudio da alternativa ${OPTION_LETTERS[idx] ?? String(idx + 1)}`}
+                                />'''
+          assert old_option_call in source, "uso de CandidateMedia na alternativa não encontrado"
+          source = source.replace(old_option_call, new_option_call, 1)
+
+          old_node_ad = '<audio controls src={currentNode.audioDescricaoUrl}>'
+          new_node_ad = '<audio aria-label="Audiodescrição do cenário" controls src={currentNode.audioDescricaoUrl}>'
+          assert old_node_ad in source, "audiodescrição da etapa não encontrada"
+          source = source.replace(old_node_ad, new_node_ad, 1)
+
+          old_option_ad = '<audio controls src={option.audioDescricaoUrl}>'
+          new_option_ad = '<audio aria-label={`Audiodescrição da alternativa ${OPTION_LETTERS[idx] ?? String(idx + 1)}`} controls src={option.audioDescricaoUrl}>'
+          assert old_option_ad in source, "audiodescrição da alternativa não encontrada"
+          source = source.replace(old_option_ad, new_option_ad, 1)
+
+          candidate_path.write_text(source, encoding="utf-8")
+
+          test_path = Path("frontend/scripts/test-candidate-media-a11y.mjs")
+          test_path.write_text('''import assert from "node:assert/strict";
+          import { readFileSync } from "node:fs";
+          import { fileURLToPath } from "node:url";
+          import { dirname, resolve } from "node:path";
+
+          const here = dirname(fileURLToPath(import.meta.url));
+          const source = readFileSync(resolve(here, "../src/routes/candidato.tsx"), "utf8");
+
+          assert.match(source, /accessibleDescription: string \\| null;/);
+          assert.match(source, /alt=\\{accessibleDescription\\?\\.trim\\(\\) \\|\\| ""\\}/);
+          assert.match(source, /accessibleDescription=\\{currentNode\\.descricaoAcessivel\\}/);
+          assert.match(source, /accessibleDescription=\\{option\\.descricaoAcessivel\\}/);
+          assert.match(source, /aria-label="Audiodescrição do cenário"/);
+          assert.match(source, /aria-label=\\{`Audiodescrição da alternativa/);
+          assert.doesNotMatch(source, /alt="Mídia do atendimento"/);
+
+          console.log("CandidateMedia usa descrições acessíveis contextuais e trata ausência como imagem decorativa.");
+          ''', encoding="utf-8")
+
+          package_path = Path("frontend/package.json")
+          package_source = package_path.read_text(encoding="utf-8")
+          old_script = '    "test:screen-manuals": "node scripts/test-screen-manuals.mjs"'
+          new_script = '    "test:screen-manuals": "node scripts/test-screen-manuals.mjs",\n    "test:candidate-media-a11y": "node scripts/test-candidate-media-a11y.mjs"'
+          assert old_script in package_source, "script de testes não encontrado no package.json"
+          package_path.write_text(package_source.replace(old_script, new_script, 1), encoding="utf-8")
+
+          ci_path = Path(".github/workflows/ci.yml")
+          ci_source = ci_path.read_text(encoding="utf-8")
+          anchor = '''      - name: Upload frontend diagnostics on failure
+                if: failure()'''
+          addition = '''      - name: Test candidate media accessibility
+                shell: bash
+                run: |
+                  set -o pipefail
+                  npm run test:candidate-media-a11y 2>&1 | tee -a frontend.log
+
+              - name: Upload frontend diagnostics on failure
+                if: failure()'''
+          assert anchor in ci_source, "ponto de inclusão do teste na CI não encontrado"
+          ci_path.write_text(ci_source.replace(anchor, addition, 1), encoding="utf-8")
+          PY
+
+          cd frontend
+          node scripts/test-candidate-media-a11y.mjs
+          cd ..
+
+      - name: Remover workflow temporário e publicar commit
+        shell: bash
+        run: |
+          git rm .github/workflows/patch-issue-490.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add frontend/src/routes/candidato.tsx frontend/scripts/test-candidate-media-a11y.mjs frontend/package.json .github/workflows/ci.yml
+          git commit -m "fix(frontend): usar descrições acessíveis nas mídias"
+          git push origin HEAD:fix/issue-490-descricao-acessivel-midias
