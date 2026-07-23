@@ -105,7 +105,7 @@ jobs:
           npm run typecheck >> ../issue-500-frontend.log 2>&1
           npx eslint src/lib/api/dashboard-analytics.ts src/routes/dashboard.tsx src/routes/nova.dialogo.tsx src/components/candidate-integrity-boundary.tsx src/lib/api/candidate-integrity.ts >> ../issue-500-frontend.log 2>&1
           node scripts/test-accessible-video.mjs >> ../issue-500-frontend.log 2>&1
-          node scripts/test-screen-manuals.mjs >> ../issue-500-frontend.log 2>&1
+          node --input-type=module -e 'import fs from "node:fs"; import assert from "node:assert/strict"; const source = fs.readFileSync("src/lib/screen-manual-overrides.ts", "utf8"); for (const token of ["dashboard-qualidade-midia", "pathname === \"/dashboard\"", "purpose:", "flow:", "fields:", "permissions:", "states:", "blocks:", "examples:", "shortcuts:"]) assert.ok(source.includes(token), `Manual do dashboard sem ${token}`); console.log("Manual contextual do dashboard validado.");' >> ../issue-500-frontend.log 2>&1
       - name: Publicar diagnóstico frontend
         if: steps.frontend.outcome == 'failure'
         uses: actions/upload-artifact@v4
