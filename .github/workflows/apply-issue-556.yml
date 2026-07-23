@@ -1,0 +1,61 @@
+name: Aplicar correção da issue 556
+
+on:
+  pull_request:
+    branches:
+      - main
+    types:
+      - opened
+      - synchronize
+      - reopened
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  apply-fix:
+    if: ${{ github.head_ref == 'fix/556-gupy-canonical-urls-20260723' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+          fetch-depth: 0
+
+      - name: Corrigir URLs provisórias e validar documentação
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          path = Path("docs/GUPY-FONTE-CANONICA.md")
+          content = path.read_text(encoding="utf-8")
+          replacements = {
+              "https://developers.gupy.io/docs/configurando-webhooks-e-obtendo-payloads-reais-":
+                  "https://developers.gupy.io/docs/configurando-webhooks-e-obtendo-payloads-reais",
+              "https://developers.gupy.io/docs/fluxo-de-admiss%C3%A3o-para-sistema-de-folha-":
+                  "https://developers.gupy.io/docs/fluxo-de-admiss%C3%A3o-para-sistema-de-folha-copy",
+          }
+          expected_counts = {
+              "https://developers.gupy.io/docs/configurando-webhooks-e-obtendo-payloads-reais-": 2,
+              "https://developers.gupy.io/docs/fluxo-de-admiss%C3%A3o-para-sistema-de-folha-": 1,
+          }
+          for source, target in replacements.items():
+              count = content.count(source)
+              if count != expected_counts[source]:
+                  raise SystemExit(f"Quantidade inesperada para {source}: {count}")
+              content = content.replace(source, target)
+          path.write_text(content, encoding="utf-8")
+          PY
+          python3 scripts/validate_docs.py
+          git rm .github/workflows/apply-issue-556.yml
+
+      - name: Registrar correção
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "fix(docs): remover URLs provisórias da fonte Gupy (#556)"
+          git push origin HEAD:${{ github.head_ref }}
