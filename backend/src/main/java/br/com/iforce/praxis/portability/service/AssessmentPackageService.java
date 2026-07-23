@@ -202,8 +202,8 @@ public class AssessmentPackageService {
                 .map(competency -> new CompetencyContent(
                         competency.getName(),
                         competency.getWeight(),
-                        competency.getTargetScore(),
-                        competency.getTier() == null ? null : competency.getTier().getDescricao()
+                        (double) competency.getTargetScore(),
+                        competency.getTier() == null ? ResultTier.MAJOR.getDescricao() : competency.getTier().getDescricao()
                 ))
                 .toList();
         List<NodeContent> nodes = version.getNodes().stream()
@@ -332,9 +332,9 @@ public class AssessmentPackageService {
             competency.setSimulationVersion(version);
             competency.setName(source.name().trim());
             competency.setWeight(source.weight());
-            competency.setTargetScore(source.targetScore());
+            competency.setTargetScore(source.targetScore() == null ? 70 : source.targetScore().intValue());
             competency.setTier(source.tier() == null || source.tier().isBlank()
-                    ? null
+                    ? ResultTier.MAJOR
                     : ResultTier.fromString(source.tier()));
             version.getCompetencies().add(competency);
         }
@@ -377,7 +377,7 @@ public class AssessmentPackageService {
         option.setText(source.text());
         option.setNextNodeId(trimToNull(source.nextNodeId()));
         option.setCritical(source.critical());
-        option.setAuditNote(source.behavioralJustification() == null ? "" : source.behavioralJustification().trim());
+        option.setAuditNote(source.behavioralJustification().trim());
         option.setPlainTextDescription(trimToNull(source.plainTextDescription()));
         option.setAudioDescriptionUrl(trimToNull(source.audioDescriptionUrl()));
         option.setMediaUrl(trimToNull(source.mediaUrl()));
