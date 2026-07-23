@@ -2,6 +2,7 @@ package br.com.iforce.praxis.featureflag.service;
 
 import br.com.iforce.praxis.audit.service.AuditEventService;
 import br.com.iforce.praxis.featureflag.dto.FeatureFlagContracts.EvaluationRequest;
+import br.com.iforce.praxis.featureflag.dto.FeatureFlagContracts.EvaluationResponse;
 import br.com.iforce.praxis.featureflag.dto.FeatureFlagContracts.UpsertRequest;
 import br.com.iforce.praxis.featureflag.persistence.entity.FeatureFlagEntity;
 import br.com.iforce.praxis.featureflag.persistence.repository.FeatureFlagMetricRepository;
@@ -59,8 +60,8 @@ class FeatureFlagServiceTest {
                 "candidate-42"
         );
 
-        var first = service.evaluate("flag-1", context);
-        var second = service.evaluate("flag-1", context);
+        EvaluationResponse first = service.evaluate("flag-1", context);
+        EvaluationResponse second = service.evaluate("flag-1", context);
 
         assertThat(first.rolloutBucket()).isBetween(0, 9_999);
         assertThat(second.rolloutBucket()).isEqualTo(first.rolloutBucket());
@@ -74,7 +75,7 @@ class FeatureFlagServiceTest {
         flag.setKillSwitch(true);
         when(featureFlagRepository.findById("flag-2")).thenReturn(Optional.of(flag));
 
-        var result = service.evaluate("flag-2", new EvaluationRequest(
+        EvaluationResponse result = service.evaluate("flag-2", new EvaluationRequest(
                 "empresa-piloto",
                 null,
                 "user-1",
