@@ -21,10 +21,14 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -73,6 +77,7 @@ class ParticipationBulkServiceTest {
                 "active",
                 true,
                 true,
+                true,
                 true
         );
         ParticipationMonitoringResponse incompatible = participation(
@@ -80,6 +85,7 @@ class ParticipationBulkServiceTest {
                 "individual",
                 "completed",
                 "active",
+                true,
                 false,
                 false,
                 false
@@ -124,11 +130,89 @@ class ParticipationBulkServiceTest {
                 .hasMessageContaining("justificativa");
     }
 
+    @Test
+    void activeFilterExcludesParticipationWithoutRecentActivity() {
+        ParticipationMonitoringResponse active = participation(
+                "active-1",
+                "individual",
+                "inProgress",
+                "active",
+                true,
+                false,
+                false,
+                false
+        );
+        ParticipationMonitoringResponse stale = participation(
+                "stale-1",
+                "individual",
+                "inProgress",
+                "active",
+                false,
+                false,
+                false,
+                false
+        );
+        when(queryService.search(0, 100, null, null)).thenReturn(
+                new ParticipationMonitoringPageResponse(List.of(active, stale), 0, 100, 2, 1)
+        );
+
+        BulkPreviewResponse preview = service.preview(new BulkPreviewRequest(
+                "EXPORT",
+                "FILTER",
+                List.of(),
+                new BulkFilter(null, null, "active", null, null),
+                null,
+                null,
+                null
+        ));
+
+        assertThat(preview.selectedCount()).isEqualTo(1);
+        assertThat(preview.eligibleCount()).isEqualTo(1);
+    }
+
+    @Test
+    void filterSelectionAboveFiveThousandRequiresRefinement() {
+        when(queryService.search(anyInt(), eq(100), isNull(), isNull())).thenAnswer(invocation -> {
+            int page = invocation.getArgument(0, Integer.class);
+            List<ParticipationMonitoringResponse> items = new ArrayList<>();
+            for (int index = 0; index < 100; index++) {
+                String id = "item-" + (page * 100 + index);
+                items.add(participation(
+                        id,
+                        "individual",
+                        "notStarted",
+                        "active",
+                        true,
+                        false,
+                        false,
+                        false
+                ));
+            }
+            return new ParticipationMonitoringPageResponse(items, page, 100, 5_100, 51);
+        });
+
+        BulkPreviewRequest request = new BulkPreviewRequest(
+                "EXPORT",
+                "FILTER",
+                List.of(),
+                new BulkFilter(null, null, null, null, null),
+                null,
+                null,
+                null
+        );
+
+        assertThatThrownBy(() -> service.preview(request))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasMessageContaining("mais de 5000 participações")
+                .hasMessageContaining("Refine os filtros");
+    }
+
     private static ParticipationMonitoringResponse participation(
             String id,
             String type,
             String status,
             String linkStatus,
+            boolean active,
             boolean canResend,
             boolean canExtend,
             boolean canCancel
@@ -151,7 +235,7 @@ class ParticipationBulkServiceTest {
                 0,
                 0,
                 now,
-                true,
+                active,
                 "/candidate/" + id,
                 now.plusSeconds(86_400),
                 linkStatus,
