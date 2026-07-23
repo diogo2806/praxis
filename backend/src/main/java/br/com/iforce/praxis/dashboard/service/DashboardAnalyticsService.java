@@ -263,16 +263,16 @@ public class DashboardAnalyticsService {
         }
 
         private void addDuration(CandidateAttemptEntity attempt) {
-    if (attempt.getStartedAt() == null
-            || attempt.getFinishedAt() == null
-            || !durationAttemptIds.add(attempt.getId())) {
-        return;
-    }
-    long seconds = Duration.between(attempt.getStartedAt(), attempt.getFinishedAt()).getSeconds();
-    durationSeconds += Math.max(0, seconds);
-}
+            if (attempt.getStartedAt() == null
+                    || attempt.getFinishedAt() == null
+                    || !durationAttemptIds.add(attempt.getId())) {
+                return;
+            }
+            long seconds = Duration.between(attempt.getStartedAt(), attempt.getFinishedAt()).getSeconds();
+            durationSeconds += Math.max(0, seconds);
+        }
 
-private MediaQualityComparison toResponse() {
+        private MediaQualityComparison toResponse() {
             long responseTotal = responses.values().stream().mapToLong(Long::longValue).sum();
             List<ResponseDistribution> distribution = responses.entrySet().stream()
                     .map(entry -> new ResponseDistribution(
