@@ -22,7 +22,8 @@ jobs:
       - name: Aplicar, validar e publicar
         run: |
           set +e
-          python - <<'PY' > .github/issue-489-error.txt 2>&1
+          (
+            python - <<'PY'
           import base64
           import gzip
           import hashlib
@@ -37,6 +38,11 @@ jobs:
           source = gzip.decompress(base64.b64decode(encoded)).decode('utf-8')
           exec(compile(source, 'apply_issue_489.py', 'exec'), {'__name__': '__main__'})
           PY
+            cd frontend
+            node scripts/test-candidate-i18n.mjs
+            cd ..
+            git diff --check
+          ) > /tmp/issue-489-run.log 2>&1
           status=$?
           set -e
 
@@ -44,19 +50,18 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
           if [ "$status" -ne 0 ]; then
-            cat .github/issue-489-error.txt
-            git add .github/issue-489-error.txt
-            git commit -m "chore: registrar diagnóstico da correção #489"
+            cat /tmp/issue-489-run.log
+            git reset --hard HEAD
+            git clean -fd
+            cp /tmp/issue-489-run.log .github/issue-489-run-error.txt
+            git add .github/issue-489-run-error.txt
+            git commit -m "chore: registrar validação da correção #489"
             git push
             exit 0
           fi
 
           rm -f .github/issue-489-error.txt
-          cd frontend
-          node scripts/test-candidate-i18n.mjs
-          cd ..
-          git diff --check
-
+          rm -f .github/issue-489-run-error.txt
           rm -rf .github/issue-489-parts
           rm -rf .github/issue-489-parts-v2
           rm -f .github/workflows/run-issue-489.yml
