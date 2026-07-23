@@ -8,6 +8,7 @@ import { Focus, HelpCircle, Menu } from "lucide-react";
 import { AccessibilityPanel, useCognitivePreferences } from "@/components/app-shell-accessibility";
 import { AppSidebar } from "@/components/app-shell-navigation";
 import { DeliveryAlertBanner } from "@/components/delivery-alert-banner";
+import { IntegrityReviewQueuePanel } from "@/components/integrity-review-queue-panel";
 import { LanguageSelector } from "@/components/language-selector";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { getUnreadNotificationsCount } from "@/lib/api/notifications";
@@ -246,6 +247,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         >
           {preferences.simpleNavigation && <PageGoal pathname={pathname} language={language} specialist={specialist} />}
           {children}
+          {pathname === "/monitoramento" && <IntegrityReviewQueuePanel />}
         </div>
       </main>
     </div>

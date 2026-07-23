@@ -37,38 +37,67 @@ Os eventos aceitos do navegador são:
 
 O backend também registra abertura, retomada, heartbeat, expiração e encerramento da sessão.
 
+### Fila de revisão técnica
+
+A Central operacional sincroniza uma fila restrita a partir de regras determinísticas e retroativas. A regra apenas encaminha a tentativa para revisão humana; não classifica intenção e não produz score de risco.
+
+Regras iniciais:
+
+| Código | Regra de encaminhamento | Explicação neutra |
+|---|---|---|
+| `SESSION_INTERRUPTION` | uma ou mais sessões expiradas | interrupção compatível com conexão instável, suspensão do navegador ou pausa operacional |
+| `VISIBILITY_CHANGES` | três ou mais eventos `TAB_HIDDEN` | alternância recorrente de visibilidade, sem inferência sobre intenção |
+| `SESSION_RESUMPTIONS` | duas ou mais retomadas | recargas, perdas de conexão ou retomadas operacionais repetidas |
+| `INPUT_MODE_CHANGES` | oito ou mais mudanças de entrada | alternância entre teclado, toque e ponteiro, sem inferir deficiência ou comportamento |
+
+A revisão aceita somente os pareceres:
+
+- `NO_IMPACT` — Sem impacto;
+- `TECHNICAL_ISSUE_CONFIRMED` — Problema técnico confirmado;
+- `REAPPLICATION_RECOMMENDED` — Reaplicação recomendada;
+- `PRIVACY_COMPLIANCE_REVIEW` — Análise de privacidade/compliance.
+
+Todo parecer exige justificativa textual e registra responsável, data, decisão anterior, nova decisão e opção de compartilhamento. Cada abertura do detalhe também gera uma entrada de acesso às evidências.
+
 ### Separação da pontuação
 
 As informações ficam exclusivamente em:
 
 - `candidate_integrity_sessions`;
-- `candidate_integrity_events`.
+- `candidate_integrity_events`;
+- `candidate_integrity_reviews`;
+- `candidate_integrity_review_audit`.
 
 Não foram adicionados campos de integridade em:
 
 - `candidate_attempts`;
 - respostas da tentativa;
 - itens de resultado;
-- relatório empresarial;
 - payload enviado à Gupy.
 
-Nenhum serviço de pontuação consulta as tabelas de integridade.
+Nenhum serviço de pontuação consulta as tabelas de integridade. O parecer técnico não chama `save` da tentativa e não altera score, competência, resultado da integração ou decisão de contratação.
+
+Quando o revisor autoriza o compartilhamento, o relatório empresarial recebe somente o status neutro e a data. Evidências, justificativa e identidade do responsável permanecem restritas.
 
 ## Dados e proteção
 
 | Campo | Finalidade | Proteção |
 |---|---|---|
 | `client_session_id` | Retomar a mesma sessão do navegador | Valor aleatório, sem dado pessoal |
-| `ip_hash` | Correlacionar tecnicamente acessos quando necessário | HMAC-SHA-256; IP bruto não é persistido |
+| `ip_hash` | Correlacionar tecnicamente acessos quando necessário | HMAC-SHA-256; IP bruto não é persistido nem devolvido pela API de revisão |
 | `user_agent_category` | Distinguir categoria geral do dispositivo | Somente desktop, tablet, mobile ou desconhecido |
 | `input_mode` | Interpretar corretamente uso de teclado, toque ou ponteiro | Não representa deficiência e não gera pontuação |
 | `visibility_state` | Registrar visibilidade da aba | Somente `VISIBLE` ou `HIDDEN` |
 | `event_type` | Construir linha do tempo técnica | Lista fechada de eventos permitidos |
 | `detail` | Identificar categoria de mídia | Somente `IMAGE`, `AUDIO` ou `OTHER` |
+| `justification` | Fundamentar o parecer humano | Restrita aos perfis autorizados e preservada na auditoria |
+| `share_with_company` | Autorizar status neutro no relatório | Não libera evidências, justificativa ou responsável |
 
-O cliente não pode enviar pontos, gabarito, classificação, score de risco, justificativa de revisão ou conteúdo textual da resposta por esses endpoints.
+O cliente não pode enviar pontos, gabarito, classificação, score de risco ou conteúdo textual da resposta pelos endpoints de telemetria.
 
 ## Endpoints
+
+### Fluxo público do candidato
 
 ```text
 POST /candidate/attempts/{attemptToken}/integrity/session
@@ -94,7 +123,27 @@ POST /candidate/attempts/{attemptToken}/answers
 
 Assim, ocultar ou bloquear a tela no React não é a fronteira de segurança: o backend também recusa o carregamento da etapa e o envio de resposta sem uma sessão técnica ativa pertencente à mesma tentativa.
 
-## Estados da sessão
+### Revisão interna restrita
+
+```text
+GET  /api/v1/integrity-reviews?page=0&size=25
+GET  /api/v1/integrity-reviews/{attemptId}
+POST /api/v1/integrity-reviews/{attemptId}/decision
+```
+
+A fila e as evidências exigem `TEAM_MANAGER`, `PARTNER_MANAGER` ou `OPERATIONS_MANAGER` da empresa autenticada.
+
+### Status neutro no relatório
+
+```text
+GET /api/v1/results/{attemptId}/integrity-status
+```
+
+O endpoint devolve HTTP 204 enquanto não existir um parecer decidido e explicitamente autorizado para compartilhamento. Quando autorizado, retorna apenas `decision` e `decidedAt`.
+
+## Estados
+
+### Sessão
 
 | Estado | Significado |
 |---|---|
@@ -102,7 +151,26 @@ Assim, ocultar ou bloquear a tela no React não é a fronteira de segurança: o 
 | `CLOSED` | Navegador encerrou ou a avaliação terminou |
 | `EXPIRED` | Heartbeat não foi recebido dentro do limite |
 
-Esses estados são internos e não representam aprovação, reprovação ou validade cognitiva da avaliação.
+### Revisão
+
+| Estado | Significado |
+|---|---|
+| `PENDING` | Evidências aguardam parecer humano |
+| `DECIDED` | Parecer neutro foi registrado com justificativa e responsável |
+
+Esses estados não representam aprovação, reprovação ou validade cognitiva da avaliação.
+
+## Retenção e descarte
+
+A rotina diária descarta sessões `CLOSED` e `EXPIRED` cujo encerramento ultrapassou o prazo configurado. A exclusão da sessão remove os eventos técnicos relacionados por chave estrangeira com `ON DELETE CASCADE`.
+
+Quando a última sessão da tentativa é descartada:
+
+- o parecer neutro é preservado;
+- a justificativa e a trilha de auditoria são preservadas;
+- `evidence_discarded_at` é preenchido;
+- a tela deixa de exibir sessões e eventos;
+- o descarte é auditado.
 
 ## Comunicação ao candidato
 
@@ -118,9 +186,11 @@ Quando outra sessão está ativa, a interface apresenta somente orientação ope
 
 As mensagens da barreira técnica estão disponíveis em português, inglês e espanhol, acompanhando o idioma selecionado pela pessoa participante.
 
-## Manual da tela
+## Manual das telas
 
-A rota `/candidato/{token}` já utiliza o ícone global de manual. O processo completo correspondente é **Experiência da pessoa participante**, contendo:
+A rota `/candidato/{token}` usa o processo **Experiência da pessoa participante** em `/manual#experiencia-participante`.
+
+A rota `/monitoramento` usa o processo **Central operacional e revisão técnica** em `/manual#central-operacional-fila`, contendo:
 
 - finalidade da tela;
 - fluxo operacional;
@@ -130,7 +200,7 @@ A rota `/candidato/{token}` já utiliza o ícone global de manual. O processo co
 - motivos de bloqueio;
 - exemplos;
 - atalhos;
-- link para a central completa em `/manual#experiencia-participante`.
+- link para o processo completo na Central de manuais.
 
 ## Configuração
 
@@ -138,20 +208,17 @@ A rota `/candidato/{token}` já utiliza o ícone global de manual. O processo co
 praxis.integrity.heartbeat-seconds=30
 praxis.integrity.session-timeout-seconds=90
 praxis.integrity.hash-secret=
+praxis.integrity.evidence-retention-days=180
+praxis.integrity.evidence-retention-enabled=true
+praxis.integrity.evidence-retention-cron=0 0 4 * * *
 ```
 
 Quando `praxis.integrity.hash-secret` não é informado, o backend usa `praxis.jwt-secret` como chave do HMAC. Em produção, é recomendado configurar uma chave própria e rotacionável.
 
-## Limites desta entrega
+## Limites e próximas evoluções independentes
 
-Esta entrega cria a fundação do fluxo do candidato. Permanecem como próximas fases independentes:
+1. implementação Redis `SET NX EX` quando a infraestrutura disponibilizar Redis ao backend;
+2. modelos estatísticos somente depois de existir base rotulada por revisão humana;
+3. qualquer modelo futuro deve permanecer explicável, auditável e sem penalidade automática.
 
-1. painel interno de revisão com permissões específicas;
-2. entidades de alerta, evidência, revisão e trilha de acesso individual;
-3. regras determinísticas retroativas sobre dados existentes;
-4. status neutro revisado para empresa e candidato;
-5. retenção e descarte automatizados das evidências;
-6. implementação Redis `SET NX EX` quando a infraestrutura disponibilizar Redis ao backend;
-7. modelos estatísticos somente depois de existir base rotulada por revisão humana.
-
-Nenhuma dessas fases futuras deve ser implementada dentro das tabelas ou serviços de pontuação.
+Nenhuma evolução futura deve ser implementada dentro das tabelas ou serviços de pontuação.

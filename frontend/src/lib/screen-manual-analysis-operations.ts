@@ -81,16 +81,17 @@ export const ANALYSIS_OPERATION_MANUALS: ScreenManualDefinition[] = [
   },
   {
     id: "central-operacional-fila",
-    title: "Central operacional",
+    title: "Central operacional e revisão técnica",
     purpose:
-      "Concentrar somente exceções técnicas acionáveis: integrações com erro ou pendentes, entregas em retentativa, itens em DLQ e alertas ainda não lidos.",
+      "Concentrar exceções acionáveis e permitir a revisão humana de evidências técnicas sem classificar intenção, aplicar penalidade ou alterar o resultado da avaliação.",
     flow: [
-      "Revise os quatro contadores da fila operacional.",
-      "Selecione um contador para filtrar a tela pela categoria desejada.",
-      "Abra o diagnóstico da integração quando a conexão estiver pendente ou com erro.",
-      "Acompanhe a próxima tentativa automática sem executar ação manual enquanto a entrega estiver em retentativa.",
-      "Nos itens em DLQ, corrija a causa e use Tentar novamente para reprocessar.",
-      "Marque alertas como lidos depois de concluir a análise.",
+      "Revise os contadores de integrações, retentativas, DLQ e alertas não lidos.",
+      "Trate as falhas operacionais pelo diagnóstico ou reprocessamento apropriado.",
+      "Na seção Revisão técnica de integridade, selecione uma participação encaminhada por regra determinística.",
+      "Abra as evidências; esse acesso fica registrado na trilha de auditoria.",
+      "Leia os alertas explicáveis, as sessões e a linha do tempo sem inferir intenção da pessoa candidata.",
+      "Selecione um dos quatro pareceres neutros, informe a justificativa obrigatória e salve.",
+      "Marque o compartilhamento somente quando o relatório empresarial puder exibir o status neutro e a data.",
     ],
     fields: [
       {
@@ -99,63 +100,80 @@ export const ANALYSIS_OPERATION_MANUALS: ScreenManualDefinition[] = [
           "Exibe somente provedores em estado PENDENTE ou ERRO; conexões saudáveis ficam na tela Integrações.",
       },
       {
-        name: "Em retentativa",
+        name: "Em retentativa e DLQ",
         description:
-          "Entregas pendentes ou em nova tentativa automática, com quantidade de tentativas e próximo horário programado.",
+          "Mostra entregas ainda cobertas pela política automática ou que já exigem reprocessamento manual.",
       },
       {
-        name: "Em DLQ",
+        name: "Fila de revisão técnica",
         description:
-          "Entregas que esgotaram a política automática e exigem diagnóstico e reprocessamento manual.",
+          "Lista participações que atingiram regras determinísticas de interrupção, visibilidade, retomada ou mudança de entrada.",
       },
       {
-        name: "Alertas não lidos",
-        description: "Ocorrências operacionais que ainda não foram reconhecidas pelo usuário.",
+        name: "Alertas explicáveis",
+        description:
+          "Apresentam regra, quantidade de ocorrências e explicação neutra; não representam classificação automática de fraude.",
       },
       {
-        name: "Filtro ativo",
+        name: "Sessões e linha do tempo",
         description:
-          "Categoria selecionada pelos contadores. Mostrar toda a fila restaura a visão completa das exceções.",
+          "Evidências técnicas restritas, sem endereço de rede bruto e sem vínculo com score ou competência.",
       },
       {
-        name: "Tentar novamente",
+        name: "Parecer humano",
         description:
-          "Reprocessa somente uma entrega em DLQ; entregas com retentativa automática não oferecem esta ação.",
+          "Aceita Sem impacto, Problema técnico confirmado, Reaplicação recomendada ou Análise de privacidade/compliance.",
+      },
+      {
+        name: "Justificativa obrigatória",
+        description:
+          "Registra os fatos verificados e fica preservada na trilha de mudanças do parecer.",
+      },
+      {
+        name: "Compartilhar no relatório",
+        description:
+          "Quando marcado, libera somente o status neutro e a data; evidências, justificativa e responsável permanecem restritos.",
+      },
+      {
+        name: "Trilha de auditoria",
+        description:
+          "Registra criação do encaminhamento, cada acesso às evidências, alterações de parecer e descarte pela retenção.",
       },
     ],
     permissions: [
-      "Perfil EMPRESA com acesso operacional às integrações, notificações e entregas da própria empresa.",
-      "O reprocessamento pode exigir permissão específica de operação ou integração.",
+      "A fila e as evidências exigem TEAM_MANAGER, PARTNER_MANAGER ou OPERATIONS_MANAGER da própria empresa.",
+      "O resultado compartilhado segue a permissão normal da Central de Resultados.",
+      "O acesso é isolado por empresa e cada abertura de evidência é auditada.",
     ],
     states: [
-      "Carregando fila operacional",
-      "Fila sem intervenções pendentes",
-      "Integração pendente",
-      "Integração com erro",
-      "Entrega aguardando retentativa",
-      "Entrega em DLQ",
-      "Reprocessando entrega",
-      "Alerta não lido",
-      "Erro de carregamento ou ação",
+      "Fila operacional sem pendências",
+      "Revisão técnica pendente",
+      "Evidências carregando",
+      "Evidências disponíveis",
+      "Parecer humano decidido",
+      "Status neutro compartilhado",
+      "Evidências descartadas por retenção",
+      "Erro de carregamento ou salvamento",
     ],
     blocks: [
-      "Falha ao consultar integrações, entregas ou notificações.",
+      "Usuário sem perfil autorizado para consultar evidências técnicas.",
+      "Participação sem alerta determinístico suficiente para entrar na fila.",
+      "Parecer sem justificativa textual.",
+      "Evidências já descartadas pela política de retenção.",
+      "Falha ao consultar a fila, registrar o acesso ou salvar o parecer.",
       "Entrega ainda coberta pela política automática de retentativa.",
-      "Causa da falha externa ainda não corrigida.",
-      "Entrega já reprocessada ou fora da DLQ.",
-      "Usuário sem permissão para reprocessar ou acessar o diagnóstico.",
-      "Ação de leitura ou reprocessamento já em andamento.",
     ],
     examples: [
-      "Filtrar por DLQ, corrigir a credencial do provedor e reprocessar uma entrega que esgotou as tentativas.",
-      "Filtrar retentativas para confirmar o próximo horário sem disparar uma duplicidade manual.",
-      "Marcar um alerta como lido após abrir o resultado relacionado e concluir a análise.",
+      "Confirmar que uma sessão expirou por queda de conexão e recomendar reaplicação com justificativa.",
+      "Registrar Sem impacto após verificar alternâncias de visibilidade compatíveis com o fluxo operacional.",
+      "Encaminhar para privacidade/compliance sem alterar nota, competência ou decisão de contratação.",
+      "Compartilhar no relatório apenas o status Problema técnico confirmado e a data do parecer.",
     ],
     shortcuts: [
-      "Clique novamente no contador selecionado para voltar à fila completa.",
-      "Use Configurar integrações para alterar credenciais e parâmetros permanentes.",
-      "Comece pelos itens em DLQ, depois revise integrações com erro e alertas.",
-      "Integrações conectadas e entregas enviadas não aparecem nesta tela.",
+      "Comece pelos itens em DLQ e depois trate as revisões técnicas pendentes.",
+      "Abra o resultado em outra aba para comparar contexto sem misturar evidência técnica e pontuação.",
+      "Não recarregue o detalhe sem necessidade, pois cada novo acesso fica auditado.",
+      "Use o ícone Ajuda desta tela para abrir este processo completo na Central de manuais.",
     ],
     matches: (pathname) => pathname === "/monitoramento",
   },
