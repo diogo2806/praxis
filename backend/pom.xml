@@ -44,6 +44,10 @@
             <artifactId>spring-boot-starter-web</artifactId>
         </dependency>
         <dependency>
+            <groupId>org.apache.httpcomponents.client5</groupId>
+            <artifactId>httpclient5</artifactId>
+        </dependency>
+        <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-aop</artifactId>
         </dependency>
@@ -122,9 +126,6 @@
             <artifactId>postgresql</artifactId>
             <scope>runtime</scope>
         </dependency>
-        <!-- Testes de integração rodam contra PostgreSQL real via Testcontainers (as migrations
-             usam sintaxe exclusiva do PostgreSQL, incompatível com H2). Versões gerenciadas pelo
-             spring-boot-dependencies. -->
         <dependency>
             <groupId>org.testcontainers</groupId>
             <artifactId>postgresql</artifactId>
@@ -167,9 +168,6 @@
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
                 <executions>
-                    <!-- Grava META-INF/build-info.properties (versão e horário exato da
-                         compilação) para o /actuator/info. Permite confirmar, em produção,
-                         qual build está de fato em execução no container. -->
                     <execution>
                         <goals>
                             <goal>build-info</goal>
