@@ -24,62 +24,52 @@ assert.equal(errors.length, 0, "access-control.ts deve transpilar sem erros");
 const encoded = Buffer.from(output.outputText, "utf8").toString("base64");
 const access = await import(`data:text/javascript;base64,${encoded}`);
 
-const specialist = [access.PARTNER_SPECIALIST_ROLE];
-const company = [access.EMPRESA_ROLE];
-const hybrid = [access.PARTNER_SPECIALIST_ROLE, access.EMPRESA_ROLE];
+const profiles = {
+  admin: [access.ADMIN_ROLE],
+  company: [access.EMPRESA_ROLE],
+  author: [access.ASSESSMENT_EDITOR_ROLE],
+  analyst: [access.RESULTS_ANALYST_ROLE],
+  operator: [access.OPERATIONS_MANAGER_ROLE],
+  partnerManager: [access.PARTNER_MANAGER_ROLE],
+  specialist: [access.PARTNER_SPECIALIST_ROLE],
+  unknown: ["UNKNOWN_ROLE"],
+};
 
-assert.equal(access.isRestrictedPartnerSpecialist(specialist), true);
-assert.equal(access.isRestrictedPartnerSpecialist(company), false);
-assert.equal(access.isRestrictedPartnerSpecialist(hybrid), false);
+assert.equal(access.canAccessFrontendPath("/admin", profiles.admin), true);
+assert.equal(access.canAccessFrontendPath("/admin", profiles.company), false);
+assert.equal(access.canAccessFrontendPath("/dashboard", profiles.company), true);
+assert.equal(access.canAccessFrontendPath("/avaliacoes/123", profiles.author), true);
+assert.equal(access.canAccessFrontendPath("/nova/avaliacao", profiles.author), true);
+assert.equal(access.canAccessFrontendPath("/results", profiles.analyst), true);
+assert.equal(access.canAccessFrontendPath("/participacoes", profiles.operator), true);
+assert.equal(access.canAccessFrontendPath("/integrations", profiles.operator), true);
+assert.equal(access.canAccessFrontendPath("/parceiros", profiles.partnerManager), true);
+assert.equal(access.canAccessFrontendPath("/avaliacoes/especialista", profiles.specialist), true);
+assert.equal(access.canAccessFrontendPath("/competencias", profiles.specialist), true);
+assert.equal(access.canAccessFrontendPath("/billing", profiles.specialist), false);
+assert.equal(access.canAccessFrontendPath("/dashboard", profiles.specialist), false);
+assert.equal(access.canAccessFrontendPath("/dashboard", profiles.unknown), false);
+assert.equal(access.canAccessFrontendPath("/rota-sem-politica", profiles.company), false);
+assert.equal(access.canAccessFrontendPath("/login?lang=en", []), true);
 
-for (const path of [
-  "/avaliacoes",
-  "/competencias",
-  "/nova/avaliacao",
-  "/nova/personagem",
-  "/nova/dialogo",
-  "/nova/validador",
-  "/nova/mapa",
-]) {
-  assert.equal(access.canAccessFrontendPath(path, specialist), true, `${path} deveria ser permitido`);
-}
+assert.equal(access.canPerformFrontendAction("assessment:create", profiles.author), true);
+assert.equal(access.canPerformFrontendAction("assessment:publish", profiles.author), false);
+assert.equal(access.canPerformFrontendAction("assessment:edit", profiles.specialist), true);
+assert.equal(access.canPerformFrontendAction("assessment:publish", profiles.specialist), false);
+assert.equal(access.canPerformFrontendAction("competency:manage", profiles.specialist), false);
+assert.equal(access.canPerformFrontendAction("team:manage", [access.TEAM_MANAGER_ROLE]), true);
+assert.equal(access.canPerformFrontendAction("partner:manage", profiles.partnerManager), true);
+assert.equal(access.canPerformFrontendAction("billing:manage", profiles.company), true);
+assert.equal(access.canPerformFrontendAction("billing:manage", profiles.unknown), false);
 
-for (const path of [
-  "/dashboard",
-  "/nova/piloto",
-  "/nova/governanca",
-  "/integrations",
-  "/billing",
-]) {
-  assert.equal(access.canAccessFrontendPath(path, specialist), false, `${path} deveria ser bloqueado`);
-}
+assert.equal(source.includes("MutationObserver"), false);
+assert.equal(source.includes("textContent"), false);
+assert.equal(source.includes("window.location.replace"), false);
+assert.equal(source.includes("querySelectorAll"), false);
 
-assert.equal(
-  access.isPartnerSpecialistForbiddenAction("/nova/validador", "Ir para publicação →"),
-  true,
-);
-assert.equal(
-  access.isPartnerSpecialistForbiddenAction("/nova/personagem", "Criar rascunho"),
-  true,
-);
-assert.equal(
-  access.isPartnerSpecialistForbiddenAction("/nova/dialogo", "Criar rascunho para editar"),
-  true,
-);
-assert.equal(
-  access.isPartnerSpecialistForbiddenAction("/nova/avaliacao", "Adicionar e salvar"),
-  true,
-);
-assert.equal(
-  access.isPartnerSpecialistForbiddenAction("/nova/avaliacao", "Próximo: Cenário"),
-  false,
-);
-assert.equal(
-  access.isPartnerSpecialistForbiddenAction("/nova/validador", "Exportar diagnóstico"),
-  false,
-);
+assert.equal(access.resolveDefaultAuthenticatedRoute(profiles.specialist), "/avaliacoes/especialista");
+assert.equal(access.resolveDefaultAuthenticatedRoute(profiles.admin), "/admin");
+assert.equal(access.resolveDefaultAuthenticatedRoute(profiles.unknown), "/dashboard");
+assert.equal(access.resolveDefaultAuthenticatedRoute([]), "/login");
 
-assert.equal(access.resolveDefaultAuthenticatedRoute(specialist), "/avaliacoes");
-assert.equal(access.resolveDefaultAuthenticatedRoute([access.ADMIN_ROLE]), "/admin");
-
-console.log("Controle de acesso do PARTNER_SPECIALIST validado.");
+console.log("Políticas declarativas de rotas e ações validadas para todos os perfis.");

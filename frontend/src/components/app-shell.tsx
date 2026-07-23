@@ -9,8 +9,13 @@ import { AccessibilityPanel, useCognitivePreferences } from "@/components/app-sh
 import { AppSidebar } from "@/components/app-shell-navigation";
 import { DeliveryAlertBanner } from "@/components/delivery-alert-banner";
 import { LanguageSelector } from "@/components/language-selector";
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { getUnreadNotificationsCount } from "@/lib/api/notifications";
-import { isRestrictedPartnerSpecialist } from "@/lib/access-control";
+import {
+  canAccessFrontendPath,
+  isRestrictedPartnerSpecialist,
+  resolveDefaultAuthenticatedRoute,
+} from "@/lib/access-control";
 import {
   resolveAppShellContext,
   resolveAppShellGoalKey,
@@ -69,7 +74,7 @@ const shellCopy = {
     skip: "Ir al contenido principal",
     openMenu: "Abrir menú",
     menu: "Menú principal",
-    menuDescription: "Navegación organizada según los permisos del perfil.",
+    menuDescription: "Navegación organizada según las permisos del perfil.",
     help: "Ayuda",
     pageGoal: "Objetivo de esta pantalla",
     exitFocus: "Salir del modo enfoque",
@@ -126,6 +131,21 @@ function PageGoal({ pathname, language, specialist }: {
   );
 }
 
+function AccessDenied({ destination }: { destination: string }) {
+  return (
+    <main className="mx-auto flex min-h-screen max-w-xl flex-col justify-center px-6 py-12 text-center">
+      <p className="text-sm font-semibold uppercase tracking-wide text-primary">Acesso negado</p>
+      <h1 className="mt-3 text-3xl font-semibold text-foreground">Seu perfil não possui acesso a esta área.</h1>
+      <p className="mt-4 text-sm leading-6 text-muted-foreground">
+        A política da rota foi verificada antes da renderização do conteúdo protegido.
+      </p>
+      <a href={destination} className="mx-auto mt-6 inline-flex min-h-11 items-center justify-center rounded-md bg-primary px-5 py-2 text-sm font-medium text-primary-foreground">
+        Voltar para uma área permitida
+      </a>
+    </main>
+  );
+}
+
 export function AppShell({ children }: { children: ReactNode }) {
   const pathname = useRouterState({ select: (state) => state.location.pathname });
   const session = useSession();
@@ -150,6 +170,10 @@ export function AppShell({ children }: { children: ReactNode }) {
   useEffect(() => {
     document.documentElement.dataset.praxisRoute = resolveAppShellRouteDataKey(pathname);
   }, [pathname]);
+
+  if (!canAccessFrontendPath(pathname, session.roles)) {
+    return <AccessDenied destination={resolveDefaultAuthenticatedRoute(session.roles)} />;
+  }
 
   return (
     <div className="flex min-h-screen bg-background text-foreground">
