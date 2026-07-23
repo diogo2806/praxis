@@ -99,19 +99,8 @@ public class TalentReferenceService {
 
         List<CandidateAttemptEntity> population = normativePopulation(empresaId, version, request);
         boolean eligible = population.size() >= request.minimumSample() && request.pathCompatibilityConfirmed();
-
         if (request.activate()) {
-            normativeGroupRepository
-                    .findFirstByEmpresaIdAndSimulationVersionIdAndStatusOrderByUpdatedAtDesc(
-                            empresaId,
-                            version.getId(),
-                            NormativeGroupStatus.ACTIVE
-                    )
-                    .ifPresent(previous -> {
-                        previous.setStatus(NormativeGroupStatus.ARCHIVED);
-                        previous.setUpdatedAt(Instant.now());
-                        normativeGroupRepository.save(previous);
-                    });
+            archiveActiveNormativeGroup(empresaId, version.getId());
         }
 
         Instant now = Instant.now();
@@ -167,19 +156,8 @@ public class TalentReferenceService {
         if (request.validUntil() != null) {
             validatePeriod(request.validFrom(), request.validUntil(), "A validade da nota de corte é inválida.");
         }
-
         if (request.approve()) {
-            decisionThresholdPolicyRepository
-                    .findFirstByEmpresaIdAndSimulationVersionIdAndStatusOrderByUpdatedAtDesc(
-                            empresaId,
-                            version.getId(),
-                            CutScorePolicyStatus.APPROVED
-                    )
-                    .ifPresent(previous -> {
-                        previous.setStatus(CutScorePolicyStatus.REVOKED);
-                        previous.setUpdatedAt(Instant.now());
-                        decisionThresholdPolicyRepository.save(previous);
-                    });
+            revokeApprovedDecisionThreshold(empresaId, version.getId());
         }
 
         Instant now = Instant.now();
@@ -221,7 +199,7 @@ public class TalentReferenceService {
     public TalentReferenceConfigurationResponse getConfiguration(String simulationId, int versionNumber) {
         String empresaId = currentEmpresaService.requiredEmpresaId();
         SimulationVersionEntity version = loadVersion(empresaId, simulationId, versionNumber);
-        List<NormativeReferenceResponse> normativeGroups = normativeGroupRepository
+        List<NormativeReferenceResponse> groups = normativeGroupRepository
                 .findByEmpresaIdAndSimulationVersionIdOrderByUpdatedAtDesc(empresaId, version.getId())
                 .stream()
                 .map(group -> toNormativeResponse(group, normativePopulation(empresaId, version, group)))
@@ -233,9 +211,9 @@ public class TalentReferenceService {
                 .toList();
         return new TalentReferenceConfigurationResponse(
                 targetProfile(version),
-                normativeGroups,
+                groups,
                 thresholds,
-                configurationWarnings(normativeGroups, thresholds)
+                configurationWarnings(groups, thresholds)
         );
     }
 
@@ -337,6 +315,34 @@ public class TalentReferenceService {
         return (int) Math.round((belowOrEqual * 100.0) / validScores.size());
     }
 
+    private void archiveActiveNormativeGroup(String empresaId, Long versionId) {
+        normativeGroupRepository
+                .findFirstByEmpresaIdAndSimulationVersionIdAndStatusOrderByUpdatedAtDesc(
+                        empresaId,
+                        versionId,
+                        NormativeGroupStatus.ACTIVE
+                )
+                .ifPresent(previous -> {
+                    previous.setStatus(NormativeGroupStatus.ARCHIVED);
+                    previous.setUpdatedAt(Instant.now());
+                    normativeGroupRepository.save(previous);
+                });
+    }
+
+    private void revokeApprovedDecisionThreshold(String empresaId, Long versionId) {
+        decisionThresholdPolicyRepository
+                .findFirstByEmpresaIdAndSimulationVersionIdAndStatusOrderByUpdatedAtDesc(
+                        empresaId,
+                        versionId,
+                        CutScorePolicyStatus.APPROVED
+                )
+                .ifPresent(previous -> {
+                    previous.setStatus(CutScorePolicyStatus.REVOKED);
+                    previous.setUpdatedAt(Instant.now());
+                    decisionThresholdPolicyRepository.save(previous);
+                });
+    }
+
     private NormativeReferenceResponse normativeReferenceAt(
             String empresaId,
             SimulationVersionEntity version,
@@ -382,7 +388,7 @@ public class TalentReferenceService {
                 candidateAttemptRepository.findByEmpresaIdAndSimulationVersionIdAndStatus(
                         empresaId,
                         version.getId(),
-                        AttemptStatus.DONE
+                        AttemptStatus.COMPLETED
                 ),
                 request.periodStart(),
                 request.periodEnd(),
@@ -399,7 +405,7 @@ public class TalentReferenceService {
                 candidateAttemptRepository.findByEmpresaIdAndSimulationVersionIdAndStatus(
                         empresaId,
                         version.getId(),
-                        AttemptStatus.DONE
+                        AttemptStatus.COMPLETED
                 ),
                 group.getPeriodStart(),
                 group.getPeriodEnd(),
@@ -520,12 +526,12 @@ public class TalentReferenceService {
     }
 
     private List<String> configurationWarnings(
-            List<NormativeReferenceResponse> normativeGroups,
+            List<NormativeReferenceResponse> groups,
             List<DecisionThresholdResponse> thresholds
     ) {
         List<String> warnings = new ArrayList<>();
         warnings.add(TARGET_PROFILE_WARNING);
-        if (normativeGroups.stream().noneMatch(group -> group.status() == NormativeGroupStatus.ACTIVE && group.eligible())) {
+        if (groups.stream().noneMatch(group -> group.status() == NormativeGroupStatus.ACTIVE && group.eligible())) {
             warnings.add(NO_NORMATIVE_REFERENCE_WARNING);
         }
         if (thresholds.stream().noneMatch(threshold -> threshold.status() == CutScorePolicyStatus.APPROVED
@@ -538,7 +544,10 @@ public class TalentReferenceService {
     private SimulationVersionEntity loadVersion(String empresaId, String simulationId, int versionNumber) {
         return simulationVersionRepository
                 .findBySimulationEmpresaIdAndSimulationIdAndVersionNumber(empresaId, simulationId, versionNumber)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Versão da avaliação não encontrada."));
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "Versão da avaliação não encontrada."
+                ));
     }
 
     private CandidateReferenceSnapshotDto readSnapshot(TalentReferenceSnapshotEntity entity) {
