@@ -29,6 +29,7 @@ assert.ok(
   "O estado persistido deve ser consultado antes de requisitar a etapa",
 );
 assert.match(candidateClient, /consentStatus\.required && !consentStatus\.valid/);
+assert.match(candidateClient, /verticalSaude: attempt\.verticalSaude/);
 assert.match(candidateClient, /healthConsentValid: consentStatus\.valid/);
 assert.match(candidateClient, /JSON\.stringify\(\{ version, onBehalfOfMinor \}\)/);
 assert.match(candidateClient, /method: "DELETE"/);
