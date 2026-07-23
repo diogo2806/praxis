@@ -1,17 +1,17 @@
 # Documentação Operacional — Práxis
 
-> **Propósito:** descrever como o Práxis funciona em produção para que administradores da
-> plataforma, suporte, DevOps, operação e manutenção consigam operar o sistema sem depender de
-> conhecimento informal da equipe de desenvolvimento.
+> **Propósito:** descrever como o Práxis funciona em produção para que administradores, suporte,
+> DevOps, operação e manutenção consigam operar o sistema sem depender de conhecimento informal.
 >
-> **Escopo:** Parte A do requisito de Documentação Operacional e de Implantação. A instalação do
-> zero está em [IMPLANTACAO.md](IMPLANTACAO.md).
+> **Escopo:** Parte A da documentação operacional e de implantação. A instalação do zero está em
+> [IMPLANTACAO.md](IMPLANTACAO.md).
 >
-> **Regra de sincronização:** a documentação é parte do produto. Sempre que uma funcionalidade
-> alterar a operação ou a implantação, este documento deve ser atualizado na mesma entrega.
+> **Regra de sincronização:** mudanças que alterem operação, segurança, configuração, runtime ou
+> implantação devem atualizar esta documentação na mesma entrega.
 
-Esta documentação é fiel ao código em `backend/src/main/java/br/com/iforce/praxis`, às migrações
-em `backend/src/main/resources/db/migration` e a `backend/src/main/resources/application.properties`.
+Esta revisão foi conferida contra a `main` no commit
+`1f6ff281210e6aa71b1880da1119d22f8aabb68e`, incluindo código Java, propriedades, Dockerfiles e
+migrações Flyway.
 
 ---
 
@@ -19,143 +19,98 @@ em `backend/src/main/resources/db/migration` e a `backend/src/main/resources/app
 
 ### 2.1 Visão geral
 
-O Práxis é uma plataforma multi-empresa de avaliação comportamental determinística. RH/Empresa cria
-simulações situacionais, publica versões imutáveis e aplica em candidatos por link interno ou por
-integração com ATS (Gupy, Recrutei). O score é calculado de forma determinística por alternativa
-escolhida, competência e peso — não há IA julgando candidato.
+O Práxis é uma plataforma multiempresa de avaliação comportamental determinística. A empresa cria
+simulações situacionais, publica versões imutáveis e aplica avaliações por link interno ou integração
+com ATS. O score é calculado por alternativa, competência e peso; não há IA julgando candidatos.
 
 ```mermaid
 flowchart LR
-  ADMIN["Operador ADMIN<br/>(plataforma)"] --> FE["Frontend<br/>TanStack Start"]
-  RH["RH / Empresa<br/>(role EMPRESA)"] --> FE
-  CAND["Candidato<br/>(token)"] --> FE
-  GUPY["Gupy / Recrutei"] -->|Bearer integração| API
-  FE --> API["Backend<br/>Spring Boot 3.5 / Java 21"]
-  API --> DB[("PostgreSQL<br/>Flyway")]
-  API --> S3[("Object Storage<br/>S3-compatível (opcional)")]
-  API --> MP["Mercado Pago<br/>(billing, opcional)"]
-  API --> OUTBOX["Outbox transacional<br/>(outbox_events)"]
-  OUTBOX --> WEBHOOK["result_webhook_url<br/>externo"]
-  OUTBOX --> NOTIF["Notificações internas / DLQ"]
+  ADMIN["Operador ADMIN"] --> FE["Frontend TanStack Start"]
+  EMP["Empresa e subperfis"] --> FE
+  CAND["Candidato por token"] --> FE
+  ATS["Gupy / Recrutei"] -->|Bearer integração| API
+  FE --> API["Backend Spring Boot 3.5 / Java 21"]
+  API --> DB[("PostgreSQL / Flyway")]
+  API --> S3["Object Storage opcional"]
+  API --> MP["Mercado Pago opcional"]
+  API --> OUTBOX["Outbox transacional"]
 ```
 
 ### 2.2 Principais módulos
 
-Pacote base `br.com.iforce.praxis`:
-
 | Módulo | Responsabilidade |
 | --- | --- |
-| `auth` | Login, JWT, empresa e roles. |
-| `account` | Conta do próprio usuário (`/me`, troca de senha). |
-| `admin` | Painel da plataforma (role `ADMIN`): cadastro e governança de empresas, usuários, uso e auditoria. |
-| `billing` | Cobrança Mercado Pago (Parte B); webhook público, ledger e planos. Desligado por padrão. |
+| `auth` | Login, JWT, convites, recuperação de senha, empresa e papéis. |
+| `account` | Conta do usuário autenticado e troca de senha. |
+| `admin` | Governança da plataforma, empresas, usuários, uso e auditoria. |
+| `billing` | Cobrança Mercado Pago, webhook, ledger e planos. |
 | `simulation` | Criação, versões, grafo, validação, publicação, monitoramento e Talent Match. |
 | `candidate` | Fluxo público do candidato e links internos. |
-| `gupy` | Contrato externo `/test/**` (provedor de testes da Gupy). |
-| `recrutei` | Contrato externo `/recrutei/test/**` (provedor de testes da Recrutei). |
-| `companyprofile` | Perfil da empresa do empresa. |
+| `gupy` | Contrato externo `/test/**`. |
+| `recrutei` | Contrato externo `/recrutei/test/**`. |
+| `companyprofile` | Perfil da empresa. |
 | `empresaconfig` | Catálogos configuráveis por empresa. |
-| `media` | Upload de imagem/áudio para nós e alternativas (Object Storage). |
+| `media` | Upload de imagem e áudio para nós e alternativas. |
 | `term` | Aceite de termos. |
-| `audit` | Trilha de eventos append-only. |
-| `shared.outbox` | Entrega assíncrona de eventos/resultados com retry e DLQ. |
+| `audit` | Trilha append-only. |
+| `shared.outbox` | Entrega assíncrona com retry e DLQ. |
 
 ### 2.3 Fluxo de requisições
 
-1. O frontend (SSR/proxy) ou o ATS chama o backend em `http://<host>:8080` (sem context path; raiz `/`).
-2. `JwtAuthenticationFilter` resolve autenticação e empresa antes das regras do Spring Security.
-3. O `SecurityConfig` decide rota pública × protegida e qual role é exigida.
-4. O contexto de empresa isola simulações, tentativas, auditoria, mídia e entregas.
-5. Escritas relevantes geram evento de auditoria append-only; resultados externos vão ao outbox.
+1. O frontend SSR, um cliente HTTP ou o ATS chama o backend na raiz `/`.
+2. `JwtAuthenticationFilter` resolve autenticação, empresa e autoridades.
+3. `SecurityConfig` aplica rota pública, papel principal e subperfil exigido.
+4. O contexto de empresa isola os dados.
+5. Escritas relevantes geram auditoria; entregas externas usam outbox.
 
-### 2.4 Autenticação
+### 2.4 Autenticação e rotas públicas
 
-- **Usuários internos (ADMIN, EMPRESA):** `POST /api/v1/auth/login` retorna JWT (assinado com
-  `PRAXIS_JWT_SECRET`, expiração `PRAXIS_JWT_EXPIRATION_HOURS`, padrão 8h). O token carrega empresa e roles.
-- **Convite:** `POST /api/v1/auth/invite/accept` cria a senha e ativa o usuário convidado.
-- **Candidato:** sem usuário; usa token de tentativa (`attemptToken`) em rotas `/candidate/**`.
-- **Integração ATS (`/test/**`, `/recrutei/test/**`):** Bearer token de integração; o backend compara
-  o SHA-256 Base64URL do token com a tabela `integration_tokens` (por provider), via `IntegrationAuthService`.
-- **Webhook Mercado Pago (`/api/webhooks/mercado-pago/**`):** público, validado por assinatura
-  `x-signature` no próprio handler, sem JWT.
+- `POST /api/v1/auth/login`: autenticação de usuários internos e emissão de JWT.
+- `POST /api/v1/auth/invite/accept`: aceite de convite e criação de senha.
+- `POST /api/v1/auth/password/forgot`: solicita recuperação de senha sem revelar se o e-mail existe.
+- `POST /api/v1/auth/password/reset`: redefine a senha com token temporário válido.
+- `/candidate/**`: acesso por token de tentativa, sem usuário interno.
+- `/test/**` e `/recrutei/test/**`: Bearer token de integração comparado por SHA-256 Base64URL.
+- `/api/webhooks/mercado-pago/**`: público no Spring Security, mas validado por assinatura no handler.
+- `/actuator/health`: público para health check.
+- Swagger/OpenAPI, quando habilitados, exigem `ADMIN`.
 
-```mermaid
-sequenceDiagram
-  participant U as Usuário (EMPRESA/ADMIN)
-  participant FE as Frontend
-  participant API as Backend
-  U->>FE: credenciais
-  FE->>API: POST /api/v1/auth/login
-  API->>API: valida BCrypt + status do usuário/empresa
-  API-->>FE: JWT (empresa + roles)
-  FE->>API: chamadas com Authorization: Bearer <jwt>
-  API->>API: JwtAuthenticationFilter resolve empresa/roles
-  API-->>FE: resposta isolada por empresa
-```
+A recuperação de senha usa TTL, limite por janela e token armazenado apenas de forma segura. O link
+pode ser enviado por SMTP; logging do link só deve ser usado fora de produção e depende das flags de
+fallback de console.
 
-### 2.5 Multi-empresa
+### 2.5 Multiempresa
 
-- Cada cliente é um `EmpresaEntity` (não existe `CustomerEntity`). Cliente = empresa.
-- O empresa técnico `PLATFORM` hospeda os operadores `ADMIN`.
-- Com `PRAXIS_SECURITY_ENABLED=true`, o empresa vem do JWT (interno) ou do token de integração (ATS).
-- Com `PRAXIS_SECURITY_ENABLED=false`, todas as rotas ficam liberadas e o empresa usado é
-  `PRAXIS_DEFAULT_EMPRESA_ID` (padrão `empresa-1`; o nome legado `PRAXIS_DEFAULT_TENANT_ID`
-  é aceito como fallback). Se a empresa configurada não existir no banco, ela é criada
-  automaticamente no startup. **Use `false` apenas em desenvolvimento.**
-- `EmpresaStatus.SUSPENSO` e `CANCELADO` bloqueiam autenticação e APIs protegidas; `SEM_CREDITO` e
-  `INADIMPLENTE` não bloqueiam login/API.
+- Cada cliente é um `EmpresaEntity`.
+- A empresa técnica `PLATFORM` hospeda operadores `ADMIN`.
+- Com segurança ligada, a empresa vem do JWT ou token de integração.
+- Com segurança desligada, usa-se `PRAXIS_DEFAULT_EMPRESA_ID`; essa configuração é proibida em
+  produção pelas validações de startup.
+- `SUSPENSO` e `CANCELADO` bloqueiam autenticação e APIs protegidas.
 
 ### 2.6 Integrações externas
 
-| Integração | Direção | Rota / Mecanismo | Padrão |
+| Integração | Direção | Mecanismo | Padrão |
 | --- | --- | --- | --- |
-| Gupy | ATS → Práxis | `GET /test`, `POST /test/candidate`, `GET /test/result/{id}` (Bearer integração) | Operacional |
-| Recrutei | ATS → Práxis | `/recrutei/test`, `/recrutei/test/**` (Bearer integração) | Operacional |
-| Webhook de resultado | Práxis → externo | Outbox entrega para `result_webhook_url` da tentativa | Sob demanda |
-| Mercado Pago | Práxis ↔ MP | API REST + webhook `/api/webhooks/mercado-pago` | `MP_ENABLED=false` por padrão |
-| Object Storage (S3) | Práxis → S3 | AWS SDK v2; upload de mídia | Opcional (`OBJECT_STORAGE_*`) |
+| Gupy | ATS → Práxis | `/test/**` com Bearer de integração | Operacional |
+| Recrutei | ATS → Práxis | `/recrutei/test/**` com Bearer de integração | Operacional |
+| Webhook de resultado | Práxis → externo | Outbox para `result_webhook_url` | Sob demanda |
+| Mercado Pago | Práxis ↔ MP | REST + webhook assinado | Desabilitado por padrão |
+| Object Storage | Práxis → S3 | AWS SDK v2 | Opcional |
 
-### 2.7 Armazenamento de arquivos
+### 2.7 Armazenamento de mídia
 
-- Mídia (imagem/áudio) de nós e alternativas é enviada via `POST /api/v1/media`.
-- Backend persiste em storage S3-compatível pela AWS SDK v2 quando `OBJECT_STORAGE_*` está configurado.
-- `path-style=true` (padrão) suporta MinIO e provedores S3-compatíveis; defina `endpoint`,
-  `public-url`, `region`, `access-key`, `secret-key` e `bucket`.
-- Limite de upload: `PRAXIS_MEDIA_MAX_FILE_SIZE` (padrão 10MB) e `PRAXIS_MEDIA_MAX_REQUEST_SIZE` (12MB).
+Mídias são enviadas por `POST /api/v1/media`. O Object Storage S3-compatível exige endpoint, URL
+pública, região, credenciais e bucket coerentes quando configurado. O perfil `prod` rejeita
+configuração parcial. Os limites padrão são 10 MB por arquivo e 12 MB por requisição.
 
 ### 2.8 Banco de dados
 
-- PostgreSQL com schema versionado por **Flyway** (`spring.flyway.enabled=true`).
-- Migrações em `backend/src/main/resources/db/migration` (e `.../postgresql` para SQL específico).
-- `spring.jpa.hibernate.ddl-auto` padrão `none`; em produção mantenha `validate` (compose usa `validate`).
-  **Nunca** use `update`/`create` em produção: o schema é responsabilidade do Flyway.
-
-### 2.9 Diagrama — fluxo de avaliação
-
-```mermaid
-flowchart TD
-  A["RH cria rascunho<br/>/nova/avaliacao"] --> B["Objetivo, competências, pesos"]
-  B --> C["Personagem, turnos, alternativas, mídia"]
-  C --> D["Validador: blockers / warnings / quality"]
-  D -->|publicável| E["Governança publica versão (imutável)"]
-  E --> F["Link interno OU tentativa ATS"]
-  F --> G["Candidato responde /candidato/{token}"]
-  G --> H["Score determinístico por competência e peso"]
-  H --> I["Evento de resultado + auditoria + outbox"]
-```
-
-### 2.10 Diagrama — fluxo Mercado Pago
-
-```mermaid
-flowchart TD
-  A["ADMIN inicia checkout<br/>/api/admin/.../billing"] --> B["Backend chama API Mercado Pago"]
-  B --> C["Cliente paga no Mercado Pago"]
-  C --> D["MP envia webhook<br/>POST /api/webhooks/mercado-pago"]
-  D --> E["Valida assinatura x-signature + idempotência"]
-  E --> F["Consulta API MP antes de aplicar mudança"]
-  F --> G["Atualiza saldo/ledger ou assinatura (append-only)"]
-  G --> H["Job de inadimplência (MP_DELINQUENCY_CRON) aplica carência"]
-```
+- PostgreSQL com Flyway habilitado no startup.
+- Migrações em `backend/src/main/resources/db/migration` e subdiretórios específicos.
+- A sequência atual está acima de `V1000`; não use intervalos fixos em procedimentos operacionais.
+- `spring.flyway.out-of-order=false` por padrão e no perfil `prod`.
+- `spring.jpa.hibernate.ddl-auto=none` por padrão; use `validate` em produção.
 
 ---
 
@@ -166,300 +121,227 @@ flowchart TD
 | Item | Valor |
 | --- | --- |
 | Stack | Spring Boot 3.5.3, Java 21, Maven |
-| Porta | `8080` (`server.port`, override `SERVER_PORT`) |
-| Context path | Raiz `/` (não há context path configurado) |
-| Health check | `GET /actuator/health` (público) |
-| Documentação de API | Swagger UI em `/docs` quando `SPRINGDOC_SWAGGER_UI_ENABLED=true` |
-| Artefato | `target/praxis-backend-*.jar` (Spring Boot fat jar) |
-
-### Banco
-
-| Item | Valor |
-| --- | --- |
-| SGBD | PostgreSQL |
-| Versão validada | `postgres:17-alpine` (docker-compose). Recomendado PostgreSQL 14+ |
-| Migrações | Flyway, automáticas no startup |
-
-### Storage
-
-| Item | Valor |
-| --- | --- |
-| Tipo | S3-compatível (AWS S3 ou MinIO), AWS SDK v2 |
-| Bucket padrão | `praxis-media` (`OBJECT_STORAGE_BUCKET`) |
-| Obrigatório? | Não; só para funcionalidade de mídia |
-
-### Integrações
-
-| Item | Valor |
-| --- | --- |
-| Mercado Pago | Billing (Parte B), `MP_ENABLED=false` por padrão |
-| Gupy | Provedor de testes, rotas `/test/**` |
-| Recrutei | Provedor de testes, rotas `/recrutei/test/**` |
+| Porta | `8080` |
+| Context path | Raiz `/` |
+| Health | `GET /actuator/health` |
+| Info do build | `GET /actuator/info` |
+| Swagger UI | `/docs`, opt-in e restrito a `ADMIN` |
+| Artefato | `target/praxis-backend-*.jar` |
 
 ### Frontend
 
 | Item | Valor |
 | --- | --- |
 | Stack | React 19, TanStack Start/Router, Vite, Tailwind |
-| Porta | Dev `5173` (Vite); container Nginx `80` |
-| Build container | `npm ci`; dev local com `pnpm` |
+| Desenvolvimento | Vite na porta `5173` |
+| Produção | container Node.js 22 na porta `80` |
+| Runtime | `node .output/server/index.mjs` |
+| Build | `npm ci` e `npm run build` no container |
+
+O frontend não usa Nginx como runtime da imagem atual. Nginx, Traefik ou outro proxy pode existir na
+infraestrutura externa para TLS e roteamento.
 
 ---
 
 ## 4. Configurações
 
-Propriedades em `application.properties` (sobrescritas pelas variáveis de ambiente entre `${...}`).
-Para cada uma: finalidade, se é obrigatória, valor padrão e exemplo.
+As propriedades ficam em `backend/src/main/resources/application.properties` e podem ser
+sobrescritas pelas variáveis de ambiente indicadas.
 
-### 4.1 Núcleo da aplicação e banco
+### 4.1 Núcleo e banco
 
-| Propriedade | Env | Finalidade | Obrigatória | Padrão | Exemplo |
-| --- | --- | --- | --- | --- | --- |
-| `server.port` | `SERVER_PORT` | Porta HTTP do backend | Não | `8080` | `8080` |
-| `spring.datasource.url` | `DB_HOST`,`DB_PORT`,`DB_NAME`,`DB_SCHEMA` | Conexão JDBC PostgreSQL | Sim (em prod) | `jdbc:postgresql://localhost:5432/postgres?currentSchema=public` | host `db`, porta `5432`, nome `praxis` |
-| `spring.datasource.username` | `DB_USER` | Usuário do banco | Sim | `postgres` | `praxis` |
-| `spring.datasource.password` | `DB_PASS` (ou `SPRING_DATASOURCE_PASSWORD`) | Senha do banco | Sim | `postgres` | `senha-forte` |
-| `spring.jpa.hibernate.ddl-auto` | `PRAXIS_JPA_DDL_AUTO` | Estratégia DDL do Hibernate | Não | `none` | `validate` (prod) |
-| `spring.datasource.hikari.maximum-pool-size` | `SPRING_DATASOURCE_HIKARI_MAXIMUM_POOL_SIZE` | Pool de conexões | Não | `5` | `10` |
+| Propriedade | Env | Padrão / regra |
+| --- | --- | --- |
+| `server.port` | `SERVER_PORT` | `8080` |
+| `spring.datasource.url` | `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_SCHEMA` | JDBC PostgreSQL local em desenvolvimento |
+| `spring.datasource.username` | `DB_USER` | `postgres` em desenvolvimento |
+| `spring.datasource.password` | `DB_PASS` | `postgres` em desenvolvimento |
+| `spring.jpa.hibernate.ddl-auto` | `PRAXIS_JPA_DDL_AUTO` | `none`; use `validate` em produção |
+| `spring.flyway.out-of-order` | `SPRING_FLYWAY_OUT_OF_ORDER` | `false` |
+| `spring.datasource.hikari.maximum-pool-size` | `SPRING_DATASOURCE_HIKARI_MAXIMUM_POOL_SIZE` | `5` |
 
-### 4.2 Plataforma Práxis
+### 4.2 Plataforma e segurança
 
-| Propriedade | Env | Finalidade | Obrigatória | Padrão | Exemplo |
-| --- | --- | --- | --- | --- | --- |
-| `praxis.public-base-url` | `PRAXIS_PUBLIC_BASE_URL` | Base pública usada em links e resultados | Sim (prod) | `http://localhost:8080` | `https://app.praxis.com.br` |
-| `praxis.candidate-page-base-url` | `PRAXIS_CANDIDATE_PAGE_BASE_URL` | Base pública do fluxo do candidato | Não | herda `public-base-url` | `https://app.praxis.com.br` |
-| `praxis.security.enabled` | `PRAXIS_SECURITY_ENABLED` | Liga/desliga segurança interna (JWT) | Não | `true` | `true` |
-| `praxis.default-empresa-id` | `PRAXIS_DEFAULT_EMPRESA_ID` (fallback legado: `PRAXIS_DEFAULT_TENANT_ID`) | Empresa usado quando segurança está desligada (criada no startup se não existir) | Não | `empresa-1` | `empresa-1` |
-| `praxis.jwt-secret` | `PRAXIS_JWT_SECRET` | Segredo de assinatura do JWT | Sim | — (sem padrão) | string longa e aleatória |
-| `praxis.jwt-expiration-hours` | `PRAXIS_JWT_EXPIRATION_HOURS` | Validade do JWT em horas | Não | `8` | `8` |
-| `praxis.cors.allowed-origins` | `PRAXIS_CORS_ALLOWED_ORIGINS` | Origens liberadas no CORS (lista por vírgula) | Não | localhost dev | `https://app.praxis.com.br` |
-| `praxis.attempt-link-ttl-hours` | `PRAXIS_ATTEMPT_LINK_TTL_HOURS` | TTL do link de tentativa | Não | `168` | `168` |
-| `praxis.attempt-session-ttl-hours` | `PRAXIS_ATTEMPT_SESSION_TTL_HOURS` | TTL da sessão da tentativa | Não | `24` | `24` |
-| `praxis.recommend-interview-threshold` | `PRAXIS_RECOMMEND_INTERVIEW_THRESHOLD` | Score mínimo para recomendar entrevista | Não | `70` | `70` |
+| Propriedade | Env | Padrão / regra |
+| --- | --- | --- |
+| `praxis.public-base-url` | `PRAXIS_PUBLIC_BASE_URL` | localhost em dev; HTTPS obrigatório em prod |
+| `praxis.candidate-page-base-url` | `PRAXIS_CANDIDATE_PAGE_BASE_URL` | herda a URL pública |
+| `praxis.security.enabled` | `PRAXIS_SECURITY_ENABLED` | `true`; não pode ser `false` em prod |
+| `praxis.default-empresa-id` | `PRAXIS_DEFAULT_EMPRESA_ID` | `empresa-1` em dev |
+| `praxis.jwt-secret` | `PRAXIS_JWT_SECRET` | obrigatório e forte em prod |
+| `praxis.jwt-expiration-hours` | `PRAXIS_JWT_EXPIRATION_HOURS` | `8` |
+| `praxis.cors.allowed-origins` | `PRAXIS_CORS_ALLOWED_ORIGINS` | obrigatório, HTTPS e sem wildcard em prod |
+| `praxis.partner.enabled` | `PRAXIS_PARTNER_ENABLED` | `false` |
 
-### 4.3 Operador ADMIN e convites
+### 4.3 Recuperação de senha e notificações
 
-> O requisito cita `praxis.admin.invite-ttl-hours`, `praxis.admin.bootstrap.email` e
-> `praxis.admin.bootstrap.password`. Elas existem no código (`@Value`), não no `application.properties`.
+| Propriedade | Env | Padrão |
+| --- | --- | --- |
+| `praxis.email.enabled` | `PRAXIS_EMAIL_ENABLED` | `false` |
+| `praxis.email.from` | `PRAXIS_EMAIL_FROM` | `no-reply@praxis.local` |
+| `praxis.auth.password-reset-ttl-hours` | `PRAXIS_AUTH_PASSWORD_RESET_TTL_HOURS` | `2` |
+| `praxis.auth.password-reset-max-attempts` | `PRAXIS_AUTH_PASSWORD_RESET_MAX_ATTEMPTS` | `5` |
+| `praxis.auth.password-reset-window-minutes` | `PRAXIS_AUTH_PASSWORD_RESET_WINDOW_MINUTES` | `15` |
+| `praxis.auth.password-reset-log-link` | `PRAXIS_AUTH_PASSWORD_RESET_LOG_LINK` | `false` |
+| `praxis.notifications.console-fallback-enabled` | `PRAXIS_NOTIFICATIONS_CONSOLE_FALLBACK_ENABLED` | `false` |
 
-| Propriedade | Env | Finalidade | Obrigatória | Padrão | Exemplo |
-| --- | --- | --- | --- | --- | --- |
-| `praxis.admin.invite-ttl-hours` | `PRAXIS_ADMIN_INVITE_TTL_HOURS` | TTL do convite emitido pelo ADMIN | Não | `168` | `72` |
-| `praxis.admin.bootstrap.email` | `PRAXIS_ADMIN_BOOTSTRAP_EMAIL` | E-mail do operador ADMIN inicial (empresa PLATFORM) | Não (recomendado no 1º deploy) | vazio | `admin@praxis.com.br` |
-| `praxis.admin.bootstrap.password` | `PRAXIS_ADMIN_BOOTSTRAP_PASSWORD` | Senha do operador ADMIN inicial | Não (par com email) | vazio | senha forte |
-| `praxis.admin.bootstrap.name` | `PRAXIS_ADMIN_BOOTSTRAP_NAME` | Nome do operador ADMIN inicial | Não | `Operador da plataforma` | `Operação Práxis` |
+Quando e-mail estiver habilitado em produção, SMTP e remetente válido devem estar configurados. O
+fallback de console deve permanecer desligado.
 
-O bootstrap é **idempotente**: só cria o ADMIN se email e senha estiverem preenchidos, o empresa
-`PLATFORM` existir e ainda não houver usuário com aquele e-mail. As credenciais ficam **apenas** em
-variáveis de ambiente.
+### 4.4 LGPD e privacidade
 
-### 4.4 LGPD / Privacidade
+| Propriedade | Env | Padrão / regra |
+| --- | --- | --- |
+| `praxis.privacy-retention-days` | `PRAXIS_PRIVACY_RETENTION_DAYS` | `180` |
+| `praxis.privacy-retention-enabled` | `PRAXIS_PRIVACY_RETENTION_ENABLED` | `true` |
+| `praxis.privacy-retention-cron` | `PRAXIS_PRIVACY_RETENTION_CRON` | `0 30 3 * * *` |
+| `praxis.privacy.controller-name` | `PRAXIS_PRIVACY_CONTROLLER_NAME` | obrigatório em prod |
+| `praxis.privacy.service-email` | `PRAXIS_PRIVACY_SERVICE_EMAIL` | informar e-mail ou URL de atendimento |
+| `praxis.privacy.service-url` | `PRAXIS_PRIVACY_SERVICE_URL` | informar URL ou e-mail de atendimento |
+| `praxis.privacy.dpo-contact` | `PRAXIS_PRIVACY_DPO_CONTACT` | opcional |
 
-| Propriedade | Env | Finalidade | Padrão |
-| --- | --- | --- | --- |
-| `praxis.privacy-retention-days` | `PRAXIS_PRIVACY_RETENTION_DAYS` | Retenção de dados do candidato (dias) | `180` |
-| `praxis.privacy-retention-enabled` | `PRAXIS_PRIVACY_RETENTION_ENABLED` | Liga a rotina de retenção/anonimização | `true` |
-| `praxis.privacy-retention-cron` | `PRAXIS_PRIVACY_RETENTION_CRON` | Cron da rotina de retenção | `0 30 3 * * *` |
-| `praxis.privacy.controller-name` | `PRAXIS_PRIVACY_CONTROLLER_NAME` | Controlador LGPD exibido ao candidato | placeholder |
-| `praxis.privacy.service-email` | `PRAXIS_PRIVACY_SERVICE_EMAIL` | Canal de atendimento LGPD | vazio |
-| `praxis.privacy.dpo-contact` | `PRAXIS_PRIVACY_DPO_CONTACT` | Contato do DPO | vazio |
+### 4.5 Mercado Pago
 
-### 4.5 Mercado Pago (Parte B — billing)
+`MP_ENABLED=false` por padrão. Quando habilitado, `MP_ACCESS_TOKEN`, `MP_PUBLIC_KEY`,
+`MP_WEBHOOK_SECRET`, `MP_NOTIFICATION_URL` HTTPS e demais URLs devem ser consistentes. O perfil
+`prod` rejeita configuração incompleta.
 
-| Propriedade | Env | Finalidade | Padrão |
-| --- | --- | --- | --- |
-| `mp.enabled` | `MP_ENABLED` | Habilita chamadas ao Mercado Pago | `false` |
-| `mp.base-url` | `MP_BASE_URL` | Base da API MP | `https://api.mercadopago.com` |
-| `mp.access-token` | `MP_ACCESS_TOKEN` | Access Token (segredo, só backend) | vazio |
-| `mp.public-key` | `MP_PUBLIC_KEY` | Public Key | vazio |
-| `mp.webhook-secret` | `MP_WEBHOOK_SECRET` | Valida assinatura `x-signature` do webhook | vazio |
-| `mp.grace-period-days` | `MP_GRACE_PERIOD_DAYS` | Carência antes de suspender inadimplente | `7` |
-| `mp.back-url` | `MP_BACK_URL` | URL de retorno do checkout | herda `public-base-url` |
-| `mp.notification-url` | `MP_NOTIFICATION_URL` | URL pública do webhook | vazio |
-| `mp.delinquency-cron` | `MP_DELINQUENCY_CRON` | Cron do job de inadimplência | `0 0 * * * *` |
+### 4.6 Object Storage
 
-### 4.6 Object Storage e mídia
+Quando qualquer propriedade `OBJECT_STORAGE_*` for informada, endpoint, URL pública, região,
+access key, secret key e bucket devem formar uma configuração completa. `path-style=true` suporta
+MinIO e provedores compatíveis.
 
-| Propriedade | Env | Finalidade | Padrão |
-| --- | --- | --- | --- |
-| `praxis.object-storage.endpoint` | `OBJECT_STORAGE_ENDPOINT` | Endpoint S3-compatível | vazio |
-| `praxis.object-storage.public-url` | `OBJECT_STORAGE_PUBLIC_URL` | URL pública dos objetos | vazio |
-| `praxis.object-storage.region` | `OBJECT_STORAGE_REGION` | Região | `us-east-1` |
-| `praxis.object-storage.access-key` | `OBJECT_STORAGE_ACCESS_KEY` | Chave de acesso | vazio |
-| `praxis.object-storage.secret-key` | `OBJECT_STORAGE_SECRET_KEY` | Chave secreta | vazio |
-| `praxis.object-storage.bucket` | `OBJECT_STORAGE_BUCKET` | Bucket | `praxis-media` |
-| `praxis.object-storage.path-style` | `OBJECT_STORAGE_PATH_STYLE` | Path-style addressing (MinIO) | `true` |
-
-### 4.7 Documentação de API (Swagger)
+### 4.7 Swagger e Actuator
 
 | Propriedade | Env | Finalidade | Padrão |
 | --- | --- | --- | --- |
 | `springdoc.swagger-ui.enabled` | `SPRINGDOC_SWAGGER_UI_ENABLED` | Expõe Swagger UI em `/docs` | `false` |
 | `springdoc.api-docs.enabled` | `SPRINGDOC_API_DOCS_ENABLED` | Expõe OpenAPI em `/v3/api-docs` | `false` |
+| `management.endpoints.web.exposure.include` | `MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE` | Define endpoints Actuator expostos | `health,info` |
+
+Por padrão, `health,info` são expostos via web. `health` é público; a exposição adicional deve ser
+avaliada conforme a infraestrutura. Swagger e OpenAPI são opt-in e, quando ativos, exigem `ADMIN`.
+
+### 4.8 Proxies confiáveis
+
+`server.forward-headers-strategy=native` e o `RemoteIpValve` do Tomcat processam cabeçalhos
+encaminhados somente quando o peer imediato corresponde a `PRAXIS_TRUSTED_PROXY_REGEX`. Ajuste a
+expressão à rede real; não confie diretamente em `X-Forwarded-For` vindo da internet.
 
 ---
 
-## 5. Usuários do sistema
+## 5. Usuários e autorização
 
-O backend tem dois papéis (`roles`) reais no `SecurityConfig`: `ADMIN` e `EMPRESA`. O candidato não
-é usuário (acessa por token de tentativa).
+O backend possui os papéis principais `ADMIN` e `EMPRESA`. Para usuários de empresa, o
+`SecurityConfig` também aplica subperfis por rota e ação:
 
-### ADMIN (operador da plataforma — empresa `PLATFORM`)
+| Autoridade | Responsabilidade principal |
+| --- | --- |
+| `TEAM_MANAGER` | Gestão de equipe e operações permitidas ao gestor. |
+| `ASSESSMENT_EDITOR` | Autoria e edição de avaliações. |
+| `RESULTS_ANALYST` | Consulta e análise de resultados. |
+| `OPERATIONS_MANAGER` | Operação de convites, tentativas e entregas. |
+| `PARTNER_MANAGER` | Gestão do módulo de parceiros, quando habilitado. |
+| `PARTNER_SPECIALIST` | Atuação especializada e restrita no módulo de parceiros. |
 
-Painel em `/api/admin/**`. Pode:
+A presença de `EMPRESA` não concede automaticamente todas as ações: endpoints sensíveis exigem o
+subperfil correspondente. O candidato não é usuário interno e acessa somente por token de tentativa.
 
-- Criar clientes (empresas) — `POST /api/admin/empresas`.
-- Atualizar dados/condições comerciais — `PATCH /api/admin/empresas/{empresaId}`.
-- Suspender — `POST /api/admin/empresas/{empresaId}/suspend`.
-- Reativar — `POST /api/admin/empresas/{empresaId}/reactivate`.
-- Cancelar — `POST /api/admin/empresas/{empresaId}/cancel`.
-- Consultar uso — `GET /api/admin/empresas/{empresaId}/usage` e `GET /api/admin/dashboard`.
-- Visualizar auditoria — `GET /api/admin/audit`, `GET /api/admin/empresas/{empresaId}/audit`.
-- Gerir usuários do empresa — convidar, reenviar convite, bloquear, desbloquear
-  (`/api/admin/empresas/{empresaId}/users/**`).
-- Gerir billing do empresa (Parte B) — `/api/admin/empresas/{empresaId}/billing/**`.
+### ADMIN
 
-### EMPRESA (administra o próprio empresa)
+Opera `/api/admin/**`, incluindo cadastro e governança de empresas, usuários, uso, auditoria e
+billing. Os operadores ficam na empresa técnica `PLATFORM`.
 
-Rotas `/api/v1/**`. Pode:
+### EMPRESA e subperfis
 
-- Administrar o próprio empresa (`/api/v1/empresa-config/**`, `/api/v1/company-profile/**`).
-- Criar e publicar avaliações (`/api/v1/simulations/**`).
-- Gerir a própria conta (`/api/v1/account/me`, troca de senha).
-- Criar links e convidar candidatos (`/api/v1/candidate-links/**`).
-- Consultar resultados, monitoramento, Talent Match e auditoria do empresa (`/api/v1/audit/**`).
-- Operar entregas/DLQ (`/api/v1/gupy/result-deliveries/**`, `/api/v1/notifications/**`).
-
-### Estados do usuário (`UserStatus`)
-
-`ATIVO`, `CONVIDADO` (e demais estados de bloqueio). Usuário `CONVIDADO` não autentica até aceitar o
-convite e criar senha.
+As APIs `/api/v1/**` cobrem perfil, configurações, avaliações, candidatos, resultados, auditoria,
+integrações e entregas. A autorização concreta depende do endpoint e do subperfil aplicado pelo
+`SecurityConfig`.
 
 ---
 
 ## 6. Fluxos operacionais
 
-### 6.1 Cadastro de cliente
+### 6.1 Cadastro e convite
 
-1. ADMIN cria o empresa (`POST /api/admin/empresas`) → estado inicial `EM_TESTE`/`ATIVO`.
-2. Cria o responsável (usuário EMPRESA) do empresa.
-3. Envia o convite (`/api/admin/empresas/{empresaId}/users/invite`) com TTL `praxis.admin.invite-ttl-hours`.
-4. Cliente aceita o convite (`POST /api/v1/auth/invite/accept`) e cria a senha.
-5. Primeiro login (`POST /api/v1/auth/login`).
+1. `ADMIN` cria a empresa.
+2. Cria ou convida o responsável.
+3. O convite é enviado com token e TTL.
+4. O usuário aceita em `POST /api/v1/auth/invite/accept`.
+5. Após criar a senha, passa a autenticar em `/api/v1/auth/login`.
 
-### 6.2 Convite
+### 6.2 Recuperação de senha
 
-```text
-Criar (ADMIN) → Enviar (e-mail/link com token + TTL) → Aceitar (/auth/invite/accept)
-→ Criar senha → Primeiro acesso (status passa de CONVIDADO para ATIVO)
-```
+1. O usuário informa o e-mail em `POST /api/v1/auth/password/forgot`.
+2. O backend aplica limite de tentativas e responde de forma neutra.
+3. Um token temporário é enviado pelo canal configurado.
+4. A nova senha é registrada em `POST /api/v1/auth/password/reset`.
+5. Tokens expirados, usados ou inválidos são rejeitados.
 
-Reenvio: `POST /api/admin/empresas/{empresaId}/users/{userId}/resend-invite` (gera novo TTL).
+Usuários autenticados continuam podendo trocar a própria senha pelo endpoint de conta.
 
-### 6.3 Recuperação de senha
-
-- Usuário autenticado troca a própria senha em `POST /api/v1/account/password`.
-- **Observação:** não há, hoje, endpoint público de "esqueci minha senha". A redefinição para
-  usuário sem acesso é operada via novo convite/reenvio pelo ADMIN. Documente esse processo no
-  runbook de suporte e mantenha esta seção sincronizada se um fluxo self-service for adicionado.
-
-### 6.4 Cobrança (Mercado Pago — Parte B)
-
-Ver diagrama em §2.10 e [mercado-pago.md](mercado-pago.md). Resumo: ADMIN inicia checkout (crédito
-AVULSO ou assinatura PROFISSIONAL), MP confirma por webhook validado por assinatura, o backend
-consulta a API MP antes de aplicar a mudança financeira (saldo/ledger append-only ou assinatura), e
-o job `MP_DELINQUENCY_CRON` aplica a carência de inadimplência.
-
-### 6.5 Suspensão
+### 6.3 Avaliação
 
 ```text
-Suspender (POST /empresas/{id}/suspend, com motivo) → Status = SUSPENSO (bloqueia login e API)
-→ Evento de auditoria ADMIN_EMPRESA_SUSPENDED → Reativação (POST /empresas/{id}/reactivate)
+Rascunho → objetivo/competências → personagens e alternativas → validação → publicação imutável
+→ link interno ou ATS → execução do candidato → score determinístico → auditoria e entrega
 ```
 
-Motivos comuns: inadimplência confirmada, violação de termos, solicitação do cliente.
+### 6.4 Cobrança
 
-### 6.6 Cancelamento
+O `ADMIN` inicia checkout. O Mercado Pago confirma por webhook assinado. O backend consulta a API do
+provedor antes de aplicar alterações financeiras e registra ledger/auditoria. O módulo é opcional.
 
-```text
-Cancelar (POST /empresas/{id}/cancel, com motivo) → Status = CANCELADO (sem acesso ativo)
-→ Dados/histórico preservados → Evento de auditoria ADMIN_EMPRESA_CANCELED
-```
+### 6.5 Suspensão e cancelamento
 
-O cancelamento **preserva os dados** (não há exclusão física) e registra auditoria.
+`SUSPENSO` bloqueia login e APIs até reativação. `CANCELADO` encerra o acesso ativo e preserva os
+dados e a auditoria; não há exclusão física automática nesse fluxo.
 
 ---
 
 ## 7. Auditoria
 
-- **Quais eventos:** ciclo de simulação (rascunho, blueprint, nós, alternativas, submissão, aprovação,
-  clone, publicação, arquivamento), tentativa (criada, iniciada, abandonada, expirada, resposta,
-  concluída, anonimizada), decisão humana, consentimento de saúde e ações administrativas
-  (`ADMIN_EMPRESA_CREATED/UPDATED/SUSPENDED/REACTIVATED/CANCELED`,
-  `ADMIN_USER_INVITED/INVITE_RESENT/BLOCKED/UNBLOCKED`, `ADMIN_USAGE_VIEWED`, mudanças de plano).
-  Ver `audit/model/AuditEventType.java`.
-- **Onde ficam:** tabela `audit_events` (`AuditEventEntity`), isolada por empresa, com ator registrado.
-- **Como consultar:**
-  - EMPRESA: `GET /api/v1/audit/simulations/{id}/versions/{n}` e
-    `GET /api/v1/audit/candidate-attempts/{attemptId}`.
-  - ADMIN: `GET /api/admin/audit` e `GET /api/admin/audit/{eventId}`.
-- **Como interpretar:** cada evento traz tipo, ator, empresa, alvo e timestamp; use para reconstruir a
-  linha do tempo de uma versão, tentativa ou ação administrativa.
+Eventos de simulação, tentativa, consentimento, decisões humanas, integrações e ações administrativas
+são registrados em `audit_events`. A trilha é append-only: correções geram novos eventos; eventos
+existentes não são editados ou excluídos.
 
-**A auditoria é append-only: não existe edição nem exclusão de eventos.** Correções são feitas por
-novos eventos, nunca por mutação dos existentes.
+Consultas de empresa ficam em `/api/v1/audit/**`; consultas administrativas ficam em
+`/api/admin/audit/**`.
 
 ---
 
 ## 8. Backup
 
-> O Práxis não embarca rotina de backup; defina-a na infraestrutura. Recomendações operacionais:
+O Práxis não embarca rotina de backup. A infraestrutura deve manter:
 
-### Banco (PostgreSQL)
+- dump lógico periódico do PostgreSQL;
+- retenção compatível com LGPD e requisitos do cliente;
+- WAL/PITR quando o RPO exigir;
+- versionamento e lifecycle do bucket de mídia;
+- testes periódicos de restauração em ambiente isolado.
 
-- **Periodicidade:** dump lógico diário (`pg_dump`/`pg_dumpall`) + WAL archiving/PITR para RPO baixo.
-- **Retenção:** mínimo 30 dias de diários; mensais conforme política de compliance/LGPD.
-- **Restauração:** validar restore em ambiente isolado periodicamente. Procedimento:
-  1. Provisionar PostgreSQL na versão compatível.
-  2. `pg_restore`/`psql` do dump no banco vazio.
-  3. Subir o backend com `PRAXIS_JPA_DDL_AUTO=validate` — o Flyway confirma a integridade do schema.
-  4. Validar `GET /actuator/health` e um login de ponta a ponta.
-
-### Storage (mídia S3)
-
-- **Retenção:** habilitar versionamento do bucket e regra de lifecycle alinhada à retenção LGPD.
-- **Recuperação:** restaurar objetos por versão; o banco referencia as mídias por chave/URL.
+Após restaurar, suba o backend com `PRAXIS_JPA_DDL_AUTO=validate`, confirme Flyway, health check,
+login e um fluxo crítico de avaliação.
 
 ---
 
 ## 9. Logs
 
-O backend usa SLF4J/Logback (padrão Spring Boot), saída em stdout (amigável a Docker/Cloud).
+O backend usa SLF4J/Logback em stdout. Observe autenticação, billing, webhooks, integrações, outbox e
+falhas de configuração. Nunca registre segredos, tokens em claro ou PII desnecessária.
 
-| Categoria | Origem | O que observar |
-| --- | --- | --- |
-| Aplicação | `br.com.iforce.praxis.*` | Erros de negócio e exceções |
-| Autenticação | `auth`, `JwtAuthenticationFilter` | Falhas de login, JWT inválido (e-mails mascarados) |
-| Cobrança | `billing` | Checkout, sincronização, inadimplência |
-| Webhook | `MercadoPagoWebhookController/Service` | Assinatura, idempotência, payload |
-| Integração | `gupy`, `recrutei`, `shared.outbox` | Tentativas, entregas, retry, DLQ |
-
-**Níveis:** `INFO` (operação normal), `WARN` (degradação recuperável, ex.: empresa PLATFORM ausente no
-bootstrap), `ERROR` (falha que exige ação). Ajuste por `logging.level.<pacote>` (ex.:
-`LOGGING_LEVEL_BR_COM_IFORCE_PRAXIS=DEBUG`). **Nunca** logue segredos ou PII de candidato.
+`INFO` representa operação normal; `WARN`, degradação recuperável; `ERROR`, falha que exige ação.
 
 ---
 
 ## 10. Monitoramento
 
-- **Health Check:** `GET /actuator/health` (rota pública, usada pelo `HEALTHCHECK` do Docker).
-- **Actuator:** o starter `spring-boot-actuator` está presente. **Por padrão, só `health` é exposto via
-  web.** Para expor métricas/info, configure
-  `MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE=health,info,metrics` (e proteja o acesso).
-- **Métricas sugeridas:** tempo de resposta dos endpoints, taxa de erro 5xx, uso de memória/CPU da JVM
-  (Micrometer via actuator quando exposto), profundidade do outbox (`pending`/`retrying`/`dlq`).
-- **Banco:** monitorar conexões do HikariCP (pool máx. `5` por padrão), latência de queries e locks.
-- **JVM (container):** heap configurado em `-Xmx256m` no Dockerfile; ajuste `JAVA_OPTS` conforme carga.
+- `GET /actuator/health`: disponibilidade e dependências.
+- `GET /actuator/info`: versão e horário do build quando build-info estiver presente.
+- Por padrão, `health,info` são expostos via web.
+- Monitore taxa de 5xx, latência, CPU/memória, pool Hikari, locks do banco, profundidade do outbox e DLQ.
+- Ajuste recursos da JVM e do Node conforme carga real.
 
 ---
 
@@ -467,42 +349,53 @@ bootstrap), `ERROR` (falha que exige ação). Ajuste por `logging.level.<pacote>
 
 | Cenário | Sintoma | Ação |
 | --- | --- | --- |
-| Banco indisponível | `/actuator/health` `DOWN`, erros de conexão | Verificar PostgreSQL/credenciais/rede; o app não sobe sem banco (Flyway no startup). Restaurar do backup se necessário. |
-| S3 indisponível | Falha em `POST /api/v1/media` | Restante do sistema segue. Verificar `OBJECT_STORAGE_*`, credenciais e endpoint; reprocessar uploads. |
-| Mercado Pago indisponível | Checkout/sync falham | Cobrança é opcional; não bloqueia avaliação. Reprocessar após retorno; webhooks são idempotentes. |
-| Gupy/Recrutei indisponível | Erros em `/test/**` | Verificar token de integração (tabela `integration_tokens`). Tentativas em andamento não são afetadas. |
-| Webhook atrasado | Resultado não chega ao ATS | Outbox aplica retry com backoff; acompanhar `GET /api/v1/gupy/result-deliveries`. |
-| Fila parada (outbox) | Eventos presos em `pending`/`retrying`, crescimento de `dlq` | Ver [ARQUITETURA_OUTBOX_PATTERN.md](ARQUITETURA_OUTBOX_PATTERN.md); reprocessar via `POST /api/v1/gupy/result-deliveries/{id}/reprocess`. |
+| Banco indisponível | health `DOWN`, falha no startup | Verificar rede, credenciais, PostgreSQL e Flyway. |
+| Configuração inválida em prod | aplicação recusa iniciar | Corrigir a propriedade indicada pelo validador; não contornar a trava. |
+| S3 indisponível | upload falha | Revisar `OBJECT_STORAGE_*` e reprocessar o upload. |
+| Mercado Pago indisponível | checkout/sync falham | Reprocessar após retorno; webhooks são idempotentes. |
+| ATS indisponível | falhas em `/test/**` | Verificar disponibilidade e token de integração. |
+| Webhook atrasado | resultado não chega | Acompanhar retry/outbox e reprocessar conforme runbook. |
+| Recuperação de senha não envia | usuário não recebe link | Verificar e-mail habilitado, SMTP, remetente e logs sem expor token. |
+| IP incorreto no rate limit | origem aparece como proxy | Revisar `PRAXIS_TRUSTED_PROXY_REGEX` e cadeia de proxies. |
 
 ---
 
-## 12. Atualizações (procedimento oficial)
+## 12. Atualizações e rollback
 
-1. **Parar/drenar** a aplicação (ou retirar a instância do balanceador).
-2. **Backup** do banco (e snapshot do storage) — ver §8.
-3. **Flyway:** subir a nova versão executa as novas migrações automaticamente no startup.
-   - Para validar antes, rode `mvn -pl backend flyway:info` ou inspecione `db/migration`.
-4. **Subir a nova versão** (`java -jar` ou nova imagem/container).
-5. **Validar Health Check** (`GET /actuator/health` → `UP`) e um fluxo crítico (login + abrir tentativa).
-6. **Liberar usuários** (recolocar no balanceador / reabrir acesso).
+1. Drenar ou retirar a instância do balanceador.
+2. Fazer backup do banco e snapshot do storage.
+3. Conferir migrations e compatibilidade.
+4. Subir a nova versão; Flyway aplica migrations no startup.
+5. Validar `/actuator/health`, `/actuator/info`, login e um fluxo crítico.
+6. Recolocar a instância em serviço.
 
-### Rollback
+Flyway não executa rollback automático. Prefira migrations compatíveis para frente. Quando houver
+incompatibilidade, restaure o backup ou aplique migration corretiva antes de retornar a aplicação.
 
-- **Aplicação:** voltar para a imagem/jar anterior.
-- **Banco:** Flyway não faz rollback automático. Se a nova migração for incompatível com a versão
-  anterior, restaure o backup do banco (§8) ou aplique migração corretiva. **Por isso o backup do
-  passo 2 é obrigatório antes de qualquer atualização.**
-- Prefira migrações **compatíveis para frente** (expand/contract) para permitir rollback da aplicação
-  sem reverter o schema.
+---
+
+## Validação da documentação
+
+Execute:
+
+```bash
+python scripts/validate_docs.py
+```
+
+A validação confere links e governança Gupy e também detecta divergências verificáveis entre esta
+documentação, `application.properties`, `PasswordResetController`, `frontend/Dockerfile` e a política
+de versões Flyway.
 
 ---
 
 ## Referências
 
-- [README principal](../README.md) — visão, endpoints e variáveis.
-- [IMPLANTACAO.md](IMPLANTACAO.md) — instalação do zero (Parte B).
-- [Integração Gupy](INTEGRACAO-GUPY-PROVEDOR.md) e [Mercado Pago](mercado-pago.md).
-- [Arquitetura Outbox](ARQUITETURA_OUTBOX_PATTERN.md) — retry, DLQ e reprocessamento.
+- [README principal](../README.md)
+- [IMPLANTACAO.md](IMPLANTACAO.md)
+- [Integração Gupy](INTEGRACAO-GUPY-PROVEDOR.md)
+- [Mercado Pago](mercado-pago.md)
+- [Arquitetura Outbox](ARQUITETURA_OUTBOX_PATTERN.md)
 
 **Versão do sistema coberta:** backend `0.1.0-SNAPSHOT`, Spring Boot 3.5.3, Java 21.
-**Última revisão:** 30/06/2026.
+**Base revisada:** `main` no commit `1f6ff281210e6aa71b1880da1119d22f8aabb68e`.
+**Última revisão:** 23/07/2026.
