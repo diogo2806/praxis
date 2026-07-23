@@ -93,7 +93,12 @@ public enum AuditEventType implements DescribedEnum {
     INTEGRITY_REVIEW_CREATED("integrityReviewCreated"),
     INTEGRITY_EVIDENCE_ACCESSED("integrityEvidenceAccessed"),
     INTEGRITY_REVIEW_DECIDED("integrityReviewDecided"),
-    INTEGRITY_EVIDENCE_DISCARDED("integrityEvidenceDiscarded");
+    INTEGRITY_EVIDENCE_DISCARDED("integrityEvidenceDiscarded"),
+    FEATURE_FLAG_CREATED("featureFlagCreated"),
+    FEATURE_FLAG_UPDATED("featureFlagUpdated"),
+    FEATURE_FLAG_ACTIVATED("featureFlagActivated"),
+    FEATURE_FLAG_DEACTIVATED("featureFlagDeactivated"),
+    FEATURE_FLAG_KILL_SWITCH_CHANGED("featureFlagKillSwitchChanged");
 
     private final String descricao;
 
