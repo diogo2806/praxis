@@ -182,6 +182,12 @@ function ParticipacoesPage() {
                 Convite por jornada
               </Link>
             </Button>
+            <Button asChild variant="outline" className="gap-2 bg-card">
+              <Link to="/participacoes/operacoes-em-lote">
+                <Workflow className="h-4 w-4" />
+                Operações em lote
+              </Link>
+            </Button>
             <Button
               variant="outline"
               className="gap-2 bg-card"
