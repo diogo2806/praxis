@@ -1,6 +1,7 @@
 package br.com.iforce.praxis.participationops.service;
 
 import br.com.iforce.praxis.auth.context.EmpresaContextHolder;
+import br.com.iforce.praxis.auth.service.CurrentEmpresaService;
 import br.com.iforce.praxis.candidate.service.CompanyCandidateLinkService;
 import br.com.iforce.praxis.journey.service.AssessmentJourneyAttemptLifecycleService;
 import br.com.iforce.praxis.participationops.dto.ParticipationOperationsContracts.ParticipationRef;
@@ -12,6 +13,9 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.scheduling.annotation.Async;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.context.SecurityContext;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
@@ -57,7 +61,7 @@ public class ParticipationBulkWorker {
             return;
         }
 
-        EmpresaContextHolder.set(job.getEmpresaId());
+        installCompanyContext(job);
         try {
             job.setStatus("RUNNING");
             job.setStartedAt(Instant.now());
@@ -69,29 +73,74 @@ public class ParticipationBulkWorker {
                 if (!"PENDING".equals(item.getStatus())) {
                     continue;
                 }
-                try {
-                    execute(job, item, payload);
-                    item.setStatus("SUCCEEDED");
-                    item.setReason(null);
-                    job.setSucceededItems(job.getSucceededItems() + 1);
-                } catch (Exception exception) {
-                    item.setStatus("FAILED");
-                    item.setReason(safeReason(exception));
-                    job.setFailedItems(job.getFailedItems() + 1);
-                }
-                item.setProcessedAt(Instant.now());
-                itemRepository.save(item);
-                job.setProcessedItems(job.getProcessedItems() + 1);
-                jobRepository.save(job);
+                processItem(job, item, payload);
             }
 
             job.setStatus(job.getFailedItems() > 0 ? "COMPLETED_WITH_ERRORS" : "COMPLETED");
             job.setCompletedAt(Instant.now());
             ParticipationBulkJobEntity completed = jobRepository.save(job);
             auditService.recordCompleted(completed);
+        } catch (Exception exception) {
+            failJob(job, exception);
         } finally {
             EmpresaContextHolder.clear();
+            SecurityContextHolder.clearContext();
         }
+    }
+
+    private void installCompanyContext(ParticipationBulkJobEntity job) {
+        EmpresaContextHolder.set(job.getEmpresaId());
+        SecurityContext context = SecurityContextHolder.createEmptyContext();
+        UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
+                job.getRequestedBy(),
+                null,
+                List.of()
+        );
+        authentication.setDetails(new CurrentEmpresaService.AuthenticatedEmpresa(job.getEmpresaId()));
+        context.setAuthentication(authentication);
+        SecurityContextHolder.setContext(context);
+    }
+
+    private void processItem(
+            ParticipationBulkJobEntity job,
+            ParticipationBulkItemEntity item,
+            Map<String, Object> payload
+    ) {
+        try {
+            execute(job, item, payload);
+            item.setStatus("SUCCEEDED");
+            item.setReason(null);
+            job.setSucceededItems(job.getSucceededItems() + 1);
+        } catch (Exception exception) {
+            item.setStatus("FAILED");
+            item.setReason(safeReason(exception));
+            job.setFailedItems(job.getFailedItems() + 1);
+        }
+        item.setProcessedAt(Instant.now());
+        itemRepository.save(item);
+        job.setProcessedItems(job.getProcessedItems() + 1);
+        jobRepository.save(job);
+    }
+
+    private void failJob(ParticipationBulkJobEntity job, Exception exception) {
+        String reason = safeReason(exception);
+        List<ParticipationBulkItemEntity> pendingItems = itemRepository.findByJobIdOrderByIdAsc(job.getId())
+                .stream()
+                .filter(item -> "PENDING".equals(item.getStatus()))
+                .toList();
+        Instant now = Instant.now();
+        for (ParticipationBulkItemEntity item : pendingItems) {
+            item.setStatus("FAILED");
+            item.setReason(reason);
+            item.setProcessedAt(now);
+            itemRepository.save(item);
+            job.setProcessedItems(job.getProcessedItems() + 1);
+            job.setFailedItems(job.getFailedItems() + 1);
+        }
+        job.setStatus("FAILED");
+        job.setCompletedAt(now);
+        ParticipationBulkJobEntity failed = jobRepository.save(job);
+        auditService.recordCompleted(failed);
     }
 
     private void execute(
@@ -173,7 +222,7 @@ public class ParticipationBulkWorker {
         if (message == null || message.isBlank()) {
             return "Falha ao processar o item.";
         }
-        String sanitized = message.replaceAll("[\\r\\n\\t]+", " ").trim();
+        String sanitized = message.replaceAll("[\r\n\t]+", " ").trim();
         return sanitized.length() <= 1000 ? sanitized : sanitized.substring(0, 1000);
     }
 }
