@@ -131,6 +131,18 @@ public class CandidateAttemptEntity implements EmpresaAwareEntity {
     @Column(name = "privacy_notice_hash", length = 64)
     private String privacyNoticeHash;
 
+    @Column(name = "health_consent_recorded_at")
+    private Instant healthConsentRecordedAt;
+
+    @Column(name = "health_consent_version", length = 80)
+    private String healthConsentVersion;
+
+    @Column(name = "health_consent_subject_type", length = 30)
+    private String healthConsentSubjectType;
+
+    @Column(name = "health_consent_revoked_at")
+    private Instant healthConsentRevokedAt;
+
     @Column(name = "human_review_completed_at")
     private Instant humanReviewCompletedAt;
 

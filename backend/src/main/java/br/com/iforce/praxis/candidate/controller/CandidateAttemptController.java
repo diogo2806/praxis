@@ -81,7 +81,7 @@ public class CandidateAttemptController {
     @GetMapping("/{attemptToken}")
     @Operation(
             summary = "Carrega participacao do candidato",
-            description = "Retorna somente a etapa atual para uma sessão técnica ativa, com aceite dos documentos legais registrado e sem regras futuras."
+            description = "Retorna somente a etapa atual para uma sessão técnica ativa, com aceite dos documentos legais e consentimento de saúde aplicável registrados, sem regras futuras."
     )
     public ResponseEntity<ParticipacaoResponse> getCandidateAttempt(
             @PathVariable String attemptToken,
@@ -90,6 +90,7 @@ public class CandidateAttemptController {
         publicCandidateFlowSecurity.requireValidAttemptToken(attemptToken);
         candidatePrivacyNoticeService.assertAcknowledged(attemptToken);
         candidateIntegrityService.requireActiveSession(attemptToken, integritySessionId);
+        candidateHealthConsentService.assertConsentGranted(attemptToken);
         ParticipacaoResponse response = candidateAttemptService.findCandidateAttempt(attemptToken);
         return ResponseEntity.ok(publicCandidateFlowSecurity.sanitize(attemptToken, response));
     }
@@ -97,7 +98,7 @@ public class CandidateAttemptController {
     @PostMapping("/{attemptToken}/answers")
     @Operation(
             summary = "Registra resposta do candidato",
-            description = "Registra a resposta somente com aceite dos documentos legais e sessão técnica ativos."
+            description = "Registra a resposta somente com aceite dos documentos legais, consentimento de saúde aplicável e sessão técnica ativos."
     )
     public ResponseEntity<RegistrarRespostaResponse> submitAnswer(
             @PathVariable String attemptToken,
@@ -107,6 +108,7 @@ public class CandidateAttemptController {
         publicCandidateFlowSecurity.requireValidAttemptToken(attemptToken);
         candidatePrivacyNoticeService.assertAcknowledged(attemptToken);
         candidateIntegrityService.requireActiveSession(attemptToken, integritySessionId);
+        candidateHealthConsentService.assertConsentGranted(attemptToken);
         RegistrarRespostaResponse response = candidateAttemptService.submitAnswer(
                 attemptToken,
                 publicCandidateFlowSecurity.sanitizeRequest(request)

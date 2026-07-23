@@ -3,6 +3,7 @@ export {
   getCandidateAttempt,
   submitCandidateAnswer,
 } from "./candidate-attempt-public";
+export { recordHealthConsent } from "./candidate-health-consent-public";
 export { createSimulationBranchNode } from "./simulation-branch-node";
 export {
   createSimulationNode,
