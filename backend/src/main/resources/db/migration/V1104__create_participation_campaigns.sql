@@ -5,6 +5,7 @@ CREATE TABLE participation_campaigns (
     simulation_id VARCHAR(120) NOT NULL,
     application_cycle_id VARCHAR(120) NOT NULL,
     application_context VARCHAR(200),
+    idempotency_key VARCHAR(120) NOT NULL,
     status VARCHAR(24) NOT NULL,
     initial_send_at TIMESTAMPTZ NOT NULL,
     link_validity_days INTEGER NOT NULL,
@@ -20,7 +21,8 @@ CREATE TABLE participation_campaigns (
     completed_at TIMESTAMPTZ,
     CONSTRAINT ck_participation_campaign_status CHECK (status IN ('DRAFT', 'SCHEDULED', 'RUNNING', 'PAUSED', 'COMPLETED', 'CANCELLED')),
     CONSTRAINT ck_participation_campaign_validity CHECK (link_validity_days BETWEEN 1 AND 90),
-    CONSTRAINT uk_participation_campaign_cycle UNIQUE (empresa_id, simulation_id, application_cycle_id)
+    CONSTRAINT uk_participation_campaign_cycle UNIQUE (empresa_id, simulation_id, application_cycle_id),
+    CONSTRAINT uk_participation_campaign_idempotency UNIQUE (empresa_id, idempotency_key)
 );
 
 CREATE TABLE participation_campaign_reminders (
