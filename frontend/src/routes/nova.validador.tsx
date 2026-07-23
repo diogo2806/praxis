@@ -28,6 +28,28 @@ import {
   type ValidationEditor,
 } from "@/lib/validation-diagnostics";
 
+interface PathCompetencyMetricsResponse {
+  competency: string;
+  minimumScore: number;
+  maximumScore: number;
+  evidenceCount: number;
+  observable: boolean;
+}
+
+interface TerminalRouteResponse {
+  routeId: string;
+  terminalNodeId: string;
+  nodeIds: string[];
+  convergenceNodeIds: string[];
+  decisionCount: number;
+  estimatedDurationSeconds: number;
+  estimatedDifficultyPercent: number;
+  rawMinimumScore: number;
+  rawMaximumScore: number;
+  maximumNormalizedScore: number;
+  competencies: PathCompetencyMetricsResponse[];
+}
+
 export const Route = createFileRoute("/nova/validador")({
   validateSearch: (search: Record<string, unknown>) => ({
     simulationId: typeof search.simulationId === "string" ? search.simulationId : undefined,
@@ -78,6 +100,9 @@ function ValidatorPage() {
     search.versionNumber,
   );
   const validation = validationQuery.data;
+  const terminalRoutes = (
+    validation as (typeof validation & { routes?: TerminalRouteResponse[] }) | undefined
+  )?.routes ?? [];
   const diagnostics = buildValidationDiagnostics(versionQuery.data, validation?.issues ?? []);
   const blockers = diagnostics.filter((diagnostic) => diagnostic.issue.severity === "blocker");
   const warnings = diagnostics.filter((diagnostic) => diagnostic.issue.severity === "warning");
@@ -201,6 +226,8 @@ function ValidatorPage() {
               </div>
             </section>
 
+            <TerminalRoutes routes={terminalRoutes} />
+
             {diagnostics.length === 0 ? (
               <StateBanner tone="ok" title="Nenhum bloqueio ou aviso encontrado">
                 Esta versão está estruturalmente pronta. Confirme termos e publicação em Governança.
@@ -267,6 +294,111 @@ function ValidatorPage() {
       </main>
     </AppShell>
   );
+}
+
+function TerminalRoutes({ routes }: { routes: TerminalRouteResponse[] }) {
+  if (routes.length === 0) return null;
+
+  return (
+    <section className="rounded-xl border border-border bg-card p-5">
+      <div className="flex items-start gap-3">
+        <GitBranch className="mt-0.5 h-5 w-5 text-primary" />
+        <div>
+          <h2 className="font-semibold">Rotas terminais e comparabilidade</h2>
+          <p className="mt-1 text-sm leading-6 text-muted-foreground">
+            Cada rota mostra oportunidades de evidência, teto bruto, duração, decisões e dificuldade
+            estimada. Pontos de convergência aparecem quando ramificações voltam ao mesmo nó.
+          </p>
+        </div>
+      </div>
+
+      <div className="mt-4 grid gap-4 xl:grid-cols-2">
+        {routes.map((route) => (
+          <article key={route.routeId} className="rounded-lg border border-border bg-background p-4">
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <div className="text-xs font-semibold uppercase tracking-wide text-primary">
+                  {route.routeId}
+                </div>
+                <h3 className="mt-1 font-semibold">Final: {route.terminalNodeId}</h3>
+                <p className="mt-1 text-xs leading-5 text-muted-foreground">
+                  {route.nodeIds.join(" → ")}
+                </p>
+              </div>
+              <span className="rounded-md border border-border bg-card px-2 py-1 text-xs font-semibold">
+                Máximo normalizado: {route.maximumNormalizedScore}/100
+              </span>
+            </div>
+
+            <dl className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
+              <RouteMetric label="Teto bruto" value={String(route.rawMaximumScore)} />
+              <RouteMetric label="Duração" value={formatDuration(route.estimatedDurationSeconds)} />
+              <RouteMetric label="Decisões" value={String(route.decisionCount)} />
+              <RouteMetric label="Dificuldade" value={`${route.estimatedDifficultyPercent}%`} />
+            </dl>
+
+            {route.convergenceNodeIds.length > 0 && (
+              <p className="mt-3 text-xs text-muted-foreground">
+                Convergência: {route.convergenceNodeIds.join(", ")}
+              </p>
+            )}
+
+            <div className="mt-4 overflow-x-auto">
+              <table className="w-full min-w-[520px] text-left text-sm">
+                <thead className="text-xs uppercase tracking-wide text-muted-foreground">
+                  <tr>
+                    <th className="pb-2 pr-3">Competência</th>
+                    <th className="pb-2 pr-3">Mínimo</th>
+                    <th className="pb-2 pr-3">Máximo</th>
+                    <th className="pb-2">Evidências</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {route.competencies.map((competency) => (
+                    <tr key={competency.competency} className="border-t border-border">
+                      <td className="py-2 pr-3 font-medium">{competency.competency}</td>
+                      <td className="py-2 pr-3">{competency.minimumScore}</td>
+                      <td className="py-2 pr-3">{competency.maximumScore}</td>
+                      <td className="py-2">
+                        <span
+                          className={cn(
+                            "rounded-md px-2 py-1 text-xs font-semibold",
+                            competency.observable
+                              ? "bg-success/10 text-success"
+                              : "bg-danger/10 text-danger",
+                          )}
+                        >
+                          {competency.evidenceCount}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </article>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function RouteMetric({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-md border border-border bg-card p-2">
+      <dt className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+        {label}
+      </dt>
+      <dd className="mt-1 font-semibold text-foreground">{value}</dd>
+    </div>
+  );
+}
+
+function formatDuration(seconds: number) {
+  const minutes = Math.floor(seconds / 60);
+  const remainingSeconds = seconds % 60;
+  if (minutes === 0) return `${remainingSeconds}s`;
+  return remainingSeconds === 0 ? `${minutes}min` : `${minutes}min ${remainingSeconds}s`;
 }
 
 function DiagnosticGroup({

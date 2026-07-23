@@ -2,9 +2,7 @@ package br.com.iforce.praxis.simulation.dto;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 
-
 import java.util.List;
-
 
 @Schema(description = "Resultado da validação estrutural antes da publicação.")
 public record SimulationValidationResponse(
@@ -26,6 +24,30 @@ public record SimulationValidationResponse(
         @Schema(example = "90")
         int qualityScore,
 
-        List<ValidationIssueResponse> issues
+        List<ValidationIssueResponse> issues,
+
+        @Schema(description = "Todas as rotas terminais encontradas no grafo, com métricas de comparabilidade.")
+        List<TerminalRouteResponse> routes
 ) {
+
+    public SimulationValidationResponse(
+            String simulationId,
+            int versionNumber,
+            boolean publishable,
+            long blockerCount,
+            long warningCount,
+            int qualityScore,
+            List<ValidationIssueResponse> issues
+    ) {
+        this(
+                simulationId,
+                versionNumber,
+                publishable,
+                blockerCount,
+                warningCount,
+                qualityScore,
+                issues,
+                List.of()
+        );
+    }
 }

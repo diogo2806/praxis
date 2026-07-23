@@ -1,42 +1,25 @@
 package br.com.iforce.praxis.gupy.service;
 
 import br.com.iforce.praxis.audit.model.AuditEventType;
-
 import br.com.iforce.praxis.audit.service.AuditEventService;
-
 import br.com.iforce.praxis.audit.service.AuditMetadata;
-
 import br.com.iforce.praxis.config.PraxisProperties;
-
 import br.com.iforce.praxis.gupy.model.AttemptAnswer;
-
 import br.com.iforce.praxis.gupy.model.AttemptStatus;
-
 import br.com.iforce.praxis.gupy.model.CandidateAttempt;
-
 import br.com.iforce.praxis.gupy.model.PublishedSimulation;
-
 import br.com.iforce.praxis.gupy.model.ReliabilityLevel;
-
 import br.com.iforce.praxis.gupy.model.ResultDecision;
-
 import br.com.iforce.praxis.gupy.model.ResultItem;
-
 import br.com.iforce.praxis.gupy.model.ScenarioNode;
-
 import br.com.iforce.praxis.gupy.model.ScenarioOption;
-
 import br.com.iforce.praxis.gupy.model.ScoreCalculationResult;
-
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-
 import java.time.Instant;
-
 import java.util.List;
-
 import java.util.Map;
-
 
 /**
  * Máquina de estados da {@link CandidateAttempt}. Concentra as transições
@@ -51,17 +34,37 @@ public class AttemptStateMachine {
     private final AuditEventService auditEventService;
     private final AuditMetadata auditMetadata;
     private final ResultScoringService resultScoringService;
+    private final PathScoringSnapshotService pathScoringSnapshotService;
 
+    @Autowired
+    public AttemptStateMachine(
+            PraxisProperties praxisProperties,
+            AuditEventService auditEventService,
+            AuditMetadata auditMetadata,
+            ResultScoringService resultScoringService,
+            PathScoringSnapshotService pathScoringSnapshotService
+    ) {
+        this.praxisProperties = praxisProperties;
+        this.auditEventService = auditEventService;
+        this.auditMetadata = auditMetadata;
+        this.resultScoringService = resultScoringService;
+        this.pathScoringSnapshotService = pathScoringSnapshotService;
+    }
+
+    /** Construtor mantido para testes unitários isolados. */
     public AttemptStateMachine(
             PraxisProperties praxisProperties,
             AuditEventService auditEventService,
             AuditMetadata auditMetadata,
             ResultScoringService resultScoringService
     ) {
-        this.praxisProperties = praxisProperties;
-        this.auditEventService = auditEventService;
-        this.auditMetadata = auditMetadata;
-        this.resultScoringService = resultScoringService;
+        this(
+                praxisProperties,
+                auditEventService,
+                auditMetadata,
+                resultScoringService,
+                new PathScoringSnapshotService()
+        );
     }
 
     public boolean isTerminalBlocked(AttemptStatus status) {
@@ -165,6 +168,11 @@ public class AttemptStateMachine {
                 attempt.startedAt(),
                 attempt.servedAtByNodeId()
         );
+        PathScoringSnapshotService.ScoringSnapshot scoringSnapshot = pathScoringSnapshotService.calculate(
+                simulation,
+                answersByNodeId,
+                scoreResult.score()
+        );
         return copy(
                 attempt,
                 AttemptStatus.COMPLETED,
@@ -175,15 +183,21 @@ public class AttemptStateMachine {
                 scoreResult.decision(),
                 scoreResult.humanReviewRequired(),
                 scoreResult.reliabilityLevel(),
-                buildCompanyResultString(simulation, scoreResult, answersByNodeId),
+                buildCompanyResultString(simulation, scoreResult, scoringSnapshot, answersByNodeId),
                 attempt.startedAt(),
                 Instant.now()
-        );
+        ).toBuilder()
+                .rawScore(scoringSnapshot.rawScore())
+                .pathMaximumScore(scoringSnapshot.pathMaximumScore())
+                .normalizedScore(scoringSnapshot.normalizedScore())
+                .scoringAlgorithmVersion(scoringSnapshot.algorithmVersion())
+                .build();
     }
 
     private String buildCompanyResultString(
             PublishedSimulation simulation,
             ScoreCalculationResult scoreResult,
+            PathScoringSnapshotService.ScoringSnapshot scoringSnapshot,
             Map<String, AttemptAnswer> answersByNodeId
     ) {
         String outcome = switch (scoreResult.decision()) {
@@ -201,7 +215,10 @@ public class AttemptStateMachine {
         String result = "Resumo da participação\n\n"
                 + "Teste: " + simulation.name() + "\n\n"
                 + "Resultado em relação aos critérios: " + outcome + "\n\n"
-                + "Pontuação geral: " + scoreResult.score() + "/100\n\n"
+                + "Pontuação bruta no caminho: " + scoringSnapshot.rawScore() + "/"
+                + scoringSnapshot.pathMaximumScore() + "\n\n"
+                + "Pontuação normalizada: " + scoringSnapshot.normalizedScore() + "/100\n\n"
+                + "Versão do algoritmo: " + scoringSnapshot.algorithmVersion() + "\n\n"
                 + reviewLine + "\n\n"
                 + "Observação sobre o tempo de resposta: " + responseTimeSignal + ".";
         if (terminalReport == null || terminalReport.isBlank()) {
@@ -290,30 +307,18 @@ public class AttemptStateMachine {
             Instant startedAt,
             Instant finishedAt
     ) {
-        return new CandidateAttempt(
-                attempt.id(),
-                attempt.resultId(),
-                attempt.empresaId(),
-                attempt.companyId(),
-                attempt.simulationId(),
-                attempt.simulationVersionId(),
-                attempt.simulationVersionNumber(),
-                attempt.idempotencyKey(),
-                attempt.candidateName(),
-                attempt.candidateEmail(),
-                status,
-                score,
-                results,
-                answersByNodeId,
-                servedAtByNodeId,
-                decision,
-                humanReviewRequired,
-                reliabilityLevel,
-                attempt.accommodationTimeMultiplier(),
-                companyResultString,
-                attempt.createdAt(),
-                startedAt,
-                finishedAt
-        );
+        return attempt.toBuilder()
+                .status(status)
+                .score(score)
+                .results(results)
+                .answersByNodeId(answersByNodeId)
+                .servedAtByNodeId(servedAtByNodeId)
+                .decision(decision)
+                .humanReviewRequired(humanReviewRequired)
+                .reliabilityLevel(reliabilityLevel)
+                .companyResultString(companyResultString)
+                .startedAt(startedAt)
+                .finishedAt(finishedAt)
+                .build();
     }
 }

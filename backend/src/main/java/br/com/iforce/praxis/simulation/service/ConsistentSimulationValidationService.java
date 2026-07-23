@@ -7,7 +7,7 @@ import br.com.iforce.praxis.simulation.model.ValidationIssueSeverity;
 import br.com.iforce.praxis.simulation.persistence.entity.SimulationNodeEntity;
 import br.com.iforce.praxis.simulation.persistence.entity.SimulationOptionEntity;
 import br.com.iforce.praxis.simulation.persistence.entity.SimulationVersionEntity;
-
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Service;
 
@@ -36,8 +36,20 @@ public class ConsistentSimulationValidationService extends SimulationValidationS
     private static final String TIMEOUT_WITHOUT_DESTINATION =
             "Esta etapa continua o teste, mas não tem destino para tempo esgotado.";
 
-    public ConsistentSimulationValidationService(PraxisProperties praxisProperties) {
+    private final SimulationPathComparabilityService pathComparabilityService;
+
+    @Autowired
+    public ConsistentSimulationValidationService(
+            PraxisProperties praxisProperties,
+            SimulationPathComparabilityService pathComparabilityService
+    ) {
         super(praxisProperties);
+        this.pathComparabilityService = pathComparabilityService;
+    }
+
+    /** Construtor mantido para testes unitários isolados. */
+    public ConsistentSimulationValidationService(PraxisProperties praxisProperties) {
+        this(praxisProperties, new SimulationPathComparabilityService());
     }
 
     @Override
@@ -50,6 +62,10 @@ public class ConsistentSimulationValidationService extends SimulationValidationS
                 .filter(issue -> isRelevant(issue, nodesById))
                 .toList());
         appendDirectEndReportIssues(simulationVersionEntity, issues);
+
+        SimulationPathComparabilityService.PathComparabilityAnalysis pathAnalysis =
+                pathComparabilityService.analyze(simulationVersionEntity);
+        issues.addAll(pathAnalysis.issues());
 
         long blockerCount = issues.stream()
                 .filter(issue -> issue.severity() == ValidationIssueSeverity.BLOCKER)
@@ -66,7 +82,8 @@ public class ConsistentSimulationValidationService extends SimulationValidationS
                 blockerCount,
                 warningCount,
                 qualityScore,
-                issues
+                List.copyOf(issues),
+                pathAnalysis.routes()
         );
     }
 
