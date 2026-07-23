@@ -19,9 +19,10 @@ jobs:
           fetch-depth: 1
           show-progress: false
 
-      - name: Reconstruir e aplicar correção
+      - name: Aplicar, validar e publicar
         run: |
-          python - <<'PY'
+          set +e
+          python - <<'PY' > .github/issue-489-error.txt 2>&1
           import base64
           import gzip
           from pathlib import Path
@@ -33,21 +34,29 @@ jobs:
           source = gzip.decompress(base64.b64decode(encoded)).decode('utf-8')
           exec(compile(source, 'apply_issue_489.py', 'exec'), {'__name__': '__main__'})
           PY
+          status=$?
+          set -e
 
-      - name: Validar catálogo e diff
-        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          if [ "$status" -ne 0 ]; then
+            cat .github/issue-489-error.txt
+            git add .github/issue-489-error.txt
+            git commit -m "chore: registrar diagnóstico da correção #489"
+            git push
+            exit 0
+          fi
+
+          rm -f .github/issue-489-error.txt
           cd frontend
           node scripts/test-candidate-i18n.mjs
           cd ..
           git diff --check
 
-      - name: Remover mecanismo temporário e publicar
-        run: |
           rm -rf .github/issue-489-parts
           rm -f .github/workflows/run-issue-489.yml
 
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add -A
           git commit -m "fix(frontend): traduzir execução da avaliação do candidato"
           git push
