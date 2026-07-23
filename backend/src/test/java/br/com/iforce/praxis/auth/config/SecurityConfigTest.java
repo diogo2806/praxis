@@ -13,6 +13,7 @@ import java.util.Set;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @SpringBootTest(properties = {
@@ -24,6 +25,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @AutoConfigureMockMvc
 @Sql(scripts = "/seed-simulation-fixture.sql")
 class SecurityConfigTest {
+
+    private static final String PERMISSIONS_POLICY = "camera=(), microphone=(), geolocation=(), payment=()";
 
     @Autowired
     private MockMvc mockMvc;
@@ -52,6 +55,14 @@ class SecurityConfigTest {
         mockMvc.perform(get("/test")
                         .header("Authorization", "Bearer empresa1-token"))
                 .andExpect(status().isOk());
+    }
+
+    @Test
+    void responsesKeepPermissionsPolicyHeader() throws Exception {
+        mockMvc.perform(get("/test")
+                        .header("Authorization", "Bearer empresa1-token"))
+                .andExpect(status().isOk())
+                .andExpect(header().string("Permissions-Policy", PERMISSIONS_POLICY));
     }
 
     @Test
