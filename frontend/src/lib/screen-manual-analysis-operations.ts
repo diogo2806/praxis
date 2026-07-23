@@ -2,6 +2,94 @@ import type { ScreenManualDefinition } from "@/lib/screen-manuals";
 
 export const ANALYSIS_OPERATION_MANUALS: ScreenManualDefinition[] = [
   {
+    id: "resultado-executivo-entrevista",
+    title: "Relatório executivo e entrevista estruturada",
+    purpose:
+      "Transformar o percurso concluído em uma leitura operacional rastreável, preparar perguntas de entrevista vinculadas a regras ou evidências e preservar a decisão final como responsabilidade humana.",
+    flow: [
+      "Confirme a pessoa participante, a avaliação, a versão e a data de conclusão no cabeçalho.",
+      "Revise a visão executiva, distinguindo dado observado, interpretação por regra e interpretação cadastrada pela empresa.",
+      "Abra as evidências críticas e os pontos indicados para aprofundamento.",
+      "Revise o roteiro determinístico: edite, remova ou acrescente perguntas conforme a entrevista planejada.",
+      "Registre o roteiro e as anotações; cada salvamento cria um evento imutável na trilha da tentativa.",
+      "Conduza a entrevista, registre a decisão humana final e informe a justificativa.",
+      "Use Imprimir / salvar PDF para gerar o documento com avaliação, versão, datas, evidências e auditoria.",
+    ],
+    fields: [
+      {
+        name: "Visão executiva",
+        description:
+          "Resume competências, quantidade de evidências, referências do percurso, alternativas críticas e limitações sem recomendar contratação ou reprovação.",
+      },
+      {
+        name: "Dado observado",
+        description:
+          "Resposta efetivamente registrada na tentativa e referência técnica do nó e da alternativa que originaram a evidência.",
+      },
+      {
+        name: "Interpretação configurada pela empresa",
+        description:
+          "Texto cadastrado pelo autor na alternativa ou no cenário da versão respondida; quando ausente, a tela informa explicitamente a lacuna.",
+      },
+      {
+        name: "Roteiro de entrevista",
+        description:
+          "Perguntas iniciais produzidas por regras fixas e vinculadas a uma competência ou evidência; podem ser editadas, removidas ou complementadas.",
+      },
+      {
+        name: "Anotações do entrevistador",
+        description:
+          "Registro factual da entrevista, separado da interpretação da avaliação e da decisão humana final.",
+      },
+      {
+        name: "Decisão humana final",
+        description:
+          "Avançar, reprovar, contratar ou colocar em espera, sempre registrada por uma pessoa responsável e com justificativa própria.",
+      },
+      {
+        name: "Trilha de auditoria",
+        description:
+          "Linha cronológica dos eventos da tentativa, incluindo conclusão, registros de roteiro e decisões humanas.",
+      },
+    ],
+    permissions: [
+      "Perfil EMPRESA autenticado e vinculado à empresa dona da tentativa.",
+      "Acesso à Central de Resultados para consultar evidências e competências.",
+      "Permissão operacional para registrar roteiro, anotações e decisão humana.",
+    ],
+    states: [
+      "Carregando resultado e relatório executivo",
+      "Resultado disponível com roteiro inicial por regras",
+      "Roteiro editado ainda não registrado",
+      "Roteiro registrado na auditoria",
+      "Decisão humana ainda não registrada",
+      "Decisão humana registrada",
+      "Relatório pronto para impressão ou PDF",
+      "Falha parcial no relatório executivo com resultado básico ainda disponível",
+    ],
+    blocks: [
+      "Tentativa inexistente ou pertencente a outra empresa.",
+      "Versão histórica da avaliação indisponível para reconstruir os textos do percurso.",
+      "Pergunta vazia, identificador duplicado ou limite de 30 perguntas atingido.",
+      "Anotações acima de 4000 caracteres.",
+      "Tentativa sem evidências recuperáveis para determinada competência.",
+      "Falha de conexão ao carregar ou registrar o roteiro.",
+      "Decisão final sem opção selecionada.",
+    ],
+    examples: [
+      "Revisar a evidência Situação 3:opcao-b, aprofundar Comunicação e registrar duas perguntas adicionais do entrevistador.",
+      "Remover uma pergunta que não se aplica à vaga, salvar o roteiro revisado e depois gerar o PDF para o gestor requisitante.",
+      "Registrar a decisão de avançar somente após a entrevista, mantendo a justificativa separada da pontuação da avaliação.",
+    ],
+    shortcuts: [
+      "Use o botão Imprimir / salvar PDF para abrir o diálogo nativo do navegador e escolher Salvar como PDF.",
+      "Use Tab e Shift+Tab para percorrer perguntas, anotações e ações sem o mouse.",
+      "Use o ícone Manual e depois Ver processo completo para abrir /manual#resultado-executivo-entrevista.",
+      "Retorne à lista preservando os filtros pelo botão Voltar para resultados.",
+    ],
+    matches: (pathname) => /^\/results\/[^/]+$/.test(pathname),
+  },
+  {
     id: "talent-match-contextual",
     title: "Talent Match contextual",
     purpose:
