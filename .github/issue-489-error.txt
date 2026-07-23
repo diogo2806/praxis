@@ -1,4 +1,4 @@
-apply_issue_489.py:709: SyntaxWarning: "\s" is an invalid escape sequence. Such sequences will not work in the future. Did you mean "\\s"? A raw string is also an option.
+apply_issue_489.py:664: SyntaxWarning: invalid escape sequence '\s'
 Traceback (most recent call last):
   File "<stdin>", line 13, in <module>
   File "apply_issue_489.py", line 154, in <module>
