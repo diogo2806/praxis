@@ -17,9 +17,11 @@ import java.time.Instant;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-/** Registra o consentimento específico da vertical educativa de saúde. */
+/** Registra e valida o consentimento específico da vertical educativa de saúde. */
 @Service
 public class CandidateHealthConsentService {
+
+    private static final String SUBJECT_TYPE_DATA_SUBJECT = "DATA_SUBJECT";
 
     private final CandidateAttemptRepository candidateAttemptRepository;
     private final AuditEventService auditEventService;
@@ -53,12 +55,7 @@ public class CandidateHealthConsentService {
             );
         }
 
-        CandidateAttemptTokenResolver.ResolvedAttemptToken resolved = tokenResolver.resolve(attemptToken);
-        CandidateAttemptEntity attempt = candidateAttemptRepository.findById(resolved.attemptId())
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Participação não encontrada."));
-        if (resolved.empresaId() != null && !resolved.empresaId().equals(attempt.getEmpresaId())) {
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Token não pertence a esta participação.");
-        }
+        CandidateAttemptEntity attempt = resolveAttempt(attemptToken);
         if (!healthVerticalService.isHealthVertical(attempt.getEmpresaId())) {
             throw new ResponseStatusException(
                     HttpStatus.CONFLICT,
@@ -67,20 +64,62 @@ public class CandidateHealthConsentService {
         }
 
         Instant consentedAt = Instant.now();
+        String version = request.version().trim();
+        attempt.setHealthConsentRecordedAt(consentedAt);
+        attempt.setHealthConsentVersion(version);
+        attempt.setHealthConsentSubjectType(SUBJECT_TYPE_DATA_SUBJECT);
+        attempt.setHealthConsentRevokedAt(null);
+        candidateAttemptRepository.save(attempt);
+
         auditEventService.appendCandidateAttemptEvent(
                 attempt.getEmpresaId(),
                 attempt.getId(),
                 AuditEventType.HEALTH_CONSENT_RECORDED,
                 "Consentimento de saúde registrado pelo participante.",
-                buildMetadata(attempt.getId(), request, consentedAt)
+                buildMetadata(attempt.getId(), version, consentedAt)
         );
     }
 
-    private String buildMetadata(String attemptId, HealthConsentRequest request, Instant consentedAt) {
+    /**
+     * Impede que dados da avaliação de saúde sejam carregados ou respondidos sem um consentimento
+     * persistido, versionado e não revogado. Empresas fora da vertical de saúde não são afetadas.
+     */
+    @Transactional(readOnly = true)
+    public void assertConsentGranted(String attemptToken) {
+        CandidateAttemptEntity attempt = resolveAttempt(attemptToken);
+        if (!healthVerticalService.isHealthVertical(attempt.getEmpresaId())) {
+            return;
+        }
+
+        boolean valid = attempt.getHealthConsentRecordedAt() != null
+                && attempt.getHealthConsentVersion() != null
+                && !attempt.getHealthConsentVersion().isBlank()
+                && SUBJECT_TYPE_DATA_SUBJECT.equals(attempt.getHealthConsentSubjectType())
+                && attempt.getHealthConsentRevokedAt() == null;
+        if (!valid) {
+            throw new ResponseStatusException(
+                    HttpStatus.PRECONDITION_REQUIRED,
+                    "O consentimento específico para tratamento de dados de saúde deve ser registrado antes da avaliação."
+            );
+        }
+    }
+
+    private CandidateAttemptEntity resolveAttempt(String attemptToken) {
+        CandidateAttemptTokenResolver.ResolvedAttemptToken resolved = tokenResolver.resolve(attemptToken);
+        CandidateAttemptEntity attempt = candidateAttemptRepository.findById(resolved.attemptId())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Participação não encontrada."));
+        if (resolved.empresaId() != null && !resolved.empresaId().equals(attempt.getEmpresaId())) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Token não pertence a esta participação.");
+        }
+        return attempt;
+    }
+
+    private String buildMetadata(String attemptId, String version, Instant consentedAt) {
         Map<String, Object> payload = new LinkedHashMap<>();
         payload.put("attemptId", attemptId);
         payload.put("source", "candidate");
-        payload.put("noticeVersion", request.version().trim());
+        payload.put("noticeVersion", version);
+        payload.put("subjectType", SUBJECT_TYPE_DATA_SUBJECT);
         payload.put("onBehalfOfMinor", false);
         payload.put("consentedAt", consentedAt.toString());
         try {
