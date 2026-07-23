@@ -23,9 +23,9 @@ const manualSource = readFileSync(
 );
 
 assert.match(routeSource, /createFileRoute\("\/nova\/previa"\)/);
-assert.match(routeSource, /não cria participação/);
-assert.match(routeSource, /não consome crédito/);
-assert.match(routeSource, /não gera resultado oficial/);
+assert.match(routeSource, /não\s+cria participação/);
+assert.match(routeSource, /não\s+consome crédito/);
+assert.match(routeSource, /não\s+gera resultado oficial/);
 assert.match(routeSource, /getSimulationValidation/);
 assert.match(routeSource, /Cobertura da sessão/);
 assert.match(routeSource, /Mapa de cobertura/);
