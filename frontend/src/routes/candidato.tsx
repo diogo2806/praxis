@@ -39,7 +39,6 @@ const candidateStyles = `
     --font-sans: 'IBM Plex Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
     --font-mono: 'IBM Plex Mono', ui-monospace, 'SFMono-Regular', monospace;
     --shadow-lg: 0 40px 80px -40px oklch(0.30 0.06 245 / 0.40);
-
     min-height: 100vh;
     background: var(--bg);
     font-family: var(--font-sans);
@@ -74,7 +73,6 @@ const candidateStyles = `
   }
   .cand-root.large-text { font-size: 20px; }
   @media (max-width: 560px) { .cand-root { font-size: 16px; } }
-
   .cand-a11y {
     display: flex;
     flex-wrap: wrap;
@@ -105,7 +103,6 @@ const candidateStyles = `
     color: #6cf;
     border-color: #6cf;
   }
-
   .scenario {
     background: var(--surface);
     border: 1px solid var(--line);
@@ -125,190 +122,310 @@ const candidateStyles = `
   }
   .sc-id { display: flex; align-items: center; gap: 0.65rem; }
   .avatar {
-    width: 2.2rem; height: 2.2rem; border-radius: 50%;
+    width: 2.2rem;
+    height: 2.2rem;
+    border-radius: 50%;
     background: linear-gradient(135deg, var(--c-primary), var(--c-primary-deep));
-    color: white; display: grid; place-items: center;
-    font-weight: 600; font-size: 0.8rem; font-family: var(--font-mono);
+    color: white;
+    display: grid;
+    place-items: center;
+    font-weight: 600;
+    font-size: 0.8rem;
+    font-family: var(--font-mono);
   }
   .sc-id .who { font-weight: 600; font-size: 0.92rem; line-height: 1.1; }
-  .sc-id .stage { font-family: var(--font-mono); font-size: 0.68rem; color: var(--c-faint); letter-spacing: 0.04em; }
+  .sc-id .stage {
+    font-family: var(--font-mono);
+    font-size: 0.68rem;
+    color: var(--c-faint);
+    letter-spacing: 0.04em;
+  }
   .sc-timer {
-    font-family: var(--font-mono); font-weight: 500; font-size: 0.95rem;
-    color: var(--c-muted); display: flex; align-items: center; gap: 0.4rem;
+    font-family: var(--font-mono);
+    font-weight: 500;
+    font-size: 0.95rem;
+    color: var(--c-muted);
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
   }
   .sc-timer .tdot {
-    width: 0.45rem; height: 0.45rem; border-radius: 50%;
-    background: var(--c-gold); animation: cand-pulse 1.6s ease-in-out infinite;
+    width: 0.45rem;
+    height: 0.45rem;
+    border-radius: 50%;
+    background: var(--c-gold);
+    animation: cand-pulse 1.6s ease-in-out infinite;
   }
   @keyframes cand-pulse { 50% { opacity: 0.35; } }
-
   .sc-body { padding: 1.15rem 1.2rem 1.3rem; }
   .sc-tag {
-    font-family: var(--font-mono); font-size: 0.66rem; letter-spacing: 0.12em;
-    text-transform: uppercase; color: var(--c-danger); font-weight: 500;
+    font-family: var(--font-mono);
+    font-size: 0.66rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--c-danger);
+    font-weight: 500;
   }
   .sc-msg {
-    font-family: var(--font-display); font-size: 1.18rem; line-height: 1.35;
-    margin: 0.55rem 0 1.1rem; color: var(--c-ink);
+    font-family: var(--font-display);
+    font-size: 1.18rem;
+    line-height: 1.35;
+    margin: 0.55rem 0 1.1rem;
+    color: var(--c-ink);
   }
   .sc-opts { display: flex; flex-direction: column; gap: 0.55rem; }
   .opt {
-    display: flex; gap: 0.7rem; align-items: flex-start; text-align: left;
-    width: 100%; background: var(--surface); border: 1px solid var(--line);
-    border-radius: var(--r); padding: 0.7rem 0.8rem; cursor: pointer;
-    font: inherit; font-size: 0.9rem; color: var(--c-ink);
-    transition: border-color .15s, background .15s, transform .1s; line-height: 1.35;
+    display: flex;
+    gap: 0.7rem;
+    align-items: flex-start;
+    text-align: left;
+    width: 100%;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--r);
+    padding: 0.7rem 0.8rem;
+    cursor: pointer;
+    font: inherit;
+    font-size: 0.9rem;
+    color: var(--c-ink);
+    transition: border-color .15s, background .15s, transform .1s;
+    line-height: 1.35;
   }
   .opt:hover { border-color: var(--c-primary); background: oklch(0.5 0.1 233 / 0.04); }
   .opt .key {
-    flex: none; width: 1.5rem; height: 1.5rem; border-radius: 0.4rem;
-    border: 1px solid var(--line); display: grid; place-items: center;
-    font-family: var(--font-mono); font-size: 0.78rem; font-weight: 600;
-    color: var(--c-muted); transition: .15s;
+    flex: none;
+    width: 1.5rem;
+    height: 1.5rem;
+    border-radius: 0.4rem;
+    border: 1px solid var(--line);
+    display: grid;
+    place-items: center;
+    font-family: var(--font-mono);
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--c-muted);
+    transition: .15s;
   }
   .opt:hover .key { border-color: var(--c-primary); color: var(--c-primary); }
   .opt.picked { border-color: var(--c-primary); background: oklch(0.5 0.1 233 / 0.06); }
   .opt.picked .key { background: var(--c-primary); color: white; border-color: var(--c-primary); }
   .opt:disabled { opacity: 0.6; cursor: not-allowed; }
-
-  .cand-root.hc .opt:hover { background: #222; }
-  .cand-root.hc .opt.picked { background: #222; }
+  .cand-root.hc .opt:hover, .cand-root.hc .opt.picked { background: #222; }
   .cand-root.hc .opt.picked .key { background: #6cf; color: #000; }
-
   .sc-note {
-    margin-top: 1rem; font-size: 0.82rem; color: var(--c-faint);
-    display: flex; gap: 0.55rem; align-items: flex-start; min-height: 1.2rem;
+    margin-top: 1rem;
+    font-size: 0.82rem;
+    color: var(--c-faint);
+    display: flex;
+    gap: 0.55rem;
+    align-items: flex-start;
+    min-height: 1.2rem;
   }
-  .sc-note svg { flex: none; width: 1rem; height: 1rem; margin-top: 0.15rem; stroke: var(--c-gold-deep); }
-
+  .sc-note svg {
+    flex: none;
+    width: 1rem;
+    height: 1rem;
+    margin-top: 0.15rem;
+    stroke: var(--c-gold-deep);
+  }
   .sc-confirm {
-    margin-top: 1rem; display: flex; flex-direction: column; align-items: center; gap: 0.5rem;
+    margin-top: 1rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
   }
   .sc-confirm .confirm-hint {
-    font-size: 0.82rem; color: var(--c-faint); font-family: var(--font-sans);
+    font-size: 0.82rem;
+    color: var(--c-faint);
+    font-family: var(--font-sans);
   }
-  .sc-confirm button {
-    font-family: var(--font-sans); font-weight: 600; font-size: 0.94rem;
-    padding: 0.72rem 1.6rem; border-radius: var(--r-pill); cursor: pointer;
-    border: 1px solid transparent; background: var(--c-primary); color: white;
+  .sc-confirm button, .cand-consent .cc-btn, .cand-review .rev-btn {
+    font-family: var(--font-sans);
+    font-weight: 600;
+    font-size: 0.94rem;
+    padding: 0.72rem 1.6rem;
+    border-radius: var(--r-pill);
+    cursor: pointer;
+    border: 1px solid transparent;
+    background: var(--c-primary);
+    color: white;
     box-shadow: 0 8px 20px -10px oklch(0.5 0.1 233 / 0.7);
     transition: transform .15s, box-shadow .2s, background .2s;
   }
-  .sc-confirm button:hover { background: var(--c-primary-deep); }
-  .sc-confirm button:active { transform: translateY(1px); }
-  .sc-confirm button:disabled { opacity: 0.6; cursor: not-allowed; }
-
-  .sc-error {
-    margin-top: 0.7rem; font-size: 0.82rem; font-weight: 500;
-    color: var(--c-danger); text-align: center;
+  .sc-confirm button:hover, .cand-consent .cc-btn:hover, .cand-review .rev-btn:hover {
+    background: var(--c-primary-deep);
   }
-
+  .sc-confirm button:active { transform: translateY(1px); }
+  .sc-confirm button:disabled, .cand-consent .cc-btn:disabled, .cand-review .rev-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+  .sc-error, .cand-consent .cc-err, .cand-review .rev-err {
+    margin-top: 0.7rem;
+    font-size: 0.82rem;
+    font-weight: 500;
+    color: var(--c-danger);
+    text-align: center;
+  }
   .sc-media { margin: 0.6rem 0; display: flex; justify-content: center; }
-  .sc-media img { max-height: 12rem; width: auto; border-radius: var(--r); border: 1px solid var(--line); object-fit: contain; }
+  .sc-media img {
+    max-height: 12rem;
+    width: auto;
+    border-radius: var(--r);
+    border: 1px solid var(--line);
+    object-fit: contain;
+  }
   .sc-media audio { width: 100%; }
-
   .cand-progress {
-    width: 100%; max-width: 620px; margin-bottom: 0.8rem;
-    display: flex; flex-direction: column; gap: 0.4rem;
+    width: 100%;
+    max-width: 620px;
+    margin-bottom: 0.8rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
   }
   .cand-progress .cp-info {
-    display: flex; justify-content: space-between; align-items: center;
-    font-family: var(--font-mono); font-size: 0.75rem; color: var(--c-muted); font-weight: 500;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    color: var(--c-muted);
+    font-weight: 500;
   }
   .cand-progress .cp-track {
-    height: 0.38rem; border-radius: var(--r-pill);
-    background: oklch(0.5 0.06 240 / 0.1); overflow: hidden;
+    height: 0.38rem;
+    border-radius: var(--r-pill);
+    background: oklch(0.5 0.06 240 / 0.1);
+    overflow: hidden;
   }
   .cand-progress .cp-fill {
-    height: 100%; border-radius: var(--r-pill);
+    height: 100%;
+    border-radius: var(--r-pill);
     background: linear-gradient(90deg, var(--c-primary), oklch(0.62 0.12 215));
     transition: width 1s linear;
   }
-  .cand-progress .cp-fill.low { background: linear-gradient(90deg, oklch(0.7 0.14 60), oklch(0.58 0.18 28)); }
-
-  .cand-status {
-    width: 100%; max-width: 620px;
-    background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-lg);
-    box-shadow: var(--shadow-lg); padding: 2.5rem 1.5rem; text-align: center;
+  .cand-progress .cp-fill.low {
+    background: linear-gradient(90deg, oklch(0.7 0.14 60), oklch(0.58 0.18 28));
   }
-  .cand-status .cs-label {
-    font-family: var(--font-mono); font-size: 0.66rem; letter-spacing: 0.12em;
-    text-transform: uppercase; font-weight: 500;
+  .cand-status, .cand-consent {
+    width: 100%;
+    max-width: 620px;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--r-lg);
+    box-shadow: var(--shadow-lg);
   }
-  .cand-status .cs-label.loading { color: var(--c-muted); }
+  .cand-status { padding: 2.5rem 1.5rem; text-align: center; }
+  .cand-status .cs-label, .cand-consent .cc-label {
+    font-family: var(--font-mono);
+    font-size: 0.66rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    font-weight: 500;
+  }
+  .cand-status .cs-label.loading, .cand-consent .cc-label { color: var(--c-muted); }
   .cand-status .cs-label.error { color: var(--c-danger); }
   .cand-status .cs-label.done { color: var(--c-success); }
-  .cand-status h1 {
-    font-family: var(--font-display); font-size: 1.8rem; font-weight: 500;
-    margin: 0.7rem 0 0; color: var(--c-ink); line-height: 1.15;
+  .cand-status h1, .cand-consent h1 {
+    font-family: var(--font-display);
+    font-weight: 500;
+    color: var(--c-ink);
+    line-height: 1.15;
   }
-  .cand-status p { margin-top: 0.7rem; font-size: 0.92rem; color: var(--c-muted); max-width: 44ch; margin-inline: auto; }
-  .cand-status .cs-note { font-size: 0.82rem; color: var(--c-faint); margin-top: 0.7rem; max-width: 48ch; margin-inline: auto; }
-
+  .cand-status h1 { font-size: 1.8rem; margin: 0.7rem 0 0; }
+  .cand-consent h1 { font-size: 1.5rem; margin: 0.5rem 0 0; }
+  .cand-status p {
+    margin-top: 0.7rem;
+    font-size: 0.92rem;
+    color: var(--c-muted);
+    max-width: 44ch;
+    margin-inline: auto;
+  }
+  .cand-status .cs-note {
+    margin: 1.2rem auto 0;
+    max-width: 48ch;
+    padding: 0.9rem 1rem;
+    border: 1px solid var(--line-soft);
+    border-radius: var(--r);
+    background: var(--bg-alt);
+    color: var(--c-muted);
+    font-size: 0.82rem;
+    text-align: left;
+  }
   .cand-review { margin-top: 1.2rem; }
   .cand-review a, .cand-review button.link-btn {
-    font-family: var(--font-sans); font-size: 0.88rem; font-weight: 500;
-    color: var(--c-primary); text-decoration: underline; cursor: pointer;
-    background: none; border: none;
+    font-family: var(--font-sans);
+    font-size: 0.88rem;
+    font-weight: 500;
+    color: var(--c-primary);
+    text-decoration: underline;
+    cursor: pointer;
+    background: none;
+    border: none;
   }
   .cand-review textarea {
-    width: 100%; max-width: 24rem; margin: 0.5rem auto; display: block;
-    border: 1px solid var(--line); border-radius: var(--r); padding: 0.6rem 0.8rem;
-    font: inherit; font-size: 0.88rem; resize: none; background: var(--surface); color: var(--c-ink);
+    width: 100%;
+    max-width: 24rem;
+    margin: 0.5rem auto;
+    display: block;
+    border: 1px solid var(--line);
+    border-radius: var(--r);
+    padding: 0.6rem 0.8rem;
+    font: inherit;
+    font-size: 0.88rem;
+    resize: none;
+    background: var(--surface);
+    color: var(--c-ink);
   }
-  .cand-review .rev-btn {
-    font-family: var(--font-sans); font-weight: 600; font-size: 0.88rem;
-    padding: 0.55rem 1.2rem; border-radius: var(--r-pill); cursor: pointer;
-    border: 1px solid transparent; background: var(--c-primary); color: white;
-    transition: background .15s;
+  .cand-review .rev-btn { font-size: 0.88rem; padding: 0.55rem 1.2rem; }
+  .cand-review .rev-ok {
+    color: var(--c-success);
+    font-size: 0.88rem;
+    font-weight: 500;
+    margin-top: 0.5rem;
   }
-  .cand-review .rev-btn:hover { background: var(--c-primary-deep); }
-  .cand-review .rev-btn:disabled { opacity: 0.6; cursor: not-allowed; }
-  .cand-review .rev-ok { color: var(--c-success); font-size: 0.88rem; font-weight: 500; margin-top: 0.5rem; }
-  .cand-review .rev-err { color: var(--c-danger); font-size: 0.82rem; font-weight: 500; margin-top: 0.5rem; }
-
   .cand-footer {
-    width: 100%; max-width: 620px; margin-top: 1.2rem;
-    padding-top: 0.8rem; border-top: 1px solid var(--line-soft);
-    font-size: 0.74rem; color: var(--c-faint); text-align: center; line-height: 1.55;
+    width: 100%;
+    max-width: 620px;
+    margin-top: 1.2rem;
+    padding-top: 0.8rem;
+    border-top: 1px solid var(--line-soft);
+    font-size: 0.74rem;
+    color: var(--c-faint);
+    text-align: center;
+    line-height: 1.55;
   }
-
-  .cand-consent {
-    width: 100%; max-width: 620px;
-    background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-lg);
-    box-shadow: var(--shadow-lg); padding: 1.5rem; text-align: left;
+  .cand-consent { padding: 1.5rem; text-align: left; }
+  .cand-consent .cc-body {
+    margin-top: 1rem;
+    font-size: 0.9rem;
+    color: var(--c-muted);
+    line-height: 1.6;
   }
-  .cand-consent .cc-label {
-    font-family: var(--font-mono); font-size: 0.66rem; letter-spacing: 0.12em;
-    text-transform: uppercase; color: var(--c-muted); font-weight: 500;
-  }
-  .cand-consent h1 {
-    font-family: var(--font-display); font-size: 1.5rem; font-weight: 500;
-    margin: 0.5rem 0 0; color: var(--c-ink); line-height: 1.2;
-  }
-  .cand-consent .cc-body { margin-top: 1rem; font-size: 0.9rem; color: var(--c-muted); line-height: 1.6; }
   .cand-consent .cc-body p + p { margin-top: 0.7rem; }
   .cand-consent .cc-body strong { color: var(--c-ink); }
   .cand-consent .cc-body ul { margin: 0.5rem 0; padding-left: 1.2rem; }
   .cand-consent .cc-body li + li { margin-top: 0.3rem; }
-  .cand-consent .cc-checks { margin-top: 1.2rem; display: flex; flex-direction: column; gap: 0.5rem; }
+  .cand-consent .cc-checks {
+    margin-top: 1.2rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
   .cand-consent .cc-check {
-    display: flex; align-items: flex-start; gap: 0.7rem;
-    padding: 0.7rem 0.8rem; border: 1px solid var(--line); border-radius: var(--r);
-    font-size: 0.88rem; color: var(--c-ink);
+    display: flex;
+    align-items: flex-start;
+    gap: 0.7rem;
+    padding: 0.7rem 0.8rem;
+    border: 1px solid var(--line);
+    border-radius: var(--r);
+    font-size: 0.88rem;
+    color: var(--c-ink);
   }
   .cand-consent .cc-check input { margin-top: 0.15rem; }
   .cand-consent .cc-actions { margin-top: 1.2rem; }
-  .cand-consent .cc-btn {
-    font-family: var(--font-sans); font-weight: 600; font-size: 0.94rem;
-    padding: 0.72rem 1.6rem; border-radius: var(--r-pill); cursor: pointer;
-    border: 1px solid transparent; background: var(--c-primary); color: white;
-    box-shadow: 0 8px 20px -10px oklch(0.5 0.1 233 / 0.7);
-    transition: transform .15s, background .2s;
-  }
-  .cand-consent .cc-btn:hover { background: var(--c-primary-deep); }
-  .cand-consent .cc-btn:disabled { opacity: 0.6; cursor: not-allowed; }
-  .cand-consent .cc-err { color: var(--c-danger); font-size: 0.82rem; font-weight: 500; margin-top: 0.5rem; }
 `;
 
 export const Route = createFileRoute("/candidato")({
@@ -336,6 +453,7 @@ const LOAD_ERROR_MESSAGES: Record<number, string> = {
 };
 
 const ACCESSIBILITY_STORAGE_KEY = "praxis:candidate-accessibility";
+const OPTION_LETTERS = ["A", "B", "C", "D", "E", "F", "G", "H"];
 
 type CandidateAccessibilityPreferences = {
   highContrast: boolean;
@@ -380,11 +498,6 @@ function friendlyApiErrorMessage(
   return fallback;
 }
 
-// `candidato.tsx` is the parent route of `candidato.$token.tsx`, so it must
-// render an <Outlet /> for the token experience to show. Without it, opening
-// `/candidato/:token` (a link that already carries the token) would fall back
-// to this entry form and ask for the token again. We only show the entry form
-// when no child route (token) is active.
 function CandidateRouteLayout() {
   const childMatches = useChildMatches();
   if (childMatches.length > 0) {
@@ -435,9 +548,13 @@ function CandidateEntryPage() {
 function CandidateMedia({
   mediaUrl,
   mediaType,
+  accessibleDescription,
+  audioLabel,
 }: {
   mediaUrl: string;
   mediaType: MediaType | null;
+  accessibleDescription?: string | null;
+  audioLabel: string;
 }) {
   if (mediaType === "AUDIO") {
     return (
@@ -445,27 +562,27 @@ function CandidateMedia({
         controls
         src={mediaUrl}
         className="w-full"
+        aria-label={audioLabel}
         onClick={(event) => event.stopPropagation()}
       >
         Seu navegador não suporta áudio.
       </audio>
     );
   }
+
   return (
     <img
       src={mediaUrl}
-      alt="Mídia do atendimento"
+      alt={accessibleDescription?.trim() || ""}
       className="max-h-48 w-auto rounded-md border border-border object-contain"
     />
   );
 }
 
-const OPTION_LETTERS = ["A", "B", "C", "D", "E", "F", "G", "H"];
-
 function formatTimer(seconds: number): string {
-  const m = Math.floor(seconds / 60);
-  const s = seconds % 60;
-  return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
+  const minutes = Math.floor(seconds / 60);
+  const remainder = seconds % 60;
+  return `${String(minutes).padStart(2, "0")}:${String(remainder).padStart(2, "0")}`;
 }
 
 function FocusedCandidateExperience({ token }: { token: string }) {
@@ -567,9 +684,6 @@ function FocusedCandidateExperience({ token }: { token: string }) {
       try {
         await sendAnswer(timedOut);
       } catch (error) {
-        // Se o tempo da etapa estourou (409) e ainda estávamos enviando uma
-        // resposta real, reenviamos como tempo esgotado para que o fluxo siga
-        // para a alternativa de timeout em vez de deixar o candidato travado.
         if (!timedOut && error instanceof PraxisApiError && error.status === 409) {
           try {
             await sendAnswer(true);
@@ -752,7 +866,11 @@ function FocusedCandidateExperience({ token }: { token: string }) {
 
               {currentNode.audioDescricaoUrl && (
                 <div className="sc-media">
-                  <audio controls src={currentNode.audioDescricaoUrl}>
+                  <audio
+                    controls
+                    src={currentNode.audioDescricaoUrl}
+                    aria-label="Audiodescrição do cenário"
+                  >
                     Seu navegador não suporta áudio.
                   </audio>
                 </div>
@@ -762,6 +880,8 @@ function FocusedCandidateExperience({ token }: { token: string }) {
                   <CandidateMedia
                     mediaUrl={currentNode.midiaUrl}
                     mediaType={currentNode.tipoMidia ?? null}
+                    accessibleDescription={currentNode.descricaoAcessivel}
+                    audioLabel="Áudio do cenário"
                   />
                 </div>
               )}
@@ -785,7 +905,13 @@ function FocusedCandidateExperience({ token }: { token: string }) {
                     </button>
                     {option.audioDescricaoUrl && (
                       <div className="sc-media">
-                        <audio controls src={option.audioDescricaoUrl}>
+                        <audio
+                          controls
+                          src={option.audioDescricaoUrl}
+                          aria-label={`Audiodescrição da alternativa ${
+                            OPTION_LETTERS[idx] ?? idx + 1
+                          }`}
+                        >
                           Seu navegador não suporta áudio.
                         </audio>
                       </div>
@@ -795,6 +921,8 @@ function FocusedCandidateExperience({ token }: { token: string }) {
                         <CandidateMedia
                           mediaUrl={option.mediaUrl}
                           mediaType={option.tipoMidia ?? null}
+                          accessibleDescription={option.descricaoAcessivel}
+                          audioLabel={`Áudio da alternativa ${OPTION_LETTERS[idx] ?? idx + 1}`}
                         />
                       </div>
                     )}
@@ -827,6 +955,7 @@ function FocusedCandidateExperience({ token }: { token: string }) {
                   strokeWidth="2"
                   strokeLinecap="round"
                   strokeLinejoin="round"
+                  aria-hidden="true"
                 >
                   <path d="M12 2 4 5v6c0 5 3.4 8.3 8 11 4.6-2.7 8-6 8-11V5z" />
                 </svg>
@@ -931,7 +1060,7 @@ function HealthConsentGate({ token, onConsented }: { token: string; onConsented:
       <div className="cc-body">
         <p>
           Esta atividade é um <strong>exercício educativo de tomada de decisão</strong>. Ela
-          apresenta situações do dia a dia para você praticar escolhas.{" "}
+          apresenta situações do dia a dia para você praticar escolhas. {" "}
           <strong>
             Não é uma consulta, não é diagnóstico e não substitui a orientação de um profissional de
             saúde.
@@ -939,23 +1068,21 @@ function HealthConsentGate({ token, onConsented }: { token: string; onConsented:
         </p>
         <p>
           Para realizar a atividade, a empresa responsável vai tratar respostas suas que podem
-          revelar informações relacionadas à sua saúde ou aos seus hábitos. Esses dados serão usados{" "}
+          revelar informações relacionadas à sua saúde ou aos seus hábitos. Esses dados serão usados {" "}
           <strong>somente</strong> para gerar o resultado educativo desta atividade e para as
           finalidades descritas na política de privacidade da empresa responsável.
         </p>
         <ul>
-          <li>
-            A pontuação segue critérios definidos antes da atividade. Não há IA julgando você.
-          </li>
+          <li>A pontuação segue critérios definidos antes da atividade. Não há IA julgando você.</li>
           <li>
             Seus dados não serão usados para decidir, sozinhos e de forma automatizada, sobre
             tratamento, atendimento ou acesso a serviços.
           </li>
           <li>Você pode pedir que uma pessoa revise o resultado.</li>
           <li>
-            Você pode acessar, corrigir ou excluir seus dados e revogar este consentimento a
-            qualquer momento, pelo canal indicado pela empresa responsável. A revogação não afeta
-            atividades já realizadas.
+            Você pode acessar, corrigir ou excluir seus dados e revogar este consentimento a qualquer
+            momento, pelo canal indicado pela empresa responsável. A revogação não afeta atividades
+            já realizadas.
           </li>
         </ul>
       </div>
@@ -978,9 +1105,7 @@ function HealthConsentGate({ token, onConsented }: { token: string; onConsented:
             checked={onBehalfOfMinor}
             onChange={(event) => setOnBehalfOfMinor(event.target.checked)}
           />
-          <span>
-            Estou concordando como responsável legal pela pessoa sob minha responsabilidade.
-          </span>
+          <span>Estou concordando como responsável legal pela pessoa sob minha responsabilidade.</span>
         </label>
       </div>
 
