@@ -1,4 +1,0 @@
-Issue #500 aplicada com sucesso
-Contrato de vídeo acessível validado.
-rm 'scripts/apply_issue_500.py'
-rm '.github/workflows/apply-issue-500.yml'
