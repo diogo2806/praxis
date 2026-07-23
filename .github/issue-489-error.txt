@@ -1,7 +1,3 @@
-apply_issue_489.py:664: SyntaxWarning: invalid escape sequence '\s'
 Traceback (most recent call last):
-  File "<stdin>", line 13, in <module>
-  File "apply_issue_489.py", line 154, in <module>
-  File "apply_issue_489.py", line 13, in replace_once
-RuntimeError:                  Cenário {currentStep}/{totalSteps}
-: esperado 1 trecho, encontrado 0
+  File "<stdin>", line 9, in <module>
+AssertionError: Tamanho inválido do payload: 12580
