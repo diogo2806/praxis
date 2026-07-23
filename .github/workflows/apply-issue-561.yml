@@ -30,42 +30,68 @@ jobs:
           cache-dependency-path: frontend/package-lock.json
 
       - name: Corrigir mutations e validar frontend
+        id: validate
+        continue-on-error: true
         shell: bash
         run: |
-          python3 - <<'PY'
+          set +e
+          {
+            python3 - <<'PY'
           from pathlib import Path
+          import re
 
           path = Path("frontend/src/routes/nova.dialogo.tsx")
           content = path.read_text(encoding="utf-8")
-          replacements = [
-              (
-                  "      mediaUrl,\n      mediaType,\n    }: {\n      nodeId: string;",
-                  "      mediaUrl,\n      mediaType,\n      mediaTranscript,\n      mediaCaptionsUrl,\n      mediaVersion,\n    }: {\n      nodeId: string;",
-              ),
-              (
-                  "      mediaUrl,\n      mediaType,\n    }: {\n      nodeId: string;\n      optionId: string;",
-                  "      mediaUrl,\n      mediaType,\n      mediaTranscript,\n      mediaCaptionsUrl,\n      mediaVersion,\n    }: {\n      nodeId: string;\n      optionId: string;",
-              ),
-          ]
-          for source, target in replacements:
-              if source not in content:
-                  raise SystemExit(f"Padrão não encontrado: {source!r}")
-              content = content.replace(source, target, 1)
+
+          def add_fields(mutation_name: str, source: str) -> str:
+              pattern = re.compile(
+                  rf"(const {mutation_name} = useMutation\(\{{\s*mutationFn: \(\{{.*?\bmediaType,)(\s*\}}: \{{)",
+                  re.DOTALL,
+              )
+              replacement = (
+                  r"\1\n      mediaTranscript,\n      mediaCaptionsUrl,\n      mediaVersion,\2"
+              )
+              updated, count = pattern.subn(replacement, source, count=1)
+              if count != 1:
+                  raise SystemExit(f"Mutation não localizada: {mutation_name}")
+              return updated
+
+          content = add_fields("updateNodeMediaMutation", content)
+          content = add_fields("updateOptionMutation", content)
           path.write_text(content, encoding="utf-8")
           PY
-          cd frontend
-          npm ci
-          npm run typecheck
-          npm run lint
-          npm run test:candidate-media-a11y
-          cd ..
-          git rm .github/workflows/apply-issue-561.yml
+            cd frontend
+            npm ci
+            npm run typecheck
+            npm run lint
+            npm run test:candidate-media-a11y
+            cd ..
+            git rm .github/workflows/apply-issue-561.yml
+          } > issue-561-validation.log 2>&1
+          status=$?
+          cat issue-561-validation.log
+          exit $status
+
+      - name: Publicar diagnóstico
+        if: steps.validate.outcome == 'failure'
+        uses: actions/upload-artifact@v4
+        with:
+          name: issue-561-diagnostics
+          path: issue-561-validation.log
+          retention-days: 2
+
+      - name: Interromper após diagnóstico
+        if: steps.validate.outcome == 'failure'
+        shell: bash
+        run: exit 1
 
       - name: Registrar correção
+        if: steps.validate.outcome == 'success'
         shell: bash
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          rm -f issue-561-validation.log
           git add -A
           git commit -m "fix(frontend): corrigir escopo dos metadados de mídia (#561)"
           git push origin HEAD:${{ github.head_ref }}
