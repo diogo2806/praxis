@@ -5,70 +5,32 @@ import {
   getSimulationVersion as getSimulationVersionLegacy,
   updateSimulationNode as updateSimulationNodeLegacy,
   updateSimulationOption as updateSimulationOptionLegacy,
-  type CreateNodeRequest as LegacyCreateNodeRequest,
-  type CreateOptionRequest as LegacyCreateOptionRequest,
+  type CreateNodeRequest as CanonicalCreateNodeRequest,
+  type CreateOptionRequest as CanonicalCreateOptionRequest,
   type DashboardResponse as LegacyDashboardResponse,
   type GupyPreflightCheckCode as LegacyGupyPreflightCheckCode,
   type GupyPreflightResponse as LegacyGupyPreflightResponse,
-  type SimulationVersionDetailResponse as LegacySimulationVersionDetailResponse,
-  type SimulationVersionNodeResponse as LegacySimulationVersionNodeResponse,
-  type SimulationVersionOptionResponse as LegacySimulationVersionOptionResponse,
-  type UpdateNodeRequest as LegacyUpdateNodeRequest,
-  type UpdateOptionRequest as LegacyUpdateOptionRequest,
+  type SimulationVersionDetailResponse as CanonicalSimulationVersionDetailResponse,
+  type SimulationVersionNodeResponse as CanonicalSimulationVersionNodeResponse,
+  type SimulationVersionOptionResponse as CanonicalSimulationVersionOptionResponse,
+  type UpdateNodeRequest as CanonicalUpdateNodeRequest,
+  type UpdateOptionRequest as CanonicalUpdateOptionRequest,
 } from "./praxis-legacy";
 
 /**
- * Contratos públicos normalizados do frontend.
+ * Contratos públicos do frontend alinhados diretamente ao payload do backend.
  *
- * O módulo legado continua como implementação interna para preservar os demais
- * consumidores, mas nomes corrompidos por substituições antigas não são mais
- * expostos por `@/lib/api/praxis`.
+ * Os aliases abaixo apontam para uma única definição canônica. Este módulo mantém
+ * apenas os comportamentos adicionais da fachada, sem reconstruir campos ou
+ * mascarar incompatibilidades de nomes.
  */
-export type SimulationVersionOptionResponse = Omit<
-  LegacySimulationVersionOptionResponse,
-  "plainTextDescriptioetapa"
-> & {
-  plainTextDescription: string | null;
-};
-
-export type SimulationVersionNodeResponse = Omit<
-  LegacySimulationVersionNodeResponse,
-  "plainTextDescriptioetapa" | "options"
-> & {
-  plainTextDescription: string | null;
-  options: SimulationVersionOptionResponse[];
-};
-
-export type SimulationVersionDetailResponse = Omit<
-  LegacySimulationVersionDetailResponse,
-  "nodes"
-> & {
-  nodes: SimulationVersionNodeResponse[];
-};
-
-export type CreateNodeRequest = Omit<
-  LegacyCreateNodeRequest,
-  "timeJustificatioetapa" | "plainTextDescriptioetapa"
-> & {
-  timeJustification?: string | null;
-  plainTextDescription?: string | null;
-};
-
-export type UpdateNodeRequest = Omit<
-  LegacyUpdateNodeRequest,
-  "timeJustificatioetapa" | "plainTextDescriptioetapa"
-> & {
-  timeJustification?: string | null;
-  plainTextDescription?: string | null;
-};
-
-export type CreateOptionRequest = Omit<LegacyCreateOptionRequest, "plainTextDescriptioetapa"> & {
-  plainTextDescription?: string | null;
-};
-
-export type UpdateOptionRequest = Omit<LegacyUpdateOptionRequest, "plainTextDescriptioetapa"> & {
-  plainTextDescription?: string | null;
-};
+export type CreateNodeRequest = CanonicalCreateNodeRequest;
+export type CreateOptionRequest = CanonicalCreateOptionRequest;
+export type SimulationVersionDetailResponse = CanonicalSimulationVersionDetailResponse;
+export type SimulationVersionNodeResponse = CanonicalSimulationVersionNodeResponse;
+export type SimulationVersionOptionResponse = CanonicalSimulationVersionOptionResponse;
+export type UpdateNodeRequest = CanonicalUpdateNodeRequest;
+export type UpdateOptionRequest = CanonicalUpdateOptionRequest;
 
 export type GupyPreflightCheckCode = LegacyGupyPreflightCheckCode | "publicationStatus";
 
@@ -147,10 +109,7 @@ export async function getSimulationVersion(
   versionNumber: number,
 ): Promise<SimulationVersionDetailResponse> {
   const requestRevision = competencyUpdateRevision;
-  const response = (await getSimulationVersionLegacy(
-    simulationId,
-    versionNumber,
-  )) as unknown as SimulationVersionDetailResponse;
+  const response = await getSimulationVersionLegacy(simulationId, versionNumber);
 
   const mappedNodes = response.nodes.map((node) => ({
     ...node,
