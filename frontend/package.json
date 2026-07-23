@@ -15,7 +15,8 @@
     "test:screen-manuals": "node scripts/test-screen-manuals.mjs",
     "test:api-contracts": "node scripts/test-api-contracts.mjs",
     "test:authoring-flow": "node scripts/test-authoring-flow.mjs",
-    "test:health-consent": "node scripts/test-health-consent-gate.mjs"
+    "test:health-consent": "node scripts/test-health-consent-gate.mjs",
+    "test:candidate-media-a11y": "node scripts/test-candidate-media-accessibility.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
@@ -58,7 +59,7 @@
     "input-otp": "^1.4.2",
     "lucide-react": "^0.575.0",
     "react": "^19.2.0",
-    "react-day-picker": "^9.14.0",
+    "react-day-picker": "^9.14.2",
     "react-dom": "^19.2.0",
     "react-hook-form": "^7.71.2",
     "react-resizable-panels": "^4.6.5",
