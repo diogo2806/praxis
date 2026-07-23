@@ -133,7 +133,7 @@ public class SecurityConfig {
                         .hasAnyRole(COMPANY_MANAGER_ROLES)
                         .requestMatchers("/api/v1/gupy/result-deliveries/**")
                         .hasAnyRole(OPERATIONS_ROLES)
-                        .requestMatchers("/api/v1/integrity-reviews/**")
+                        .requestMatchers("/api/v1/integrity-reviews", "/api/v1/integrity-reviews/**")
                         .hasAnyRole(INTEGRITY_REVIEW_ROLES)
                         .requestMatchers("/api/v1/results/**").hasAnyRole(ANALYSIS_ROLES)
                         .requestMatchers("/api/v1/notifications/**").hasAnyRole(OPERATIONS_ROLES)
@@ -166,7 +166,7 @@ public class SecurityConfig {
                     .maxAgeInSeconds(31_536_000));
             headers.referrerPolicy(referrer -> referrer
                     .policy(ReferrerPolicyHeaderWriter.ReferrerPolicy.NO_REFERRER));
-            headers.permissionsPolicy(policy -> policy
+            headers.permissionsPolicyHeader(policy -> policy
                     .policy("camera=(), microphone=(), geolocation=(), payment=()"));
             headers.contentSecurityPolicy(csp -> csp
                     .policyDirectives("default-src 'none'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'"));
