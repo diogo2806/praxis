@@ -315,6 +315,52 @@ export const SCREEN_MANUAL_OVERRIDES: ScreenManualDefinition[] = [
     ],
     matches: (pathname) => pathname === "/admin/feature-flags",
   },
+  {
+    id: "participacoes-operacoes-em-lote",
+    title: "Operações em lote de participações",
+    purpose: "Reutilizar filtros, organizar participações com tags e executar ações operacionais em escala com confirmação, idempotência e rastreabilidade item a item.",
+    flow: [
+      "Aplique filtros ou escolha uma visão salva privada ou compartilhada.",
+      "Selecione os itens da página ou escolha todos os resultados do filtro atual.",
+      "Escolha a ação, preencha os campos exigidos e selecione Revisar impacto.",
+      "Confira quantidade, exceções, impacto e justificativa antes de confirmar.",
+      "Acompanhe o progresso assíncrono e baixe o relatório final com sucesso, ignorado e falha.",
+    ],
+    fields: [
+      { name: "Visão salva", description: "Conjunto reutilizável de filtros, ordenação e colunas, privado ou compartilhado com a empresa." },
+      { name: "Filtros", description: "Avaliação, participante, situação do processo, situação do link e necessidade de atenção." },
+      { name: "Seleção", description: "Distingue os itens marcados na página de todos os resultados do filtro confirmado." },
+      { name: "Ação", description: "Reenvio, extensão, cancelamento de jornada, inclusão ou remoção de tag e exportação." },
+      { name: "Dias adicionais", description: "Quantidade entre 1 e 365 aplicada somente à extensão de validade." },
+      { name: "Tag", description: "Classificação interna com nome, cor e descrição, isolada por empresa." },
+      { name: "Justificativa", description: "Contexto auditável, obrigatório para cancelamentos em lote." },
+      { name: "Lote", description: "Job idempotente com progresso, contadores e resultado individual por participação." },
+    ],
+    permissions: [
+      "Perfis EMPRESA, TEAM_MANAGER e OPERATIONS_MANAGER podem operar participações da própria empresa.",
+      "A tela não oferece decisão de contratação em lote nem acesso a participações de outra empresa.",
+    ],
+    states: ["Sem seleção", "Pronto para revisar", "Prévia calculada", "Pendente", "Processando", "Concluído", "Concluído com falhas", "Falhou"],
+    blocks: [
+      "Nenhuma participação selecionada ou nenhum resultado no filtro.",
+      "Item incompatível com a ação no estado atual.",
+      "Cancelamento sem justificativa.",
+      "Extensão fora do intervalo de 1 a 365 dias.",
+      "Tag não informada ou pertencente a outra empresa.",
+      "Limite de 500 itens explícitos ou 5.000 itens filtrados excedido.",
+    ],
+    examples: [
+      "Selecionar todos os convites expirados de uma avaliação, estender por sete dias e acompanhar o resultado por item.",
+      "Aplicar a tag Piloto Gupy a todas as participações do filtro sem alterar pontuação ou decisão humana.",
+    ],
+    shortcuts: [
+      "Salve filtros recorrentes como visão compartilhada para o time.",
+      "Use Selecionar página para um recorte manual e Todos do filtro para operações amplas.",
+      "A seleção é congelada antes do processamento; alterações posteriores no filtro não mudam o lote.",
+      "Use o relatório CSV como link para o processo completo de conferência e reconciliação do lote.",
+    ],
+    matches: (pathname) => pathname === "/participacoes/operacoes-em-lote",
+  },
 ];
 
 export function resolveScreenManualOverride(pathname: string) {
