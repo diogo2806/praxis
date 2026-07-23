@@ -8,6 +8,7 @@ public record CandidateRadarDto(
         int generalScore,
         Integer normativePercentile,
         Boolean meetsDecisionThreshold,
+        CandidateReferenceSnapshotDto referenceSnapshot,
         List<CompetencyScoreDto> competencies
 ) {
 }
