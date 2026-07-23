@@ -41,7 +41,6 @@ jobs:
           node frontend/scripts/test-candidate-experience-i18n.mjs
           git rm scripts/apply_issue_489.py
           git rm .github/workflows/apply-issue-489.yml
-          git rm -f .github/issue-489-trigger.txt
 
       - name: Registrar correção
         if: steps.guard.outputs.apply == 'true'
