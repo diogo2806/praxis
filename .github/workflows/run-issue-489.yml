@@ -25,12 +25,15 @@ jobs:
           python - <<'PY' > .github/issue-489-error.txt 2>&1
           import base64
           import gzip
+          import hashlib
           from pathlib import Path
 
-          parts = sorted(Path('.github/issue-489-parts').glob('part-*.txt'))
+          parts = sorted(Path('.github/issue-489-parts-v2').glob('part-*.txt'))
           assert len(parts) == 9, f'Esperadas 9 partes, encontradas {len(parts)}'
           encoded = ''.join(path.read_text(encoding='utf-8').strip() for path in parts)
-          assert len(encoded) == 12384, f'Tamanho inválido do payload: {len(encoded)}'
+          assert len(encoded) == 12420, f'Tamanho inválido do payload: {len(encoded)}'
+          digest = hashlib.sha256(encoded.encode('utf-8')).hexdigest()
+          assert digest == 'd07ff459443c894473a66ae7928f218f23a92425999a82b0515bf6dbb8dbd627', f'Hash inválido: {digest}'
           source = gzip.decompress(base64.b64decode(encoded)).decode('utf-8')
           exec(compile(source, 'apply_issue_489.py', 'exec'), {'__name__': '__main__'})
           PY
@@ -55,6 +58,7 @@ jobs:
           git diff --check
 
           rm -rf .github/issue-489-parts
+          rm -rf .github/issue-489-parts-v2
           rm -f .github/workflows/run-issue-489.yml
 
           git add -A
