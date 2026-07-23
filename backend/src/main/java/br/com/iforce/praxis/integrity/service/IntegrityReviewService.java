@@ -25,6 +25,7 @@ import br.com.iforce.praxis.integrity.persistence.repository.CandidateIntegrityR
 import br.com.iforce.praxis.integrity.persistence.repository.CandidateIntegritySessionRepository;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
@@ -70,6 +71,7 @@ public class IntegrityReviewService {
     private final Clock clock;
     private final int retentionDays;
 
+    @Autowired
     public IntegrityReviewService(
             CandidateIntegrityReviewRepository reviewRepository,
             CandidateIntegrityReviewAuditRepository reviewAuditRepository,
