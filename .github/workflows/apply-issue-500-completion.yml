@@ -34,20 +34,15 @@ jobs:
           python3 scripts/apply_issue_500_completion.py
           python3 - <<'PY'
           from pathlib import Path
+          import re
 
           path = Path("backend/src/main/java/br/com/iforce/praxis/dashboard/service/DashboardAnalyticsService.java")
           source = path.read_text(encoding="utf-8")
-          old = '''        private void addDuration(CandidateAttemptEntity attempt) {
-              if (!durationAttemptIds.add(attempt.getId())
-                      || attempt.getStartedAt() == null
-                      || attempt.getFinishedAt() == null) {
-                  return;
-              }
-              long seconds = Duration.between(attempt.getStartedAt(), attempt.getFinishedAt()).getSeconds();
-              durationSeconds += Math.max(0, seconds);
-          }
-          '''
-          new = '''        private void addDuration(CandidateAttemptEntity attempt) {
+          pattern = re.compile(
+              r"        private void addDuration\(CandidateAttemptEntity attempt\) \{.*?\n        \}\n\n        private MediaQualityComparison toResponse",
+              re.DOTALL,
+          )
+          replacement = '''        private void addDuration(CandidateAttemptEntity attempt) {
               if (attempt.getStartedAt() == null
                       || attempt.getFinishedAt() == null
                       || !durationAttemptIds.add(attempt.getId())) {
@@ -56,10 +51,12 @@ jobs:
               long seconds = Duration.between(attempt.getStartedAt(), attempt.getFinishedAt()).getSeconds();
               durationSeconds += Math.max(0, seconds);
           }
-          '''
-          if old not in source:
-              raise SystemExit("Método addDuration esperado não encontrado")
-          path.write_text(source.replace(old, new, 1), encoding="utf-8")
+
+          private MediaQualityComparison toResponse'''
+          source, count = pattern.subn(replacement, source, count=1)
+          if count != 1:
+              raise SystemExit(f"Método addDuration esperado não encontrado: {count}")
+          path.write_text(source, encoding="utf-8")
           PY
       - name: Validar backend
         id: backend
