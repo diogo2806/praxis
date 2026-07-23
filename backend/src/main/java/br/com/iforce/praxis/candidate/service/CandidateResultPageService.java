@@ -49,15 +49,24 @@ public class CandidateResultPageService {
         CandidateAttempt attempt = candidateAttemptMapper.toDomain(entity);
         PublishedSimulation simulation = findSimulation(entity);
         boolean finished = isTerminal(attempt.status());
+        boolean completed = attempt.status() == AttemptStatus.COMPLETED;
 
         return new CandidateResultPageResponse(
                 simulation.name(),
                 publicStatus(attempt.status()),
                 finished,
-                attempt.status() == AttemptStatus.COMPLETED ? entity.getCallbackUrl() : null,
+                completed ? entity.getCallbackUrl() : null,
                 attempt.finishedAt(),
-                candidateResults(attempt)
+                candidateResults(attempt),
+                completed ? attempt.rawScore() : null,
+                completed ? attempt.pathMaximumScore() : null,
+                completed ? normalizedScore(attempt) : null,
+                completed ? attempt.scoringAlgorithmVersion() : null
         );
+    }
+
+    private Integer normalizedScore(CandidateAttempt attempt) {
+        return attempt.normalizedScore() == null ? attempt.score() : attempt.normalizedScore();
     }
 
     private List<CandidateResultItemResponse> candidateResults(CandidateAttempt attempt) {
