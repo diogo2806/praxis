@@ -1,5 +1,6 @@
 package br.com.iforce.praxis.gupy.delivery.service;
 
+import org.apache.hc.client5.http.DnsResolver;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
 import org.apache.hc.client5.http.impl.classic.HttpClients;
 import org.apache.hc.client5.http.impl.io.PoolingHttpClientConnectionManager;
@@ -22,7 +23,7 @@ public class OutboundRestClientFactory {
         InetAddress[] validatedAddresses = target.addresses();
 
         PoolingHttpClientConnectionManager connectionManager = PoolingHttpClientConnectionManagerBuilder.create()
-                .setDnsResolver(host -> resolvePinned(host, validatedHost, validatedAddresses))
+                .setDnsResolver(createPinnedDnsResolver(validatedHost, validatedAddresses))
                 .setDefaultSocketConfig(SocketConfig.custom()
                         .setSoTimeout(Timeout.ofMilliseconds(Math.max(1, readTimeoutMs)))
                         .build())
@@ -43,14 +44,33 @@ public class OutboundRestClientFactory {
                 .build();
     }
 
+    private DnsResolver createPinnedDnsResolver(String validatedHost, InetAddress[] validatedAddresses) {
+        return new DnsResolver() {
+            @Override
+            public InetAddress[] resolve(String requestedHost) throws UnknownHostException {
+                return resolvePinned(requestedHost, validatedHost, validatedAddresses);
+            }
+
+            @Override
+            public String resolveCanonicalHostname(String requestedHost) throws UnknownHostException {
+                validateHost(requestedHost, validatedHost);
+                return validatedHost;
+            }
+        };
+    }
+
     private InetAddress[] resolvePinned(
             String requestedHost,
             String validatedHost,
             InetAddress[] validatedAddresses
     ) throws UnknownHostException {
+        validateHost(requestedHost, validatedHost);
+        return validatedAddresses.clone();
+    }
+
+    private void validateHost(String requestedHost, String validatedHost) throws UnknownHostException {
         if (!requestedHost.equalsIgnoreCase(validatedHost)) {
             throw new UnknownHostException("Host não validado: " + requestedHost);
         }
-        return validatedAddresses.clone();
     }
 }
