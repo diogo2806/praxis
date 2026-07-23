@@ -21,7 +21,8 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: ${{ github.head_ref }}
-          fetch-depth: 0
+          fetch-depth: 1
+          show-progress: false
 
       - name: Verificar se a correção já foi aplicada
         id: guard
@@ -37,7 +38,10 @@ jobs:
         if: steps.guard.outputs.apply == 'true'
         shell: bash
         run: |
-          python3 scripts/apply_issue_489.py
+          set -o pipefail
+          echo "=== APPLY ISSUE 489 PATCH ==="
+          PYTHONUNBUFFERED=1 python3 scripts/apply_issue_489.py 2>&1 | tee /tmp/issue-489-patch.log
+          echo "=== VALIDATE ISSUE 489 CONTRACT ==="
           node frontend/scripts/test-candidate-experience-i18n.mjs
           git rm scripts/apply_issue_489.py
           git rm .github/workflows/apply-issue-489.yml
