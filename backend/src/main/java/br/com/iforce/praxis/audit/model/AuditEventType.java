@@ -85,7 +85,11 @@ public enum AuditEventType implements DescribedEnum {
     TEAM_USER_INVITE_RESENT("teamUserInviteResent"),
     TEAM_USER_BLOCKED("teamUserBlocked"),
     TEAM_USER_UNBLOCKED("teamUserUnblocked"),
-    TEAM_USER_ACCESS_UPDATED("teamUserAccessUpdated");
+    TEAM_USER_ACCESS_UPDATED("teamUserAccessUpdated"),
+    INTEGRITY_REVIEW_CREATED("integrityReviewCreated"),
+    INTEGRITY_EVIDENCE_ACCESSED("integrityEvidenceAccessed"),
+    INTEGRITY_REVIEW_DECIDED("integrityReviewDecided"),
+    INTEGRITY_EVIDENCE_DISCARDED("integrityEvidenceDiscarded");
 
     private final String descricao;
 
