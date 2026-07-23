@@ -76,31 +76,14 @@ const COMPANY_ADMIN_ROLES = new Set([EMPRESA_ROLE, TEAM_MANAGER_ROLE, PARTNER_MA
 
 const ROLE_AREAS: Record<string, ReadonlySet<FrontendAccessArea>> = {
   [ASSESSMENT_EDITOR_ROLE]: new Set([
-    "dashboard",
-    "assessments",
-    "assessment-authoring",
-    "competencies",
-    "team",
-    "account",
-    "manuals",
+    "dashboard", "assessments", "assessment-authoring", "competencies", "team", "account", "manuals",
   ]),
   [RESULTS_ANALYST_ROLE]: new Set(["dashboard", "results", "team", "account", "manuals"]),
   [OPERATIONS_MANAGER_ROLE]: new Set([
-    "dashboard",
-    "journeys",
-    "participations",
-    "operations",
-    "integrations",
-    "team",
-    "account",
-    "manuals",
+    "dashboard", "journeys", "participations", "operations", "integrations", "team", "account", "manuals",
   ]),
   [PARTNER_SPECIALIST_ROLE]: new Set([
-    "assessments",
-    "assessment-authoring",
-    "competencies",
-    "account",
-    "manuals",
+    "assessments", "assessment-authoring", "competencies", "account", "manuals",
   ]),
 };
 
@@ -158,11 +141,17 @@ export function canPerformFrontendAction(action: FrontendAction, roles: string[]
   return roles.some((role) => ROLE_ACTIONS[role]?.has(action));
 }
 
+/**
+ * Mantido temporariamente como contrato de compatibilidade para sessões antigas.
+ * A autorização não manipula DOM, não observa mutações e não redireciona imperativamente.
+ */
+export function applyBrowserAccessPolicy(_roles: string[]): void {
+  // A política é aplicada declarativamente pelo AppShell e pelos componentes de ação.
+}
+
 function normalizePath(pathname: string): string {
   const withoutQuery = pathname.split(/[?#]/, 1)[0] || "/";
-  if (withoutQuery.length > 1 && withoutQuery.endsWith("/")) {
-    return withoutQuery.slice(0, -1);
-  }
+  if (withoutQuery.length > 1 && withoutQuery.endsWith("/")) return withoutQuery.slice(0, -1);
   return withoutQuery;
 }
 
