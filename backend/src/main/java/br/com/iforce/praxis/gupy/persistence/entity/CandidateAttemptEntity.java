@@ -84,6 +84,18 @@ public class CandidateAttemptEntity implements EmpresaAwareEntity {
     @Column(name = "score")
     private Integer score;
 
+    @Column(name = "raw_score")
+    private Integer rawScore;
+
+    @Column(name = "path_maximum_score")
+    private Integer pathMaximumScore;
+
+    @Column(name = "normalized_score")
+    private Integer normalizedScore;
+
+    @Column(name = "scoring_algorithm_version", length = 80)
+    private String scoringAlgorithmVersion;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "decision", nullable = false, length = 60)
     private ResultDecision decision;
