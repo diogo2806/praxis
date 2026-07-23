@@ -1,5 +1,5 @@
 import { apiRequest } from "@/lib/api/http";
-import { PraxisApiError } from "@/lib/api/praxis-legacy";
+import { PraxisApiError } from "@/lib/api/praxis";
 
 export type CommercialPlanType = "AVULSO" | "PROFISSIONAL" | "ENTERPRISE";
 export type EmpresaStatus =
