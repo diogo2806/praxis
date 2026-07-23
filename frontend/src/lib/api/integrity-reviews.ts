@@ -1,5 +1,5 @@
 import { apiRequest } from "@/lib/api/http";
-import type { AttemptStatus } from "@/lib/api/praxis-legacy";
+import type { AttemptStatus } from "@/lib/api/praxis";
 
 export type IntegrityReviewStatus = "PENDING" | "DECIDED";
 export type IntegrityReviewDecision =
