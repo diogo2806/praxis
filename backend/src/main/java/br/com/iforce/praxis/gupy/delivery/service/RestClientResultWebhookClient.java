@@ -34,6 +34,12 @@ public class RestClientResultWebhookClient implements ResultWebhookClient {
                 .uri(target.uri())
                 .body(testResultResponse)
                 .retrieve()
+                .onStatus(status -> status.is3xxRedirection(), (request, response) -> {
+                    throw new IllegalStateException(
+                            "Redirecionamento não permitido no envio de resultado: "
+                                    + response.getStatusCode().value()
+                    );
+                })
                 .toBodilessEntity();
     }
 
@@ -44,6 +50,9 @@ public class RestClientResultWebhookClient implements ResultWebhookClient {
         ResponseEntity<Void> response = client.get()
                 .uri(target.uri())
                 .retrieve()
+                .onStatus(status -> status.is3xxRedirection(), (request, redirectResponse) -> {
+                    throw new CallbackHttpStatusException(redirectResponse.getStatusCode().value());
+                })
                 .toBodilessEntity();
         int statusCode = response.getStatusCode().value();
         if (!response.getStatusCode().is2xxSuccessful()) {
