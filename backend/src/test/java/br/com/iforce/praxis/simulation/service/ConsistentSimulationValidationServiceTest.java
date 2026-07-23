@@ -2,12 +2,12 @@ package br.com.iforce.praxis.simulation.service;
 
 import br.com.iforce.praxis.config.PraxisProperties;
 import br.com.iforce.praxis.simulation.dto.SimulationValidationResponse;
+import br.com.iforce.praxis.simulation.persistence.entity.OptionCompetencyScoreEntity;
 import br.com.iforce.praxis.simulation.persistence.entity.SimulationCompetencyEntity;
 import br.com.iforce.praxis.simulation.persistence.entity.SimulationEntity;
 import br.com.iforce.praxis.simulation.persistence.entity.SimulationNodeEntity;
 import br.com.iforce.praxis.simulation.persistence.entity.SimulationOptionEntity;
 import br.com.iforce.praxis.simulation.persistence.entity.SimulationVersionEntity;
-
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -67,9 +67,11 @@ class ConsistentSimulationValidationServiceTest {
 
         SimulationValidationResponse response = service.validate(version);
 
-        assertThat(response.publishable()).isTrue();
+        assertThat(response.publishable()).isFalse();
         assertThat(response.issues())
                 .noneMatch(issue -> issue.message().contains("destino para tempo esgotado"));
+        assertThat(response.issues())
+                .anyMatch(issue -> issue.message().contains("sem observar a competência obrigatória"));
     }
 
     @Test
@@ -97,6 +99,44 @@ class ConsistentSimulationValidationServiceTest {
         assertThat(response.issues())
                 .anyMatch(issue -> issue.message().contains("destino de tempo esgotado")
                         && issue.message().contains("não existe"));
+    }
+
+    @Test
+    void listsEveryTerminalRouteWithComparableMetrics() {
+        SimulationVersionEntity version = validVersion(false);
+
+        SimulationValidationResponse response = service.validate(version);
+
+        assertThat(response.routes()).hasSize(2);
+        assertThat(response.routes())
+                .allSatisfy(route -> {
+                    assertThat(route.decisionCount()).isEqualTo(1);
+                    assertThat(route.estimatedDurationSeconds()).isPositive();
+                    assertThat(route.competencies()).singleElement()
+                            .satisfies(metric -> {
+                                assertThat(metric.competency()).isEqualTo("Comunicação");
+                                assertThat(metric.maximumScore()).isEqualTo(80);
+                                assertThat(metric.evidenceCount()).isEqualTo(1);
+                            });
+                });
+    }
+
+    @Test
+    void blocksPublicationWhenOneRouteCannotObserveRequiredCompetency() {
+        SimulationVersionEntity version = validVersion(false);
+        SimulationOptionEntity directEnd = findRoot(version).getOptions().stream()
+                .filter(option -> option.getNextNodeId() == null)
+                .findFirst()
+                .orElseThrow();
+        directEnd.getCompetencyScores().clear();
+
+        SimulationValidationResponse response = service.validate(version);
+
+        assertThat(response.publishable()).isFalse();
+        assertThat(response.issues())
+                .anyMatch(issue -> issue.message().contains("rota")
+                        && issue.message().contains("competência obrigatória")
+                        && issue.message().contains("Comunicação"));
     }
 
     private SimulationNodeEntity findRoot(SimulationVersionEntity version) {
@@ -156,6 +196,12 @@ class ConsistentSimulationValidationServiceTest {
         option.setText("Alternativa " + optionId);
         option.setNextNodeId(nextNodeId);
         option.setAuditNote("Relatório do encerramento.");
+
+        OptionCompetencyScoreEntity score = new OptionCompetencyScoreEntity();
+        score.setSimulationOption(option);
+        score.setCompetencyName("Comunicação");
+        score.setScore(80);
+        option.getCompetencyScores().add(score);
         return option;
     }
 }
