@@ -15,6 +15,7 @@ O portal externo é uma dependência documental, não uma parte deste repositór
 | Assunto | Documento | Responsabilidade |
 | --- | --- | --- |
 | Contrato implementado | [Integração Praxis como provedor](INTEGRACAO-GUPY-PROVEDOR.md) | Autenticação, endpoints, payloads, validações, estados e segurança. |
+| Fluxos adjacentes | [Matriz de aderência dos fluxos adjacentes](GUPY-FLUXOS-ADJACENTES.md) | Webhooks gerais, atualização de vagas, pré-admissão e folha, sem ampliar o contrato de provedor externo. |
 | Homologação | [Centro de homologação técnica](HOMOLOGACAO-GUPY.md) | Evidências, bloqueios, prontidão e validação em vaga real. |
 | Entrega assíncrona | [Arquitetura de Outbox](ARQUITETURA_OUTBOX_PATTERN.md) | Processamento, retry, DLQ e operação das entregas. |
 | Operação geral | [Operação em produção](OPERACAO.md) | Monitoramento, incidentes e procedimentos operacionais. |
@@ -23,9 +24,23 @@ O portal externo é uma dependência documental, não uma parte deste repositór
 
 Em caso de divergência, código e testes prevalecem sobre documentos internos. A documentação deve ser corrigida no mesmo pull request que alterar o contrato público.
 
+## Mapeamento de URLs revisado em 23/07/2026
+
+A coleta integral foi comparada por título, conteúdo e finalidade. As cinco URLs registradas como falha correspondem a quatro páginas canônicas:
+
+| URL registrada na coleta | Página canônica | Situação |
+| --- | --- | --- |
+| `configurando-webhooks-e-obtendo-payloads-reais` | [Configurando webhooks e obtendo payloads reais](https://developers.gupy.io/docs/configurando-webhooks-e-obtendo-payloads-reais-) | Alias sem hífen final. O conteúdo útil está na rota com hífen final. |
+| `configurando-webhooks-e-obtendo-payloads-reais-copy` | [Configurando webhooks e obtendo payloads reais](https://developers.gupy.io/docs/configurando-webhooks-e-obtendo-payloads-reais-) | Duplicata com sufixo `copy`; não deve ser usada como fonte. |
+| `fluxo-de-atualizacao-de-vagas` | [Fluxo de Atualização de vagas](https://developers.gupy.io/docs/atualiza%C3%A7%C3%A3o-de-vagas) | O slug canônico usa `atualização-de-vagas`, sem o prefixo `fluxo-de`. |
+| `fluxo-de-pré-admissão-da-pessoa-contratada-copy` | [Fluxo de Admissão da Pessoa Contratada](https://developers.gupy.io/docs/fluxo-de-admiss%C3%A3o-da-pessoa-contratada) | O conteúdo canônico usa “admissão”, sem `pré-` e sem `copy`. |
+| `fluxo-de-admissão-para-sistema-de-folha-copy` | [Fluxo de Admissão para Sistema de Folha](https://developers.gupy.io/docs/fluxo-de-admiss%C3%A3o-para-sistema-de-folha-) | Duplicata com `copy`; o conteúdo útil está na rota com hífen final. |
+
+As rotas canônicas acima pertencem a fluxos gerais de R&S ou ao produto Gupy Admissão. Elas não substituem o contrato de testes de provedores externos.
+
 ## Problemas externos observados
 
-A auditoria realizada em 18/07/2026 encontrou no portal da Gupy:
+A auditoria realizada em 18/07/2026 e revisada em 23/07/2026 encontrou no portal da Gupy:
 
 - páginas com sufixos `copy`, `copy-of` e `-1`;
 - rotas com hífen final;
@@ -41,7 +56,7 @@ Esses problemas não devem ser reproduzidos no Práxis. Nenhum alias externo pro
 
 1. Não copiar a documentação completa da Gupy para o repositório.
 2. Não criar links diretos para `developers.gupy.io` fora deste arquivo.
-3. Não referenciar URLs com `copy`, `copy-of`, sufixo numérico ou hífen final.
+3. Não referenciar URLs com `copy`, `copy-of`, sufixo numérico ou hífen final, salvo nesta tabela de saneamento documental.
 4. Manter exemplos de payload somente no documento do contrato implementado.
 5. Manter retry, backoff e DLQ somente no documento de Outbox.
 6. Manter checklist e evidências somente no documento de homologação.
@@ -64,4 +79,4 @@ Esses problemas não devem ser reproduzidos no Práxis. Nenhum alias externo pro
 
 O Práxis controla sua implementação, documentação, testes e evidências. A correção de links, aliases, títulos ou conteúdo hospedado no portal da Gupy depende do mantenedor externo.
 
-Última revisão: 18/07/2026.
+Última revisão: 23/07/2026.
