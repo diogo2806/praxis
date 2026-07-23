@@ -5,6 +5,7 @@ import { AppShell } from "@/components/app-shell";
 import { EmptyState } from "@/components/praxis-ui";
 import {
   getCandidateAttempt,
+  HEALTH_CONSENT_VERSION,
   PraxisApiError,
   recordHealthConsent,
   requestHumanReview,
@@ -630,7 +631,11 @@ function FocusedCandidateExperience({ token }: { token: string }) {
   const attempt = liveAttempt ?? attemptQuery.data;
   const currentNode = attempt?.etapaAtual ?? null;
   const finished = Boolean(attempt && (attempt.finalizado || !currentNode));
-  const needsHealthConsent = Boolean(attempt?.verticalSaude) && !healthConsentGiven && !finished;
+  const needsHealthConsent =
+    Boolean(attempt?.verticalSaude) &&
+    !healthConsentGiven &&
+    !attempt?.healthConsentValid &&
+    !finished;
   const timeLimit = Math.max(
     1,
     currentNode?.tempoLimiteSegundosAcomodado ?? currentNode?.tempoLimiteSegundos ?? 30,
@@ -676,6 +681,8 @@ function FocusedCandidateExperience({ token }: { token: string }) {
           progresso: response.progresso,
           etapaAtual: response.etapaAtual,
           verticalSaude: attempt.verticalSaude,
+          healthConsentValid: attempt.healthConsentValid,
+          healthConsentNoticeVersion: attempt.healthConsentNoticeVersion,
         });
         setSelectedOptionId(null);
         void attemptQuery.refetch();
@@ -818,7 +825,17 @@ function FocusedCandidateExperience({ token }: { token: string }) {
           </p>
         </div>
       ) : needsHealthConsent ? (
-        <HealthConsentGate token={token} onConsented={() => setHealthConsentGiven(true)} />
+        <HealthConsentGate
+          token={token}
+          noticeVersion={attempt?.healthConsentNoticeVersion ?? HEALTH_CONSENT_VERSION}
+          onConsented={async () => {
+            const refreshedAttempt = await attemptQuery.refetch();
+            if (refreshedAttempt.data?.healthConsentValid) {
+              setLiveAttempt(refreshedAttempt.data);
+              setHealthConsentGiven(true);
+            }
+          }}
+        />
       ) : currentNode && !finished ? (
         <>
           <div className="cand-progress">
@@ -1045,11 +1062,19 @@ function HumanReviewRequest({ attemptId }: { attemptId: string }) {
   );
 }
 
-function HealthConsentGate({ token, onConsented }: { token: string; onConsented: () => void }) {
+function HealthConsentGate({
+  token,
+  noticeVersion,
+  onConsented,
+}: {
+  token: string;
+  noticeVersion: string;
+  onConsented: () => Promise<void> | void;
+}) {
   const [agreed, setAgreed] = useState(false);
   const [onBehalfOfMinor, setOnBehalfOfMinor] = useState(false);
   const mutation = useMutation({
-    mutationFn: () => recordHealthConsent(token, onBehalfOfMinor),
+    mutationFn: () => recordHealthConsent(token, onBehalfOfMinor, noticeVersion),
     onSuccess: onConsented,
   });
 

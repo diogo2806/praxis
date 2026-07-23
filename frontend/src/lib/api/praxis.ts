@@ -1,9 +1,16 @@
 export * from "./praxis-legacy";
 export {
   getCandidateAttempt,
+  getHealthConsentStatus,
+  HEALTH_CONSENT_VERSION,
+  recordHealthConsent,
+  revokeHealthConsent,
   submitCandidateAnswer,
 } from "./candidate-attempt-public";
-export { recordHealthConsent } from "./candidate-health-consent-public";
+export type {
+  CandidateAttemptResponse,
+  HealthConsentStatusResponse,
+} from "./candidate-attempt-public";
 export { createSimulationBranchNode } from "./simulation-branch-node";
 export {
   createSimulationNode,

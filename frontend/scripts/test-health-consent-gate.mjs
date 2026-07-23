@@ -12,34 +12,38 @@ async function readBackend(relativePath) {
   return readFile(new URL(relativePath, repositoryRoot), "utf8");
 }
 
-const [candidateClient, consentClient, publicExports, controller, service, entity, migration] =
+const [candidateClient, candidateRoute, publicExports, controller, service, entity, migration] =
   await Promise.all([
     readFrontend("src/lib/api/candidate-attempt-public.ts"),
-    readFrontend("src/lib/api/candidate-health-consent-public.ts"),
+    readFrontend("src/routes/candidato.tsx"),
     readFrontend("src/lib/api/praxis.ts"),
     readBackend("backend/src/main/java/br/com/iforce/praxis/candidate/controller/CandidateAttemptController.java"),
     readBackend("backend/src/main/java/br/com/iforce/praxis/candidate/service/CandidateHealthConsentService.java"),
     readBackend("backend/src/main/java/br/com/iforce/praxis/gupy/persistence/entity/CandidateAttemptEntity.java"),
-    readBackend("backend/src/main/resources/db/migration/V1019__persist_health_consent.sql"),
+    readBackend("backend/src/main/resources/db/migration/V1020__complete_health_consent_state.sql"),
   ]);
 
-assert.match(candidateClient, /HEALTH_CONSENT_REQUIRED_STATUS = 428/);
-assert.match(candidateClient, /healthConsentRequiredAttempt/);
-assert.match(candidateClient, /verticalSaude: true/);
-assert.match(consentClient, /await recordHealthConsentLegacy/);
-assert.match(consentClient, /window\.location\.reload\(\)/);
-assert.match(publicExports, /recordHealthConsent.*candidate-health-consent-public/);
+assert.ok(
+  candidateClient.indexOf("getHealthConsentStatus(token)") <
+    candidateClient.indexOf("apiRequest<LegacyCandidateAttemptResponse>"),
+  "O estado persistido deve ser consultado antes de requisitar a etapa",
+);
+assert.match(candidateClient, /consentStatus\.required && !consentStatus\.valid/);
+assert.match(candidateClient, /healthConsentValid: consentStatus\.valid/);
+assert.match(candidateClient, /JSON\.stringify\(\{ version, onBehalfOfMinor \}\)/);
+assert.match(candidateClient, /method: "DELETE"/);
+assert.match(candidateRoute, /!attempt\?\.healthConsentValid/);
+assert.match(candidateRoute, /const refreshedAttempt = await attemptQuery\.refetch\(\)/);
+assert.match(candidateRoute, /setLiveAttempt\(refreshedAttempt\.data\)/);
+assert.match(candidateRoute, /recordHealthConsent\(token, onBehalfOfMinor, noticeVersion\)/);
+assert.match(publicExports, /getHealthConsentStatus/);
+assert.match(publicExports, /revokeHealthConsent/);
+assert.equal((controller.match(/candidateHealthConsentService\.assertConsentGranted/g) ?? []).length, 2);
+assert.match(controller, /@DeleteMapping\("\/\{attemptToken\}\/health-consent"\)/);
+assert.match(service, /currentNoticeVersion\.equals\(requestedVersion\)/);
+assert.match(service, /hasValidCurrentConsent\(attempt\)/);
+assert.match(service, /HEALTH_CONSENT_REVOKED/);
+assert.match(entity, /healthConsentSource/);
+assert.match(migration, /ck_candidate_attempt_health_consent_complete/);
 
-const controllerGuards = controller.match(/candidateHealthConsentService\.assertConsentGranted\(attemptToken\)/g) ?? [];
-assert.equal(controllerGuards.length, 2, "Leitura e resposta devem exigir consentimento de saúde.");
-assert.match(service, /HttpStatus\.PRECONDITION_REQUIRED/);
-assert.match(service, /setHealthConsentRecordedAt/);
-assert.match(service, /setHealthConsentVersion/);
-assert.match(service, /getHealthConsentRevokedAt\(\) == null/);
-assert.match(entity, /health_consent_recorded_at/);
-assert.match(entity, /health_consent_version/);
-assert.match(entity, /health_consent_subject_type/);
-assert.match(entity, /health_consent_revoked_at/);
-assert.match(migration, /ALTER TABLE candidate_attempts/);
-
-console.log("Barreira persistida de consentimento de saúde validada.");
+console.log("Contrato completo de consentimento de saúde validado.");
