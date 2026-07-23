@@ -48,6 +48,7 @@ export async function getCandidateAttempt(token: string): Promise<CandidateAttem
   );
   return {
     ...attempt,
+    verticalSaude: attempt.verticalSaude,
     healthConsentValid: consentStatus.valid,
     healthConsentNoticeVersion: consentStatus.noticeVersion,
   };
