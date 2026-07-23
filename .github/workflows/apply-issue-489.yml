@@ -1,0 +1,35 @@
+name: Apply issue 489 candidate i18n patch
+
+on:
+  push:
+    branches:
+      - fix/issue-489-candidate-i18n-20260723
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/issue-489-candidate-i18n-20260723
+          fetch-depth: 0
+
+      - name: Apply deterministic patch
+        run: python3 scripts/apply_issue_489.py
+
+      - name: Remove temporary patch automation
+        run: |
+          rm scripts/apply_issue_489.py
+          rm .github/workflows/apply-issue-489.yml
+
+      - name: Commit generated correction
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "fix(i18n): traduzir execução da avaliação do candidato (#489)"
+          git push origin HEAD:fix/issue-489-candidate-i18n-20260723
