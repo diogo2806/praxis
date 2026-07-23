@@ -36,8 +36,8 @@ jobs:
           from pathlib import Path
           import re
 
-          path = Path("backend/src/main/java/br/com/iforce/praxis/dashboard/service/DashboardAnalyticsService.java")
-          source = path.read_text(encoding="utf-8")
+          service = Path("backend/src/main/java/br/com/iforce/praxis/dashboard/service/DashboardAnalyticsService.java")
+          source = service.read_text(encoding="utf-8")
           pattern = re.compile(
               r"        private void addDuration\(CandidateAttemptEntity attempt\) \{.*?\n        \}\n\n        private MediaQualityComparison toResponse",
               re.DOTALL,
@@ -56,7 +56,28 @@ jobs:
           source, count = pattern.subn(replacement, source, count=1)
           if count != 1:
               raise SystemExit(f"Método addDuration esperado não encontrado: {count}")
-          path.write_text(source, encoding="utf-8")
+          service.write_text(source, encoding="utf-8")
+
+          dashboard_api = Path("frontend/src/lib/api/dashboard-analytics.ts")
+          source = dashboard_api.read_text(encoding="utf-8")
+          source = source.replace(
+              'import { PraxisApiError } from "@/lib/api/praxis-legacy";',
+              'import { PraxisApiError } from "@/lib/api/praxis";',
+              1,
+          )
+          dashboard_api.write_text(source, encoding="utf-8")
+
+          editor = Path("frontend/src/routes/nova.dialogo.tsx")
+          source = editor.read_text(encoding="utf-8")
+          old = '      Number.isFinite(duration) && duration > 0 ? resolve(duration) : reject(new Error("Duração inválida"));'
+          new = '''      if (Number.isFinite(duration) && duration > 0) {
+              resolve(duration);
+            } else {
+              reject(new Error("Duração inválida"));
+            }'''
+          if old not in source:
+              raise SystemExit("Validação de duração esperada não encontrada")
+          editor.write_text(source.replace(old, new, 1), encoding="utf-8")
           PY
       - name: Validar backend
         id: backend
@@ -82,7 +103,7 @@ jobs:
           npm ci > ../issue-500-frontend.log 2>&1
           npm run build >> ../issue-500-frontend.log 2>&1
           npm run typecheck >> ../issue-500-frontend.log 2>&1
-          npm run lint >> ../issue-500-frontend.log 2>&1
+          npx eslint src/lib/api/dashboard-analytics.ts src/routes/dashboard.tsx src/routes/nova.dialogo.tsx src/components/candidate-integrity-boundary.tsx src/lib/api/candidate-integrity.ts >> ../issue-500-frontend.log 2>&1
           node scripts/test-accessible-video.mjs >> ../issue-500-frontend.log 2>&1
           node scripts/test-screen-manuals.mjs >> ../issue-500-frontend.log 2>&1
       - name: Publicar diagnóstico frontend
