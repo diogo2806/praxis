@@ -16,11 +16,12 @@ ENV FORCE_COLOR=0
 ENV TERM=dumb
 
 COPY package*.json ./
-RUN --mount=type=cache,target=/root/.npm \
-    sh -c 'echo "[build][frontend][npm-ci][start] $(date -u +%Y-%m-%dT%H:%M:%SZ)"; pipe=/tmp/build-log.$$; mkfifo "$pipe"; while IFS= read -r line; do echo "[$(date -u +%Y-%m-%dT%H:%M:%SZ)] $line"; done < "$pipe" & logger=$!; npm ci --prefer-offline --no-audit --fund=false --progress=false --loglevel=warn > "$pipe" 2>&1; status=$?; wait "$logger"; rm -f "$pipe"; echo "[build][frontend][npm-ci][end] $(date -u +%Y-%m-%dT%H:%M:%SZ) status=$status"; exit "$status"'
+# Do not use a persistent BuildKit npm cache here. EasyPanel keeps build caches
+# on the host and repeated deployments can exhaust the server disk.
+RUN sh -c 'echo "[build][frontend][npm-ci][start] $(date -u +%Y-%m-%dT%H:%M:%SZ)"; pipe=/tmp/build-log.$$; mkfifo "$pipe"; while IFS= read -r line; do echo "[$(date -u +%Y-%m-%dT%H:%M:%SZ)] $line"; done < "$pipe" & logger=$!; npm ci --prefer-offline --no-audit --fund=false --progress=false --loglevel=warn > "$pipe" 2>&1; status=$?; wait "$logger"; rm -f "$pipe"; npm cache clean --force >/dev/null 2>&1 || true; echo "[build][frontend][npm-ci][end] $(date -u +%Y-%m-%dT%H:%M:%SZ) status=$status"; exit "$status"'
 
 COPY . .
-RUN sh -c 'echo "[build][frontend][vite-build][start] $(date -u +%Y-%m-%dT%H:%M:%SZ)"; pipe=/tmp/build-log.$$; mkfifo "$pipe"; while IFS= read -r line; do echo "[$(date -u +%Y-%m-%dT%H:%M:%SZ)] $line"; done < "$pipe" & logger=$!; npm run build > "$pipe" 2>&1; status=$?; wait "$logger"; rm -f "$pipe"; echo "[build][frontend][vite-build][end] $(date -u +%Y-%m-%dT%H:%M:%SZ) status=$status"; exit "$status"'
+RUN sh -c 'echo "[build][frontend][vite-build][start] $(date -u +%Y-%m-%dT%H:%M:%SZ)"; pipe=/tmp/build-log.$$; mkfifo "$pipe"; while IFS= read -r line; do echo "[$(date -u +%Y-%m-%dT%H:%M:%SZ)] $line"; done < "$pipe" & logger=$!; npm run build > "$pipe" 2>&1; status=$?; wait "$logger"; rm -f "$pipe"; rm -rf /tmp/*; echo "[build][frontend][vite-build][end] $(date -u +%Y-%m-%dT%H:%M:%SZ) status=$status"; exit "$status"'
 
 # Runtime stage
 FROM node:22-alpine
