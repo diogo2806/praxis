@@ -29,7 +29,8 @@ CREATE TABLE answer_key_review_assignments (
     submitted_at TIMESTAMPTZ,
     CONSTRAINT ck_answer_key_assignment_role CHECK (assignment_role IN ('EXPERT', 'APPROVER')),
     CONSTRAINT ck_answer_key_assignment_status CHECK (status IN ('INVITED', 'IN_PROGRESS', 'SUBMITTED', 'APPROVED')),
-    CONSTRAINT uk_answer_key_assignment UNIQUE (round_id, user_id)
+    CONSTRAINT uk_answer_key_assignment UNIQUE (round_id, user_id, assignment_role),
+    CONSTRAINT uk_answer_key_assignment_user UNIQUE (round_id, user_id)
 );
 
 CREATE TABLE answer_key_evidence_links (
