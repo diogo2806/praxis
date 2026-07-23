@@ -25,7 +25,7 @@ import java.util.Locale;
 import java.util.UUID;
 
 /**
- * Cria uma nova avaliação independente usando uma versão existente da própria empresa como base.
+ * Cria uma nova avaliação independente usando uma versão existente como base.
  * A origem permanece inalterada e a cópia sempre nasce como versão 1 em rascunho.
  */
 @Service
@@ -58,23 +58,62 @@ public class SimulationDuplicateService {
             DuplicateSimulationRequest request
     ) {
         String empresaId = currentEmpresaService.requiredEmpresaId();
-        SimulationVersionEntity sourceVersion = simulationVersionRepository
-                .findBySimulationEmpresaIdAndSimulationIdAndVersionNumber(
-                        empresaId,
-                        simulationId,
-                        versionNumber
-                )
-                .orElseThrow(() -> new ResponseStatusException(
-                        HttpStatus.NOT_FOUND,
-                        "Não encontramos a avaliação usada como modelo."
-                ));
+        SimulationVersionEntity sourceVersion = loadVersion(empresaId, simulationId, versionNumber);
+        return duplicateLoadedVersion(
+                sourceVersion,
+                empresaId,
+                request.name(),
+                "Avaliação duplicada como novo rascunho reutilizável.",
+                "{\"sourceSimulationId\":\"" + escapeJson(simulationId)
+                        + "\",\"sourceVersionNumber\":" + versionNumber + "}"
+        );
+    }
 
+    /**
+     * Copia uma versão visível e aprovada pelo catálogo para a empresa atual.
+     * A autorização de visibilidade do modelo deve ser validada pelo serviço do catálogo.
+     */
+    @Transactional
+    public SimulationVersionDetailResponse duplicateFromCatalog(
+            String sourceEmpresaId,
+            String sourceSimulationId,
+            int sourceVersionNumber,
+            String templateId,
+            String templateVersion,
+            String newName
+    ) {
+        String targetEmpresaId = currentEmpresaService.requiredEmpresaId();
+        SimulationVersionEntity sourceVersion = loadVersion(
+                sourceEmpresaId,
+                sourceSimulationId,
+                sourceVersionNumber
+        );
+        String metadata = "{\"sourceSimulationId\":\"" + escapeJson(sourceSimulationId)
+                + "\",\"sourceVersionNumber\":" + sourceVersionNumber
+                + ",\"templateId\":\"" + escapeJson(templateId)
+                + "\",\"templateVersion\":\"" + escapeJson(templateVersion) + "\"}";
+        return duplicateLoadedVersion(
+                sourceVersion,
+                targetEmpresaId,
+                newName,
+                "Avaliação criada como rascunho independente a partir do catálogo de modelos.",
+                metadata
+        );
+    }
+
+    private SimulationVersionDetailResponse duplicateLoadedVersion(
+            SimulationVersionEntity sourceVersion,
+            String targetEmpresaId,
+            String newName,
+            String auditMessage,
+            String auditMetadata
+    ) {
         Instant createdAt = Instant.now();
         SimulationEntity sourceSimulation = sourceVersion.getSimulation();
         SimulationEntity duplicateSimulation = new SimulationEntity();
-        duplicateSimulation.setId(generateSimulationId(request.name()));
-        duplicateSimulation.setEmpresaId(empresaId);
-        duplicateSimulation.setName(request.name().trim());
+        duplicateSimulation.setId(generateSimulationId(newName));
+        duplicateSimulation.setEmpresaId(targetEmpresaId);
+        duplicateSimulation.setName(newName.trim());
         duplicateSimulation.setDescription(sourceSimulation.getDescription());
         duplicateSimulation.setCriticalSituation(sourceSimulation.getCriticalSituation());
         duplicateSimulation.setResultUse(sourceSimulation.getResultUse());
@@ -89,16 +128,31 @@ public class SimulationDuplicateService {
 
         SimulationEntity savedSimulation = simulationRepository.save(duplicateSimulation);
         auditEventService.appendSimulationVersionEvent(
-                empresaId,
+                targetEmpresaId,
                 savedSimulation.getId(),
                 duplicateVersion.getVersionNumber(),
                 AuditEventType.SIMULATION_VERSION_CLONED,
-                "Avaliação duplicada como novo rascunho reutilizável.",
-                "{\"sourceSimulationId\":\"" + escapeJson(simulationId)
-                        + "\",\"sourceVersionNumber\":" + versionNumber + "}"
+                auditMessage,
+                auditMetadata
         );
-
         return simulationMapperService.toVersionDetail(duplicateVersion);
+    }
+
+    private SimulationVersionEntity loadVersion(
+            String empresaId,
+            String simulationId,
+            int versionNumber
+    ) {
+        return simulationVersionRepository
+                .findBySimulationEmpresaIdAndSimulationIdAndVersionNumber(
+                        empresaId,
+                        simulationId,
+                        versionNumber
+                )
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "Não encontramos a avaliação usada como modelo."
+                ));
     }
 
     private SimulationVersionEntity copyVersion(
