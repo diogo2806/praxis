@@ -18,7 +18,8 @@
     "test:health-consent": "node scripts/test-health-consent-gate.mjs",
     "test:candidate-media-a11y": "node scripts/test-candidate-media-accessibility.mjs",
     "test:candidate-i18n": "node scripts/test-candidate-execution-i18n.mjs",
-    "test:landing-commercial": "node scripts/test-landing-commercial.mjs"
+    "test:landing-commercial": "node scripts/test-landing-commercial.mjs",
+    "test:result-executive": "node scripts/test-result-executive-report.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
@@ -87,7 +88,6 @@
     "eslint-plugin-react-hooks": "^7.1.1",
     "eslint-plugin-react-refresh": "^0.4.20",
     "globals": "^15.15.0",
-    "nitro": "3.0.260603-beta",
     "prettier": "^3.7.3",
     "typescript": "^5.8.3",
     "typescript-eslint": "^8.56.1",
