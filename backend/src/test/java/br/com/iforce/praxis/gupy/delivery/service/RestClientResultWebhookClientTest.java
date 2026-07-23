@@ -4,8 +4,8 @@ import br.com.iforce.praxis.gupy.dto.TestResultResponse;
 import com.sun.net.httpserver.HttpServer;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.web.client.RestClient;
 
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.URI;
 import java.util.List;
@@ -37,8 +37,8 @@ class RestClientResultWebhookClientTest {
     @Test
     void rejectsLocalNetworkWebhook() {
         RestClientResultWebhookClient client = new RestClientResultWebhookClient(
-                RestClient.builder(),
                 validator(),
+                new OutboundRestClientFactory(),
                 1_000,
                 1_000
         );
@@ -49,54 +49,39 @@ class RestClientResultWebhookClientTest {
     }
 
     @Test
-    void confirmsCallbackOnlyAfterReceiving2xx() throws Exception {
-        server = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
-        server.createContext("/callback", exchange -> {
-            exchange.sendResponseHeaders(204, -1);
-            exchange.close();
-        });
-        server.start();
+    void rejectsUserInfoAndHttpWhenSecurityIsEnabled() {
+        GupyOutboundUrlValidator validator = new GupyOutboundUrlValidator(true);
 
-        URI callbackUri = uri("/callback");
-        GupyOutboundUrlValidator validator = mock(GupyOutboundUrlValidator.class);
-        when(validator.validate(callbackUri.toString())).thenReturn(callbackUri);
-
-        ResultWebhookClient client = new RestClientResultWebhookClient(
-                RestClient.builder(),
-                validator,
-                1_000,
-                1_000
-        );
-
-        assertThat(client.getCallback(callbackUri.toString())).isEqualTo(204);
+        assertThatThrownBy(() -> validator.validate("https://user:pass@8.8.8.8/result"))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("URL externa inválida.");
+        assertThatThrownBy(() -> validator.validate("http://8.8.8.8/result"))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("URL externa deve usar HTTPS em produção.");
     }
 
     @Test
-    void doesNotFollowRedirectWithoutValidatingTheNewDestination() throws Exception {
+    void pinsTheAddressResolvedDuringValidation() throws Exception {
+        AtomicInteger resolutions = new AtomicInteger();
+        GupyOutboundUrlValidator validator = new GupyOutboundUrlValidator(false, host -> {
+            if (resolutions.getAndIncrement() == 0) {
+                return new InetAddress[]{InetAddress.getByName("8.8.8.8")};
+            }
+            return new InetAddress[]{InetAddress.getByName("127.0.0.1")};
+        });
+
+        ValidatedOutboundTarget target = validator.validateAndResolve("http://example.test/result");
+
+        assertThat(target.addresses()).containsExactly(InetAddress.getByName("8.8.8.8"));
+        assertThat(resolutions).hasValue(1);
+    }
+
+    @Test
+    void doesNotFollowRedirectForCallback() throws Exception {
         AtomicInteger redirectedRequests = new AtomicInteger();
-        server = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
-        server.createContext("/redirect", exchange -> {
-            exchange.getResponseHeaders().add("Location", "/target");
-            exchange.sendResponseHeaders(302, -1);
-            exchange.close();
-        });
-        server.createContext("/target", exchange -> {
-            redirectedRequests.incrementAndGet();
-            exchange.sendResponseHeaders(204, -1);
-            exchange.close();
-        });
-        server.start();
-
+        server = redirectServer(redirectedRequests);
         URI callbackUri = uri("/redirect");
-        GupyOutboundUrlValidator validator = mock(GupyOutboundUrlValidator.class);
-        when(validator.validate(callbackUri.toString())).thenReturn(callbackUri);
-
-        ResultWebhookClient client = new RestClientResultWebhookClient(
-                RestClient.builder(),
-                validator,
-                1_000,
-                1_000
-        );
+        RestClientResultWebhookClient client = clientForLocalTarget(callbackUri);
 
         assertThatThrownBy(() -> client.getCallback(callbackUri.toString()))
                 .isInstanceOfSatisfying(
@@ -106,8 +91,52 @@ class RestClientResultWebhookClientTest {
         assertThat(redirectedRequests).hasValue(0);
     }
 
+    @Test
+    void doesNotFollowRedirectForResultPost() throws Exception {
+        AtomicInteger redirectedRequests = new AtomicInteger();
+        server = redirectServer(redirectedRequests);
+        URI webhookUri = uri("/redirect");
+        RestClientResultWebhookClient client = clientForLocalTarget(webhookUri);
+
+        assertThatThrownBy(() -> client.postResult(webhookUri.toString(), response()))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("Redirecionamento não permitido");
+        assertThat(redirectedRequests).hasValue(0);
+    }
+
+    private RestClientResultWebhookClient clientForLocalTarget(URI uri) throws Exception {
+        GupyOutboundUrlValidator validator = mock(GupyOutboundUrlValidator.class);
+        ValidatedOutboundTarget target = new ValidatedOutboundTarget(
+                uri,
+                new InetAddress[]{InetAddress.getByName("127.0.0.1")}
+        );
+        when(validator.validateAndResolve(uri.toString())).thenReturn(target);
+        return new RestClientResultWebhookClient(
+                validator,
+                new OutboundRestClientFactory(),
+                1_000,
+                1_000
+        );
+    }
+
+    private HttpServer redirectServer(AtomicInteger redirectedRequests) throws Exception {
+        HttpServer httpServer = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
+        httpServer.createContext("/redirect", exchange -> {
+            exchange.getResponseHeaders().add("Location", "/target");
+            exchange.sendResponseHeaders(302, -1);
+            exchange.close();
+        });
+        httpServer.createContext("/target", exchange -> {
+            redirectedRequests.incrementAndGet();
+            exchange.sendResponseHeaders(204, -1);
+            exchange.close();
+        });
+        httpServer.start();
+        return httpServer;
+    }
+
     private URI uri(String path) {
-        return URI.create("http://127.0.0.1:" + server.getAddress().getPort() + path);
+        return URI.create("http://localhost:" + server.getAddress().getPort() + path);
     }
 
     private GupyOutboundUrlValidator validator() {
