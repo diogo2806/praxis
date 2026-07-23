@@ -25,6 +25,40 @@ public record CandidateResultPageResponse(
         Instant concluidoEm,
 
         @Schema(description = "Resultados major permitidos pelo contrato Gupy para exibição à pessoa candidata.")
-        List<CandidateResultItemResponse> resultados
+        List<CandidateResultItemResponse> resultados,
+
+        @Schema(example = "240", description = "Pontos obtidos antes da normalização pelo caminho.")
+        Integer pontuacaoBruta,
+
+        @Schema(example = "320", description = "Teto bruto disponível no caminho efetivamente percorrido.")
+        Integer pontuacaoMaximaCaminho,
+
+        @Schema(example = "75", description = "Nota comparável de 0 a 100 após normalização pelo caminho.")
+        Integer pontuacaoNormalizada,
+
+        @Schema(example = "path-normalized-v2")
+        String versaoAlgoritmoPontuacao
 ) {
+
+    public CandidateResultPageResponse(
+            String avaliacaoNome,
+            String status,
+            boolean finalizado,
+            String redirectUrl,
+            Instant concluidoEm,
+            List<CandidateResultItemResponse> resultados
+    ) {
+        this(
+                avaliacaoNome,
+                status,
+                finalizado,
+                redirectUrl,
+                concluidoEm,
+                resultados,
+                null,
+                null,
+                null,
+                null
+        );
+    }
 }
