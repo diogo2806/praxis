@@ -5,20 +5,37 @@ export const ANALYSIS_OPERATION_MANUALS: ScreenManualDefinition[] = [
     id: "talent-match-contextual",
     title: "Talent Match contextual",
     purpose:
-      "Comparar até cinco participações concluídas de uma avaliação e versão específicas com a referência configurada, sem manter uma segunda lista global de avaliações ou candidatos.",
+      "Comparar até cinco participações concluídas da mesma avaliação e versão, distinguindo perfil-alvo, referência normativa elegível e nota de corte aprovada, sem transformar score em decisão automática.",
     flow: [
       "Abra a avaliação desejada em Avaliações ou filtre o processo em Resultados.",
       "Acesse Talent Match preservando o identificador da avaliação e o número da versão.",
-      "Revise o cabeçalho para confirmar o contexto carregado.",
+      "Revise o perfil-alvo, que representa apenas a expectativa configurada pela organização.",
+      "Confirme se existe referência normativa elegível para a mesma versão, população, período e caminho avaliativo.",
+      "Revise separadamente a nota de corte, sua justificativa, evidência, população e validade.",
       "Ative o modo cego quando a comparação não deve exibir dados identificáveis.",
-      "Selecione até cinco participações concluídas da mesma avaliação e versão.",
-      "Compare o radar com a referência, abra as evidências e registre a decisão humana quando aplicável.",
+      "Selecione até cinco participações concluídas e confira o snapshot histórico aplicado a cada uma.",
+      "Abra as evidências e registre a decisão humana quando aplicável.",
     ],
     fields: [
       {
         name: "Avaliação e versão",
         description:
-          "Contexto obrigatório recebido de Avaliações ou Resultados; não pode ser escolhido em uma lista global nesta tela.",
+          "Contexto obrigatório recebido de Avaliações ou Resultados. Todas as participações e referências devem pertencer à mesma empresa e versão.",
+      },
+      {
+        name: "Perfil-alvo configurado",
+        description:
+          "Pontuação desejada por competência definida pela organização. Não é média de candidatos, referência normativa nem nota de corte.",
+      },
+      {
+        name: "Referência normativa",
+        description:
+          "Grupo comparável por cargo, senioridade, vaga, população, período e versão. Média, desvio e percentil só aparecem quando a amostra mínima e a comparabilidade foram validadas.",
+      },
+      {
+        name: "Nota de corte",
+        description:
+          "Limiar decisório independente, versionado e aprovado, com população, justificativa, evidência e prazo de validade próprios.",
       },
       {
         name: "Busca de participante",
@@ -32,50 +49,56 @@ export const ANALYSIS_OPERATION_MANUALS: ScreenManualDefinition[] = [
       },
       {
         name: "Participações selecionadas",
-        description: "Conjunto de até cinco resultados exibidos simultaneamente no gráfico comparativo.",
-      },
-      {
-        name: "Referência configurada",
-        description: "Pontuação-alvo de cada competência definida previamente na versão da avaliação.",
+        description:
+          "Conjunto de até cinco resultados exibidos simultaneamente, cada um com o snapshot das referências vigentes quando a tentativa foi concluída.",
       },
       {
         name: "Decisão humana",
         description:
-          "Registro explícito de avanço, rejeição, contratação ou espera, com justificativa opcional e sem decisão automática pelo score.",
+          "Registro explícito de avanço, rejeição, contratação ou espera, com justificativa opcional e sem decisão automática pelo score ou pela nota de corte.",
       },
     ],
     permissions: [
-      "Perfil EMPRESA com acesso aos resultados da avaliação.",
-      "A avaliação e a versão devem pertencer à empresa autenticada.",
+      "Perfis TEAM_MANAGER ou RESULTS_ANALYST podem consultar resultados e configurar referências da própria empresa.",
+      "A avaliação, a versão, as tentativas e os grupos normativos devem pertencer à empresa autenticada.",
+      "A aprovação de nota de corte e ativação de grupo normativo geram trilha de auditoria.",
       "O usuário precisa ter autorização para consultar evidências e registrar decisão humana.",
     ],
     states: [
       "Contexto ausente com retorno para Avaliações ou Resultados",
-      "Carregando avaliação e participações concluídas",
-      "Versão não publicada",
-      "Sem participações concluídas",
+      "Carregando avaliação, referências e participações concluídas",
+      "Perfil-alvo disponível",
+      "Grupo normativo elegível e ativo",
+      "Grupo normativo inelegível ou ausente",
+      "Nota de corte aprovada e vigente",
+      "Nota de corte ausente, futura, vencida ou revogada",
       "Comparação aguardando seleção",
-      "Comparação disponível",
+      "Comparação disponível com snapshot histórico",
       "Modo cego ativo",
-      "Erro de carregamento ou registro",
+      "Erro de carregamento, configuração ou registro",
     ],
     blocks: [
       "Identificador da avaliação ou número da versão ausente.",
-      "Avaliação ou versão inexistente, arquivada ou sem acesso.",
-      "Versão sem referência de competências configurada.",
-      "Nenhuma participação concluída para o contexto informado.",
+      "Avaliação, versão ou tentativa inexistente ou sem acesso.",
+      "Tentativas de versões diferentes ou ainda não concluídas.",
+      "Grupo normativo com menos de 30 casos, caminho não comparável ou população incompatível.",
+      "Média e percentil ocultos quando a referência normativa não é elegível.",
+      "Recomendação binária indisponível quando não existe nota de corte aprovada e vigente.",
       "Limite de cinco participações selecionadas atingido.",
-      "Falha ao carregar resultados, evidências ou registrar a decisão humana.",
+      "Usuário sem permissão para configurar referências ou registrar decisão.",
     ],
     examples: [
-      "Abrir a versão 2 da avaliação de atendimento e comparar três participações concluídas no modo cego.",
-      "Baixar a evidência de uma participação e registrar avanço após a revisão humana do percurso.",
+      "Comparar três pessoas da versão 2 com o perfil-alvo, sem chamar essa expectativa de benchmark.",
+      "Ativar um grupo normativo de atendentes seniores da mesma vaga, com 45 casos concluídos no período informado.",
+      "Aprovar nota de corte 70 com justificativa, evidência e validade até o fim do ciclo seletivo.",
+      "Abrir uma tentativa antiga e confirmar que ela preserva a referência vigente na data da conclusão.",
     ],
     shortcuts: [
       "Use o ícone de comparação na tela Avaliações para abrir o contexto correto.",
       "Use Limpar para retirar todas as participações do radar sem sair da versão.",
-      "Abra o resultado individual para revisar competências e percurso antes de registrar a decisão.",
-      "Quando faltar contexto, retorne a Avaliações em vez de procurar uma lista global dentro do Talent Match.",
+      "Ative o modo cego antes de selecionar participantes quando quiser reduzir viés de identificação.",
+      "Abra o resultado individual para revisar competências e percurso antes da decisão humana.",
+      "Não configure nota de corte a partir da média do perfil-alvo; registre metodologia e evidência próprias.",
     ],
     matches: (pathname) => pathname === "/talent-match",
   },
