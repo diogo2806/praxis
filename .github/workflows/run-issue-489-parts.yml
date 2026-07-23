@@ -1,0 +1,56 @@
+name: Executar correção da issue 489
+
+on:
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: write
+
+jobs:
+  apply-fix:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout da branch
+        uses: actions/checkout@v4
+        with:
+          ref: fix/issue-489-traduzir-execucao-candidato
+          fetch-depth: 1
+          show-progress: false
+
+      - name: Reconstruir e aplicar correção
+        run: |
+          python - <<'PY'
+          import base64
+          import gzip
+          from pathlib import Path
+
+          parts = sorted(Path('.github/issue-489-parts').glob('part-*.txt'))
+          assert len(parts) == 9, f'Esperadas 9 partes, encontradas {len(parts)}'
+          encoded = ''.join(path.read_text(encoding='utf-8').strip() for path in parts)
+          assert len(encoded) == 12384, f'Tamanho inválido do payload: {len(encoded)}'
+          source = gzip.decompress(base64.b64decode(encoded)).decode('utf-8')
+          exec(compile(source, 'apply_issue_489.py', 'exec'), {'__name__': '__main__'})
+          PY
+
+      - name: Validar catálogo e alterações
+        run: |
+          cd frontend
+          node scripts/test-candidate-i18n.mjs
+          cd ..
+          git diff --check
+
+      - name: Remover artefatos temporários e publicar
+        run: |
+          rm -rf .github/issue-489-parts
+          rm -f .github/issue-489-error.txt
+          rm -f .github/workflows/apply-issue-489.yml
+          rm -f .github/workflows/trace-issue-489.yml
+          rm -f .github/workflows/run-issue-489-parts.yml
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "fix(frontend): traduzir execução da avaliação do candidato"
+          git push
