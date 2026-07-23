@@ -32,6 +32,35 @@ jobs:
         run: |
           python3 -m py_compile scripts/apply_issue_500_completion.py
           python3 scripts/apply_issue_500_completion.py
+          python3 - <<'PY'
+          from pathlib import Path
+
+          path = Path("backend/src/main/java/br/com/iforce/praxis/dashboard/service/DashboardAnalyticsService.java")
+          source = path.read_text(encoding="utf-8")
+          old = '''        private void addDuration(CandidateAttemptEntity attempt) {
+              if (!durationAttemptIds.add(attempt.getId())
+                      || attempt.getStartedAt() == null
+                      || attempt.getFinishedAt() == null) {
+                  return;
+              }
+              long seconds = Duration.between(attempt.getStartedAt(), attempt.getFinishedAt()).getSeconds();
+              durationSeconds += Math.max(0, seconds);
+          }
+          '''
+          new = '''        private void addDuration(CandidateAttemptEntity attempt) {
+              if (attempt.getStartedAt() == null
+                      || attempt.getFinishedAt() == null
+                      || !durationAttemptIds.add(attempt.getId())) {
+                  return;
+              }
+              long seconds = Duration.between(attempt.getStartedAt(), attempt.getFinishedAt()).getSeconds();
+              durationSeconds += Math.max(0, seconds);
+          }
+          '''
+          if old not in source:
+              raise SystemExit("Método addDuration esperado não encontrado")
+          path.write_text(source.replace(old, new, 1), encoding="utf-8")
+          PY
       - name: Validar backend
         id: backend
         continue-on-error: true
@@ -72,7 +101,6 @@ jobs:
         run: |
           git rm -f scripts/apply_issue_500_completion.py
           git rm -f .github/workflows/apply-issue-500-completion.yml
-          git rm -f .github/workflows/apply-issue-500-completion-v2.yml
           rm -rf scripts/__pycache__
           rm -f issue-500-backend.log issue-500-frontend.log
       - name: Commitar
