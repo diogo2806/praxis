@@ -8,8 +8,9 @@
 > **Regra de sincronização:** sempre que uma funcionalidade alterar a implantação (nova variável,
 > nova dependência, nova migração que exija passo manual), atualize este documento na mesma entrega.
 
-Fiel a `docker-compose.yml`, `backend/Dockerfile`, `backend/pom.xml`,
-`backend/src/main/resources/application.properties` e às migrações Flyway.
+Fiel a `docker-compose.yml`, `backend/Dockerfile`, `frontend/Dockerfile`, `backend/pom.xml`,
+`backend/src/main/resources/application.properties` e às migrações Flyway da `main` no commit
+`1f6ff281210e6aa71b1880da1119d22f8aabb68e`.
 
 ---
 
@@ -21,7 +22,7 @@ Fiel a `docker-compose.yml`, `backend/Dockerfile`, `backend/pom.xml`,
 | Maven | 3.9+ | Build do backend (`maven:3.9-eclipse-temurin-21` no Dockerfile) |
 | PostgreSQL | 14+ (validado em 17) | `postgres:17-alpine` no compose |
 | Docker / Docker Compose | recente | Quando usar containers |
-| Node.js + pnpm/npm | Node 20+ | Build do frontend (`pnpm` dev, `npm ci` no container) |
+| Node.js + pnpm/npm | Node 22 no container | Build do frontend (`pnpm` dev, `npm ci` no container) |
 | AWS S3 ou MinIO | — | Opcional; só para mídia |
 | Conta Mercado Pago | — | Opcional; só para billing (Parte B) |
 | Acesso Gupy/Recrutei | — | Opcional; só para integração ATS |
@@ -41,7 +42,14 @@ Fiel a `docker-compose.yml`, `backend/Dockerfile`, `backend/pom.xml`,
 | `DB_HOST` / `DB_PORT` / `DB_NAME` | Host, porta e nome do banco (compõem o JDBC URL) | `DATABASE_URL` |
 | `DB_USER` | Usuário do banco | `DATABASE_USER` |
 | `DB_PASS` (ou `SPRING_DATASOURCE_PASSWORD`) | Senha do banco | `DATABASE_PASSWORD` |
-| `PRAXIS_PUBLIC_BASE_URL` | Base pública para links/resultados | `PUBLIC_BASE_URL` |
+| `PRAXIS_PUBLIC_BASE_URL` | Base pública HTTPS para links/resultados | `PUBLIC_BASE_URL` |
+| `PRAXIS_CANDIDATE_PAGE_BASE_URL` | Base pública HTTPS do candidato | — |
+| `PRAXIS_CORS_ALLOWED_ORIGINS` | Origens HTTPS permitidas | — |
+| `PRAXIS_PRIVACY_CONTROLLER_NAME` | Identificação do controlador LGPD | — |
+| `PRAXIS_PRIVACY_SERVICE_EMAIL` ou `PRAXIS_PRIVACY_SERVICE_URL` | Canal de privacidade | — |
+
+O perfil `prod` valida essas configurações no startup. SMTP, Mercado Pago e Object Storage também são
+validados quando os respectivos módulos estão habilitados/configurados.
 
 ### 14.2 Recomendadas
 
@@ -50,11 +58,12 @@ Fiel a `docker-compose.yml`, `backend/Dockerfile`, `backend/pom.xml`,
 | `DB_SCHEMA` | Schema do Flyway/JPA | `public` |
 | `PRAXIS_JPA_DDL_AUTO` | `validate` em produção | `none` |
 | `PRAXIS_SECURITY_ENABLED` | Manter `true` em produção | `true` |
-| `PRAXIS_CORS_ALLOWED_ORIGINS` | Origens do frontend | dev localhost |
-| `PRAXIS_CANDIDATE_PAGE_BASE_URL` | Base pública do candidato | herda `PRAXIS_PUBLIC_BASE_URL` |
 | `PRAXIS_ADMIN_BOOTSTRAP_EMAIL` | Operador ADMIN inicial | vazio |
 | `PRAXIS_ADMIN_BOOTSTRAP_PASSWORD` | Senha do ADMIN inicial | vazio |
 | `SPRING_PROFILES_ACTIVE` | Perfil ativo (compose usa `prod`) | — |
+| `SPRINGDOC_SWAGGER_UI_ENABLED` | Habilita Swagger UI em `/docs` | `false` |
+| `SPRINGDOC_API_DOCS_ENABLED` | Habilita OpenAPI em `/v3/api-docs` | `false` |
+| `MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE` | Endpoints Actuator expostos | `health,info` |
 
 ### 14.3 Object Storage (S3) — opcional
 
@@ -76,7 +85,7 @@ Fiel a `docker-compose.yml`, `backend/Dockerfile`, `backend/pom.xml`,
 | `MP_ACCESS_TOKEN` | Access Token (segredo, só backend) | `MERCADO_PAGO_ACCESS_TOKEN` |
 | `MP_PUBLIC_KEY` | Public Key | — |
 | `MP_WEBHOOK_SECRET` | Valida assinatura do webhook | — |
-| `MP_NOTIFICATION_URL` | URL pública do webhook | — |
+| `MP_NOTIFICATION_URL` | URL pública HTTPS do webhook | — |
 
 > A variável `ADMIN_BOOTSTRAP_EMAIL`/`ADMIN_BOOTSTRAP_PASSWORD` do requisito corresponde a
 > `PRAXIS_ADMIN_BOOTSTRAP_EMAIL`/`PRAXIS_ADMIN_BOOTSTRAP_PASSWORD`. A Gupy não usa variável de
@@ -100,11 +109,11 @@ GRANT ALL ON SCHEMA public TO praxis;
 ### 15.2 Flyway e migrações
 
 - O Flyway está habilitado (`spring.flyway.enabled=true`) e roda **automaticamente no startup**.
-- As migrações ficam em `backend/src/main/resources/db/migration` (versões `V1..V47`) e em
-  `.../postgresql` para SQL específico do PostgreSQL.
+- As migrações ficam em `backend/src/main/resources/db/migration`, com sequência versionada atualmente acima de `V1000`, e em `.../postgresql` para SQL específico do PostgreSQL.
+- Não fixe um intervalo numérico no runbook: consulte o diretório de migrations ou `flyway:info` para identificar a versão mais recente.
 - `spring.flyway.default-schema`/`schemas` usam `DB_SCHEMA` (padrão `public`).
-- Não é necessário criar tabelas manualmente: subir o backend aplica todo o schema, incluindo seeds
-  (ex.: `V16__seed_default_empresa`, `V44__seed_platform_empresa`).
+- `spring.flyway.out-of-order` é `false` por padrão e permanece forçado como `false` no perfil `prod`.
+- Não é necessário criar tabelas manualmente: subir o backend aplica todo o schema e os seeds versionados.
 - Conferir estado: `mvn -pl backend flyway:info` (ou logs de startup do backend).
 
 ---
@@ -127,7 +136,8 @@ Gera `target/praxis-backend-0.1.0-SNAPSHOT.jar` (fat jar Spring Boot). Para pula
 java -jar target/praxis-backend-0.1.0-SNAPSHOT.jar
 ```
 
-Variáveis mínimas para subir: `PRAXIS_JWT_SECRET`, `DB_HOST/DB_PORT/DB_NAME`, `DB_USER`, `DB_PASS`.
+Em produção, ative `SPRING_PROFILES_ACTIVE=prod` e forneça todas as configurações exigidas pelo
+validador de startup, não apenas as credenciais mínimas de desenvolvimento.
 
 ### Frontend
 
@@ -136,6 +146,8 @@ cd frontend
 pnpm install   # dev local
 pnpm build     # build de produção (container usa npm ci)
 ```
+
+O build gera `.output`; o runtime do container executa `.output/server/index.mjs` com Node.js 22.
 
 ---
 
@@ -146,11 +158,12 @@ pnpm build     # build de produção (container usa npm ci)
 1. Instalar JRE 21 e PostgreSQL (ou apontar para banco gerenciado).
 2. Copiar o jar e definir as variáveis de ambiente (§14).
 3. Executar como serviço (systemd) com `java -jar app.jar`.
-4. Colocar atrás de um reverse proxy (Nginx) com HTTPS (§18).
+4. Colocar atrás de um reverse proxy (Nginx, Traefik ou ALB) com HTTPS (§18).
 
 ### 17.2 Docker / Docker Compose
 
-O repositório já traz `docker-compose.yml` (backend + frontend + postgres). Crie um `.env` na raiz:
+O repositório traz `docker-compose.yml` para backend, frontend e PostgreSQL. Crie um `.env` na raiz
+com as credenciais e URLs exigidas pelo perfil `prod`, por exemplo:
 
 ```bash
 POSTGRES_USER=praxis
@@ -159,6 +172,9 @@ PRAXIS_JWT_SECRET=troque-este-segredo-com-tamanho-suficiente
 PRAXIS_SECURITY_ENABLED=true
 PRAXIS_PUBLIC_BASE_URL=https://app.seu-dominio.com.br
 PRAXIS_CANDIDATE_PAGE_BASE_URL=https://app.seu-dominio.com.br
+PRAXIS_CORS_ALLOWED_ORIGINS=https://app.seu-dominio.com.br
+PRAXIS_PRIVACY_CONTROLLER_NAME="Empresa responsável"
+PRAXIS_PRIVACY_SERVICE_EMAIL=privacidade@seu-dominio.com.br
 ```
 
 Subir tudo:
@@ -170,7 +186,7 @@ docker compose up --build
 Serviços resultantes:
 
 - Backend: `http://localhost:8080` (`PRAXIS_JPA_DDL_AUTO=validate`, `SPRING_PROFILES_ACTIVE=prod`).
-- Frontend: `http://localhost` (Nginx na porta 80).
+- Frontend: `http://localhost`, servidor Node.js gerado pelo TanStack Start na porta 80.
 - PostgreSQL: rede interna do Compose, volume `postgres_data`.
 
 > As integrações Gupy e Recrutei não usam uma credencial global de ambiente. O token é cadastrado
@@ -180,24 +196,26 @@ Serviços resultantes:
 
 ### 17.3 Cloud / homologação / produção
 
-- **Imagem:** o `backend/Dockerfile` faz build multi-stage (Maven → JRE 21) e expõe `8080` com
-  `HEALTHCHECK` em `/actuator/health`. Publique em um registry e implante (ECS, Kubernetes, etc.).
+- **Backend:** o `backend/Dockerfile` faz build multi-stage (Maven → JRE 21), expõe `8080` e possui
+  `HEALTHCHECK` em `/actuator/health`.
+- **Frontend:** o `frontend/Dockerfile` faz build com Node.js 22 e executa o servidor SSR do TanStack
+  Start com `node .output/server/index.mjs`, expondo a porta `80`.
 - **Banco:** prefira PostgreSQL gerenciado; aponte `DB_*` para ele.
 - **Segredos:** injete `PRAXIS_JWT_SECRET`, `DB_PASS`, `MP_*` e `OBJECT_STORAGE_*` por secret manager,
   nunca em imagem ou repositório.
-- **Homologação × Produção:** diferencie por variáveis de ambiente (URLs, credenciais, `MP_ENABLED`,
-  CORS). Não há arquivo `application-prod.properties` adicional — o perfil `prod` apenas é ativado.
-- **Recursos JVM:** o Dockerfile usa `-Xmx256m`; ajuste `JAVA_OPTS` conforme a carga.
+- **Homologação × Produção:** diferencie por variáveis de ambiente e mantenha o perfil `prod` ativo.
+- **Recursos JVM:** ajuste `JAVA_OPTS` conforme a carga e os limites do container.
 
 ---
 
-## 18. SSL / HTTPS
+## 18. SSL / HTTPS e proxies confiáveis
 
 - O backend roda HTTP atrás de um **reverse proxy** que termina TLS (Nginx, Traefik, ALB).
-- `server.forward-headers-strategy=framework` já está habilitado: o backend respeita
-  `X-Forwarded-Proto/Host` para gerar URLs públicas corretas.
+- `server.forward-headers-strategy=native` está habilitado.
+- O Tomcat só aceita `X-Forwarded-For` e `X-Forwarded-Proto` quando o peer imediato corresponde a
+  `PRAXIS_TRUSTED_PROXY_REGEX`; ajuste a expressão para a rede real da infraestrutura.
 - Configure `PRAXIS_PUBLIC_BASE_URL`/`PRAXIS_CANDIDATE_PAGE_BASE_URL` com o domínio **https** público.
-- Use certificados válidos (Let's Encrypt ou corporativos). Exemplo Nginx:
+- Use certificados válidos. Exemplo Nginx:
 
 ```nginx
 server {
@@ -222,23 +240,22 @@ server {
 | --- | --- |
 | JWT | Tokens assinados com `PRAXIS_JWT_SECRET`; sessão `STATELESS`; expiração `PRAXIS_JWT_EXPIRATION_HOURS` (8h). |
 | BCrypt | Senhas com `BCryptPasswordEncoder` (`SecurityConfig`). |
-| CORS | `WebConfig` libera origens de `PRAXIS_CORS_ALLOWED_ORIGINS`; defina o domínio do frontend em produção. |
+| CORS | `WebConfig` libera origens de `PRAXIS_CORS_ALLOWED_ORIGINS`; em produção são exigidas origens HTTPS sem wildcard. |
 | Headers | `frameOptions(deny)` e `contentTypeOptions` ativos. CSRF desabilitado (API stateless). |
-| Roles | `ADMIN` para `/api/admin/**`; `EMPRESA` para `/api/v1/**` protegidas (`SecurityConfig`). |
+| Papéis | `ADMIN` e `EMPRESA`, com subperfis `TEAM_MANAGER`, `ASSESSMENT_EDITOR`, `RESULTS_ANALYST`, `OPERATIONS_MANAGER`, `PARTNER_MANAGER` e `PARTNER_SPECIALIST` conforme a rota. |
 | Empresa | Isolamento por empresa via JWT/token; `SUSPENSO`/`CANCELADO` bloqueiam acesso. |
-| Proteção de Webhook | `/api/webhooks/mercado-pago` valida assinatura `x-signature` (`MP_WEBHOOK_SECRET`), idempotência e consulta a API MP antes de aplicar mudança financeira. |
-| Tokens de integração (ATS) | Comparação por SHA-256 Base64URL contra a tabela `integration_tokens` (por provider); o token em claro nunca é persistido. |
-| Secrets | `PRAXIS_JWT_SECRET`, `DB_PASS`, `MP_*`, `OBJECT_STORAGE_*` só por variável de ambiente/secret manager. Nunca commitar. |
+| Recuperação de senha | Rotas públicas `/api/v1/auth/password/forgot` e `/api/v1/auth/password/reset`, com token temporário e limite de tentativas. |
+| Proteção de Webhook | `/api/webhooks/mercado-pago` valida assinatura, idempotência e consulta a API MP antes de aplicar mudança financeira. |
+| Tokens de integração | Comparação por SHA-256 Base64URL; o token em claro nunca é persistido. |
+| Proxies | Cabeçalhos encaminhados só são aceitos de peers correspondentes a `PRAXIS_TRUSTED_PROXY_REGEX`. |
+| Secrets | Segredos somente por variável de ambiente/secret manager. Nunca commitar. |
 
 > **Importante:** `PRAXIS_SECURITY_ENABLED=false` libera todas as rotas e usa
 > `PRAXIS_DEFAULT_EMPRESA_ID`. Use **apenas em desenvolvimento**, nunca em produção.
 >
-> **Trava de inicialização (fail-fast):** com o perfil `prod` ativo
-> (`SPRING_PROFILES_ACTIVE=prod`, como no `docker-compose`) **e**
-> `PRAXIS_SECURITY_ENABLED=false`, a aplicação **recusa iniciar**
-> (`SecurityStartupGuard`), evitando expor produção sem autenticação e sem
-> isolamento multi-tenant. Fora de produção, a mesma combinação apenas registra
-> um alerta no log.
+> **Travas de inicialização:** o perfil `prod` recusa iniciar com segurança desabilitada, segredo JWT
+> fraco/ausente, URLs ou CORS inseguros, informações LGPD ausentes ou integrações parcialmente
+> configuradas.
 
 ---
 
@@ -246,16 +263,18 @@ server {
 
 - [ ] Banco criado e acessível (`DB_*` corretos).
 - [ ] Migrações executadas (Flyway `OK` nos logs / `flyway:info`).
-- [ ] Operador ADMIN bootstrap criado (`PRAXIS_ADMIN_BOOTSTRAP_EMAIL`/`_PASSWORD`; empresa `PLATFORM` existe).
+- [ ] Operador ADMIN bootstrap criado, quando necessário.
 - [ ] Login funcionando (`POST /api/v1/auth/login`).
-- [ ] Upload de mídia funcionando (`POST /api/v1/media`) — se `OBJECT_STORAGE_*` configurado.
-- [ ] Mercado Pago conectado — se `MP_ENABLED=true` (webhook e `MP_*` válidos).
-- [ ] Gupy/Recrutei conectada — token cadastrado pela área de Integrações (guardado em `integration_tokens`); `GET /test` responde.
-- [ ] Health Check `UP` (`GET /actuator/health`).
-- [ ] Auditoria funcionando (ações geram eventos em `audit_events`).
-- [ ] Backup configurado (banco + storage) — ver [OPERACAO.md §8](OPERACAO.md#8-backup).
-- [ ] HTTPS ativo e `PRAXIS_PUBLIC_BASE_URL` com domínio público.
-- [ ] CORS restrito ao domínio do frontend (`PRAXIS_CORS_ALLOWED_ORIGINS`).
+- [ ] Recuperação de senha validada (`/forgot` e `/reset`) com SMTP habilitado.
+- [ ] Upload de mídia funcionando — se Object Storage configurado.
+- [ ] Mercado Pago conectado — se `MP_ENABLED=true`.
+- [ ] Gupy/Recrutei conectada — token cadastrado e `GET /test` respondendo.
+- [ ] Health Check `UP` (`GET /actuator/health`) e build identificado em `/actuator/info`.
+- [ ] Swagger indisponível, ou restrito a `ADMIN` quando explicitamente habilitado.
+- [ ] Auditoria funcionando.
+- [ ] Backup configurado — ver [OPERACAO.md §8](OPERACAO.md#8-backup).
+- [ ] HTTPS ativo e URLs públicas corretas.
+- [ ] CORS e proxies confiáveis restritos à infraestrutura real.
 
 ---
 
@@ -269,8 +288,9 @@ A documentação é considerada concluída quando:
 - ✅ As rotinas de backup e recuperação estão documentadas ([OPERACAO §8](OPERACAO.md#8-backup)).
 - ✅ Os procedimentos de atualização e rollback estão definidos ([OPERACAO §12](OPERACAO.md#12-atualizações-procedimento-oficial)).
 - ✅ Todas as variáveis de ambiente estão descritas (§14 e [OPERACAO §4](OPERACAO.md#4-configurações)).
-- ✅ As integrações externas estão documentadas ([OPERACAO §2.6](OPERACAO.md#26-integrações-externas), Gupy, Recrutei, Mercado Pago).
-- ✅ A documentação permanece sincronizada com a versão do sistema (ver rodapé).
+- ✅ As integrações externas estão documentadas.
+- ✅ `python scripts/validate_docs.py` confirma a sincronização verificável com propriedades, rotas e runtime.
 
 **Versão do sistema coberta:** backend `0.1.0-SNAPSHOT`, Spring Boot 3.5.3, Java 21.
-**Última revisão:** 15/07/2026.
+**Base revisada:** `main` no commit `1f6ff281210e6aa71b1880da1119d22f8aabb68e`.
+**Última revisão:** 23/07/2026.
