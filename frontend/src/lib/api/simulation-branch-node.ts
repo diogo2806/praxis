@@ -1,4 +1,4 @@
-import { PraxisApiError } from "@/lib/api/praxis-legacy";
+import { PraxisApiError } from "@/lib/api/praxis";
 import { getApiBaseUrl } from "@/lib/runtime-config";
 import { getSession } from "@/lib/session";
 
