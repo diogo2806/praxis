@@ -4,7 +4,7 @@ import type {
   CandidateAttemptResponse as LegacyCandidateAttemptResponse,
   SubmitAnswerRequest,
   SubmitAnswerResponse,
-} from "@/lib/api/praxis-legacy";
+} from "@/lib/api/praxis";
 
 const INTEGRITY_SESSION_HEADER = "X-Praxis-Integrity-Session";
 export const HEALTH_CONSENT_VERSION = "2026-06-01";
