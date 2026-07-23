@@ -2,9 +2,7 @@ package br.com.iforce.praxis.gupy.model;
 
 import br.com.iforce.praxis.shared.model.MediaType;
 
-
 import java.util.List;
-
 
 public record ScenarioNode(
         String id,
@@ -26,7 +24,45 @@ public record ScenarioNode(
 ) {
 
     /**
-     * Construtor compatível com o formato anterior (sem mídia), usado por testes e fluxos legados.
+     * Construtor compatível com o formato completo anterior à inclusão dos metadados acessíveis.
+     */
+    public ScenarioNode(
+            String id,
+            int turnIndex,
+            String speaker,
+            String message,
+            Integer timeLimitSeconds,
+            String timeoutNextNodeId,
+            boolean isFinal,
+            String reportText,
+            String plainTextDescription,
+            String audioDescriptionUrl,
+            String mediaUrl,
+            MediaType mediaType,
+            List<ScenarioOption> options
+    ) {
+        this(
+                id,
+                turnIndex,
+                speaker,
+                message,
+                timeLimitSeconds,
+                timeoutNextNodeId,
+                isFinal,
+                reportText,
+                plainTextDescription,
+                audioDescriptionUrl,
+                mediaUrl,
+                mediaType,
+                null,
+                null,
+                null,
+                options
+        );
+    }
+
+    /**
+     * Construtor compatível com o formato anterior sem mídia, usado por testes e fluxos legados.
      */
     public ScenarioNode(
             String id,
