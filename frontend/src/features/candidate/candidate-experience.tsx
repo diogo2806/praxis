@@ -1,7 +1,8 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { useCallback, useEffect, useState, type CSSProperties } from "react";
+import { useCallback, useEffect, useMemo, useState, type CSSProperties } from "react";
 import {
   getCandidateAttempt,
+  HEALTH_CONSENT_VERSION,
   PraxisApiError,
   recordHealthConsent,
   requestHumanReview,
@@ -118,15 +119,21 @@ function FocusedCandidateExperience({ token }: { token: string }) {
   const [healthConsentGiven, setHealthConsentGiven] = useState(false);
   const { highContrast, largeText, dyslexiaFont } = accessibilityPreferences;
 
-  const submitErrorMessages: Record<number, string> = {
-    400: copy.errors.submitBadRequest,
-    409: copy.errors.submitConflict,
-  };
-  const loadErrorMessages: Record<number, string> = {
-    400: copy.errors.loadBadRequest,
-    404: copy.errors.loadNotFound,
-    409: copy.errors.loadConflict,
-  };
+  const submitErrorMessages = useMemo<Record<number, string>>(
+    () => ({
+      400: copy.errors.submitBadRequest,
+      409: copy.errors.submitConflict,
+    }),
+    [copy.errors.submitBadRequest, copy.errors.submitConflict],
+  );
+  const loadErrorMessages = useMemo<Record<number, string>>(
+    () => ({
+      400: copy.errors.loadBadRequest,
+      404: copy.errors.loadNotFound,
+      409: copy.errors.loadConflict,
+    }),
+    [copy.errors.loadBadRequest, copy.errors.loadConflict, copy.errors.loadNotFound],
+  );
 
   const attemptQuery = useQuery({
     queryKey: ["candidate-attempt", token],
@@ -149,7 +156,11 @@ function FocusedCandidateExperience({ token }: { token: string }) {
   const attempt = liveAttempt ?? attemptQuery.data;
   const currentNode = attempt?.etapaAtual ?? null;
   const finished = Boolean(attempt && (attempt.finalizado || !currentNode));
-  const needsHealthConsent = Boolean(attempt?.verticalSaude) && !healthConsentGiven && !finished;
+  const needsHealthConsent =
+    Boolean(attempt?.verticalSaude) &&
+    !healthConsentGiven &&
+    !attempt?.healthConsentValid &&
+    !finished;
   const timeLimit = Math.max(
     1,
     currentNode?.tempoLimiteSegundosAcomodado ?? currentNode?.tempoLimiteSegundos ?? 30,
@@ -195,6 +206,8 @@ function FocusedCandidateExperience({ token }: { token: string }) {
           progresso: response.progresso,
           etapaAtual: response.etapaAtual,
           verticalSaude: attempt.verticalSaude,
+          healthConsentValid: attempt.healthConsentValid,
+          healthConsentNoticeVersion: attempt.healthConsentNoticeVersion,
         });
         setSelectedOptionId(null);
         void attemptQuery.refetch();
@@ -336,7 +349,14 @@ function FocusedCandidateExperience({ token }: { token: string }) {
         <HealthConsentGate
           token={token}
           copy={copy}
-          onConsented={() => setHealthConsentGiven(true)}
+          noticeVersion={attempt?.healthConsentNoticeVersion ?? HEALTH_CONSENT_VERSION}
+          onConsented={async () => {
+            const refreshedAttempt = await attemptQuery.refetch();
+            if (refreshedAttempt.data?.healthConsentValid) {
+              setLiveAttempt(refreshedAttempt.data);
+              setHealthConsentGiven(true);
+            }
+          }}
         />
       ) : currentNode && !finished ? (
         <>
@@ -559,17 +579,19 @@ function HumanReviewRequest({
 function HealthConsentGate({
   token,
   copy,
+  noticeVersion,
   onConsented,
 }: {
   token: string;
   copy: CandidateExecutionCopy;
-  onConsented: () => void;
+  noticeVersion: string;
+  onConsented: () => Promise<void> | void;
 }) {
   const [agreed, setAgreed] = useState(false);
   const [onBehalfOfMinor, setOnBehalfOfMinor] = useState(false);
   const mutation = useMutation({
-    mutationFn: () => recordHealthConsent(token, onBehalfOfMinor),
-    onSuccess: onConsented,
+    mutationFn: () => recordHealthConsent(token, onBehalfOfMinor, noticeVersion),
+    onSuccess: () => onConsented(),
   });
   const healthCopy = copy.healthConsent;
 
