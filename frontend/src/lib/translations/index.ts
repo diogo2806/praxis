@@ -2,6 +2,7 @@ import { ptBr } from "./pt-br";
 import { en } from "./en";
 import { esMx } from "./es-mx";
 import { candidateAccessTranslations } from "./candidate-access";
+import { candidateExecutionTranslations } from "./candidate-execution";
 import { documentMetadataTranslations } from "./document-metadata";
 
 export type Language = "pt-BR" | "en" | "es-MX";
@@ -9,6 +10,7 @@ export type Language = "pt-BR" | "en" | "es-MX";
 const withSharedTranslations = <T extends object>(language: Language, translation: T) => ({
   ...translation,
   candidateAccess: candidateAccessTranslations[language],
+  candidateExecution: candidateExecutionTranslations[language],
   documentMetadata: documentMetadataTranslations[language],
 });
 

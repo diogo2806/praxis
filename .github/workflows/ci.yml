@@ -135,6 +135,18 @@ jobs:
           set -o pipefail
           npm run test:health-consent 2>&1 | tee -a frontend.log
 
+      - name: Test candidate media accessibility
+        shell: bash
+        run: |
+          set -o pipefail
+          npm run test:candidate-media-a11y 2>&1 | tee -a frontend.log
+
+      - name: Test candidate execution translations
+        shell: bash
+        run: |
+          set -o pipefail
+          npm run test:candidate-i18n 2>&1 | tee -a frontend.log
+
       - name: Upload frontend diagnostics on failure
         if: failure()
         uses: actions/upload-artifact@v4
