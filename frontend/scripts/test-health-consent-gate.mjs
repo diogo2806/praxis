@@ -12,10 +12,10 @@ async function readBackend(relativePath) {
   return readFile(new URL(relativePath, repositoryRoot), "utf8");
 }
 
-const [candidateClient, candidateRoute, publicExports, controller, service, entity, migration] =
+const [candidateClient, candidateExperience, publicExports, controller, service, entity, migration] =
   await Promise.all([
     readFrontend("src/lib/api/candidate-attempt-public.ts"),
-    readFrontend("src/routes/candidato.tsx"),
+    readFrontend("src/features/candidate/candidate-experience.tsx"),
     readFrontend("src/lib/api/praxis.ts"),
     readBackend("backend/src/main/java/br/com/iforce/praxis/candidate/controller/CandidateAttemptController.java"),
     readBackend("backend/src/main/java/br/com/iforce/praxis/candidate/service/CandidateHealthConsentService.java"),
@@ -32,10 +32,10 @@ assert.match(candidateClient, /consentStatus\.required && !consentStatus\.valid/
 assert.match(candidateClient, /healthConsentValid: consentStatus\.valid/);
 assert.match(candidateClient, /JSON\.stringify\(\{ version, onBehalfOfMinor \}\)/);
 assert.match(candidateClient, /method: "DELETE"/);
-assert.match(candidateRoute, /!attempt\?\.healthConsentValid/);
-assert.match(candidateRoute, /const refreshedAttempt = await attemptQuery\.refetch\(\)/);
-assert.match(candidateRoute, /setLiveAttempt\(refreshedAttempt\.data\)/);
-assert.match(candidateRoute, /recordHealthConsent\(token, onBehalfOfMinor, noticeVersion\)/);
+assert.match(candidateExperience, /!attempt\?\.healthConsentValid/);
+assert.match(candidateExperience, /const refreshedAttempt = await attemptQuery\.refetch\(\)/);
+assert.match(candidateExperience, /setLiveAttempt\(refreshedAttempt\.data\)/);
+assert.match(candidateExperience, /recordHealthConsent\(token, onBehalfOfMinor, noticeVersion\)/);
 assert.match(publicExports, /getHealthConsentStatus/);
 assert.match(publicExports, /revokeHealthConsent/);
 assert.equal((controller.match(/candidateHealthConsentService\.assertConsentGranted/g) ?? []).length, 2);
