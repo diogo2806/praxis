@@ -7,6 +7,7 @@ import { statusMeta, type Maturity } from "@/lib/simulation-meta";
 const toneClass = {
   ok: "border-success/25 bg-success/10 text-foreground",
   warn: "border-warning/35 bg-warning/15 text-warning-foreground",
+  warning: "border-warning/35 bg-warning/15 text-warning-foreground",
   info: "border-primary/25 bg-primary/10 text-foreground",
   danger: "border-danger/25 bg-danger/10 text-foreground",
   muted: "border-border bg-muted text-foreground",
@@ -78,7 +79,9 @@ export function StateBanner({
   action?: ReactNode;
   live?: "off" | "polite" | "assertive";
 }) {
-  const Icon = tone === "danger" ? AlertTriangle : tone === "warn" ? AlertTriangle : CheckCircle2;
+  const Icon = tone === "danger" || tone === "warning" || tone === "warn"
+    ? AlertTriangle
+    : CheckCircle2;
   return (
     <div
       role={tone === "danger" ? "alert" : "status"}
