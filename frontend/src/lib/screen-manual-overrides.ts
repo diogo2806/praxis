@@ -2,6 +2,26 @@ import type { ScreenManualDefinition } from "@/lib/screen-manuals";
 
 export const SCREEN_MANUAL_OVERRIDES: ScreenManualDefinition[] = [
   {
+    id: "dashboard-qualidade-midia",
+    title: "Dashboard operacional e qualidade de mídia",
+    purpose: "Acompanhar a operação e comparar resultados observados por formato e versão de mídia sem misturar amostras incompatíveis.",
+    flow: ["Revise os indicadores principais.", "Observe movimentação, situação e funil.", "Compare formato e versão na tabela de qualidade.", "Investigue diferenças relevantes antes de considerar formatos equivalentes."],
+    fields: [
+      { name: "Formato", description: "Imagem, áudio ou vídeo efetivamente apresentado." },
+      { name: "Versão", description: "Identificador imutável usado para separar conteúdos incompatíveis." },
+      { name: "Amostra", description: "Quantidade de tentativas distintas expostas à versão." },
+      { name: "Conclusão", description: "Tentativas concluídas e percentual observado." },
+      { name: "Tempo médio", description: "Duração média entre início e conclusão para a amostra observável." },
+      { name: "Respostas", description: "Distribuição das alternativas escolhidas nos nós associados à mídia." },
+    ],
+    permissions: ["Perfil EMPRESA com acesso aos indicadores agregados da própria organização."],
+    states: ["Carregando", "Sem amostra", "Com dados", "Indicadores indisponíveis", "Erro"],
+    blocks: ["Usuário sem acesso à empresa.", "Falha ao carregar analytics.", "Amostra sem versão de mídia.", "Dados insuficientes para interpretar diferenças."],
+    examples: ["Comparar vídeo v2 com áudio v1 sem combinar versões.", "Detectar aumento de abandono após uma mudança de estímulo."],
+    shortcuts: ["Use Atualizar para recalcular os dados.", "Use Tab para navegar pela tabela.", "Não trate diferença observada como causalidade sem amostra e validação.", "Consulte o processo completo na Central de manuais."],
+    matches: (pathname) => pathname === "/dashboard",
+  },
+  {
     id: "editor-dialogo-multimidia",
     title: "Editor de diálogo e mídia acessível",
     purpose: "Criar etapas, alternativas e versões equivalentes de imagem, áudio e vídeo sem alterar silenciosamente o construto avaliado.",
