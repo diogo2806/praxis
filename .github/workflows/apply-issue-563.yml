@@ -54,29 +54,26 @@ jobs:
           )
           service.write_text(content, encoding="utf-8")
 
-          test = Path("backend/src/test/java/br/com/iforce/praxis/integrity/service/IntegrityReviewServiceTest.java")
-          content = test.read_text(encoding="utf-8")
-          test_import_anchor = "import org.mockito.junit.jupiter.MockitoExtension;"
-          test_anchor = "    @Test\n    void requiresTextualJustification() {"
-          if test_import_anchor not in content or test_anchor not in content:
-              raise SystemExit("Pontos de alteração do teste não encontrados")
-          content = content.replace(
-              test_import_anchor,
-              test_import_anchor + "\nimport org.springframework.beans.factory.annotation.Autowired;",
-              1,
-          )
-          regression_test = '''    @Test
-          void declaresProductionConstructorForSpringInjection() {
-              assertThat(IntegrityReviewService.class.getConstructors()).hasSize(1);
-              assertThat(IntegrityReviewService.class.getConstructors()[0].isAnnotationPresent(Autowired.class)).isTrue();
-          }
+          test = Path("backend/src/test/java/br/com/iforce/praxis/integrity/service/IntegrityReviewServiceSpringWiringTest.java")
+          test.write_text('''package br.com.iforce.praxis.integrity.service;
 
-          '''
-          content = content.replace(test_anchor, regression_test + test_anchor, 1)
-          test.write_text(content, encoding="utf-8")
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
+class IntegrityReviewServiceSpringWiringTest {
+
+    @Test
+    void declaresProductionConstructorForSpringInjection() {
+        assertThat(IntegrityReviewService.class.getConstructors()).hasSize(1);
+        assertThat(IntegrityReviewService.class.getConstructors()[0].isAnnotationPresent(Autowired.class)).isTrue();
+    }
+}
+''', encoding="utf-8")
           PY
           cd backend
-          mvn -B -Dtest=IntegrityReviewServiceTest test
+          mvn -B -Dtest=IntegrityReviewServiceTest,IntegrityReviewServiceSpringWiringTest test
           cd ..
           git rm .github/workflows/apply-issue-563.yml
 
