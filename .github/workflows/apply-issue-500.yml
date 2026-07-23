@@ -41,6 +41,41 @@ jobs:
         run: |
           set +e
           {
+            python3 - <<'PY'
+          from pathlib import Path
+
+          path = Path("scripts/apply_issue_500.py")
+          source = path.read_text(encoding="utf-8")
+          old = '''replace_all(
+              duplicate,
+              "        target.setMediaType(source.getMediaType());",
+              "        target.setMediaType(source.getMediaType());\\n"
+              "        target.setMediaTranscript(source.getMediaTranscript());\\n"
+              "        target.setMediaCaptionsUrl(source.getMediaCaptionsUrl());\\n"
+              "        target.setMediaVersion(source.getMediaVersion());",
+          )
+          '''
+          new = '''replace_once(
+              duplicate,
+              "        targetNode.setMediaType(sourceNode.getMediaType());",
+              "        targetNode.setMediaType(sourceNode.getMediaType());\\n"
+              "        targetNode.setMediaTranscript(sourceNode.getMediaTranscript());\\n"
+              "        targetNode.setMediaCaptionsUrl(sourceNode.getMediaCaptionsUrl());\\n"
+              "        targetNode.setMediaVersion(sourceNode.getMediaVersion());",
+          )
+          replace_once(
+              duplicate,
+              "        targetOption.setMediaType(sourceOption.getMediaType());",
+              "        targetOption.setMediaType(sourceOption.getMediaType());\\n"
+              "        targetOption.setMediaTranscript(sourceOption.getMediaTranscript());\\n"
+              "        targetOption.setMediaCaptionsUrl(sourceOption.getMediaCaptionsUrl());\\n"
+              "        targetOption.setMediaVersion(sourceOption.getMediaVersion());",
+          )
+          '''
+          if old not in source:
+              raise SystemExit("Bloco de duplicação esperado não encontrado no aplicador")
+          path.write_text(source.replace(old, new, 1), encoding="utf-8")
+          PY
             python3 -m py_compile scripts/apply_issue_500.py &&
             python3 scripts/apply_issue_500.py &&
             node frontend/scripts/test-accessible-video.mjs &&
