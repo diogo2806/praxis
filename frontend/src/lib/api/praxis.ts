@@ -33,6 +33,27 @@ export type {
   UpdateNodeRequest,
   UpdateOptionRequest,
 } from "./praxis-contract";
+export {
+  configureDecisionThreshold,
+  configureNormativeGroup,
+  getTalentMatch,
+  getTalentReferenceConfiguration,
+} from "./talent-match";
+export type {
+  CandidateRadarDto,
+  CandidateReferenceSnapshotDto,
+  CompetencyScoreDto,
+  CompetencyTargetProfileDto,
+  DecisionThresholdRequest,
+  DecisionThresholdResponse,
+  DecisionThresholdStatus,
+  NormativeGroupRequest,
+  NormativeGroupStatus,
+  NormativeMetricDto,
+  NormativeReferenceResponse,
+  TalentMatchResponse,
+  TalentReferenceConfigurationResponse,
+} from "./talent-match";
 export { listCandidateLinks } from "./candidate-links";
 export { listAdminEmpresas } from "./admin-empresas";
 export { DashboardCompatibilityError, getDashboard } from "./dashboard-strict";
