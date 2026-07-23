@@ -1,5 +1,6 @@
-import { useEffect } from "react";
 import { createFileRoute } from "@tanstack/react-router";
+
+import { LandingFaqSection, LandingPricingSection } from "../components/landing-commercial";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -16,1310 +17,265 @@ export const Route = createFileRoute("/")({
       { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
       {
         rel: "stylesheet",
-        href: "https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,500;0,8..60,600;0,8..60,700;1,8..60,400;1,8..60,500&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;450;500;600;700&display=swap",
+        href: "https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,500;0,8..60,600;0,8..60,700;1,8..60,400&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap",
       },
     ],
   }),
   component: LandingPage,
 });
 
-const landingStyles = `
-  :root{
-    --bg: oklch(0.985 0.006 85);
-    --bg-alt: oklch(0.965 0.009 235);
-    --surface: oklch(1 0 0);
-    --ink: oklch(0.24 0.02 240);
-    --muted: oklch(0.49 0.018 240);
-    --faint: oklch(0.62 0.015 240);
-    --line: oklch(0.9 0.01 240);
-    --line-soft: oklch(0.93 0.008 240);
-    --primary: oklch(0.5 0.1 233);
-    --primary-deep: oklch(0.4 0.09 238);
-    --navy: oklch(0.19 0.035 245);
-    --navy-2: oklch(0.24 0.04 245);
-    --on-navy: oklch(0.95 0.012 235);
-    --on-navy-mut: oklch(0.74 0.02 235);
-    --gold: oklch(0.76 0.13 80);
-    --gold-deep: oklch(0.62 0.12 76);
-    --success: oklch(0.6 0.13 150);
-    --danger: oklch(0.58 0.18 28);
+const applications = [
+  {
+    title: "Seleção e mobilidade interna",
+    description:
+      "Avalie respostas a situações relacionadas a uma função, atividade ou contexto profissional.",
+  },
+  {
+    title: "Capacitação e desenvolvimento",
+    description:
+      "Observe como participantes aplicam conhecimentos e critérios em situações simuladas.",
+  },
+  {
+    title: "Atendimento e operações",
+    description:
+      "Represente ocorrências, decisões, procedimentos e consequências presentes na rotina das equipes.",
+  },
+  {
+    title: "Procedimentos e conformidade",
+    description:
+      "Avalie a compreensão e a aplicação de orientações internas por meio de situações contextualizadas.",
+  },
+] as const;
 
-    --r-sm: 0.5rem;
-    --r: 0.75rem;
-    --r-lg: 1.1rem;
-    --r-pill: 999px;
-
-    --font-display: 'Source Serif 4', Georgia, 'Times New Roman', serif;
-    --font-sans: 'IBM Plex Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
-    --font-mono: 'IBM Plex Mono', ui-monospace, 'SFMono-Regular', monospace;
-
-    --maxw: 1140px;
-    --pad-x: clamp(1.25rem, 4vw, 2rem);
-    --sec-y: clamp(4.5rem, 9vw, 7.5rem);
-
-    --shadow-sm: 0 1px 2px oklch(0.4 0.05 245 / 0.06), 0 1px 1px oklch(0.4 0.05 245 / 0.04);
-    --shadow: 0 18px 40px -24px oklch(0.35 0.06 245 / 0.30), 0 4px 12px -6px oklch(0.35 0.06 245 / 0.12);
-    --shadow-lg: 0 40px 80px -40px oklch(0.30 0.06 245 / 0.40);
-  }
-
-  *{box-sizing:border-box}
-  html{scroll-behavior:smooth}
-  body{
-    margin:0;
-    font-family:var(--font-sans);
-    color:var(--ink);
-    background:var(--bg);
-    line-height:1.6;
-    font-size:17px;
-    -webkit-font-smoothing:antialiased;
-    text-rendering:optimizeLegibility;
-  }
-  @media (max-width:560px){ body{font-size:16px} }
-
-  h1,h2,h3,h4{font-family:var(--font-display);font-weight:600;line-height:1.12;letter-spacing:-0.01em;margin:0;color:var(--ink)}
-  h1{font-size:clamp(2.4rem,5.4vw,4rem);font-weight:500}
-  h2{font-size:clamp(1.9rem,3.8vw,2.9rem);font-weight:500}
-  h3{font-size:1.18rem;letter-spacing:0}
-  p{margin:0}
-  a{color:inherit;text-decoration:none}
-
-  .wrap{max-width:var(--maxw);margin-inline:auto;padding-inline:var(--pad-x)}
-  .eyebrow{
-    font-family:var(--font-mono);font-size:0.72rem;font-weight:500;letter-spacing:0.16em;
-    text-transform:uppercase;color:var(--primary);display:inline-flex;align-items:center;gap:0.55rem;
-  }
-  .eyebrow::before{content:"";width:1.4rem;height:1px;background:var(--gold-deep)}
-  .lead{font-size:clamp(1.05rem,1.6vw,1.22rem);color:var(--muted);max-width:46ch}
-
-  /* buttons */
-  .btn{
-    display:inline-flex;align-items:center;justify-content:center;gap:0.5rem;
-    font-family:var(--font-sans);font-weight:600;font-size:0.98rem;
-    padding:0.82rem 1.4rem;border-radius:var(--r-pill);cursor:pointer;
-    border:1px solid transparent;transition:transform .15s ease, box-shadow .2s ease, background .2s ease, border-color .2s ease;
-    min-height:2.95rem;white-space:nowrap;
-  }
-  .btn:active{transform:translateY(1px)}
-  .btn-primary{background:var(--primary);color:white;box-shadow:0 8px 20px -10px oklch(0.5 0.1 233 / 0.7)}
-  .btn-primary:hover{background:var(--primary-deep);box-shadow:0 12px 26px -10px oklch(0.5 0.1 233 / 0.8)}
-  .btn-ghost{background:transparent;color:var(--ink);border-color:var(--line)}
-  .btn-ghost:hover{border-color:var(--primary);color:var(--primary);background:oklch(0.5 0.1 233 / 0.05)}
-  .btn-gold{background:var(--ink);color:white}
-  .btn-gold:hover{background:oklch(0.18 0.02 240)}
-  .btn-on-navy{background:var(--on-navy);color:var(--navy)}
-  .btn-on-navy:hover{background:white}
-  .btn-arrow{transition:transform .2s ease}
-  .btn:hover .btn-arrow{transform:translateX(3px)}
-
-  /* nav */
-  header.nav{position:sticky;top:0;z-index:50;background:oklch(0.985 0.006 85 / 0.82);backdrop-filter:saturate(140%) blur(12px);border-bottom:1px solid transparent;transition:border-color .3s, box-shadow .3s}
-  header.nav.scrolled{border-color:var(--line-soft);box-shadow:var(--shadow-sm)}
-  .nav-inner{display:flex;align-items:center;justify-content:space-between;height:4.6rem;gap:1rem}
-  .brand{display:flex;align-items:baseline;gap:0.5rem;font-family:var(--font-display);font-size:1.4rem;font-weight:600;letter-spacing:-0.01em}
-  .brand .dot{width:0.42rem;height:0.42rem;border-radius:50%;background:var(--gold);display:inline-block;transform:translateY(-0.05rem)}
-  .brand small{font-family:var(--font-mono);font-size:0.62rem;letter-spacing:0.14em;text-transform:uppercase;color:var(--faint);font-weight:500}
-  .nav-links{display:flex;align-items:center;gap:0.35rem}
-  .nav-links a.link{padding:0.5rem 0.8rem;border-radius:var(--r-sm);font-size:0.92rem;font-weight:500;color:var(--muted);transition:color .15s, background .15s}
-  .nav-links a.link:hover{color:var(--ink);background:oklch(0.5 0.1 233 / 0.06)}
-  .nav-cta{display:flex;align-items:center;gap:0.6rem}
-  .nav-cta .link{font-size:0.92rem;font-weight:500;color:var(--muted);padding:0.4rem 0.4rem}
-  .nav-cta .link:hover{color:var(--ink)}
-  .menu-btn{display:none;background:none;border:1px solid var(--line);border-radius:var(--r-sm);width:2.7rem;height:2.7rem;cursor:pointer;align-items:center;justify-content:center}
-  .menu-btn svg{width:1.3rem;height:1.3rem;stroke:var(--ink)}
-
-  @media (max-width:920px){
-    .nav-links{display:none}
-    .nav-cta .link{display:none}
-    .menu-btn{display:flex}
-    .mobile-open .nav-links{
-      display:flex;flex-direction:column;position:absolute;top:4.6rem;left:0;right:0;
-      background:var(--surface);padding:0.8rem var(--pad-x) 1.4rem;border-bottom:1px solid var(--line);gap:0.1rem;box-shadow:var(--shadow)
-    }
-    .mobile-open .nav-links a.link{padding:0.85rem 0.6rem;font-size:1rem;border-bottom:1px solid var(--line-soft);border-radius:0}
-  }
-
-  /* hero */
-  .hero{position:relative;overflow:hidden;padding-top:clamp(2.5rem,5vw,4.5rem);padding-bottom:var(--sec-y)}
-  .hero::before{
-    content:"";position:absolute;inset:0;z-index:0;pointer-events:none;
-    background:
-      radial-gradient(60% 50% at 78% 8%, oklch(0.76 0.13 80 / 0.10), transparent 70%),
-      radial-gradient(70% 60% at 8% 0%, oklch(0.5 0.1 233 / 0.08), transparent 60%);
-  }
-  .hero-grid{position:relative;z-index:1;display:grid;grid-template-columns:1.05fr 0.95fr;gap:clamp(2rem,4vw,4rem);align-items:center}
-  @media (max-width:940px){ .hero-grid{grid-template-columns:1fr;gap:2.75rem} }
-  .hero-copy h1{margin:1.1rem 0 0}
-  .hero-copy h1 .accent{font-style:italic;color:var(--primary)}
-  .hero-copy .lead{margin-top:1.3rem;max-width:48ch}
-  .hero-ctas{display:flex;gap:0.8rem;margin-top:2rem;flex-wrap:wrap}
-  .integrations-line{display:flex;align-items:center;gap:0.6rem;margin-top:2rem;font-size:0.9rem;color:var(--faint)}
-  .integrations-line .pip{width:0.5rem;height:0.5rem;border-radius:50%;background:var(--success);box-shadow:0 0 0 3px oklch(0.6 0.13 150 / 0.18)}
-  .integrations-line b{color:var(--muted);font-weight:600}
-
-  /* hero reveal animation */
-  .reveal-up{opacity:0;transform:translateY(14px);animation:revealUp .7s cubic-bezier(.2,.7,.2,1) forwards}
-  .d1{animation-delay:.05s}.d2{animation-delay:.15s}.d3{animation-delay:.27s}.d4{animation-delay:.4s}.d5{animation-delay:.52s}
-  @keyframes revealUp{to{opacity:1;transform:none}}
-
-  /* scenario card */
-  .scenario{
-    background:var(--surface);border:1px solid var(--line);border-radius:var(--r-lg);
-    box-shadow:var(--shadow-lg);overflow:hidden;
-  }
-  .sc-top{display:flex;align-items:center;justify-content:space-between;padding:0.9rem 1.1rem;border-bottom:1px solid var(--line-soft);background:linear-gradient(var(--bg-alt),transparent)}
-  .sc-id{display:flex;align-items:center;gap:0.65rem}
-  .avatar{width:2.2rem;height:2.2rem;border-radius:50%;background:linear-gradient(135deg,var(--primary),var(--primary-deep));color:white;display:grid;place-items:center;font-weight:600;font-size:0.8rem;font-family:var(--font-mono)}
-  .sc-id .who{font-weight:600;font-size:0.92rem;line-height:1.1}
-  .sc-id .stage{font-family:var(--font-mono);font-size:0.68rem;color:var(--faint);letter-spacing:0.04em}
-  .sc-timer{font-family:var(--font-mono);font-weight:500;font-size:0.95rem;color:var(--muted);display:flex;align-items:center;gap:0.4rem}
-  .sc-timer .tdot{width:0.45rem;height:0.45rem;border-radius:50%;background:var(--gold);animation:pulse 1.6s ease-in-out infinite}
-  @keyframes pulse{50%{opacity:0.35}}
-  .sc-body{padding:1.15rem 1.2rem 1.3rem}
-  .sc-tag{font-family:var(--font-mono);font-size:0.66rem;letter-spacing:0.12em;text-transform:uppercase;color:var(--danger);font-weight:500}
-  .sc-msg{font-family:var(--font-display);font-size:1.18rem;line-height:1.35;margin:0.55rem 0 1.1rem;color:var(--ink)}
-  .sc-opts{display:flex;flex-direction:column;gap:0.55rem}
-  .opt{display:flex;gap:0.7rem;align-items:flex-start;text-align:left;width:100%;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:0.7rem 0.8rem;cursor:pointer;font:inherit;font-size:0.9rem;color:var(--ink);transition:border-color .15s, background .15s, transform .1s;line-height:1.35}
-  .opt:hover{border-color:var(--primary);background:oklch(0.5 0.1 233 / 0.04)}
-  .opt .key{flex:none;width:1.5rem;height:1.5rem;border-radius:0.4rem;border:1px solid var(--line);display:grid;place-items:center;font-family:var(--font-mono);font-size:0.78rem;font-weight:600;color:var(--muted);transition:.15s}
-  .opt:hover .key{border-color:var(--primary);color:var(--primary)}
-  .opt.picked{border-color:var(--primary);background:oklch(0.5 0.1 233 / 0.06)}
-  .opt.picked .key{background:var(--primary);color:white;border-color:var(--primary)}
-  .sc-note{margin-top:1rem;font-size:0.82rem;color:var(--faint);display:flex;gap:0.55rem;align-items:flex-start;min-height:1.2rem;transition:color .2s}
-  .sc-note svg{flex:none;width:1rem;height:1rem;margin-top:0.15rem;stroke:var(--gold-deep)}
-  .sc-note.resolved{color:var(--muted)}
-
-  /* generic section */
-  section{position:relative}
-  .sec{padding-block:var(--sec-y)}
-  .sec-alt{background:var(--bg-alt)}
-  .sec-head{
-    max-width:760px;
-    margin-inline:auto;
-    text-align:center;
-    display:flex;
-    flex-direction:column;
-    align-items:center;
-  }
-  .sec-head h2{margin-top:0.9rem}
-  .sec-head .lead{margin-top:1rem;margin-inline:auto}
-
-  /* problem split */
-  .split{display:grid;grid-template-columns:1fr 1fr;gap:1.1rem;margin-top:2.8rem}
-  @media (max-width:780px){ .split{grid-template-columns:1fr} }
-  .col{border-radius:var(--r-lg);padding:1.6rem 1.6rem 1.7rem;border:1px solid var(--line)}
-  .col.bad{background:var(--surface)}
-  .col.good{background:linear-gradient(180deg, oklch(0.5 0.1 233 / 0.05), var(--surface));border-color:oklch(0.5 0.1 233 / 0.25)}
-  .col h3{display:flex;align-items:center;gap:0.6rem;font-family:var(--font-sans);font-weight:700;font-size:1rem;letter-spacing:0;margin-bottom:1.1rem}
-  .col .badge{font-family:var(--font-mono);font-size:0.62rem;letter-spacing:0.1em;text-transform:uppercase;padding:0.25rem 0.55rem;border-radius:var(--r-pill);font-weight:500}
-  .col.bad .badge{background:oklch(0.58 0.18 28 / 0.1);color:var(--danger)}
-  .col.good .badge{background:oklch(0.6 0.13 150 / 0.14);color:var(--success)}
-  .clist{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:0.85rem}
-  .clist li{display:flex;gap:0.7rem;align-items:flex-start;font-size:0.96rem;color:var(--muted)}
-  .clist li svg{flex:none;width:1.15rem;height:1.15rem;margin-top:0.18rem}
-  .col.bad .clist svg{stroke:var(--danger)}
-  .col.good .clist svg{stroke:var(--success)}
-  .col.good .clist li{color:var(--ink)}
-
-  /* steps */
-  .steps{display:grid;grid-template-columns:repeat(3,1fr);gap:1.1rem;margin-top:2.8rem}
-  @media (max-width:780px){ .steps{grid-template-columns:1fr} }
-  .step{position:relative;background:var(--surface);border:1px solid var(--line);border-radius:var(--r-lg);padding:1.7rem 1.5rem}
-  .step .num{font-family:var(--font-mono);font-size:0.8rem;font-weight:600;color:var(--gold-deep);letter-spacing:0.1em}
-  .step h3{margin:0.9rem 0 0.5rem;font-size:1.12rem}
-  .step p{font-size:0.95rem;color:var(--muted)}
-  .step .rule{position:absolute;top:1.9rem;right:-0.55rem;width:1.1rem;height:1px;background:var(--line);display:none}
-  @media(min-width:781px){ .step:not(:last-child) .rule{display:block} }
-
-  /* feature + signature scorecard */
-  .feat-grid{display:grid;grid-template-columns:1fr 1fr;gap:clamp(2rem,4vw,3.4rem);margin-top:2.8rem;align-items:start}
-  @media (max-width:900px){ .feat-grid{grid-template-columns:1fr} }
-  .feats{display:grid;grid-template-columns:1fr 1fr;gap:1.4rem 1.6rem}
-  @media (max-width:520px){ .feats{grid-template-columns:1fr} }
-  .feat h3{font-family:var(--font-sans);font-weight:700;font-size:1rem;letter-spacing:0;display:flex;gap:0.55rem;align-items:center;margin-bottom:0.4rem}
-  .feat .ico{flex:none;width:1.9rem;height:1.9rem;border-radius:0.55rem;display:grid;place-items:center;background:oklch(0.5 0.1 233 / 0.09)}
-  .feat .ico svg{width:1.05rem;height:1.05rem;stroke:var(--primary)}
-  .feat p{font-size:0.92rem;color:var(--muted)}
-
-  /* the signature evidence card */
-  .evidence{position:sticky;top:6rem;background:var(--surface);border:1px solid var(--line);border-radius:var(--r-lg);box-shadow:var(--shadow);overflow:hidden}
-  .ev-top{padding:1.05rem 1.2rem;border-bottom:1px solid var(--line-soft);display:flex;align-items:center;justify-content:space-between;background:linear-gradient(var(--bg-alt),transparent)}
-  .ev-top .t{font-family:var(--font-mono);font-size:0.68rem;letter-spacing:0.12em;text-transform:uppercase;color:var(--faint)}
-  .ev-seal{display:inline-flex;align-items:center;gap:0.4rem;font-family:var(--font-mono);font-size:0.68rem;font-weight:500;color:var(--gold-deep);border:1px solid oklch(0.76 0.13 80 / 0.4);background:oklch(0.76 0.13 80 / 0.1);padding:0.28rem 0.6rem;border-radius:var(--r-pill)}
-  .ev-seal svg{width:0.85rem;height:0.85rem;stroke:var(--gold-deep)}
-  .ev-body{padding:1.3rem 1.3rem 1.4rem}
-  .ev-score{display:flex;align-items:baseline;gap:0.7rem}
-  .ev-score .n{font-family:var(--font-mono);font-weight:600;font-size:3.2rem;line-height:1;color:var(--ink);letter-spacing:-0.02em}
-  .ev-score .of{font-family:var(--font-mono);font-size:1rem;color:var(--faint)}
-  .ev-score .decision{margin-left:auto;font-size:0.78rem;font-weight:600;padding:0.32rem 0.7rem;border-radius:var(--r-pill);background:oklch(0.6 0.13 150 / 0.14);color:var(--success)}
-  .ev-comp{margin-top:1.4rem;display:flex;flex-direction:column;gap:0.85rem}
-  .cbar .clabel{display:flex;justify-content:space-between;font-size:0.82rem;margin-bottom:0.32rem;color:var(--muted)}
-  .cbar .clabel b{color:var(--ink);font-family:var(--font-mono);font-weight:500}
-  .track{height:0.5rem;border-radius:var(--r-pill);background:oklch(0.5 0.06 240 / 0.1);overflow:hidden}
-  .fill{display:block;height:100%;border-radius:var(--r-pill);background:linear-gradient(90deg,var(--primary),oklch(0.62 0.12 215));width:0;transition:width 1.1s cubic-bezier(.2,.7,.2,1)}
-  .ev-trail{margin-top:1.4rem;border-top:1px dashed var(--line);padding-top:1rem}
-  .ev-trail .lab{font-family:var(--font-mono);font-size:0.64rem;letter-spacing:0.12em;text-transform:uppercase;color:var(--faint);margin-bottom:0.55rem}
-  .ev-trail code{display:block;font-family:var(--font-mono);font-size:0.74rem;line-height:1.7;color:var(--muted);white-space:pre-wrap}
-  .ev-trail code .ok{color:var(--primary);font-weight:500}
-  .ev-trail code .gold{color:var(--gold-deep)}
-
-  /* use-cases grid */
-  .use-cases{display:grid;grid-template-columns:repeat(3,1fr);gap:1.1rem;margin-top:2.8rem}
-  @media (max-width:880px){ .use-cases{grid-template-columns:1fr 1fr;gap:1rem} }
-  @media (max-width:560px){ .use-cases{grid-template-columns:1fr} }
-  .uc{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-lg);padding:1.5rem 1.4rem;transition:transform .15s, box-shadow .15s}
-  .uc:hover{transform:translateY(-2px);box-shadow:var(--shadow)}
-  .uc .uc-ico{width:2.4rem;height:2.4rem;border-radius:0.7rem;display:grid;place-items:center;margin-bottom:1rem}
-  .uc .uc-ico svg{width:1.3rem;height:1.3rem}
-  .uc h3{font-family:var(--font-sans);font-weight:700;font-size:1rem;letter-spacing:0;margin-bottom:0.4rem}
-  .uc p{font-size:0.9rem;color:var(--muted);line-height:1.5}
-  .uc .uc-examples{margin-top:0.7rem;font-size:0.82rem;color:var(--faint);font-style:italic}
-  .uc-recruit .uc-ico{background:oklch(0.5 0.1 233 / 0.1)}
-  .uc-recruit .uc-ico svg{stroke:var(--primary)}
-  .uc-health .uc-ico{background:oklch(0.6 0.13 150 / 0.12)}
-  .uc-health .uc-ico svg{stroke:var(--success)}
-  .uc-edu .uc-ico{background:oklch(0.76 0.13 80 / 0.15)}
-  .uc-edu .uc-ico svg{stroke:var(--gold-deep)}
-  .uc-corp .uc-ico{background:oklch(0.5 0.1 233 / 0.08)}
-  .uc-corp .uc-ico svg{stroke:var(--primary-deep)}
-  .uc-compliance .uc-ico{background:oklch(0.58 0.18 28 / 0.1)}
-  .uc-compliance .uc-ico svg{stroke:var(--danger)}
-  .uc-public .uc-ico{background:oklch(0.49 0.018 240 / 0.1)}
-  .uc-public .uc-ico svg{stroke:var(--muted)}
-
-  /* integrations band */
-  .integ-band{max-width:760px;margin:2.8rem auto 0}
-  #integracoes .sec-head{text-align:center;align-items:center}
-  .flow{display:flex;flex-direction:column;gap:0.7rem}
-  .flow .fstep{display:flex;align-items:center;gap:0.9rem;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:1rem 1.05rem;font-size:0.95rem;box-shadow:var(--shadow-sm)}
-  .flow .fstep .fn{flex:none;width:1.7rem;height:1.7rem;border-radius:50%;background:var(--ink);color:white;display:grid;place-items:center;font-family:var(--font-mono);font-size:0.78rem;font-weight:600}
-  .flow .fstep.gp .fn{background:var(--gold-deep)}
-  .flow-note{margin-top:1rem;display:flex;gap:0.55rem;align-items:flex-start;justify-content:center;font-size:0.9rem;color:var(--muted);text-align:center}
-  .flow-note .pip{flex:none;width:0.5rem;height:0.5rem;border-radius:50%;background:var(--success);box-shadow:0 0 0 3px oklch(0.6 0.13 150 / 0.18);margin-top:0.55rem}
-  .connect{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-lg);padding:1.6rem 1.5rem 1.3rem;box-shadow:var(--shadow)}
-  .connect .cstep{display:flex;gap:0.9rem;align-items:flex-start}
-  .connect .ci{flex:none;width:2.4rem;height:2.4rem;border-radius:0.7rem;display:grid;place-items:center;font-family:var(--font-display);font-weight:600;font-size:1.05rem}
-  .connect .ci svg{width:1.2rem;height:1.2rem;stroke:#3a2a05}
-  .ci-ats{background:oklch(0.6 0.13 150 / 0.14);color:var(--success)}
-  .ci-prx{background:oklch(0.5 0.1 233 / 0.1);color:var(--primary)}
-  .ci-ok{background:var(--gold)}
-  .connect .cstep b{display:block;font-size:0.98rem;color:var(--ink)}
-  .connect .cstep > div span{font-size:0.86rem;color:var(--muted);display:block;margin-top:0.12rem}
-  .connect .cdown{height:1rem;margin:0.4rem 0 0.4rem 1.15rem;border-left:2px dashed var(--line)}
-  .connect .cnote{margin-top:1.2rem;padding-top:1rem;border-top:1px solid var(--line-soft);font-size:0.84rem;color:var(--muted);display:flex;align-items:center;gap:0.5rem}
-  .connect .cnote .pip{flex:none;width:0.5rem;height:0.5rem;border-radius:50%;background:var(--success);box-shadow:0 0 0 3px oklch(0.6 0.13 150 / 0.18)}
-
-  /* governance: dark band */
-  .dark-band{background:var(--navy);color:var(--on-navy);position:relative;overflow:hidden}
-  .dark-band::before{content:"";position:absolute;inset:0;background:radial-gradient(50% 40% at 85% 0%, oklch(0.76 0.13 80 / 0.10), transparent 70%);pointer-events:none}
-  .dark-band h2,.dark-band h3{color:var(--on-navy)}
-  .dark-band .eyebrow{color:var(--gold)}
-  .dark-band .eyebrow::before{background:var(--gold)}
-  .dark-band .lead{color:var(--on-navy-mut)}
-  .gov-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1.1rem;margin-top:2.8rem}
-  @media (max-width:820px){ .gov-grid{grid-template-columns:1fr} }
-  .gov{border:1px solid oklch(1 0 0 / 0.12);border-radius:var(--r-lg);padding:1.5rem 1.4rem;background:oklch(1 0 0 / 0.03)}
-  .gov .ico{width:2.1rem;height:2.1rem;border-radius:0.55rem;display:grid;place-items:center;background:oklch(0.76 0.13 80 / 0.15);margin-bottom:1rem}
-  .gov .ico svg{width:1.15rem;height:1.15rem;stroke:var(--gold)}
-  .gov h3{font-family:var(--font-sans);font-weight:700;font-size:1.02rem;letter-spacing:0;margin-bottom:0.45rem}
-  .gov p{font-size:0.92rem;color:var(--on-navy-mut)}
-  .gov-foot{margin-top:2.4rem;display:flex;flex-wrap:wrap;gap:0.6rem;align-items:center}
-  .chip{font-family:var(--font-mono);font-size:0.72rem;letter-spacing:0.06em;color:var(--on-navy-mut);border:1px solid oklch(1 0 0 / 0.16);border-radius:var(--r-pill);padding:0.4rem 0.85rem}
-  .chip b{color:var(--on-navy);font-weight:600}
-
-  /* pricing */
-  .roi{display:flex;gap:0.8rem;align-items:flex-start;max-width:60ch;margin:1.4rem auto 0;text-align:left;font-size:1.02rem;color:var(--muted)}
-  .roi svg{flex:none;width:1.3rem;height:1.3rem;margin-top:0.25rem;stroke:var(--gold-deep)}
-  .roi b{color:var(--ink);font-weight:600}
-  .plans{display:grid;grid-template-columns:repeat(3,1fr);gap:1.2rem;margin-top:2.4rem;align-items:stretch}
-  @media (max-width:920px){ .plans{grid-template-columns:1fr;max-width:460px} }
-  .plan{display:flex;flex-direction:column;background:var(--surface);border:1px solid var(--line);border-radius:var(--r-lg);padding:1.8rem 1.6rem;position:relative;transition:transform .2s ease, box-shadow .2s ease}
-  .plan:hover{transform:translateY(-3px);box-shadow:var(--shadow)}
-  .plan.feature{border-color:var(--primary);box-shadow:var(--shadow);background:linear-gradient(180deg, oklch(0.5 0.1 233 / 0.04), var(--surface))}
-  .plan .ptag{position:absolute;top:-0.8rem;left:1.6rem;font-family:var(--font-mono);font-size:0.66rem;letter-spacing:0.1em;text-transform:uppercase;font-weight:600;background:var(--primary);color:white;padding:0.32rem 0.7rem;border-radius:var(--r-pill)}
-  .plan .pname{font-family:var(--font-display);font-size:1.4rem;font-weight:600}
-  .plan .pfor{font-size:0.85rem;color:var(--faint);margin-top:0.25rem;min-height:2.4em}
-  .price{margin:1.2rem 0 0;display:flex;align-items:baseline;gap:0.35rem;flex-wrap:wrap}
-  .price .cur{font-family:var(--font-mono);font-size:1rem;color:var(--muted);font-weight:500}
-  .price .amt{font-family:var(--font-mono);font-size:2.5rem;font-weight:600;line-height:1;color:var(--ink);letter-spacing:-0.02em}
-  .price .per{font-size:0.85rem;color:var(--faint)}
-  .price.consulta .amt{font-size:1.7rem}
-  .psub{font-size:0.82rem;color:var(--muted);margin-top:0.55rem;min-height:1.4em}
-  .plan .btn{margin-top:1.4rem;width:100%}
-  .plist{list-style:none;margin:1.5rem 0 0;padding:1.4rem 0 0;border-top:1px solid var(--line-soft);display:flex;flex-direction:column;gap:0.7rem;flex:1}
-  .plist li{display:flex;gap:0.6rem;align-items:flex-start;font-size:0.9rem;color:var(--muted)}
-  .plist li svg{flex:none;width:1.05rem;height:1.05rem;margin-top:0.18rem;stroke:var(--primary)}
-  .plist li.head{color:var(--ink);font-weight:600;font-size:0.86rem}
-  .plist li.head svg{stroke:var(--gold-deep)}
-  .pfoot{margin:2rem auto 0;font-size:0.86rem;color:var(--faint);display:flex;gap:0.55rem;align-items:flex-start;max-width:70ch}
-  .pfoot svg{flex:none;width:1.05rem;height:1.05rem;margin-top:0.16rem;stroke:var(--success)}
-
-  /* Planos: linha "todos os recursos" */
-  .all-plans{display:inline-flex;align-items:center;gap:.55rem;justify-content:center;margin:1.4rem auto 0;padding:.55rem 1.05rem;border-radius:var(--r-pill);background:oklch(0.5 0.1 233 / 0.08);color:var(--primary-deep);font-size:.95rem;font-weight:600}
-  .all-plans svg{flex:none;width:1.1rem;height:1.1rem;stroke:var(--primary)}
-
-  /* Planos: seletor de ciclo */
-  .cycle{display:inline-flex;align-items:center;gap:.3rem;background:var(--surface);border:1px solid var(--line);border-radius:var(--r-pill);padding:5px;margin-top:1.4rem}
-  .cyc{font-family:var(--font-sans);font-size:.9rem;font-weight:600;color:var(--muted);background:transparent;border:0;cursor:pointer;padding:.45rem 1.1rem;border-radius:var(--r-pill);min-height:2.4rem;transition:background .18s ease,color .18s ease}
-  .cyc.on{background:var(--primary);color:#fff}
-  .cyc-tag{display:inline-block;margin-left:.4rem;font-size:.68rem;font-weight:700;letter-spacing:.01em;color:var(--primary);background:color-mix(in oklab, var(--primary) 14%, transparent);border-radius:var(--r-pill);padding:.1rem .45rem;vertical-align:middle}
-  .cyc.on .cyc-tag{color:#fff;background:rgba(255,255,255,.24)}
-  .cycle-hint{font-size:.8rem;color:var(--faint);margin-top:.6rem}
-  .cycle-cta{font-size:.95rem;color:var(--muted);text-align:center;margin-top:1.4rem}
-  .cycle-cta a{color:var(--primary);font-weight:600;border-bottom:1px solid color-mix(in oklab, var(--primary) 35%, transparent)}
-  .cycle-cta a:hover{color:var(--primary-deep)}
-
-  /* Planos: destaque por card */
-  #contratacao .plan .btn{margin-top:auto}
-  .plan .phi{display:flex;gap:.55rem;align-items:flex-start;margin-top:.9rem;font-size:.92rem;font-weight:600;color:var(--primary-deep)}
-  .plan .phi svg{flex:none;width:1.05rem;height:1.05rem;margin-top:.12rem;stroke:var(--primary)}
-
-  /* Planos: tabela de volume do Profissional */
-  .tiers{width:100%;border-collapse:collapse;margin:1.2rem 0 .5rem}
-  .tiers th{font-family:var(--font-mono);font-weight:500;color:var(--faint);text-align:left;padding:.4rem .15rem;border-bottom:1px solid var(--line-soft);font-size:.64rem;text-transform:uppercase;letter-spacing:.1em}
-  .tiers th.r{text-align:right}
-  .tiers td{padding:.62rem .15rem;border-bottom:1px solid var(--line-soft);color:var(--muted);font-size:.92rem}
-  .tiers td:first-child{font-family:var(--font-mono);font-weight:600;color:var(--ink)}
-  .tiers td.u{text-align:right;white-space:nowrap;color:var(--faint)}
-  .tiers td.t{text-align:right;white-space:nowrap;font-family:var(--font-mono);font-weight:600;color:var(--ink)}
-  .tiers tr:last-child td{border-bottom:0}
-  /* tables.css aplica um padrão global com !important; devolve o visual próprio da landing */
-  body table.tiers{background:transparent!important;color:var(--muted)!important}
-  body table.tiers>thead,body table.tiers>thead>tr{background:transparent!important;border-bottom:0!important;color:var(--faint)!important}
-  body table.tiers>thead>tr>th{height:auto;padding:.4rem .15rem!important;font-size:.64rem!important;font-weight:500!important;color:var(--faint)!important}
-  body table.tiers>tbody>tr{border-bottom:0!important}
-  body table.tiers>tbody>tr:hover{background:transparent!important}
-  body table.tiers>:is(thead,tbody)>tr>td{padding:.62rem .15rem!important}
-  .tier-off{display:inline-block;margin-left:.35rem;font-family:var(--font-mono);font-size:.6rem;font-weight:600;letter-spacing:.02em;color:var(--success);background:oklch(0.6 0.13 150 / 0.12);border-radius:var(--r-pill);padding:.1rem .42rem;vertical-align:middle}
-  .tier-note{font-size:.8rem;color:var(--faint);margin-top:.5rem;line-height:1.45}
-
-  /* faq */
-  .faq{margin:2.6rem auto 0;max-width:780px;border-top:1px solid var(--line)}
-  .qa{border-bottom:1px solid var(--line)}
-  .qa button{width:100%;text-align:left;background:none;border:none;cursor:pointer;font:inherit;padding:1.25rem 0.25rem;display:flex;justify-content:space-between;align-items:center;gap:1rem;color:var(--ink)}
-  .qa button .q{font-family:var(--font-display);font-size:1.1rem;font-weight:500}
-  .qa .ic{flex:none;width:1.5rem;height:1.5rem;position:relative;transition:transform .25s}
-  .qa .ic::before,.qa .ic::after{content:"";position:absolute;background:var(--primary);border-radius:2px;top:50%;left:50%;transform:translate(-50%,-50%)}
-  .qa .ic::before{width:0.95rem;height:2px}
-  .qa .ic::after{width:2px;height:0.95rem;transition:transform .25s}
-  .qa.open .ic::after{transform:translate(-50%,-50%) scaleY(0)}
-  .qa .ans{max-height:0;overflow:hidden;transition:max-height .3s ease}
-  .qa .ans p{padding:0 0.25rem 1.3rem;color:var(--muted);font-size:0.98rem;max-width:68ch}
-
-  /* final cta */
-  .final{text-align:center;padding-block:clamp(4.5rem,8vw,7rem)}
-  .final h2{max-width:18ch;margin-inline:auto}
-  .final .lead{margin:1.2rem auto 0;text-align:center}
-  .final .hero-ctas{justify-content:center;margin-top:2.2rem}
-
-  /* footer */
-  footer{background:var(--navy);color:var(--on-navy-mut);padding-block:2.6rem}
-  .foot-inner{display:flex;justify-content:space-between;align-items:center;gap:1rem;flex-wrap:wrap}
-  footer .brand{color:var(--on-navy)}
-  footer .brand small{color:oklch(0.6 0.02 245)}
-  footer .fcopy{font-size:0.84rem;font-family:var(--font-mono);letter-spacing:0.02em}
-
-  /* ===== mobile polish ===== */
-  @media (max-width:560px){
-    :root{--pad-x:1rem;--sec-y:3.5rem}
-    h1{font-size:1.85rem;line-height:1.15}
-    h2{font-size:1.55rem;line-height:1.18}
-    .hero{padding-top:1.5rem}
-    .hero-copy .lead{font-size:0.98rem}
-    .hero-ctas{flex-direction:column;gap:0.6rem}
-    .hero-ctas .btn{width:100%;justify-content:center}
-    .integrations-line{font-size:0.82rem;flex-wrap:wrap}
-    .scenario .sc-msg{font-size:1.02rem}
-    .scenario .opt{font-size:0.85rem;padding:0.6rem 0.7rem}
-    .builder{display:none}
-    .sec-head .lead{font-size:0.95rem}
-    .split{gap:0.8rem;margin-top:2rem}
-    .col{padding:1.2rem}
-    .steps{gap:0.8rem;margin-top:2rem}
-    .step{padding:1.3rem 1.2rem}
-    .feat-grid{margin-top:2rem}
-    .feat h3{font-size:0.95rem}
-    .use-cases{gap:0.8rem;margin-top:2rem}
-    .uc{padding:1.2rem}
-    .integ-band{gap:1.6rem;margin-top:2rem}
-    .flow .fstep{font-size:0.88rem;padding:0.7rem 0.85rem}
-    .connect{padding:1.2rem 1.1rem 1rem}
-    .connect .cstep b{font-size:0.92rem}
-    .connect .cstep > div span{font-size:0.82rem}
-    .gov-grid{gap:0.8rem;margin-top:2rem}
-    .gov{padding:1.2rem}
-    .gov-foot{gap:0.45rem;margin-top:1.6rem}
-    .chip{font-size:0.65rem;padding:0.3rem 0.65rem}
-    .plans{margin-top:1.8rem;gap:1rem}
-    .plan{padding:1.4rem 1.2rem}
-    .price .amt{font-size:2rem}
-    .pfoot{font-size:0.8rem}
-    .faq{margin-top:1.8rem}
-    .qa button .q{font-size:0.98rem}
-    .final h2{font-size:1.5rem;max-width:none}
-    .final .lead{font-size:0.95rem}
-    .final .hero-ctas{flex-direction:column}
-    .final .hero-ctas .btn{width:100%;justify-content:center}
-    .foot-inner{flex-direction:column;text-align:center;gap:0.6rem}
-  }
-  @media (max-width:380px){
-    h1{font-size:1.6rem}
-    .eyebrow{font-size:0.65rem}
-    .scenario .sc-top{padding:0.7rem 0.8rem}
-    .scenario .sc-body{padding:0.9rem 0.9rem 1rem}
-  }
-
-  /* focus + motion */
-  :focus-visible{outline:3px solid color-mix(in oklab, var(--primary) 65%, white);outline-offset:2px;border-radius:3px}
-  @media (prefers-reduced-motion: reduce){
-    *,*::before,*::after{animation-duration:.001ms!important;animation-iteration-count:1!important;transition-duration:.001ms!important;scroll-behavior:auto!important}
-    .reveal-up{opacity:1;transform:none}
-  }
-  /* ===== scenario mini-report ===== */
-  .sc-report{margin-top:0.95rem;border-top:1px dashed var(--line);padding-top:0.95rem;max-height:0;opacity:0;overflow:hidden;transition:max-height .4s ease, opacity .3s ease}
-  .sc-report.show{max-height:380px;opacity:1}
-  .sc-report .rh{display:flex;align-items:center;justify-content:space-between;gap:0.8rem;margin-bottom:0.8rem}
-  .sc-report .rl{font-family:var(--font-mono);font-size:0.64rem;letter-spacing:0.12em;text-transform:uppercase;color:var(--faint)}
-  .sc-report .tag{font-size:0.7rem;font-weight:600;padding:0.26rem 0.62rem;border-radius:var(--r-pill);white-space:nowrap}
-  .tag-ok{background:oklch(0.6 0.13 150 / 0.14);color:var(--success)}
-  .tag-rev{background:oklch(0.76 0.13 80 / 0.18);color:var(--gold-deep)}
-  .sc-report .pts{display:flex;flex-direction:column;gap:0.5rem}
-  .ptrow{display:grid;grid-template-columns:8.5rem 1fr auto;align-items:center;gap:0.6rem}
-  .ptrow .pn{font-size:0.8rem;color:var(--muted)}
-  .ptrow .pt-track{height:0.42rem;border-radius:var(--r-pill);background:oklch(0.5 0.06 240 / 0.1);overflow:hidden}
-  .ptrow .pt-fill{display:block;height:100%;border-radius:var(--r-pill);background:linear-gradient(90deg,var(--primary),oklch(0.62 0.12 215));width:0;transition:width .55s cubic-bezier(.2,.7,.2,1)}
-  .ptrow .pv{font-family:var(--font-mono);font-size:0.78rem;font-weight:600;color:var(--primary);text-align:right;white-space:nowrap}
-  .ptrow .pv.zero{color:var(--faint)}
-  .ptrow .pv .acc{font-size:0.68rem;font-weight:500;color:var(--faint);margin-left:0.3rem}
-  .sc-report .read{margin-top:0.85rem;font-size:0.84rem;color:var(--muted);line-height:1.5}
-  .sc-report .read b{color:var(--ink);font-weight:600}
-  .sc-report .invisible-note{margin-top:0.75rem;font-size:0.74rem;color:var(--faint);display:flex;gap:0.45rem;align-items:flex-start}
-  .sc-report .invisible-note svg{flex:none;width:0.95rem;height:0.95rem;margin-top:0.1rem;stroke:var(--faint)}
-
-  /* ===== Mapa da simulação: product mock (native canvas palette) ===== */
-  .builder{margin-top:3rem}
-  .builder .blead{display:flex;align-items:flex-start;gap:0.65rem;max-width:62ch;margin-bottom:1.4rem;color:var(--muted);font-size:1rem;line-height:1.55}
-  .builder .blead svg{flex:none;width:1.25rem;height:1.25rem;margin-top:0.22rem;stroke:var(--gold-deep)}
-  .builder .blead b{color:var(--ink);font-weight:600}
-  .appwin{border:1px solid var(--line);border-radius:var(--r-lg);overflow:hidden;box-shadow:var(--shadow-lg);background:#FCFAF6}
-  .appbar{display:flex;align-items:center;gap:0.5rem;padding:0.7rem 1rem;background:#fff;border-bottom:1px solid #EBEEF0}
-  .appbar .dots{display:flex;gap:0.42rem}
-  .appbar .dots i{width:0.7rem;height:0.7rem;border-radius:50%;display:block;background:#D9DFE3}
-  .appbar .dots i:first-child{background:#E1A536}
-  .appbar .url{margin-left:0.5rem;font-family:var(--font-mono);font-size:0.74rem;color:#9AA3AA}
-  .mapwin{padding:1.2rem 1.3rem 0}
-  .maphead .meyebrow{font-family:var(--font-mono);font-size:0.66rem;letter-spacing:0.14em;text-transform:uppercase;color:#1B6C8C;font-weight:600}
-  .maphead h3{font-family:var(--font-display);font-size:clamp(1.3rem,3vw,1.6rem);font-weight:500;color:#172128;margin:0.3rem 0 0}
-  .mapstats{display:flex;align-items:center;flex-wrap:wrap;gap:0.5rem 1rem;margin-top:0.7rem;font-size:0.86rem;color:#616A71}
-  .mapstats b{color:#172128;font-weight:700;font-family:var(--font-mono)}
-  .mapstats .sep{width:3px;height:3px;border-radius:50%;background:#9AA3AA}
-  .mapstats .pill-amber{display:inline-flex;align-items:center;gap:0.35rem;font-size:0.78rem;font-weight:600;color:#7A5410;background:#FCF2DB;border:1px solid #E6C98A;border-radius:var(--r-pill);padding:0.24rem 0.68rem}
-  .mapstats .pill-amber svg{width:0.85rem;height:0.85rem;stroke:#E1A536}
-  .canvas{position:relative;margin-top:1rem;background:#FCFAF6;background-image:radial-gradient(#E6E3DA 1.4px, transparent 1.4px);background-size:18px 18px;border-top:1px solid #EBEEF0;overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch}
-  .canvas-inner{position:relative;width:720px;height:420px;margin:0 auto}
-  .canvas svg.edges{position:absolute;inset:0;width:720px;height:420px;overflow:visible;pointer-events:none;z-index:5}
-  .canvas svg.edges path{fill:none;stroke:#b7bfce;stroke-width:1.8}
-  .edge-label{position:absolute;font-size:10.5px;color:#616A71;background:#fff;border:1px solid #D9DFE3;border-radius:999px;padding:1.5px 9px;z-index:13;white-space:nowrap;box-shadow:0 1px 2px rgba(20,30,55,.05)}
-  .vxn{position:absolute;width:255px;background:#fff;border:1px solid #D9DFE3;border-radius:12px;box-shadow:0 2px 6px rgba(20,30,55,.07);z-index:10}
-  .vxn.root .vxmsg{border-top:3px solid #1B6C8C;border-radius:12px 12px 0 0}
-  .vxmsg{padding:9px 11px;border-bottom:1px solid #EBEEF0}
-  .vxhead{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;gap:6px}
-  .vxid{display:inline-flex;align-items:center;gap:5px;font-family:var(--font-mono);font-size:11px;font-weight:650;color:#0E5570}
-  .vxid svg{width:12px;height:12px;stroke:#1B6C8C;flex:none}
-  .vxbadge{font-family:var(--font-sans);font-size:8.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:#1B6C8C;background:#E2F1FA;padding:1px 5px;border-radius:5px}
-  .vxlock{width:11px!important;height:11px!important;stroke:#9AA3AA!important;margin-left:1px}
-  .vxtimer{display:inline-flex;align-items:center;gap:3px;font-family:var(--font-mono);font-size:10.5px;color:#9AA3AA;flex:none}
-  .vxtimer svg{width:11px;height:11px;stroke:#9AA3AA}
-  .vxtext{font-size:12px;line-height:1.4;color:#172128}
-  .vxsec-l{display:flex;justify-content:space-between;font-size:9.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:#9AA3AA;padding:8px 11px 4px}
-  .vxcomp{padding:0 11px 8px;display:flex;flex-direction:column;gap:3px}
-  .vxcrow{display:grid;grid-template-columns:1fr 54px auto;align-items:center;gap:10px;font-size:11px}
-  .vxcrow .cn{min-width:0;color:#616A71;font-weight:600}
-  .vxcrow .cin{display:flex;align-items:center;justify-content:flex-start;justify-self:start;width:54px;height:18px;padding:0 6px;border:1px solid #D9DFE3;border-radius:5px;background:#fff;font-family:var(--font-mono);font-size:10.5px;color:#616A71;text-align:left;white-space:nowrap}
-  .vxcrow .cacc{font-family:var(--font-mono);font-weight:700;color:#0E5570;font-size:11.5px}
-  .vxcrow .cacc.z{color:#9AA3AA}
-  .vxout{border-top:1px solid #EBEEF0;padding:7px 11px}
-  .vxorow{display:flex;align-items:center;gap:6px}
-  .vxorow .otext{flex:1;min-width:0;font-size:11.5px;color:#172128;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .vxsel{flex:none;display:inline-flex;align-items:center;gap:3px;height:22px;padding:0 6px;border:1px solid #D9DFE3;border-radius:6px;background:#fff;font-family:var(--font-mono);font-size:10.5px;color:#0E5570}
-  .vxsel svg{width:9px;height:9px;stroke:#616A71}
-  .vxbtn{flex:none;width:20px;height:20px;border-radius:6px;display:grid;place-items:center;border:1px solid #D9DFE3}
-  .vxbtn svg{width:11px;height:11px}
-  .vxbtn.del{background:#FAE7E5;border-color:#FAE7E5;stroke:#CC3E35}
-  .vxbtn.add{background:#E2F1FA;border-color:#E2F1FA;stroke:#1B6C8C}
-  .vxto{display:flex;align-items:center;gap:6px;padding:6px 11px;border-top:1px solid #EBEEF0;background:#FCFBF7}
-  .vxto .tl{flex:none;font-size:9.5px;font-weight:700;text-transform:uppercase;color:#9AA3AA;display:inline-flex;align-items:center;gap:4px}
-  .vxto .tl svg{width:11px;height:11px;stroke:#E1A536}
-  .vxto .tsel{flex:1;min-width:0;height:20px;border:1px solid #E6C98A;border-radius:6px;background:#fff;font-size:10.5px;color:#7A5410;display:flex;align-items:center;padding:0 6px}
-  .vxto .add{flex:none;width:20px;height:20px;border-radius:6px;display:grid;place-items:center;background:#FCF2DB;border:1px solid #E6C98A;stroke:#7A5410}
-  .vxto .add svg{width:11px;height:11px}
-  .vxfoot{padding:6px 9px;border-top:1px solid #EBEEF0}
-  .vxfoot .fadd{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:600;color:#1B6C8C;border:1px dashed #D9DFE3;border-radius:7px;padding:3px 9px;background:transparent}
-  .vxfoot .fadd svg{width:11px;height:11px;stroke:#1B6C8C}
-  .vxport{position:absolute;width:11px;height:11px;border-radius:50%;background:#fff;border:2px solid #1B6C8C;z-index:12}
-
-`;
-const landingMarkup = `<header class="nav" id="nav">
-  <div class="wrap nav-inner">
-    <a href="#topo" class="brand" aria-label="Práxis, por iForce">
-      Práxis<span class="dot"></span><small>by iForce</small>
-    </a>
-    <nav class="nav-links" aria-label="Seções">
-      <a class="link" href="#problema">Por que usar</a>
-      <a class="link" href="#como">Como funciona</a>
-      <a class="link" href="#evidencia">Recursos</a>
-      <a class="link" href="#aplicacoes">Onde se aplica</a>
-      <a class="link" href="#governanca">Governança</a>
-      <a class="link" href="#contratacao">Planos</a>
-    </nav>
-    <div class="nav-cta">
-      <a class="link" href="/comecar">Entrar</a>
-      <a class="btn btn-primary" href="#cta">Solicitar demonstração</a>
-    </div>
-    <button class="menu-btn" id="menuBtn" aria-label="Abrir menu" aria-expanded="false">
-      <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
-    </button>
-  </div>
-</header>
-
-<main id="topo">
-
-  <!-- HERO -->
-  <section class="hero">
-    <div class="wrap hero-grid">
-      <div class="hero-copy">
-        <span class="eyebrow reveal-up d1">Avaliações situacionais para diferentes contextos</span>
-        <h1 class="reveal-up d2">Transforme situações do dia a dia em avaliações estruturadas e rastreáveis.</h1>
-        <p class="lead reveal-up d3">Crie cenários, defina critérios e pesos, compartilhe a avaliação por link e acompanhe as respostas, os indicadores por competência e os registros do percurso.</p>
-        <p class="lead reveal-up d3">Use em treinamento, operações, atendimento, vendas, liderança, conformidade, educação, seleção e outros contextos que possam ser representados por cenários e critérios previamente definidos.</p>
-        <div class="hero-ctas reveal-up d4">
-          <a class="btn btn-primary" href="#cta">Solicitar demonstração <span class="btn-arrow">→</span></a>
-          <a class="btn btn-ghost" href="#demo">Experimentar um cenário</a>
-        </div>
-        <div class="integrations-line reveal-up d5">
-          <span class="pip"></span>
-          <span>A Práxis organiza evidências e indicadores. A interpretação e a decisão final permanecem com a equipe responsável.</span>
-        </div>
-      </div>
-
-      <!-- interactive scenario -->
-      <div class="scenario reveal-up d4" id="demo" aria-label="Demonstração de um cenário">
-        <div class="sc-top">
-          <div class="sc-id">
-            <div class="avatar">PP</div>
-            <div>
-              <div class="who">Pessoa participante</div>
-              <div class="stage">Cenário 1/3 · abertura</div>
-            </div>
-          </div>
-          <div class="sc-timer"><span class="tdot"></span>00:24</div>
-        </div>
-        <div class="sc-body">
-          <div class="sc-tag">Cliente · furioso</div>
-          <p class="sc-msg">“Já é a terceira vez que abro chamado e ninguém resolve. Preciso disso hoje, ou vou escalar para cima.”</p>
-          <div class="sc-opts" role="group" aria-label="Como você agiria?">
-            <button class="opt"><span class="key">A</span><span>Pedir desculpas e prometer retorno em 30min, sem confirmar com o time.</span></button>
-            <button class="opt"><span class="key">B</span><span>Reconhecer a frustração, confirmar o número do chamado e dar um prazo realista alinhado ao time.</span></button>
-            <button class="opt"><span class="key">C</span><span>Explicar a política interna de SLA e pedir paciência até o próximo ciclo.</span></button>
-            <button class="opt"><span class="key">D</span><span>Encaminhar direto para o supervisor sem tentar resolver.</span></button>
-          </div>
-          <p class="sc-note" id="scNote">
-            <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2 4 5v6c0 5 3.4 8.3 8 11 4.6-2.7 8-6 8-11V5z"/></svg>
-          <span>Exemplo demonstrativo. Os critérios e os pontos são configurados pela organização responsável.</span>
-          </p>
-          <div class="sc-report" id="scReport" aria-live="polite">
-            <div class="rh"><span class="rl">Leitura desta decisão</span><span class="tag" id="rTag"></span></div>
-            <div class="pts" id="rPts"></div>
-            <p class="read" id="rRead"></p>
-            <p class="invisible-note">
-              <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3l18 18M10.6 10.6a2 2 0 0 0 2.9 2.9M9.5 5.2A9 9 0 0 1 21 12a13 13 0 0 1-2.1 2.9M6.3 6.3A13 13 0 0 0 3 12a12 12 0 0 0 6 6"/></svg>
-              <span>Pesos, critérios e marcadores ficam restritos à área de análise autorizada.</span>
-            </p>
-          </div>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- PROBLEM -->
-  <section class="sec sec-alt" id="problema">
-    <div class="wrap">
-      <div class="sec-head">
-        <span class="eyebrow">O problema</span>
-        <h2>Respostas teóricas não mostram, sozinhas, como critérios são aplicados em contexto.</h2>
-        <p class="lead">A Práxis permite apresentar situações, registrar escolhas e aplicar regras de pontuação configuradas antes da publicação da avaliação.</p>
-      </div>
-      <div class="split">
-        <div class="col bad">
-          <h3><span class="badge">Sem contexto estruturado</span></h3>
-          <ul class="clist">
-            <li><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>Critérios podem permanecer dispersos ou implícitos.</li>
-            <li><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>Respostas podem ser avaliadas sem uma referência comum.</li>
-            <li><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>O caminho percorrido pode não ficar registrado.</li>
-            <li><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>Alterações no conteúdo podem dificultar comparações posteriores.</li>
-          </ul>
-        </div>
-        <div class="col good">
-          <h3><span class="badge">Com a Práxis</span></h3>
-          <ul class="clist">
-            <li><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>Situações e alternativas são definidas pela equipe.</li>
-            <li><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>Competências, pesos e regras são configurados antes da publicação.</li>
-            <li><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>O caminho das respostas e os indicadores ficam organizados.</li>
-            <li><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>Versões e eventos relevantes podem ser consultados por usuários autorizados.</li>
-          </ul>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- HOW IT WORKS -->
-  <section class="sec" id="como">
-    <div class="wrap">
-      <div class="sec-head">
-        <span class="eyebrow">Como funciona</span>
-        <h2>Da avaliação aos registros, com critérios definidos pela sua equipe.</h2>
-        <p class="lead">A equipe define o objetivo, constrói cenários e caminhos, publica por link e analisa indicadores, respostas e eventos registrados.</p>
-      </div>
-      <div class="steps">
-        <div class="step">
-          <span class="rule"></span>
-          <span class="num">PASSO 01</span>
-          <h3>Estruture a avaliação</h3>
-          <p>Defina o objetivo, os cenários, as alternativas e os possíveis caminhos.</p>
-        </div>
-        <div class="step">
-          <span class="rule"></span>
-          <span class="num">PASSO 02</span>
-          <h3>Configure os critérios</h3>
-          <p>Associe competências, pesos, pontos e respostas que exigem análise humana.</p>
-        </div>
-        <div class="step">
-          <span class="num">PASSO 03</span>
-          <h3>Compartilhe e analise</h3>
-          <p>Envie o acesso por link e consulte respostas, percurso, indicadores, eventos e relatório de evidências.</p>
-        </div>
-      </div>
-
-      <!-- Mapa da simulação: product mock -->
-      <div class="builder">
-        <p class="blead">
-          <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
-          <span>Não é planilha nem formulário: a equipe desenha o cenário <b>visualmente</b>, ligando cada resposta ao próximo passo.</span>
-        </p>
-        <div class="appwin">
-          <div class="appbar"><span class="dots"><i></i><i></i><i></i></span><span class="url">praxis.iforce.com.br/nova/mapa</span></div>
-          <div class="mapwin">
-            <div class="maphead">
-              <span class="meyebrow">Passo 3 · construtor do fluxo</span>
-              <h3>Mapa da simulação</h3>
-              <div class="mapstats">
-                <span><b>6</b> etapas</span><span class="sep"></span>
-                <span><b>2</b> saídas</span><span class="sep"></span>
-                <span><b>0</b> encerramentos</span>
-                <span class="pill-amber"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 2h4M12 8v5l3 2M12 22a8 8 0 1 0 0-16 8 8 0 0 0 0 16z"/></svg> 6 sem tempo</span>
-              </div>
-            </div>
-            <div class="canvas">
-              <div class="canvas-inner">
-                <svg class="edges" viewBox="0 0 720 360" preserveAspectRatio="none" aria-hidden="true"><path d="M285 224 C355 224 360 84 430 84"/></svg>
-                <span class="edge-label" style="left:300px;top:188px">alternativa A</span>
-
-                <!-- turno-1 (raiz) -->
-                <article class="vxn root" style="left:30px;top:40px">
-                  <span class="vxport" style="left:-6px;top:78px;border-color:#aeb6c6"></span>
-                  <span class="vxport" style="right:-6px;top:184px"></span>
-                  <div class="vxmsg">
-                    <div class="vxhead">
-                      <span class="vxid"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16v11H8l-4 4z"/></svg>turno-1 <span class="vxbadge">início</span><svg class="vxlock" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 11h12v9H6zM9 11V8a3 3 0 0 1 6 0v3"/></svg></span>
-                      <span class="vxtimer"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8v5l3 2M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18z"/></svg>45s</span>
-                    </div>
-                    <div class="vxtext">Frustrado, o cliente entrou em contato após encontrar um erro no aplicativo e não…</div>
-                  </div>
-                  <div class="vxsec-l"><span>Competências</span><span>Acum.</span></div>
-                  <div class="vxcomp">
-                    <div class="vxcrow"><span class="cn">Comunicação</span><span class="cin">50</span><span class="cacc">50</span></div>
-                    <div class="vxcrow"><span class="cn">Resolução de Conflitos</span><span class="cin">50</span><span class="cacc">50</span></div>
-                    <div class="vxcrow"><span class="cn">Aderência à Política</span><span class="cin">0</span><span class="cacc z">0</span></div>
-                  </div>
-                  <div class="vxout">
-                    <div class="vxsec-l" style="padding:0 0 5px"><span>Saídas (respostas)</span></div>
-                    <div class="vxorow">
-                      <span class="otext">alternativa A</span>
-                      <span class="vxsel">→ turno-2 <svg viewBox="0 0 24 24" fill="none" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></span>
-                      <span class="vxbtn del"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg></span>
-                    </div>
-                  </div>
-                  <div class="vxto">
-                    <span class="tl"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 2h4M12 8v5l3 2M12 22a8 8 0 1 0 0-16 8 8 0 0 0 0 16z"/></svg> Tempo acaba</span>
-                    <span class="tsel">definir</span>
-                    <span class="add"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 6v12M6 12h12"/></svg></span>
-                  </div>
-                  <div class="vxfoot"><span class="fadd"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 6v12M6 12h12"/></svg> saída</span></div>
-                </article>
-
-                <!-- turno-2 -->
-                <article class="vxn" style="left:430px;top:40px">
-                  <span class="vxport" style="left:-6px;top:44px"></span>
-                  <div class="vxmsg">
-                    <div class="vxhead">
-                      <span class="vxid"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 15l6-6M8 8H6a4 4 0 0 0 0 8h2M16 16h2a4 4 0 0 0 0-8h-2"/></svg>turno-2</span>
-                      <span class="vxtimer"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8v5l3 2M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18z"/></svg>45s</span>
-                    </div>
-                    <div class="vxtext">O bug parece estar relacionado ao login. Já tentou reiniciar o aplicativo?</div>
-                  </div>
-                  <div class="vxsec-l"><span>Competências</span><span>Acum.</span></div>
-                  <div class="vxcomp">
-                    <div class="vxcrow"><span class="cn">Comunicação</span><span class="cin">50</span><span class="cacc">100</span></div>
-                    <div class="vxcrow"><span class="cn">Resolução de Conflitos</span><span class="cin">50</span><span class="cacc">100</span></div>
-                    <div class="vxcrow"><span class="cn">Aderência à Política</span><span class="cin">0</span><span class="cacc z">0</span></div>
-                  </div>
-                  <div class="vxout">
-                    <div class="vxsec-l" style="padding:0 0 5px"><span>Saídas (respostas)</span></div>
-                    <div class="vxorow">
-                      <span class="otext">Sim, reiniciei mas não…</span>
-                      <span class="vxsel">definir <svg viewBox="0 0 24 24" fill="none" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></span>
-                      <span class="vxbtn add"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 6v12M6 12h12"/></svg></span>
-                    </div>
-                  </div>
-                  <div class="vxto">
-                    <span class="tl"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 2h4M12 8v5l3 2M12 22a8 8 0 1 0 0-16 8 8 0 0 0 0 16z"/></svg> Tempo acaba</span>
-                    <span class="tsel">definir</span>
-                    <span class="add"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 6v12M6 12h12"/></svg></span>
-                  </div>
-                  <div class="vxfoot"><span class="fadd"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 6v12M6 12h12"/></svg> saída</span></div>
-                </article>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- FEATURES + SIGNATURE EVIDENCE CARD -->
-  <section class="sec sec-alt" id="evidencia">
-    <div class="wrap">
-      <div class="sec-head">
-        <span class="eyebrow">Por dentro</span>
-        <h2>Critérios configurados antes da aplicação. Registros disponíveis depois dela.</h2>
-        <p class="lead">O relatório reúne critérios, pesos, versão, percurso e pontos registrados para apoiar a compreensão do resultado. A decisão final permanece com a equipe responsável.</p>
-      </div>
-
-      <div class="feat-grid">
-        <div class="feats">
-          <div class="feat">
-            <h3><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v18M3 12h18"/></svg></span>Pontuação baseada em regras configuradas</h3>
-            <p>Os critérios, pesos e cálculos são definidos previamente e associados à versão publicada da avaliação.</p>
-          </div>
-          <div class="feat">
-            <h3><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h4l3-8 4 16 3-8h4"/></svg></span>Pontuação comparável entre caminhos</h3>
-            <p>A nota é normalizada pelo caminho percorrido, para que quem segue um cenário mais curto não seja penalizado por isso.</p>
-          </div>
-          <div class="feat">
-            <h3><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 12l2 2 4-4M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0z"/></svg></span>Origem da pontuação registrada</h3>
-            <p>Respostas, etapas, pontos por competência e eventos podem ser consultados para apoiar a análise do resultado.</p>
-          </div>
-          <div class="feat">
-            <h3><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a9 9 0 1 0 9 9M21 3l-9 9"/></svg></span>Revisão humana</h3>
-            <p>Respostas configuradas como críticas podem exigir análise da equipe responsável. A plataforma não toma a decisão final automaticamente.</p>
-          </div>
-          <div class="feat">
-            <h3><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16v14H4zM4 9h16M9 9v10"/></svg></span>Versionamento das avaliações</h3>
-            <p>Uma versão publicada pode ser preservada enquanto a equipe prepara e testa uma nova versão.</p>
-          </div>
-          <div class="feat">
-            <h3><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12a8 8 0 0 1 16 0M8 12a4 4 0 0 1 8 0M12 12v8"/></svg></span>Operação por link</h3>
-            <p>A avaliação pode ser aplicada diretamente pela Práxis, sem depender de integração com outro sistema.</p>
-          </div>
-        </div>
-
-        <!-- signature -->
-        <aside class="evidence" aria-label="Exemplo de cartão de evidência de uma participação">
-          <div class="ev-top">
-            <span class="t">Cartão de evidência · att_4f7c</span>
-            <span class="ev-seal"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 12l2 2 4-4M12 3a9 9 0 1 0 9 9 9 9 0 0 0-9-9z"/></svg>verificável</span>
-          </div>
-          <div class="ev-body">
-            <div class="ev-score">
-              <span class="n">82</span><span class="of">/100</span>
-              <span class="decision">Maior aderência aos critérios</span>
-            </div>
-            <div class="ev-comp" id="evComp">
-              <div class="cbar"><div class="clabel"><span>Comunicação</span><b>88</b></div><div class="track"><span class="fill" data-w="88"></span></div></div>
-              <div class="cbar"><div class="clabel"><span>Resolução de Conflitos</span><b>80</b></div><div class="track"><span class="fill" data-w="80"></span></div></div>
-              <div class="cbar"><div class="clabel"><span>Aderência à Política</span><b>76</b></div><div class="track"><span class="fill" data-w="76"></span></div></div>
-            </div>
-            <div class="ev-trail">
-              <div class="lab">Trilha de decisão</div>
-              <code>turno-1 ▸ <span class="ok">B</span>  +3 Comunicação · +2 Res. Conflitos
-turno-2 ▸ <span class="ok">A</span>  +2 Res. Conflitos · +1 Aderência
-turno-3 ▸ <span class="ok">C</span>  +2 Comunicação
-<span class="gold">sem erro crítico registrado</span></code>
-            </div>
-          </div>
-        </aside>
-      </div>
-    </div>
-  </section>
-
-  <!-- ONDE SE APLICA -->
-  <section class="sec" id="aplicacoes">
-    <div class="wrap">
-      <div class="sec-head">
-        <span class="eyebrow">Onde se aplica</span>
-        <h2>Uma estrutura de avaliação que pode ser adaptada a diferentes contextos.</h2>
-        <p class="lead">A Práxis pode ser configurada para situações em que uma equipe precisa apresentar cenários, registrar escolhas e analisar critérios previamente definidos.</p>
-      </div>
-      <div class="use-cases">
-        <div class="uc uc-recruit">
-          <span class="uc-ico"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg></span>
-          <h3>Seleção e mobilidade interna</h3>
-          <p>Avalie respostas a situações relacionadas a uma função, atividade ou contexto profissional.</p>
-          <div class="uc-examples">Seleção, mobilidade interna, sucessão e padronização entre unidades</div>
-        </div>
-        <div class="uc uc-edu">
-          <span class="uc-ico"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg></span>
-          <h3>Capacitação e desenvolvimento</h3>
-          <p>Utilize cenários para observar como participantes aplicam conhecimentos e critérios em situações simuladas.</p>
-          <div class="uc-examples">Capacitação, onboarding, reciclagem e certificação</div>
-        </div>
-        <div class="uc uc-corp">
-          <span class="uc-ico"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20V10M18 20V4M6 20v-4"/></svg></span>
-          <h3>Atendimento e operações</h3>
-          <p>Represente ocorrências, decisões, procedimentos e consequências presentes na rotina das equipes.</p>
-          <div class="uc-examples">Rotinas, escalonamento e atendimento</div>
-        </div>
-        <div class="uc uc-compliance">
-          <span class="uc-ico"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></span>
-          <h3>Procedimentos e conformidade</h3>
-          <p>Avalie a compreensão e a aplicação de orientações internas por meio de situações contextualizadas.</p>
-          <div class="uc-examples">Políticas, processos e procedimentos</div>
-        </div>
-        <div class="uc uc-public">
-          <span class="uc-ico"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5V5a2 2 0 0 1 2-2h12v18H6a2 2 0 0 1-2-1.5z"/><path d="M8 7h6M8 11h8M8 15h5"/></svg></span>
-          <h3>Educação e certificação</h3>
-          <p>Observe como participantes aplicam conceitos e critérios em casos práticos, além da resposta teórica.</p>
-          <div class="uc-examples">Cursos, provas práticas, certificações e trilhas de aprendizagem</div>
-        </div>
-        <div class="uc uc-health">
-          <span class="uc-ico"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-8 0v2"/><circle cx="12" cy="7" r="4"/><path d="M4 21h16M18 8l2 2 2-2"/></svg></span>
-          <h3>Treinamento de lideranças</h3>
-          <p>Simule conversas difíceis, decisões de gestão e situações que exigem julgamento consistente.</p>
-          <div class="uc-examples">Feedback, priorização, mediação de conflitos e tomada de decisão</div>
-        </div>
-      </div>
-      <p class="pfoot" style="margin-top:2.2rem">
-        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4M12 17h.01M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg>
-        As aplicações dependem dos cenários, critérios e conteúdos configurados pela organização responsável.
-      </p>
-    </div>
-  </section>
-
-  <!-- INTEGRAÇÕES -->
-  <section class="sec sec-alt" id="integracoes">
-    <div class="wrap">
-      <div class="sec-head">
-        <span class="eyebrow">Operação independente</span>
-        <h2>Compartilhe por link e integre apenas quando houver conector compatível.</h2>
-        <p class="lead">A Práxis funciona de forma independente por links. Quando houver uma integração compatível e configurada, o resultado também poderá ser enviado ao sistema integrado.</p>
-      </div>
-      <div class="integ-band">
-        <div class="flow">
-          <div class="fstep gp"><span class="fn">1</span><span>A equipe configura <b>cenários, critérios e pesos</b></span></div>
-          <div class="fstep"><span class="fn">2</span><span>A pessoa participante acessa a avaliação por link</span></div>
-          <div class="fstep"><span class="fn">3</span><span>Indicadores e registros ficam disponíveis para análise</span></div>
-          <div class="fstep gp"><span class="fn">4</span><span>Integrações opcionais dependem de disponibilidade e configuração</span></div>
-        </div>
-        <p class="flow-note"><span class="pip"></span><span>A operação por link não depende de outro sistema.</span></p>
-      </div>
-    </div>
-  </section>
-
-  <!-- GOVERNANCE (dark) -->
-  <section class="sec dark-band" id="governanca">
-    <div class="wrap">
-      <div class="sec-head">
-        <span class="eyebrow">Governança</span>
-        <h2>Recursos para apoiar governança, privacidade e revisão.</h2>
-        <p class="lead">Trilha cronológica, versionamento, relatório de evidências, retenção, anonimização e revisão humana apoiam a operação responsável das avaliações.</p>
-      </div>
-      <div class="gov-grid">
-        <div class="gov">
-          <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2zM9 9h6M9 13h6M9 17h4"/></svg></span>
-          <h3>Trilha protegida contra alteração</h3>
-          <p>Cada evento da tentativa fica registrado (criação, resposta, timeout e finalização) em trilha projetada para não ser alterada após o registro.</p>
-        </div>
-        <div class="gov">
-          <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 3v6c0 5-3.5 8-7 9-3.5-1-7-4-7-9V6z"/></svg></span>
-          <h3>Retenção e anonimização</h3>
-          <p>Bases legais expostas, retenção configurável e rotinas de anonimização parametrizáveis após o ciclo da avaliação apoiam práticas de privacidade.</p>
-        </div>
-        <div class="gov">
-          <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v18M5 7l7-4 7 4M5 7v6c0 4 3 6 7 7 4-1 7-3 7-7V7"/></svg></span>
-          <h3>Transparência auditável</h3>
-          <p>Pesos versionados e critérios visíveis permitem compreender como os indicadores apresentados foram formados. A organização é responsável pelo conteúdo da avaliação e pela decisão final.</p>
-        </div>
-      </div>
-      <div class="gov-foot">
-        <span class="chip">navegação por teclado nos fluxos principais</span>
-        <span class="chip">estrutura semântica e tempo ajustável por participação</span>
-        <span class="chip">dados separados por empresa</span>
-      </div>
-      <p class="lead" style="margin:2rem auto 0;text-align:center">
-        A conformidade depende também das finalidades, bases legais, configurações, contratos, políticas e práticas adotadas pela organização responsável.
-      </p>
-    </div>
-  </section>
-
-  <!-- CONTRATAÇÃO -->
-  <section class="sec" id="contratacao">
-    <div class="wrap">
-      <div class="sec-head">
-        <span class="eyebrow">Planos</span>
-        <h2>Comece por avaliação. Cresça quando fizer sentido.</h2>
-        <p class="lead">Você paga pelo volume de avaliações, não por assento. E a nota nunca é uma caixa-preta: cada resultado vem com o porquê registrado.</p>
-
-        <p class="all-plans">
-          <svg viewBox="0 0 24 24" fill="none" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"></path></svg>
-          Todos os recursos em todos os planos. Você escolhe só o volume.
-        </p>
-
-        <div class="cycle" role="group" aria-label="Ciclo de cobrança">
-          <button id="cycMonthly" class="cyc on" aria-pressed="true">Mensal</button>
-          <button id="cycAnnual" class="cyc" aria-pressed="false">Anual <span class="cyc-tag">até 20% OFF</span></button>
-        </div>
-        <p class="cycle-hint">No ciclo anual, o Profissional tem desconto de 10%, 15% ou 20% conforme a faixa — e o pool do ano inteiro entra de uma vez, para usar no seu ritmo.</p>
-      </div>
-
-      <div class="plans">
-        <div class="plan">
-          <div class="pname">Avulso</div>
-          <div class="pfor">Para pilotos e demanda pontual, sem nenhum compromisso.</div>
-          <div class="price"><span class="cur">R$</span><span class="amt">69,90</span><span class="per">/ avaliação</span></div>
-          <div class="psub">Sem mensalidade. Escolha pacotes de 1, 4, 8 ou 20 avaliações e use conforme a necessidade.</div>
-          <p class="phi">
-            <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"></path></svg>
-            Compre créditos e use no seu ritmo
-          </p>
-          <a class="btn btn-ghost" href="/billing">Comprar créditos</a>
-        </div>
-
-        <div class="plan feature">
-          <span class="ptag">Mais escolhido</span>
-          <div class="pname">Profissional</div>
-          <div class="pfor">Para quem avalia com volume recorrente. Quanto mais avaliações por mês, menor o preço de cada uma.</div>
-
-          <table class="tiers" aria-label="Pacotes por volume">
-            <thead>
-              <tr><th id="thQty">Avaliações/mês</th><th class="r">Cada</th><th class="r" id="thTotal">Total/mês</th></tr>
-            </thead>
-            <tbody>
-              <tr data-monthly-qty="30" data-annual-pool="360" data-monthly-unit="54,90" data-monthly-total="1.647,00" data-annual-unit="49,41" data-annual-total="17.787,60" data-off="10"><td class="q">30</td><td class="u">R$ 54,90</td><td class="t">R$ 1.647,00</td></tr>
-              <tr data-monthly-qty="60" data-annual-pool="720" data-monthly-unit="49,90" data-monthly-total="2.994,00" data-annual-unit="42,42" data-annual-total="30.538,80" data-off="15"><td class="q">60</td><td class="u">R$ 49,90</td><td class="t">R$ 2.994,00</td></tr>
-              <tr data-monthly-qty="100" data-annual-pool="1.200" data-monthly-unit="44,90" data-monthly-total="4.490,00" data-annual-unit="35,92" data-annual-total="43.104,00" data-off="20"><td class="q">100</td><td class="u">R$ 44,90</td><td class="t">R$ 4.490,00</td></tr>
-            </tbody>
-          </table>
-          <p class="tier-note" id="tierNote">A cota entra no seu saldo a cada mensalidade paga — e o que não usar acumula enquanto a assinatura estiver ativa.</p>
-
-          <a class="btn btn-primary" href="/billing">Contratar Profissional <span class="btn-arrow">→</span></a>
-        </div>
-
-        <div class="plan">
-          <div class="pname">Enterprise</div>
-          <div class="pfor">Para grandes volumes e empresas com jurídico e TI no processo.</div>
-          <div class="price consulta"><span class="amt">Sob consulta</span></div>
-          <div class="psub">O menor preço por avaliação, definido pelo seu volume.</div>
-          <p class="phi">
-            <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"></path></svg>
-            Preço e contrato negociados com você
-          </p>
-          <a class="btn btn-gold" href="mailto:contato@iforce.com.br?subject=Plano%20Enterprise%20da%20Pr%C3%A1xis">Falar com vendas</a>
-        </div>
-      </div>
-
-      <p class="roi">
-        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
-        <span>Uma decisão equivocada custa caro em qualquer área. Uma avaliação na Práxis custa <b>R$ 69,90</b>, e deixa registrado o porquê de cada decisão.</span>
-      </p>
-
-      <p class="cycle-cta">Na dúvida? Se quiser testar antes de pagar, <a href="mailto:contato@iforce.com.br?subject=Agendar%20uma%20POC%20da%20Pr%C3%A1xis">agende uma prova de conceito (POC)</a>.</p>
-    </div>
-  </section>
-
-  <!-- FAQ -->
-  <section class="sec sec-alt" id="faq">
-    <div class="wrap">
-      <div class="sec-head">
-        <span class="eyebrow">FAQ</span>
-        <h2>Perguntas frequentes</h2>
-      </div>
-      <div class="faq">
-        <div class="qa">
-          <button aria-expanded="false"><span class="q">A Práxis usa IA generativa para avaliar pessoas?</span><span class="ic"></span></button>
-          <div class="ans"><p>Não. A pontuação é calculada a partir de critérios, pesos e regras configurados previamente pela equipe responsável.</p></div>
-        </div>
-        <div class="qa">
-          <button aria-expanded="false"><span class="q">Preciso integrar a Práxis a outro sistema?</span><span class="ic"></span></button>
-          <div class="ans"><p>Não. A operação pode ser realizada por links diretos e acompanhada no painel. Integrações são opcionais e dependem da existência e configuração de um conector compatível.</p></div>
-        </div>
-        <div class="qa">
-          <button aria-expanded="false"><span class="q">Como funciona a contratação?</span><span class="ic"></span></button>
-          <div class="ans"><p>Há planos com preço aberto para uso avulso e para volumes recorrentes no Profissional, em ciclo mensal ou anual. O anual é cobrado de uma vez e libera o pool do ano inteiro de uma só vez (360, 720 ou 1.200 avaliações), com desconto de 10%, 15% ou 20% conforme a faixa; no mensal, a cota entra a cada mensalidade e o que não for usado acumula enquanto a assinatura estiver ativa. Operações Enterprise, integrações, suporte específico e condições contratuais ficam sob consulta conforme volume e escopo.</p></div>
-        </div>
-        <div class="qa">
-          <button aria-expanded="false"><span class="q">Quanto tempo leva para colocar no ar?</span><span class="ic"></span></button>
-          <div class="ans"><p>Com cenários já estruturados, a equipe pode ajustar o contexto, os critérios e os pesos, testar em modo piloto e publicar quando estiver pronto.</p></div>
-        </div>
-        <div class="qa">
-          <button aria-expanded="false"><span class="q">O participante vê pesos, gabarito ou marcadores críticos?</span><span class="ic"></span></button>
-          <div class="ans"><p>Não. A visão do participante é limpa. Pesos, critérios e marcadores ficam restritos ao painel admin e à trilha de auditoria.</p></div>
-        </div>
-        <div class="qa">
-          <button aria-expanded="false"><span class="q">A Práxis toma a decisão final?</span><span class="ic"></span></button>
-          <div class="ans"><p>Não. A plataforma organiza critérios, pontuações e registros para apoiar a análise. Respostas configuradas como críticas podem exigir revisão, e a interpretação e a decisão final permanecem com a equipe responsável.</p></div>
-        </div>
-        <div class="qa">
-          <button aria-expanded="false"><span class="q">Para quais contextos serve?</span><span class="ic"></span></button>
-          <div class="ans"><p>A Práxis pode ser configurada para diferentes contextos em que uma equipe precisa apresentar situações, registrar escolhas e analisar critérios previamente definidos. As aplicações dependem do conteúdo e dos critérios definidos pela organização responsável.</p></div>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- FINAL CTA -->
-  <section class="final" id="cta">
-    <div class="wrap">
-      <span class="eyebrow" style="justify-content:center;display:flex">Vamos conversar</span>
-      <h2 style="margin-top:1rem">Estruture cenários, critérios e evidências em um só fluxo.</h2>
-      <p class="lead">Conheça a criação de avaliações, a participação por link e a análise dos resultados em uma demonstração da Práxis.</p>
-      <div class="hero-ctas">
-        <a class="btn btn-primary" href="mailto:contato@iforce.com.br?subject=Demonstra%C3%A7%C3%A3o%20da%20Pr%C3%A1xis">Solicitar demonstração <span class="btn-arrow">→</span></a>
-        <a class="btn btn-ghost" href="#contratacao">Ver planos</a>
-      </div>
-    </div>
-  </section>
-
-</main>
-
-<footer id="entrar">
-  <div class="wrap foot-inner">
-    <a href="#topo" class="brand">Práxis<span class="dot"></span><small>by iForce</small></a>
-    <span class="fcopy">© 2026 iForce · praxis.iforce.com.br</span>
-  </div>
-</footer>`;
+const governanceItems = [
+  {
+    title: "Trilha de decisão",
+    description:
+      "Eventos da tentativa, respostas, tempos e finalização ficam disponíveis para análise e auditoria.",
+  },
+  {
+    title: "Critérios versionados",
+    description:
+      "Pesos, marcadores e regras permanecem vinculados à versão usada em cada aplicação.",
+  },
+  {
+    title: "Revisão humana",
+    description:
+      "A plataforma organiza evidências para apoiar a equipe responsável, sem substituir a decisão final.",
+  },
+] as const;
 
 function LandingPage() {
-  useEffect(() => {
-    const nav = document.getElementById("nav");
-    const menuBtn = document.getElementById("menuBtn");
-    const note = document.getElementById("scNote");
-    const report = document.getElementById("scReport");
-    const rTag = document.getElementById("rTag");
-    const rPts = document.getElementById("rPts");
-    const rRead = document.getElementById("rRead");
-
-    const cleanups: Array<() => void> = [];
-
-    if (nav) {
-      const onScroll = () => nav.classList.toggle("scrolled", window.scrollY > 8);
-      onScroll();
-      window.addEventListener("scroll", onScroll, { passive: true });
-      cleanups.push(() => window.removeEventListener("scroll", onScroll));
-    }
-
-    if (nav && menuBtn) {
-      const onMenuClick = () => {
-        const open = nav.classList.toggle("mobile-open");
-        menuBtn.setAttribute("aria-expanded", String(open));
-      };
-      menuBtn.addEventListener("click", onMenuClick);
-      cleanups.push(() => menuBtn.removeEventListener("click", onMenuClick));
-
-      document.querySelectorAll<HTMLAnchorElement>(".nav-links a").forEach((anchor) => {
-        const closeMenu = () => {
-          nav.classList.remove("mobile-open");
-          menuBtn.setAttribute("aria-expanded", "false");
-        };
-        anchor.addEventListener("click", closeMenu);
-        cleanups.push(() => anchor.removeEventListener("click", closeMenu));
-      });
-    }
-
-    const monthlyButton = document.getElementById("cycMonthly");
-    const annualButton = document.getElementById("cycAnnual");
-    const totalHeader = document.getElementById("thTotal");
-    const tierNote = document.getElementById("tierNote");
-    const tierRows = Array.from(document.querySelectorAll<HTMLTableRowElement>("#contratacao .tiers tbody tr"));
-
-    // Valores mensais e anuais espelham os planos cadastrados no módulo de cobrança
-    // (Profissional mensal e anual, com desconto de 10%, 15% e 20% por faixa).
-    const qtyHeader = document.getElementById("thQty");
-    const applyCycle = (annual: boolean) => {
-      if (totalHeader) totalHeader.textContent = annual ? "Total/ano" : "Total/mês";
-      if (qtyHeader) qtyHeader.textContent = annual ? "Pool anual" : "Avaliações/mês";
-      tierRows.forEach((row) => {
-        const qty = annual ? row.dataset.annualPool : row.dataset.monthlyQty;
-        const unit = annual ? row.dataset.annualUnit : row.dataset.monthlyUnit;
-        const total = annual ? row.dataset.annualTotal : row.dataset.monthlyTotal;
-        const qtyCell = row.querySelector<HTMLElement>(".q");
-        const unitCell = row.querySelector<HTMLElement>(".u");
-        const totalCell = row.querySelector<HTMLElement>(".t");
-        if (qtyCell) qtyCell.textContent = qty ?? "";
-        if (unitCell) {
-          unitCell.innerHTML =
-            "R$ " + unit + (annual ? ' <span class="tier-off">' + row.dataset.off + "% OFF</span>" : "");
-        }
-        if (totalCell) totalCell.textContent = "R$ " + total;
-      });
-      if (tierNote) {
-        tierNote.textContent = annual
-          ? "Cobrança única para 12 meses: o pool do ano inteiro entra de uma vez no seu saldo, já com o desconto da faixa, para usar no seu ritmo."
-          : "A cota entra no seu saldo a cada mensalidade paga — e o que não usar acumula enquanto a assinatura estiver ativa.";
-      }
-      monthlyButton?.classList.toggle("on", !annual);
-      annualButton?.classList.toggle("on", annual);
-      monthlyButton?.setAttribute("aria-pressed", String(!annual));
-      annualButton?.setAttribute("aria-pressed", String(annual));
-    };
-
-    if (monthlyButton && annualButton) {
-      const onMonthlyClick = () => applyCycle(false);
-      const onAnnualClick = () => applyCycle(true);
-      monthlyButton.addEventListener("click", onMonthlyClick);
-      annualButton.addEventListener("click", onAnnualClick);
-      cleanups.push(() => monthlyButton.removeEventListener("click", onMonthlyClick));
-      cleanups.push(() => annualButton.removeEventListener("click", onAnnualClick));
-    }
-
-    const reads: Record<
-      string,
-      { tag: string; cls: string; pts: Array<[string, number]>; read: string }
-    > = {
-      A: {
-        tag: "Decisão registrada",
-        cls: "tag-ok",
-        pts: [
-          ["Comunicação", 2],
-          ["Resolução de Conflitos", 0],
-          ["Aderência à Política", 0],
-        ],
-        read: "<b>Acolhe, mas promete sem garantir.</b> Cria uma expectativa que o time pode não conseguir cumprir.",
-      },
-      B: {
-        tag: "Decisão registrada",
-        cls: "tag-ok",
-        pts: [
-          ["Comunicação", 3],
-          ["Resolução de Conflitos", 2],
-          ["Aderência à Política", 1],
-        ],
-        read: "<b>Acolhe, assume responsabilidade e alinha com o time.</b> A resposta mais equilibrada do turno.",
-      },
-      C: {
-        tag: "Decisão registrada",
-        cls: "tag-ok",
-        pts: [
-          ["Comunicação", 1],
-          ["Resolução de Conflitos", 0],
-          ["Aderência à Política", 2],
-        ],
-        read: "<b>Tecnicamente correta, porém fria.</b> Segue a política, mas ignora um cliente já irritado.",
-      },
-      D: {
-        tag: "Aciona revisão humana",
-        cls: "tag-rev",
-        pts: [
-          ["Comunicação", 0],
-          ["Resolução de Conflitos", 0],
-          ["Aderência à Política", 0],
-        ],
-        read: "<b>Esquiva da situação.</b> Marcada como decisão crítica e encaminhada para a revisão de uma pessoa.",
-      },
-    };
-
-    const acc: Record<string, number> = { "Comunicação": 0, "Resolução de Conflitos": 0, "Aderência à Política": 0 };
-    const best: Record<string, number> = {};
-    reads.B.pts.forEach(([name, value]) => { best[name] = value; });
-
-    document.querySelectorAll<HTMLButtonElement>(".opt").forEach((button) => {
-      const onPick = () => {
-        document.querySelectorAll(".opt").forEach((option) => option.classList.remove("picked"));
-        button.classList.add("picked");
-        const key = button.querySelector(".key")?.textContent?.trim() ?? "";
-        const data = reads[key];
-        if (!data || !note || !report || !rTag || !rPts || !rRead) return;
-
-        data.pts.forEach(([name, value]) => { acc[name] += value; });
-
-        note.style.display = "none";
-        rTag.textContent = data.tag;
-        rTag.className = "tag " + data.cls;
-        rPts.innerHTML = data.pts
-          .map(
-            ([name, value]) => {
-              const pct = best[name] > 0 ? Math.round((value / best[name]) * 100) : 0;
-              return '<div class="ptrow"><span class="pn">' +
-              name +
-              '</span><span class="pt-track"><span class="pt-fill" data-w="' +
-              pct +
-              '"></span></span><span class="pv' +
-              (value === 0 ? " zero" : "") +
-              '">+' +
-              value +
-              '<span class="acc">acum ' + acc[name] + '</span>' +
-              "</span></div>";
-            },
-          )
-          .join("");
-        rRead.innerHTML = data.read;
-        report.classList.add("show");
-        requestAnimationFrame(() => {
-          rPts.querySelectorAll<HTMLElement>(".pt-fill[data-w]").forEach((el) => {
-            el.style.width = el.dataset.w + "%";
-          });
-        });
-      };
-      button.addEventListener("click", onPick);
-      cleanups.push(() => button.removeEventListener("click", onPick));
-    });
-
-    document.querySelectorAll<HTMLButtonElement>(".qa button").forEach((button) => {
-      const onToggle = () => {
-        const qa = button.parentElement;
-        const ans = qa?.querySelector<HTMLElement>(".ans");
-        if (!qa || !ans) return;
-        const open = qa.classList.toggle("open");
-        button.setAttribute("aria-expanded", String(open));
-        ans.style.maxHeight = open ? ans.scrollHeight + "px" : "0";
-      };
-      button.addEventListener("click", onToggle);
-      cleanups.push(() => button.removeEventListener("click", onToggle));
-    });
-
-    const evComp = document.getElementById("evComp");
-    if (evComp) {
-      const fills = evComp.querySelectorAll<HTMLElement>(".fill[data-w]");
-      const obs = new IntersectionObserver(
-        (entries) => {
-          entries.forEach((entry) => {
-            if (entry.isIntersecting) {
-              fills.forEach((el) => { el.style.width = el.dataset.w + "%"; });
-              obs.disconnect();
-            }
-          });
-        },
-        { threshold: 0.3 },
-      );
-      obs.observe(evComp);
-      cleanups.push(() => obs.disconnect());
-    }
-
-    return () => cleanups.forEach((cleanup) => cleanup());
-  }, []);
-
   return (
-    <>
-      <style>{landingStyles}</style>
-      <div dangerouslySetInnerHTML={{ __html: landingMarkup }} />
-    </>
+    <div className="min-h-screen bg-[#fbfaf6] text-slate-900 [font-family:'IBM_Plex_Sans',sans-serif]">
+      <header className="sticky top-0 z-30 border-b border-slate-200/80 bg-[#fbfaf6]/95 backdrop-blur">
+        <div className="mx-auto flex min-h-16 max-w-6xl flex-wrap items-center justify-between gap-4 px-5 py-3 sm:px-8">
+          <a href="#topo" className="font-serif text-2xl font-semibold tracking-tight">
+            Práxis <span className="text-amber-500">•</span>
+          </a>
+          <nav aria-label="Navegação principal" className="flex flex-wrap items-center justify-end gap-x-5 gap-y-2 text-sm font-medium text-slate-600">
+            <a className="transition hover:text-sky-700" href="#como-funciona">
+              Como funciona
+            </a>
+            <a className="transition hover:text-sky-700" href="#aplicacoes">
+              Aplicações
+            </a>
+            <a className="transition hover:text-sky-700" href="#governanca">
+              Governança
+            </a>
+            <a className="transition hover:text-sky-700" href="#contratacao">
+              Planos
+            </a>
+            <a
+              className="rounded-full bg-slate-900 px-4 py-2 font-semibold text-white transition hover:bg-sky-800"
+              href="/login"
+            >
+              Entrar
+            </a>
+          </nav>
+        </div>
+      </header>
+
+      <main id="topo">
+        <section className="relative overflow-hidden px-5 py-20 sm:px-8 sm:py-28">
+          <div className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_top_right,rgba(14,165,233,0.14),transparent_34%),radial-gradient(circle_at_top_left,rgba(245,158,11,0.12),transparent_30%)]" />
+          <div className="mx-auto grid max-w-6xl items-center gap-12 lg:grid-cols-[1.1fr_0.9fr]">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.22em] text-sky-700">
+                Avaliações situacionais estruturadas
+              </p>
+              <h1 className="mt-5 max-w-4xl font-serif text-5xl font-medium leading-[1.05] tracking-tight text-slate-950 sm:text-7xl">
+                Observe decisões em cenários próximos da realidade.
+              </h1>
+              <p className="mt-7 max-w-2xl text-lg leading-8 text-slate-600 sm:text-xl">
+                Crie cenários interativos, configure critérios e pesos, compartilhe por link e acompanhe
+                indicadores e registros do percurso.
+              </p>
+              <div className="mt-9 flex flex-wrap gap-3">
+                <a
+                  className="inline-flex min-h-12 items-center justify-center rounded-full bg-sky-700 px-6 font-semibold text-white shadow-lg shadow-sky-950/15 transition hover:bg-sky-800"
+                  href="mailto:contato@iforce.com.br?subject=Demonstra%C3%A7%C3%A3o%20da%20Pr%C3%A1xis"
+                >
+                  Solicitar demonstração
+                </a>
+                <a
+                  className="inline-flex min-h-12 items-center justify-center rounded-full border border-slate-300 bg-white px-6 font-semibold text-slate-800 transition hover:border-sky-700 hover:text-sky-700"
+                  href="#contratacao"
+                >
+                  Ver planos
+                </a>
+              </div>
+            </div>
+
+            <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-2xl shadow-slate-950/10 sm:p-8">
+              <div className="flex items-center justify-between gap-4 border-b border-slate-100 pb-5">
+                <div>
+                  <p className="text-sm font-semibold text-slate-900">Cenário de atendimento</p>
+                  <p className="text-xs text-slate-500">Turno 1 de 3</p>
+                </div>
+                <span className="rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-800">
+                  Situação crítica
+                </span>
+              </div>
+              <p className="mt-6 font-serif text-2xl leading-9 text-slate-900">
+                Um cliente relata atraso e exige uma solução imediata que depende de outra equipe. Como você
+                responde?
+              </p>
+              <div className="mt-6 space-y-3">
+                {[
+                  "Prometo resolver ainda hoje, mesmo sem confirmação.",
+                  "Acolho a reclamação, assumo o acompanhamento e alinho o prazo com a equipe responsável.",
+                  "Informo apenas o prazo padrão previsto na política.",
+                ].map((answer, index) => (
+                  <div
+                    key={answer}
+                    className={
+                      index === 1
+                        ? "flex gap-3 rounded-xl border-2 border-sky-700 bg-sky-50 p-4 text-sm leading-6 text-slate-800"
+                        : "flex gap-3 rounded-xl border border-slate-200 p-4 text-sm leading-6 text-slate-600"
+                    }
+                  >
+                    <span className="font-semibold text-sky-800">{String.fromCharCode(65 + index)}</span>
+                    <span>{answer}</span>
+                  </div>
+                ))}
+              </div>
+              <div className="mt-6 grid grid-cols-3 gap-3 text-center text-xs">
+                <Indicator label="Comunicação" value="+3" />
+                <Indicator label="Conflitos" value="+2" />
+                <Indicator label="Aderência" value="+1" />
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section id="como-funciona" className="bg-white px-5 py-20 sm:px-8">
+          <div className="mx-auto max-w-6xl">
+            <div className="mx-auto max-w-3xl text-center">
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-sky-700">Como funciona</p>
+              <h2 className="mt-3 font-serif text-3xl font-semibold tracking-tight sm:text-5xl">
+                Da criação do cenário à análise das evidências.
+              </h2>
+            </div>
+            <div className="mt-12 grid gap-6 md:grid-cols-3">
+              <ProcessCard number="01" title="Configure" description="Defina cenários, alternativas, critérios, pesos, tempos e marcadores que exigem revisão." />
+              <ProcessCard number="02" title="Compartilhe" description="Publique a avaliação e envie o acesso por link, sem depender de integração com outro sistema." />
+              <ProcessCard number="03" title="Analise" description="Acompanhe indicadores, respostas e a trilha cronológica usada para compor o resultado." />
+            </div>
+          </div>
+        </section>
+
+        <section id="aplicacoes" className="px-5 py-20 sm:px-8">
+          <div className="mx-auto max-w-6xl">
+            <div className="max-w-3xl">
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-sky-700">Onde se aplica</p>
+              <h2 className="mt-3 font-serif text-3xl font-semibold tracking-tight sm:text-5xl">
+                Uma estrutura adaptável a diferentes contextos.
+              </h2>
+              <p className="mt-5 text-lg leading-8 text-slate-600">
+                A aplicação depende dos cenários, critérios e conteúdos definidos pela organização responsável.
+              </p>
+            </div>
+            <div className="mt-10 grid gap-5 sm:grid-cols-2">
+              {applications.map((application) => (
+                <article key={application.title} className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+                  <h3 className="text-lg font-semibold">{application.title}</h3>
+                  <p className="mt-3 leading-7 text-slate-600">{application.description}</p>
+                </article>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        <section id="governanca" className="bg-slate-950 px-5 py-20 text-white sm:px-8">
+          <div className="mx-auto max-w-6xl">
+            <div className="max-w-3xl">
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-sky-300">Governança</p>
+              <h2 className="mt-3 font-serif text-3xl font-semibold tracking-tight sm:text-5xl">
+                Recursos para apoiar privacidade, revisão e rastreabilidade.
+              </h2>
+            </div>
+            <div className="mt-12 grid gap-6 md:grid-cols-3">
+              {governanceItems.map((item) => (
+                <article key={item.title} className="rounded-2xl border border-slate-700 bg-slate-900 p-6">
+                  <h3 className="text-lg font-semibold">{item.title}</h3>
+                  <p className="mt-3 leading-7 text-slate-300">{item.description}</p>
+                </article>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        <LandingPricingSection />
+        <LandingFaqSection />
+
+        <section className="px-5 py-20 text-center sm:px-8">
+          <div className="mx-auto max-w-4xl rounded-3xl bg-sky-800 px-6 py-14 text-white shadow-2xl shadow-sky-950/20 sm:px-12">
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-sky-200">Vamos conversar</p>
+            <h2 className="mt-4 font-serif text-3xl font-semibold tracking-tight sm:text-5xl">
+              Estruture cenários, critérios e evidências em um só fluxo.
+            </h2>
+            <p className="mx-auto mt-5 max-w-2xl text-lg leading-8 text-sky-100">
+              Conheça a criação de avaliações, a participação por link e a análise dos resultados em uma
+              demonstração da Práxis.
+            </p>
+            <a
+              className="mt-8 inline-flex min-h-12 items-center justify-center rounded-full bg-white px-6 font-semibold text-sky-900 transition hover:bg-sky-50"
+              href="mailto:contato@iforce.com.br?subject=Demonstra%C3%A7%C3%A3o%20da%20Pr%C3%A1xis"
+            >
+              Solicitar demonstração
+            </a>
+          </div>
+        </section>
+      </main>
+
+      <footer className="border-t border-slate-200 bg-white px-5 py-8 sm:px-8">
+        <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-4 text-sm text-slate-500">
+          <a href="#topo" className="font-serif text-xl font-semibold text-slate-900">
+            Práxis <span className="text-amber-500">•</span>
+          </a>
+          <span>© 2026 iForce · praxis.iforce.com.br</span>
+        </div>
+      </footer>
+    </div>
+  );
+}
+
+function Indicator({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-lg bg-slate-50 p-3">
+      <div className="font-semibold text-sky-700">{value}</div>
+      <div className="mt-1 text-slate-500">{label}</div>
+    </div>
+  );
+}
+
+function ProcessCard({ number, title, description }: { number: string; title: string; description: string }) {
+  return (
+    <article className="rounded-2xl border border-slate-200 bg-slate-50 p-6">
+      <span className="text-sm font-semibold text-sky-700">{number}</span>
+      <h3 className="mt-4 text-xl font-semibold">{title}</h3>
+      <p className="mt-3 leading-7 text-slate-600">{description}</p>
+    </article>
   );
 }
