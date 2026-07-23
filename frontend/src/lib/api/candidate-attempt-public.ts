@@ -1,10 +1,10 @@
+import type {
+  CandidateAttemptContract,
+  SubmitAnswerRequestContract,
+  SubmitAnswerResponseContract,
+} from "@/lib/api/candidate-attempt-contract";
 import { getCandidateIntegritySession } from "@/lib/api/candidate-integrity";
 import { apiRequest } from "@/lib/api/http";
-import type {
-  CandidateAttemptResponse as LegacyCandidateAttemptResponse,
-  SubmitAnswerRequest,
-  SubmitAnswerResponse,
-} from "@/lib/api/praxis";
 
 const INTEGRITY_SESSION_HEADER = "X-Praxis-Integrity-Session";
 export const HEALTH_CONSENT_VERSION = "2026-06-01";
@@ -16,7 +16,7 @@ export interface HealthConsentStatusResponse {
   noticeVersion: string | null;
 }
 
-export type CandidateAttemptResponse = LegacyCandidateAttemptResponse & {
+export type CandidateAttemptResponse = CandidateAttemptContract & {
   healthConsentValid: boolean;
   healthConsentNoticeVersion: string | null;
 };
@@ -38,7 +38,7 @@ export async function getCandidateAttempt(token: string): Promise<CandidateAttem
     return pendingHealthConsentAttempt(consentStatus);
   }
 
-  const attempt = await apiRequest<LegacyCandidateAttemptResponse>(
+  const attempt = await apiRequest<CandidateAttemptContract>(
     `/candidate/attempts/${encodeURIComponent(token)}`,
     { headers: integrityHeaders(token) },
     {
@@ -84,9 +84,9 @@ export function revokeHealthConsent(token: string): Promise<void> {
 
 export function submitCandidateAnswer(
   token: string,
-  body: SubmitAnswerRequest,
-): Promise<SubmitAnswerResponse> {
-  return apiRequest<SubmitAnswerResponse>(
+  body: SubmitAnswerRequestContract,
+): Promise<SubmitAnswerResponseContract> {
+  return apiRequest<SubmitAnswerResponseContract>(
     `/candidate/attempts/${encodeURIComponent(token)}/answers`,
     {
       method: "POST",
@@ -99,6 +99,9 @@ export function submitCandidateAnswer(
     },
   );
 }
+
+export type SubmitAnswerRequest = SubmitAnswerRequestContract;
+export type SubmitAnswerResponse = SubmitAnswerResponseContract;
 
 function pendingHealthConsentAttempt(status: HealthConsentStatusResponse): CandidateAttemptResponse {
   return {
