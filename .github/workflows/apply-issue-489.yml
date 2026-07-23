@@ -28,26 +28,43 @@ jobs:
         id: guard
         shell: bash
         run: |
-          if [ ! -f scripts/apply_issue_489.py ]; then
+          if [ ! -f scripts/apply_issue_489.py ] || [ -f .github/issue-489-patch-error.log ]; then
             echo "apply=false" >> "$GITHUB_OUTPUT"
           else
             echo "apply=true" >> "$GITHUB_OUTPUT"
           fi
 
       - name: Aplicar alterações e validar contrato
+        id: patch
         if: steps.guard.outputs.apply == 'true'
+        continue-on-error: true
         shell: bash
         run: |
           set -o pipefail
-          echo "=== APPLY ISSUE 489 PATCH ==="
-          PYTHONUNBUFFERED=1 python3 scripts/apply_issue_489.py 2>&1 | tee /tmp/issue-489-patch.log
-          echo "=== VALIDATE ISSUE 489 CONTRACT ==="
-          node frontend/scripts/test-candidate-experience-i18n.mjs
-          git rm scripts/apply_issue_489.py
-          git rm .github/workflows/apply-issue-489.yml
+          {
+            echo "=== APPLY ISSUE 489 PATCH ==="
+            PYTHONUNBUFFERED=1 python3 scripts/apply_issue_489.py
+            echo "=== VALIDATE ISSUE 489 CONTRACT ==="
+            node frontend/scripts/test-candidate-experience-i18n.mjs
+            git rm scripts/apply_issue_489.py
+            git rm .github/workflows/apply-issue-489.yml
+          } 2>&1 | tee /tmp/issue-489-patch.log
+
+      - name: Registrar diagnóstico da falha
+        if: steps.guard.outputs.apply == 'true' && steps.patch.outcome == 'failure'
+        shell: bash
+        run: |
+          git reset --hard HEAD
+          cp /tmp/issue-489-patch.log .github/issue-489-patch-error.log
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add .github/issue-489-patch-error.log
+          git commit -m "chore(i18n): registrar diagnóstico da issue 489"
+          git push origin HEAD:${{ github.head_ref }}
+          exit 1
 
       - name: Registrar correção
-        if: steps.guard.outputs.apply == 'true'
+        if: steps.guard.outputs.apply == 'true' && steps.patch.outcome == 'success'
         shell: bash
         run: |
           git config user.name "github-actions[bot]"
