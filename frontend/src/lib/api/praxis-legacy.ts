@@ -201,7 +201,7 @@ export interface SimulationVersionOptionResponse {
   isCritical: boolean;
   nextNodeId: string | null;
   auditNote: string;
-  plainTextDescriptioetapa: string | null;
+  plainTextDescription: string | null;
   audioDescriptionUrl?: string | null;
   mediaUrl: string | null;
   mediaType: MediaType | null;
@@ -218,7 +218,7 @@ export interface SimulationVersionNodeResponse {
   reportText: string | null;
   positionX: number | null;
   positionY: number | null;
-  plainTextDescriptioetapa: string | null;
+  plainTextDescription: string | null;
   audioDescriptionUrl?: string | null;
   mediaUrl: string | null;
   mediaType: MediaType | null;
@@ -243,13 +243,13 @@ export interface SimulationVersionDetailResponse {
 export interface CreateNodeRequest {
   clientMessage?: string | null;
   timeLimitSeconds?: number | null;
-  timeJustificatioetapa?: string | null;
+  timeJustification?: string | null;
   timeoutNextNodeId?: string | null;
   isFinal?: boolean;
   reportText?: string | null;
   positionX?: number | null;
   positionY?: number | null;
-  plainTextDescriptioetapa?: string | null;
+  plainTextDescription?: string | null;
   audioDescriptionUrl?: string | null;
   mediaUrl?: string | null;
   mediaType?: MediaType | null;
@@ -258,13 +258,13 @@ export interface CreateNodeRequest {
 export interface UpdateNodeRequest {
   clientMessage?: string;
   timeLimitSeconds?: number | null;
-  timeJustificatioetapa?: string | null;
+  timeJustification?: string | null;
   timeoutNextNodeId?: string | null;
   isFinal?: boolean;
   reportText?: string | null;
   positionX?: number | null;
   positionY?: number | null;
-  plainTextDescriptioetapa?: string | null;
+  plainTextDescription?: string | null;
   audioDescriptionUrl?: string | null;
   mediaUrl?: string | null;
   mediaType?: MediaType | null;
@@ -277,7 +277,7 @@ export interface CreateOptionRequest {
   isCritical: boolean;
   nextNodeId?: string | null;
   resultingTone?: string | null;
-  plainTextDescriptioetapa?: string | null;
+  plainTextDescription?: string | null;
   audioDescriptionUrl?: string | null;
   mediaUrl?: string | null;
   mediaType?: MediaType | null;
@@ -290,7 +290,7 @@ export interface UpdateOptionRequest {
   isCritical?: boolean;
   nextNodeId?: string | null;
   resultingTone?: string | null;
-  plainTextDescriptioetapa?: string | null;
+  plainTextDescription?: string | null;
   audioDescriptionUrl?: string | null;
   mediaUrl?: string | null;
   mediaType?: MediaType | null;
