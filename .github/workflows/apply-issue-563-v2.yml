@@ -1,0 +1,78 @@
+name: Aplicar correção mínima da issue 563
+
+on:
+  pull_request:
+    branches: [main]
+    types: [synchronize, reopened]
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    if: ${{ github.head_ref == 'fix/563-integrity-review-injection-20260723' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+          fetch-depth: 0
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: maven
+          cache-dependency-path: backend/pom.xml
+      - name: Aplicar e testar
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          path = Path("backend/src/main/java/br/com/iforce/praxis/integrity/service/IntegrityReviewService.java")
+          source = path.read_text(encoding="utf-8")
+          source = source.replace(
+              "import org.springframework.beans.factory.annotation.Value;",
+              "import org.springframework.beans.factory.annotation.Autowired;\nimport org.springframework.beans.factory.annotation.Value;",
+              1,
+          )
+          source = source.replace(
+              "    public IntegrityReviewService(",
+              "    @Autowired\n    public IntegrityReviewService(",
+              1,
+          )
+          path.write_text(source, encoding="utf-8")
+
+          test = Path("backend/src/test/java/br/com/iforce/praxis/integrity/service/IntegrityReviewServiceSpringWiringTest.java")
+          lines = [
+              "package br.com.iforce.praxis.integrity.service;",
+              "",
+              "import org.junit.jupiter.api.Test;",
+              "import org.springframework.beans.factory.annotation.Autowired;",
+              "",
+              "import static org.assertj.core.api.Assertions.assertThat;",
+              "",
+              "class IntegrityReviewServiceSpringWiringTest {",
+              "",
+              "    @Test",
+              "    void declaresProductionConstructorForSpringInjection() {",
+              "        assertThat(IntegrityReviewService.class.getConstructors()).hasSize(1);",
+              "        assertThat(IntegrityReviewService.class.getConstructors()[0]",
+              "                .isAnnotationPresent(Autowired.class)).isTrue();",
+              "    }",
+              "}",
+              "",
+          ]
+          test.write_text("\n".join(lines), encoding="utf-8")
+          PY
+          cd backend
+          mvn -B -Dtest=IntegrityReviewServiceTest,IntegrityReviewServiceSpringWiringTest test
+          cd ..
+          git rm -f .github/workflows/apply-issue-563.yml
+          git rm -f .github/workflows/apply-issue-563-v2.yml
+      - name: Commitar
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "fix(backend): declarar construtor injetável da revisão de integridade (#563)"
+          git push origin HEAD:${{ github.head_ref }}
