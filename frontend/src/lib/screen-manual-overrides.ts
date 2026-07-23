@@ -267,6 +267,54 @@ export const SCREEN_MANUAL_OVERRIDES: ScreenManualDefinition[] = [
     ],
     matches: (pathname) => pathname === "/configuracoes/perfil",
   },
+  {
+    id: "feature-flags",
+    title: "Feature flags e rollout progressivo",
+    purpose: "Controlar liberações graduais por contexto, reduzir risco operacional e interromper recursos críticos sem novo deploy.",
+    flow: [
+      "Crie a flag informando chave, finalidade, responsável, padrão seguro e prazo de remoção quando temporária.",
+      "Defina os escopos explícitos por empresa, ambiente, plano, usuário ou papel e, quando necessário, um percentual de rollout.",
+      "Use Simular para confirmar a variante estável que será entregue a um identificador antes de ativar.",
+      "Ative a flag para iniciar a avaliação dos escopos e acompanhe métricas por variante.",
+      "Acione Bloquear para interromper imediatamente o recurso e libere o kill switch somente após resolver o risco.",
+      "Remova flags expiradas conforme o plano registrado e preserve o histórico de auditoria.",
+    ],
+    fields: [
+      { name: "Chave", description: "Identificador técnico minúsculo e estável, sem dados pessoais ou segredos." },
+      { name: "Descrição", description: "Objetivo operacional e comportamento liberado pela flag." },
+      { name: "Responsável", description: "Pessoa ou equipe accountable pela decisão, observação e remoção." },
+      { name: "Padrão ligado", description: "Valor seguro aplicado quando nenhum escopo ou override decidir a variante." },
+      { name: "Override global", description: "Força ON ou OFF depois dos escopos e do rollout, ou mantém o padrão." },
+      { name: "Rollout percentual", description: "Percentual de 0 a 100 calculado por hash estável do identificador." },
+      { name: "Escopos", description: "Listas de empresas, ambientes, planos, usuários e papéis liberados explicitamente." },
+      { name: "Exposta ao frontend", description: "Permite retornar somente o valor booleano avaliado, sem revelar regras internas." },
+      { name: "Expiração", description: "Data obrigatória para flag temporária, acompanhada do plano de remoção." },
+    ],
+    permissions: [
+      "Somente perfil ADMIN pode criar, editar, ativar, desativar, simular ou acionar kill switch.",
+      "Usuários autenticados recebem apenas flags marcadas para frontend e já avaliadas no próprio contexto.",
+    ],
+    states: ["Inativa", "Ativa", "Bloqueada por kill switch", "Expirada", "Salvando", "Erro"],
+    blocks: [
+      "Chave, descrição ou responsável ausente.",
+      "Rollout fora do intervalo de 0 a 100.",
+      "Flag temporária sem expiração ou plano de remoção.",
+      "Tentativa de alterar pontuação, gabarito ou tratamento de avaliação publicada.",
+      "Usuário sem perfil ADMIN.",
+      "Chave já utilizada por outra flag.",
+    ],
+    examples: [
+      "Liberar um novo painel para duas empresas piloto e depois ampliar de 10% para 50% mantendo o mesmo bucket por usuário.",
+      "Acionar o kill switch após aumento de falhas de integração, sem aguardar novo deploy.",
+    ],
+    shortcuts: [
+      "Use Simular antes de ativar para validar empresa e identificador estável.",
+      "Escopos explícitos têm precedência sobre rollout percentual.",
+      "O kill switch sempre vence os demais escopos.",
+      "Consulte a auditoria para identificar autor, alteração e horário.",
+    ],
+    matches: (pathname) => pathname === "/admin/feature-flags",
+  },
 ];
 
 export function resolveScreenManualOverride(pathname: string) {

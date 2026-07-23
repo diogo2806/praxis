@@ -1,8 +1,9 @@
 import type { ReactNode } from "react";
 import { useState } from "react";
 import { Link, useRouterState } from "@tanstack/react-router";
-import { Building2, LayoutDashboard, Menu, ShieldCheck, X } from "lucide-react";
+import { Building2, Flag, LayoutDashboard, Menu, ShieldCheck, X } from "lucide-react";
 import { LanguageSelector } from "@/components/language-selector";
+import { ScreenManual } from "@/components/screen-manual";
 import { useLanguage } from "@/lib/language-context";
 import { cn } from "@/lib/utils";
 
@@ -20,6 +21,7 @@ export function AdminShell({ children }: { children: ReactNode }) {
   const navItems = [
     { to: "/admin", label: t.admin.dashboard, icon: LayoutDashboard, exact: true },
     { to: "/admin/empresas", label: t.admin.clients, icon: Building2, exact: false },
+    { to: "/admin/feature-flags", label: "Feature flags", icon: Flag, exact: false },
   ];
 
   const navLinkClass = (active: boolean) =>
@@ -59,6 +61,7 @@ export function AdminShell({ children }: { children: ReactNode }) {
                 );
               })}
             </nav>
+            <ScreenManual pathname={pathname} iconOnly className="h-11 w-11 rounded-md shadow-none" />
             <LanguageSelector />
             <button
               type="button"
