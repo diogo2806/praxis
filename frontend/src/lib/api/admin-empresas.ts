@@ -3,7 +3,7 @@ import type {
   CommercialPlanType,
   EmpresaAdminSummary,
   EmpresaStatus,
-} from "@/lib/api/praxis-legacy";
+} from "@/lib/api/praxis";
 
 export interface AdminEmpresaFilters {
   search?: string;
