@@ -17,7 +17,8 @@
     "test:authoring-flow": "node scripts/test-authoring-flow.mjs",
     "test:health-consent": "node scripts/test-health-consent-gate.mjs",
     "test:candidate-media-a11y": "node scripts/test-candidate-media-accessibility.mjs",
-    "test:candidate-i18n": "node scripts/test-candidate-execution-i18n.mjs"
+    "test:candidate-i18n": "node scripts/test-candidate-execution-i18n.mjs",
+    "test:landing-commercial": "node scripts/test-landing-commercial.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
