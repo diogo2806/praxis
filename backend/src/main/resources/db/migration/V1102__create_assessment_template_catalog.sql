@@ -20,6 +20,7 @@ CREATE TABLE assessment_templates (
     usage_limitations TEXT NOT NULL,
     author_user_id VARCHAR(180) NOT NULL,
     reviewed_by VARCHAR(180),
+    review_note TEXT,
     reviewed_at TIMESTAMPTZ,
     published_at TIMESTAMPTZ,
     CONSTRAINT ck_assessment_template_scope CHECK (scope IN ('INTERNAL', 'SHARED', 'OFFICIAL')),
