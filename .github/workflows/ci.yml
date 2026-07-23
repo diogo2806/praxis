@@ -75,7 +75,7 @@ jobs:
           retention-days: 7
 
   frontend-build:
-    name: Frontend — build, typecheck, lint & access control
+    name: Frontend — build, typecheck, lint & architecture tests
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -122,6 +122,12 @@ jobs:
         run: |
           set -o pipefail
           npm run test:screen-manuals 2>&1 | tee -a frontend.log
+
+      - name: Test API contracts
+        shell: bash
+        run: |
+          set -o pipefail
+          npm run test:api-contracts 2>&1 | tee -a frontend.log
 
       - name: Upload frontend diagnostics on failure
         if: failure()
