@@ -1,24 +1,40 @@
 name: Aplicar correção de acessibilidade da issue 490
 
 on:
-  push:
+  pull_request:
     branches:
-      - fix/issue-490-descricao-acessivel-midias-v2
+      - main
+    types:
+      - opened
+      - synchronize
+      - reopened
 
 permissions:
   contents: write
+  pull-requests: write
 
 jobs:
   apply-patch:
-    if: ${{ !contains(github.event.head_commit.message, 'fix(a11y): usa descrições acessíveis nas mídias') }}
+    if: ${{ github.head_ref == 'fix/issue-490-descricao-acessivel-midias-v2' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: fix/issue-490-descricao-acessivel-midias-v2
+          ref: ${{ github.head_ref }}
           fetch-depth: 0
 
+      - name: Verificar se a correção já foi aplicada
+        id: guard
+        shell: bash
+        run: |
+          if git log -1 --pretty=%B | grep -Fq "fix(a11y): usa descrições acessíveis nas mídias"; then
+            echo "apply=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "apply=true" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Aplicar alterações e validar
+        if: steps.guard.outputs.apply == 'true'
         shell: bash
         run: |
           python - <<'PY'
@@ -75,13 +91,15 @@ jobs:
           PY
 
           node frontend/scripts/test-candidate-media-accessibility.mjs
+          git rm -f .github/issue-490-trigger.txt
           git rm .github/workflows/issue-490-apply-patch.yml
 
       - name: Registrar correção
+        if: steps.guard.outputs.apply == 'true'
         shell: bash
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add frontend/src/routes/candidato.tsx frontend/scripts/test-candidate-media-accessibility.mjs frontend/package.json .github/workflows/issue-490-apply-patch.yml
+          git add -A
           git commit -m "fix(a11y): usa descrições acessíveis nas mídias"
-          git push origin HEAD:fix/issue-490-descricao-acessivel-midias-v2
+          git push origin HEAD:${{ github.head_ref }}
