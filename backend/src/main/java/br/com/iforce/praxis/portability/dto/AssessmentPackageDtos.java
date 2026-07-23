@@ -33,10 +33,10 @@ public final class AssessmentPackageDtos {
     }
 
     public record PackageOrigin(
-            @NotBlank String sourceSystem,
-            @NotBlank String sourceAssessmentId,
+            @NotBlank @Size(max = 120) String sourceSystem,
+            @NotBlank @Size(max = 120) String sourceAssessmentId,
             int sourceVersionNumber,
-            @NotBlank String exportedBy,
+            @NotBlank @Size(max = 180) String exportedBy,
             @NotNull Instant exportedAt
     ) {
     }
@@ -57,7 +57,7 @@ public final class AssessmentPackageDtos {
     }
 
     public record CompetencyContent(
-            @NotBlank @Size(max = 180) String name,
+            @NotBlank @Size(max = 140) String name,
             double weight,
             Double targetScore,
             String tier
@@ -68,49 +68,49 @@ public final class AssessmentPackageDtos {
             @NotBlank @Size(max = 120) String id,
             int turnIndex,
             @NotBlank @Size(max = 120) String speaker,
-            @NotBlank @Size(max = 4000) String message,
+            @NotBlank @Size(max = 1200) String message,
             Integer timeLimitSeconds,
-            String timeoutNextNodeId,
+            @Size(max = 120) String timeoutNextNodeId,
             boolean terminal,
-            String reportText,
+            @Size(max = 2000) String reportText,
             Double positionX,
             Double positionY,
-            String plainTextDescription,
-            String audioDescriptionUrl,
-            String mediaUrl,
-            String mediaType,
-            String mediaTranscript,
-            String mediaCaptionsUrl,
-            String mediaVersion,
+            @Size(max = 1500) String plainTextDescription,
+            @Size(max = 1000) String audioDescriptionUrl,
+            @Size(max = 1000) String mediaUrl,
+            @Size(max = 16) String mediaType,
+            @Size(max = 8000) String mediaTranscript,
+            @Size(max = 1000) String mediaCaptionsUrl,
+            @Size(max = 120) String mediaVersion,
             @NotNull List<@Valid OptionContent> options
     ) {
     }
 
     public record OptionContent(
             @NotBlank @Size(max = 120) String id,
-            @NotBlank @Size(max = 2000) String text,
-            String nextNodeId,
+            @NotBlank @Size(max = 800) String text,
+            @Size(max = 120) String nextNodeId,
             boolean critical,
-            String behavioralJustification,
-            String plainTextDescription,
-            String audioDescriptionUrl,
-            String mediaUrl,
-            String mediaType,
-            String mediaTranscript,
-            String mediaCaptionsUrl,
-            String mediaVersion,
+            @NotBlank @Size(max = 1000) String behavioralJustification,
+            @Size(max = 1500) String plainTextDescription,
+            @Size(max = 1000) String audioDescriptionUrl,
+            @Size(max = 1000) String mediaUrl,
+            @Size(max = 16) String mediaType,
+            @Size(max = 8000) String mediaTranscript,
+            @Size(max = 1000) String mediaCaptionsUrl,
+            @Size(max = 120) String mediaVersion,
             @NotNull Map<@NotBlank String, Integer> competencyScores
     ) {
     }
 
     public record MediaAsset(
-            @NotBlank String assetId,
-            @NotBlank String url,
-            @NotBlank String mediaType,
+            @NotBlank @Size(max = 120) String assetId,
+            @NotBlank @Size(max = 1000) String url,
+            @NotBlank @Size(max = 64) String mediaType,
             long declaredSizeBytes,
-            @NotBlank String sha256,
-            @NotBlank String license,
-            @NotBlank String origin,
+            @NotBlank @Size(min = 64, max = 64) String sha256,
+            @NotBlank @Size(max = 180) String license,
+            @NotBlank @Size(max = 255) String origin,
             boolean embedded
     ) {
     }
