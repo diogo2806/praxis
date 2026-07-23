@@ -235,36 +235,23 @@ public class ParticipationBulkService {
         String selectionMode = normalizeUpper(selectionModeValue);
         validateActionPayload(empresaId, action, additionalDays, tagId, justification);
 
-        List<ParticipationMonitoringResponse> all = allParticipations(filter);
-        Map<ParticipationRef, ParticipationMonitoringResponse> byRef = all.stream()
-                .collect(Collectors.toMap(
-                        item -> new ParticipationRef(item.participationType(), item.participationId()),
-                        Function.identity(),
-                        (left, right) -> left,
-                        LinkedHashMap::new
-                ));
-
         List<ParticipationRef> refs;
+        Map<ParticipationRef, ParticipationMonitoringResponse> byRef;
         if ("EXPLICIT".equals(selectionMode)) {
-            if (selected == null || selected.isEmpty()) {
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Selecione ao menos uma participação.");
-            }
-            if (selected.size() > MAX_EXPLICIT_SELECTION) {
-                throw new ResponseStatusException(
-                        HttpStatus.BAD_REQUEST,
-                        "A seleção explícita permite no máximo " + MAX_EXPLICIT_SELECTION + " itens."
-                );
-            }
-            refs = selected.stream()
-                    .map(ref -> new ParticipationRef(normalizeLower(ref.type()), ref.id().trim()))
-                    .distinct()
-                    .toList();
+            refs = normalizeExplicitSelection(selected);
+            byRef = findExplicitParticipations(filter, refs);
         } else if ("FILTER".equals(selectionMode)) {
-            refs = all.stream()
-                    .filter(item -> matchesFilter(item, filter))
+            List<ParticipationMonitoringResponse> filtered = findFilteredParticipations(filter);
+            refs = filtered.stream()
                     .map(item -> new ParticipationRef(item.participationType(), item.participationId()))
-                    .limit(MAX_FILTER_SELECTION)
                     .toList();
+            byRef = filtered.stream()
+                    .collect(Collectors.toMap(
+                            item -> new ParticipationRef(item.participationType(), item.participationId()),
+                            Function.identity(),
+                            (left, right) -> left,
+                            LinkedHashMap::new
+                    ));
         } else {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Modo de seleção inválido.");
         }
@@ -284,29 +271,74 @@ public class ParticipationBulkService {
         return new SelectionEvaluation(refs, Map.copyOf(excluded));
     }
 
-    private List<ParticipationMonitoringResponse> allParticipations(BulkFilter filter) {
-        String simulationId = filter == null ? null : filter.simulationId();
-        String candidate = filter == null ? null : filter.candidate();
-        Map<ParticipationRef, ParticipationMonitoringResponse> items = new LinkedHashMap<>();
+    private static List<ParticipationRef> normalizeExplicitSelection(List<ParticipationRef> selected) {
+        if (selected == null || selected.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Selecione ao menos uma participação.");
+        }
+        if (selected.size() > MAX_EXPLICIT_SELECTION) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "A seleção explícita permite no máximo " + MAX_EXPLICIT_SELECTION + " itens."
+            );
+        }
+        return selected.stream()
+                .map(ref -> new ParticipationRef(normalizeLower(ref.type()), ref.id().trim()))
+                .distinct()
+                .toList();
+    }
+
+    private Map<ParticipationRef, ParticipationMonitoringResponse> findExplicitParticipations(
+            BulkFilter filter,
+            List<ParticipationRef> refs
+    ) {
+        Set<ParticipationRef> pending = new LinkedHashSet<>(refs);
+        Map<ParticipationRef, ParticipationMonitoringResponse> found = new LinkedHashMap<>();
         int page = 0;
         int totalPages;
         do {
-            ParticipationMonitoringPageResponse response = queryService.search(
-                    page,
-                    PAGE_SIZE,
-                    simulationId,
-                    candidate
-            );
+            ParticipationMonitoringPageResponse response = searchPage(page, filter);
             for (ParticipationMonitoringResponse item : response.items()) {
-                items.putIfAbsent(
-                        new ParticipationRef(item.participationType(), item.participationId()),
-                        item
-                );
+                ParticipationRef ref = new ParticipationRef(item.participationType(), item.participationId());
+                if (pending.remove(ref)) {
+                    found.put(ref, item);
+                }
             }
             totalPages = response.totalPages();
             page++;
-        } while (page < totalPages && items.size() < MAX_FILTER_SELECTION);
-        return new ArrayList<>(items.values());
+        } while (page < totalPages && !pending.isEmpty());
+        return found;
+    }
+
+    private List<ParticipationMonitoringResponse> findFilteredParticipations(BulkFilter filter) {
+        Map<ParticipationRef, ParticipationMonitoringResponse> found = new LinkedHashMap<>();
+        int page = 0;
+        int totalPages;
+        do {
+            ParticipationMonitoringPageResponse response = searchPage(page, filter);
+            for (ParticipationMonitoringResponse item : response.items()) {
+                if (!matchesFilter(item, filter)) {
+                    continue;
+                }
+                ParticipationRef ref = new ParticipationRef(item.participationType(), item.participationId());
+                found.putIfAbsent(ref, item);
+                if (found.size() > MAX_FILTER_SELECTION) {
+                    throw new ResponseStatusException(
+                            HttpStatus.BAD_REQUEST,
+                            "O filtro retorna mais de " + MAX_FILTER_SELECTION
+                                    + " participações. Refine os filtros antes de criar o lote."
+                    );
+                }
+            }
+            totalPages = response.totalPages();
+            page++;
+        } while (page < totalPages);
+        return new ArrayList<>(found.values());
+    }
+
+    private ParticipationMonitoringPageResponse searchPage(int page, BulkFilter filter) {
+        String simulationId = filter == null ? null : filter.simulationId();
+        String candidate = filter == null ? null : filter.candidate();
+        return queryService.search(page, PAGE_SIZE, simulationId, candidate);
     }
 
     private static boolean matchesFilter(ParticipationMonitoringResponse item, BulkFilter filter) {
@@ -331,7 +363,7 @@ public class ParticipationBulkService {
         String status = normalizeLower(item.status());
         return switch (filter) {
             case "waiting" -> "notstarted".equals(status);
-            case "active" -> "inprogress".equals(status);
+            case "active" -> "inprogress".equals(status) && item.active();
             case "completed" -> "completed".equals(status);
             case "attention" -> needsAttention(item);
             default -> filter.equals(status);
