@@ -4,6 +4,7 @@ import { ArrowLeft, CheckCircle2, FileText, Save } from "lucide-react";
 import { useState } from "react";
 
 import { AppShell } from "@/components/app-shell";
+import { IntegritySharedStatus } from "@/components/integrity-shared-status";
 import { StateBanner } from "@/components/praxis-ui";
 import {
   getResultDetail,
@@ -77,6 +78,7 @@ function ResultDetailContent({ result }: { result: ResultDetailResponse }) {
     <>
       <CandidateResultHeader result={result} />
       <div className="space-y-6">
+        <IntegritySharedStatus attemptId={result.attemptId} />
         <CompetencyBreakdown competencies={result.competencies} />
         <CandidateAnswersPanel answers={result.answers} />
         <HumanDecisionPanel result={result} />
