@@ -3,6 +3,7 @@ export const canonicalAuthoringRoutes = {
   character: "/nova/personagem",
   dialogue: "/nova/dialogo",
   map: "/nova/mapa",
+  preview: "/nova/previa",
   review: "/nova/validador",
   governance: "/nova/governanca",
 } as const;

@@ -1,4 +1,5 @@
 import { Link, useRouterState } from "@tanstack/react-router";
+import { Eye } from "lucide-react";
 import {
   canonicalAuthoringRoutes,
   isScenarioAuthoringPath,
@@ -34,14 +35,27 @@ export function WizardStepper({
     unlockedThrough ? wizardSteps.findIndex((step) => step.slug === unlockedThrough) : idx,
   );
   const showScenarioNavigation = isScenarioAuthoringPath(currentPathname);
+  const canOpenPreview = Boolean(simulationSearch.simulationId && simulationSearch.versionNumber);
 
   return (
     <div className="mb-8 rounded-xl border border-border bg-card p-4">
-      <div className="mb-3 text-xs text-muted-foreground">
-        <span className="font-semibold text-foreground">{t.wizard.createTest}</span> ·{" "}
-        {t.wizard.stepOf
-          .replace("{current}", String(idx + 1))
-          .replace("{total}", String(wizardSteps.length))}
+      <div className="mb-3 flex flex-wrap items-center justify-between gap-3 text-xs text-muted-foreground">
+        <span>
+          <span className="font-semibold text-foreground">{t.wizard.createTest}</span> ·{" "}
+          {t.wizard.stepOf
+            .replace("{current}", String(idx + 1))
+            .replace("{total}", String(wizardSteps.length))}
+        </span>
+        {canOpenPreview && currentPathname !== canonicalAuthoringRoutes.preview && (
+          <Link
+            to={canonicalAuthoringRoutes.preview}
+            search={simulationSearch}
+            className="inline-flex min-h-10 items-center justify-center gap-2 rounded-md border border-primary/40 bg-primary/5 px-3 py-2 text-sm font-semibold text-primary transition hover:bg-primary/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          >
+            <Eye className="h-4 w-4" />
+            Testar como candidato
+          </Link>
+        )}
       </div>
       <ol className="flex gap-2 overflow-x-auto pb-1 md:grid md:grid-cols-4 md:overflow-visible md:pb-0">
         {wizardSteps.map((step, index) => {

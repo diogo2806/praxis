@@ -153,6 +153,12 @@ jobs:
           set -o pipefail
           npm run test:candidate-i18n 2>&1 | tee -a frontend.log
 
+      - name: Test candidate journey preview
+        shell: bash
+        run: |
+          set -o pipefail
+          npm run test:candidate-preview 2>&1 | tee -a frontend.log
+
       - name: Upload frontend diagnostics on failure
         if: failure()
         uses: actions/upload-artifact@v4
