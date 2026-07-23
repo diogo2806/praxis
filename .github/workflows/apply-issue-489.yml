@@ -1,9 +1,9 @@
 name: Aplicar correção da issue 489
 
 on:
-  push:
+  pull_request:
     branches:
-      - fix/issue-489-traduzir-execucao-candidato
+      - main
 
 permissions:
   contents: write
@@ -16,6 +16,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          ref: fix/issue-489-traduzir-execucao-candidato
 
       - name: Aplicar alteração segura
         env:
