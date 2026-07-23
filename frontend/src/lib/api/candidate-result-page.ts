@@ -20,6 +20,10 @@ export interface CandidateResultPageResponse {
   redirectUrl?: string | null;
   concluidoEm?: string | null;
   resultados: CandidateResultItemResponse[];
+  pontuacaoBruta?: number | null;
+  pontuacaoMaximaCaminho?: number | null;
+  pontuacaoNormalizada?: number | null;
+  versaoAlgoritmoPontuacao?: string | null;
 }
 
 export function getCandidateResultPage(
