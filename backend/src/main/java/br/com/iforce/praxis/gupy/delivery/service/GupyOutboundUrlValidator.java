@@ -1,33 +1,36 @@
 package br.com.iforce.praxis.gupy.delivery.service;
 
 import org.springframework.beans.factory.annotation.Value;
-
 import org.springframework.stereotype.Component;
 
-
 import java.net.Inet6Address;
-
 import java.net.InetAddress;
-
 import java.net.URI;
-
 import java.net.UnknownHostException;
-
 import java.util.Locale;
-
 
 @Component
 public class GupyOutboundUrlValidator {
 
     private final boolean securityEnabled;
+    private final HostResolver hostResolver;
 
     public GupyOutboundUrlValidator(
             @Value("${praxis.security.enabled:true}") boolean securityEnabled
     ) {
+        this(securityEnabled, InetAddress::getAllByName);
+    }
+
+    GupyOutboundUrlValidator(boolean securityEnabled, HostResolver hostResolver) {
         this.securityEnabled = securityEnabled;
+        this.hostResolver = hostResolver;
     }
 
     public URI validate(String outboundUrl) {
+        return validateAndResolve(outboundUrl).uri();
+    }
+
+    public ValidatedOutboundTarget validateAndResolve(String outboundUrl) {
         URI uri = URI.create(outboundUrl);
         String scheme = uri.getScheme() == null ? "" : uri.getScheme().toLowerCase(Locale.ROOT);
         String host = uri.getHost() == null ? "" : uri.getHost().toLowerCase(Locale.ROOT);
@@ -41,17 +44,23 @@ public class GupyOutboundUrlValidator {
         if (host.isBlank() || uri.getUserInfo() != null) {
             throw new IllegalArgumentException("URL externa inválida.");
         }
-        assertPublicAddress(host);
-        return uri;
+
+        InetAddress[] addresses = resolvePublicAddresses(host);
+        return new ValidatedOutboundTarget(uri, addresses);
     }
 
-    private void assertPublicAddress(String host) {
+    private InetAddress[] resolvePublicAddresses(String host) {
         try {
-            for (InetAddress address : InetAddress.getAllByName(host)) {
+            InetAddress[] addresses = hostResolver.resolve(host);
+            if (addresses.length == 0) {
+                throw new IllegalArgumentException("Host externo não resolvido.");
+            }
+            for (InetAddress address : addresses) {
                 if (isForbiddenAddress(address)) {
                     throw new IllegalArgumentException("URL externa não pode apontar para rede local ou reservada.");
                 }
             }
+            return addresses;
         } catch (UnknownHostException exception) {
             throw new IllegalArgumentException("Host externo não resolvido.", exception);
         }
@@ -72,5 +81,10 @@ public class GupyOutboundUrlValidator {
         }
         byte firstByte = address.getAddress()[0];
         return (firstByte & 0xfe) == 0xfc;
+    }
+
+    @FunctionalInterface
+    interface HostResolver {
+        InetAddress[] resolve(String host) throws UnknownHostException;
     }
 }

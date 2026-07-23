@@ -1,7 +1,6 @@
 package br.com.iforce.praxis.gupy.delivery.service;
 
 import org.junit.jupiter.api.Test;
-import org.springframework.web.client.RestClient;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
@@ -12,8 +11,8 @@ class ResultWebhookClientContractTest {
     @Test
     void rejectsGenericPayloadInsteadOfDiscardingItSilently() {
         ResultWebhookClient client = new RestClientResultWebhookClient(
-                RestClient.builder(),
                 mock(GupyOutboundUrlValidator.class),
+                mock(OutboundRestClientFactory.class),
                 1_000,
                 1_000
         );
