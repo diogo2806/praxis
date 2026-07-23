@@ -21,7 +21,8 @@
     "test:landing-commercial": "node scripts/test-landing-commercial.mjs",
     "test:result-executive": "node scripts/test-result-executive-report.mjs",
     "test:candidate-preview": "node scripts/test-candidate-journey-preview.mjs",
-    "test:feature-flags": "node scripts/test-feature-flags.mjs"
+    "test:feature-flags": "node scripts/test-feature-flags.mjs",
+    "test:participation-bulk": "node scripts/test-participation-bulk-operations.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
