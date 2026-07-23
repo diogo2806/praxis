@@ -80,6 +80,96 @@ export const PORTABILITY_MANUALS: ScreenManualDefinition[] = [
     ],
     matches: (pathname) => pathname === "/nova/portabilidade",
   },
+  {
+    id: "catalogo-modelos-avaliacao",
+    title: "Biblioteca de modelos de avaliação",
+    purpose:
+      "Pesquisar, comparar, favoritar, revisar e reutilizar modelos governados, gerando avaliações independentes sem alterar o modelo nem misturar resultados entre empresas.",
+    flow: [
+      "Use os filtros de negócio, competência, idioma e complexidade para localizar modelos internos, compartilhados ou oficiais disponíveis.",
+      "Abra a prévia para revisar estrutura, duração, competências, requisitos de acessibilidade, evidências metodológicas e limitações de uso.",
+      "Compare até três modelos antes de escolher a base mais adequada ao cargo e ao contexto.",
+      "Ao cadastrar um modelo, selecione uma versão de origem, preencha a classificação e envie o rascunho para revisão independente.",
+      "Depois da aprovação, use o modelo para criar uma nova avaliação. A cópia nasce como versão 1 em rascunho e permanece independente de mudanças futuras no catálogo.",
+    ],
+    fields: [
+      {
+        name: "Busca e filtros",
+        description:
+          "Pesquisa por título, resumo, cargo, área, setor, competência, senioridade, idioma, complexidade e favoritos.",
+      },
+      {
+        name: "Escopo",
+        description:
+          "INTERNAL restringe o modelo à empresa; SHARED disponibiliza após aprovação administrativa; OFFICIAL identifica modelo mantido pelo Práxis.",
+      },
+      {
+        name: "Versão de origem",
+        description:
+          "Avaliação e versão imutável usadas para gerar cópias. A publicação do modelo não modifica a origem.",
+      },
+      {
+        name: "Evidências metodológicas",
+        description:
+          "Fundamentos, revisão técnica e evidências que justificam o uso do modelo.",
+      },
+      {
+        name: "Limitações de uso",
+        description:
+          "Contextos, públicos ou decisões para os quais o modelo não deve ser utilizado sem adaptação e nova validação.",
+      },
+      {
+        name: "Prévia",
+        description:
+          "Quantidade de cenários, finais e alternativas, duração, cobertura de competências, nó inicial e recursos de acessibilidade.",
+      },
+      {
+        name: "Parecer da revisão",
+        description:
+          "Registro usado pelo revisor para aprovar ou rejeitar o modelo sem permitir autoaprovação pelo autor.",
+      },
+      {
+        name: "Nome da nova avaliação",
+        description:
+          "Nome da cópia independente criada na empresa atual como versão 1 em rascunho.",
+      },
+    ],
+    permissions: [
+      "Usuários da empresa podem cadastrar modelos internos a partir de versões às quais têm acesso.",
+      "Somente ADMIN pode propor ou aprovar modelos compartilhados e oficiais.",
+      "O autor não pode aprovar o próprio modelo.",
+      "Somente a empresa proprietária altera o cadastro; outras empresas apenas consultam e reutilizam modelos compartilhados ou oficiais aprovados.",
+    ],
+    states: [
+      "DRAFT: cadastro ainda editável e não reutilizável.",
+      "IN_REVIEW: aguardando parecer independente.",
+      "APPROVED: disponível para reutilização conforme o escopo.",
+      "REJECTED: devolvido ao proprietário para ajuste e novo envio.",
+      "ARCHIVED: retirado do catálogo sem alterar cópias já criadas.",
+    ],
+    blocks: [
+      "Versão de origem inexistente ou fora da empresa proprietária.",
+      "Competência informada que não pertence à versão de origem.",
+      "Tentativa de publicar modelo cuja origem ainda não está publicada.",
+      "Tentativa de autoaprovação pelo autor.",
+      "Modelo compartilhado ou oficial sem perfil ADMIN.",
+      "Modelo não aprovado ao tentar criar uma avaliação.",
+      "Modelo interno de outra empresa ou modelo não visível para o usuário atual.",
+    ],
+    examples: [
+      "Filtrar por cargo Desenvolvedor Java, senioridade Sênior e competência Tomada de decisão para comparar modelos antes de criar a avaliação.",
+      "Publicar internamente uma avaliação validada, receber parecer de outro revisor e disponibilizá-la somente para a própria empresa.",
+      "Criar uma cópia de um modelo oficial; depois atualizar o catálogo sem alterar a versão já copiada pelo cliente.",
+    ],
+    shortcuts: [
+      "Marque modelos recorrentes como favoritos para usar o filtro Somente favoritos.",
+      "Selecione até três cartões em Comparar para revisar diferenças lado a lado.",
+      "Abra a tela com simulationId e versionNumber para cadastrar diretamente aquela versão como modelo.",
+      "Depois de criar a cópia, use o Validador estrutural, o Gabarito por especialistas e a Governança antes de publicar.",
+      "Consulte docs/CATALOGO-MODELOS-AVALIACAO.md para o processo completo.",
+    ],
+    matches: (pathname) => pathname === "/avaliacoes/modelos",
+  },
 ];
 
 export function resolvePortabilityManual(pathname: string) {
