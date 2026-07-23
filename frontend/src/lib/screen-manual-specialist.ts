@@ -66,10 +66,12 @@ const PARTNER_SPECIALIST_HOME_MANUAL: ScreenManualDefinition = {
   matches: (pathname) => pathname === "/avaliacoes/especialista",
 };
 
+export const PARTNER_SPECIALIST_MANUALS: ScreenManualDefinition[] = [
+  PARTNER_SPECIALIST_HOME_MANUAL,
+];
+
 export function resolvePartnerSpecialistManual(
   pathname: string,
 ): ScreenManualDefinition | undefined {
-  return PARTNER_SPECIALIST_HOME_MANUAL.matches(pathname)
-    ? PARTNER_SPECIALIST_HOME_MANUAL
-    : undefined;
+  return PARTNER_SPECIALIST_MANUALS.find((manual) => manual.matches(pathname));
 }
