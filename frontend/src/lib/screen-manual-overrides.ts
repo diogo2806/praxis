@@ -2,6 +2,25 @@ import type { ScreenManualDefinition } from "@/lib/screen-manuals";
 
 export const SCREEN_MANUAL_OVERRIDES: ScreenManualDefinition[] = [
   {
+    id: "editor-dialogo-multimidia",
+    title: "Editor de diálogo e mídia acessível",
+    purpose: "Criar etapas, alternativas e versões equivalentes de imagem, áudio e vídeo sem alterar silenciosamente o construto avaliado.",
+    flow: ["Selecione a etapa.", "Anexe a mídia.", "Preencha texto equivalente e transcrição.", "Para vídeo, informe legenda WebVTT.", "Revise os bloqueios no Validador antes de publicar."],
+    fields: [
+      { name: "Mídia", description: "Imagem, áudio ou vídeo validado por MIME type e tamanho." },
+      { name: "Texto equivalente", description: "Descrição que permite responder sem depender do formato visual ou sonoro." },
+      { name: "Transcrição", description: "Conteúdo textual integral de áudio ou vídeo." },
+      { name: "Legenda WebVTT", description: "Legenda sincronizada obrigatória para vídeo." },
+      { name: "Versão da mídia", description: "Identificador imutável gravado na tentativa para auditoria e comparação." },
+    ],
+    permissions: ["Perfil EMPRESA ou especialista autorizado com permissão de editar rascunhos."],
+    states: ["Sem mídia", "Enviando", "Mídia anexada", "Acessibilidade incompleta", "Pronta para validação", "Erro"],
+    blocks: ["Versão publicada ou arquivada.", "Formato ou tamanho não permitido.", "URL sem HTTPS.", "Texto equivalente ausente.", "Áudio ou vídeo sem transcrição.", "Vídeo sem legenda WebVTT."],
+    examples: ["Vídeo de atendimento com legenda, transcrição e versão textual equivalente.", "Áudio de cliente com transcrição integral e controles de velocidade."],
+    shortcuts: ["Use Tab para alcançar os controles.", "Use Espaço para reproduzir ou pausar.", "Abra o Validador para ver todos os bloqueios.", "Consulte o processo completo na Central de manuais."],
+    matches: (pathname) => pathname === "/nova/dialogo",
+  },
+  {
     id: "avaliacoes-catalogo",
     title: "Avaliações",
     purpose: "Centralizar o cadastro, as versões, a situação e as ações administrativas das avaliações usadas nas jornadas.",

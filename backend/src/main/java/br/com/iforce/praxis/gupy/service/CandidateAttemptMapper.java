@@ -280,7 +280,10 @@ public class CandidateAttemptMapper {
                         option.plainTextDescription(),
                         option.audioDescriptionUrl(),
                         option.mediaUrl(),
-                        option.mediaType()
+                        option.mediaType(),
+                        option.mediaTranscript(),
+                        option.mediaCaptionsUrl(),
+                        option.mediaVersion()
                 ))
                 .toList();
 
@@ -295,6 +298,9 @@ public class CandidateAttemptMapper {
                 node.audioDescriptionUrl(),
                 node.mediaUrl(),
                 node.mediaType(),
+                node.mediaTranscript(),
+                node.mediaCaptionsUrl(),
+                node.mediaVersion(),
                 alternativas
         );
     }

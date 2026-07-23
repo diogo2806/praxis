@@ -150,6 +150,9 @@ public class SimulationDuplicateService {
         targetNode.setAudioDescriptionUrl(sourceNode.getAudioDescriptionUrl());
         targetNode.setMediaUrl(sourceNode.getMediaUrl());
         targetNode.setMediaType(sourceNode.getMediaType());
+        targetNode.setMediaTranscript(sourceNode.getMediaTranscript());
+        targetNode.setMediaCaptionsUrl(sourceNode.getMediaCaptionsUrl());
+        targetNode.setMediaVersion(sourceNode.getMediaVersion());
 
         for (SimulationOptionEntity sourceOption : sourceNode.getOptions()) {
             targetNode.getOptions().add(copyOption(sourceOption, targetNode));
@@ -172,6 +175,9 @@ public class SimulationDuplicateService {
         targetOption.setAudioDescriptionUrl(sourceOption.getAudioDescriptionUrl());
         targetOption.setMediaUrl(sourceOption.getMediaUrl());
         targetOption.setMediaType(sourceOption.getMediaType());
+        targetOption.setMediaTranscript(sourceOption.getMediaTranscript());
+        targetOption.setMediaCaptionsUrl(sourceOption.getMediaCaptionsUrl());
+        targetOption.setMediaVersion(sourceOption.getMediaVersion());
 
         for (OptionCompetencyScoreEntity sourceScore : sourceOption.getCompetencyScores()) {
             OptionCompetencyScoreEntity targetScore = new OptionCompetencyScoreEntity();

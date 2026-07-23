@@ -403,6 +403,9 @@ public class SimulationAdminService {
         nodeEntity.setPlainTextDescription(trimToNull(request.plainTextDescription()));
         nodeEntity.setAudioDescriptionUrl(trimToNull(request.audioDescriptionUrl()));
         applyMedia(request.mediaUrl(), request.mediaType(), nodeEntity::setMediaUrl, nodeEntity::setMediaType);
+        nodeEntity.setMediaTranscript(trimToNull(request.mediaTranscript()));
+        nodeEntity.setMediaCaptionsUrl(trimToNull(request.mediaCaptionsUrl()));
+        nodeEntity.setMediaVersion(resolveMediaVersion(request.mediaVersion(), nodeEntity.getMediaUrl()));
         versionEntity.getNodes().add(nodeEntity);
 
         simulationVersionRepository.save(versionEntity);
@@ -476,6 +479,15 @@ public class SimulationAdminService {
         }
         if (request.mediaUrl() != null) {
             applyMedia(request.mediaUrl(), request.mediaType(), nodeEntity::setMediaUrl, nodeEntity::setMediaType);
+        }
+        if (request.mediaTranscript() != null) {
+            nodeEntity.setMediaTranscript(trimToNull(request.mediaTranscript()));
+        }
+        if (request.mediaCaptionsUrl() != null) {
+            nodeEntity.setMediaCaptionsUrl(trimToNull(request.mediaCaptionsUrl()));
+        }
+        if (request.mediaVersion() != null || request.mediaUrl() != null) {
+            nodeEntity.setMediaVersion(resolveMediaVersion(request.mediaVersion(), nodeEntity.getMediaUrl()));
         }
         if (!nodeEntity.isFinal() && trimToNull(nodeEntity.getMessage()) == null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "A fala da etapa e obrigatoria.");
@@ -558,6 +570,9 @@ public class SimulationAdminService {
         optionEntity.setPlainTextDescription(trimToNull(request.plainTextDescription()));
         optionEntity.setAudioDescriptionUrl(trimToNull(request.audioDescriptionUrl()));
         applyMedia(request.mediaUrl(), request.mediaType(), optionEntity::setMediaUrl, optionEntity::setMediaType);
+        optionEntity.setMediaTranscript(trimToNull(request.mediaTranscript()));
+        optionEntity.setMediaCaptionsUrl(trimToNull(request.mediaCaptionsUrl()));
+        optionEntity.setMediaVersion(resolveMediaVersion(request.mediaVersion(), optionEntity.getMediaUrl()));
         applyCompetencyScores(optionEntity, request.competencyLevels());
         nodeEntity.getOptions().add(optionEntity);
 
@@ -620,6 +635,15 @@ public class SimulationAdminService {
         }
         if (request.mediaUrl() != null) {
             applyMedia(request.mediaUrl(), request.mediaType(), optionEntity::setMediaUrl, optionEntity::setMediaType);
+        }
+        if (request.mediaTranscript() != null) {
+            optionEntity.setMediaTranscript(trimToNull(request.mediaTranscript()));
+        }
+        if (request.mediaCaptionsUrl() != null) {
+            optionEntity.setMediaCaptionsUrl(trimToNull(request.mediaCaptionsUrl()));
+        }
+        if (request.mediaVersion() != null || request.mediaUrl() != null) {
+            optionEntity.setMediaVersion(resolveMediaVersion(request.mediaVersion(), optionEntity.getMediaUrl()));
         }
         if (request.competencyLevels() != null) {
             assertCompetencyScores(versionEntity, request.competencyLevels());
@@ -1128,6 +1152,14 @@ public class SimulationAdminService {
         );
     }
 
+    private String resolveMediaVersion(String requestedVersion, String mediaUrl) {
+        if (mediaUrl == null || mediaUrl.isBlank()) {
+            return null;
+        }
+        String normalized = trimToNull(requestedVersion);
+        return normalized == null ? "media-" + UUID.randomUUID() : normalized;
+    }
+
     private int nextVersionNumber(String simulationId) {
         return simulationVersionRepository.findFirstBySimulationIdOrderByVersionNumberDesc(simulationId)
                 .map(version -> version.getVersionNumber() + 1)
@@ -1219,6 +1251,9 @@ public class SimulationAdminService {
         clonedNodeEntity.setAudioDescriptionUrl(sourceNodeEntity.getAudioDescriptionUrl());
         clonedNodeEntity.setMediaUrl(sourceNodeEntity.getMediaUrl());
         clonedNodeEntity.setMediaType(sourceNodeEntity.getMediaType());
+        clonedNodeEntity.setMediaTranscript(sourceNodeEntity.getMediaTranscript());
+        clonedNodeEntity.setMediaCaptionsUrl(sourceNodeEntity.getMediaCaptionsUrl());
+        clonedNodeEntity.setMediaVersion(sourceNodeEntity.getMediaVersion());
 
         for (SimulationOptionEntity sourceOptionEntity : sourceNodeEntity.getOptions()) {
             SimulationOptionEntity clonedOptionEntity = cloneOption(sourceOptionEntity, clonedNodeEntity);
@@ -1243,6 +1278,9 @@ public class SimulationAdminService {
         clonedOptionEntity.setAudioDescriptionUrl(sourceOptionEntity.getAudioDescriptionUrl());
         clonedOptionEntity.setMediaUrl(sourceOptionEntity.getMediaUrl());
         clonedOptionEntity.setMediaType(sourceOptionEntity.getMediaType());
+        clonedOptionEntity.setMediaTranscript(sourceOptionEntity.getMediaTranscript());
+        clonedOptionEntity.setMediaCaptionsUrl(sourceOptionEntity.getMediaCaptionsUrl());
+        clonedOptionEntity.setMediaVersion(sourceOptionEntity.getMediaVersion());
 
         for (OptionCompetencyScoreEntity sourceScoreEntity : sourceOptionEntity.getCompetencyScores()) {
             OptionCompetencyScoreEntity clonedScoreEntity = new OptionCompetencyScoreEntity();

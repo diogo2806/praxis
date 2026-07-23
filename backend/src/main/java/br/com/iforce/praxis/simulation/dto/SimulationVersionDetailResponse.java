@@ -42,6 +42,9 @@ public record SimulationVersionDetailResponse(
             String audioDescriptionUrl,
             String mediaUrl,
             MediaType mediaType,
+            String mediaTranscript,
+            String mediaCaptionsUrl,
+            String mediaVersion,
             List<OptionDto> options
     ) {
     }
@@ -56,7 +59,10 @@ public record SimulationVersionDetailResponse(
             String plainTextDescription,
             String audioDescriptionUrl,
             String mediaUrl,
-            MediaType mediaType
+            MediaType mediaType,
+            String mediaTranscript,
+            String mediaCaptionsUrl,
+            String mediaVersion
     ) {
     }
 }

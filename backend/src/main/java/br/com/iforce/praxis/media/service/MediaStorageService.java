@@ -51,16 +51,17 @@ import java.util.UUID;
 /**
  * Cuida do recebimento, validação e armazenamento das mídias das avaliações.
  *
- * <p>Na visão do processo, este serviço garante que imagens e áudios anexados a
+ * <p>Na visão do processo, este serviço garante que imagens, áudios e vídeos anexados a
  * uma avaliação passem por uma conferência mínima antes de entrarem no produto.
  * Ele confirma se o storage está configurado, impede arquivos vazios ou grandes
- * demais, identifica se o conteúdo é realmente imagem ou áudio, grava em uma
+ * demais, identifica se o conteúdo é realmente imagem, áudio ou vídeo, grava em uma
  * área separada por empresa e devolve a URL que a tela pode salvar no roteiro.</p>
  */
 @Service
 public class MediaStorageService {
 
-    private static final long MAX_FILE_SIZE_BYTES = 10L * 1024 * 1024;
+    private static final long MAX_STANDARD_FILE_SIZE_BYTES = 10L * 1024 * 1024;
+    private static final long MAX_VIDEO_FILE_SIZE_BYTES = 100L * 1024 * 1024;
     private static final Tika TIKA = new Tika();
 
     private static final Map<String, String> IMAGE_EXTENSIONS = Map.of(
@@ -82,6 +83,13 @@ public class MediaStorageService {
             Map.entry("audio/mp4", ".m4a"),
             Map.entry("audio/x-m4a", ".m4a"),
             Map.entry("audio/aac", ".aac")
+    );
+
+    private static final Map<String, String> VIDEO_EXTENSIONS = Map.ofEntries(
+            Map.entry("video/mp4", ".mp4"),
+            Map.entry("video/webm", ".webm"),
+            Map.entry("video/ogg", ".ogv"),
+            Map.entry("video/quicktime", ".mov")
     );
 
     private final ObjectStorageProperties properties;
@@ -107,10 +115,10 @@ public class MediaStorageService {
      * <p>Fluxo do processo: primeiro verifica se o armazenamento de mídia está
      * disponível. Depois confere se o arquivo veio preenchido e se respeita o
      * limite de tamanho. Em seguida, identifica o tipo real do conteúdo para
-     * aceitar apenas imagem ou áudio. Por fim, grava o arquivo em uma pasta da
+     * aceitar apenas imagem, áudio ou vídeo. Por fim, grava o arquivo em uma pasta da
      * empresa atual e devolve a URL pública para uso no cadastro da avaliação.</p>
      *
-     * @param file imagem ou áudio enviado pela tela de cadastro
+     * @param file imagem, áudio ou vídeo enviado pela tela de cadastro
      * @return endereço público da mídia, tipo identificado, formato do arquivo e tamanho armazenado
      */
     public MediaUploadResponse upload(MultipartFile file) {
@@ -123,13 +131,16 @@ public class MediaStorageService {
         if (file == null || file.isEmpty()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Arquivo de mídia vazio.");
         }
-        if (file.getSize() > MAX_FILE_SIZE_BYTES) {
-            throw new ResponseStatusException(HttpStatus.PAYLOAD_TOO_LARGE, "Mídia excede o tamanho máximo de 10MB.");
+        if (file.getSize() > MAX_VIDEO_FILE_SIZE_BYTES) {
+            throw new ResponseStatusException(HttpStatus.PAYLOAD_TOO_LARGE, "Mídia excede o tamanho máximo de 100MB.");
         }
 
         byte[] bytes = readBytes(file);
         String detectedContentType = normalizeContentType(TIKA.detect(bytes));
         MediaType mediaType = resolveMediaType(detectedContentType);
+        if (mediaType != MediaType.VIDEO && bytes.length > MAX_STANDARD_FILE_SIZE_BYTES) {
+            throw new ResponseStatusException(HttpStatus.PAYLOAD_TOO_LARGE, "Imagem ou áudio excede o tamanho máximo de 10MB.");
+        }
         String extension = extensionFor(mediaType, detectedContentType);
 
         // Isola a mídia por empresa: permite limpeza no offboarding (deletar o prefixo
@@ -193,9 +204,12 @@ public class MediaStorageService {
         if (AUDIO_EXTENSIONS.containsKey(contentType)) {
             return MediaType.AUDIO;
         }
+        if (VIDEO_EXTENSIONS.containsKey(contentType)) {
+            return MediaType.VIDEO;
+        }
         throw new ResponseStatusException(
                 HttpStatus.UNSUPPORTED_MEDIA_TYPE,
-                "Apenas imagens ou áudios são suportados."
+                "Apenas imagens, áudios ou vídeos nos formatos permitidos são suportados."
         );
     }
 
@@ -212,8 +226,11 @@ public class MediaStorageService {
      * @return extensão usada no nome do arquivo armazenado
      */
     private String extensionFor(MediaType mediaType, String contentType) {
-        Map<String, String> extensions = mediaType == MediaType.IMAGE ? IMAGE_EXTENSIONS : AUDIO_EXTENSIONS;
-        return extensions.get(contentType);
+        return switch (mediaType) {
+            case IMAGE -> IMAGE_EXTENSIONS.get(contentType);
+            case AUDIO -> AUDIO_EXTENSIONS.get(contentType);
+            case VIDEO -> VIDEO_EXTENSIONS.get(contentType);
+        };
     }
 
     /**

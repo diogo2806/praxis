@@ -16,7 +16,10 @@ public record ScenarioOption(
         String plainTextDescription,
         String audioDescriptionUrl,
         String mediaUrl,
-        MediaType mediaType
+        MediaType mediaType,
+        String mediaTranscript,
+        String mediaCaptionsUrl,
+        String mediaVersion
 ) {
 
     /**
@@ -30,6 +33,6 @@ public record ScenarioOption(
             boolean critical,
             String auditNote
     ) {
-        this(id, text, nextNodeId, competencyScores, critical, auditNote, null, null, null, null);
+        this(id, text, nextNodeId, competencyScores, critical, auditNote, null, null, null, null, null, null, null);
     }
 }

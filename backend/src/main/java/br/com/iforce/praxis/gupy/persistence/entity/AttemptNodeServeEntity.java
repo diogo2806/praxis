@@ -12,6 +12,9 @@ import jakarta.persistence.GenerationType;
 
 import jakarta.persistence.Id;
 
+import br.com.iforce.praxis.shared.model.MediaType;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.JoinColumn;
 
 import jakarta.persistence.ManyToOne;
@@ -54,4 +57,11 @@ public class AttemptNodeServeEntity {
 
     @Column(name = "served_at", nullable = false)
     private Instant servedAt;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "media_type", length = 16)
+    private MediaType mediaType;
+
+    @Column(name = "media_version", length = 120)
+    private String mediaVersion;
 }

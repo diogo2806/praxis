@@ -249,6 +249,9 @@ public class SimulationMapperService {
                 simulationNodeEntity.getAudioDescriptionUrl(),
                 simulationNodeEntity.getMediaUrl(),
                 simulationNodeEntity.getMediaType(),
+                simulationNodeEntity.getMediaTranscript(),
+                simulationNodeEntity.getMediaCaptionsUrl(),
+                simulationNodeEntity.getMediaVersion(),
                 options
         );
     }
@@ -269,7 +272,10 @@ public class SimulationMapperService {
                 simulationOptionEntity.getPlainTextDescription(),
                 simulationOptionEntity.getAudioDescriptionUrl(),
                 simulationOptionEntity.getMediaUrl(),
-                simulationOptionEntity.getMediaType()
+                simulationOptionEntity.getMediaType(),
+                simulationOptionEntity.getMediaTranscript(),
+                simulationOptionEntity.getMediaCaptionsUrl(),
+                simulationOptionEntity.getMediaVersion()
         );
     }
 
@@ -294,6 +300,9 @@ public class SimulationMapperService {
                 simulationNodeEntity.getAudioDescriptionUrl(),
                 simulationNodeEntity.getMediaUrl(),
                 simulationNodeEntity.getMediaType(),
+                simulationNodeEntity.getMediaTranscript(),
+                simulationNodeEntity.getMediaCaptionsUrl(),
+                simulationNodeEntity.getMediaVersion(),
                 options
         );
     }
@@ -314,7 +323,10 @@ public class SimulationMapperService {
                 simulationOptionEntity.getPlainTextDescription(),
                 simulationOptionEntity.getAudioDescriptionUrl(),
                 simulationOptionEntity.getMediaUrl(),
-                simulationOptionEntity.getMediaType()
+                simulationOptionEntity.getMediaType(),
+                simulationOptionEntity.getMediaTranscript(),
+                simulationOptionEntity.getMediaCaptionsUrl(),
+                simulationOptionEntity.getMediaVersion()
         );
     }
 

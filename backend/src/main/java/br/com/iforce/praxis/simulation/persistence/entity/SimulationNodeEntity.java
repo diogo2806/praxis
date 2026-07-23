@@ -104,6 +104,15 @@ public class SimulationNodeEntity {
     @Column(name = "media_type", length = 16)
     private MediaType mediaType;
 
+    @Column(name = "media_transcript", length = 8000)
+    private String mediaTranscript;
+
+    @Column(name = "media_captions_url", length = 1000)
+    private String mediaCaptionsUrl;
+
+    @Column(name = "media_version", length = 120)
+    private String mediaVersion;
+
     @OneToMany(mappedBy = "simulationNode", cascade = CascadeType.ALL, orphanRemoval = true)
     private Set<SimulationOptionEntity> options = new LinkedHashSet<>();
 

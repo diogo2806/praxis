@@ -62,6 +62,7 @@ public class ConsistentSimulationValidationService extends SimulationValidationS
                 .filter(issue -> isRelevant(issue, nodesById))
                 .toList());
         appendDirectEndReportIssues(simulationVersionEntity, issues);
+        appendMediaAccessibilityIssues(simulationVersionEntity, issues);
 
         SimulationPathComparabilityService.PathComparabilityAnalysis pathAnalysis =
                 pathComparabilityService.analyze(simulationVersionEntity);
@@ -118,6 +119,45 @@ public class ConsistentSimulationValidationService extends SimulationValidationS
                 }
             }
         }
+    }
+
+    private void appendMediaAccessibilityIssues(
+            SimulationVersionEntity simulationVersionEntity,
+            List<ValidationIssueResponse> issues
+    ) {
+        for (SimulationNodeEntity node : simulationVersionEntity.getNodes()) {
+            validateMedia(node.getNodeId(), "etapa", node.getMediaType(), node.getMediaUrl(),
+                    node.getPlainTextDescription(), node.getMediaTranscript(),
+                    node.getMediaCaptionsUrl(), node.getMediaVersion(), issues);
+            for (SimulationOptionEntity option : node.getOptions()) {
+                validateMedia(node.getNodeId(), "alternativa " + option.getOptionId(), option.getMediaType(),
+                        option.getMediaUrl(), option.getPlainTextDescription(), option.getMediaTranscript(),
+                        option.getMediaCaptionsUrl(), option.getMediaVersion(), issues);
+            }
+        }
+    }
+
+    private void validateMedia(
+            String nodeId, String label, br.com.iforce.praxis.shared.model.MediaType mediaType,
+            String mediaUrl, String equivalentText, String transcript, String captionsUrl,
+            String mediaVersion, List<ValidationIssueResponse> issues
+    ) {
+        if (mediaUrl == null || mediaUrl.isBlank()) return;
+        if (mediaType == null) {
+            addMediaBlocker(nodeId, "A " + label + " possui mídia sem tipo identificado.", issues);
+            return;
+        }
+        if (!mediaUrl.startsWith("https://")) addMediaBlocker(nodeId, "A mídia da " + label + " deve usar URL HTTPS.", issues);
+        if (mediaVersion == null || mediaVersion.isBlank()) addMediaBlocker(nodeId, "A mídia da " + label + " precisa de uma versão imutável.", issues);
+        if (equivalentText == null || equivalentText.isBlank()) addMediaBlocker(nodeId, "A mídia da " + label + " precisa de texto equivalente acessível.", issues);
+        if ((mediaType == br.com.iforce.praxis.shared.model.MediaType.AUDIO || mediaType == br.com.iforce.praxis.shared.model.MediaType.VIDEO)
+                && (transcript == null || transcript.isBlank())) addMediaBlocker(nodeId, "Áudio e vídeo da " + label + " precisam de transcrição.", issues);
+        if (mediaType == br.com.iforce.praxis.shared.model.MediaType.VIDEO && (captionsUrl == null || captionsUrl.isBlank()))
+            addMediaBlocker(nodeId, "O vídeo da " + label + " precisa de legenda WebVTT.", issues);
+    }
+
+    private void addMediaBlocker(String nodeId, String message, List<ValidationIssueResponse> issues) {
+        issues.add(new ValidationIssueResponse(ValidationIssueSeverity.BLOCKER, nodeId, message));
     }
 
     private boolean isRelevant(

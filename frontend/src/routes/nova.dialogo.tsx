@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { GitBranch, ImagePlus, Music, Plus, Save, Trash2, X } from "lucide-react";
+import { Film, GitBranch, ImagePlus, Music, Plus, Save, Trash2, X } from "lucide-react";
 
 import { AppShell } from "@/components/app-shell";
 import { EmptyState, StateBanner, StatusBadge } from "@/components/praxis-ui";
@@ -345,11 +345,17 @@ function DialogEditor() {
       nodeId: string;
       mediaUrl: string;
       mediaType: MediaType | null;
+      mediaTranscript?: string | null;
+      mediaCaptionsUrl?: string | null;
+      mediaVersion?: string | null;
     }) => {
       assertEditable();
       return updateSimulationNode(search.simulationId!, search.versionNumber!, nodeId, {
         mediaUrl,
         mediaType,
+        mediaTranscript,
+        mediaCaptionsUrl,
+        mediaVersion,
       });
     },
     onSuccess: refetchVersion,
@@ -410,6 +416,9 @@ function DialogEditor() {
       resultingTone?: string;
       mediaUrl?: string;
       mediaType?: MediaType | null;
+      mediaTranscript?: string | null;
+      mediaCaptionsUrl?: string | null;
+      mediaVersion?: string | null;
     }) => {
       assertEditable();
       return updateSimulationOption(search.simulationId!, search.versionNumber!, nodeId, optionId, {
@@ -420,6 +429,9 @@ function DialogEditor() {
         resultingTone,
         mediaUrl,
         mediaType,
+        mediaTranscript,
+        mediaCaptionsUrl,
+        mediaVersion,
       });
     },
     onSuccess: refetchVersion,
@@ -818,6 +830,9 @@ function DialogEditor() {
                   <MediaAttachment
                     mediaUrl={selected.mediaUrl}
                     mediaType={selected.mediaType}
+                    mediaTranscript={selected.mediaTranscript}
+                    mediaCaptionsUrl={selected.mediaCaptionsUrl}
+                    mediaVersion={selected.mediaVersion}
                     disabled={updateNodeMediaMutation.isPending}
                     onChange={(next) => {
                       setFeedbackMessage(null);
@@ -825,6 +840,9 @@ function DialogEditor() {
                         nodeId: selected.id,
                         mediaUrl: next?.mediaUrl ?? "",
                         mediaType: next?.mediaType ?? null,
+                        mediaTranscript: next?.mediaTranscript ?? "",
+                        mediaCaptionsUrl: next?.mediaCaptionsUrl ?? "",
+                        mediaVersion: next?.mediaVersion ?? "",
                       });
                     }}
                   />
@@ -1009,14 +1027,20 @@ function DialogEditor() {
                         <MediaAttachment
                           mediaUrl={option.mediaUrl}
                           mediaType={option.mediaType}
+                          mediaTranscript={option.mediaTranscript}
+                          mediaCaptionsUrl={option.mediaCaptionsUrl}
+                          mediaVersion={option.mediaVersion}
                           disabled={updateOptionMutation.isPending}
-                          label="Anexar imagem ou áudio à alternativa"
+                          label="Anexar imagem, áudio ou vídeo à alternativa"
                           onChange={(next) =>
                             updateOptionMutation.mutate({
                               nodeId: selected.id,
                               optionId: option.id,
                               mediaUrl: next?.mediaUrl ?? "",
                               mediaType: next?.mediaType ?? null,
+                        mediaTranscript: next?.mediaTranscript ?? "",
+                        mediaCaptionsUrl: next?.mediaCaptionsUrl ?? "",
+                        mediaVersion: next?.mediaVersion ?? "",
                             })
                           }
                         />
@@ -1134,13 +1158,19 @@ function DialogEditor() {
 function MediaAttachment({
   mediaUrl,
   mediaType,
+  mediaTranscript,
+  mediaCaptionsUrl,
+  mediaVersion,
   onChange,
   disabled,
-  label = "Anexar imagem ou áudio",
+  label = "Anexar imagem, áudio ou vídeo",
 }: {
   mediaUrl: string | null;
   mediaType: MediaType | null;
-  onChange: (next: { mediaUrl: string; mediaType: MediaType } | null) => void;
+  mediaTranscript?: string | null;
+  mediaCaptionsUrl?: string | null;
+  mediaVersion?: string | null;
+  onChange: (next: { mediaUrl: string; mediaType: MediaType; mediaTranscript?: string | null; mediaCaptionsUrl?: string | null; mediaVersion?: string | null } | null) => void;
   disabled?: boolean;
   label?: string;
 }) {
@@ -1150,8 +1180,8 @@ function MediaAttachment({
 
   async function handleFile(file: File | undefined) {
     if (!file) return;
-    if (!file.type.startsWith("image/") && !file.type.startsWith("audio/")) {
-      setError("Apenas imagens ou áudios são suportados.");
+    if (!file.type.startsWith("image/") && !file.type.startsWith("audio/") && !file.type.startsWith("video/")) {
+      setError("Apenas imagens, áudios ou vídeos são suportados.");
       return;
     }
     setError(null);
@@ -1172,7 +1202,7 @@ function MediaAttachment({
       <input
         ref={inputRef}
         type="file"
-        accept="image/*,audio/*"
+        accept="image/*,audio/*,video/mp4,video/webm,video/ogg,video/quicktime"
         className="hidden"
         onChange={(event) => void handleFile(event.target.files?.[0])}
       />
@@ -1207,9 +1237,27 @@ function MediaAttachment({
           disabled={disabled || uploading}
           className="inline-flex items-center gap-1.5 rounded-md border border-border bg-card px-2.5 py-1.5 text-xs hover:bg-accent disabled:opacity-50"
         >
-          <Music className="h-3.5 w-3.5" />
+          {mediaType === "VIDEO" ? <Film className="h-3.5 w-3.5" /> : <Music className="h-3.5 w-3.5" />}
           {uploading ? "Enviando..." : label}
         </button>
+      )}
+      {mediaUrl && (mediaType === "AUDIO" || mediaType === "VIDEO") && (
+        <label className="mt-3 block text-xs">
+          Transcrição acessível
+          <textarea className="input mt-1 min-h-20" defaultValue={mediaTranscript ?? ""} onBlur={(event) => onChange({ mediaUrl, mediaType: mediaType!, mediaTranscript: event.target.value, mediaCaptionsUrl, mediaVersion })} />
+        </label>
+      )}
+      {mediaUrl && mediaType === "VIDEO" && (
+        <label className="mt-3 block text-xs">
+          URL da legenda WebVTT
+          <input className="input mt-1" type="url" defaultValue={mediaCaptionsUrl ?? ""} onBlur={(event) => onChange({ mediaUrl, mediaType, mediaTranscript, mediaCaptionsUrl: event.target.value, mediaVersion })} />
+        </label>
+      )}
+      {mediaUrl && (
+        <label className="mt-3 block text-xs">
+          Versão da mídia
+          <input className="input mt-1" defaultValue={mediaVersion ?? ""} placeholder="Gerada automaticamente quando vazia" onBlur={(event) => onChange({ mediaUrl, mediaType: mediaType!, mediaTranscript, mediaCaptionsUrl, mediaVersion: event.target.value })} />
+        </label>
       )}
       {error && <p className="mt-2 text-xs text-danger">{error}</p>}
     </div>
@@ -1217,6 +1265,14 @@ function MediaAttachment({
 }
 
 function MediaPreview({ mediaUrl, mediaType }: { mediaUrl: string; mediaType: MediaType | null }) {
+  if (mediaType === "VIDEO") {
+    return (
+      <video controls preload="metadata" className="max-h-64 w-full rounded-md border border-border bg-black">
+        <source src={mediaUrl} />
+        Seu navegador não suporta vídeo.
+      </video>
+    );
+  }
   if (mediaType === "AUDIO") {
     return (
       <audio controls src={mediaUrl} className="w-full">

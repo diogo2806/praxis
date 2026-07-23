@@ -19,6 +19,9 @@ public record ScenarioNode(
         String audioDescriptionUrl,
         String mediaUrl,
         MediaType mediaType,
+        String mediaTranscript,
+        String mediaCaptionsUrl,
+        String mediaVersion,
         List<ScenarioOption> options
 ) {
 
@@ -33,6 +36,6 @@ public record ScenarioNode(
             Integer timeLimitSeconds,
             List<ScenarioOption> options
     ) {
-        this(id, turnIndex, speaker, message, timeLimitSeconds, null, false, null, null, null, null, null, options);
+        this(id, turnIndex, speaker, message, timeLimitSeconds, null, false, null, null, null, null, null, null, null, null, options);
     }
 }
