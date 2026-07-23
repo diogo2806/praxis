@@ -30,11 +30,11 @@ A coleta integral foi comparada por título, conteúdo e finalidade. As cinco UR
 
 | URL registrada na coleta | Página canônica | Situação |
 | --- | --- | --- |
-| `configurando-webhooks-e-obtendo-payloads-reais` | [Configurando webhooks e obtendo payloads reais](https://developers.gupy.io/docs/configurando-webhooks-e-obtendo-payloads-reais-) | Alias sem hífen final. O conteúdo útil está na rota com hífen final. |
-| `configurando-webhooks-e-obtendo-payloads-reais-copy` | [Configurando webhooks e obtendo payloads reais](https://developers.gupy.io/docs/configurando-webhooks-e-obtendo-payloads-reais-) | Duplicata com sufixo `copy`; não deve ser usada como fonte. |
+| `configurando-webhooks-e-obtendo-payloads-reais` | [Configurando webhooks e obtendo payloads reais](https://developers.gupy.io/v2.0/docs/configurando-webhooks-e-obtendo-payloads-reais) | Alias sem hífen final. O conteúdo útil está na rota com hífen final. |
+| `configurando-webhooks-e-obtendo-payloads-reais-copy` | [Configurando webhooks e obtendo payloads reais](https://developers.gupy.io/v2.0/docs/configurando-webhooks-e-obtendo-payloads-reais) | Duplicata com sufixo `copy`; não deve ser usada como fonte. |
 | `fluxo-de-atualizacao-de-vagas` | [Fluxo de Atualização de vagas](https://developers.gupy.io/docs/atualiza%C3%A7%C3%A3o-de-vagas) | O slug canônico usa `atualização-de-vagas`, sem o prefixo `fluxo-de`. |
 | `fluxo-de-pré-admissão-da-pessoa-contratada-copy` | [Fluxo de Admissão da Pessoa Contratada](https://developers.gupy.io/docs/fluxo-de-admiss%C3%A3o-da-pessoa-contratada) | O conteúdo canônico usa “admissão”, sem `pré-` e sem `copy`. |
-| `fluxo-de-admissão-para-sistema-de-folha-copy` | [Fluxo de Admissão para Sistema de Folha](https://developers.gupy.io/docs/fluxo-de-admiss%C3%A3o-para-sistema-de-folha-) | Duplicata com `copy`; o conteúdo útil está na rota com hífen final. |
+| `fluxo-de-admissão-para-sistema-de-folha-copy` | [Fluxo de Admissão para Sistema de Folha](https://developers.gupy.io/v2.0/docs/fluxo-de-admiss%C3%A3o-para-sistema-de-folha) | Duplicata com `copy`; o conteúdo útil está na rota com hífen final. |
 
 As rotas canônicas acima pertencem a fluxos gerais de R&S ou ao produto Gupy Admissão. Elas não substituem o contrato de testes de provedores externos.
 
