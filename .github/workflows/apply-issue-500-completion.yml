@@ -80,6 +80,7 @@ jobs:
         run: |
           cd frontend
           npm ci > ../issue-500-frontend.log 2>&1
+          npm run build >> ../issue-500-frontend.log 2>&1
           npm run typecheck >> ../issue-500-frontend.log 2>&1
           npm run lint >> ../issue-500-frontend.log 2>&1
           node scripts/test-accessible-video.mjs >> ../issue-500-frontend.log 2>&1
