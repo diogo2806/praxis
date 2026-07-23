@@ -1,5 +1,7 @@
 package br.com.iforce.praxis.featureflag.controller;
 
+import br.com.iforce.praxis.auth.persistence.entity.EmpresaEntity;
+import br.com.iforce.praxis.auth.persistence.repository.EmpresaRepository;
 import br.com.iforce.praxis.auth.service.CurrentEmpresaService;
 import br.com.iforce.praxis.auth.service.CurrentUserService;
 import br.com.iforce.praxis.featureflag.dto.FeatureFlagContracts.EvaluationRequest;
@@ -24,15 +26,18 @@ public class FeatureFlagController {
     private final FeatureFlagService featureFlagService;
     private final CurrentEmpresaService currentEmpresaService;
     private final CurrentUserService currentUserService;
+    private final EmpresaRepository empresaRepository;
 
     public FeatureFlagController(
             FeatureFlagService featureFlagService,
             CurrentEmpresaService currentEmpresaService,
-            CurrentUserService currentUserService
+            CurrentUserService currentUserService,
+            EmpresaRepository empresaRepository
     ) {
         this.featureFlagService = featureFlagService;
         this.currentEmpresaService = currentEmpresaService;
         this.currentUserService = currentUserService;
+        this.empresaRepository = empresaRepository;
     }
 
     @GetMapping
@@ -40,6 +45,10 @@ public class FeatureFlagController {
     public ResponseEntity<FrontendFlagsResponse> frontendFlags(Authentication authentication) {
         String empresaId = currentEmpresaService.requiredEmpresaId();
         String userId = currentUserService.requiredUserId();
+        String plan = empresaRepository.findById(empresaId)
+                .map(EmpresaEntity::getCommercialPlanType)
+                .map(Enum::name)
+                .orElse(null);
         Set<String> roles = authentication == null
                 ? Set.of()
                 : authentication.getAuthorities().stream()
@@ -47,7 +56,7 @@ public class FeatureFlagController {
                         .collect(Collectors.toUnmodifiableSet());
         EvaluationRequest context = new EvaluationRequest(
                 empresaId,
-                null,
+                plan,
                 userId,
                 roles,
                 null,
