@@ -1,7 +1,7 @@
 import type { ScreenManualDefinition } from "@/lib/screen-manuals";
 
 const PARTNER_SPECIALIST_HOME_MANUAL: ScreenManualDefinition = {
-  id: "area-especialista",
+  id: "avaliacoes-catalogo",
   title: "Área do especialista parceiro",
   purpose:
     "Centralizar as funções autorizadas para criar, editar e revisar rascunhos de avaliações sem expor áreas administrativas da empresa.",
