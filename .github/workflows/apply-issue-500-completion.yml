@@ -33,22 +33,48 @@ jobs:
           python3 -m py_compile scripts/apply_issue_500_completion.py
           python3 scripts/apply_issue_500_completion.py
       - name: Validar backend
+        id: backend
+        continue-on-error: true
         run: |
           cd backend
-          mvn -B -Dtest=DashboardAnalyticsServiceTest,CandidateIntegrityServiceTest test
+          mvn -B -Dtest=DashboardAnalyticsServiceTest,CandidateIntegrityServiceTest test > ../issue-500-backend.log 2>&1
+      - name: Publicar diagnóstico backend
+        if: steps.backend.outcome == 'failure'
+        uses: actions/upload-artifact@v4
+        with:
+          name: issue-500-backend-diagnostics
+          path: issue-500-backend.log
+          retention-days: 2
+      - name: Interromper após diagnóstico backend
+        if: steps.backend.outcome == 'failure'
+        run: exit 1
       - name: Validar frontend
+        id: frontend
+        continue-on-error: true
         run: |
           cd frontend
-          npm ci
-          npm run typecheck
-          npm run lint
-          node scripts/test-accessible-video.mjs
-          node scripts/test-screen-manuals.mjs
-      - name: Limpar aplicador
+          npm ci > ../issue-500-frontend.log 2>&1
+          npm run typecheck >> ../issue-500-frontend.log 2>&1
+          npm run lint >> ../issue-500-frontend.log 2>&1
+          node scripts/test-accessible-video.mjs >> ../issue-500-frontend.log 2>&1
+          node scripts/test-screen-manuals.mjs >> ../issue-500-frontend.log 2>&1
+      - name: Publicar diagnóstico frontend
+        if: steps.frontend.outcome == 'failure'
+        uses: actions/upload-artifact@v4
+        with:
+          name: issue-500-frontend-diagnostics
+          path: issue-500-frontend.log
+          retention-days: 2
+      - name: Interromper após diagnóstico frontend
+        if: steps.frontend.outcome == 'failure'
+        run: exit 1
+      - name: Limpar aplicadores
         run: |
           git rm -f scripts/apply_issue_500_completion.py
           git rm -f .github/workflows/apply-issue-500-completion.yml
+          git rm -f .github/workflows/apply-issue-500-completion-v2.yml
           rm -rf scripts/__pycache__
+          rm -f issue-500-backend.log issue-500-frontend.log
       - name: Commitar
         run: |
           git config user.name "github-actions[bot]"
