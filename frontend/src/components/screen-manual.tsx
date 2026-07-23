@@ -24,6 +24,7 @@ import { resolveAnalysisOperationManual } from "@/lib/screen-manual-analysis-ope
 import { resolveCompetencyOwnershipManual } from "@/lib/screen-manual-competency-ownership";
 import { useLanguage } from "@/lib/language-context";
 import { resolvePartnerSpecialistManual } from "@/lib/screen-manual-specialist";
+import { resolvePreviewJourneyManual } from "@/lib/screen-manual-preview";
 import { resolvePublicationManual } from "@/lib/screen-manual-publication";
 import { resolveScenarioOwnershipManual } from "@/lib/screen-manual-scenario-ownership";
 import { resolveScreenManualOverride } from "@/lib/screen-manual-overrides";
@@ -91,6 +92,7 @@ export function ScreenManual({ pathname, iconOnly = false, className }: ScreenMa
     resolveAccessOnboardingManual(pathname) ??
     resolveAnalysisOperationManual(pathname) ??
     resolvePartnerSpecialistManual(pathname) ??
+    resolvePreviewJourneyManual(pathname) ??
     resolveScenarioOwnershipManual(pathname) ??
     resolvePublicationManual(pathname) ??
     resolveCompetencyOwnershipManual(pathname) ??
