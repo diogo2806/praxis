@@ -19,7 +19,8 @@
     "test:candidate-media-a11y": "node scripts/test-candidate-media-accessibility.mjs",
     "test:candidate-i18n": "node scripts/test-candidate-execution-i18n.mjs",
     "test:landing-commercial": "node scripts/test-landing-commercial.mjs",
-    "test:result-executive": "node scripts/test-result-executive-report.mjs"
+    "test:result-executive": "node scripts/test-result-executive-report.mjs",
+    "test:candidate-preview": "node scripts/test-candidate-journey-preview.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
@@ -80,7 +81,7 @@
     "@lovable.dev/vite-tanstack-config": "2.4.0",
     "@types/node": "^22.16.5",
     "@types/react": "^19.2.0",
-    "@types/react-dom": "^19.2.0",
+    "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^5.2.0",
     "eslint": "^10.7.0",
     "eslint-config-prettier": "^10.1.1",
