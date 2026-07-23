@@ -1,4 +1,8 @@
 import { Link, useRouterState } from "@tanstack/react-router";
+import {
+  canonicalAuthoringRoutes,
+  isScenarioAuthoringPath,
+} from "@/lib/authoring-flow";
 import { wizardSteps, type WizardSlug } from "@/lib/simulation-meta";
 import { useLanguage } from "@/lib/language-context";
 import { cn } from "@/lib/utils";
@@ -23,12 +27,13 @@ export function WizardStepper({
     nodeId: typeof currentSearch.nodeId === "string" ? currentSearch.nodeId : undefined,
   };
   const { t } = useLanguage();
-  const idx = wizardSteps.findIndex((s) => s.slug === current);
+  const effectiveCurrent = isScenarioAuthoringPath(currentPathname) ? "cenario" : current;
+  const idx = wizardSteps.findIndex((step) => step.slug === effectiveCurrent);
   const unlockedIdx = Math.max(
     idx,
-    unlockedThrough ? wizardSteps.findIndex((s) => s.slug === unlockedThrough) : idx,
+    unlockedThrough ? wizardSteps.findIndex((step) => step.slug === unlockedThrough) : idx,
   );
-  const showDialogReviewNavigation = current === "revisao" && currentPathname === "/nova/dialogo";
+  const showScenarioNavigation = isScenarioAuthoringPath(currentPathname);
 
   return (
     <div className="mb-8 rounded-xl border border-border bg-card p-4">
@@ -39,10 +44,10 @@ export function WizardStepper({
           .replace("{total}", String(wizardSteps.length))}
       </div>
       <ol className="flex gap-2 overflow-x-auto pb-1 md:grid md:grid-cols-4 md:overflow-visible md:pb-0">
-        {wizardSteps.map((s, i) => {
-          const done = i < idx;
-          const active = i === idx;
-          const locked = i > unlockedIdx;
+        {wizardSteps.map((step, index) => {
+          const done = index < idx;
+          const active = index === idx;
+          const locked = index > unlockedIdx;
           const content = (
             <>
               <div
@@ -63,17 +68,17 @@ export function WizardStepper({
                     !active && !done && !locked && "bg-card text-foreground ring-1 ring-border",
                   )}
                 >
-                  {done ? "✓" : s.n}
+                  {done ? "✓" : step.n}
                 </span>
-                {t.wizard.step} {s.n}
+                {t.wizard.step} {step.n}
               </div>
               <div className="mt-1 truncate text-xs font-medium text-foreground">
-                {t.wizard.steps[s.slug]}
+                {t.wizard.steps[step.slug]}
               </div>
             </>
           );
           return (
-            <li key={s.slug} className="min-w-[8.25rem] md:min-w-0">
+            <li key={step.slug} className="min-w-[8.25rem] md:min-w-0">
               {locked ? (
                 <div
                   aria-disabled="true"
@@ -87,7 +92,7 @@ export function WizardStepper({
                 </div>
               ) : (
                 <Link
-                  to={s.path}
+                  to={step.path}
                   search={simulationSearch}
                   aria-current={active ? "step" : undefined}
                   className={cn(
@@ -105,24 +110,53 @@ export function WizardStepper({
         })}
       </ol>
 
-      {showDialogReviewNavigation && (
+      {showScenarioNavigation && (
         <nav
-          aria-label="Navegação da revisão"
-          className="mt-4 flex flex-wrap justify-end gap-2 border-t border-border pt-4"
+          aria-label="Subetapas do cenário"
+          className="mt-4 flex flex-wrap gap-2 border-t border-border pt-4"
         >
           <Link
-            to="/nova/validador"
+            to={canonicalAuthoringRoutes.character}
             search={simulationSearch}
-            className="rounded-md border border-border bg-card px-3 py-2 text-sm font-medium text-foreground transition hover:bg-accent"
+            aria-current={
+              currentPathname === canonicalAuthoringRoutes.character ? "page" : undefined
+            }
+            className={cn(
+              "rounded-md border px-3 py-2 text-sm font-medium transition",
+              currentPathname === canonicalAuthoringRoutes.character
+                ? "border-primary bg-primary/10 text-primary"
+                : "border-border bg-card text-foreground hover:bg-accent",
+            )}
           >
-            Revisão e prontidão
+            1. Personagem
           </Link>
           <Link
-            to="/nova/mapa"
+            to={canonicalAuthoringRoutes.dialogue}
             search={mapSearch}
-            className="rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground transition hover:bg-primary/90"
+            aria-current={
+              currentPathname === canonicalAuthoringRoutes.dialogue ? "page" : undefined
+            }
+            className={cn(
+              "rounded-md border px-3 py-2 text-sm font-medium transition",
+              currentPathname === canonicalAuthoringRoutes.dialogue
+                ? "border-primary bg-primary/10 text-primary"
+                : "border-border bg-card text-foreground hover:bg-accent",
+            )}
           >
-            Mapa do fluxo
+            2. Diálogo
+          </Link>
+          <Link
+            to={canonicalAuthoringRoutes.map}
+            search={mapSearch}
+            aria-current={currentPathname === canonicalAuthoringRoutes.map ? "page" : undefined}
+            className={cn(
+              "rounded-md border px-3 py-2 text-sm font-medium transition",
+              currentPathname === canonicalAuthoringRoutes.map
+                ? "border-primary bg-primary/10 text-primary"
+                : "border-border bg-card text-foreground hover:bg-accent",
+            )}
+          >
+            3. Mapa do fluxo
           </Link>
         </nav>
       )}

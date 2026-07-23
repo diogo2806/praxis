@@ -1,10 +1,21 @@
 import { createFileRoute, redirect } from "@tanstack/react-router";
 
+import { legacyAuthoringRedirects } from "@/lib/authoring-flow";
+
 export const Route = createFileRoute("/simulations/new")({
-  beforeLoad: () => {
+  validateSearch: (search: Record<string, unknown>) => ({
+    simulationId: typeof search.simulationId === "string" ? search.simulationId : undefined,
+    versionNumber:
+      typeof search.versionNumber === "number" && Number.isFinite(search.versionNumber)
+        ? search.versionNumber
+        : typeof search.versionNumber === "string" && Number.isFinite(Number(search.versionNumber))
+          ? Number(search.versionNumber)
+          : undefined,
+  }),
+  beforeLoad: ({ search }) => {
     throw redirect({
-      to: "/nova/avaliacao",
-      search: { simulationId: undefined, versionNumber: undefined },
+      to: legacyAuthoringRedirects.simulationsNew,
+      search,
     });
   },
 });

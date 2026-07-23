@@ -5,7 +5,6 @@ import { CheckCircle2, XCircle } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
 import { EmptyState, StateBanner, StatusBadge } from "@/components/praxis-ui";
 import { Button } from "@/components/ui/button";
-import { WizardStepper } from "@/components/wizard-stepper";
 import {
   getGupyPreflight,
   listSimulations,
@@ -53,16 +52,16 @@ function GupyActivation() {
 
   return (
     <AppShell>
-      <WizardStepper current="publicacao" />
       <header className="mb-5 flex flex-wrap items-start justify-between gap-4">
         <div>
           <div className="text-xs font-semibold uppercase tracking-[0.18em] text-primary">
-            Ativação no ATS
+            Operação pós-publicação
           </div>
           <h1 className="mt-1 font-display text-3xl">Gupy — ativação e conferência</h1>
           <p className="mt-2 max-w-3xl text-sm leading-6 text-muted-foreground">
-            Primeiro publique a versão no Práxis. Depois execute esta conferência para validar o
-            token real da integração, a URL pública e a estrutura que será exposta à Gupy.
+            Primeiro publique a versão no fluxo oficial do Práxis. Depois execute esta conferência
+            operacional para validar o token real da integração, a URL pública e a estrutura exposta à
+            Gupy.
           </p>
         </div>
         <Button asChild variant="outline" className="bg-card">

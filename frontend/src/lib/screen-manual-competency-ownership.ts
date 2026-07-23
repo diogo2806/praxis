@@ -13,11 +13,27 @@ export const COMPETENCY_OWNERSHIP_MANUALS: ScreenManualDefinition[] = [
       "Continue para Personagem; para criar ou alterar uma competência global, abra Competências.",
     ],
     fields: [
-      { name: "Cargo ou contexto", description: "Nome operacional da avaliação e contexto em que ela será aplicada." },
-      { name: "Situação crítica", description: "Cenário realista que orienta a construção das etapas e alternativas." },
-      { name: "Busca de competências", description: "Filtra somente competências ativas disponíveis no catálogo da empresa." },
-      { name: "Competências selecionadas", description: "Dimensões do catálogo que farão parte desta versão da avaliação." },
-      { name: "Competências antigas", description: "Referências preservadas em versões antigas quando já não existem no catálogo ativo; podem ser removidas do rascunho." },
+      {
+        name: "Cargo ou contexto",
+        description: "Nome operacional da avaliação e contexto em que ela será aplicada.",
+      },
+      {
+        name: "Situação crítica",
+        description: "Cenário realista que orienta a construção das etapas e alternativas.",
+      },
+      {
+        name: "Busca de competências",
+        description: "Filtra somente competências ativas disponíveis no catálogo da empresa.",
+      },
+      {
+        name: "Competências selecionadas",
+        description: "Dimensões do catálogo que farão parte desta versão da avaliação.",
+      },
+      {
+        name: "Competências antigas",
+        description:
+          "Referências preservadas em versões antigas quando já não existem no catálogo ativo; podem ser removidas do rascunho.",
+      },
     ],
     permissions: [
       "Perfil EMPRESA com acesso à criação ou edição de avaliações.",
@@ -48,51 +64,6 @@ export const COMPETENCY_OWNERSHIP_MANUALS: ScreenManualDefinition[] = [
       "Consulte o processo completo na Central de manuais.",
     ],
     matches: (pathname) => pathname === "/nova/avaliacao",
-  },
-  {
-    id: "objetivo-somente-leitura",
-    title: "Resumo do objetivo e modelo base",
-    purpose:
-      "Revisar, sem editar, o objetivo, a versão, a situação crítica e as competências selecionadas antes da autoria do personagem.",
-    flow: [
-      "Abra a tela com avaliação e versão informadas.",
-      "Revise nome, descrição, primeira etapa, situação crítica e situação da versão.",
-      "Confira competências, pesos, importância e metas em modo somente leitura.",
-      "Volte para Nova avaliação para alterar a seleção ou siga para Personagem.",
-    ],
-    fields: [
-      { name: "Avaliação e versão", description: "Contexto obrigatório do resumo exibido." },
-      { name: "Primeira etapa", description: "Identificador do nó inicial configurado no modelo base." },
-      { name: "Situação crítica", description: "Contexto definido em Nova avaliação e exibido apenas para conferência." },
-      { name: "Competência", description: "Nome da dimensão previamente selecionada em Nova avaliação." },
-      { name: "Peso", description: "Participação percentual da competência no resultado da versão." },
-      { name: "Importância e meta", description: "Classificação e valor-alvo mantidos pela configuração da versão." },
-    ],
-    permissions: ["Perfil EMPRESA com acesso de leitura à avaliação e à versão da própria empresa."],
-    states: [
-      "Sem contexto",
-      "Carregando",
-      "Resumo disponível",
-      "Sem competências selecionadas",
-      "Falha de carregamento",
-    ],
-    blocks: [
-      "Avaliação ou versão não informada.",
-      "Versão não encontrada ou pertencente a outra empresa.",
-      "Nenhuma competência selecionada para avançar ao Personagem.",
-      "Falha temporária ao carregar o resumo.",
-    ],
-    examples: [
-      "Conferir que a versão 2 possui três competências antes de começar a escrever o personagem.",
-      "Identificar ausência de competências e voltar para Nova avaliação para selecionar itens do catálogo.",
-    ],
-    shortcuts: [
-      "Use Alterar seleção para retornar diretamente ao rascunho da versão.",
-      "Use Abrir catálogo apenas para manter competências globais.",
-      "Esta tela não salva nem redistribui pesos.",
-      "Consulte o processo completo na Central de manuais.",
-    ],
-    matches: (pathname) => pathname === "/nova/objetivo",
   },
 ];
 

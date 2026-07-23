@@ -9,8 +9,9 @@ import {
   type QuickStartCategory,
   type QuickStartTemplateSummaryResponse,
 } from "@/lib/api/praxis";
+import { canonicalAuthoringRoutes } from "@/lib/authoring-flow";
 
-const QUICK_START_DESTINATION = "/nova/validador" as const;
+const QUICK_START_DESTINATION = canonicalAuthoringRoutes.assessment;
 
 export const Route = createFileRoute("/nova/rapido")({
   head: () => ({
@@ -18,7 +19,7 @@ export const Route = createFileRoute("/nova/rapido")({
       { title: "Começar rápido - Práxis" },
       {
         name: "description",
-        content: "Crie uma avaliação a partir de um modelo pronto e siga direto para a revisão.",
+        content: "Crie uma avaliação a partir de um modelo pronto e entre no fluxo oficial de autoria.",
       },
     ],
   }),
@@ -51,10 +52,11 @@ function QuickStartPage() {
           <Sparkles className="h-3.5 w-3.5" />
           Começar rápido
         </div>
-        <h1 className="mt-1 font-display text-3xl">Escolha um modelo para revisar</h1>
+        <h1 className="mt-1 font-display text-3xl">Escolha um modelo para editar</h1>
         <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
           Cada modelo já vem com cenário, alternativas, competências e pesos preenchidos. Depois da
-          criação, você segue direto para a revisão estrutural antes de publicar.
+          criação, você entra em Nova avaliação e percorre o mesmo fluxo oficial usado por uma autoria
+          iniciada do zero.
         </p>
       </div>
 
@@ -93,7 +95,7 @@ function QuickStartPage() {
       <div className="mt-8 text-sm text-muted-foreground">
         Prefere montar do zero?{" "}
         <Link
-          to="/nova/avaliacao"
+          to={canonicalAuthoringRoutes.assessment}
           className="font-medium text-primary hover:underline"
           search={{ simulationId: undefined, versionNumber: undefined }}
         >

@@ -3,7 +3,6 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { AppShell } from "@/components/app-shell";
 import { EmptyState, StateBanner } from "@/components/praxis-ui";
 import { CalibrationReport } from "@/components/simulation/calibration-report";
-import { WizardStepper } from "@/components/wizard-stepper";
 import { getCalibrationReport, getSimulationMonitoring } from "@/lib/api/praxis";
 
 export const Route = createFileRoute("/nova/piloto")({
@@ -19,7 +18,7 @@ export const Route = createFileRoute("/nova/piloto")({
   head: () => ({
     meta: [
       { title: "Piloto e indicadores - Práxis" },
-      { name: "description", content: "Indicadores reais de execução antes da publicação." },
+      { name: "description", content: "Indicadores reais e calibração de uma avaliação em operação." },
     ],
   }),
   component: Page,
@@ -42,12 +41,14 @@ function Page() {
 
   return (
     <AppShell>
-      <WizardStepper current="publicacao" />
       <div className="mb-6">
-        <div className="text-xs uppercase tracking-[0.2em] text-primary">Passo 4</div>
+        <div className="text-xs uppercase tracking-[0.2em] text-primary">
+          Operação pós-publicação
+        </div>
         <h1 className="mt-1 font-display text-3xl">Piloto e indicadores</h1>
         <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
-          Esta tela mostra os indicadores reais da avaliação e versão abertas no fluxo de autoria.
+          Consulte execução e calibração sem criar um segundo caminho de autoria. Alterações na
+          avaliação continuam sendo feitas pelo fluxo oficial de quatro passos.
         </p>
       </div>
       {!hasContext ? (
@@ -105,27 +106,22 @@ function Page() {
               <CalibrationReport report={calibrationQuery.data} />
             ) : null}
           </section>
-          <div className="mt-8 flex justify-between">
+          <div className="mt-8 flex flex-wrap justify-between gap-3">
             <Link
-              to="/nova/validador"
-              search={{
-                simulationId: search.simulationId,
-                versionNumber: search.versionNumber,
-              }}
+              to="/monitoramento"
               className="rounded-md border border-border bg-card px-4 py-2 text-sm hover:bg-accent"
             >
-              Voltar: Validador
+              Central operacional
             </Link>
             <Link
-              to="/nova/mapa"
+              to="/nova/governanca"
               search={{
                 simulationId: search.simulationId,
-                nodeId: undefined,
                 versionNumber: search.versionNumber,
               }}
               className="rounded-md bg-primary px-5 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
             >
-              Ver mapa e pontuação
+              Voltar à publicação
             </Link>
           </div>
         </>
