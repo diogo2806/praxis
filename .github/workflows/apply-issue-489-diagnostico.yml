@@ -1,0 +1,67 @@
+name: Diagnosticar e aplicar issue 489
+
+on:
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: write
+
+jobs:
+  apply-fix:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: fix/issue-489-traduzir-execucao-candidato
+          fetch-depth: 1
+          show-progress: false
+
+      - name: Aplicar e registrar diagnóstico
+        run: |
+          python - <<'PY'
+          import base64
+          import gzip
+          import traceback
+          from pathlib import Path
+
+          workflow = Path('.github/workflows/apply-issue-489.yml').read_text(encoding='utf-8')
+          lines = workflow.splitlines()
+          start = next(index for index, line in enumerate(lines) if line.strip() == 'SCRIPT_B64: >-') + 1
+          encoded = []
+          for line in lines[start:]:
+              if not line.startswith('            '):
+                  break
+              encoded.append(line.strip())
+
+          try:
+              source = gzip.decompress(base64.b64decode(''.join(encoded))).decode('utf-8')
+              exec(compile(source, 'apply_issue_489.py', 'exec'), {'__name__': '__main__'})
+          except Exception:
+              diagnostic = traceback.format_exc()
+              print(diagnostic)
+              Path('.github/issue-489-error.txt').write_text(diagnostic, encoding='utf-8')
+          PY
+
+      - name: Validar e criar commit
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          if [ -f .github/issue-489-error.txt ]; then
+            git add .github/issue-489-error.txt
+            git commit -m "chore: registrar diagnóstico da issue #489"
+            git push
+            exit 0
+          fi
+
+          cd frontend
+          node scripts/test-candidate-i18n.mjs
+          cd ..
+          git diff --check
+          rm -f .github/workflows/apply-issue-489-diagnostico.yml
+          git add -A
+          git commit -m "fix(frontend): traduzir execução da avaliação do candidato"
+          git push
