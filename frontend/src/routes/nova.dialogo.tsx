@@ -341,6 +341,9 @@ function DialogEditor() {
       nodeId,
       mediaUrl,
       mediaType,
+      mediaTranscript,
+      mediaCaptionsUrl,
+      mediaVersion,
     }: {
       nodeId: string;
       mediaUrl: string;
@@ -406,6 +409,9 @@ function DialogEditor() {
       resultingTone,
       mediaUrl,
       mediaType,
+      mediaTranscript,
+      mediaCaptionsUrl,
+      mediaVersion,
     }: {
       nodeId: string;
       optionId: string;
