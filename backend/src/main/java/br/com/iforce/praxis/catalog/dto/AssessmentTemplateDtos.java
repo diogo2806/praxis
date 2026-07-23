@@ -106,6 +106,7 @@ public final class AssessmentTemplateDtos {
             String usageLimitations,
             String authorUserId,
             String reviewedBy,
+            String reviewNote,
             Instant reviewedAt,
             Instant publishedAt,
             boolean favorite,
