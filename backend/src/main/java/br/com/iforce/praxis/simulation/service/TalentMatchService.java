@@ -95,7 +95,7 @@ public class TalentMatchService {
         }
 
         boolean incomplete = attempts.stream().anyMatch(attempt ->
-                attempt.getStatus() != AttemptStatus.DONE || attempt.getScore() == null
+                attempt.getStatus() != AttemptStatus.COMPLETED || attempt.getScore() == null
         );
         if (incomplete) {
             throw new ResponseStatusException(
