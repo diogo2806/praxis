@@ -1,5 +1,5 @@
 import type {
-  CandidateAttemptContract,
+  CandidateAttemptContract as LegacyCandidateAttemptResponse,
   SubmitAnswerRequestContract,
   SubmitAnswerResponseContract,
 } from "@/lib/api/candidate-attempt-contract";
@@ -16,7 +16,7 @@ export interface HealthConsentStatusResponse {
   noticeVersion: string | null;
 }
 
-export type CandidateAttemptResponse = CandidateAttemptContract & {
+export type CandidateAttemptResponse = LegacyCandidateAttemptResponse & {
   healthConsentValid: boolean;
   healthConsentNoticeVersion: string | null;
 };
@@ -38,7 +38,7 @@ export async function getCandidateAttempt(token: string): Promise<CandidateAttem
     return pendingHealthConsentAttempt(consentStatus);
   }
 
-  const attempt = await apiRequest<CandidateAttemptContract>(
+  const attempt = await apiRequest<LegacyCandidateAttemptResponse>(
     `/candidate/attempts/${encodeURIComponent(token)}`,
     { headers: integrityHeaders(token) },
     {
