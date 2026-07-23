@@ -28,24 +28,26 @@ jobs:
         run: |
           python3 - <<'PY'
           from pathlib import Path
+          import re
 
           path = Path("docs/GUPY-FONTE-CANONICA.md")
           content = path.read_text(encoding="utf-8")
-          replacements = {
-              "https://developers.gupy.io/docs/configurando-webhooks-e-obtendo-payloads-reais-":
+          replacements = [
+              (
+                  r"https://developers\.gupy\.io/docs/configurando-webhooks-e-obtendo-payloads-reais-(?![A-Za-z0-9])",
                   "https://developers.gupy.io/docs/configurando-webhooks-e-obtendo-payloads-reais",
-              "https://developers.gupy.io/docs/fluxo-de-admiss%C3%A3o-para-sistema-de-folha-":
+                  2,
+              ),
+              (
+                  r"https://developers\.gupy\.io/docs/fluxo-de-admiss%C3%A3o-para-sistema-de-folha-(?![A-Za-z0-9])",
                   "https://developers.gupy.io/docs/fluxo-de-admiss%C3%A3o-para-sistema-de-folha-copy",
-          }
-          expected_counts = {
-              "https://developers.gupy.io/docs/configurando-webhooks-e-obtendo-payloads-reais-": 2,
-              "https://developers.gupy.io/docs/fluxo-de-admiss%C3%A3o-para-sistema-de-folha-": 1,
-          }
-          for source, target in replacements.items():
-              count = content.count(source)
-              if count != expected_counts[source]:
-                  raise SystemExit(f"Quantidade inesperada para {source}: {count}")
-              content = content.replace(source, target)
+                  1,
+              ),
+          ]
+          for pattern, target, expected in replacements:
+              content, count = re.subn(pattern, target, content)
+              if count != expected:
+                  raise SystemExit(f"Quantidade inesperada para {pattern}: {count}")
           path.write_text(content, encoding="utf-8")
           PY
           python3 scripts/validate_docs.py
