@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { readdirSync, readFileSync, statSync } from "node:fs";
-import { dirname, join, relative, resolve } from "node:path";
+import { basename, dirname, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const scriptDirectory = dirname(fileURLToPath(import.meta.url));
@@ -105,6 +105,14 @@ function extractManualDefinitions(filePath) {
   return definitions;
 }
 
+function isAvailableInManualCenter(manual) {
+  const moduleName = basename(manual.filePath, ".ts");
+  return (
+    manualRouteSource.includes(`@/lib/${moduleName}`) ||
+    manualRouteSource.includes(`"${manual.id}"`)
+  );
+}
+
 const routeFiles = listFiles(
   routesDirectory,
   (filePath) => filePath.endsWith(".tsx") && !filePath.endsWith("__root.tsx"),
@@ -139,10 +147,7 @@ for (const route of routes) {
     continue;
   }
 
-  const hasValidAnchor = matchingManuals.some((manual) =>
-    manualRouteSource.includes(`"${manual.id}"`),
-  );
-  if (!hasValidAnchor) {
+  if (!matchingManuals.some(isAvailableInManualCenter)) {
     missingAnchors.push(
       `${route.routePath} -> ${matchingManuals.map((manual) => manual.id).join(", ")}`,
     );
