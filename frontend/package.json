@@ -12,7 +12,8 @@
     "lint": "eslint .",
     "format": "prettier --write .",
     "test:access-control": "node scripts/test-access-control.mjs",
-    "test:screen-manuals": "node scripts/test-screen-manuals.mjs"
+    "test:screen-manuals": "node scripts/test-screen-manuals.mjs",
+    "test:api-contracts": "node scripts/test-api-contracts.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",

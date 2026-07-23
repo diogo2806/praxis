@@ -30,6 +30,18 @@ export default tseslint.config(
                 "TanStack Start does not use the Next.js `server-only` package. Rename the module to `*.server.ts` or mark it with `@tanstack/react-start/server-only`.",
             },
           ],
+          patterns: [
+            {
+              group: [
+                "@/lib/api/praxis-legacy",
+                "@/lib/api/praxis-legacy.ts",
+                "**/lib/api/praxis-legacy",
+                "**/lib/api/praxis-legacy.ts",
+              ],
+              message:
+                "Consuma a fachada pública `@/lib/api/praxis`; o módulo legado é restrito à implementação interna da API.",
+            },
+          ],
         },
       ],
       "react-refresh/only-export-components": ["warn", { allowConstantExport: true }],
