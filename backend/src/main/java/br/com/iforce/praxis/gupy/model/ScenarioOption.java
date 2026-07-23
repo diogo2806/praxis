@@ -2,9 +2,7 @@ package br.com.iforce.praxis.gupy.model;
 
 import br.com.iforce.praxis.shared.model.MediaType;
 
-
 import java.util.Map;
-
 
 public record ScenarioOption(
         String id,
@@ -23,7 +21,39 @@ public record ScenarioOption(
 ) {
 
     /**
-     * Construtor compatível com o formato anterior (sem mídia), usado por testes e fluxos legados.
+     * Construtor compatível com o formato completo anterior à inclusão dos metadados acessíveis.
+     */
+    public ScenarioOption(
+            String id,
+            String text,
+            String nextNodeId,
+            Map<String, Integer> competencyScores,
+            boolean critical,
+            String auditNote,
+            String plainTextDescription,
+            String audioDescriptionUrl,
+            String mediaUrl,
+            MediaType mediaType
+    ) {
+        this(
+                id,
+                text,
+                nextNodeId,
+                competencyScores,
+                critical,
+                auditNote,
+                plainTextDescription,
+                audioDescriptionUrl,
+                mediaUrl,
+                mediaType,
+                null,
+                null,
+                null
+        );
+    }
+
+    /**
+     * Construtor compatível com o formato anterior sem mídia, usado por testes e fluxos legados.
      */
     public ScenarioOption(
             String id,
