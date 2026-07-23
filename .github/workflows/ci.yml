@@ -117,6 +117,12 @@ jobs:
           set -o pipefail
           npm run test:access-control 2>&1 | tee -a frontend.log
 
+      - name: Test screen manual coverage
+        shell: bash
+        run: |
+          set -o pipefail
+          npm run test:screen-manuals 2>&1 | tee -a frontend.log
+
       - name: Upload frontend diagnostics on failure
         if: failure()
         uses: actions/upload-artifact@v4

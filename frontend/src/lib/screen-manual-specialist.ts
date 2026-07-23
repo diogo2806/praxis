@@ -1,7 +1,7 @@
 import type { ScreenManualDefinition } from "@/lib/screen-manuals";
 
 const PARTNER_SPECIALIST_HOME_MANUAL: ScreenManualDefinition = {
-  id: "area-especialista",
+  id: "avaliacoes-catalogo",
   title: "Área do especialista parceiro",
   purpose:
     "Centralizar as funções autorizadas para criar, editar e revisar rascunhos de avaliações sem expor áreas administrativas da empresa.",
@@ -66,10 +66,12 @@ const PARTNER_SPECIALIST_HOME_MANUAL: ScreenManualDefinition = {
   matches: (pathname) => pathname === "/avaliacoes/especialista",
 };
 
+export const PARTNER_SPECIALIST_MANUALS: ScreenManualDefinition[] = [
+  PARTNER_SPECIALIST_HOME_MANUAL,
+];
+
 export function resolvePartnerSpecialistManual(
   pathname: string,
 ): ScreenManualDefinition | undefined {
-  return PARTNER_SPECIALIST_HOME_MANUAL.matches(pathname)
-    ? PARTNER_SPECIALIST_HOME_MANUAL
-    : undefined;
+  return PARTNER_SPECIALIST_MANUALS.find((manual) => manual.matches(pathname));
 }

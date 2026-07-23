@@ -11,7 +11,8 @@
     "preview": "vite preview",
     "lint": "eslint .",
     "format": "prettier --write .",
-    "test:access-control": "node scripts/test-access-control.mjs"
+    "test:access-control": "node scripts/test-access-control.mjs",
+    "test:screen-manuals": "node scripts/test-screen-manuals.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
