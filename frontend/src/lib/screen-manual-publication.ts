@@ -274,6 +274,66 @@ export const PUBLICATION_MANUALS: ScreenManualDefinition[] = [
     ],
     matches: (pathname) => pathname === "/jornadas",
   },
+  {
+    id: "suboperadores-governanca",
+    title: "Suboperadores de dados",
+    purpose:
+      "Dar transparência aos fornecedores que tratam dados pessoais em nome do Práxis e apoiar a governança de privacidade da organização.",
+    flow: [
+      "Revise a lista pública de suboperadores e as respectivas finalidades.",
+      "Consulte o país ou região de tratamento e a categoria de dados envolvida.",
+      "Abra os links de privacidade e segurança quando precisar avaliar um fornecedor.",
+      "Use o canal de contato informado para dúvidas, objeções ou solicitações de privacidade.",
+    ],
+    fields: [
+      {
+        name: "Suboperador",
+        description: "Fornecedor contratado para executar uma atividade técnica ou operacional.",
+      },
+      {
+        name: "Finalidade",
+        description: "Motivo específico pelo qual o fornecedor participa do tratamento.",
+      },
+      {
+        name: "Localização",
+        description: "País ou região principal em que os dados são processados ou armazenados.",
+      },
+      {
+        name: "Dados envolvidos",
+        description: "Categorias de dados pessoais que podem ser tratadas pelo fornecedor.",
+      },
+      {
+        name: "Links",
+        description: "Políticas oficiais de privacidade e segurança do suboperador.",
+      },
+    ],
+    permissions: [
+      "A página é pública e pode ser consultada sem autenticação.",
+      "A manutenção da lista exige responsabilidade administrativa e jurídica da controladora do Práxis.",
+    ],
+    states: [
+      "Lista publicada",
+      "Lista atualizada",
+      "Fornecedor substituído",
+      "Link externo indisponível",
+    ],
+    blocks: [
+      "Falha temporária ao abrir a política externa do fornecedor.",
+      "Conteúdo do site externo alterado ou indisponível.",
+      "Solicitação que exige análise do canal de privacidade.",
+    ],
+    examples: [
+      "Verificar onde a infraestrutura de hospedagem processa os dados.",
+      "Consultar quais categorias de dados são enviadas ao provedor de e-mail transacional.",
+    ],
+    shortcuts: [
+      "Use Tab para navegar entre os links da tabela.",
+      "Os links externos abrem em nova guia.",
+      "Consulte Privacidade e Termos para o processo completo de tratamento de dados.",
+      "Use contato@iforce.com.br para solicitações relacionadas à privacidade.",
+    ],
+    matches: (pathname) => pathname === "/suboperadores",
+  },
 ];
 
 export function resolvePublicationManual(pathname: string) {
