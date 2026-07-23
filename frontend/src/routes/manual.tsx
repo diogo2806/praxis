@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { ACCESS_ONBOARDING_MANUALS } from "@/lib/screen-manual-access-onboarding";
 import { ANALYSIS_OPERATION_MANUALS } from "@/lib/screen-manual-analysis-operations";
 import { COMPETENCY_OWNERSHIP_MANUALS } from "@/lib/screen-manual-competency-ownership";
+import { PORTABILITY_MANUALS } from "@/lib/screen-manual-portability";
 import { PUBLICATION_MANUALS } from "@/lib/screen-manual-publication";
 import { SCENARIO_OWNERSHIP_MANUALS } from "@/lib/screen-manual-scenario-ownership";
 import { SCREEN_MANUAL_OVERRIDES } from "@/lib/screen-manual-overrides";
@@ -41,6 +42,7 @@ const MANUALS = [
   ...ANALYSIS_OPERATION_MANUALS,
   ...ACCESS_ONBOARDING_MANUALS,
   ...PUBLICATION_MANUALS,
+  ...PORTABILITY_MANUALS,
   ...COMPETENCY_OWNERSHIP_MANUALS,
   ...SCREEN_MANUAL_OVERRIDES.filter(
     (manual) => !REPLACED_OVERRIDE_MANUALS.has(manual.id),
@@ -72,6 +74,7 @@ const MANUAL_CATEGORIES: ManualCategoryDefinition[] = [
       "avaliacoes-catalogo",
       "validador-diagnostico",
       "conformidade-contextual",
+      "portabilidade-avaliacoes",
       "criacao-avaliacao",
       "avaliacoes",
       "competencias",

@@ -24,6 +24,7 @@ import { resolveAnalysisOperationManual } from "@/lib/screen-manual-analysis-ope
 import { resolveCompetencyOwnershipManual } from "@/lib/screen-manual-competency-ownership";
 import { useLanguage } from "@/lib/language-context";
 import { resolvePartnerSpecialistManual } from "@/lib/screen-manual-specialist";
+import { resolvePortabilityManual } from "@/lib/screen-manual-portability";
 import { resolvePreviewJourneyManual } from "@/lib/screen-manual-preview";
 import { resolvePublicationManual } from "@/lib/screen-manual-publication";
 import { resolveScenarioOwnershipManual } from "@/lib/screen-manual-scenario-ownership";
@@ -70,10 +71,10 @@ const manualCopy = {
     fields: "Explicación de los campos",
     permissions: "Permisos necesarios",
     states: "Estados posibles",
-    blocks: "Motivos de bloqueo",
+    blocks: "Motivos de bloqueio",
     examples: "Ejemplos",
     shortcuts: "Atajos",
-    completeProcess: "Ver proceso completo",
+    completeProcess: "Ver processo completo",
   },
 } as const;
 
@@ -93,6 +94,7 @@ export function ScreenManual({ pathname, iconOnly = false, className }: ScreenMa
     resolveAnalysisOperationManual(pathname) ??
     resolvePartnerSpecialistManual(pathname) ??
     resolvePreviewJourneyManual(pathname) ??
+    resolvePortabilityManual(pathname) ??
     resolveScenarioOwnershipManual(pathname) ??
     resolvePublicationManual(pathname) ??
     resolveCompetencyOwnershipManual(pathname) ??
