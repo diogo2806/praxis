@@ -3,39 +3,35 @@ package br.com.iforce.praxis.gupy.delivery.service;
 import br.com.iforce.praxis.gupy.dto.TestResultResponse;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
-import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
-
-import java.io.IOException;
-import java.net.HttpURLConnection;
-import java.net.URI;
 
 @Component
 public class RestClientResultWebhookClient implements ResultWebhookClient {
 
-    private final RestClient resultRestClient;
-    private final RestClient callbackRestClient;
     private final GupyOutboundUrlValidator outboundUrlValidator;
+    private final OutboundRestClientFactory restClientFactory;
+    private final int connectTimeoutMs;
+    private final int readTimeoutMs;
 
     public RestClientResultWebhookClient(
-            RestClient.Builder restClientBuilder,
             GupyOutboundUrlValidator outboundUrlValidator,
-            @Value("${praxis.gupy.callback.connect-timeout-ms:3000}") int callbackConnectTimeoutMs,
-            @Value("${praxis.gupy.callback.read-timeout-ms:5000}") int callbackReadTimeoutMs
+            OutboundRestClientFactory restClientFactory,
+            @Value("${praxis.gupy.callback.connect-timeout-ms:3000}") int connectTimeoutMs,
+            @Value("${praxis.gupy.callback.read-timeout-ms:5000}") int readTimeoutMs
     ) {
-        this.resultRestClient = restClientBuilder.build();
-        this.callbackRestClient = RestClient.builder()
-                .requestFactory(callbackRequestFactory(callbackConnectTimeoutMs, callbackReadTimeoutMs))
-                .build();
         this.outboundUrlValidator = outboundUrlValidator;
+        this.restClientFactory = restClientFactory;
+        this.connectTimeoutMs = connectTimeoutMs;
+        this.readTimeoutMs = readTimeoutMs;
     }
 
     @Override
     public void postResult(String webhookUrl, TestResultResponse testResultResponse) {
-        URI uri = outboundUrlValidator.validate(webhookUrl);
-        resultRestClient.post()
-                .uri(uri)
+        ValidatedOutboundTarget target = outboundUrlValidator.validateAndResolve(webhookUrl);
+        RestClient client = restClientFactory.create(target, connectTimeoutMs, readTimeoutMs);
+        client.post()
+                .uri(target.uri())
                 .body(testResultResponse)
                 .retrieve()
                 .toBodilessEntity();
@@ -43,9 +39,10 @@ public class RestClientResultWebhookClient implements ResultWebhookClient {
 
     @Override
     public int getCallback(String callbackUrl) {
-        URI uri = outboundUrlValidator.validate(callbackUrl);
-        ResponseEntity<Void> response = callbackRestClient.get()
-                .uri(uri)
+        ValidatedOutboundTarget target = outboundUrlValidator.validateAndResolve(callbackUrl);
+        RestClient client = restClientFactory.create(target, connectTimeoutMs, readTimeoutMs);
+        ResponseEntity<Void> response = client.get()
+                .uri(target.uri())
                 .retrieve()
                 .toBodilessEntity();
         int statusCode = response.getStatusCode().value();
@@ -53,19 +50,5 @@ public class RestClientResultWebhookClient implements ResultWebhookClient {
             throw new CallbackHttpStatusException(statusCode);
         }
         return statusCode;
-    }
-
-    private SimpleClientHttpRequestFactory callbackRequestFactory(int connectTimeoutMs, int readTimeoutMs) {
-        SimpleClientHttpRequestFactory requestFactory = new SimpleClientHttpRequestFactory() {
-            @Override
-            protected void prepareConnection(HttpURLConnection connection, String httpMethod) throws IOException {
-                super.prepareConnection(connection, httpMethod);
-                // Redirecionamentos não são seguidos: cada destino precisa passar pela validação SSRF.
-                connection.setInstanceFollowRedirects(false);
-            }
-        };
-        requestFactory.setConnectTimeout(Math.max(1, connectTimeoutMs));
-        requestFactory.setReadTimeout(Math.max(1, readTimeoutMs));
-        return requestFactory;
     }
 }
