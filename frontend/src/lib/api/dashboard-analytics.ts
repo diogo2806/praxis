@@ -1,5 +1,5 @@
 import { apiRequest } from "@/lib/api/http";
-import { PraxisApiError } from "@/lib/api/praxis-legacy";
+import { PraxisApiError } from "@/lib/api/praxis";
 
 export interface DashboardParticipationSummary {
   total: number;
@@ -21,11 +21,28 @@ export interface DashboardActivityPoint {
   abandoned: number;
 }
 
+export interface DashboardResponseDistribution {
+  responseId: string;
+  count: number;
+  percentage: number;
+}
+
+export interface DashboardMediaQualityComparison {
+  mediaType: "IMAGE" | "AUDIO" | "VIDEO";
+  mediaVersion: string;
+  sampleSize: number;
+  completed: number;
+  completionRatePercent: number;
+  averageDurationSeconds: number | null;
+  responseDistribution: DashboardResponseDistribution[];
+}
+
 export interface DashboardAnalyticsResponse {
   generatedAt: string;
   periodDays: number;
   participations: DashboardParticipationSummary;
   activity: DashboardActivityPoint[];
+  mediaQualityComparisons: DashboardMediaQualityComparison[];
 }
 
 export async function getDashboardAnalytics(): Promise<DashboardAnalyticsResponse | null> {

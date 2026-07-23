@@ -21,6 +21,7 @@ import {
   getDashboardAnalytics,
   type DashboardActivityPoint,
   type DashboardAnalyticsResponse,
+  type DashboardMediaQualityComparison,
   type DashboardParticipationSummary,
 } from "@/lib/api/dashboard-analytics";
 import { DashboardCompatibilityError, getDashboard } from "@/lib/api/dashboard-strict";
@@ -260,8 +261,68 @@ function AnalyticsGrid({ analytics }: { analytics: DashboardAnalyticsResponse })
       <StatusBreakdown summary={analytics.participations} />
       <ParticipationFunnel summary={analytics.participations} />
       <PeriodQuality summary={analytics.participations} />
+      <MediaQualityTable comparisons={analytics.mediaQualityComparisons} />
     </section>
   );
+}
+
+function MediaQualityTable({ comparisons }: { comparisons: DashboardMediaQualityComparison[] }) {
+  return (
+    <section className="rounded-md border border-border bg-card p-4 xl:col-span-2" aria-labelledby="media-quality-title">
+      <h2 id="media-quality-title" className="text-lg font-semibold text-foreground">Qualidade por formato e versão de mídia</h2>
+      <p className="mt-1 text-xs text-muted-foreground">
+        Dados observados nos últimos 30 dias. Cada versão é analisada separadamente para evitar misturar estímulos incompatíveis.
+      </p>
+      {comparisons.length === 0 ? (
+        <p className="mt-4 text-sm text-muted-foreground">Ainda não há amostra de mídia versionada no período.</p>
+      ) : (
+        <div className="mt-4 overflow-x-auto">
+          <table className="w-full min-w-[760px] text-left text-sm">
+            <thead className="border-b border-border text-xs uppercase text-muted-foreground">
+              <tr>
+                <th className="px-3 py-2">Formato</th>
+                <th className="px-3 py-2">Versão</th>
+                <th className="px-3 py-2 text-right">Amostra</th>
+                <th className="px-3 py-2 text-right">Conclusão</th>
+                <th className="px-3 py-2 text-right">Tempo médio</th>
+                <th className="px-3 py-2">Respostas observadas</th>
+              </tr>
+            </thead>
+            <tbody>
+              {comparisons.map((item) => (
+                <tr key={`${item.mediaType}-${item.mediaVersion}`} className="border-b border-border/70 last:border-0">
+                  <td className="px-3 py-3 font-medium">{formatMediaType(item.mediaType)}</td>
+                  <td className="px-3 py-3 font-mono text-xs">{item.mediaVersion}</td>
+                  <td className="px-3 py-3 text-right tabular-nums">{item.sampleSize}</td>
+                  <td className="px-3 py-3 text-right tabular-nums">
+                    {item.completed}/{item.sampleSize} · {formatPercent(item.completionRatePercent)}
+                  </td>
+                  <td className="px-3 py-3 text-right tabular-nums">{formatDuration(item.averageDurationSeconds)}</td>
+                  <td className="px-3 py-3 text-xs text-muted-foreground">
+                    {item.responseDistribution.length === 0
+                      ? "Sem respostas"
+                      : item.responseDistribution.map((response) => `${response.responseId}: ${formatPercent(response.percentage)}`).join(" · ")}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </section>
+  );
+}
+
+function formatMediaType(mediaType: DashboardMediaQualityComparison["mediaType"]): string {
+  if (mediaType === "VIDEO") return "Vídeo";
+  if (mediaType === "AUDIO") return "Áudio";
+  return "Imagem";
+}
+
+function formatDuration(seconds: number | null): string {
+  if (seconds === null) return "—";
+  if (seconds < 60) return `${Math.round(seconds)}s`;
+  return `${Math.floor(seconds / 60)}min ${Math.round(seconds % 60)}s`;
 }
 
 function ActivityChart({ activity }: { activity: DashboardActivityPoint[] }) {

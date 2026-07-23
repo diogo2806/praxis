@@ -39,7 +39,7 @@ import java.util.UUID;
 public class CandidateIntegrityService {
 
     private static final String LEGACY_ATTEMPT_PATTERN = "att_[A-Za-z0-9]{16,64}";
-    private static final Set<String> ALLOWED_ASSET_DETAILS = Set.of("IMAGE", "AUDIO", "OTHER");
+    private static final Set<String> ALLOWED_ASSET_DETAILS = Set.of("IMAGE", "AUDIO", "VIDEO", "OTHER");
     private static final EnumSet<IntegrityEventType> CLIENT_EVENTS = EnumSet.of(
             IntegrityEventType.TAB_HIDDEN,
             IntegrityEventType.TAB_VISIBLE,
@@ -47,6 +47,10 @@ public class CandidateIntegrityService {
             IntegrityEventType.NODE_PRESENTED,
             IntegrityEventType.ASSET_LOADED,
             IntegrityEventType.STIMULUS_STARTED,
+            IntegrityEventType.VIDEO_PLAYBACK_STARTED,
+            IntegrityEventType.VIDEO_PLAYBACK_PAUSED,
+            IntegrityEventType.VIDEO_PLAYBACK_COMPLETED,
+            IntegrityEventType.VIDEO_PLAYBACK_ERROR,
             IntegrityEventType.RESPONSE_SELECTED,
             IntegrityEventType.RESPONSE_CONFIRMED
     );
@@ -347,7 +351,12 @@ public class CandidateIntegrityService {
     }
 
     private String normalizeDetail(IntegrityEventType eventType, String detail) {
-        if (eventType != IntegrityEventType.ASSET_LOADED && eventType != IntegrityEventType.STIMULUS_STARTED) {
+        if (eventType != IntegrityEventType.ASSET_LOADED
+                && eventType != IntegrityEventType.STIMULUS_STARTED
+                && eventType != IntegrityEventType.VIDEO_PLAYBACK_STARTED
+                && eventType != IntegrityEventType.VIDEO_PLAYBACK_PAUSED
+                && eventType != IntegrityEventType.VIDEO_PLAYBACK_COMPLETED
+                && eventType != IntegrityEventType.VIDEO_PLAYBACK_ERROR) {
             return null;
         }
         if (detail == null) {

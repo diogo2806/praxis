@@ -10,6 +10,10 @@ export type CandidateIntegrityEventType =
   | "NODE_PRESENTED"
   | "ASSET_LOADED"
   | "STIMULUS_STARTED"
+  | "VIDEO_PLAYBACK_STARTED"
+  | "VIDEO_PLAYBACK_PAUSED"
+  | "VIDEO_PLAYBACK_COMPLETED"
+  | "VIDEO_PLAYBACK_ERROR"
   | "RESPONSE_SELECTED"
   | "RESPONSE_CONFIRMED";
 
@@ -27,7 +31,7 @@ export interface CandidateIntegrityEventRequest {
   inputMode?: CandidateIntegrityInputMode | null;
   visibilityState?: "VISIBLE" | "HIDDEN" | null;
   sequenceNumber?: number | null;
-  detail?: "IMAGE" | "AUDIO" | "OTHER" | null;
+  detail?: "IMAGE" | "AUDIO" | "VIDEO" | "OTHER" | null;
 }
 
 const activeSessions = new Map<string, string>();

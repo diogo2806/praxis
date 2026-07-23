@@ -1161,6 +1161,8 @@ function DialogEditor() {
   );
 }
 
+const MAX_VIDEO_DURATION_SECONDS = 10 * 60;
+
 function MediaAttachment({
   mediaUrl,
   mediaType,
@@ -1189,6 +1191,18 @@ function MediaAttachment({
     if (!file.type.startsWith("image/") && !file.type.startsWith("audio/") && !file.type.startsWith("video/")) {
       setError("Apenas imagens, áudios ou vídeos são suportados.");
       return;
+    }
+    if (file.type.startsWith("video/")) {
+      try {
+        const durationSeconds = await readVideoDuration(file);
+        if (durationSeconds > MAX_VIDEO_DURATION_SECONDS) {
+          setError("O vídeo deve ter no máximo 10 minutos.");
+          return;
+        }
+      } catch {
+        setError("Não foi possível validar a duração do vídeo.");
+        return;
+      }
     }
     setError(null);
     setUploading(true);
@@ -1268,6 +1282,30 @@ function MediaAttachment({
       {error && <p className="mt-2 text-xs text-danger">{error}</p>}
     </div>
   );
+}
+
+function readVideoDuration(file: File): Promise<number> {
+  return new Promise((resolve, reject) => {
+    const objectUrl = URL.createObjectURL(file);
+    const video = document.createElement("video");
+    video.preload = "metadata";
+    video.onloadedmetadata = () => {
+      const duration = video.duration;
+      URL.revokeObjectURL(objectUrl);
+      video.remove();
+      if (Number.isFinite(duration) && duration > 0) {
+    resolve(duration);
+  } else {
+    reject(new Error("Duração inválida"));
+  }
+    };
+    video.onerror = () => {
+      URL.revokeObjectURL(objectUrl);
+      video.remove();
+      reject(new Error("Metadados indisponíveis"));
+    };
+    video.src = objectUrl;
+  });
 }
 
 function MediaPreview({ mediaUrl, mediaType }: { mediaUrl: string; mediaType: MediaType | null }) {

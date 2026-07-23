@@ -106,7 +106,7 @@ export function CandidateIntegrityBoundary({ token, children }: CandidateIntegri
 
     const record = (
       eventType: CandidateIntegrityEventType,
-      detail?: "IMAGE" | "AUDIO" | "OTHER",
+      detail?: "IMAGE" | "AUDIO" | "VIDEO" | "OTHER",
       inputMode: CandidateIntegrityInputMode | null = inputModeRef.current,
     ) => {
       const sessionId = sessionIdRef.current;
@@ -158,9 +158,25 @@ export function CandidateIntegrityBoundary({ token, children }: CandidateIntegri
       const target = event.target;
       if (target instanceof HTMLImageElement) record("ASSET_LOADED", "IMAGE");
       if (target instanceof HTMLAudioElement) record("ASSET_LOADED", "AUDIO");
+      if (target instanceof HTMLVideoElement) record("ASSET_LOADED", "VIDEO");
     };
     const handleStimulusStarted = (event: Event) => {
       if (event.target instanceof HTMLAudioElement) record("STIMULUS_STARTED", "AUDIO");
+      if (event.target instanceof HTMLVideoElement) {
+        record("STIMULUS_STARTED", "VIDEO");
+        record("VIDEO_PLAYBACK_STARTED", "VIDEO");
+      }
+    };
+    const handleVideoPaused = (event: Event) => {
+      if (event.target instanceof HTMLVideoElement && !event.target.ended) {
+        record("VIDEO_PLAYBACK_PAUSED", "VIDEO");
+      }
+    };
+    const handleVideoCompleted = (event: Event) => {
+      if (event.target instanceof HTMLVideoElement) record("VIDEO_PLAYBACK_COMPLETED", "VIDEO");
+    };
+    const handleVideoError = (event: Event) => {
+      if (event.target instanceof HTMLVideoElement) record("VIDEO_PLAYBACK_ERROR", "VIDEO");
     };
     const handleCandidateClick = (event: MouseEvent) => {
       const target = event.target;
@@ -230,6 +246,9 @@ export function CandidateIntegrityBoundary({ token, children }: CandidateIntegri
         window.addEventListener("load", handleAssetLoaded, true);
         window.addEventListener("loadeddata", handleAssetLoaded, true);
         window.addEventListener("play", handleStimulusStarted, true);
+        window.addEventListener("pause", handleVideoPaused, true);
+        window.addEventListener("ended", handleVideoCompleted, true);
+        window.addEventListener("error", handleVideoError, true);
         window.addEventListener("click", handleCandidateClick, true);
         window.addEventListener("pagehide", handlePageHide);
 
@@ -255,6 +274,9 @@ export function CandidateIntegrityBoundary({ token, children }: CandidateIntegri
       window.removeEventListener("load", handleAssetLoaded, true);
       window.removeEventListener("loadeddata", handleAssetLoaded, true);
       window.removeEventListener("play", handleStimulusStarted, true);
+      window.removeEventListener("pause", handleVideoPaused, true);
+      window.removeEventListener("ended", handleVideoCompleted, true);
+      window.removeEventListener("error", handleVideoError, true);
       window.removeEventListener("click", handleCandidateClick, true);
       window.removeEventListener("pagehide", handlePageHide);
 
