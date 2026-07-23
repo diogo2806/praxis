@@ -129,6 +129,12 @@ jobs:
           set -o pipefail
           npm run test:api-contracts 2>&1 | tee -a frontend.log
 
+      - name: Test result executive report
+        shell: bash
+        run: |
+          set -o pipefail
+          npm run test:result-executive 2>&1 | tee -a frontend.log
+
       - name: Test health consent contract
         shell: bash
         run: |
