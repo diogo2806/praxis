@@ -41,6 +41,7 @@ public enum AuditEventType implements DescribedEnum {
     REVIEW_REQUESTED("reviewRequested"),
     DATA_SUBJECT_REQUEST("dataSubjectRequest"),
     HEALTH_CONSENT_RECORDED("healthConsentRecorded"),
+    HEALTH_CONSENT_REVOKED("healthConsentRevoked"),
     ADMIN_EMPRESA_CREATED("adminEmpresaCreated"),
     ADMIN_EMPRESA_UPDATED("adminEmpresaUpdated"),
     ADMIN_EMPRESA_SUSPENDED("adminEmpresaSuspended"),

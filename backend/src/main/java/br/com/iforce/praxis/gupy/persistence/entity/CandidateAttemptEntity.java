@@ -140,6 +140,9 @@ public class CandidateAttemptEntity implements EmpresaAwareEntity {
     @Column(name = "health_consent_subject_type", length = 30)
     private String healthConsentSubjectType;
 
+    @Column(name = "health_consent_source", length = 40)
+    private String healthConsentSource;
+
     @Column(name = "health_consent_revoked_at")
     private Instant healthConsentRevokedAt;
 
