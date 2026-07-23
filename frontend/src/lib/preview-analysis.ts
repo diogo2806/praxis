@@ -53,7 +53,16 @@ export function analyzePreviewGraph(
   const reachable = new Set<string>();
   const queue = nodeById.has(rootNodeId) ? [rootNodeId] : [];
   const problems: PreviewFlowProblem[] = [];
-  const optionKeys: string[] = [];
+  const optionKeys = new Set<string>();
+
+  if (!rootNodeId || !nodeById.has(rootNodeId)) {
+    problems.push({
+      kind: "missing-node",
+      nodeId: rootNodeId || null,
+      optionId: null,
+      message: "A etapa raiz configurada não existe nesta versão.",
+    });
+  }
 
   while (queue.length > 0) {
     const nodeId = queue.shift()!;
@@ -63,7 +72,7 @@ export function analyzePreviewGraph(
     if (!node) continue;
 
     for (const option of node.options) {
-      optionKeys.push(previewOptionKey(node.id, option.id));
+      optionKeys.add(previewOptionKey(node.id, option.id));
       if (!option.nextNodeId) {
         if (!node.isFinal) {
           problems.push({
@@ -103,8 +112,7 @@ export function analyzePreviewGraph(
 
   for (const node of version.nodes) {
     for (const option of node.options) {
-      const key = previewOptionKey(node.id, option.id);
-      if (!optionKeys.includes(key)) optionKeys.push(key);
+      optionKeys.add(previewOptionKey(node.id, option.id));
     }
   }
 
@@ -177,7 +185,9 @@ export function analyzePreviewGraph(
     const targets = [
       ...node.options.map((option) => option.nextNodeId),
       node.timeoutNextNodeId,
-    ].filter((target): target is string => Boolean(target) && nodeById.has(target));
+    ].filter(
+      (target): target is string => target != null && nodeById.has(target),
+    );
 
     for (const target of targets) walk(target, nextPath, nextStack);
   }
@@ -195,7 +205,7 @@ export function analyzePreviewGraph(
     cycleNodeIds: [...cycleNodeIds],
     longPathNodeIds: [...longPathNodeIds],
     problems,
-    optionKeys,
+    optionKeys: [...optionKeys],
   };
 }
 
@@ -205,19 +215,21 @@ export function calculatePreviewCoverage(
   visitedNodeIds: Iterable<string>,
   visitedOptionKeys: Iterable<string>,
 ): PreviewCoverage {
-  const visitedNodes = new Set(visitedNodeIds);
-  const visitedOptions = new Set(visitedOptionKeys);
-  const visitedFinals = analysis.finalNodeIds.filter((nodeId) => visitedNodes.has(nodeId)).length;
+  const visitedNodeSet = new Set(visitedNodeIds);
+  const visitedOptionSet = new Set(visitedOptionKeys);
+  const visitedNodes = version.nodes.filter((node) => visitedNodeSet.has(node.id)).length;
+  const visitedOptions = analysis.optionKeys.filter((key) => visitedOptionSet.has(key)).length;
+  const visitedFinals = analysis.finalNodeIds.filter((nodeId) => visitedNodeSet.has(nodeId)).length;
 
   return {
-    visitedNodes: version.nodes.filter((node) => visitedNodes.has(node.id)).length,
+    visitedNodes,
     totalNodes: version.nodes.length,
-    visitedOptions: analysis.optionKeys.filter((key) => visitedOptions.has(key)).length,
+    visitedOptions,
     totalOptions: analysis.optionKeys.length,
     visitedFinals,
     totalFinals: analysis.finalNodeIds.length,
-    nodePercent: percent(visitedNodes.size, version.nodes.length),
-    optionPercent: percent(visitedOptions.size, analysis.optionKeys.length),
+    nodePercent: percent(visitedNodes, version.nodes.length),
+    optionPercent: percent(visitedOptions, analysis.optionKeys.length),
     finalPercent: percent(visitedFinals, analysis.finalNodeIds.length),
   };
 }
