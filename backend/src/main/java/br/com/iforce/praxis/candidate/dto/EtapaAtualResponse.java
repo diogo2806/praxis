@@ -37,8 +37,17 @@ public record EtapaAtualResponse(
         @Schema(description = "URL publica da imagem ou audio da situacao.", nullable = true)
         String midiaUrl,
 
-        @Schema(description = "Tipo da midia (IMAGE ou AUDIO).", nullable = true)
+        @Schema(description = "Tipo da midia (IMAGE, AUDIO ou VIDEO).", nullable = true)
         MediaType tipoMidia,
+
+        @Schema(description = "Transcrição textual acessível.", nullable = true)
+        String transcricaoMidia,
+
+        @Schema(description = "URL da legenda WebVTT.", nullable = true)
+        String legendaMidiaUrl,
+
+        @Schema(description = "Versão imutável da mídia apresentada.", nullable = true)
+        String versaoMidia,
 
         List<RespostaResponse> alternativas
 ) {

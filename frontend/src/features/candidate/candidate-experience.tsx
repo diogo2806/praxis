@@ -1,5 +1,5 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { useCallback, useEffect, useMemo, useState, type CSSProperties } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import {
   getCandidateAttempt,
   HEALTH_CONSENT_VERSION,
@@ -67,35 +67,65 @@ function CandidateMedia({
   mediaUrl,
   mediaType,
   accessibleDescription,
+  transcript,
+  captionsUrl,
+  mediaVersion,
   audioLabel,
   unsupportedAudio,
 }: {
   mediaUrl: string;
   mediaType: MediaType | null;
   accessibleDescription?: string | null;
+  transcript?: string | null;
+  captionsUrl?: string | null;
+  mediaVersion?: string | null;
   audioLabel: string;
   unsupportedAudio: string;
 }) {
+  const [playbackRate, setPlaybackRate] = useState(1);
+  const mediaRef = useRef<HTMLMediaElement>(null);
+
+  useEffect(() => {
+    if (mediaRef.current) mediaRef.current.playbackRate = playbackRate;
+  }, [playbackRate]);
+
   if (mediaType === "AUDIO") {
     return (
-      <audio
-        controls
-        src={mediaUrl}
-        className="w-full"
-        aria-label={audioLabel}
-        onClick={(event) => event.stopPropagation()}
-      >
-        {unsupportedAudio}
-      </audio>
+      <div className="space-y-2">
+        <audio ref={mediaRef as React.RefObject<HTMLAudioElement>} controls preload="metadata" src={mediaUrl} className="w-full" aria-label={audioLabel} onClick={(event) => event.stopPropagation()}>
+          {unsupportedAudio}
+        </audio>
+        <PlaybackRateControl value={playbackRate} onChange={setPlaybackRate} />
+        {transcript && <details><summary>Transcrição</summary><p className="mt-2 whitespace-pre-wrap">{transcript}</p></details>}
+      </div>
     );
   }
 
+  if (mediaType === "VIDEO") {
+    return (
+      <div className="space-y-2" data-media-version={mediaVersion ?? undefined}>
+        <video ref={mediaRef as React.RefObject<HTMLVideoElement>} controls preload="metadata" playsInline className="max-h-[28rem] w-full rounded-md border border-border bg-black" aria-label={accessibleDescription?.trim() || "Vídeo do cenário"} onClick={(event) => event.stopPropagation()}>
+          <source src={mediaUrl} />
+          {captionsUrl && <track kind="captions" src={captionsUrl} srcLang="pt-BR" label="Português" default />}
+          Seu navegador não suporta vídeo.
+        </video>
+        <PlaybackRateControl value={playbackRate} onChange={setPlaybackRate} />
+        {transcript && <details><summary>Transcrição</summary><p className="mt-2 whitespace-pre-wrap">{transcript}</p></details>}
+      </div>
+    );
+  }
+
+  return <img src={mediaUrl} alt={accessibleDescription?.trim() || ""} className="max-h-48 w-auto rounded-md border border-border object-contain" data-media-version={mediaVersion ?? undefined} />;
+}
+
+function PlaybackRateControl({ value, onChange }: { value: number; onChange: (value: number) => void }) {
   return (
-    <img
-      src={mediaUrl}
-      alt={accessibleDescription?.trim() || ""}
-      className="max-h-48 w-auto rounded-md border border-border object-contain"
-    />
+    <label className="inline-flex items-center gap-2 text-sm">
+      Velocidade
+      <select value={value} onChange={(event) => onChange(Number(event.target.value))} aria-label="Velocidade de reprodução">
+        {[0.5, 0.75, 1, 1.25, 1.5, 2].map((rate) => <option key={rate} value={rate}>{rate}×</option>)}
+      </select>
+    </label>
   );
 }
 
@@ -418,6 +448,9 @@ function FocusedCandidateExperience({ token }: { token: string }) {
                     mediaUrl={currentNode.midiaUrl}
                     mediaType={currentNode.tipoMidia ?? null}
                     accessibleDescription={currentNode.descricaoAcessivel}
+                    transcript={currentNode.transcricaoMidia}
+                    captionsUrl={currentNode.legendaMidiaUrl}
+                    mediaVersion={currentNode.versaoMidia}
                     audioLabel={copy.media.scenarioAudio}
                     unsupportedAudio={copy.media.unsupportedAudio}
                   />
@@ -460,6 +493,9 @@ function FocusedCandidateExperience({ token }: { token: string }) {
                             mediaUrl={option.mediaUrl}
                             mediaType={option.tipoMidia ?? null}
                             accessibleDescription={option.descricaoAcessivel}
+                            transcript={option.transcricaoMidia}
+                            captionsUrl={option.legendaMidiaUrl}
+                            mediaVersion={option.versaoMidia}
                             audioLabel={copy.media.optionAudio(optionLabel)}
                             unsupportedAudio={copy.media.unsupportedAudio}
                           />

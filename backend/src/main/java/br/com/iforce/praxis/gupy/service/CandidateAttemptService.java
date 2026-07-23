@@ -497,6 +497,8 @@ public class CandidateAttemptService {
                 : findCurrentNode(savedAttempt, simulation).orElse(null);
         savedAttempt = markNodeServed(savedAttempt, currentNode, Instant.now());
         savedAttempt = persist(savedAttempt, candidateAttemptEntity);
+        snapshotServedMedia(candidateAttemptEntity, currentNode);
+        candidateAttemptRepository.save(candidateAttemptEntity);
 
         return new ParticipacaoResponse(
                 savedAttempt.id(),
@@ -593,6 +595,8 @@ public class CandidateAttemptService {
                 : findCurrentNode(savedAttempt, simulation).orElse(null);
         savedAttempt = markNodeServed(savedAttempt, nextNode, Instant.now());
         savedAttempt = persist(savedAttempt, candidateAttemptEntity);
+        snapshotServedMedia(candidateAttemptEntity, nextNode);
+        candidateAttemptRepository.save(candidateAttemptEntity);
 
         return new RegistrarRespostaResponse(
                 savedAttempt.id(),
@@ -622,6 +626,17 @@ public class CandidateAttemptService {
                 .findByEmpresaIdAndId(empresaId, attemptId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Tentativa não encontrada."));
         return candidatePageUrl(candidateAttemptEntity);
+    }
+
+    private void snapshotServedMedia(CandidateAttemptEntity entity, ScenarioNode node) {
+        if (node == null) return;
+        entity.getNodeServes().stream()
+                .filter(serve -> node.id().equals(serve.getNodeId()))
+                .findFirst()
+                .ifPresent(serve -> {
+                    serve.setMediaType(node.mediaType());
+                    serve.setMediaVersion(node.mediaVersion());
+                });
     }
 
     /** Agrupa uma participação do candidato com a respectiva prova aplicada. */

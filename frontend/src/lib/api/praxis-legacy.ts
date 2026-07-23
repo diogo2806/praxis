@@ -21,7 +21,7 @@ export type ParticipacaoStatus =
   | "abandonada"
   | "expirada";
 
-export type MediaType = "IMAGE" | "AUDIO";
+export type MediaType = "IMAGE" | "AUDIO" | "VIDEO";
 export type ResultTier = "major" | "minor";
 
 export interface MediaUploadResponse {
@@ -38,6 +38,9 @@ export interface CandidateOptionResponse {
   audioDescricaoUrl?: string | null;
   mediaUrl?: string | null;
   tipoMidia?: MediaType | null;
+  transcricaoMidia?: string | null;
+  legendaMidiaUrl?: string | null;
+  versaoMidia?: string | null;
   proximaEtapaId?: string | null;
 }
 
@@ -52,6 +55,9 @@ export interface CandidateNodeResponse {
   audioDescricaoUrl?: string | null;
   midiaUrl?: string | null;
   tipoMidia?: MediaType | null;
+  transcricaoMidia?: string | null;
+  legendaMidiaUrl?: string | null;
+  versaoMidia?: string | null;
   proximaEtapaTempoEsgotadoId?: string | null;
   alternativas: CandidateOptionResponse[];
 }
@@ -205,6 +211,9 @@ export interface SimulationVersionOptionResponse {
   audioDescriptionUrl?: string | null;
   mediaUrl: string | null;
   mediaType: MediaType | null;
+  mediaTranscript: string | null;
+  mediaCaptionsUrl: string | null;
+  mediaVersion: string | null;
 }
 
 export interface SimulationVersionNodeResponse {
@@ -222,6 +231,9 @@ export interface SimulationVersionNodeResponse {
   audioDescriptionUrl?: string | null;
   mediaUrl: string | null;
   mediaType: MediaType | null;
+  mediaTranscript: string | null;
+  mediaCaptionsUrl: string | null;
+  mediaVersion: string | null;
   options: SimulationVersionOptionResponse[];
 }
 
@@ -253,6 +265,9 @@ export interface CreateNodeRequest {
   audioDescriptionUrl?: string | null;
   mediaUrl?: string | null;
   mediaType?: MediaType | null;
+  mediaTranscript?: string | null;
+  mediaCaptionsUrl?: string | null;
+  mediaVersion?: string | null;
 }
 
 export interface UpdateNodeRequest {
@@ -268,6 +283,9 @@ export interface UpdateNodeRequest {
   audioDescriptionUrl?: string | null;
   mediaUrl?: string | null;
   mediaType?: MediaType | null;
+  mediaTranscript?: string | null;
+  mediaCaptionsUrl?: string | null;
+  mediaVersion?: string | null;
 }
 
 export interface CreateOptionRequest {
@@ -281,6 +299,9 @@ export interface CreateOptionRequest {
   audioDescriptionUrl?: string | null;
   mediaUrl?: string | null;
   mediaType?: MediaType | null;
+  mediaTranscript?: string | null;
+  mediaCaptionsUrl?: string | null;
+  mediaVersion?: string | null;
 }
 
 export interface UpdateOptionRequest {
@@ -294,6 +315,9 @@ export interface UpdateOptionRequest {
   audioDescriptionUrl?: string | null;
   mediaUrl?: string | null;
   mediaType?: MediaType | null;
+  mediaTranscript?: string | null;
+  mediaCaptionsUrl?: string | null;
+  mediaVersion?: string | null;
 }
 
 export type ResultDeliveryStatus = "pending" | "retrying" | "sent" | "dlq";

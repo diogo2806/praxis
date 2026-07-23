@@ -5,5 +5,6 @@ package br.com.iforce.praxis.shared.model;
  */
 public enum MediaType {
     IMAGE,
-    AUDIO
+    AUDIO,
+    VIDEO
 }

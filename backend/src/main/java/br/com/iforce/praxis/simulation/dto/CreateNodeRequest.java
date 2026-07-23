@@ -49,7 +49,19 @@ public record CreateNodeRequest(
         @Schema(description = "URL pública da imagem ou áudio anexado à etapa.", nullable = true)
         String mediaUrl,
 
-        @Schema(description = "Tipo da mídia anexada (IMAGE ou AUDIO).", nullable = true)
-        MediaType mediaType
+        @Schema(description = "Tipo da mídia anexada (IMAGE, AUDIO ou VIDEO).", nullable = true)
+        MediaType mediaType,
+
+        @Size(max = 8000)
+        @Schema(description = "Transcrição textual acessível do áudio ou vídeo.", nullable = true)
+        String mediaTranscript,
+
+        @Size(max = 1000)
+        @Schema(description = "URL pública da legenda WebVTT do vídeo.", nullable = true)
+        String mediaCaptionsUrl,
+
+        @Size(max = 120)
+        @Schema(description = "Versão imutável do conteúdo multimídia apresentada ao candidato.", nullable = true)
+        String mediaVersion
 ) {
 }
