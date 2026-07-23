@@ -9,21 +9,16 @@ import { AccessibilityPanel, useCognitivePreferences } from "@/components/app-sh
 import { AppSidebar } from "@/components/app-shell-navigation";
 import { DeliveryAlertBanner } from "@/components/delivery-alert-banner";
 import { LanguageSelector } from "@/components/language-selector";
-import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-} from "@/components/ui/sheet";
 import { getUnreadNotificationsCount } from "@/lib/api/notifications";
 import { isRestrictedPartnerSpecialist } from "@/lib/access-control";
+import {
+  resolveAppShellContext,
+  resolveAppShellGoalKey,
+  resolveAppShellRouteDataKey,
+} from "@/lib/app-shell-context";
 import { useLanguage } from "@/lib/language-context";
 import { useSession } from "@/lib/session";
 import { cn } from "@/lib/utils";
-
-type Language = ReturnType<typeof useLanguage>["language"];
 
 const shellCopy = {
   "pt-BR": {
@@ -37,6 +32,7 @@ const shellCopy = {
     specialistArea: "Área do especialista",
     home: "Início",
     workspace: "Workspace",
+    dashboard: "Dashboard",
     assessments: "Avaliações",
     competencies: "Catálogo de competências",
     account: "Minha conta",
@@ -58,6 +54,7 @@ const shellCopy = {
     specialistArea: "Specialist area",
     home: "Home",
     workspace: "Workspace",
+    dashboard: "Dashboard",
     assessments: "Assessments",
     competencies: "Competency catalog",
     account: "My account",
@@ -79,6 +76,7 @@ const shellCopy = {
     specialistArea: "Área del especialista",
     home: "Inicio",
     workspace: "Workspace",
+    dashboard: "Dashboard",
     assessments: "Evaluaciones",
     competencies: "Catálogo de competencias",
     account: "Mi cuenta",
@@ -109,58 +107,14 @@ const goalCopy = {
   },
 } as const;
 
-function pageContext(pathname: string, language: Language, specialist: boolean) {
-  const copy = shellCopy[language];
-  if (specialist) {
-    if (pathname === "/avaliacoes/especialista") return { section: copy.specialistArea, label: copy.home };
-    if (pathname.startsWith("/avalicoes") || pathname.startsWith("/nova")) {
-      return { section: copy.specialistArea, label: copy.assessments };
-    }
-    if (pathname === "/competencias") return { section: copy.specialistArea, label: copy.competencies };
-    if (pathname === "/configuracoes/conta") return { section: copy.specialistArea, label: copy.account };
-    if (pathname === "/manual") return { section: copy.specialistArea, label: copy.help };
-  }
-  if (pathname === "/dashboard") return { section: copy.workspace, label: "Dashboard" };
-  if (pathname.startsWith("/avalicoes") || pathname.startsWith("/nova")) {
-    return { section: copy.workspace, label: copy.assessments };
-  }
-  if (pathname === "/jornadas" || pathname.startsWith("/jornada/")) {
-    return { section: copy.workspace, label: copy.journeys };
-  }
-  if (pathname.startsWith("/participacoes") || pathname === "/enviar-link") {
-    return { section: copy.workspace, label: copy.participations };
-  }
-  if (pathname.startsWith("/results") || pathname === "/talent-match") {
-    return { section: copy.workspace, label: copy.results };
-  }
-  if (pathname === "/monitoramento" || pathname === "/notifications") {
-    return { section: copy.operation, label: copy.operations };
-  }
-  return { section: copy.settings, label: copy.settings };
-}
-
-function routeDataKey(pathname: string): string {
-  if (pathname === "/avalicoes/especialista") return "especialista";
-  if (pathname.startsWith("/avaliacoes")) return "avaliacoes";
-  if (pathname === "/jornadas" || pathname.startsWith("/jornada/")) return "jornadas";
-  if (pathname.startsWith("/participacoes") || pathname === "/enviar-link") return "participacoes";
-  if (pathname.startsWith("/results")) return "results";
-  if (pathname === "/dashboard") return "dashboard";
-  return "other";
-}
-
 function PageGoal({ pathname, language, specialist }: {
   pathname: string;
-  language: Language;
+  language: keyof typeof shellCopy;
   specialist: boolean;
 }) {
   const copy = shellCopy[language];
   const goals = goalCopy[language];
-  const goal = specialist && pathname === "/avaliacoes/especialista"
-    ? goals.specialist
-    : pathname.startsWith("/avalicoes") || pathname.startsWith("/nova")
-      ? goals.assessments
-      : goals.default;
+  const goal = goals[resolveAppShellGoalKey(pathname, specialist)];
   return (
     <section className="praxis-page-goal mb-6 flex max-w-4xl items-start gap-3 rounded-lg border border-primary/25 bg-primary/5 p-4">
       <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary text-sm font-semibold text-primary-foreground">1</div>
@@ -178,7 +132,11 @@ export function AppShell({ children }: { children: ReactNode }) {
   const specialist = isRestrictedPartnerSpecialist(session.roles);
   const { language } = useLanguage();
   const copy = shellCopy[language];
-  const context = pageContext(pathname, language, specialist);
+  const contextKeys = resolveAppShellContext(pathname, specialist);
+  const context = {
+    section: copy[contextKeys.section],
+    label: copy[contextKeys.label],
+  };
   const { preferences, toggle, reset } = useCognitivePreferences();
   const unreadQuery = useQuery({
     queryKey: ["notifications", "unread-count"],
@@ -190,7 +148,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   const unreadNotifications = specialist ? 0 : (unreadQuery.data?.count ?? 0);
 
   useEffect(() => {
-    document.documentElement.dataset.praxisRoute = routeDataKey(pathname);
+    document.documentElement.dataset.praxisRoute = resolveAppShellRouteDataKey(pathname);
   }, [pathname]);
 
   return (
