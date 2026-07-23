@@ -28,12 +28,19 @@ export interface IntegrityReviewPage {
   totalPages: number;
 }
 
-export interface IntegrityReviewDetail extends IntegrityReviewQueueItem {
+export interface IntegrityReviewDetail {
+  attemptId: string;
+  candidateName: string;
+  candidateEmail: string;
+  attemptStatus: AttemptStatus;
+  reviewStatus: IntegrityReviewStatus;
+  decision: IntegrityReviewDecision | null;
   justification: string | null;
   sharedWithCompany: boolean;
   reviewedBy: string | null;
   decidedAt: string | null;
   retentionUntil: string;
+  evidenceDiscardedAt: string | null;
   alerts: Array<{
     code: string;
     title: string;
