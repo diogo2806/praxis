@@ -79,6 +79,11 @@ function CandidateResultContent({
 }) {
   const completed = result.status === "concluida";
   const candidateResults = result.resultados ?? [];
+  const hasScoringSnapshot =
+    completed &&
+    result.pontuacaoBruta != null &&
+    result.pontuacaoMaximaCaminho != null &&
+    result.pontuacaoNormalizada != null;
   const title = completed
     ? "Avaliação concluída"
     : result.finalizado
@@ -119,6 +124,41 @@ function CandidateResultContent({
           </>
         )}
       </dl>
+
+      {hasScoringSnapshot && (
+        <section className="mt-6 rounded-xl border border-border bg-background/60 p-4" aria-labelledby="score-method-title">
+          <h2 id="score-method-title" className="text-base font-semibold text-foreground">
+            Como a pontuação foi calculada
+          </h2>
+          <p className="mt-1 text-sm leading-6 text-muted-foreground">
+            A pontuação bruta registra os pontos obtidos no caminho percorrido. A pontuação
+            normalizada permite comparar caminhos com oportunidades de pontuação diferentes.
+          </p>
+          <dl className="mt-4 grid gap-3 sm:grid-cols-2">
+            <div className="rounded-lg border border-border bg-card p-3">
+              <dt className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                Pontuação bruta
+              </dt>
+              <dd className="mt-1 text-xl font-semibold text-foreground">
+                {result.pontuacaoBruta}/{result.pontuacaoMaximaCaminho}
+              </dd>
+            </div>
+            <div className="rounded-lg border border-border bg-card p-3">
+              <dt className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                Pontuação normalizada
+              </dt>
+              <dd className="mt-1 text-xl font-semibold text-primary">
+                {result.pontuacaoNormalizada}/100
+              </dd>
+            </div>
+          </dl>
+          {result.versaoAlgoritmoPontuacao && (
+            <p className="mt-3 text-xs text-muted-foreground">
+              Versão do cálculo: {result.versaoAlgoritmoPontuacao}
+            </p>
+          )}
+        </section>
+      )}
 
       {completed && candidateResults.length > 0 && (
         <section className="mt-6" aria-labelledby="candidate-results-title">
