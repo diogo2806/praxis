@@ -1,3 +1,6 @@
+apply_issue_489.py:731: SyntaxWarning: "\s" is an invalid escape sequence. Such sequences will not work in the future. Did you mean "\\s"? A raw string is also an option.
 Traceback (most recent call last):
-  File "<stdin>", line 9, in <module>
-AssertionError: Tamanho inválido do payload: 12580
+  File "<stdin>", line 13, in <module>
+  File "apply_issue_489.py", line 152, in <module>
+  File "apply_issue_489.py", line 13, in replace_once
+RuntimeError:                      mediaType={currentNode.tipoMidia ?? nul: esperado 1 trecho, encontrado 0
