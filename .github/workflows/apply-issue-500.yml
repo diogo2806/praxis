@@ -79,7 +79,7 @@ jobs:
             python3 -m py_compile scripts/apply_issue_500.py &&
             python3 scripts/apply_issue_500.py &&
             node frontend/scripts/test-accessible-video.mjs &&
-            git rm scripts/apply_issue_500.py &&
+            git rm -f scripts/apply_issue_500.py &&
             git rm .github/workflows/apply-issue-500.yml
           } > apply-issue-500.log 2>&1
           status=$?
