@@ -98,7 +98,9 @@ public enum AuditEventType implements DescribedEnum {
     FEATURE_FLAG_UPDATED("featureFlagUpdated"),
     FEATURE_FLAG_ACTIVATED("featureFlagActivated"),
     FEATURE_FLAG_DEACTIVATED("featureFlagDeactivated"),
-    FEATURE_FLAG_KILL_SWITCH_CHANGED("featureFlagKillSwitchChanged");
+    FEATURE_FLAG_KILL_SWITCH_CHANGED("featureFlagKillSwitchChanged"),
+    PARTICIPATION_BULK_JOB_CREATED("participationBulkJobCreated"),
+    PARTICIPATION_BULK_JOB_COMPLETED("participationBulkJobCompleted");
 
     private final String descricao;
 
