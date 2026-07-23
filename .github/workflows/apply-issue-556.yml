@@ -35,12 +35,12 @@ jobs:
           replacements = [
               (
                   r"https://developers\.gupy\.io/docs/configurando-webhooks-e-obtendo-payloads-reais-(?![A-Za-z0-9])",
-                  "https://developers.gupy.io/docs/configurando-webhooks-e-obtendo-payloads-reais",
+                  "https://developers.gupy.io/v2.0/docs/configurando-webhooks-e-obtendo-payloads-reais",
                   2,
               ),
               (
                   r"https://developers\.gupy\.io/docs/fluxo-de-admiss%C3%A3o-para-sistema-de-folha-(?![A-Za-z0-9])",
-                  "https://developers.gupy.io/docs/fluxo-de-admiss%C3%A3o-para-sistema-de-folha-copy",
+                  "https://developers.gupy.io/v2.0/docs/fluxo-de-admiss%C3%A3o-para-sistema-de-folha",
                   1,
               ),
           ]
