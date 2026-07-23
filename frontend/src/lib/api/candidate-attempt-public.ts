@@ -1,34 +1,85 @@
-import { apiRequest } from "@/lib/api/http";
 import { getCandidateIntegritySession } from "@/lib/api/candidate-integrity";
-import {
-  PraxisApiError,
-  type CandidateAttemptResponse,
-  type CandidateNodeResponse,
-  type SubmitAnswerRequest,
-  type SubmitAnswerResponse,
+import { apiRequest } from "@/lib/api/http";
+import type {
+  CandidateAttemptResponse as LegacyCandidateAttemptResponse,
+  SubmitAnswerRequest,
+  SubmitAnswerResponse,
 } from "@/lib/api/praxis-legacy";
 
 const INTEGRITY_SESSION_HEADER = "X-Praxis-Integrity-Session";
-const HEALTH_CONSENT_REQUIRED_STATUS = 428;
+export const HEALTH_CONSENT_VERSION = "2026-06-01";
+
+export interface HealthConsentStatusResponse {
+  healthVertical: boolean;
+  required: boolean;
+  valid: boolean;
+  noticeVersion: string | null;
+}
+
+export type CandidateAttemptResponse = LegacyCandidateAttemptResponse & {
+  healthConsentValid: boolean;
+  healthConsentNoticeVersion: string | null;
+};
+
+export function getHealthConsentStatus(token: string): Promise<HealthConsentStatusResponse> {
+  return apiRequest<HealthConsentStatusResponse>(
+    `/candidate/attempts/${encodeURIComponent(token)}/health-consent`,
+    undefined,
+    {
+      authenticated: false,
+      fallbackMessage: "Não foi possível verificar o consentimento de saúde.",
+    },
+  );
+}
 
 export async function getCandidateAttempt(token: string): Promise<CandidateAttemptResponse> {
-  try {
-    return await apiRequest<CandidateAttemptResponse>(
-      `/candidate/attempts/${encodeURIComponent(token)}`,
-      {
-        headers: integrityHeaders(token),
-      },
-      {
-        authenticated: false,
-        fallbackMessage: "Não foi possível carregar a avaliação.",
-      },
-    );
-  } catch (error) {
-    if (error instanceof PraxisApiError && error.status === HEALTH_CONSENT_REQUIRED_STATUS) {
-      return healthConsentRequiredAttempt(token);
-    }
-    throw error;
+  const consentStatus = await getHealthConsentStatus(token);
+  if (consentStatus.required && !consentStatus.valid) {
+    return pendingHealthConsentAttempt(consentStatus);
   }
+
+  const attempt = await apiRequest<LegacyCandidateAttemptResponse>(
+    `/candidate/attempts/${encodeURIComponent(token)}`,
+    { headers: integrityHeaders(token) },
+    {
+      authenticated: false,
+      fallbackMessage: "Não foi possível carregar a avaliação.",
+    },
+  );
+  return {
+    ...attempt,
+    healthConsentValid: consentStatus.valid,
+    healthConsentNoticeVersion: consentStatus.noticeVersion,
+  };
+}
+
+export function recordHealthConsent(
+  token: string,
+  onBehalfOfMinor = false,
+  version = HEALTH_CONSENT_VERSION,
+): Promise<void> {
+  return apiRequest<void>(
+    `/candidate/attempts/${encodeURIComponent(token)}/health-consent`,
+    {
+      method: "POST",
+      body: JSON.stringify({ version, onBehalfOfMinor }),
+    },
+    {
+      authenticated: false,
+      fallbackMessage: "Não foi possível registrar o consentimento de saúde.",
+    },
+  );
+}
+
+export function revokeHealthConsent(token: string): Promise<void> {
+  return apiRequest<void>(
+    `/candidate/attempts/${encodeURIComponent(token)}/health-consent`,
+    { method: "DELETE" },
+    {
+      authenticated: false,
+      fallbackMessage: "Não foi possível revogar o consentimento de saúde.",
+    },
+  );
 }
 
 export function submitCandidateAnswer(
@@ -49,30 +100,26 @@ export function submitCandidateAnswer(
   );
 }
 
-function healthConsentRequiredAttempt(token: string): CandidateAttemptResponse {
-  const consentGateStage: CandidateNodeResponse = {
-    id: "health-consent-required",
-    numero: 0,
-    pessoa: "",
-    descricao: "",
-    tempoLimiteSegundos: null,
-    alternativas: [],
-  };
-
+function pendingHealthConsentAttempt(status: HealthConsentStatusResponse): CandidateAttemptResponse {
   return {
-    participacaoId: token,
-    avaliacaoNome: "Avaliação",
+    participacaoId: "health-consent-pending",
+    avaliacaoNome: "",
     status: "nao_iniciada",
     finalizado: false,
     redirectUrl: null,
     acaoSugeridaFrontend: "INICIAR",
-    progresso: {
-      passoAtual: 0,
-      passosEstimados: 0,
-      percentual: 0,
+    progresso: { passoAtual: 1, passosEstimados: 1, percentual: 0 },
+    etapaAtual: {
+      id: "health-consent",
+      numero: 1,
+      pessoa: "Participante",
+      descricao: "",
+      tempoLimiteSegundos: null,
+      alternativas: [],
     },
-    etapaAtual: consentGateStage,
-    verticalSaude: true,
+    verticalSaude: status.healthVertical,
+    healthConsentValid: false,
+    healthConsentNoticeVersion: status.noticeVersion,
   };
 }
 
