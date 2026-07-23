@@ -42,6 +42,11 @@ public class SecurityConfig {
     private static final String[] AUTHOR_ROLES = {"TEAM_MANAGER", "ASSESSMENT_EDITOR", "PARTNER_SPECIALIST"};
     private static final String[] ANALYSIS_ROLES = {"TEAM_MANAGER", "RESULTS_ANALYST"};
     private static final String[] OPERATIONS_ROLES = {"TEAM_MANAGER", "OPERATIONS_MANAGER"};
+    private static final String[] INTEGRITY_REVIEW_ROLES = {
+            "TEAM_MANAGER",
+            "PARTNER_MANAGER",
+            "OPERATIONS_MANAGER"
+    };
     private static final String[] ANALYSIS_OR_OPERATIONS_ROLES = {
             "TEAM_MANAGER",
             "RESULTS_ANALYST",
@@ -128,6 +133,8 @@ public class SecurityConfig {
                         .hasAnyRole(COMPANY_MANAGER_ROLES)
                         .requestMatchers("/api/v1/gupy/result-deliveries/**")
                         .hasAnyRole(OPERATIONS_ROLES)
+                        .requestMatchers("/api/v1/integrity-reviews/**")
+                        .hasAnyRole(INTEGRITY_REVIEW_ROLES)
                         .requestMatchers("/api/v1/results/**").hasAnyRole(ANALYSIS_ROLES)
                         .requestMatchers("/api/v1/notifications/**").hasAnyRole(OPERATIONS_ROLES)
                         .requestMatchers("/api/v1/audit/**").hasAnyRole(COMPANY_MANAGER_ROLES)
