@@ -14,8 +14,10 @@ COPY pom.xml .
 COPY src ./src
 
 # Build the application without compiling or executing backend tests.
-RUN --mount=type=cache,target=/root/.m2 \
-    mvn clean package -B -ntp -Dmaven.test.skip=true
+# The Maven repository is removed in the same layer so BuildKit does not retain
+# an unbounded mutable cache on the deployment host.
+RUN mvn clean package -B -ntp -Dmaven.test.skip=true \
+    && rm -rf /root/.m2/repository /root/.m2/wrapper /tmp/*
 
 # Runtime stage
 FROM eclipse-temurin:21-jre

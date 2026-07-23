@@ -1,0 +1,56 @@
+name: Docker maintenance validation
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - backend/Dockerfile
+      - frontend/Dockerfile
+      - scripts/docker-disk-cleanup.sh
+      - scripts/install-docker-cleanup-timer.sh
+      - docs/MANUTENCAO-DOCKER.md
+      - .github/workflows/docker-maintenance.yml
+  push:
+    branches: [main]
+    paths:
+      - backend/Dockerfile
+      - frontend/Dockerfile
+      - scripts/docker-disk-cleanup.sh
+      - scripts/install-docker-cleanup-timer.sh
+      - docs/MANUTENCAO-DOCKER.md
+      - .github/workflows/docker-maintenance.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    name: Validate Docker maintenance safeguards
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate shell syntax
+        run: |
+          sh -n scripts/docker-disk-cleanup.sh
+          sh -n scripts/install-docker-cleanup-timer.sh
+
+      - name: Protect persistent volumes
+        run: |
+          if grep -R -E 'docker[[:space:]]+volume[[:space:]]+prune|docker[[:space:]]+system[[:space:]]+prune.*--volumes' scripts/docker-disk-cleanup.sh scripts/install-docker-cleanup-timer.sh; then
+            echo 'A rotina de manutenção não pode remover volumes.' >&2
+            exit 1
+          fi
+
+      - name: Reject persistent package-manager cache mounts
+        run: |
+          if grep -n -- '--mount=type=cache' backend/Dockerfile frontend/Dockerfile; then
+            echo 'Caches persistentes do Maven/npm não são permitidos nos Dockerfiles de produção.' >&2
+            exit 1
+          fi
+
+      - name: Validate Dockerfile syntax
+        run: |
+          docker build --check backend
+          docker build --check frontend
