@@ -1,0 +1,60 @@
+name: Issue 486 source refactor
+
+on:
+  push:
+    branches:
+      - fix/issue-486-contratos-corrompidos
+
+permissions:
+  contents: write
+
+jobs:
+  apply-refactor:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout da branch
+        uses: actions/checkout@v4
+        with:
+          ref: fix/issue-486-contratos-corrompidos
+
+      - name: Corrigir nomes corrompidos na origem
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          path = Path("frontend/src/lib/api/praxis-legacy.ts")
+          content = path.read_text(encoding="utf-8")
+          replacements = (
+              ("plainTextDescriptioetapa", "plainTextDescription", 6),
+              ("timeJustificatioetapa", "timeJustification", 2),
+          )
+
+          for old, new, expected_count in replacements:
+              actual_count = content.count(old)
+              if actual_count != expected_count:
+                  raise SystemExit(
+                      f"Quantidade inesperada de {old}: esperado {expected_count}, encontrado {actual_count}"
+                  )
+              content = content.replace(old, new)
+
+          for old, _, _ in replacements:
+              if old in content:
+                  raise SystemExit(f"Nome corrompido ainda presente: {old}")
+
+          path.write_text(content, encoding="utf-8")
+          PY
+
+      - name: Registrar correção na branch
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add frontend/src/lib/api/praxis-legacy.ts
+          if git diff --cached --quiet; then
+            echo "Nenhuma alteração necessária."
+            exit 0
+          fi
+          git commit -m "refactor(frontend): corrigir nomes dos contratos legados"
+          git push origin HEAD:fix/issue-486-contratos-corrompidos
