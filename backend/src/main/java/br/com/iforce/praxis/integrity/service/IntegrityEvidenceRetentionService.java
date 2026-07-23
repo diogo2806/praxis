@@ -10,6 +10,7 @@ import br.com.iforce.praxis.integrity.persistence.entity.CandidateIntegritySessi
 import br.com.iforce.praxis.integrity.persistence.repository.CandidateIntegrityReviewAuditRepository;
 import br.com.iforce.praxis.integrity.persistence.repository.CandidateIntegrityReviewRepository;
 import br.com.iforce.praxis.integrity.persistence.repository.CandidateIntegritySessionRepository;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -40,6 +41,7 @@ public class IntegrityEvidenceRetentionService {
     private final Clock clock;
     private final int retentionDays;
 
+    @Autowired
     public IntegrityEvidenceRetentionService(
             CandidateIntegritySessionRepository sessionRepository,
             CandidateIntegrityReviewRepository reviewRepository,
