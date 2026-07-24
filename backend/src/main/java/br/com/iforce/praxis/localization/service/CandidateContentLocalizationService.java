@@ -16,15 +16,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
-import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Objects;
 import java.util.UUID;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 
 @Service
 public class CandidateContentLocalizationService {
@@ -70,11 +66,12 @@ public class CandidateContentLocalizationService {
                 response.participacaoId(),
                 defaultIfBlank(bundle.title(), response.avaliacaoNome()),
                 response.status(),
-                response.iniciadaEm(),
-                response.expiraEm(),
                 response.finalizado(),
                 response.redirectUrl(),
-                localizeStage(response.etapaAtual(), bundle)
+                response.acaoSugeridaFrontend(),
+                response.progresso(),
+                localizeStage(response.etapaAtual(), bundle),
+                response.verticalSaude()
         );
     }
 
@@ -91,10 +88,13 @@ public class CandidateContentLocalizationService {
             return response;
         }
         return new RegistrarRespostaResponse(
+                response.participacaoId(),
+                response.status(),
+                response.repetida(),
                 response.finalizado(),
                 response.redirectUrl(),
-                localizeStage(response.proximaEtapa(), bundle),
-                response.versaoAlgoritmoPontuacao()
+                response.progresso(),
+                localizeStage(response.etapaAtual(), bundle)
         );
     }
 
@@ -339,43 +339,48 @@ public class CandidateContentLocalizationService {
         if (stage == null) {
             return null;
         }
-        NodeText node = bundle.nodes().get(stage.noId());
-        if (node == null) {
+        NodeText node = bundle.nodes().get(stage.id());
+        List<RespostaResponse> alternatives = stage.alternativas() == null
+                ? null
+                : stage.alternativas().stream()
+                        .map(answer -> localizeAnswer(stage.id(), answer, bundle))
+                        .toList();
+        if (node == null && alternatives == stage.alternativas()) {
             return stage;
         }
-        List<RespostaResponse> answers = stage.respostas().stream()
-                .map(answer -> localizeAnswer(stage.noId(), answer, bundle))
-                .toList();
         return new EtapaAtualResponse(
-                stage.noId(),
-                defaultIfBlank(node.speaker(), stage.personagem()),
-                defaultIfBlank(node.message(), stage.mensagem()),
+                stage.id(),
+                stage.numero(),
+                defaultIfBlank(node == null ? null : node.speaker(), stage.pessoa()),
+                defaultIfBlank(node == null ? null : node.message(), stage.descricao()),
+                defaultIfBlank(node == null ? null : node.plainTextDescription(), stage.descricaoAcessivel()),
+                stage.tempoLimiteSegundos(),
+                stage.tempoLimiteSegundosAcomodado(),
+                stage.audioDescricaoUrl(),
+                stage.midiaUrl(),
                 stage.tipoMidia(),
-                stage.audioUrl(),
-                stage.videoUrl(),
-                stage.imagemUrl(),
-                defaultIfBlank(node.plainTextDescription(), stage.descricaoTextoAlternativa()),
-                defaultIfBlank(node.mediaTranscript(), stage.transcricaoMidia()),
-                stage.limiteTempoSegundos(),
-                answers,
-                stage.sessionNonce()
+                defaultIfBlank(node == null ? null : node.mediaTranscript(), stage.transcricaoMidia()),
+                stage.legendaMidiaUrl(),
+                stage.versaoMidia(),
+                alternatives
         );
     }
 
     private RespostaResponse localizeAnswer(String nodeId, RespostaResponse answer, LocaleBundle bundle) {
-        OptionText translation = bundle.options().get(optionKey(nodeId, answer.respostaId()));
+        OptionText translation = bundle.options().get(optionKey(nodeId, answer.id()));
         if (translation == null) {
             return answer;
         }
         return new RespostaResponse(
-                answer.respostaId(),
+                answer.id(),
                 defaultIfBlank(translation.text(), answer.texto()),
+                defaultIfBlank(translation.plainTextDescription(), answer.descricaoAcessivel()),
+                answer.audioDescricaoUrl(),
+                answer.midiaUrl(),
                 answer.tipoMidia(),
-                answer.audioUrl(),
-                answer.videoUrl(),
-                answer.imagemUrl(),
-                defaultIfBlank(translation.plainTextDescription(), answer.descricaoTextoAlternativa()),
-                defaultIfBlank(translation.mediaTranscript(), answer.transcricaoMidia())
+                defaultIfBlank(translation.mediaTranscript(), answer.transcricaoMidia()),
+                answer.legendaMidiaUrl(),
+                answer.versaoMidia()
         );
     }
 
