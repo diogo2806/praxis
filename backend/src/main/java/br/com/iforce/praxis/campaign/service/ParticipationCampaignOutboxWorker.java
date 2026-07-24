@@ -15,6 +15,7 @@ import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.sql.Timestamp;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
@@ -48,6 +49,7 @@ public class ParticipationCampaignOutboxWorker {
 
     @Scheduled(fixedDelayString = "${praxis.campaign.outbox-delay-ms:60000}")
     public void processDueMessages() {
+        Instant now = Instant.now();
         List<UUID> due = jdbcTemplate.query(
                 """
                         SELECT outbox.id
@@ -61,8 +63,8 @@ public class ParticipationCampaignOutboxWorker {
                         LIMIT ?
                         """,
                 (resultSet, rowNum) -> resultSet.getObject("id", UUID.class),
-                Instant.now(),
-                Instant.now(),
+                Timestamp.from(now),
+                Timestamp.from(now),
                 BATCH_SIZE
         );
         for (UUID id : due) {
@@ -78,7 +80,7 @@ public class ParticipationCampaignOutboxWorker {
                         SET status = 'PROCESSING', attempt_count = attempt_count + 1, processed_at = ?
                         WHERE id = ? AND status IN ('PENDING', 'FAILED')
                         """,
-                Instant.now(),
+                Timestamp.from(Instant.now()),
                 outboxId
         );
         if (claimed == 0) return;
@@ -106,6 +108,7 @@ public class ParticipationCampaignOutboxWorker {
                     message.body()
             );
             Instant now = Instant.now();
+            Timestamp nowTimestamp = Timestamp.from(now);
             jdbcTemplate.update(
                     """
                             UPDATE participation_campaign_outbox
@@ -116,8 +119,8 @@ public class ParticipationCampaignOutboxWorker {
                     message.subject(),
                     message.body(),
                     delivered,
-                    now,
-                    now,
+                    nowTimestamp,
+                    nowTimestamp,
                     row.id()
             );
             jdbcTemplate.update(
@@ -129,7 +132,7 @@ public class ParticipationCampaignOutboxWorker {
                             WHERE id = ?
                             """,
                     delivered,
-                    now,
+                    nowTimestamp,
                     row.participantId()
             );
             jdbcTemplate.update(
@@ -146,6 +149,7 @@ public class ParticipationCampaignOutboxWorker {
     @Scheduled(cron = "${praxis.campaign.retention-cron:0 30 3 * * *}")
     public void purgeExpiredPersonalData() {
         Instant now = Instant.now();
+        Timestamp nowTimestamp = Timestamp.from(now);
         List<UUID> campaigns = jdbcTemplate.query(
                 """
                         SELECT id FROM participation_campaigns
@@ -158,7 +162,7 @@ public class ParticipationCampaignOutboxWorker {
                         LIMIT 100
                         """,
                 (resultSet, rowNum) -> resultSet.getObject("id", UUID.class),
-                now
+                nowTimestamp
         );
         for (UUID campaignId : campaigns) {
             jdbcTemplate.update(
@@ -168,7 +172,7 @@ public class ParticipationCampaignOutboxWorker {
                                 last_error = NULL, updated_at = ?
                             WHERE campaign_id = ?
                             """,
-                    now,
+                    nowTimestamp,
                     campaignId
             );
             jdbcTemplate.update(
@@ -218,8 +222,8 @@ public class ParticipationCampaignOutboxWorker {
                         """,
                 response.attemptId(),
                 response.candidateUrl(),
-                expiresAt,
-                Instant.now(),
+                Timestamp.from(expiresAt),
+                Timestamp.from(Instant.now()),
                 row.participantId()
         );
         return new LinkData(response.attemptId(), response.candidateUrl(), expiresAt);
@@ -245,13 +249,14 @@ public class ParticipationCampaignOutboxWorker {
         Instant now = Instant.now();
         jdbcTemplate.update(
                 "UPDATE participation_campaign_outbox SET status = 'SKIPPED', processed_at = ?, last_error = NULL WHERE id = ?",
-                now,
+                Timestamp.from(now),
                 row.id()
         );
     }
 
     private void markFailed(OutboxRow row, RuntimeException exception) {
         Instant now = Instant.now();
+        Timestamp nowTimestamp = Timestamp.from(now);
         String message = sanitizeError(exception);
         if (row.attemptCount() >= MAX_ATTEMPTS) {
             jdbcTemplate.update(
@@ -261,7 +266,7 @@ public class ParticipationCampaignOutboxWorker {
                             WHERE id = ?
                             """,
                     message,
-                    now,
+                    nowTimestamp,
                     row.id()
             );
             jdbcTemplate.update(
@@ -274,7 +279,7 @@ public class ParticipationCampaignOutboxWorker {
                             """,
                     row.messageType(),
                     message,
-                    now,
+                    nowTimestamp,
                     row.participantId()
             );
             return;
@@ -287,8 +292,8 @@ public class ParticipationCampaignOutboxWorker {
                         WHERE id = ?
                         """,
                 message,
-                now.plus(retryMinutes, ChronoUnit.MINUTES),
-                now,
+                Timestamp.from(now.plus(retryMinutes, ChronoUnit.MINUTES)),
+                nowTimestamp,
                 row.id()
         );
     }
