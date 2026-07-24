@@ -1,11 +1,15 @@
 package br.com.iforce.praxis.gupy.controller;
 
+import br.com.iforce.praxis.gupy.dto.GupyHomologationEvidenceRequest;
 import br.com.iforce.praxis.gupy.dto.GupyHomologationResponse;
 import br.com.iforce.praxis.gupy.service.GupyHomologationService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -28,5 +32,16 @@ public class GupyHomologationController {
     )
     public ResponseEntity<GupyHomologationResponse> getStatus() {
         return ResponseEntity.ok(gupyHomologationService.getStatus());
+    }
+
+    @PutMapping("/evidence")
+    @Operation(
+            summary = "Registra evidências externas da homologação Gupy",
+            description = "Registra confirmação do callback, páginas de resultado e aprovações formais sem alterar evidências técnicas automáticas."
+    )
+    public ResponseEntity<GupyHomologationResponse> updateEvidence(
+            @Valid @RequestBody GupyHomologationEvidenceRequest request
+    ) {
+        return ResponseEntity.ok(gupyHomologationService.updateEvidence(request));
     }
 }

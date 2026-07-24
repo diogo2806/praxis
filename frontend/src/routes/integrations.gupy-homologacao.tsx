@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useEffect, useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import {
   AlertTriangle,
@@ -7,13 +7,16 @@ import {
   CircleDashed,
   ClipboardCopy,
   RefreshCw,
+  Save,
   ShieldCheck,
 } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
 import { StateBanner } from "@/components/praxis-ui";
 import {
   getGupyHomologationStatus,
+  updateGupyHomologationEvidence,
   type GupyHomologationCheckStatus,
+  type GupyHomologationEvidenceRequest,
   type GupyHomologationResponse,
 } from "@/lib/api/gupy-homologation";
 import { cn } from "@/lib/utils";
@@ -55,8 +58,8 @@ function GupyHomologationPage() {
             </div>
             <h1 className="mt-1 text-3xl font-semibold">Centro de homologação técnica</h1>
             <p className="mt-2 max-w-3xl text-sm leading-6 text-muted-foreground">
-              Acompanhe o que o Práxis já consegue comprovar e o que ainda depende de token, vaga,
-              callback, webhook e aprovação no ambiente real da Gupy.
+              Acompanhe o que o Práxis já consegue comprovar e registre somente as evidências
+              externas confirmadas pela Gupy e pelo cliente.
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
@@ -117,6 +120,26 @@ function GupyHomologationPage() {
 }
 
 function HomologationContent({ data }: { data: GupyHomologationResponse }) {
+  const queryClient = useQueryClient();
+  const [evidence, setEvidence] = useState<GupyHomologationEvidenceRequest>(() =>
+    evidenceRequestFrom(data),
+  );
+
+  useEffect(() => {
+    setEvidence(evidenceRequestFrom(data));
+  }, [data]);
+
+  const evidenceMutation = useMutation({
+    mutationFn: updateGupyHomologationEvidence,
+    onSuccess: (response) => {
+      queryClient.setQueryData(["integrations", "gupy", "homologation"], response);
+    },
+  });
+
+  function toggleEvidence(field: keyof Omit<GupyHomologationEvidenceRequest, "notes">) {
+    setEvidence((current) => ({ ...current, [field]: !current[field] }));
+  }
+
   return (
     <>
       <section className="rounded-xl border border-border bg-card p-6">
@@ -155,12 +178,14 @@ function HomologationContent({ data }: { data: GupyHomologationResponse }) {
         </div>
       </section>
 
-      <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+      <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <Metric label="Avaliações publicadas" value={data.metrics.publishedTests} />
         <Metric label="Tentativas originadas pela Gupy" value={data.metrics.gupyAttempts} />
         <Metric label="Tentativas concluídas" value={data.metrics.completedGupyAttempts} />
         <Metric label="Tentativas com webhook" value={data.metrics.attemptsWithResultWebhook} />
         <Metric label="Webhooks entregues" value={data.metrics.sentResultWebhooks} />
+        <Metric label="Consultas de resultado" value={data.metrics.resultEndpointQueries} />
+        <Metric label="Resultados percentuais válidos" value={data.metrics.validPercentageResults} />
         <Metric
           label="Entregas em DLQ"
           value={data.metrics.resultWebhooksInDlq}
@@ -189,11 +214,73 @@ function HomologationContent({ data }: { data: GupyHomologationResponse }) {
         </div>
       </section>
 
+      <section className="rounded-xl border border-border bg-card p-6">
+        <h2 className="text-lg font-semibold">Registro das evidências externas</h2>
+        <p className="mt-1 max-w-3xl text-sm leading-6 text-muted-foreground">
+          Marque somente itens confirmados em uma vaga real ou não listada. Cada alteração fica
+          vinculada ao usuário autenticado e registrada na auditoria da integração.
+        </p>
+        <div className="mt-5 grid gap-3 md:grid-cols-2">
+          <EvidenceCheckbox
+            checked={evidence.callbackConfirmed}
+            label="A Gupy confirmou o GET no callback_url"
+            onChange={() => toggleEvidence("callbackConfirmed")}
+          />
+          <EvidenceCheckbox
+            checked={evidence.resultPagesConfirmed}
+            label="Empresa e candidato visualizaram páginas separadas"
+            onChange={() => toggleEvidence("resultPagesConfirmed")}
+          />
+          <EvidenceCheckbox
+            checked={evidence.gupyApproved}
+            label="Aprovação formal da Gupy recebida"
+            onChange={() => toggleEvidence("gupyApproved")}
+          />
+          <EvidenceCheckbox
+            checked={evidence.clientApproved}
+            label="Aprovação formal do cliente recebida"
+            onChange={() => toggleEvidence("clientApproved")}
+          />
+        </div>
+        <label className="mt-4 block text-sm font-medium">
+          Evidências, protocolo ou observações
+          <textarea
+            value={evidence.notes}
+            maxLength={2000}
+            rows={4}
+            onChange={(event) => setEvidence((current) => ({ ...current, notes: event.target.value }))}
+            className="mt-2 w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
+            placeholder="Ex.: vaga utilizada, data, responsável da Gupy, protocolo e links dos comprovantes."
+          />
+        </label>
+        <div className="mt-4 flex flex-wrap items-center gap-3">
+          <button
+            type="button"
+            onClick={() => evidenceMutation.mutate(evidence)}
+            disabled={evidenceMutation.isPending}
+            className="inline-flex min-h-10 items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-60"
+          >
+            <Save className="h-4 w-4" />
+            {evidenceMutation.isPending ? "Salvando..." : "Salvar evidências"}
+          </button>
+          {evidenceMutation.isSuccess && (
+            <span className="text-sm text-success">Evidências registradas.</span>
+          )}
+          {evidenceMutation.isError && (
+            <span role="alert" className="text-sm text-danger">
+              {evidenceMutation.error instanceof Error
+                ? evidenceMutation.error.message
+                : "Não foi possível salvar as evidências."}
+            </span>
+          )}
+        </div>
+      </section>
+
       <section className="rounded-xl border border-border bg-card">
         <div className="border-b border-border p-6">
           <h2 className="text-lg font-semibold">Checklist de homologação</h2>
           <p className="mt-1 text-sm text-muted-foreground">
-            Itens externos só são concluídos quando houver evidência gerada pelo fluxo real.
+            Itens externos só são concluídos quando houver evidência gerada ou registrada pelo fluxo real.
           </p>
         </div>
         <div className="divide-y divide-border">
@@ -219,10 +306,17 @@ function HomologationContent({ data }: { data: GupyHomologationResponse }) {
         </div>
       </section>
 
-      <StateBanner tone="info" title="Aprovação externa obrigatória">
-        O estado “evidências prontas” não significa homologação aprovada. A conclusão formal depende
-        da Gupy e do cliente após o teste em vaga real.
-      </StateBanner>
+      {data.status === "HOMOLOGATED" ? (
+        <StateBanner tone="success" title="Homologação formal registrada">
+          As evidências técnicas estão completas e as aprovações da Gupy e do cliente foram
+          registradas. A documentação comercial pode ser atualizada para refletir esse estado.
+        </StateBanner>
+      ) : (
+        <StateBanner tone="info" title="Aprovação externa obrigatória">
+          O estado “evidências prontas” não significa homologação aprovada. A conclusão formal
+          depende do registro das aprovações reais da Gupy e do cliente.
+        </StateBanner>
+      )}
 
       <div className="flex flex-wrap gap-3">
         <Link
@@ -242,6 +336,38 @@ function HomologationContent({ data }: { data: GupyHomologationResponse }) {
   );
 }
 
+function EvidenceCheckbox({
+  checked,
+  label,
+  onChange,
+}: {
+  checked: boolean;
+  label: string;
+  onChange: () => void;
+}) {
+  return (
+    <label className="flex cursor-pointer items-start gap-3 rounded-md border border-border bg-background p-4 text-sm">
+      <input
+        type="checkbox"
+        checked={checked}
+        onChange={onChange}
+        className="mt-0.5 h-4 w-4"
+      />
+      <span>{label}</span>
+    </label>
+  );
+}
+
+function evidenceRequestFrom(data: GupyHomologationResponse): GupyHomologationEvidenceRequest {
+  return {
+    callbackConfirmed: data.externalEvidence.callbackConfirmed,
+    resultPagesConfirmed: data.externalEvidence.resultPagesConfirmed,
+    gupyApproved: data.externalEvidence.gupyApproved,
+    clientApproved: data.externalEvidence.clientApproved,
+    notes: data.externalEvidence.notes ?? "",
+  };
+}
+
 function Metric({ label, value, warning = false }: { label: string; value: number; warning?: boolean }) {
   return (
     <div className="rounded-xl border border-border bg-card p-4">
@@ -254,7 +380,7 @@ function Metric({ label, value, warning = false }: { label: string; value: numbe
 }
 
 function OverallIcon({ status }: { status: GupyHomologationResponse["status"] }) {
-  if (status === "EVIDENCE_READY") {
+  if (status === "HOMOLOGATED" || status === "EVIDENCE_READY") {
     return <ShieldCheck className="mt-0.5 h-7 w-7 shrink-0 text-success" />;
   }
   if (status === "BLOCKED") {
@@ -287,6 +413,7 @@ function overallStatusLabel(status: GupyHomologationResponse["status"]) {
     BLOCKED: "Existem bloqueios técnicos",
     READY_FOR_EXTERNAL_VALIDATION: "Pronto para validação em vaga real",
     EVIDENCE_READY: "Evidências técnicas prontas para aprovação",
+    HOMOLOGATED: "Homologação formal concluída",
   }[status];
 }
 
@@ -294,8 +421,10 @@ function overallStatusDescription(status: GupyHomologationResponse["status"]) {
   return {
     BLOCKED: "Corrija os requisitos ou falhas operacionais antes de avançar com a homologação.",
     READY_FOR_EXTERNAL_VALIDATION:
-      "A configuração interna está pronta. O próximo passo é executar o fluxo com token e vaga reais.",
+      "A configuração interna está pronta. O próximo passo é executar e registrar o fluxo com token e vaga reais.",
     EVIDENCE_READY:
-      "O fluxo técnico gerou evidências de tentativa, conclusão e webhook. Falta a confirmação formal da Gupy.",
+      "O fluxo técnico e as validações externas produziram evidências. Faltam as aprovações formais.",
+    HOMOLOGATED:
+      "A Gupy e o cliente aprovaram formalmente o fluxo após a validação ponta a ponta.",
   }[status];
 }
