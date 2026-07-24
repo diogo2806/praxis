@@ -10,6 +10,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.time.Instant;
@@ -111,7 +112,7 @@ public class EnterpriseTokenService {
                     claims.path("mfa").asBoolean(false),
                     claims.path("providerId").asText()
             );
-        } catch (JsonProcessingException | IllegalArgumentException exception) {
+        } catch (IOException | IllegalArgumentException exception) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Conteúdo do token corporativo inválido.");
         }
     }
