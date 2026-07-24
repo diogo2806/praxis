@@ -6,6 +6,7 @@ import {
   CreditCard,
   FileStack,
   FileText,
+  FlaskConical,
   GitCompare,
   Gauge,
   HelpCircle,
@@ -67,36 +68,11 @@ export const navigationGroups: NavigationGroup[] = [
         path: "/avaliacoes",
         allowedRoles: productRoles,
         children: [
-          {
-            icon: ClipboardList,
-            label: "Central de Avaliações",
-            path: "/avaliacoes",
-            allowedRoles: productRoles,
-          },
-          {
-            icon: FileStack,
-            label: "Biblioteca de Modelos",
-            path: "/avaliacoes/modelos",
-            allowedRoles: productRoles,
-          },
-          {
-            icon: Sparkles,
-            label: "Nova Avaliação",
-            path: "/nova",
-            allowedRoles: productRoles,
-          },
-          {
-            icon: ListChecks,
-            label: "Competências",
-            path: "/competencias",
-            allowedRoles: productRoles,
-          },
-          {
-            icon: Workflow,
-            label: "Jornadas",
-            path: "/jornadas",
-            allowedRoles: productRoles,
-          },
+          { icon: ClipboardList, label: "Central de Avaliações", path: "/avaliacoes", allowedRoles: productRoles },
+          { icon: FileStack, label: "Biblioteca de Modelos", path: "/avaliacoes/modelos", allowedRoles: productRoles },
+          { icon: Sparkles, label: "Nova Avaliação", path: "/nova", allowedRoles: productRoles },
+          { icon: ListChecks, label: "Competências", path: "/competencias", allowedRoles: productRoles },
+          { icon: Workflow, label: "Jornadas", path: "/jornadas", allowedRoles: productRoles },
         ],
       },
       {
@@ -105,30 +81,10 @@ export const navigationGroups: NavigationGroup[] = [
         path: "/jornadas",
         allowedRoles: productRoles,
         children: [
-          {
-            icon: Send,
-            label: "Campanhas",
-            path: "/participacoes/campanhas",
-            allowedRoles: managementRoles,
-          },
-          {
-            icon: Users,
-            label: "Participações",
-            path: "/participacoes",
-            allowedRoles: productRoles,
-          },
-          {
-            icon: Link2,
-            label: "Convites",
-            path: "/convites",
-            allowedRoles: productRoles,
-          },
-          {
-            icon: UserRoundCheck,
-            label: "Experiência do Participante",
-            path: "/candidato/demo",
-            allowedRoles: productRoles,
-          },
+          { icon: Send, label: "Campanhas", path: "/participacoes/campanhas", allowedRoles: managementRoles },
+          { icon: Users, label: "Participações", path: "/participacoes", allowedRoles: productRoles },
+          { icon: Link2, label: "Convites", path: "/convites", allowedRoles: productRoles },
+          { icon: UserRoundCheck, label: "Experiência do Participante", path: "/candidato/demo", allowedRoles: productRoles },
         ],
       },
     ],
@@ -139,27 +95,13 @@ export const navigationGroups: NavigationGroup[] = [
       {
         icon: BarChart3,
         label: "Resultados",
-        path: "/resultados",
+        path: "/results",
         allowedRoles: productRoles,
         children: [
-          {
-            icon: BarChart3,
-            label: "Resultados",
-            path: "/resultados",
-            allowedRoles: productRoles,
-          },
-          {
-            icon: GitCompare,
-            label: "Talent Match",
-            path: "/talent-match",
-            allowedRoles: productRoles,
-          },
-          {
-            icon: TestTube2,
-            label: "Piloto e Indicadores",
-            path: "/piloto",
-            allowedRoles: productRoles,
-          },
+          { icon: BarChart3, label: "Resultados", path: "/results", allowedRoles: productRoles },
+          { icon: GitCompare, label: "Talent Match", path: "/talent-match", allowedRoles: productRoles },
+          { icon: TestTube2, label: "Piloto e Indicadores", path: "/piloto", allowedRoles: productRoles },
+          { icon: FlaskConical, label: "Qualidade e Justiça", path: "/resultados/qualidade", allowedRoles: managementRoles },
         ],
       },
     ],
@@ -167,36 +109,16 @@ export const navigationGroups: NavigationGroup[] = [
   {
     label: "Operação",
     items: [
-      {
-        icon: Gauge,
-        label: "Central Operacional",
-        path: "/operacao",
-        allowedRoles: productRoles,
-      },
+      { icon: Gauge, label: "Central Operacional", path: "/operacao", allowedRoles: productRoles },
       {
         icon: Plug,
         label: "Integrações",
         path: "/integracoes",
         allowedRoles: managementRoles,
         children: [
-          {
-            icon: Plug,
-            label: "Integrações",
-            path: "/integracoes",
-            allowedRoles: managementRoles,
-          },
-          {
-            icon: ShieldCheck,
-            label: "Ativação Gupy",
-            path: "/integracoes/gupy/ativacao",
-            allowedRoles: managementRoles,
-          },
-          {
-            icon: Network,
-            label: "Webhooks",
-            path: "/integracoes/webhooks",
-            allowedRoles: managementRoles,
-          },
+          { icon: Plug, label: "Integrações", path: "/integracoes", allowedRoles: managementRoles },
+          { icon: ShieldCheck, label: "Ativação Gupy", path: "/integracoes/gupy/ativacao", allowedRoles: managementRoles },
+          { icon: Network, label: "Webhooks", path: "/integracoes/webhooks", allowedRoles: managementRoles },
         ],
       },
     ],
@@ -210,24 +132,9 @@ export const navigationGroups: NavigationGroup[] = [
         path: "/perfil-empresa",
         allowedRoles: managementRoles,
         children: [
-          {
-            icon: Building2,
-            label: "Perfil da Empresa",
-            path: "/perfil-empresa",
-            allowedRoles: managementRoles,
-          },
-          {
-            icon: Users,
-            label: "Equipe e Acessos",
-            path: "/equipe",
-            allowedRoles: managementRoles,
-          },
-          {
-            icon: KeyRound,
-            label: "Parceiros",
-            path: "/parceiros",
-            allowedRoles: managementRoles,
-          },
+          { icon: Building2, label: "Perfil da Empresa", path: "/perfil-empresa", allowedRoles: managementRoles },
+          { icon: Users, label: "Equipe e Acessos", path: "/equipe", allowedRoles: managementRoles },
+          { icon: KeyRound, label: "Parceiros", path: "/parceiros", allowedRoles: managementRoles },
         ],
       },
       {
@@ -236,24 +143,9 @@ export const navigationGroups: NavigationGroup[] = [
         path: "/financeiro",
         allowedRoles: managementRoles,
         children: [
-          {
-            icon: CreditCard,
-            label: "Financeiro",
-            path: "/financeiro",
-            allowedRoles: managementRoles,
-          },
-          {
-            icon: ReceiptText,
-            label: "Cobrança",
-            path: "/admin/cobranca",
-            allowedRoles: adminRoles,
-          },
-          {
-            icon: Activity,
-            label: "Uso e Créditos",
-            path: "/admin/uso",
-            allowedRoles: adminRoles,
-          },
+          { icon: CreditCard, label: "Financeiro", path: "/financeiro", allowedRoles: managementRoles },
+          { icon: ReceiptText, label: "Cobrança", path: "/admin/cobranca", allowedRoles: adminRoles },
+          { icon: Activity, label: "Uso e Créditos", path: "/admin/uso", allowedRoles: adminRoles },
         ],
       },
       {
@@ -262,24 +154,9 @@ export const navigationGroups: NavigationGroup[] = [
         path: "/admin",
         allowedRoles: adminRoles,
         children: [
-          {
-            icon: ShieldCheck,
-            label: "Administração",
-            path: "/admin",
-            allowedRoles: adminRoles,
-          },
-          {
-            icon: Building2,
-            label: "Empresas",
-            path: "/admin/empresas",
-            allowedRoles: adminRoles,
-          },
-          {
-            icon: Target,
-            label: "Governança",
-            path: "/admin/governanca",
-            allowedRoles: adminRoles,
-          },
+          { icon: ShieldCheck, label: "Administração", path: "/admin", allowedRoles: adminRoles },
+          { icon: Building2, label: "Empresas", path: "/admin/empresas", allowedRoles: adminRoles },
+          { icon: Target, label: "Governança", path: "/admin/governanca", allowedRoles: adminRoles },
         ],
       },
     ],
@@ -287,18 +164,8 @@ export const navigationGroups: NavigationGroup[] = [
 ];
 
 export const footerNavigationItems: NavigationItem[] = [
-  {
-    icon: HelpCircle,
-    label: "Ajuda",
-    path: "/ajuda",
-    allowedRoles: productRoles,
-  },
-  {
-    icon: FileText,
-    label: "Manual",
-    path: "/manual",
-    allowedRoles: productRoles,
-  },
+  { icon: HelpCircle, label: "Ajuda", path: "/ajuda", allowedRoles: productRoles },
+  { icon: FileText, label: "Manual", path: "/manual", allowedRoles: productRoles },
 ];
 
 export function filterNavigationItems(items: NavigationItem[], profile: SessionProfile) {
@@ -306,8 +173,6 @@ export function filterNavigationItems(items: NavigationItem[], profile: SessionP
     .filter((item) => item.allowedRoles.includes(profile))
     .map((item) => ({
       ...item,
-      children: item.children
-        ? filterNavigationItems(item.children, profile)
-        : undefined,
+      children: item.children ? filterNavigationItems(item.children, profile) : undefined,
     }));
 }
