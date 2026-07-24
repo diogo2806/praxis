@@ -16,6 +16,11 @@ type PublicRuntimeConfigResponse = {
   defaultEmpresaId?: string | null;
 };
 
+type RuntimeConfigSynchronization = {
+  config: PraxisRuntimeConfig;
+  synchronized: boolean;
+};
+
 declare global {
   interface Window {
     __PRAXIS_CONFIG__?: {
@@ -38,6 +43,7 @@ const buildTimePartnerModuleEnabled =
 const buildTimeDefaultEmpresaId =
   String(import.meta.env.VITE_PRAXIS_DEFAULT_EMPRESA_ID ?? "empresa-1").trim() || "empresa-1";
 const RUNTIME_CONFIG_TIMEOUT_MS = 1_500;
+const RUNTIME_CONFIG_RETRY_DELAYS_MS = [0, 1_000, 2_000, 4_000, 8_000, 15_000, 30_000, 60_000] as const;
 
 let runtimeConfigRefreshPromise: Promise<PraxisRuntimeConfig> | null = null;
 
@@ -62,30 +68,55 @@ export function refreshRuntimeConfigFromBackend(): Promise<PraxisRuntimeConfig> 
     return Promise.resolve(getRuntimeConfig());
   }
   if (!runtimeConfigRefreshPromise) {
-    runtimeConfigRefreshPromise = loadRuntimeConfigFromBackend();
+    runtimeConfigRefreshPromise = synchronizeRuntimeConfigWithRetry().finally(() => {
+      runtimeConfigRefreshPromise = null;
+    });
   }
   return runtimeConfigRefreshPromise;
 }
 
-async function loadRuntimeConfigFromBackend(): Promise<PraxisRuntimeConfig> {
+async function synchronizeRuntimeConfigWithRetry(): Promise<PraxisRuntimeConfig> {
+  let latestConfig = getRuntimeConfig();
+
+  for (const delayMs of RUNTIME_CONFIG_RETRY_DELAYS_MS) {
+    if (delayMs > 0) {
+      await wait(delayMs);
+    }
+
+    const synchronization = await loadRuntimeConfigFromBackend();
+    latestConfig = synchronization.config;
+    if (synchronization.synchronized) {
+      return latestConfig;
+    }
+  }
+
+  return latestConfig;
+}
+
+async function loadRuntimeConfigFromBackend(): Promise<RuntimeConfigSynchronization> {
   const current = getRuntimeConfig();
   const [publicConfig, probedSecurityEnabled] = await Promise.all([
     fetchPublicRuntimeConfig(current.apiBaseUrl),
     probeSecurityEnabled(current.apiBaseUrl),
   ]);
+  const synchronized = publicConfig !== null || probedSecurityEnabled !== null;
+
+  if (!synchronized) {
+    return { config: current, synchronized: false };
+  }
 
   window.__PRAXIS_CONFIG__ = {
     ...window.__PRAXIS_CONFIG__,
     apiBaseUrl: current.apiBaseUrl,
     securityEnabled:
-      probedSecurityEnabled ?? publicConfig?.securityEnabled ?? current.securityEnabled,
+      publicConfig?.securityEnabled ?? probedSecurityEnabled ?? current.securityEnabled,
     partnerModuleEnabled:
       publicConfig?.partnerModuleEnabled ?? current.partnerModuleEnabled,
     defaultEmpresaId:
       readNonBlank(publicConfig?.defaultEmpresaId) ?? current.defaultEmpresaId,
   };
 
-  return getRuntimeConfig();
+  return { config: getRuntimeConfig(), synchronized: true };
 }
 
 async function fetchPublicRuntimeConfig(
@@ -127,6 +158,10 @@ async function fetchRuntimeEndpoint(url: string): Promise<Response | null> {
   } finally {
     window.clearTimeout(timeout);
   }
+}
+
+function wait(delayMs: number): Promise<void> {
+  return new Promise((resolve) => window.setTimeout(resolve, delayMs));
 }
 
 function readNonBlank(value: string | null | undefined): string | null {
