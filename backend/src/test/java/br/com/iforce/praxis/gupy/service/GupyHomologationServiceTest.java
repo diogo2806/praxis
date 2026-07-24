@@ -86,7 +86,7 @@ class GupyHomologationServiceTest {
     @Test
     void exposesCompleteEvidenceWithoutClaimingExternalApproval() {
         EmpresaIntegrationEntity integration = completeIntegration(false, false);
-        stubCompleteAutomaticEvidence(integration);
+        stubCompleteAutomaticEvidence(integration, 1L);
 
         GupyHomologationResponse response = service.getStatus();
 
@@ -104,7 +104,7 @@ class GupyHomologationServiceTest {
     @Test
     void marksHomologatedOnlyAfterBothFormalApprovals() {
         EmpresaIntegrationEntity integration = completeIntegration(true, true);
-        stubCompleteAutomaticEvidence(integration);
+        stubCompleteAutomaticEvidence(integration, 1L);
 
         GupyHomologationResponse response = service.getStatus();
 
@@ -118,12 +118,7 @@ class GupyHomologationServiceTest {
     @Test
     void keepsValidationPendingWhenResultWasNotQueried() {
         EmpresaIntegrationEntity integration = completeIntegration(false, false);
-        stubCompleteAutomaticEvidence(integration);
-        when(auditEventRepository.countIntegrationEndpointEvidence(
-                "tenant-1",
-                "GUPY",
-                "GET /test/result/{resultId}"
-        )).thenReturn(0L);
+        stubCompleteAutomaticEvidence(integration, 0L);
 
         GupyHomologationResponse response = service.getStatus();
 
@@ -161,7 +156,7 @@ class GupyHomologationServiceTest {
         return integration;
     }
 
-    private void stubCompleteAutomaticEvidence(EmpresaIntegrationEntity integration) {
+    private void stubCompleteAutomaticEvidence(EmpresaIntegrationEntity integration, long resultQueries) {
         IntegrationTokenEntity token = new IntegrationTokenEntity();
         Instant evidenceAt = Instant.parse("2026-07-17T20:00:00Z");
         when(integrationTokenRepository.findFirstByEmpresaIdAndProvider("tenant-1", "gupy"))
@@ -191,7 +186,7 @@ class GupyHomologationServiceTest {
                 "tenant-1",
                 "GUPY",
                 "GET /test/result/{resultId}"
-        )).thenReturn(1L);
+        )).thenReturn(resultQueries);
     }
 
     private void stubEmptyEvidence() {
