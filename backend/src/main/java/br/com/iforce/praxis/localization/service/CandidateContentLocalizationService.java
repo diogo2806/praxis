@@ -25,6 +25,9 @@ import java.util.UUID;
 @Service
 public class CandidateContentLocalizationService {
 
+    private static final String INTERNAL_OPTION_NAMESPACE = "internal";
+    private static final String PUBLIC_OPTION_NAMESPACE = "public";
+
     private final NamedParameterJdbcTemplate jdbcTemplate;
     private final CandidateAttemptTokenResolver tokenResolver;
 
@@ -292,19 +295,38 @@ public class CandidateContentLocalizationService {
                     return values;
                 });
         Map<String, OptionText> options = jdbcTemplate.query("""
-                SELECT node_id, option_id, text, plain_text_description, media_transcript
-                  FROM simulation_option_translations
-                 WHERE locale_id = :localeId
-                """, new MapSqlParameterSource("localeId", header.localeId()),
+                SELECT translation.node_id,
+                       translation.option_id,
+                       translation.text,
+                       translation.plain_text_description,
+                       translation.media_transcript
+                  FROM simulation_option_translations translation
+                  JOIN simulation_nodes node
+                    ON node.simulation_version_id = :versionId
+                   AND node.node_id = translation.node_id
+                  JOIN simulation_options option_data
+                    ON option_data.simulation_node_id = node.id
+                   AND option_data.option_id = translation.option_id
+                 WHERE translation.locale_id = :localeId
+                 ORDER BY translation.node_id, option_data.option_id
+                """, new MapSqlParameterSource()
+                .addValue("localeId", header.localeId())
+                .addValue("versionId", versionId),
                 resultSet -> {
                     Map<String, OptionText> values = new LinkedHashMap<>();
+                    Map<String, Integer> displayIndexByNode = new LinkedHashMap<>();
                     while (resultSet.next()) {
-                        values.put(optionKey(resultSet.getString("node_id"), resultSet.getString("option_id")),
-                                new OptionText(
-                                        resultSet.getString("text"),
-                                        resultSet.getString("plain_text_description"),
-                                        resultSet.getString("media_transcript")
-                                ));
+                        String nodeId = resultSet.getString("node_id");
+                        String internalOptionId = resultSet.getString("option_id");
+                        int displayIndex = displayIndexByNode.getOrDefault(nodeId, 0);
+                        OptionText translation = new OptionText(
+                                resultSet.getString("text"),
+                                resultSet.getString("plain_text_description"),
+                                resultSet.getString("media_transcript")
+                        );
+                        optionKeys(nodeId, internalOptionId, displayIndex)
+                                .forEach(key -> values.put(key, translation));
+                        displayIndexByNode.put(nodeId, displayIndex + 1);
                     }
                     return values;
                 });
@@ -345,9 +367,6 @@ public class CandidateContentLocalizationService {
                 : stage.alternativas().stream()
                         .map(answer -> localizeAnswer(stage.id(), answer, bundle))
                         .toList();
-        if (node == null && alternatives == stage.alternativas()) {
-            return stage;
-        }
         return new EtapaAtualResponse(
                 stage.id(),
                 stage.numero(),
@@ -367,7 +386,10 @@ public class CandidateContentLocalizationService {
     }
 
     private RespostaResponse localizeAnswer(String nodeId, RespostaResponse answer, LocaleBundle bundle) {
-        OptionText translation = bundle.options().get(optionKey(nodeId, answer.id()));
+        OptionText translation = bundle.options().get(publicOptionKey(nodeId, answer.id()));
+        if (translation == null) {
+            translation = bundle.options().get(internalOptionKey(nodeId, answer.id()));
+        }
         if (translation == null) {
             return answer;
         }
@@ -384,12 +406,40 @@ public class CandidateContentLocalizationService {
         );
     }
 
-    private String defaultIfBlank(String value, String fallback) {
-        return value == null || value.isBlank() ? fallback : value;
+    static List<String> optionKeys(String nodeId, String internalOptionId, int displayIndex) {
+        return List.of(
+                internalOptionKey(nodeId, internalOptionId),
+                publicOptionKey(nodeId, optionLabel(displayIndex))
+        );
     }
 
-    private String optionKey(String nodeId, String optionId) {
-        return nodeId + "\u0000" + optionId;
+    static String optionLabel(int index) {
+        if (index < 0) {
+            throw new IllegalArgumentException("O índice da alternativa não pode ser negativo.");
+        }
+        int value = index;
+        StringBuilder label = new StringBuilder();
+        do {
+            label.insert(0, (char) ('A' + (value % 26)));
+            value = (value / 26) - 1;
+        } while (value >= 0);
+        return label.toString();
+    }
+
+    private static String internalOptionKey(String nodeId, String optionId) {
+        return optionKey(INTERNAL_OPTION_NAMESPACE, nodeId, optionId);
+    }
+
+    private static String publicOptionKey(String nodeId, String optionId) {
+        return optionKey(PUBLIC_OPTION_NAMESPACE, nodeId, optionId);
+    }
+
+    private static String optionKey(String namespace, String nodeId, String optionId) {
+        return namespace + "\u0000" + nodeId + "\u0000" + optionId;
+    }
+
+    private String defaultIfBlank(String value, String fallback) {
+        return value == null || value.isBlank() ? fallback : value;
     }
 
     private String normalizeLocale(String locale) {
