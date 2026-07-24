@@ -66,6 +66,20 @@ public interface CandidateAttemptRepository extends JpaRepository<CandidateAttem
 
     long countByEmpresaIdAndCallbackUrlIsNotNullAndResultWebhookUrlIsNotNull(String empresaId);
 
+    /** Conta resultados Gupy concluídos com percentual válido no contrato oficial (0 a 100). */
+    @Query("""
+            SELECT COUNT(c)
+            FROM CandidateAttemptEntity c
+            WHERE c.empresaId = :empresaId
+              AND c.callbackUrl IS NOT NULL
+              AND c.status = :status
+              AND c.normalizedScore BETWEEN 0 AND 100
+            """)
+    long countGupyCompletedAttemptsWithValidPercentage(
+            @Param("empresaId") String empresaId,
+            @Param("status") AttemptStatus status
+    );
+
     @Query("SELECT MAX(c.createdAt) FROM CandidateAttemptEntity c WHERE c.empresaId = :empresaId AND c.callbackUrl IS NOT NULL")
     Optional<Instant> findLastGupyAttemptCreatedAt(@Param("empresaId") String empresaId);
 
