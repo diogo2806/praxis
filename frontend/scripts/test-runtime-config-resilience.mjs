@@ -32,8 +32,13 @@ assert.ok(
 );
 assert.match(
   source,
-  /if \(!synchronization\.synchronized\)[\s\S]*?return latestConfig;/,
-  "as tentativas devem continuar enquanto o backend não responder",
+  /if \(synchronization\.synchronized\) \{\s*return latestConfig;\s*\}/s,
+  "as tentativas devem terminar somente depois de uma resposta válida do backend",
+);
+assert.match(
+  source,
+  /for \(const delayMs of RUNTIME_CONFIG_RETRY_DELAYS_MS\)[\s\S]*?return latestConfig;\s*\}/,
+  "as tentativas devem preservar a última configuração quando o backend continuar indisponível",
 );
 
 console.log("Resiliência da configuração de runtime validada para falhas temporárias do backend.");
