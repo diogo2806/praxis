@@ -292,19 +292,34 @@ public class CandidateContentLocalizationService {
                     return values;
                 });
         Map<String, OptionText> options = jdbcTemplate.query("""
-                SELECT node_id, option_id, text, plain_text_description, media_transcript
-                  FROM simulation_option_translations
-                 WHERE locale_id = :localeId
-                """, new MapSqlParameterSource("localeId", header.localeId()),
+                SELECT t.node_id, t.option_id, t.text, t.plain_text_description, t.media_transcript
+                  FROM simulation_option_translations t
+                  JOIN simulation_nodes n
+                    ON n.simulation_version_id = :versionId
+                   AND n.node_id = t.node_id
+                  JOIN simulation_options o
+                    ON o.simulation_node_id = n.id
+                   AND o.option_id = t.option_id
+                 WHERE t.locale_id = :localeId
+                 ORDER BY n.display_order, o.display_order, o.option_id
+                """, new MapSqlParameterSource()
+                .addValue("localeId", header.localeId())
+                .addValue("versionId", versionId),
                 resultSet -> {
                     Map<String, OptionText> values = new LinkedHashMap<>();
+                    Map<String, Integer> indexesByNode = new LinkedHashMap<>();
                     while (resultSet.next()) {
-                        values.put(optionKey(resultSet.getString("node_id"), resultSet.getString("option_id")),
-                                new OptionText(
-                                        resultSet.getString("text"),
-                                        resultSet.getString("plain_text_description"),
-                                        resultSet.getString("media_transcript")
-                                ));
+                        String nodeId = resultSet.getString("node_id");
+                        String internalOptionId = resultSet.getString("option_id");
+                        int optionIndex = indexesByNode.getOrDefault(nodeId, 0);
+                        indexesByNode.put(nodeId, optionIndex + 1);
+                        OptionText translation = new OptionText(
+                                resultSet.getString("text"),
+                                resultSet.getString("plain_text_description"),
+                                resultSet.getString("media_transcript")
+                        );
+                        values.put(optionKey(nodeId, internalOptionId), translation);
+                        values.put(optionKey(nodeId, optionLabel(optionIndex)), translation);
                     }
                     return values;
                 });
@@ -390,6 +405,16 @@ public class CandidateContentLocalizationService {
 
     private String optionKey(String nodeId, String optionId) {
         return nodeId + "\u0000" + optionId;
+    }
+
+    private String optionLabel(int index) {
+        int value = index;
+        StringBuilder label = new StringBuilder();
+        do {
+            label.insert(0, (char) ('A' + (value % 26)));
+            value = (value / 26) - 1;
+        } while (value >= 0);
+        return label.toString();
     }
 
     private String normalizeLocale(String locale) {
