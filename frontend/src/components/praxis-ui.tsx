@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { AlertTriangle, Archive, CheckCircle2, CircleDot, FileText } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import type { SimulationVersionStatus } from "@/lib/api/praxis";
 import { statusMeta, type Maturity } from "@/lib/simulation-meta";
@@ -121,5 +122,15 @@ export function EmptyState({
         {actions && <div className="grid min-w-0 gap-2 sm:min-w-[420px]">{actions}</div>}
       </div>
     </section>
+  );
+}
+
+export function SkeletonRows({ rows = 4 }: { rows?: number }) {
+  return (
+    <div className="space-y-2" aria-hidden="true">
+      {Array.from({ length: rows }).map((_, index) => (
+        <Skeleton key={index} className="h-12 bg-muted" />
+      ))}
+    </div>
   );
 }
