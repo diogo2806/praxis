@@ -1,3 +1,4 @@
+import { JOB_PREVIEW_MANUALS } from "@/lib/screen-manual-job-preview";
 import type { ScreenManualDefinition } from "@/lib/screen-manuals";
 
 export const QUALITY_MANUALS: ScreenManualDefinition[] = [
@@ -56,6 +57,7 @@ export const QUALITY_MANUALS: ScreenManualDefinition[] = [
     ],
     matches: (pathname) => pathname === "/resultados/qualidade",
   },
+  ...JOB_PREVIEW_MANUALS,
 ];
 
 export function resolveQualityManual(pathname: string) {
