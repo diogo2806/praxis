@@ -12,6 +12,7 @@
     "lint": "eslint .",
     "format": "prettier --write .",
     "test:access-control": "node scripts/test-access-control.mjs",
+    "test:runtime-config": "node scripts/test-runtime-config-resilience.mjs",
     "test:screen-manuals": "node scripts/test-screen-manuals.mjs",
     "test:api-contracts": "node scripts/test-api-contracts.mjs",
     "test:authoring-flow": "node scripts/test-authoring-flow.mjs",
