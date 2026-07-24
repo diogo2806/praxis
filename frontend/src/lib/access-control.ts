@@ -59,6 +59,7 @@ const ROUTE_POLICIES: RoutePolicy[] = [
   { prefix: "/participacoes", area: "participations" },
   { prefix: "/enviar-link", area: "participations" },
   { prefix: "/results", area: "results" },
+  { prefix: "/resultados", area: "results" },
   { prefix: "/monitoramento", area: "operations" },
   { prefix: "/notifications", area: "operations" },
   { prefix: "/configuracoes/perfil", area: "company-profile" },
