@@ -6,6 +6,7 @@ import { statusMeta, type Maturity } from "@/lib/simulation-meta";
 
 const toneClass = {
   ok: "border-success/25 bg-success/10 text-foreground",
+  success: "border-success/25 bg-success/10 text-foreground",
   warn: "border-warning/35 bg-warning/15 text-warning-foreground",
   warning: "border-warning/35 bg-warning/15 text-warning-foreground",
   info: "border-primary/25 bg-primary/10 text-foreground",
@@ -120,38 +121,5 @@ export function EmptyState({
         {actions && <div className="grid min-w-0 gap-2 sm:min-w-[420px]">{actions}</div>}
       </div>
     </section>
-  );
-}
-
-export function PageIntro({
-  eyebrow,
-  title,
-  children,
-  action,
-}: {
-  eyebrow?: string;
-  title: string;
-  children: ReactNode;
-  action?: ReactNode;
-}) {
-  return (
-    <div className="mb-5 flex flex-wrap items-start justify-between gap-4">
-      <div>
-        {eyebrow && <div className="text-xs uppercase text-primary">{eyebrow}</div>}
-        <h1 className="mt-1 text-3xl font-semibold">{title}</h1>
-        <p className="mt-1 max-w-2xl text-sm text-muted-foreground">{children}</p>
-      </div>
-      {action}
-    </div>
-  );
-}
-
-export function SkeletonRows({ rows = 4 }: { rows?: number }) {
-  return (
-    <div className="space-y-2">
-      {Array.from({ length: rows }).map((_, i) => (
-        <div key={i} className="h-12 animate-pulse rounded-md bg-muted" />
-      ))}
-    </div>
   );
 }
