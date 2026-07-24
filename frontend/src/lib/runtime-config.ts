@@ -43,7 +43,16 @@ const buildTimePartnerModuleEnabled =
 const buildTimeDefaultEmpresaId =
   String(import.meta.env.VITE_PRAXIS_DEFAULT_EMPRESA_ID ?? "empresa-1").trim() || "empresa-1";
 const RUNTIME_CONFIG_TIMEOUT_MS = 1_500;
-const RUNTIME_CONFIG_RETRY_DELAYS_MS = [0, 1_000, 2_000, 4_000, 8_000, 15_000, 30_000, 60_000] as const;
+const RUNTIME_CONFIG_RETRY_DELAYS_MS = [
+  0,
+  1_000,
+  2_000,
+  4_000,
+  8_000,
+  15_000,
+  30_000,
+  60_000,
+] as const;
 
 let runtimeConfigRefreshPromise: Promise<PraxisRuntimeConfig> | null = null;
 
