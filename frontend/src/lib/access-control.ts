@@ -53,6 +53,7 @@ const ROUTE_POLICIES: RoutePolicy[] = [
   { prefix: "/dashboard", area: "dashboard" },
   { prefix: "/avaliacoes/especialista", area: "assessments" },
   { prefix: "/avaliacoes", area: "assessments" },
+  { prefix: "/previas-realistas", area: "assessments" },
   { prefix: "/nova", area: "assessment-authoring" },
   { prefix: "/simulations/new", area: "assessment-authoring" },
   { prefix: "/jornadas", area: "journeys" },

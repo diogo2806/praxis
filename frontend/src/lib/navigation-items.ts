@@ -1,6 +1,7 @@
 import {
   Activity,
   BarChart3,
+  BriefcaseBusiness,
   Building2,
   ClipboardList,
   CreditCard,
@@ -33,30 +34,14 @@ import {
 import type { SessionProfile } from "@/lib/session";
 
 export type NavigationIcon = typeof Home;
-
-export type NavigationItem = {
-  icon: NavigationIcon;
-  label: string;
-  path: string;
-  allowedRoles: SessionProfile[];
-  children?: NavigationItem[];
-};
-
-export type NavigationGroup = {
-  label: string;
-  items: NavigationItem[];
-};
+export type NavigationItem = { icon: NavigationIcon; label: string; path: string; allowedRoles: SessionProfile[]; children?: NavigationItem[] };
+export type NavigationGroup = { label: string; items: NavigationItem[] };
 
 const productRoles: SessionProfile[] = ["ADMIN", "CLIENT_MANAGER", "PARTNER_SPECIALIST"];
 const managementRoles: SessionProfile[] = ["ADMIN", "CLIENT_MANAGER"];
 const adminRoles: SessionProfile[] = ["ADMIN"];
 
-export const dashboardItem: NavigationItem = {
-  icon: LayoutDashboard,
-  label: "Dashboard",
-  path: "/dashboard",
-  allowedRoles: productRoles,
-};
+export const dashboardItem: NavigationItem = { icon: LayoutDashboard, label: "Dashboard", path: "/dashboard", allowedRoles: productRoles };
 
 export const navigationGroups: NavigationGroup[] = [
   {
@@ -73,6 +58,7 @@ export const navigationGroups: NavigationGroup[] = [
           { icon: Sparkles, label: "Nova Avaliação", path: "/nova", allowedRoles: productRoles },
           { icon: ListChecks, label: "Competências", path: "/competencias", allowedRoles: productRoles },
           { icon: Workflow, label: "Jornadas", path: "/jornadas", allowedRoles: productRoles },
+          { icon: BriefcaseBusiness, label: "Prévias realistas", path: "/previas-realistas", allowedRoles: managementRoles },
         ],
       },
       {
@@ -91,20 +77,18 @@ export const navigationGroups: NavigationGroup[] = [
   },
   {
     label: "Análise",
-    items: [
-      {
-        icon: BarChart3,
-        label: "Resultados",
-        path: "/results",
-        allowedRoles: productRoles,
-        children: [
-          { icon: BarChart3, label: "Resultados", path: "/results", allowedRoles: productRoles },
-          { icon: GitCompare, label: "Talent Match", path: "/talent-match", allowedRoles: productRoles },
-          { icon: TestTube2, label: "Piloto e Indicadores", path: "/piloto", allowedRoles: productRoles },
-          { icon: FlaskConical, label: "Qualidade e Justiça", path: "/resultados/qualidade", allowedRoles: managementRoles },
-        ],
-      },
-    ],
+    items: [{
+      icon: BarChart3,
+      label: "Resultados",
+      path: "/results",
+      allowedRoles: productRoles,
+      children: [
+        { icon: BarChart3, label: "Resultados", path: "/results", allowedRoles: productRoles },
+        { icon: GitCompare, label: "Talent Match", path: "/talent-match", allowedRoles: productRoles },
+        { icon: TestTube2, label: "Piloto e Indicadores", path: "/piloto", allowedRoles: productRoles },
+        { icon: FlaskConical, label: "Qualidade e Justiça", path: "/resultados/qualidade", allowedRoles: managementRoles },
+      ],
+    }],
   },
   {
     label: "Operação",
@@ -169,10 +153,5 @@ export const footerNavigationItems: NavigationItem[] = [
 ];
 
 export function filterNavigationItems(items: NavigationItem[], profile: SessionProfile) {
-  return items
-    .filter((item) => item.allowedRoles.includes(profile))
-    .map((item) => ({
-      ...item,
-      children: item.children ? filterNavigationItems(item.children, profile) : undefined,
-    }));
+  return items.filter((item) => item.allowedRoles.includes(profile)).map((item) => ({ ...item, children: item.children ? filterNavigationItems(item.children, profile) : undefined }));
 }

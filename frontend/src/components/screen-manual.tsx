@@ -22,6 +22,7 @@ import {
 import { resolveAccessOnboardingManual } from "@/lib/screen-manual-access-onboarding";
 import { resolveAnalysisOperationManual } from "@/lib/screen-manual-analysis-operations";
 import { resolveCompetencyOwnershipManual } from "@/lib/screen-manual-competency-ownership";
+import { resolveJobPreviewManual } from "@/lib/screen-manual-job-preview";
 import { useLanguage } from "@/lib/language-context";
 import { resolvePartnerSpecialistManual } from "@/lib/screen-manual-specialist";
 import { resolvePortabilityManual } from "@/lib/screen-manual-portability";
@@ -100,6 +101,7 @@ export function ScreenManual({ pathname, iconOnly = false, className }: ScreenMa
     resolvePublicationManual(pathname) ??
     resolveCompetencyOwnershipManual(pathname) ??
     resolveQualityManual(pathname) ??
+    resolveJobPreviewManual(pathname) ??
     resolveScreenManualOverride(pathname) ??
     resolveScreenManual(pathname);
 

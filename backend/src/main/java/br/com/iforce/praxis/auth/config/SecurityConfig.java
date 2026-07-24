@@ -82,6 +82,7 @@ public class SecurityConfig {
                         .requestMatchers(
                                 "/api/v1/auth/login",
                                 "/api/v1/runtime-config",
+                                "/api/v1/candidate/*/realistic-preview/**",
                                 "/candidate/**",
                                 "/candidato/**",
                                 "/actuator/health",
@@ -187,6 +188,7 @@ public class SecurityConfig {
         return "/api/v1/auth/login".equals(path)
                 || matchesPathOrDescendant(path, "/api/v1/auth/invite")
                 || matchesPathOrDescendant(path, "/api/v1/auth/password")
+                || matchesPathOrDescendant(path, "/api/v1/candidate")
                 || matchesPathOrDescendant(path, "/candidate")
                 || matchesPathOrDescendant(path, "/candidato")
                 || matchesPathOrDescendant(path, "/test")
@@ -226,7 +228,7 @@ public class SecurityConfig {
     }
 
     @Bean
-    public FilterRegistrationBean<PartnerSpecialistAuthorizationFilter> partnerSpecialistFilterRegistration(
+    public FilterRegistrationBean<PartnerSpecialistAuthorizationFilter> specialistFilterRegistration(
             PartnerSpecialistAuthorizationFilter filter
     ) {
         FilterRegistrationBean<PartnerSpecialistAuthorizationFilter> registration = new FilterRegistrationBean<>(filter);
