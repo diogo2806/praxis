@@ -38,7 +38,10 @@ export type FrontendAction =
   | "integration:manage"
   | "billing:manage";
 
-type RoutePolicy = { prefix: string; area: FrontendAccessArea };
+type RoutePolicy = {
+  prefix: string;
+  area: FrontendAccessArea;
+};
 
 const ROUTE_POLICIES: RoutePolicy[] = [
   { prefix: "/login", area: "public" },
@@ -72,12 +75,20 @@ const ROUTE_POLICIES: RoutePolicy[] = [
 ];
 
 const COMPANY_ADMIN_ROLES = new Set([EMPRESA_ROLE, TEAM_MANAGER_ROLE, PARTNER_MANAGER_ROLE]);
+
 const ROLE_AREAS: Record<string, ReadonlySet<FrontendAccessArea>> = {
-  [ASSESSMENT_EDITOR_ROLE]: new Set(["dashboard", "assessments", "assessment-authoring", "competencies", "team", "account", "manuals"]),
+  [ASSESSMENT_EDITOR_ROLE]: new Set([
+    "dashboard", "assessments", "assessment-authoring", "competencies", "team", "account", "manuals",
+  ]),
   [RESULTS_ANALYST_ROLE]: new Set(["dashboard", "results", "team", "account", "manuals"]),
-  [OPERATIONS_MANAGER_ROLE]: new Set(["dashboard", "journeys", "participations", "operations", "integrations", "team", "account", "manuals"]),
-  [PARTNER_SPECIALIST_ROLE]: new Set(["assessments", "assessment-authoring", "competencies", "account", "manuals"]),
+  [OPERATIONS_MANAGER_ROLE]: new Set([
+    "dashboard", "journeys", "participations", "operations", "integrations", "team", "account", "manuals",
+  ]),
+  [PARTNER_SPECIALIST_ROLE]: new Set([
+    "assessments", "assessment-authoring", "competencies", "account", "manuals",
+  ]),
 };
+
 const ROLE_ACTIONS: Record<string, ReadonlySet<FrontendAction>> = {
   [ASSESSMENT_EDITOR_ROLE]: new Set(["assessment:create", "assessment:edit", "competency:manage"]),
   [PARTNER_SPECIALIST_ROLE]: new Set(["assessment:create", "assessment:edit"]),
@@ -86,14 +97,66 @@ const ROLE_ACTIONS: Record<string, ReadonlySet<FrontendAction>> = {
   [OPERATIONS_MANAGER_ROLE]: new Set(["integration:manage"]),
 };
 
-export function hasRole(roles: string[], role: string): boolean { return roles.includes(role); }
-export function isRestrictedPartnerSpecialist(roles: string[]): boolean { return hasRole(roles, PARTNER_SPECIALIST_ROLE) && !hasRole(roles, EMPRESA_ROLE) && !hasRole(roles, ADMIN_ROLE); }
-export function isCompanyAdministrator(roles: string[]): boolean { return roles.some((role) => COMPANY_ADMIN_ROLES.has(role)); }
-export function resolveDefaultAuthenticatedRoute(roles: string[]): "/admin" | "/avaliacoes/especialista" | "/dashboard" | "/login" { if (hasRole(roles, ADMIN_ROLE)) return "/admin"; if (isRestrictedPartnerSpecialist(roles)) return "/avaliacoes/especialista"; if (roles.length > 0) return "/dashboard"; return "/login"; }
-export function resolveFrontendArea(pathname: string): FrontendAccessArea | null { const normalizedPath = normalizePath(pathname); if (normalizedPath === "/") return "public"; return ROUTE_POLICIES.find(({ prefix }) => matchesPath(normalizedPath, prefix))?.area ?? null; }
-export function canAccessFrontendArea(area: FrontendAccessArea, roles: string[]): boolean { if (area === "public") return true; if (area === "platform-admin") return hasRole(roles, ADMIN_ROLE); if (hasRole(roles, ADMIN_ROLE) || isCompanyAdministrator(roles)) return true; return roles.some((role) => ROLE_AREAS[role]?.has(area)); }
-export function canAccessFrontendPath(pathname: string, roles: string[]): boolean { const area = resolveFrontendArea(pathname); return area !== null && canAccessFrontendArea(area, roles); }
-export function canPerformFrontendAction(action: FrontendAction, roles: string[]): boolean { if (hasRole(roles, ADMIN_ROLE) || isCompanyAdministrator(roles)) return true; return roles.some((role) => ROLE_ACTIONS[role]?.has(action)); }
-export function applyBrowserAccessPolicy(_roles: string[]): void { /* A política é aplicada declarativamente. */ }
-function normalizePath(pathname: string): string { const withoutQuery = pathname.split(/[?#]/, 1)[0] || "/"; return withoutQuery.length > 1 && withoutQuery.endsWith("/") ? withoutQuery.slice(0, -1) : withoutQuery; }
-function matchesPath(pathname: string, rootPath: string): boolean { return pathname === rootPath || pathname.startsWith(`${rootPath}/`); }
+export function hasRole(roles: string[], role: string): boolean {
+  return roles.includes(role);
+}
+
+export function isRestrictedPartnerSpecialist(roles: string[]): boolean {
+  return hasRole(roles, PARTNER_SPECIALIST_ROLE)
+    && !hasRole(roles, EMPRESA_ROLE)
+    && !hasRole(roles, ADMIN_ROLE);
+}
+
+export function isCompanyAdministrator(roles: string[]): boolean {
+  return roles.some((role) => COMPANY_ADMIN_ROLES.has(role));
+}
+
+export function resolveDefaultAuthenticatedRoute(
+  roles: string[],
+): "/admin" | "/avaliacoes/especialista" | "/dashboard" | "/login" {
+  if (hasRole(roles, ADMIN_ROLE)) return "/admin";
+  if (isRestrictedPartnerSpecialist(roles)) return "/avaliacoes/especialista";
+  if (roles.length > 0) return "/dashboard";
+  return "/login";
+}
+
+export function resolveFrontendArea(pathname: string): FrontendAccessArea | null {
+  const normalizedPath = normalizePath(pathname);
+  if (normalizedPath === "/") return "public";
+  return ROUTE_POLICIES.find(({ prefix }) => matchesPath(normalizedPath, prefix))?.area ?? null;
+}
+
+export function canAccessFrontendArea(area: FrontendAccessArea, roles: string[]): boolean {
+  if (area === "public") return true;
+  if (area === "platform-admin") return hasRole(roles, ADMIN_ROLE);
+  if (hasRole(roles, ADMIN_ROLE) || isCompanyAdministrator(roles)) return true;
+  return roles.some((role) => ROLE_AREAS[role]?.has(area));
+}
+
+export function canAccessFrontendPath(pathname: string, roles: string[]): boolean {
+  const area = resolveFrontendArea(pathname);
+  return area !== null && canAccessFrontendArea(area, roles);
+}
+
+export function canPerformFrontendAction(action: FrontendAction, roles: string[]): boolean {
+  if (hasRole(roles, ADMIN_ROLE) || isCompanyAdministrator(roles)) return true;
+  return roles.some((role) => ROLE_ACTIONS[role]?.has(action));
+}
+
+/**
+ * Mantido temporariamente como contrato de compatibilidade para sessões antigas.
+ * A autorização não manipula DOM, não observa mutações e não redireciona imperativamente.
+ */
+export function applyBrowserAccessPolicy(_roles: string[]): void {
+  // A política é aplicada declarativamente pelo AppShell e pelos componentes de ação.
+}
+
+function normalizePath(pathname: string): string {
+  const withoutQuery = pathname.split(/[?#]/, 1)[0] || "/";
+  if (withoutQuery.length > 1 && withoutQuery.endsWith("/")) return withoutQuery.slice(0, -1);
+  return withoutQuery;
+}
+
+function matchesPath(pathname: string, rootPath: string): boolean {
+  return pathname === rootPath || pathname.startsWith(`${rootPath}/`);
+}
